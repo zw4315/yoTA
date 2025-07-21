@@ -1,0 +1,1220 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 11.60s]  Okay, so today, oh I should remind you, if you have regrades please get them in by Wednesday
+[11.60s -> 19.44s]  and I think we're going to be fairly stringent about that deadline, so if you've got regrades
+[19.44s -> 26.36s]  make sure you get those in. Okay, so today we are going to return to the subject of
+[26.36s -> 32.76s]  programming with shared memory, which you're all pretty familiar with, and the topic will be how
+[32.76s -> 38.96s]  we make programming with synchronization easier using a concept called transactional memory,
+[38.96s -> 48.44s]  which is pretty interesting, and so let me introduce the topic by talking about what you
+[48.44s -> 53.48s]  already know, right, so we've talked about synchronization primitives, low-level
+[53.48s -> 61.12s]  synchronization primitives, and we said that the key hardware mechanism you need to implement
+[61.12s -> 68.24s]  synchronization is an atomic load and store, right, and these come in a variety of different
+[68.24s -> 77.84s]  types, right, you could have fetch and op, test and set, compare and swap, and then we said that
+[78.16s -> 85.72s]  on modern systems they actually break these into two different memory operations, load,
+[85.72s -> 92.04s]  link, and store conditional, and the coherence system, you know, connects them together and
+[92.04s -> 96.88s]  makes them atomic, alright, so the key thing you need to implement synchronization primitives is
+[96.88s -> 104.32s]  an atomic load and store, right, and so once you've got this in your hardware then you can
+[104.36s -> 112.08s]  implement various different kinds of atomic operations, synchronization operations like locks
+[112.08s -> 117.72s]  and barriers, and of course with locks you can implement lock-free data structures,
+[117.72s -> 125.08s]  however programming with these, you know, admittedly higher level synchronization primitives
+[125.08s -> 130.24s]  is still pretty difficult, right, so we've seen that, you know, it's actually pretty challenging
+[130.24s -> 138.28s]  to develop lock-free data structures if you're not careful and you do the right,
+[138.28s -> 142.36s]  wrong synchronization order you end up with deadlock, and so the question is sort of,
+[142.36s -> 148.04s]  you know, are there better ways of dealing with synchronization, and in particular can you
+[148.04s -> 153.96s]  raise the level of abstraction and make it easier for programmers to get both correct programs
+[153.96s -> 159.00s]  and high performance programs, which is what we're all after, right, okay, so the idea then
+[159.00s -> 164.24s]  is we're going to talk about transactions, we're going to talk about the fundamental
+[164.24s -> 171.28s]  programmers view of transactions which is really basically pretty simple, and then we're going to
+[171.28s -> 178.20s]  talk about how, you know, transactions differ from synchronization primitives like lock and unlock,
+[178.20s -> 184.64s]  and then once we kind of understand why you'd want to use transactions and how you'd use
+[184.64s -> 188.88s]  transactions then we want to talk about how you implement transactions, and they're both software
+[189.76s -> 195.68s]  and hardware ways of implementing transactions with different performance characteristics,
+[195.68s -> 200.32s]  and so we'll talk about that, but before we talk about the details we'll also talk about
+[200.32s -> 205.68s]  some of the basic design space trade-offs that you have for implementing transactions,
+[205.68s -> 211.20s]  dealing with how you deal with the different versions that get created with transactions,
+[211.20s -> 218.04s]  how you detect whether there are conflicts between transactions and the granularity of detection,
+[218.52s -> 225.04s]  and this will kind of, you know, remind you of our discussion of cache coherence,
+[225.04s -> 230.68s]  and when we talk about cache coherence we talked about two levels at which you could
+[230.68s -> 236.72s]  do detection, right, we spent a lot of time talking about doing detection at the level of
+[236.72s -> 241.60s]  cache lines, and what was the problem with doing things at the level of cache lines,
+[242.32s -> 247.64s]  something that of course you revisited on the midterm, what happens?
+[247.64s -> 253.48s]  Yeah, you get full sharing, right, so what if you do the granularity of detection at like
+[253.48s -> 261.96s]  the operating system page level, full sharing gets much much worse, right, so we'll see this
+[261.96s -> 268.44s]  notion of granularity of detection rear its ugly head again as we talk about transactions.
+[268.44s -> 274.04s]  Okay, so first of all, so why is locking as we've currently discussed it difficult,
+[274.28s -> 281.36s]  the fundamental problem is this trade-off that the programmer has to make between having a correct
+[281.36s -> 287.64s]  program, which is what we all want, and having a high-performance program, which is also what
+[287.64s -> 292.08s]  we want, right, I mean the purpose of taking, you know, this course parallel programming is
+[292.08s -> 296.48s]  to develop high-performance programs, right, so this is fundamental trade-off that one has
+[296.48s -> 303.32s]  to deal with, and this comes down to sort of the granularity at which you do the locking,
+[303.64s -> 310.08s]  so if you do it at a coarse grain, then you get a low degree of concurrency, right,
+[310.08s -> 315.12s]  so you imagine, right, we're talking about locking data structures, you have a lock around the whole
+[315.12s -> 321.32s]  data structure, right, or even worse, you can imagine that I have a lock on all of shared
+[321.32s -> 326.20s]  memory, so every time I touch shared memory, I have to grab a lock, and that means that only
+[326.20s -> 331.08s]  one thread could be touching shared memory at any one time, so this is low concurrency,
+[331.12s -> 337.04s]  right, and so of course the opposite extreme is to go to some sort of fine-grain locking scheme,
+[337.04s -> 342.48s]  right, and this can, you know, have a much higher concurrency because now many threads
+[342.48s -> 347.48s]  could potentially be touching the same data structure if you've got fine-grain locking,
+[347.48s -> 358.36s]  and however the problem is is now you open yourself up to the potential for problems
+[359.20s -> 364.52s]  with correctness, right, so deadlock raises and such, right, so the question then is sort of,
+[364.52s -> 369.68s]  you know, is there a better way of thinking about or implementing synchronization, and that
+[369.68s -> 377.80s]  is the reason for transactions, right, so let's look at sort of an example, so suppose I want to
+[377.80s -> 382.12s]  make a deposit into your account, right, so the first thing I need to do is to get your account
+[382.12s -> 387.24s]  balanced, and then I need to increment the account balance by the amount of money being
+[387.24s -> 395.76s]  deposited, right, so first I do a get from your account, and then I increment the balance,
+[395.76s -> 402.56s]  and I put that back in your account, you'd be pretty annoyed if in the middle of the
+[402.56s -> 411.00s]  get somebody else wanted to give you some money, right, and so they, you know, got the wrong
+[411.00s -> 418.96s]  amount because it, you know, you didn't have synchronization, right, so the way to fix that
+[418.96s -> 429.36s]  is to make the deposit method atomic by using locks, right, and so you put locks around,
+[429.36s -> 435.60s]  you take an account lock, and so if you do this, right, then you're going to ensure that the
+[435.60s -> 444.60s]  deposit method is atomic, however, you know, you could instead if you were using transactions,
+[444.60s -> 451.44s]  you would just wrap the atomic construct around the whole of the contents of the deposit method,
+[451.44s -> 459.16s]  and you're declaring to the system that you want the sequence of statements to be atomic,
+[459.60s -> 467.64s]  right, so the thing to take note of is that atomic is declarative, you're saying what you
+[467.64s -> 473.72s]  want the system behavior to be, and you don't have to explicitly talk about how it's actually
+[473.72s -> 481.32s]  implemented, right, so once you declare atomic, then it's up to the system to implement atomic
+[481.32s -> 487.08s]  in the right way, right, so in fact under the covers atomic could be implemented with locks,
+[487.12s -> 496.28s]  but you as the programmer don't see the locks, your interface is this atomic declaration,
+[496.28s -> 502.20s]  right, and then of course how exactly gets implemented and how you make sure that you get
+[502.20s -> 507.56s]  good performance is the subject of the rest of the lecture, right, but it's important to note
+[507.56s -> 514.52s]  that atomic is this declarative abstraction, right, you say what you want not how to get it,
+[514.52s -> 520.88s]  right, and we've seen this in the past, right, so we talked about declarative abstractions in
+[520.88s -> 527.80s]  which you say execute these independent thousand tasks, right, so what's an example of a declarative
+[527.80s -> 537.68s]  abstraction that we've talked about in this class? Yes, so an IICPC for each for example,
+[537.72s -> 545.68s]  that's exactly correct, as opposed to an imperative abstraction where you say explicitly how you want
+[545.68s -> 552.40s]  the behavior to work, so you want say for example you instead of saying you know launch
+[552.40s -> 558.20s]  a bunch of independent tasks, you say spawn and worker threads, assign threads to work
+[558.20s -> 566.08s]  explicitly using some sort of shared task queue, right, so the synchronization analogue to
+[566.96s -> 572.80s]  declarative versus imperative semantics are you know transaction says perform this set of
+[572.80s -> 579.68s]  operations atomically whereas if you are dealing with locking then you have to explicitly acquire
+[579.68s -> 586.08s]  locks, perform the operations and release the locks and so the abstraction is much lower level
+[586.08s -> 592.56s]  and it's imperative, it says what to do as opposed to it says how to do it as opposed to
+[593.44s -> 602.92s]  what to do, right, so imperative is how and declarative is what. Okay, any questions at
+[602.92s -> 614.88s]  this point? Okay, so let's talk about what sorts of semantics you have with transactions,
+[614.92s -> 624.08s]  right, so we're talking about transactional memory which is inspired by database transactions,
+[624.08s -> 629.32s]  how many people here have taken database class? Good, a fair number of you, right,
+[629.32s -> 639.00s]  so in databases you hear about acid properties, right, so we have similar semantics for
+[639.12s -> 646.80s]  transactional memory, so you've got an atomic, an isolated sequence of memory accesses, right,
+[646.80s -> 653.92s]  so the first key thing that you want in your transactions is atomicity, right, it means all or
+[653.92s -> 661.08s]  nothing, either all of the reads and writes inside the transaction take effect and in
+[661.08s -> 666.60s]  particular the writes change the state of the memory system or it's as if none of them occurred
+[666.60s -> 672.92s]  at all, right, so you can imagine it's all or nothing and that means that you have this
+[672.92s -> 680.12s]  atomicity property. The second property of transactions is this notion of isolation,
+[680.12s -> 687.60s]  the fact that within a transaction any of the reads or in particular the writes that are made
+[687.60s -> 693.68s]  by the transaction cannot be observed by any other transactions in the system, okay, so the
+[693.88s -> 700.96s]  operations within a transaction are completely isolated, right, and then lastly, the last property
+[700.96s -> 709.44s]  is serializability which says that hey, the order, I can have a serialized order of the
+[709.44s -> 717.56s]  execution of each of the transactions in the system, right, so I can order all the transactions
+[717.56s -> 724.44s]  in the system in a serial order, however the exact order is not specified by the programmer,
+[724.44s -> 732.76s]  right, that's left up to the system, but there is a serializable order that we can impose,
+[732.76s -> 739.56s]  the system will be imposed on the order in which the transactions commit, okay,
+[739.56s -> 745.24s]  so we've got atomicity, isolation and serializability, we don't really have
+[745.24s -> 751.20s]  durability because of course memory, you know, can fail, right, so that's the,
+[751.20s -> 757.92s]  the D is missing in the semantics or the properties of transactional memory.
+[757.92s -> 765.48s]  So the way to think about transactional memory then is a transaction is a sequence
+[765.48s -> 773.00s]  of reads and writes on various addresses that are both isolated and atomic, right,
+[773.04s -> 781.92s]  so you can think about the operations that are made within the transaction as being the same as,
+[781.92s -> 788.28s]  you know, as a single operation that we talked about in the context of cash coherency, right,
+[788.28s -> 797.80s]  so that each of the transactions then can be thought of as a single atomic memory operation
+[798.20s -> 802.60s]  that occurs and it can be serialized by the system, right,
+[802.60s -> 811.76s]  so with this in mind then what consistency model do we have for transactional memory?
+[811.76s -> 816.64s]  What consistency model does transactional memory give you?
+[816.64s -> 817.24s]  Yeah?
+[817.24s -> 821.44s]  It gives you basically sequential consistency, so you can imagine, right,
+[821.60s -> 831.76s]  you know, that picture where the pointer points from one thread to the next in some random order
+[831.76s -> 839.04s]  but in this case every time it points to a particular thread it takes a whole transaction's
+[839.04s -> 844.40s]  worth of memory references, right, so it's essentially sequential consistency,
+[844.40s -> 850.72s]  some people have called this transactional consistency to, you know, differentiate it
+[850.72s -> 855.76s]  from the fact that you've got this bulk operation of memory references as opposed
+[855.76s -> 860.20s]  to a single memory reference that gets selected each time,
+[860.20s -> 862.76s]  but essentially it's sequential consistency.
+[862.76s -> 863.64s]  Question?
+[863.64s -> 875.96s]  So you can do whatever you want inside the single transaction because it's isolated, right?
+[875.96s -> 889.36s]  Well, you've got to match the whatever was stated in the program order, right?
+[889.36s -> 891.80s]  Yeah, you can't mess that up, right?
+[891.80s -> 898.44s]  Well, you know, in particular the dependencies in the program order, right?
+[898.44s -> 901.32s]  If there are no dependencies then of course you can reorder things,
+[901.32s -> 903.08s]  if there are you've got to respect them, right?
+[903.08s -> 904.20s]  Yeah.
+[904.20s -> 910.24s]  Okay, so we basically have sequential consistency,
+[910.24s -> 914.60s]  so let's motivate a little bit more why you want transactional memory, right?
+[914.60s -> 918.56s]  So this is a Java hash map, right?
+[918.56s -> 926.00s]  So we used to run this class in Java, many of you, how many people actually know Java here?
+[926.00s -> 927.68s]  Good, all right, good.
+[927.68s -> 931.76s]  So here's a Java hash map, right?
+[931.76s -> 939.44s]  It, you know, maps a key to a value, you can look at the code, it's fairly straightforward,
+[939.44s -> 945.24s]  you get a hash bucket and then you find the element within the bucket, but of course
+[945.24s -> 952.08s]  if you want to use this in a multi-threaded parallel context it's not thread safe, right?
+[952.08s -> 958.80s]  So, you know, it's not thread safe and so of course it doesn't have any extra overhead
+[958.84s -> 964.52s]  for locking but it would be a bad idea to use this in a threaded environment, right?
+[964.52s -> 968.36s]  So if you want to use it in a threaded environment what you want is some sort
+[968.36s -> 975.04s]  of synchronized map which is what Java 1.4 gave you, gives you.
+[975.04s -> 985.20s]  So it essentially uses synchronized which is a way for specifying that this method will,
+[985.20s -> 988.48s]  you need to take a lock before you use it, right?
+[988.48s -> 992.40s]  However, you don't have to explicitly release the lock but you do need to,
+[992.40s -> 997.16s]  but the system does the acquisition for you, okay?
+[997.16s -> 1005.24s]  So synchronized, it's easy, you make the whole hash map synchronized and now it's thread safe
+[1005.24s -> 1009.36s]  so you can use it within a threaded environment, however, you know,
+[1009.36s -> 1017.10s]  the performance of this hash map may not be that good because you've got this single lock
+[1017.10s -> 1020.78s]  which locks the whole data structure, right?
+[1020.78s -> 1031.16s]  Okay? So what should we do to potentially improve the performance of the Java hash map?
+[1031.16s -> 1033.28s]  What can we do?
+[1033.28s -> 1033.58s]  Yeah?
+[1033.58s -> 1043.46s]  Right, so we can do a lock per bucket as opposed to a lock over the whole hash map
+[1043.46s -> 1050.90s]  and this would potentially give us more concurrency and more performance, all right?
+[1050.90s -> 1059.66s]  So now with this finer grain locking it's potentially thread safe but the problem is
+[1059.66s -> 1062.50s]  that now it's more complicated to implement, right?
+[1062.50s -> 1068.50s]  So it's much more complicated than just putting a synchronized around the whole method,
+[1068.50s -> 1073.86s]  now you've got to dig into the details of the implementation of the hash map, okay?
+[1073.86s -> 1077.38s]  So in terms of performance, things are going to look a lot better, right?
+[1077.38s -> 1083.98s]  So in this case where we're looking at the execution time, so lower is better from 1
+[1083.98s -> 1089.18s]  to 16 processes and so the Java, the synchronized,
+[1089.18s -> 1093.54s]  the whole hash map doesn't really improve much, right?
+[1093.58s -> 1102.86s]  So you see performance roughly doesn't improve with parallelization
+[1102.86s -> 1108.30s]  because you don't have enough concurrency, however with fine grain locks we do see this
+[1108.30s -> 1112.46s]  improvement in performance as we increase the number of processes.
+[1112.46s -> 1114.54s]  So this is all good, right?
+[1114.54s -> 1120.90s]  So thumbs up for fine grain locking because it's always a win.
+[1120.90s -> 1123.50s]  Is it always a win?
+[1123.50s -> 1126.94s]  What's happening here?
+[1126.94s -> 1136.42s]  So in this case the coarse grain locks, you know, give you this no concurrency line, right,
+[1136.42s -> 1143.58s]  which doesn't improve with number of processes but what has happened with fine grain locks?
+[1143.58s -> 1149.62s]  So we're going from a hash table here now to a balanced tree data structure
+[1149.62s -> 1154.22s]  and now we are using fine grain locks with a balanced tree.
+[1154.22s -> 1161.94s]  So why at one processor do we have the execution time being so much worse
+[1161.94s -> 1164.54s]  than the coarse grain locking scheme?
+[1164.54s -> 1166.02s]  Yeah?
+[1166.02s -> 1180.58s]  Right, so you've got to take, if you're potentially doing hand over hand locking,
+[1180.58s -> 1184.78s]  you've got to take a lot of locking, a lot of locks for very little work
+[1184.78s -> 1190.58s]  and so you have a lot of overhead associated with the fine grain locks
+[1190.58s -> 1198.18s]  and it takes you four processors worth of capability in order
+[1198.18s -> 1201.86s]  to overcome the overheads of the fine grain locks, right?
+[1201.86s -> 1203.78s]  So this is not so great.
+[1203.78s -> 1208.82s]  I mean it does scale but there's a lot of overhead that you have to overcome, right?
+[1208.82s -> 1212.38s]  So the question is, you know, could you do better?
+[1212.38s -> 1220.54s]  And so with an atomic construct, right, you would just use atomic and say
+[1220.54s -> 1235.82s]  that you want the method to be atomic and so there's.
+[1242.38s -> 1256.38s]  It's going to be missing, ah, it's coming later, coming later.
+[1256.38s -> 1267.50s]  Alright, so the idea is that with atomic, I just specify
+[1267.50s -> 1272.70s]  that the whole hash map operation is going to be atomic.
+[1272.70s -> 1279.98s]  So now it's good in that it's thread safe, it's just as easy as kind
+[1279.98s -> 1283.82s]  of locking the whole method with synchronize
+[1283.82s -> 1287.50s]  and the question is will I get good performance?
+[1287.50s -> 1294.42s]  So let's look at the performance of a transactional system in the context
+[1294.42s -> 1298.14s]  of a tree update by two threads, right?
+[1298.14s -> 1303.94s]  So in this case we've got a tree and we want to modify nodes three
+[1303.94s -> 1307.50s]  and four in a thread safe way, right?
+[1307.50s -> 1310.46s]  And so let's assume that we're going to use fine grain locking.
+[1310.46s -> 1314.06s]  So we're going to do some hand over hand locking and so we need
+[1314.06s -> 1318.90s]  to lock the path to node three.
+[1318.90s -> 1327.70s]  And so the red path is the path to node three
+[1327.70s -> 1334.50s]  and the yellow path is the path from the root to node four
+[1334.50s -> 1340.10s]  and since it goes through nodes one and two, both paths go
+[1340.10s -> 1344.02s]  through nodes one and two, you potentially have a case
+[1344.02s -> 1351.70s]  where the update of node three delays the update of node four.
+[1351.70s -> 1354.02s]  Right? So everybody see that?
+[1354.02s -> 1358.14s]  Okay. Now the question is, you know,
+[1358.14s -> 1361.94s]  should there actually be a case
+[1361.94s -> 1367.66s]  where we can actually update nodes three
+[1367.66s -> 1369.14s]  and four at the same time?
+[1369.14s -> 1370.14s]  They're independent, right?
+[1370.14s -> 1373.78s]  So potentially we should be able to do this, right?
+[1373.78s -> 1377.74s]  And so with transactions you can actually make that happen, right?
+[1377.74s -> 1381.14s]  So the way to think about transactions then is
+[1381.14s -> 1383.50s]  that there's some state
+[1383.50s -> 1386.46s]  that you read during the transaction, right?
+[1386.46s -> 1388.46s]  Called the read state and the state
+[1388.46s -> 1390.94s]  that you write during the transaction called the
+[1390.94s -> 1391.86s]  write state, right?
+[1391.86s -> 1396.74s]  So the read state for transaction A is nodes one,
+[1396.74s -> 1399.66s]  two and three, right?
+[1399.66s -> 1401.66s]  And what's the write state?
+[1403.94s -> 1405.26s]  Three, right?
+[1405.26s -> 1409.94s]  So three is the write state and then for transaction B,
+[1409.94s -> 1415.30s]  which is going to update node four, the read state is one,
+[1415.30s -> 1419.02s]  two and four and the write state is four, right?
+[1419.02s -> 1422.42s]  And so what we're trying to figure
+[1422.42s -> 1428.26s]  out is whether the transactions conflict and they will conflict
+[1428.26s -> 1431.78s]  if there is an intersection between the read
+[1431.78s -> 1434.42s]  and the write states of the two transactions, right?
+[1434.42s -> 1440.74s]  And so in this case there is no intersection and also
+[1440.74s -> 1442.14s]  in that case there's no intersection
+[1442.14s -> 1446.14s]  and so there's no read-write or write-write conflict
+[1446.14s -> 1451.58s]  and so these transactions can both operate concurrently
+[1451.58s -> 1452.74s]  and they do not conflict.
+[1452.74s -> 1453.50s]  Yes?
+[1453.50s -> 1457.34s]  So what I was trying to ask earlier was
+[1457.34s -> 1461.06s]  in this case there's of course no conflict but in a case
+[1461.06s -> 1464.86s]  where two parallel threads or whatever are writing the
+[1464.86s -> 1467.82s]  transaction A and B and they're both writing the tweet,
+[1467.82s -> 1470.70s]  what would the behavior of the transaction in that case given
+[1470.70s -> 1472.02s]  that there would be a conflict?
+[1472.02s -> 1477.02s]  Okay, what do you think it should be?
+[1477.02s -> 1481.74s]  I guess one of them is given priority over the other.
+[1481.74s -> 1484.90s]  Right, you've got to serialize those transactions
+[1484.90s -> 1487.46s]  because there would be a conflict if you didn't.
+[1487.46s -> 1489.34s]  So does the other one get flushed
+[1489.34s -> 1491.54s]  or does it still end up writing?
+[1491.54s -> 1495.14s]  Well, it's eventually got to execute, right?
+[1495.14s -> 1500.94s]  And the question is how we manage the operation
+[1500.94s -> 1504.10s]  of the transactions, we're going to get to that,
+[1504.10s -> 1505.74s]  but from the point of view
+[1505.74s -> 1511.42s]  of the abstraction those transactions will be serialized,
+[1511.42s -> 1514.86s]  right?
+[1514.86s -> 1518.82s]  Okay, so in this case there is no read-write
+[1518.82s -> 1522.22s]  or write-write conflict, but in the case, you know,
+[1522.22s -> 1525.74s]  that you just brought up they both are trying to,
+[1525.74s -> 1528.98s]  both the transactions are trying to update node 3,
+[1528.98s -> 1531.54s]  now there is a conflict and so we need
+[1531.54s -> 1535.10s]  to serialize them, right?
+[1535.10s -> 1537.94s]  Okay, so this is the graph that I thought was going
+[1537.94s -> 1540.82s]  to come earlier, right, but we're just showing
+[1540.82s -> 1543.54s]  that okay now you have transactions
+[1543.54s -> 1547.06s]  with the right support, you're going to get good performance
+[1547.06s -> 1551.62s]  in as good as fine-grained locking with transactions,
+[1551.62s -> 1557.18s]  that's the yellow line which is labeled TCC,
+[1557.18s -> 1558.98s]  which is a transactional memory system
+[1558.98s -> 1563.50s]  that has hardware support and that also even the case
+[1563.50s -> 1566.94s]  where you didn't do well with fine-grained locks,
+[1566.94s -> 1569.96s]  you'll do well with transactions again
+[1569.96s -> 1571.52s]  with the right sort of hardware support.
+[1571.52s -> 1574.00s]  So this is the motivation for transactions,
+[1574.00s -> 1578.08s]  the idea that you can get an easy
+[1578.08s -> 1582.32s]  to use programming model coupled with high performance
+[1582.32s -> 1589.00s]  because you get to get the performance benefit
+[1589.00s -> 1590.76s]  of fine-grained concurrency, right?
+[1590.76s -> 1594.24s]  So transactions will only conflict when they,
+[1594.24s -> 1597.00s]  will only be serialized when there are conflicts.
+[1597.00s -> 1598.08s]  Yeah?
+[1598.08s -> 1610.12s]  This is just the abstraction, we can talk about the details.
+[1610.12s -> 1612.72s]  Hold on, it's coming.
+[1612.72s -> 1616.48s]  Alright, so back to the abstraction here,
+[1616.48s -> 1623.16s]  so we've got this doubly linked list and we want to,
+[1623.20s -> 1626.20s]  we've got this push left method and we want
+[1626.20s -> 1629.52s]  to make it thread safe with transactions.
+[1629.52s -> 1631.92s]  So the question is how should we do that?
+[1631.92s -> 1634.92s]  So I'll give you a couple of minutes to look at the code
+[1634.92s -> 1639.68s]  and you can consult with your neighbor and then we'll ask
+[1639.68s -> 1645.96s]  for a solution for how we make this code thread safe
+[1645.96s -> 1647.80s]  with transactions.
+[1653.16s -> 1666.32s]  See if somebody has a solution, let me know.
+[1666.32s -> 1667.16s]  Yeah?
+[1667.16s -> 1673.20s]  All the lines below the QN value will go?
+[1673.20s -> 1675.04s]  That's correct, right?
+[1675.04s -> 1677.76s]  So just make all of the operations
+[1677.76s -> 1682.84s]  on the variables associated with the doubly linked atomic
+[1682.84s -> 1684.48s]  and then you go, right?
+[1684.48s -> 1687.20s]  None of the tricky hand over hand locking and figuring
+[1687.20s -> 1691.16s]  out what's what, you just say hey, I want all this stuff
+[1691.16s -> 1694.36s]  to be atomic and system,
+[1694.36s -> 1699.96s]  make sure that you do as you're told, right?
+[1699.96s -> 1703.24s]  Okay, so everybody get that,
+[1703.24s -> 1706.24s]  the idea that it's fundamentally easier
+[1706.24s -> 1708.00s]  to program with transactions?
+[1708.00s -> 1710.48s]  Another benefit of transactions is what happens
+[1710.48s -> 1713.32s]  when failure occurs, right?
+[1713.32s -> 1717.36s]  So how do you deal with failure atomicity, right?
+[1717.36s -> 1719.44s]  In the case of locking you've got to remember
+[1719.44s -> 1723.72s]  to in your exception handler release any locks
+[1723.72s -> 1727.92s]  that you've acquired and clean up things in the right way
+[1727.92s -> 1730.56s]  and restore memory or the state of the system
+[1730.56s -> 1735.80s]  to the way it was before the method executed.
+[1735.80s -> 1738.56s]  And this is much easier with transactions
+[1738.56s -> 1743.40s]  because essentially when you abort a transaction it's
+[1743.40s -> 1745.20s]  like a big undo, right?
+[1745.20s -> 1750.40s]  So you get the state of the system back to the point
+[1750.40s -> 1753.12s]  at which you started executing the transaction.
+[1753.12s -> 1754.20s]  Great, right?
+[1754.20s -> 1755.72s]  You don't have to worry about figuring
+[1755.72s -> 1758.48s]  out what state you need to put back.
+[1758.48s -> 1761.56s]  You don't have to worry about releasing any locks
+[1761.56s -> 1765.76s]  that you've acquired and so it's a very clean and easy way
+[1765.76s -> 1770.60s]  of recovering from exceptions.
+[1770.60s -> 1774.96s]  So failure atomicity with instructions, right?
+[1774.96s -> 1780.48s]  So if you're trying to do a transfer and it fails,
+[1780.48s -> 1790.36s]  you can, the transactional memory system will guarantee
+[1790.36s -> 1795.24s]  that any memory updates are undone
+[1795.24s -> 1802.48s]  and you don't have any locks that you have acquired
+[1802.48s -> 1807.76s]  that are lying around potentially causing deadlock.
+[1807.76s -> 1809.04s]  OK?
+[1809.04s -> 1817.44s]  A really important idea in sort of software development
+[1817.44s -> 1822.92s]  is the idea that you should compose smaller modules together
+[1822.92s -> 1827.28s]  to build bigger, more complex software systems, right?
+[1827.28s -> 1831.64s]  And so you want composability in your system in order
+[1831.64s -> 1836.72s]  to make sure that you can kind of build complex software
+[1836.72s -> 1838.72s]  from simple components.
+[1838.72s -> 1842.32s]  But the problem is that with locks,
+[1842.32s -> 1846.68s]  this idea of composability breaks down.
+[1846.68s -> 1847.96s]  Look at this example, right?
+[1847.96s -> 1854.80s]  So we want to do a transfer from account A to account B
+[1854.80s -> 1856.64s]  and so what we're going to do is
+[1856.64s -> 1864.08s]  we're going to use a nested synchronized in which we do,
+[1864.08s -> 1870.00s]  we get a synchronized, take a lock on account A
+[1870.00s -> 1873.28s]  followed by a lock on account B, right?
+[1873.28s -> 1875.48s]  So this is fine.
+[1875.56s -> 1879.20s]  So if we call transfer from A to B on thread 0
+[1879.20s -> 1885.48s]  and transfer from B to A on thread 1, what happens?
+[1885.48s -> 1888.24s]  Well, we get deadlock, right?
+[1888.24s -> 1892.96s]  We first, thread 1 first gets a lock on A
+[1892.96s -> 1895.68s]  and thread 2 gets a lock on B and now we're
+[1895.68s -> 1899.84s]  in a deadlock, the deadly embrace situation, right?
+[1899.84s -> 1901.20s]  So how do we fix this?
+[1901.20s -> 1904.32s]  So what's the solution to not having
+[1904.32s -> 1905.72s]  deadlock in this situation?
+[1909.56s -> 1911.60s]  Yeah?
+[1911.60s -> 1912.56s]  That's one solution.
+[1912.56s -> 1915.04s]  What if I don't give you transactional memory
+[1915.04s -> 1918.48s]  and I only give you locks?
+[1918.48s -> 1919.36s]  Yeah?
+[1919.36s -> 1922.76s]  Do you synchronize A to account A and synchronize B
+[1922.76s -> 1923.68s]  to account B?
+[1927.68s -> 1931.52s]  Synchronize A, no, but you want this to be atomic, right?
+[1931.52s -> 1932.16s]  Yeah.
+[1932.16s -> 1934.20s]  Did you always have to synchronize in the same order?
+[1934.20s -> 1934.72s]  Right.
+[1934.72s -> 1938.44s]  So you need to order the lock acquisition
+[1938.44s -> 1942.44s]  by some global order, right?
+[1942.44s -> 1946.72s]  So maybe you could use always synchronize a lower
+[1946.72s -> 1950.44s]  numbered lock before a higher numbered lock, right?
+[1950.44s -> 1953.40s]  So you need some global mechanism,
+[1953.40s -> 1957.08s]  but this global mechanism breaks composability, right?
+[1957.08s -> 1958.84s]  Because now you need to know globally
+[1958.84s -> 1962.24s]  what to do in order to compose these simpler
+[1962.24s -> 1964.68s]  components together, right?
+[1964.68s -> 1971.32s]  And so this system-wide policy breaks software modularity.
+[1971.32s -> 1976.56s]  And so what you want then is transactions, right?
+[1976.56s -> 1980.40s]  So you want to wrap an atomic around the withdraw
+[1980.40s -> 1981.56s]  and deposit.
+[1981.56s -> 1983.48s]  But as we've already seen, there
+[1983.48s -> 1988.56s]  are atomics inside withdraw and inside deposit, right?
+[1988.56s -> 1991.88s]  And so now you've got nested atomics.
+[1991.92s -> 1995.16s]  But nested atomics, how should nested atomics work, right?
+[1995.16s -> 1997.36s]  If I told you nested atomics, what would you
+[1997.36s -> 1999.72s]  assume about the outer atomic?
+[2003.88s -> 2004.40s]  Yeah.
+[2008.84s -> 2009.88s]  Can you be more explicit?
+[2016.72s -> 2018.96s]  Right, it subsumes what happens
+[2018.96s -> 2020.08s]  in the inner atomic, right?
+[2020.08s -> 2022.44s]  So the outer atomic takes precedence,
+[2022.44s -> 2025.24s]  and you assume that everything within the outer atomic
+[2025.24s -> 2027.28s]  is going to be atomic, right?
+[2027.28s -> 2028.24s]  Good.
+[2028.24s -> 2036.44s]  All right, so now you declare your intent with this atomic,
+[2036.44s -> 2040.52s]  and then the system will implement things
+[2040.52s -> 2042.28s]  and manage concurrency.
+[2042.28s -> 2046.32s]  And if it turns out that you have no concurrency,
+[2046.32s -> 2050.76s]  as in this first transfer between accounts A and B,
+[2050.76s -> 2056.40s]  then the atomic regions will be serialized, right?
+[2056.40s -> 2058.64s]  But in the second example, where
+[2058.64s -> 2062.84s]  we're transferring between A and B in one transfer,
+[2062.84s -> 2067.24s]  and C and D, account C and D in the second transfer,
+[2067.24s -> 2070.08s]  now we get concurrency, and the system
+[2070.08s -> 2072.68s]  should allow that and provide the performance benefit.
+[2072.68s -> 2073.24s]  Yeah.
+[2074.08s -> 2076.52s]  In the example of concurrency, you
+[2076.52s -> 2078.56s]  wouldn't put it in an atomic frame.
+[2078.56s -> 2082.16s]  Because why would you not want to put it in atomic?
+[2082.16s -> 2084.44s]  Because, like you just said, if you have a larger
+[2084.44s -> 2088.32s]  scale atomic, only one thing can happen at a time.
+[2088.32s -> 2092.52s]  No, no, no, go back to the example of the tree.
+[2092.52s -> 2094.44s]  Oh, I see.
+[2094.44s -> 2096.72s]  In this case, is there a conflict
+[2096.72s -> 2099.28s]  between this transaction and this transaction?
+[2099.28s -> 2099.96s]  No.
+[2099.96s -> 2101.08s]  No conflict.
+[2101.08s -> 2104.48s]  Therefore, they should be able to run concurrently, right?
+[2104.48s -> 2107.32s]  And that's regardless of if we specify the atomic function.
+[2107.32s -> 2107.84s]  No, no, no.
+[2107.84s -> 2109.68s]  You are inside a transaction.
+[2109.68s -> 2110.76s]  Both of them are inside.
+[2110.76s -> 2111.84s]  They're two transactions.
+[2111.84s -> 2115.52s]  They're executing at the same time.
+[2115.52s -> 2117.44s]  They're executing at the same time.
+[2117.44s -> 2120.92s]  And the question is, do they conflict?
+[2120.92s -> 2123.36s]  Yes, then we serialize them.
+[2123.36s -> 2127.96s]  No, then they should get to run concurrently, right?
+[2128.04s -> 2133.12s]  So in this case, we serialize the two transactions,
+[2133.12s -> 2137.68s]  or the two transfers, in this example.
+[2137.68s -> 2140.88s]  And in this case, we allow them to run concurrently.
+[2140.88s -> 2142.44s]  It's important that you get that.
+[2145.48s -> 2146.64s]  Other questions?
+[2149.96s -> 2154.28s]  All right, so that's the key benefit of transactions,
+[2154.28s -> 2156.92s]  the fact that you do allow this concurrency
+[2156.92s -> 2160.48s]  if there are no conflicts.
+[2160.48s -> 2169.36s]  All right, so just a recap now, then, about transactional
+[2169.36s -> 2173.20s]  memory and why we want to use a construct, right?
+[2173.20s -> 2175.44s]  So first of all, we've got this notion
+[2175.44s -> 2179.84s]  of it's an easy to use synchronization construct, right?
+[2179.84s -> 2183.68s]  So we said it's difficult for programmers
+[2183.68s -> 2185.24s]  to get synchronization right.
+[2185.44s -> 2188.36s]  You're stuck between optimizing performance
+[2188.36s -> 2192.00s]  with fine-grain locking or getting correctness
+[2192.00s -> 2193.92s]  with coarse-grain locking.
+[2193.92s -> 2196.40s]  And so the idea is that transactions
+[2196.40s -> 2199.64s]  are as easy to use as coarse-grain locks,
+[2199.64s -> 2202.24s]  but potentially could give you the performance
+[2202.24s -> 2204.76s]  of fine-grain locking, OK?
+[2204.76s -> 2210.16s]  And so the idea is that instead of you, the programmer,
+[2210.16s -> 2212.88s]  having to worry about how to implement
+[2212.92s -> 2215.04s]  the details of a fine-grain locking
+[2215.04s -> 2219.00s]  scheme on a complex data structure,
+[2219.00s -> 2221.72s]  such as a tree or a doubly-linked list,
+[2221.72s -> 2224.32s]  you let the system do the work for you
+[2224.32s -> 2227.20s]  and give you high performance.
+[2227.20s -> 2230.24s]  And then this notion of failure atomicity and recovery,
+[2230.24s -> 2233.84s]  this idea that you can recover simply
+[2233.84s -> 2237.80s]  by aborting the transaction and letting the system recover
+[2237.80s -> 2242.36s]  the data and not have to worry about releasing locks
+[2242.36s -> 2243.76s]  that you've acquired.
+[2243.76s -> 2246.48s]  And lastly, a very important point
+[2246.48s -> 2250.64s]  is the fact that transactions compose, right?
+[2250.64s -> 2255.72s]  And so you can compose simpler, modular components together
+[2255.72s -> 2258.32s]  to form more complex software systems
+[2258.32s -> 2260.68s]  and not have to worry about a global locking scheme.
+[2260.68s -> 2261.44s]  Yeah?
+[2261.44s -> 2263.96s]  Well, why is it that you can only obtain
+[2263.96s -> 2267.36s]  most of the value quickly in this form?
+[2267.36s -> 2269.28s]  Well, you know, the question is
+[2269.28s -> 2278.16s]  that in certain cases, you may know something about the data
+[2278.16s -> 2281.60s]  structure, which means that by just looking
+[2281.60s -> 2285.16s]  at the read and write state, you
+[2285.16s -> 2287.76s]  could do something a little more optimized, right?
+[2287.76s -> 2289.64s]  And that's because you know something about the data
+[2289.64s -> 2290.72s]  structure, right?
+[2290.72s -> 2293.16s]  So if I just look at read and write state,
+[2293.16s -> 2295.48s]  I might say that these things can conflict,
+[2295.48s -> 2297.96s]  but you may know that something else that says,
+[2297.96s -> 2299.60s]  hey, they really don't conflict.
+[2299.60s -> 2303.76s]  And in fact, you could get concurrency here, right?
+[2303.76s -> 2306.80s]  So yeah.
+[2306.80s -> 2309.44s]  I mean, it's usually extra knowledge
+[2309.44s -> 2311.44s]  that you bring to the implementation that
+[2311.44s -> 2313.56s]  would allow you to do better in the case
+[2313.56s -> 2315.84s]  of a pure transactional memory system.
+[2315.84s -> 2316.52s]  That's it.
+[2316.52s -> 2317.40s]  Yeah?
+[2317.40s -> 2320.32s]  Can fine-grained locks also just be better in some cases?
+[2320.32s -> 2323.56s]  Like, if you put atomic on something that's always going
+[2323.56s -> 2327.92s]  to have to be serialized with a fine-grained lock,
+[2327.96s -> 2331.96s]  what part of that would actually keep you going?
+[2331.96s -> 2333.36s]  Yeah, maybe.
+[2333.36s -> 2334.04s]  Yeah.
+[2334.04s -> 2336.56s]  Again, you might be able to get finer granularity
+[2336.56s -> 2339.16s]  than you can with a transaction.
+[2339.16s -> 2339.66s]  Yeah.
+[2344.40s -> 2346.20s]  OK.
+[2346.20s -> 2349.36s]  So it's important to understand that sort of there
+[2349.36s -> 2354.28s]  is this difference between atomic and locking.
+[2354.28s -> 2355.56s]  They're not the same, right?
+[2355.56s -> 2359.88s]  So atomic, again, is this declarative construct
+[2359.88s -> 2364.60s]  saying, here is the behavior I expect of the atomic region.
+[2364.60s -> 2367.64s]  And locks are a way of implementing synchronization.
+[2367.64s -> 2368.68s]  Right?
+[2368.68s -> 2372.68s]  And locks are to be used for purposes beyond atomicity.
+[2372.68s -> 2374.72s]  And just because you have atomic
+[2374.72s -> 2377.20s]  doesn't mean that all your problems are solved.
+[2377.20s -> 2380.48s]  You could still use atomic incorrectly.
+[2380.48s -> 2384.28s]  And these are called atomicity violations.
+[2384.28s -> 2388.68s]  And in certain cases, atomic simply won't work.
+[2388.68s -> 2390.68s]  So here's the example.
+[2390.68s -> 2393.52s]  So what about replacing synchronize
+[2393.52s -> 2395.48s]  with atomic in this example?
+[2395.48s -> 2396.28s]  Will this work?
+[2396.28s -> 2396.78s]  Yeah.
+[2404.60s -> 2412.96s]  So I replaced synchronized with atomic.
+[2417.00s -> 2419.96s]  The complex thing.
+[2419.96s -> 2420.48s]  Yeah.
+[2420.48s -> 2421.20s]  Go ahead.
+[2421.20s -> 2421.70s]  Oh, sorry.
+[2421.70s -> 2422.20s]  No, yeah.
+[2422.20s -> 2422.70s]  It's complex.
+[2422.70s -> 2423.70s]  That's what you said.
+[2423.70s -> 2425.20s]  It's not going to be serialized.
+[2425.60s -> 2427.08s]  One has, like, an infinite loop.
+[2427.08s -> 2430.36s]  That's waiting for the very first one.
+[2430.36s -> 2430.88s]  Yeah.
+[2430.88s -> 2436.44s]  Fundamentally, what is the semantics of atomic?
+[2445.44s -> 2447.92s]  If there are constricts, it's going to see the language.
+[2447.92s -> 2451.00s]  It's going to be like, why are you here?
+[2451.00s -> 2454.20s]  If I gave you this code, and given
+[2454.20s -> 2458.20s]  that I've told you about the semantics of atomic,
+[2458.20s -> 2459.56s]  what would you expect to happen?
+[2459.56s -> 2460.06s]  Yeah.
+[2473.28s -> 2476.12s]  So if I ran this code, what would happen?
+[2479.64s -> 2482.80s]  Or livelock, right?
+[2482.80s -> 2483.84s]  Yeah.
+[2484.00s -> 2485.36s]  This would be an infinite loop.
+[2485.36s -> 2485.86s]  Why?
+[2491.72s -> 2496.08s]  What do we know about the semantics of atomic?
+[2496.08s -> 2497.52s]  Everything that's in that block
+[2497.52s -> 2502.00s]  has to happen all at once with respect to an observer.
+[2502.00s -> 2504.76s]  So atomic, atomicity, what's the second one?
+[2507.64s -> 2511.08s]  What's the second property we talked about?
+[2511.08s -> 2512.00s]  Atomicity?
+[2512.00s -> 2512.50s]  Isolation.
+[2512.50s -> 2513.20s]  Isolation.
+[2513.20s -> 2516.28s]  So what does isolation say?
+[2516.28s -> 2516.78s]  Yeah.
+[2516.78s -> 2518.40s]  It says that we can't observe the right.
+[2518.40s -> 2519.64s]  We can't observe the right.
+[2519.64s -> 2521.64s]  So we will never see anything that comes out
+[2521.64s -> 2523.44s]  of this transaction before it commits.
+[2526.36s -> 2530.28s]  So and the same for this transaction.
+[2530.28s -> 2532.96s]  Therefore, we're not going to get any forward
+[2532.96s -> 2534.36s]  progress with this code.
+[2537.08s -> 2537.56s]  OK.
+[2537.56s -> 2541.80s]  So there's a case where replacing synchronize
+[2541.80s -> 2544.12s]  with atomic won't work.
+[2544.12s -> 2545.28s]  What's wrong with this code?
+[2557.40s -> 2559.48s]  Yeah.
+[2559.48s -> 2561.52s]  You don't know in order in which the three
+[2561.52s -> 2562.52s]  atomics will run.
+[2562.52s -> 2566.28s]  And so if the pointer gets set to null after pointer
+[2566.28s -> 2571.88s]  to A, then the last atomic will not be able to.
+[2571.88s -> 2575.36s]  Like where we say B, it won't be able to.
+[2575.36s -> 2582.52s]  So what might happen?
+[2582.52s -> 2584.12s]  I don't know.
+[2584.12s -> 2586.56s]  I may dereference a non-pointer, right?
+[2586.56s -> 2589.52s]  And how would I fix it?
+[2589.52s -> 2591.08s]  0.31 atomic.
+[2591.08s -> 2591.72s]  Right.
+[2591.72s -> 2595.80s]  So we wanted to get rid of that, right?
+[2595.84s -> 2598.84s]  So this is known as an atomicity violation, right?
+[2598.84s -> 2604.16s]  So where you put atomic around the wrong set of code.
+[2604.16s -> 2612.76s]  And therefore, your atomicity behavior is incorrect.
+[2612.76s -> 2614.40s]  OK.
+[2614.40s -> 2617.08s]  So all right.
+[2617.92s -> 2625.84s]  Is there any questions about the abstraction
+[2625.84s -> 2630.60s]  of transactional memory and sort of why it's useful?
+[2630.60s -> 2631.16s]  OK.
+[2631.16s -> 2632.80s]  Let's talk about the fun stuff.
+[2632.80s -> 2636.52s]  The implementation of transactional memory.
+[2636.52s -> 2640.56s]  How do we actually make this abstraction work?
+[2640.56s -> 2641.88s]  OK.
+[2641.88s -> 2649.60s]  So we've got to talk about the three components
+[2649.60s -> 2651.52s]  of the abstraction.
+[2651.52s -> 2652.96s]  Atomicity, all or nothing.
+[2652.96s -> 2654.92s]  Isolation, which we just talked about.
+[2654.92s -> 2656.72s]  And serializability, right?
+[2656.72s -> 2661.52s]  And so these are the properties that an implementation
+[2661.52s -> 2665.80s]  of transactional memory has to provide.
+[2665.80s -> 2669.44s]  And it has to provide these things while giving you
+[2669.44s -> 2671.84s]  as much concurrency as possible, right?
+[2671.84s -> 2674.40s]  So that's the goal, right?
+[2674.40s -> 2680.28s]  And in thinking about a set of transactional memory
+[2680.28s -> 2683.56s]  implementations, there's a space.
+[2683.56s -> 2686.16s]  An implementation space is defined
+[2686.16s -> 2691.28s]  by how you deal with the transactional memory state,
+[2691.28s -> 2693.36s]  which is called data versioning.
+[2693.36s -> 2695.64s]  So how you deal with the uncommitted state
+[2695.64s -> 2698.36s]  that a transaction hasn't committed yet.
+[2698.44s -> 2702.20s]  And the committed state that the transaction that's
+[2702.20s -> 2705.16s]  previously committed has already updated.
+[2705.16s -> 2707.64s]  So that's the data versioning policy.
+[2707.64s -> 2710.40s]  And the second component of transactional memory
+[2710.40s -> 2714.64s]  implementation is how we detect conflicts.
+[2714.64s -> 2718.96s]  When and how we detect conflicts.
+[2718.96s -> 2723.28s]  And this is called the transaction conflict detection
+[2723.28s -> 2724.08s]  policy.
+[2724.08s -> 2728.72s]  So data versioning policy and conflict detection policy.
+[2728.72s -> 2734.24s]  So let's start by talking about data versioning.
+[2734.24s -> 2738.32s]  So this is how we manage the state that
+[2738.32s -> 2740.96s]  hasn't been committed yet by the transaction
+[2740.96s -> 2744.80s]  and the state that has already been committed by previously
+[2744.80s -> 2746.96s]  completed transactions, right?
+[2746.96s -> 2752.84s]  There are two ways of managing data.
+[2752.84s -> 2759.08s]  One is called eager versioning and requires the idea,
+[2759.08s -> 2765.60s]  requires the component of a undo log.
+[2765.60s -> 2769.12s]  And the second way is lazy versioning,
+[2769.12s -> 2773.92s]  where we have a write buffer as the key element
+[2773.92s -> 2775.48s]  in the system.
+[2775.48s -> 2780.00s]  So let's look at these two kinds of doing data
+[2780.00s -> 2780.88s]  versioning.
+[2780.88s -> 2782.48s]  First, eager versioning, right?
+[2782.48s -> 2785.60s]  It's called eager because you update memory
+[2785.60s -> 2786.84s]  as early as possible.
+[2786.84s -> 2789.76s]  And memory in this case could be the cache, right?
+[2789.76s -> 2795.40s]  And as we said, the key element of the eager versioning
+[2795.40s -> 2798.08s]  scheme is an undo log because we
+[2798.08s -> 2802.80s]  need some way of undoing the data updates that we've
+[2802.80s -> 2804.56s]  made in an eager manner, right?
+[2804.56s -> 2806.52s]  So in this example, we're going
+[2806.52s -> 2811.92s]  to have a single variable x that we are updating
+[2811.92s -> 2813.68s]  in the transaction.
+[2813.68s -> 2818.64s]  And x initially has a value of 10 in memory.
+[2818.64s -> 2822.24s]  And the transaction is going to write 15 to x.
+[2822.24s -> 2827.56s]  And so what we do then is we put the old value of x
+[2827.56s -> 2829.48s]  into the undo log, right?
+[2829.48s -> 2835.64s]  So x value of 10 goes into the undo log.
+[2835.64s -> 2838.32s]  And we eagerly update memory.
+[2838.32s -> 2842.20s]  So memory becomes 15, right?
+[2842.20s -> 2845.16s]  This is good because now memory is up to date.
+[2845.16s -> 2848.20s]  And that is always good, right?
+[2848.20s -> 2851.76s]  Now, what happens when we commit the transaction?
+[2851.76s -> 2852.52s]  What should we do?
+[2858.04s -> 2862.32s]  Yeah, throw away the undo log.
+[2862.32s -> 2863.64s]  We're done, right?
+[2863.64s -> 2865.20s]  Transaction's committed.
+[2865.20s -> 2867.40s]  Memory's up to date.
+[2867.40s -> 2869.24s]  We're done.
+[2869.24s -> 2875.00s]  All right, what happens when we abort the transaction?
+[2875.00s -> 2879.60s]  Now we need to restore memory to the state
+[2879.60s -> 2882.32s]  before the transaction executed, right?
+[2882.32s -> 2888.44s]  And so now this becomes a, we need
+[2888.44s -> 2890.04s]  to apply the undo log to that.
+[2890.04s -> 2895.36s]  And we get memory back to its original state, OK?
+[2895.36s -> 2895.88s]  Yeah?
+[2895.88s -> 2897.84s]  Is this still the one compared to the other?
+[2897.84s -> 2899.48s]  We have to put the log somewhere.
+[2899.48s -> 2901.48s]  Yeah, yeah, yeah.
+[2901.48s -> 2903.56s]  We're getting there.
+[2903.56s -> 2906.36s]  Has all sorts of impacts on the implementation
+[2906.36s -> 2908.12s]  of what you do.
+[2908.12s -> 2910.84s]  And we're going to talk about both hardware and software ways
+[2910.84s -> 2912.88s]  of managing this, right?
+[2912.88s -> 2921.76s]  So to have this undo log, and we update memory,
+[2921.76s -> 2923.28s]  we restore memory to the state
+[2923.28s -> 2926.56s]  that it was before we started the execution
+[2926.56s -> 2927.68s]  of the transaction.
+[2927.68s -> 2929.08s]  OK, so that's eager.
+[2929.08s -> 2929.88s]  Yeah, question.
+[2929.88s -> 2933.24s]  When you try to abort again, is this like for an error
+[2933.24s -> 2934.52s]  or a conflict?
+[2934.52s -> 2935.68s]  Well, you can abort for it.
+[2935.68s -> 2939.24s]  You just pull the abort cord, and you
+[2939.24s -> 2941.20s]  could bail out of a transaction whenever you want,
+[2941.20s -> 2941.84s]  right?
+[2941.84s -> 2944.04s]  And you know that none of the state of the memory
+[2944.04s -> 2945.04s]  is being changed.
+[2945.04s -> 2947.60s]  It's great, right?
+[2947.60s -> 2949.16s]  But the other reason that you might
+[2949.16s -> 2951.48s]  want to abort a transaction is because you
+[2951.48s -> 2953.36s]  detected a conflict, right?
+[2953.36s -> 2954.48s]  Yeah.
+[2954.48s -> 2957.80s]  You just do the transactions, and if there's conflict,
+[2957.80s -> 2960.60s]  you undo log.
+[2960.60s -> 2965.96s]  Well, the system has to determine when to.
+[2965.96s -> 2968.52s]  You will usually just restart the transaction, right?
+[2968.52s -> 2970.20s]  You try again.
+[2970.20s -> 2971.52s]  Yeah.
+[2971.52s -> 2973.92s]  If the undo log is like a certain size,
+[2973.92s -> 2976.44s]  it's like, I don't know.
+[2976.44s -> 2978.92s]  Yeah, so it depends where you keep the undo log, right?
+[2978.96s -> 2982.36s]  So you could have an explicit cache for the undo log,
+[2982.36s -> 2986.80s]  or you could just put it in regular memory,
+[2986.80s -> 2989.24s]  depending on whether you've got specific hardware
+[2989.24s -> 2991.32s]  mechanisms for handling it, or you just
+[2991.32s -> 2993.36s]  put it in memory, which would be the most scalable
+[2993.36s -> 2993.88s]  mechanism.
+[2993.88s -> 2995.76s]  You have memory and you have a cache and things like that.
+[2995.76s -> 2996.44s]  Right, right.
+[2996.44s -> 3000.52s]  So you assume that there's locality in all your accesses,
+[3000.52s -> 3003.88s]  and caches work for memory that you access here, too.
+[3003.88s -> 3004.44s]  Yeah.
+[3004.44s -> 3005.64s]  Yeah.
+[3005.64s -> 3009.12s]  Is the cycle select always on that two conflict points?
+[3009.12s -> 3011.60s]  Is it also on conflict?
+[3011.60s -> 3013.40s]  Like, if it's also on conflict, they
+[3013.40s -> 3014.76s]  will go more to other conflicts.
+[3014.76s -> 3016.56s]  So we're getting to conflict detection.
+[3016.56s -> 3018.80s]  So now we're just talking about how you manage data.
+[3018.80s -> 3021.56s]  The next topic will be how we detect conflicts
+[3021.56s -> 3022.80s]  and what we do.
+[3022.80s -> 3023.60s]  Yeah.
+[3023.60s -> 3025.64s]  Is it concerning the undo log that we're only
+[3025.64s -> 3030.00s]  keeping values in memory before to express our activity?
+[3030.00s -> 3032.08s]  We're not keeping like intermediate data?
+[3032.08s -> 3032.76s]  No.
+[3032.76s -> 3035.08s]  No, remember, you need to get back to the state
+[3035.64s -> 3038.24s]  before the transaction started executing.
+[3038.24s -> 3041.68s]  So we only need to keep the first time you write to it.
+[3041.68s -> 3043.28s]  Any subsequent updates don't need
+[3043.28s -> 3046.04s]  to be put in the undo log, right?
+[3046.04s -> 3047.32s]  Yeah.
+[3047.32s -> 3052.52s]  What happens if the undo log gets corrupted or somehow
+[3052.52s -> 3054.60s]  gets like, something goes wrong with the undo log
+[3054.60s -> 3056.20s]  before the transaction's complete?
+[3056.20s -> 3059.44s]  Well, then your system is corrupted, right?
+[3059.44s -> 3063.12s]  So this would not be resistant to that kind of a crash?
+[3063.16s -> 3065.36s]  Well, I mean, corrupted how, right?
+[3065.36s -> 3067.12s]  I mean, you need some other mechanism
+[3067.12s -> 3070.28s]  for dealing with memory fault tolerancy, right,
+[3070.28s -> 3072.44s]  if that was a problem, if it's a problem that you
+[3072.44s -> 3075.04s]  wanted to guard against.
+[3075.04s -> 3078.20s]  But let's assume for the sake of simplicity
+[3078.20s -> 3080.80s]  that our system is robust.
+[3085.20s -> 3087.52s]  All right, lazy versioning, right?
+[3087.52s -> 3090.88s]  So everybody likes to be lazy, right?
+[3090.92s -> 3094.40s]  And here, we have a write buffer, right?
+[3094.40s -> 3098.00s]  And as the key mechanism.
+[3098.00s -> 3102.80s]  And so again, in this example, we're writing to x.
+[3102.80s -> 3108.72s]  So instead of updating memory directly,
+[3108.72s -> 3110.96s]  we write into the write buffer.
+[3110.96s -> 3115.04s]  And that's why it's called lazy.
+[3115.04s -> 3119.52s]  So now that we've done this, have we
+[3119.56s -> 3124.16s]  created some complexity to what happens
+[3124.16s -> 3130.56s]  to the rest of the reads to x in the transaction?
+[3130.56s -> 3132.64s]  You have dependencies, don't you?
+[3132.64s -> 3135.36s]  Well, you may have dependencies, clearly.
+[3135.36s -> 3140.08s]  And the question is, where should subsequent values of x
+[3140.08s -> 3140.72s]  come from?
+[3143.88s -> 3145.32s]  Memory?
+[3145.32s -> 3149.12s]  No, they have to come from the write buffer, right?
+[3149.40s -> 3156.00s]  Write buffer is the most recent value of any variable that
+[3156.00s -> 3157.12s]  has been written.
+[3157.12s -> 3162.20s]  And so now we potentially have to check in two places.
+[3162.20s -> 3166.16s]  So there is this extra complexity that occurs,
+[3166.16s -> 3167.92s]  depending on how it gets implemented.
+[3167.92s -> 3170.20s]  But it's something to keep in mind, right?
+[3170.20s -> 3174.92s]  That because we haven't eagerly updated memory,
+[3174.92s -> 3177.60s]  we now have two places potentially
+[3177.60s -> 3184.00s]  where data that we may have to look for the latest
+[3184.00s -> 3186.24s]  value of data, right?
+[3186.24s -> 3187.96s]  I suppose in the undo log, you never
+[3187.96s -> 3189.80s]  look in the undo log, right?
+[3189.80s -> 3191.28s]  You only use the undo log when
+[3191.28s -> 3198.32s]  you're trying to fix an aborted transaction.
+[3198.32s -> 3203.00s]  All right, so in the case of commit,
+[3203.00s -> 3209.52s]  we now have to update memory from the write buffer,
+[3209.52s -> 3212.20s]  and then, of course, clear the write buffer.
+[3212.20s -> 3215.24s]  What do we do in the case of abort?
+[3215.24s -> 3216.60s]  Just throw it away, right?
+[3216.60s -> 3219.36s]  We just throw away the write buffer.
+[3219.36s -> 3222.92s]  We haven't changed memory, so we're good.
+[3222.92s -> 3225.16s]  All right, everybody understands the difference
+[3225.16s -> 3228.84s]  between being lazy and being eager?
+[3228.84s -> 3232.56s]  All right, so now let's talk about the trade-offs
+[3232.60s -> 3234.16s]  between the two, right?
+[3234.16s -> 3238.68s]  So in the case of eager versioning,
+[3238.68s -> 3243.20s]  we update memory directly, which is good.
+[3243.20s -> 3247.12s]  And we maintain this undo log, so we get faster commits,
+[3247.12s -> 3247.72s]  right?
+[3247.72s -> 3249.40s]  The data's already in memory, and we only
+[3249.40s -> 3251.56s]  have to look in one place.
+[3251.56s -> 3255.32s]  But the problem is that we have slower aborts.
+[3255.32s -> 3258.60s]  And because we've updated memory,
+[3258.60s -> 3262.00s]  managing fault tolerance is trickier, right?
+[3262.00s -> 3263.92s]  Because now we've got to figure out
+[3263.92s -> 3268.96s]  how to restore memory in ways that
+[3268.96s -> 3270.72s]  may not be completely obvious.
+[3274.24s -> 3277.80s]  Lazy versioning uses a write buffer.
+[3277.80s -> 3280.32s]  We potentially now have multiple places
+[3280.32s -> 3281.80s]  that we need to check.
+[3281.80s -> 3284.00s]  It gives you faster aborts, because you just
+[3284.00s -> 3285.76s]  throw away the write buffer.
+[3285.76s -> 3288.72s]  But commits are slower, because you now
+[3288.80s -> 3293.08s]  need to take the contents of the write buffer
+[3293.08s -> 3296.32s]  and apply that to memory.
+[3296.32s -> 3297.68s]  So that's data versioning.
+[3297.68s -> 3300.48s]  Now let's talk about conflict detection.
+[3300.48s -> 3301.52s]  Yeah, question?
+[3301.52s -> 3302.96s]  I have a question on data versioning.
+[3302.96s -> 3308.32s]  Does the lazy, or sorry, the eager versioning scheme
+[3308.32s -> 3309.96s]  make isolation harder?
+[3309.96s -> 3312.16s]  Does another version also make the transaction,
+[3312.16s -> 3313.64s]  which may have written in memory,
+[3313.64s -> 3315.24s]  which then gets bad?
+[3315.24s -> 3316.04s]  Yes.
+[3316.04s -> 3321.00s]  Well, the way that it potentially
+[3321.00s -> 3325.16s]  makes isolation trickier, depending
+[3325.16s -> 3327.44s]  on how you do conflict detection, which
+[3327.44s -> 3329.76s]  we'll get to next.
+[3329.76s -> 3332.24s]  So typically, OK, well, we'll get to that.
+[3332.24s -> 3334.16s]  And it'll be clear as to what's going on.
+[3334.16s -> 3334.84s]  Yeah?
+[3334.84s -> 3337.68s]  One quick question I had was when you have,
+[3337.68s -> 3340.68s]  let's say, a email from a strike,
+[3340.68s -> 3344.44s]  you're going to be accessing the memory very often,
+[3344.56s -> 3348.08s]  as opposed to, so the amount of memory utilization is higher.
+[3348.08s -> 3351.96s]  So that would be more conflicts in the buffer, right?
+[3351.96s -> 3354.36s]  Isn't that a consideration for your decision?
+[3357.88s -> 3363.56s]  So the key elements of how you kind of make
+[3363.56s -> 3367.36s]  the decision about what data versioning scheme to use
+[3367.36s -> 3370.48s]  have to do with the combination, really,
+[3370.48s -> 3373.00s]  of how you do conflict detection and how you do.
+[3373.40s -> 3374.68s]  They work together, right?
+[3374.68s -> 3376.24s]  So they essentially go together.
+[3376.24s -> 3378.56s]  And so once we talk about conflict detection,
+[3378.56s -> 3380.88s]  then we can come back and revisit your question,
+[3380.88s -> 3383.60s]  if it's not clear.
+[3383.60s -> 3386.72s]  All right, so conflict detection, right?
+[3386.72s -> 3388.84s]  So we need to detect conflicts, right?
+[3388.84s -> 3395.64s]  So either rewrite conflicts or write-write conflicts, right?
+[3395.64s -> 3400.60s]  So essentially, you've got two transactions, A and B,
+[3400.60s -> 3410.44s]  that are either a conflict because one transaction wrote
+[3410.44s -> 3413.92s]  address and another transaction read that address,
+[3413.92s -> 3417.56s]  or both transactions want to write the same address, right?
+[3417.56s -> 3420.32s]  So we've already talked about the concept
+[3420.32s -> 3426.16s]  of a read set and a write set in the context of that tree
+[3426.16s -> 3427.36s]  example.
+[3427.36s -> 3429.88s]  But to be explicit here now, read
+[3429.88s -> 3433.56s]  set are the addresses that have been read during the transaction,
+[3433.56s -> 3435.72s]  and write set are the addresses
+[3435.72s -> 3439.60s]  that have been written during the transaction, right?
+[3439.60s -> 3443.48s]  So again, there are two schemes.
+[3443.48s -> 3447.84s]  There's pessimistic detection, or encounter detection
+[3447.84s -> 3450.48s]  is another name for it, where what you try and do
+[3450.48s -> 3452.48s]  is you try and detect.
+[3452.48s -> 3456.52s]  You assume that the transactions are going to conflict,
+[3456.56s -> 3460.32s]  and you want to find the conflict as soon as possible.
+[3460.32s -> 3463.80s]  That's why it's called pessimistic, OK?
+[3463.80s -> 3467.84s]  So and then the contention manager
+[3467.84s -> 3472.00s]  decides whether you should stall or abort
+[3472.00s -> 3474.64s]  the transaction, and we'll look at examples
+[3474.64s -> 3477.08s]  where we do both, right?
+[3477.08s -> 3484.84s]  And so let's look at pessimistic in this case.
+[3484.84s -> 3490.48s]  So in these diagrams, we're going
+[3490.48s -> 3495.56s]  to assume an aggressive contention manager that
+[3495.56s -> 3499.64s]  always allows the writer to win.
+[3499.64s -> 3504.64s]  And so other transactions have to abort.
+[3504.64s -> 3509.56s]  And in each case, we want to be
+[3509.56s -> 3516.76s]  able to look at the pessimistic detection policy.
+[3516.76s -> 3519.40s]  And so on every access, you need
+[3519.40s -> 3524.72s]  to do the check for conflict.
+[3524.72s -> 3525.48s]  OK.
+[3525.48s -> 3532.40s]  So in this case, we have a read of A by transaction 0, right?
+[3532.44s -> 3542.60s]  So in this case, the read set of 0, transaction 0 is A,
+[3542.60s -> 3543.68s]  right?
+[3543.68s -> 3554.36s]  And the write set of transaction 1 is empty, right?
+[3554.36s -> 3558.48s]  So the check says no conflict, right?
+[3558.48s -> 3561.68s]  So we keep going.
+[3561.68s -> 3572.32s]  And here, with this access, the write set of transaction 1
+[3572.32s -> 3580.24s]  is B, and the read set of transaction 0 is still A,
+[3580.24s -> 3583.56s]  and the write set is empty.
+[3583.56s -> 3586.48s]  So again, no conflict, right?
+[3591.92s -> 3599.16s]  And then on write of C by transaction 0,
+[3599.16s -> 3604.32s]  now we have a read set of 0 is A,
+[3604.32s -> 3610.80s]  and the write set of 0 is C. And here, we've
+[3610.80s -> 3616.84s]  got the write set of 1 is B. So again, we do the check,
+[3616.84s -> 3618.36s]  and there's no conflict.
+[3618.36s -> 3622.04s]  And both transactions commit, OK?
+[3624.68s -> 3625.72s]  That's the first case.
+[3628.36s -> 3628.84s]  All right.
+[3631.96s -> 3633.60s]  Second case.
+[3633.60s -> 3638.80s]  Let's get rid of the.
+[3638.80s -> 3639.28s]  All right.
+[3639.32s -> 3650.64s]  So in the second case, I've got a write of A,
+[3650.64s -> 3653.76s]  and I do a check.
+[3653.76s -> 3659.76s]  And then I do have a read of A on transaction 1, right?
+[3659.76s -> 3674.72s]  And so in this case, write set of 0 is A,
+[3674.72s -> 3682.84s]  and read set of 1 is also A. So this is a conflict, right?
+[3682.84s -> 3685.28s]  And so what are my options here?
+[3690.76s -> 3699.68s]  So I could abort 1 and restart it,
+[3699.68s -> 3703.72s]  or I could assume that at some point,
+[3703.72s -> 3714.40s]  the transaction 0 will complete, and I can then commence.
+[3714.40s -> 3717.08s]  So I can stall transaction 1.
+[3717.12s -> 3720.20s]  And what would be the benefit of stalling transaction 1
+[3720.20s -> 3721.20s]  as opposed to aborting?
+[3724.28s -> 3724.80s]  Yeah?
+[3724.80s -> 3727.04s]  You don't have to do the read of A again?
+[3727.04s -> 3732.36s]  Yeah, all this works done in transaction so far
+[3732.36s -> 3733.88s]  does not have to be flushed.
+[3733.88s -> 3737.32s]  I can just hold the state of transaction 1
+[3737.32s -> 3743.40s]  until transaction 0 completes.
+[3743.44s -> 3751.28s]  And then I can resume transaction 1 until it completes.
+[3751.28s -> 3754.16s]  So this is an early detect and stall.
+[3754.16s -> 3754.92s]  Yeah?
+[3754.92s -> 3756.80s]  So what does that mean if you continue
+[3756.80s -> 3760.00s]  to read A, which is not the correct value?
+[3760.00s -> 3762.60s]  Well, you've got to read it again.
+[3762.60s -> 3763.08s]  Yeah.
+[3763.08s -> 3764.12s]  And then it would be out of the stall,
+[3764.12s -> 3764.96s]  and you'd go back and read it?
+[3764.96s -> 3766.44s]  You'd go back and read it again.
+[3766.44s -> 3767.60s]  Yeah, yeah, absolutely.
+[3767.60s -> 3768.32s]  You have to.
+[3768.32s -> 3768.76s]  Yeah.
+[3768.76s -> 3769.40s]  Yeah.
+[3769.40s -> 3770.36s]  Yeah.
+[3770.36s -> 3774.16s]  Yeah, but what if you had done maybe a read of A and T1
+[3774.16s -> 3779.00s]  before, and then that gets read to after you've stalled?
+[3779.00s -> 3783.48s]  So basically, when you go to resume the T1,
+[3783.48s -> 3785.68s]  you have multiple conflicts.
+[3785.68s -> 3795.12s]  So you're saying that later transaction 0 wrote B?
+[3795.12s -> 3799.24s]  Yeah, T1 finds that later multiple things in red
+[3799.24s -> 3801.32s]  that have been changed by T0 after?
+[3801.32s -> 3805.28s]  Well, so remember, every time you do an access,
+[3805.28s -> 3807.36s]  you're doing the check.
+[3807.36s -> 3808.88s]  Every time.
+[3808.88s -> 3813.04s]  So if there was not a conflict up to this point,
+[3813.04s -> 3814.64s]  you would not have stalled.
+[3814.64s -> 3815.16s]  Right.
+[3815.16s -> 3820.08s]  Now, if there was a later write by T0,
+[3820.08s -> 3822.40s]  then it would cause T1 to abort.
+[3822.40s -> 3823.08s]  Abort, OK.
+[3823.08s -> 3823.84s]  Yeah, yeah.
+[3827.36s -> 3827.88s]  Yeah.
+[3827.96s -> 3829.96s]  How do you know if there's been a later write
+[3829.96s -> 3832.40s]  if you don't have states since you committed it?
+[3832.40s -> 3836.12s]  Like, do you check on read-on, whether you've
+[3836.12s -> 3837.96s]  got a read state similar to what's in it?
+[3837.96s -> 3840.80s]  Well, yeah, the system has to keep track
+[3840.80s -> 3843.60s]  of the read state and write state of all the transactions
+[3843.60s -> 3845.08s]  that are in execution.
+[3845.08s -> 3847.24s]  Yeah, but like, do you know if a state's committed
+[3847.24s -> 3848.64s]  that transaction, right?
+[3848.64s -> 3850.44s]  Once it's committed that transaction,
+[3850.44s -> 3851.60s]  is it still sitting there?
+[3851.60s -> 3852.76s]  Like, is it still, like, is that?
+[3852.76s -> 3854.24s]  No, and then you're done, right?
+[3854.24s -> 3855.44s]  It's committed the state.
+[3855.44s -> 3856.76s]  It's committed its state.
+[3856.76s -> 3857.24s]  Yeah.
+[3857.28s -> 3859.52s]  It's updated the state of the system.
+[3859.52s -> 3862.08s]  And then every other transaction that's running
+[3862.08s -> 3865.40s]  will get the later state that the.
+[3865.40s -> 3868.16s]  But like he said, like, P1 is already read,
+[3868.16s -> 3871.76s]  like B, which is we've written someone in read T0 that said.
+[3871.76s -> 3873.24s]  Yeah, at that point, you know,
+[3873.24s -> 3879.64s]  so every, on every pessimistic detection says on every access,
+[3879.64s -> 3880.76s]  I do the check.
+[3880.76s -> 3883.24s]  But how would you kind of do the check then?
+[3883.24s -> 3887.16s]  No, no, so if the case is, suppose
+[3887.16s -> 3895.24s]  above here, I had read B, for example, OK?
+[3895.24s -> 3903.28s]  And then down here, I wrote B. At this point,
+[3903.28s -> 3907.16s]  this would cause this transaction to abort.
+[3907.16s -> 3908.40s]  Oh, I see.
+[3908.40s -> 3909.20s]  Right?
+[3909.20s -> 3910.68s]  I see.
+[3910.68s -> 3912.76s]  But even though it's stalled, like, you can see.
+[3912.76s -> 3914.08s]  Even though it's stalled, yeah,
+[3914.08s -> 3915.56s]  the state's still around, right?
+[3915.56s -> 3918.56s]  And I'm still doing the checks, right?
+[3918.56s -> 3922.68s]  So the stall becomes an abort.
+[3922.68s -> 3924.64s]  Yeah.
+[3924.64s -> 3927.72s]  Any other questions?
+[3927.72s -> 3931.08s]  Some of this can get tricky.
+[3931.08s -> 3934.84s]  It's going to get slightly trickier, but not much more.
+[3934.84s -> 3935.96s]  All right.
+[3935.96s -> 3940.68s]  So in this case, we do an early detect.
+[3940.68s -> 3943.40s]  Instead of throwing away the work
+[3943.40s -> 3945.88s]  that we've executed in the transaction so far,
+[3945.88s -> 3948.96s]  we stall and hope for the best.
+[3948.96s -> 3952.40s]  And we wait for transaction 0 to commit,
+[3952.40s -> 3957.16s]  and then we can commence executing transaction 1.
+[3957.16s -> 3958.00s]  All right.
+[3958.00s -> 3967.20s]  So case 3, we're going to do a read of A. Read set of 0
+[3967.20s -> 3974.20s]  is A. The read set and write set of transaction 1
+[3974.20s -> 3978.40s]  is empty, so the check passes.
+[3978.40s -> 3979.28s]  Right?
+[3979.28s -> 3984.28s]  And then we do a write of A on T1.
+[3984.28s -> 3985.60s]  So what happens in this case?
+[3989.80s -> 3991.52s]  Yeah.
+[3991.52s -> 3993.28s]  T0 aborts, as we just talked about.
+[3993.28s -> 3995.16s]  So it restarts.
+[3995.16s -> 4009.68s]  And then we do a read of A, and then we do a write of A.
+[4009.68s -> 4010.16s]  OK.
+[4017.16s -> 4020.00s]  OK.
+[4020.00s -> 4023.60s]  Read of A is stall, and then we keep going, right?
+[4025.52s -> 4026.12s]  Any questions?
+[4026.12s -> 4026.88s]  Yeah.
+[4026.88s -> 4032.16s]  So when do you know when you start to use 0?
+[4032.16s -> 4035.76s]  Remember, aggressive contention matters on writes,
+[4035.76s -> 4040.16s]  writer wins, so other transactions are poor.
+[4040.16s -> 4042.76s]  So writer always wins.
+[4042.76s -> 4048.64s]  So at this point, if there's a conflict between a read-write
+[4048.64s -> 4052.00s]  conflict, the writer wins, right?
+[4052.08s -> 4057.64s]  So if you've already written, and then you're doing a read,
+[4057.64s -> 4059.52s]  if another transaction is already written,
+[4059.52s -> 4063.84s]  and then you're doing a read, then you stall, OK?
+[4063.84s -> 4067.40s]  If you've read already, you've read bad stuff
+[4067.40s -> 4071.84s]  and computed based on that, and then a write comes along,
+[4071.84s -> 4073.76s]  then you have to abort.
+[4073.76s -> 4077.60s]  Remember, up until this point, you
+[4077.60s -> 4081.36s]  haven't done anything that would be a conflict, right?
+[4082.36s -> 4088.00s]  You're checking to see whether this read will
+[4088.00s -> 4089.96s]  cause a conflict.
+[4089.96s -> 4093.12s]  If it doesn't, you go ahead and do it.
+[4093.12s -> 4096.88s]  If it does, you just stall, because you haven't done it
+[4096.88s -> 4098.40s]  yet.
+[4098.40s -> 4100.24s]  You're thinking about it, right?
+[4100.24s -> 4102.08s]  And then once the commit is done,
+[4102.08s -> 4103.60s]  then you go ahead and do the read,
+[4103.60s -> 4107.28s]  because you know that the stall condition has been cleared.
+[4107.28s -> 4108.40s]  Yeah.
+[4108.40s -> 4109.24s]  Oh, sorry.
+[4109.24s -> 4112.16s]  I assume, just in case three, it
+[4112.16s -> 4120.28s]  looks like we start T0s, read A, before T1 is committed.
+[4120.28s -> 4123.12s]  I guess I'm just wondering, when does that restart happen,
+[4123.12s -> 4125.84s]  or how do you know that you're doing it?
+[4125.84s -> 4130.08s]  Yeah, what condition restarts?
+[4130.08s -> 4133.60s]  In this case, you abort and restart whenever
+[4133.60s -> 4136.40s]  you see a write-read conflict.
+[4136.40s -> 4137.80s]  So you just restart immediately?
+[4137.80s -> 4138.84s]  Yeah, yeah, exactly.
+[4138.84s -> 4139.36s]  Yeah.
+[4143.36s -> 4144.76s]  OK.
+[4144.76s -> 4145.84s]  All right.
+[4145.84s -> 4148.96s]  Case four.
+[4148.96s -> 4153.64s]  So that we have a write of A. So what happens?
+[4153.64s -> 4155.88s]  Does this check pass?
+[4155.88s -> 4156.40s]  Yep.
+[4156.40s -> 4168.48s]  We have a write of A on T1.
+[4168.48s -> 4170.68s]  Does this check pass?
+[4170.68s -> 4171.28s]  No?
+[4171.28s -> 4174.56s]  So what should happen?
+[4174.56s -> 4175.96s]  Abort and restart, right?
+[4182.28s -> 4184.72s]  And we have a write of A. So what should happen?
+[4186.52s -> 4187.00s]  OK.
+[4192.36s -> 4193.36s]  OK.
+[4193.36s -> 4197.44s]  So we're not going to make any progress with this scheme.
+[4197.44s -> 4200.60s]  So the system has to detect this situation, right,
+[4200.60s -> 4207.44s]  and allow one of the transactions to complete.
+[4212.40s -> 4213.76s]  OK.
+[4213.76s -> 4216.16s]  So you've got to, you know, this is a live lock condition,
+[4216.40s -> 4217.44s]  and you need to detect it.
+[4217.44s -> 4217.76s]  All right.
+[4217.76s -> 4219.24s]  So this is pessimistic.
+[4219.24s -> 4219.76s]  Yeah, go.
+[4239.76s -> 4241.04s]  Let me think.
+[4241.04s -> 4246.08s]  So you've already written.
+[4246.08s -> 4251.76s]  So in this case, you want to cause T0 to abort in this case?
+[4251.76s -> 4253.12s]  Is this what you're?
+[4253.12s -> 4255.68s]  Yeah.
+[4255.68s -> 4257.64s]  I can't see why you'd want to do that.
+[4262.96s -> 4266.00s]  But, you know, possibly.
+[4266.00s -> 4270.12s]  But I've never seen a system that works that way.
+[4270.16s -> 4270.64s]  Yeah.
+[4270.64s -> 4271.12s]  Yeah.
+[4271.12s -> 4273.08s]  What would be a different type of condition
+[4273.08s -> 4277.48s]  than what you're calling it, other than restful?
+[4277.48s -> 4279.92s]  Other than sort of allowing writes to?
+[4286.00s -> 4298.44s]  You could allow the read to, you
+[4298.52s -> 4303.12s]  could allow the transaction that's already running to,
+[4303.12s -> 4304.72s]  I mean, you could abort the transaction
+[4304.72s -> 4307.48s]  as doing the write, right, instead
+[4307.48s -> 4312.76s]  of having the write do, having the reading transaction
+[4312.76s -> 4314.84s]  be aborted.
+[4314.84s -> 4316.76s]  Yeah, right.
+[4316.76s -> 4322.40s]  But yeah, there are many options
+[4322.40s -> 4323.60s]  for contention management.
+[4323.60s -> 4325.80s]  And, you know, different systems
+[4325.80s -> 4329.16s]  have been implemented with different advantages,
+[4329.16s -> 4333.52s]  depending on sort of what the particular application
+[4333.52s -> 4335.56s]  scenario is.
+[4335.56s -> 4336.08s]  All right.
+[4336.08s -> 4338.88s]  So optimistic, let's get, I think in the last five minutes
+[4338.88s -> 4342.04s]  we can at least make a run on optimistic, right?
+[4342.04s -> 4346.12s]  So optimistic is, hey, I don't
+[4346.12s -> 4347.40s]  think there are any conflicts.
+[4347.40s -> 4350.08s]  Therefore, I'm only going to check when
+[4350.08s -> 4352.88s]  the transaction commits, right?
+[4352.88s -> 4355.28s]  Until that point, I'm going to assume everything
+[4355.28s -> 4360.08s]  is hunky dory and there are no conflicts, right?
+[4360.08s -> 4363.60s]  And so the nice thing about this
+[4363.60s -> 4366.24s]  is that you can always give precedence
+[4366.24s -> 4368.92s]  to the committing transaction.
+[4368.92s -> 4371.04s]  So the committing transaction will
+[4371.04s -> 4374.76s]  cause all other transactions to abort, right?
+[4374.76s -> 4377.92s]  So let's look at the example here.
+[4377.92s -> 4379.48s]  You know, we're not doing any checks.
+[4379.48s -> 4384.44s]  So pessimistic is I detect as I go.
+[4384.52s -> 4390.36s]  Optimistic is I need to check the right set of the committing
+[4390.36s -> 4396.28s]  transaction, which is B, against the reset
+[4396.28s -> 4398.48s]  of all other transactions.
+[4398.48s -> 4402.96s]  In this case, just zero, which is A and C.
+[4402.96s -> 4404.80s]  There's no conflict.
+[4404.80s -> 4409.76s]  So the detection says, the conflict detection
+[4409.76s -> 4415.20s]  says no problem and the commit happens.
+[4415.20s -> 4415.68s]  Yeah?
+[4415.68s -> 4420.08s]  Is reset A and right set C?
+[4420.08s -> 4421.28s]  Is reset what?
+[4421.28s -> 4422.96s]  Is T zero?
+[4422.96s -> 4425.68s]  Ah, sorry.
+[4425.68s -> 4426.32s]  You're right.
+[4426.32s -> 4430.76s]  So right set of zero is C, OK?
+[4430.76s -> 4433.44s]  So you're checking against the right set
+[4433.44s -> 4439.52s]  of the committing transaction versus the reset
+[4439.56s -> 4444.36s]  of the transaction that has been the other transactions
+[4444.36s -> 4447.76s]  in the system, OK?
+[4447.76s -> 4451.68s]  And OK, I'll talk about the other.
+[4451.68s -> 4456.56s]  OK, so in this case, what happens?
+[4456.56s -> 4459.40s]  The right set of the committing transaction is A
+[4459.40s -> 4462.44s]  and the reset of the other transaction in the system,
+[4462.44s -> 4468.52s]  T1, is also A. So what has to happen?
+[4468.52s -> 4469.00s]  Right.
+[4469.00s -> 4471.92s]  You abort and restart, right?
+[4471.92s -> 4475.84s]  And so in this case, you don't get to stall, right?
+[4475.84s -> 4481.04s]  So you don't detect early that this is going to be,
+[4481.04s -> 4484.76s]  this is sometimes called a doomed transaction, right?
+[4484.76s -> 4486.64s]  Because you know at this point
+[4486.64s -> 4489.00s]  that this transaction will not succeed
+[4489.00s -> 4491.76s]  because there's already a right in the system that's
+[4491.76s -> 4493.72s]  going to cause a conflict.
+[4493.72s -> 4498.48s]  And therefore, you're going to waste all that work.
+[4498.56s -> 4510.04s]  In case three, we have a read of A. So and write
+[4510.04s -> 4512.44s]  and commit, right?
+[4512.44s -> 4518.64s]  So we read A. Of course, that read of A could happen anywhere
+[4519.02s -> 4520.16s]  in the transaction, right?
+[4520.16s -> 4522.48s]  It could have happened after the write of A here.
+[4522.48s -> 4524.84s]  It could be down here in time, right?
+[4525.54s -> 4527.20s]  Right? But it doesn't matter, right?
+[4527.62s -> 4532.52s]  So in this case, T0 is committing
+[4532.72s -> 4535.72s]  and its write set is empty, right?
+[4536.26s -> 4537.62s]  So you're checking the write set
+[4537.62s -> 4540.68s]  of the committing transaction versus the reset
+[4541.04s -> 4543.04s]  of other transactions, right?
+[4543.50s -> 4544.86s]  And you say go ahead, right?
+[4544.86s -> 4550.12s]  In some cases, and if I gave you an example,
+[4550.12s -> 4552.44s]  I would say explicitly, you might want to check
+[4552.80s -> 4556.36s]  to see whether the write set
+[4557.28s -> 4560.92s]  of the existing transaction is conflicting.
+[4560.92s -> 4569.64s]  But it really doesn't matter because the serialization is
+[4569.64s -> 4574.92s]  such that the committing transaction is going
+[4574.92s -> 4578.70s]  to update the state of the memory
+[4578.94s -> 4582.46s]  and even though there are other writes
+[4583.88s -> 4588.70s]  that exist, there will be no conflict, right?
+[4588.70s -> 4595.98s]  So in this case, we do the commit and of T0
+[4595.98s -> 4598.26s]  and then we do the commit of T1.
+[4599.96s -> 4604.06s]  And in fact, the read of A, you know,
+[4604.06s -> 4605.54s]  you serialize these transactions,
+[4605.54s -> 4610.14s]  the read of A happens before the write of A
+[4610.72s -> 4614.76s]  in the serialized transaction order.
+[4615.40s -> 4618.02s]  And so that means, of course,
+[4618.02s -> 4620.32s]  transaction zero should not see any
+[4620.32s -> 4623.22s]  of the updates of transaction one.
+[4627.36s -> 4627.76s]  All right.
+[4627.84s -> 4639.40s]  So in this case, we have a read and write here
+[4639.40s -> 4643.18s]  and what should happen?
+[4644.96s -> 4651.46s]  So the read set of T1 and the read set of T0 are both A
+[4651.46s -> 4653.70s]  and the write set of T0 and the write set
+[4653.70s -> 4659.06s]  of T1 are both A. So what should happen here?
+[4661.56s -> 4667.46s]  Yeah. T0 should restart because we have a conflict
+[4667.46s -> 4669.10s]  between the committing transaction
+[4669.86s -> 4678.58s]  and the transaction write exists and then we restart
+[4679.02s -> 4681.22s]  and then we go ahead and commit.
+[4681.22s -> 4684.96s]  And in this case, for the pessimistic detection,
+[4684.96s -> 4686.44s]  there was no forward progress.
+[4687.44s -> 4689.92s]  But here with optimistic, you do get forward progress.
+[4690.68s -> 4690.84s]  Yeah.
+[4690.84s -> 4695.20s]  So the write to A that T1 performs, right,
+[4695.60s -> 4697.74s]  that value might depend on the fact
+[4697.84s -> 4701.14s]  that T0 had written to A before, right?
+[4701.60s -> 4706.10s]  Because T1 reads A after T0 writes to A. So doesn't
+[4706.10s -> 4709.88s]  that mean that when we, like, abort T0 and restart,
+[4710.18s -> 4711.56s]  but T1 is already committed,
+[4712.00s -> 4715.54s]  like the values that T1 has committed are committed assuming
+[4715.54s -> 4717.86s]  that- Remember, everything's isolated
+[4717.86s -> 4719.40s]  until the transaction commits.
+[4719.96s -> 4724.00s]  So there are no values being communicated
+[4724.00s -> 4726.32s]  between transactions until commit time.
+[4728.00s -> 4733.26s]  So any values that T1 and T0 are reading
+[4733.26s -> 4737.16s]  at this point existed before the transactions commenced
+[4737.92s -> 4740.44s]  or were created inside the transaction themselves.
+[4740.54s -> 4740.72s]  Yeah.
+[4740.72s -> 4749.52s]  Yeah, so eager versioning
+[4749.52s -> 4755.26s]  and optimistic detection don't go very well together.
+[4755.56s -> 4755.72s]  Yeah.
+[4755.72s -> 4768.78s]  In this case, remember, what's the rule
+[4768.78s -> 4771.70s]  for a committing transaction with optimistic detection?
+[4775.96s -> 4779.38s]  The write set of the committing transaction gets
+[4779.38s -> 4782.40s]  compared against the read sets of all the other transactions.
+[4782.40s -> 4787.64s]  What's the write set in the case of case three?
+[4789.00s -> 4789.94s]  It's empty, right?
+[4790.94s -> 4791.56s]  There's no conflict.
+[4791.78s -> 4797.88s]  No, it's the write set of the committing transaction.
+[4798.62s -> 4802.14s]  Okay, so I think time's up, so we'll pick this
+[4802.14s -> 4804.54s]  up again on Thursday.
+[4804.54s -> 4807.28s]  We talk about software and hardware implementations
+[4807.80s -> 4811.22s]  and we might move into discussion
+[4811.22s -> 4814.80s]  of application specific or domain specific hardware.

@@ -1,0 +1,772 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 7.68s]  I am very excited to be here today to talk about some of our efforts in developing training
+[7.68s -> 15.10s]  recipes for building language models and particularly for reasoning in language models.
+[15.10s -> 16.88s]  So let me start.
+[16.88s -> 24.12s]  I want to argue that AI is here today or we've seen all this progress in AI because
+[24.12s -> 29.80s]  of open scientific research and development that is happening in this area.
+[29.80s -> 33.28s]  And because we had access to fully open model.
+[33.28s -> 40.00s]  However, over time we've seen a lot of research and development in this area is getting closed
+[40.00s -> 41.00s]  off.
+[41.00s -> 42.66s]  But what does that mean now?
+[42.66s -> 47.28s]  Does it mean that now we are done with scientific language modeling research and
+[47.28s -> 48.52s]  innovation?
+[48.52s -> 50.28s]  I would argue no.
+[50.28s -> 56.22s]  We need still to do a lot of research to understand the science of language models,
+[56.22s -> 60.60s]  to improve them and also build their next generation.
+[60.60s -> 67.38s]  Also we need to make a lot of advances to push language models beyond language, right?
+[67.38s -> 73.38s]  Like in science domains, language models for health and move it beyond text.
+[73.38s -> 76.70s]  Also we need to mitigate their biases and risk.
+[76.70s -> 82.42s]  Use these language models in real world, obviously work on LM agents, improve their
+[82.42s -> 88.30s]  planning, reasoning, test time and scaling, and also make them suitable for deployment
+[88.30s -> 91.10s]  and build efficient model.
+[91.10s -> 96.78s]  So with that, I want to argue to facilitate innovation and also accelerate the science
+[96.78s -> 101.58s]  of language models, we need these models to be fully open.
+[101.58s -> 103.52s]  We want them to be transparent.
+[103.52s -> 105.42s]  We have access to their data.
+[105.42s -> 111.10s]  We want them to be accessible and reproducible by researchers and developers.
+[111.10s -> 114.42s]  So at UW and AI2, this is our focus.
+[114.42s -> 121.66s]  We like to build an open ecosystem such that we can build language models at different
+[121.66s -> 127.92s]  stages from pre-training to post-training to mid-training and also building agents.
+[127.92s -> 134.90s]  In particular, my team is leading two efforts called Open Language Model, OLMO and TULU,
+[134.90s -> 138.94s]  which is our open post-training recipes.
+[138.94s -> 145.78s]  I also want to highlight that this fully open ecosystem is only one piece of puzzle
+[145.78s -> 149.30s]  in this landscape of AI these days.
+[149.30s -> 155.70s]  So with this project, OLMO, we like to develop, study, and advance language models.
+[155.70s -> 160.72s]  We want all our efforts to be fully open, documented, and reproducible.
+[160.72s -> 168.14s]  And with this, we like to empower the AI community and also inform the public about
+[168.18s -> 170.74s]  how AI works and so on.
+[170.74s -> 178.50s]  Okay, so in this talk, I'm going to talk about three efforts that we've done to improve
+[178.50s -> 181.82s]  mostly reasoning in language models.
+[181.82s -> 185.30s]  And these three directions are mostly orthogonal.
+[185.30s -> 191.10s]  And I'm going to talk about pre-training, post-training, and inference time inference,
+[191.10s -> 192.46s]  test time inference.
+[192.46s -> 198.30s]  And many of my slides are from my amazing students and team members who have worked
+[198.30s -> 200.38s]  on these projects.
+[200.38s -> 207.90s]  Okay, so in the past year or so, we have released and launched a bunch of models and
+[207.90s -> 213.90s]  toolkits that we encourage all of you to work and improve even.
+[213.90s -> 220.54s]  In pre-training, we have released OLMO 1 and 2, our mixture of expert version and also
+[220.54s -> 223.26s]  our full pre-training data.
+[223.26s -> 230.30s]  For post-training, we have developed our training recipe on top of many open-weight
+[230.30s -> 233.58s]  models, such as LAMA, QUEN, and so on.
+[233.58s -> 239.18s]  And also, we've applied that to our fully open language model, OLMO.
+[239.18s -> 243.78s]  And also, we have all the toolkit data and so on publicly available.
+[243.78s -> 249.22s]  And most recently, we've continued working on test time scaling, where we have
+[249.22s -> 254.10s]  released SWAN, OpenScholar, and CELFREG, which I'm going to very briefly talk about
+[254.10s -> 255.94s]  those three as well.
+[255.94s -> 263.14s]  Okay, so just a quick snapshot of where results are standing is in our latest release
+[263.14s -> 269.86s]  of OLMO 2, which we have released OLMO at 7 billion parameter and 13 billion parameter
+[269.86s -> 274.58s]  scale, the base model at the end of pre-training, it is on par.
+[274.58s -> 278.70s]  And some data sets better, a little bit worse on some data set, but on average on par
+[278.70s -> 284.10s]  with LAMA 3 and QUEN 2.5, same as 13b.
+[284.10s -> 289.18s]  Importantly, we have used less number of training tokens.
+[289.18s -> 295.62s]  And we argue that OLMO 2 is on this Pareto optimal curve compared to many other kind
+[295.62s -> 302.98s]  of open-weight models, like QUEN, QUEN 2.5, LAMA 3.1, and so on.
+[302.98s -> 311.14s]  So this curve shows the average performance versus the approximate pre-training flops.
+[311.14s -> 318.02s]  And as you see, those two stars show where OLMO 2 stands.
+[318.02s -> 322.46s]  A snapshot of our post-training efforts.
+[322.46s -> 329.70s]  So most recently, we have developed our post-training recipe on top of the largest
+[329.70s -> 334.34s]  open-weight model, which was LAMA 4 or 5b.
+[334.34s -> 338.46s]  And I'm going to talk about how this process is being done in this talk.
+[338.46s -> 346.54s]  And I can show you that 2.3, 4 or 5b now is on par, or better than DeepSeq V3 and
+[346.54s -> 353.62s]  almost on par with GPT 4.0, which is very impressive, showing that now we are getting
+[353.62s -> 357.34s]  really good results compared to event proprietary models.
+[357.86s -> 364.30s]  Okay, so with that, I first want to start with post-training because a lot of our efforts
+[364.30s -> 371.06s]  on how to make these models able to reason starts from post-training or happens during
+[371.06s -> 372.42s]  the post-training.
+[372.42s -> 378.02s]  And I will talk about how we develop Tulu along this process.
+[378.02s -> 382.94s]  Okay, so how do we build a modern large language model?
+[382.94s -> 389.26s]  So it is roughly going these two stages, pre-training and post-training.
+[389.26s -> 397.14s]  In pre-training, the models are trained with predicting the next token, where data
+[397.14s -> 404.34s]  usually comes from large and large-scale data, mostly from the web, okay?
+[404.34s -> 411.62s]  But the model that comes out of this stage is not ready to be used for a lot of applications.
+[411.62s -> 412.54s]  It is not safe.
+[412.54s -> 421.06s]  It's probably not able to follow human instructions, and it's not that good at reasoning.
+[421.06s -> 424.82s]  When post-training happens, now models can do a lot of things.
+[424.82s -> 425.66s]  It can chat.
+[425.66s -> 427.14s]  It follows instructions.
+[427.14s -> 429.10s]  You can integrate it with tool use.
+[429.10s -> 431.10s]  It's able to reason.
+[431.10s -> 436.62s]  It's able to tell you when it is harmful, when it doesn't kind of follow the instruction,
+[436.62s -> 438.74s]  and so on, okay?
+[438.74s -> 442.86s]  So we do post-training to align with human preferences.
+[442.86s -> 447.82s]  You've seen it in, like, when, for example, you use ChatGPT, which of these two responses
+[447.82s -> 452.70s]  you prefer, and we collect this type of data to say which of these outcomes are
+[452.70s -> 457.14s]  more aligned with humans.
+[457.14s -> 463.30s]  We do post-training to be able to do tool use, searching, code execution, and so on.
+[463.30s -> 468.66s]  And also, we do a lot in post-training for models to be able to reason.
+[468.66s -> 474.78s]  For example, in this case, we want to teach the model how to kind of solve this arithmetic
+[474.78s -> 476.78s]  work problem.
+[476.78s -> 479.70s]  Okay, so how does it work?
+[479.70s -> 486.10s]  Following many standard language modeling or machine learning pipelines, it requires
+[486.10s -> 493.42s]  these pieces, data, the data that we need to train on, a training kind of architecture
+[493.42s -> 498.30s]  and neural network, which in almost all cases, it's a transformer-based architecture,
+[498.30s -> 504.78s]  and a very thorough evaluation loop to tell us where we are improving, where things are
+[504.78s -> 506.94s]  not going so well, okay?
+[506.94s -> 512.98s]  And I'm going to talk about these are the three integral parts in building a very modern,
+[512.98s -> 517.34s]  successful language model, data, models, and algorithms.
+[517.34s -> 523.18s]  And during this talk, I'm going to talk about what type of data is important and what type
+[523.18s -> 527.82s]  of algorithms are useful for which type of data, okay?
+[527.82s -> 533.94s]  So, data plays a really important role in building these post-trained models and, like,
+[533.94s -> 535.34s]  pre-trained model.
+[535.34s -> 542.66s]  It comes from different sources in many different forms, and they are targeting diverse
+[542.66s -> 543.90s]  capabilities, right?
+[543.90s -> 547.50s]  So, for example, we need data to be able to solve math work problems.
+[547.50s -> 549.38s]  We need data to build agents.
+[549.38s -> 556.10s]  We need data to kind of tell the model when it is not safe to respond to a query.
+[556.10s -> 564.62s]  But we need to design and use different algorithms on deciding when to use the right data and
+[564.62s -> 568.02s]  which of these algorithms are useful when, okay?
+[568.02s -> 575.98s]  So, this was our effort throughout these two projects, which started from 2023, and
+[575.98s -> 581.58s]  now we have an open, reproducible, and state-of-the-art post-training recipe.
+[581.58s -> 585.30s]  And we can apply it on many different open-weight models.
+[585.30s -> 586.26s]  Okay.
+[586.26s -> 594.26s]  In the first version, which we worked on this on June 2023, we pretty much only showed what is the
+[594.26s -> 599.70s]  best recipe to develop supervised fine-tuning data or instruction data.
+[599.70s -> 604.22s]  I'm going to dig into all these a little bit deeper in the next slides.
+[604.22s -> 611.34s]  In the second version, we showed that how we bring and digest a preference data.
+[611.90s -> 618.62s]  And then finally, we started doing very systematic study on what are the best algorithms to use these
+[618.62s -> 620.46s]  type of preference-tuning data.
+[620.46s -> 626.54s]  And at the end of these stages, we managed to show that with only open-source models,
+[626.54s -> 632.58s]  we can be as good as chat GPT, even upsetting GPT for all.
+[632.58s -> 639.70s]  Finally, at the end of last year in November, we released two or three, which pretty much put all
+[639.70s -> 643.82s]  our efforts together, such that we developed two or three.
+[643.82s -> 644.10s]  Okay.
+[644.10s -> 650.34s]  And then we applied the same recipe on Olmo, showing that the fully open training recipe also works.
+[650.34s -> 651.46s]  Okay.
+[651.46s -> 653.78s]  So what is this training recipe?
+[653.78s -> 659.18s]  So it starts from a base model, and we are following three important steps.
+[659.18s -> 665.98s]  Instruction tuning, preference tuning, and our new novel method, we call it reinforcement
+[665.98s -> 668.02s]  learning with verifiable rewards.
+[668.02s -> 668.58s]  Okay.
+[668.58s -> 673.22s]  And sometimes we have to do a bunch of kind of back and forth between these stages,
+[673.22s -> 675.62s]  and I'm going to talk about how this works.
+[675.62s -> 676.70s]  Okay.
+[676.70s -> 681.46s]  So let's first start getting the ingredients to start with, which is data.
+[681.46s -> 682.18s]  Okay.
+[682.18s -> 689.86s]  So in order to do a successful post-training, we first need to establish meaningful evaluations
+[689.86s -> 691.58s]  for targeted skills.
+[691.58s -> 694.66s]  For example, for two or three, these were our goal.
+[694.66s -> 697.62s]  We want to have a general chat capabilities.
+[697.62s -> 704.86s]  We want our model to be able to be good at knowledge recall, math and reasoning, coding,
+[704.86s -> 711.58s]  safety and noncompliance, multilingual, and also very precisely follow instructions,
+[711.58s -> 715.82s]  even when it kind of shows some constraints.
+[715.82s -> 716.62s]  Okay.
+[716.62s -> 719.94s]  So we developed all these kind of evaluation benchmarks.
+[719.94s -> 723.66s]  Like, we decided what type of evaluation data sets.
+[723.66s -> 729.18s]  Sometimes we also had to create the data sets ourselves on how to evaluate if our model
+[729.18s -> 735.42s]  has acquired good capabilities in all of these categories that I just talked about.
+[735.42s -> 736.06s]  Okay.
+[736.06s -> 740.58s]  And we also followed really good old machine learning techniques, which we set some of
+[740.58s -> 746.90s]  these data sets for development, and then kept some as hidden, and we just evaluated
+[746.90s -> 750.42s]  at the end of when all our training was done.
+[750.42s -> 751.18s]  Okay.
+[751.18s -> 757.42s]  So given our emphasis on these capabilities, we started collecting prompts, like kind of
+[757.42s -> 761.90s]  queries and instructions that we think our model should be able to answer.
+[761.90s -> 762.62s]  Okay.
+[762.62s -> 764.22s]  We checked for licenses.
+[764.22s -> 771.50s]  Are they kind of collected with a user consent, how the licensing work, and then
+[771.50s -> 778.70s]  make sure that we decontaminate them with the evaluation sets that we are evaluating on.
+[778.70s -> 783.26s]  This is very important because we've noticed in the literature, people show some really
+[783.26s -> 787.22s]  good data sets, getting really good results on certain benchmarks.
+[787.22s -> 793.18s]  But the decontamination wasn't done carefully because we are talking about very complex
+[793.18s -> 799.82s]  instances, and it's very easy for some of the test sets to be contaminated.
+[799.82s -> 806.62s]  So we, in our open instruct toolkit, we have code available for all these cases,
+[806.62s -> 809.90s]  and it's really useful to follow this.
+[809.90s -> 810.66s]  Okay.
+[810.66s -> 815.58s]  So now that we have the ingredients, we want to go through the first step, which is instruction
+[815.58s -> 819.62s]  tuning, or sometimes called supervised fine tuning.
+[819.62s -> 821.46s]  What does that mean?
+[821.46s -> 823.98s]  It basically is a very simple step.
+[823.98s -> 830.98s]  It takes a lot of these prompts and completions, and then fine-tune a pre-trained language
+[830.98s -> 833.62s]  model to be able to follow these instructions, right?
+[833.62s -> 839.82s]  So for example, we can have queries like, answer these questions one by one, summarize
+[839.82s -> 845.50s]  this talk, like many of these type of questions, and then the final answers.
+[845.50s -> 846.10s]  Okay.
+[846.10s -> 848.22s]  But how do we curate this data?
+[848.22s -> 850.34s]  How do we source this data?
+[850.34s -> 856.58s]  We can have and source this data through human annotation, which obviously it is costly,
+[856.58s -> 860.42s]  it is time consuming, and also it has high variance, right?
+[860.42s -> 866.50s]  Sometimes, particularly in tasks like reasoning, we are dealing with complex annotations, and
+[866.50s -> 872.14s]  it might not be well suited for kind of general annotators.
+[872.14s -> 880.86s]  Another approach which we introduced in our 2023 self-instruct paper was to synthetically
+[880.86s -> 887.02s]  generate these data with kind of the self-loop or self-instruction loop with another language
+[887.02s -> 887.78s]  model.
+[887.82s -> 890.94s]  Okay, so kind of synthetic data generation.
+[890.94s -> 892.50s]  And obviously it is good.
+[892.50s -> 896.82s]  It's really good in a lot of cases, but it's going to be noisy as well, okay?
+[896.82s -> 901.86s]  And it is biased to the language model that we are generating this data from, okay?
+[901.86s -> 907.82s]  And most recently, we've discovered the optimal solution is combining both of them, which
+[907.82s -> 915.06s]  we kind of build a hybrid collection of data coming from human annotation and also from
+[915.10s -> 919.66s]  synthetically generated by other language models, okay?
+[919.66s -> 927.06s]  So data curation has been kind of received well within the open source community.
+[927.06s -> 934.18s]  We had some earlier work in 2022 on, we called it natural instructions and supernatural
+[934.18s -> 940.34s]  instructions, where we only focused on kind of NLP relevant task, where we were looking
+[940.34s -> 944.70s]  at tasks like question answering, summarization, translation, and so on.
+[944.70s -> 949.82s]  Then we developed a self-instruct, a framework where we generate data synthetically.
+[949.82s -> 952.98s]  This has picked up really well within the community.
+[952.98s -> 959.06s]  Many kind of next efforts have been introduced within the community to generate
+[959.06s -> 965.94s]  more and more synthetic data sets like ELPACA, YCUNA, and so on and so forth.
+[965.94s -> 973.10s]  We all have a very good collection of data sets that are mostly focused on kind of
+[973.10s -> 977.82s]  short form question answering type tasks like FLANv1 and so on.
+[977.82s -> 982.30s]  So I'm just listing a few of these data sets here.
+[982.30s -> 986.66s]  For the full set, please check our TULU3 paper.
+[986.66s -> 993.50s]  We listed a lot of publicly available data sets, either manually curated, expert curated,
+[993.50s -> 996.46s]  or synthetically generated by the community.
+[996.46s -> 1002.54s]  And we kind of combined a lot of them, used the ones that we saw more signal out of them
+[1002.54s -> 1005.82s]  to build our final SFD mix.
+[1005.82s -> 1012.70s]  Okay, so now we have looked at all these kind of data that are available.
+[1012.70s -> 1018.50s]  And now we are doing these two repeated parallelizable tracks where we collect this data.
+[1018.50s -> 1026.10s]  And now we want to mix them such that we get high accuracy in the capabilities that we care about.
+[1026.10s -> 1028.38s]  This requires substantial effort.
+[1028.38s -> 1028.78s]  Why?
+[1028.78s -> 1035.90s]  Because, for example, if I add a lot of data about poem generation, probably my math reasoning
+[1035.90s -> 1037.54s]  capabilities drop.
+[1037.54s -> 1042.50s]  If I add a lot of data on math reasoning, probably I would lose this kind of creative
+[1042.50s -> 1045.14s]  task like poem generation, right?
+[1045.14s -> 1052.94s]  So it's a pretty challenging task to keep a good balance of all these data such that we are
+[1052.94s -> 1056.58s]  getting high accuracy across the board, okay?
+[1056.58s -> 1062.58s]  So we are exploring, and also in the community, people are exploring many different ways of
+[1062.58s -> 1072.02s]  this data mixing, including manual kind of empirical analysis, automated mixing.
+[1072.02s -> 1077.46s]  And I think the literature is evolving, and there are a lot of active research going
+[1077.46s -> 1079.70s]  on in this area.
+[1079.70s -> 1087.50s]  Okay, so let me show you some of our efforts in how we did this data mixing in our Tulu-1,
+[1087.50s -> 1089.22s]  which was kind of very simple.
+[1089.22s -> 1097.38s]  There were not much data available in 2023 such that we kind of start doing all these combinations.
+[1097.38s -> 1104.42s]  So first, we combined all available open data sets that were available back then, okay?
+[1104.42s -> 1107.46s]  And I'm listing them on the left.
+[1107.46s -> 1113.70s]  And some of them are created by humans, general, public, or experts.
+[1113.70s -> 1120.26s]  And then some are synthesized with some of the most successful language models back then, okay?
+[1120.26s -> 1128.02s]  Then similar to what I just described, we started kind of looking at evaluation sets or
+[1128.02s -> 1132.10s]  data sets targeted to evaluate certain capabilities.
+[1132.10s -> 1138.10s]  For example, this is the outcome of our fine-tuning when we were evaluating on kind
+[1138.10s -> 1141.46s]  of chat-type evaluation sets, okay?
+[1141.46s -> 1144.42s]  And here are how the results compare.
+[1144.42s -> 1148.90s]  The red ones mean, like, the results are not that good, and then the blue ones show,
+[1148.90s -> 1151.38s]  okay, successful results.
+[1151.38s -> 1157.54s]  Like, as you see here, that GPT-4-LPACA shows good high results on chat-type evaluation,
+[1157.62s -> 1162.02s]  ShareGPT also showing good results on chat evaluation.
+[1162.02s -> 1166.50s]  So we did that across many different kind of verticals, knowledge, reasoning, coding,
+[1166.50s -> 1170.50s]  multilinguality, and safety, and some of these results are quite exciting.
+[1170.50s -> 1174.98s]  Like, for example, when we train with chain-of-thought data, we see higher numbers
+[1174.98s -> 1179.30s]  on reasoning-type evaluation sets.
+[1179.30s -> 1182.98s]  Okay, so now the question is, how do we combine them?
+[1183.46s -> 1186.18s]  How do we take the best of all of these words?
+[1186.18s -> 1193.86s]  Because, as you saw, this data, actually, let me go back here, this data, like, ShareGPT
+[1193.86s -> 1201.30s]  or self-instruct, or, like, I would say, Open Assistant 1, that is good in chat,
+[1201.30s -> 1204.10s]  they are not that good in knowledge or reasoning-type tests, right?
+[1204.10s -> 1206.98s]  So it is important to kind of get the best of all these words.
+[1207.86s -> 1213.86s]  So we tried to look at the data sets that show kind of high numbers across one of these
+[1213.86s -> 1218.34s]  verticals and then started combining them, and as a result, we have a human-plus
+[1218.34s -> 1219.54s]  synthetic-type data.
+[1220.58s -> 1226.10s]  Okay, I want to highlight that we saw really good results with ShareGPT early on, but
+[1226.10s -> 1232.26s]  we later dropped this data because license and the way that the data was collected
+[1232.26s -> 1236.02s]  was not that good, so we dropped this data in our next versions.
+[1237.38s -> 1244.02s]  Okay, now, with the emphasis on reasoning, I want to dig a little bit deeper on what
+[1244.02s -> 1246.90s]  type of data particularly is useful for reasoning.
+[1248.18s -> 1250.26s]  Okay, why is this challenging?
+[1250.26s -> 1252.10s]  Let me give you a math example.
+[1252.10s -> 1253.70s]  We want to solve this problem.
+[1253.70s -> 1258.82s]  The question is, you can read this here, a store has buy-to-get-one-free deal on
+[1258.82s -> 1260.58s]  shirts, each shirt costs $25.
+[1261.30s -> 1264.74s]  If Sarah wants to buy seven shirts, how much will she spend?
+[1264.74s -> 1268.98s]  Okay, so one quick thing could be, okay, I have this problem.
+[1268.98s -> 1271.22s]  The final answer is $125.
+[1271.22s -> 1273.54s]  It's pretty easy to come up with that number.
+[1274.10s -> 1280.66s]  Okay, however, if I just fine-tune a model with this kind of input-output setting,
+[1280.66s -> 1284.98s]  probably I won't get that much out of this training instance.
+[1284.98s -> 1292.50s]  Okay, so we all observe in the community that it's really better if we start integrating
+[1292.50s -> 1298.82s]  and using this type of chain-of-thought output where we say we're gonna break this down into,
+[1298.82s -> 1303.62s]  okay, step one does do this, step two do this, and then kind of break this down as
+[1303.62s -> 1308.10s]  if you are explaining it to a child how to follow these steps to come up with that
+[1308.10s -> 1309.86s]  final number, $125.
+[1311.14s -> 1317.30s]  Okay, so to summarize, why do we think chain-of-thought data is helpful for reasoning?
+[1317.38s -> 1324.10s]  It's helping the model to handle complex, multi-step problems much easier.
+[1324.98s -> 1329.30s]  It also starts kind of revealing the model's reasoning process.
+[1329.30s -> 1336.02s]  Also, one thought is a lot of these models during pre-training have seen a lot of these
+[1336.02s -> 1341.62s]  type of chain-of-thought data, and then this kind of starts to boost them up,
+[1342.26s -> 1347.86s]  to boost this capability of saying, okay, remember you knew how to think step-by-step,
+[1347.86s -> 1353.78s]  bring them up when you are looking at these more complex math reasoning problems.
+[1354.74s -> 1357.70s]  Also, when we look at these type of annotations,
+[1358.58s -> 1364.34s]  these type of chain-of-thought data makes it much easier to spot errors in the logic,
+[1364.34s -> 1371.78s]  and also it kind of resembles how we are explaining things to humans or how humans thought process
+[1371.78s -> 1378.26s]  work. Okay, these are all very good points about why this type of chain-of-thought data
+[1378.26s -> 1386.58s]  is important. However, it's becoming more and more challenging to observe and obtain
+[1386.58s -> 1391.30s]  manual annotation for this type of chain-of-thought data.
+[1391.30s -> 1398.82s]  It is time-consuming, it is very expensive, and it often requires expert annotations.
+[1398.82s -> 1405.14s]  The example that I showed in the last slide was quite easy, but think of more challenging
+[1405.14s -> 1411.78s]  math problems. We need experts to annotate those, and obviously it is difficult to scale,
+[1411.78s -> 1417.94s]  and also it is not diverse enough. It is very hard to boost diversity with all these kind
+[1417.94s -> 1422.58s]  of limitations that we have when we want to collect this type of chain-of-thought data.
+[1423.78s -> 1429.86s]  Okay, so again our approach to address this solution was hybrid data curation,
+[1429.86s -> 1436.82s]  where we look at data mixing and also selecting from existing resources.
+[1436.82s -> 1443.62s]  We also did some very, kind of observed a very interesting paper from the literature
+[1443.62s -> 1451.46s]  where they proposed to use different personas to generate diverse data.
+[1451.46s -> 1458.98s]  Okay, so I'm referring to this paper here, but the idea is we're gonna look at different
+[1458.98s -> 1466.66s]  skills, like for example math, coding, precisely follow instruction, but then we devise different
+[1466.66s -> 1475.06s]  personas, and then we add the model to generate data for those skills given the persona that it
+[1475.06s -> 1482.50s]  is kind of looking at. This would ensure high diversity and enables us to scale further.
+[1482.50s -> 1489.62s]  What does that mean? So we kind of developed this prompt. We say we want to create this
+[1489.62s -> 1495.78s]  data with this specific persona in mind. Like for example, we want to create a math problem
+[1495.78s -> 1502.90s]  given that we are creating it for a chemical kinetics researcher. Okay, and now the problem
+[1502.90s -> 1510.10s]  looks like this. Dr. Smith, a chemist, is studying this and so on. Or we say we want to solve this
+[1510.10s -> 1516.90s]  logical reasoning problem again for that persona, for that chemical kinetics researcher. We tried
+[1516.90s -> 1526.58s]  many different personas. We designed these types of math problems for experts, for children,
+[1526.58s -> 1533.78s]  like six-year-old children, or like a computer scientist and musician. So you give many
+[1533.78s -> 1539.54s]  different personas to the model, and then we ask the model to generate it specifically designed
+[1539.54s -> 1549.38s]  for that persona. With that, we created more than 150k hard math problems and 50k grade
+[1549.38s -> 1556.10s]  school math problem. Okay, we created 35k python coding and a precise instruction following.
+[1558.26s -> 1566.42s]  Then these were mostly for generating prompts because this was the point of boosting diversity
+[1566.42s -> 1574.50s]  for the types of problems that we are getting. Then we used a combination of GPT-4.0 and Cloud
+[1574.50s -> 1581.06s]  Sonnet to generate step-by-step solutions, for example, for a given math problem, a coding
+[1581.06s -> 1588.18s]  or precise instruction following. Okay, so now let's look at the results and how successful and
+[1588.18s -> 1592.74s]  useful these data are. Okay, so let me walk through how we read these figures.
+[1593.06s -> 1600.26s]  So in the figures below, you are seeing results on two data sets,
+[1600.26s -> 1611.46s]  Math and GSM8K, which are two popular math data sets. Then each of these bars
+[1611.46s -> 1617.22s]  show a combination of using our public data sets, like the data sets that are available,
+[1618.18s -> 1624.50s]  for example, for math or general purpose, combined with these persona-driven
+[1624.50s -> 1631.30s]  synthetic math problems. Okay, and we kind of varied the amount of these persona-driven math
+[1631.30s -> 1639.38s]  data in our experiments. Okay, so the first bar, the yellow bar, just uses the general public
+[1639.38s -> 1646.58s]  data sets. And the last bar, it kind of does a 50-50 between persona-driven data and then
+[1647.54s -> 1653.38s]  general data. Okay, and as you see, over time, we see improvement mostly on the math.
+[1654.02s -> 1664.50s]  On GSM8K, we saw less improvement, and we think the reason is because GSM8K are simpler
+[1664.50s -> 1671.14s]  math word problems, like grade school math word problems, and we think the available public
+[1671.14s -> 1677.30s]  data set were already good enough. So that's why we didn't gain much. Okay, so to summarize,
+[1677.30s -> 1684.74s]  adding more persona-driven data consistently improves math performance. GSM8K improves,
+[1684.74s -> 1691.30s]  but it's much less, and kind of kept a balance on how to use this type of persona.
+[1692.26s -> 1702.02s]  Okay, so we did another step to kind of filter the data. How do we do that?
+[1702.74s -> 1709.14s]  For every word problem or every kind of instance that was generated synthetically,
+[1709.86s -> 1715.62s]  we actually went ahead and asked GPT4 to generate multiple reasoning paths. And then
+[1715.62s -> 1720.50s]  we basically did self-consistency. So in one of the classes earlier,
+[1721.38s -> 1726.58s]  I think this semester or last semester, you learned about self-consistency, and here is what
+[1726.58s -> 1734.02s]  we used. And then we basically saw which one has majority vote and kept those reasoning paths
+[1734.02s -> 1742.10s]  that gave us that kind of better answer. So through this, we managed to filter a lot of data,
+[1742.98s -> 1750.50s]  almost 40% of the data. And now we are seeing that using only 60% of the data,
+[1750.50s -> 1757.94s]  we are getting similar performance on math, right? This new pink is the filtered kind of
+[1757.94s -> 1762.82s]  process data, which is almost on par. I would say this is just kind of error bar on how
+[1762.82s -> 1770.42s]  different they are from the original mix. And we saw more significant boost on the GSM8K,
+[1771.22s -> 1778.50s]  kind of highlighting that with this better filtered data, we are getting higher accuracy on GSM8K.
+[1778.50s -> 1785.22s]  So at the end of the day, now we are able to use this 60% of the data,
+[1785.22s -> 1789.14s]  and we are getting good performance from this synthetically generated data.
+[1790.58s -> 1796.90s]  Okay, so there are many other approaches in the research community to generate chain of
+[1796.90s -> 1802.90s]  thought data. One is obviously manual human annotation. As I mentioned, this is great,
+[1802.90s -> 1810.42s]  this is very accurate, but we can pretty much have a limited scale. And sometimes it is hard
+[1810.42s -> 1818.26s]  to increase diversity in the reasoning style. And there are methods that they convert math
+[1818.26s -> 1823.78s]  problems into Python code and then generate solutions that way. This is great because
+[1823.78s -> 1831.70s]  it guarantees correctness through execution. The only issue is it's a little bit less natural,
+[1831.70s -> 1835.86s]  like natural language reasoning, the same way that you are explaining it to a child.
+[1835.86s -> 1841.46s]  So somewhat less intuitive, but it's still very interesting and it works really well.
+[1842.18s -> 1848.26s]  And also this type of self-generated chain of thought, which is scalable to many problems,
+[1849.14s -> 1853.06s]  the quality of the model really depends on the base model. And we kind of
+[1853.62s -> 1864.34s]  did a combination of all of these methods. Okay, so putting all this together, so I talked a lot
+[1864.34s -> 1871.38s]  about how we created and curated this synthetic data for math and reasoning. Then we put all
+[1871.38s -> 1878.10s]  of these together and built our data mix for supervised fine tuning. And this is the outcome,
+[1878.90s -> 1883.78s]  which is the combination of human and synthetic data. And we finally built Tulu SFT.
+[1884.74s -> 1891.30s]  So let's discuss a little bit of results. So this table has a lot of numbers, but I want
+[1891.30s -> 1897.94s]  to show kind of some of the ablations we've done. The columns show many different
+[1897.94s -> 1905.46s]  data sets that we evaluated on, like MMLU, TQA, PUBQA, and they are all kind of evaluating
+[1905.46s -> 1912.34s]  some of those core skills that we cared about. And this is our final results on the final
+[1912.34s -> 1917.30s]  SFD mix that we discovered. And these are some of the ablations. Like for example,
+[1917.30s -> 1925.22s]  if we remove wild chat, which is kind of our data mix to approach general chat capabilities,
+[1926.02s -> 1932.90s]  our average will get into 58.9 with probably the biggest drop on, as you see here,
+[1932.90s -> 1940.42s]  ELPACO eval on chat evaluations. Or without the persona data, we get to 58.6,
+[1941.46s -> 1948.90s]  where we saw drops on, for example, math and so on. Or math data, if we remove that,
+[1948.90s -> 1953.38s]  we see a really significant drop on this type of math evaluation.
+[1954.98s -> 1961.22s]  Another thing that we were very careful was we want to make sure our model is safe,
+[1961.22s -> 1966.26s]  so we added safety data. But at the same time, we want to make sure that it doesn't
+[1966.26s -> 1972.74s]  drop the capabilities, the general capabilities of the model. And this is what we've observed,
+[1972.74s -> 1976.90s]  that adding safety data doesn't hurt general capabilities of the model.
+[1977.78s -> 1983.62s]  This is also comparing the TULU SFD data with the other data sets that were available in the
+[1983.62s -> 1990.50s]  community, like mammoth data or RLHF. These were some of the most popular data sets that existed
+[1990.50s -> 1997.70s]  in the community, and this is the gains that we are having for the 656. And these were our
+[1997.70s -> 2003.06s]  earlier TULU 2 SFDs, our earliest data mix in our earlier versions.
+[2003.78s -> 2011.78s]  So overall, we argue that this is a really good SFD mix. A lot more can be done here,
+[2012.82s -> 2018.90s]  and it's really good if people in the open source community also start improving this data mix.
+[2021.46s -> 2030.74s]  So step one is done. We took our base model and then did supervised fine-tuning with a very
+[2030.74s -> 2038.50s]  carefully curated data mix. Next step is preference tuning, where it works with a
+[2038.50s -> 2045.38s]  reward model. Let's see what happens here. So at the preference fine-tuning stage,
+[2046.02s -> 2053.86s]  I think Jason also talked about this. The goal is we want to align to human preferences.
+[2053.86s -> 2062.90s]  For example, we have this query. We say write a haiku about AI. It talks about the model comes
+[2062.90s -> 2067.94s]  and outputs something. We want to give thumbs up, thumbs down if the output seems good or bad.
+[2068.34s -> 2077.14s]  Okay. But in practice, what we've observed, the role of preference fine-tuning is to show a very
+[2077.14s -> 2087.14s]  strong training signal to have a better style of chats, and it shows really higher improvements
+[2087.14s -> 2094.58s]  on chat type evaluation. It also keeps improving the basic capabilities that we were targeting,
+[2095.38s -> 2104.10s]  but in general, we saw lower absolute magnitude of improvement for math type capabilities.
+[2107.22s -> 2112.82s]  So let's dig a little bit deeper how the preference data looks like.
+[2113.70s -> 2119.94s]  So we have this prompt. Let's say explain the moon landing to a six-year-old in a few sentences.
+[2120.50s -> 2127.62s]  We want our model to generate two responses. And then the preference instant tells us
+[2127.62s -> 2134.50s]  one response is better than the other one. And it can be annotated by humans saying that
+[2134.50s -> 2139.14s]  this response to me seems much more suitable for a six-year-old.
+[2140.74s -> 2148.42s]  Most recently, people look at this called RL AIF, where instead of humans, we can have
+[2148.42s -> 2156.18s]  another AI model, let's say GPT 4.0, Cloud Sonnet or so, to evaluate which of these responses
+[2156.18s -> 2161.94s]  are better for a six-year-old. And then the algorithm to update that at some level sometimes
+[2161.94s -> 2170.90s]  is called RL AIF. But this is the nature of data. Why does this data play an important role
+[2170.90s -> 2178.02s]  in building and post-training stages is, in a lot of cases, we are dealing with
+[2178.02s -> 2186.10s]  open-ended generations and coming up with some absolute numbers to say, oh, okay, this response
+[2186.10s -> 2192.50s]  is good, it's hard. However, it's much easier to deal with comparison, to say this response
+[2192.50s -> 2198.26s]  is generally better than the other one. So the task of annotation has become much easier.
+[2198.98s -> 2206.82s]  But then we cannot use the same supervised fine-tuning algorithm to deal with this
+[2206.82s -> 2214.18s]  type of preference data. Now let me unpack RLHF or reinforcement learning with human feedback.
+[2214.18s -> 2222.18s]  How do we integrate and use this type of preference data? So we will use reinforcement
+[2222.18s -> 2229.14s]  learning. How does it work? This is the most generic form. This is kind of the most generic
+[2229.14s -> 2235.86s]  definition of RL. The idea is for a given policy, which is generate the next token,
+[2236.58s -> 2242.90s]  we generate this next token, we interact with an environment, we get some reward from
+[2242.90s -> 2248.26s]  the environment if that generated token was good or bad, and then update the state of the world.
+[2249.22s -> 2257.78s]  In RLHF, the state is getting updated from the prompts that are getting fed into the policy.
+[2259.70s -> 2267.94s]  The action is updating and finding what responses are. And then the environment is
+[2267.94s -> 2275.78s]  actually a reward model, where it tells us how good a model, like kind of tries to
+[2275.86s -> 2281.86s]  up a model that preferences that this response is generally preferred over the other one.
+[2281.86s -> 2289.30s]  Okay, so this is kind of how RLHF works. This preference data will fit into a reward model,
+[2289.30s -> 2295.94s]  where reward model is actually a neural network that is trained to tell us for a given prompt,
+[2295.94s -> 2302.10s]  which response is better. Okay, how do we optimize this complex situation
+[2302.98s -> 2310.42s]  through PPO training? Let's dig a little bit deeper. The idea is we want to maximize the reward,
+[2310.98s -> 2319.06s]  we want to get the maximal reward as possible, such that we want to constrain the model
+[2319.06s -> 2326.26s]  to stay as close as possible to the base language model. We want the policy to not go
+[2326.58s -> 2333.54s]  that far from the originally trained model. So this is establishing a very important balance
+[2333.54s -> 2339.62s]  between making sure you are aligned with those preferences that are provided to you. However,
+[2339.62s -> 2344.26s]  don't go too far from the original model that you have in mind.
+[2346.82s -> 2353.22s]  Now, in the last year or so, many different variants are introduced on how to optimize
+[2353.22s -> 2362.26s]  that objective. Last year, we had this paper called Direct Preference Optimization,
+[2362.26s -> 2368.58s]  or DPO, where the idea is, what if we just use gradient ascent on this equation?
+[2369.14s -> 2375.46s]  Let's kind of ignore all that, like now we have this reward model and then we want to
+[2375.46s -> 2381.94s]  optimize for that reward. Let's directly optimize for these human preferences and then kind of
+[2381.94s -> 2391.30s]  model it as a ranking model. So how does the DPO training work? It's like this, where we kind of
+[2391.30s -> 2398.18s]  remove a lot of these details here and we directly go from the preference data into
+[2398.18s -> 2404.02s]  policy. And then kind of given that reference model, we want to see how close this preference
+[2404.02s -> 2412.42s]  data is to the policy. So many new variants of DPO also introduced. So here I'm summarizing them.
+[2412.42s -> 2418.82s]  This is the PPO, the original formulation. Here is the direct preference optimization,
+[2418.82s -> 2424.18s]  which directly optimizes the policy given the preference data. I would always say,
+[2424.18s -> 2430.10s]  think of it as kind of some sort of ranking objective. And then the newer variants like
+[2430.10s -> 2435.14s]  SIMPO, which even makes it more simplified, where it doesn't even use a preference,
+[2435.94s -> 2444.02s]  a reference model. And other variants like lengths normalize DPO, which normalizes the same
+[2444.02s -> 2454.50s]  likelihood, but kind of make it normalized for direct lengths. Okay, so in our, this work,
+[2455.22s -> 2463.14s]  we started actually digging deeper into all these algorithms that exist. Okay. Particularly,
+[2463.14s -> 2470.58s]  we looked at comparing between DPO and PPO. Okay. So they are all different, right? They
+[2470.58s -> 2475.54s]  are getting different types of parameters. They have different implementation complexity,
+[2475.54s -> 2482.02s]  memory usage, throughput, and so on. Just to give you a very brief idea, in general,
+[2482.02s -> 2490.34s]  we saw PPO performs better than DPO in almost all cases. However, it is much more complicated
+[2490.34s -> 2497.06s]  to implement and make it work, particularly for larger models. Why? Because for PPO, we need
+[2497.06s -> 2503.22s]  to have two models running. Like we have the reward model as a neural network and also the
+[2503.22s -> 2508.42s]  policy model, which is kind of the actual language model that generates tokens. Okay.
+[2508.74s -> 2516.26s]  So it really depends on the developer's preference on which constraints they have.
+[2517.46s -> 2524.18s]  Okay. So let me dig a little bit deeper and tell you what things we ablated to figure out
+[2525.70s -> 2532.10s]  which model to use. Okay. For DPO, remember we had preference data and policy model. For PPO,
+[2532.10s -> 2536.58s]  we have all these components, preference data, the type of reward model, and the neural network
+[2536.58s -> 2541.54s]  that we have here. We have the generations, the prompts, and the policy model. Okay.
+[2542.34s -> 2548.98s]  So I'm kind of showing the final results. I'm not going into a lot of details, but here are
+[2548.98s -> 2554.10s]  the results. Let's say this is the average performance on a lot of tasks that we've looked
+[2554.10s -> 2562.58s]  at. This is the initial SFD result. When we do DPO with some sort of weaker preference tuning,
+[2563.30s -> 2572.10s]  we saw 2% boost. Okay. When we do a lot of ablations and very careful curation of preference
+[2572.10s -> 2578.98s]  data, we saw significant boost. Like look at this. We go from 56 to 61, just with better
+[2578.98s -> 2586.58s]  data selection and data curation here. Then we replace DPO with PPO. We saw now we just
+[2586.82s -> 2592.26s]  use the exact same data. We just replace the algorithm, DPO with PPO, and we saw one point
+[2592.26s -> 2599.78s]  boost here. Then we thought, okay, now this is very promising. PPO is great. Let's now think
+[2599.78s -> 2604.58s]  of a bigger reward model because remember reward model plays this environment role,
+[2604.58s -> 2612.18s]  and we kind of try to make our model as close as possible to this kind of preference data.
+[2613.06s -> 2617.78s]  Okay. When we started using a bigger reward model, we didn't saw that much improvement,
+[2617.78s -> 2624.58s]  like less than like about half a point improvement. Then finally, when we started
+[2624.58s -> 2633.38s]  mixing prompts of what type of specific design prompts for some tasks, on average, we didn't see
+[2633.38s -> 2641.78s]  much gain. Okay. However, I want to highlight that this final step on average didn't show us a lot
+[2641.78s -> 2649.14s]  of improvement, but very interestingly, when we only focused on reasoning, particularly GSM8K,
+[2650.18s -> 2656.26s]  when we started bringing up prompts that are very useful, like for improving the reasoning
+[2656.26s -> 2663.86s]  capabilities, we saw significant boosts here, that here we learn when we introduce prompts
+[2663.86s -> 2669.62s]  that are domain specific for some of those capabilities, they play a really important role.
+[2670.58s -> 2676.34s]  Okay. If you look at this whole thing, this was the choice of algorithm. This was the choice
+[2676.34s -> 2684.58s]  of data, algorithm model data. Again, we saw a really big boost on data. Okay. Takeaways
+[2684.58s -> 2690.98s]  from this, the most important factor in building a really good preference tuning algorithm
+[2691.70s -> 2699.30s]  for us was high quality data. PPO works better than DPO, but DPO is much cheaper.
+[2699.70s -> 2705.86s]  To experiment with and kind of do ablations on data. And it's kind of more practical for
+[2705.86s -> 2714.66s]  development. Scaling RM reward models help, but not significantly. Using end domain prompts
+[2714.66s -> 2723.30s]  yield performance gains, particularly for domains like reason. Okay. So now we put all of those
+[2723.30s -> 2730.50s]  together when we want to build two or three. Okay. So from our last study, we learned prompt
+[2730.50s -> 2737.22s]  selection is really important. So we looked at many different combinations on how to curate data.
+[2737.22s -> 2743.78s]  And this was kind of our best mix. We want to use some of the prompts that we already used
+[2743.78s -> 2748.10s]  in SFD. We thought this is really good to maintain accuracy and performance.
+[2749.06s -> 2755.38s]  We also brought some prompts, some new prompts that we hadn't seen during SFD. And then we
+[2755.38s -> 2761.54s]  started bringing in out of domain prompts, for example, from domains that we did not study in
+[2762.34s -> 2771.94s]  SFD. Okay. So we then did a lot of response generation from all these models. Okay. So we
+[2772.90s -> 2783.30s]  had some weaker models like 7B models, llama 7B, for example, almost 7B. All the way to very kind
+[2783.30s -> 2788.58s]  of a strong models like GPT 4.0. Because we want to look at the preferences to see which
+[2788.58s -> 2797.14s]  of these outputs are more preferable. Importantly, we brought on policy data. Remember, we want to
+[2797.22s -> 2803.46s]  improve our 2.3 SFT, right? This is the model. This is the policy model that we want to improve
+[2803.46s -> 2811.38s]  upon. So we made sure to bring some of these data points and these 2.3 completions such that
+[2811.38s -> 2818.82s]  we can say this outcome is preferred over something worse, or we need to get to something
+[2818.82s -> 2824.50s]  better, which is, for example, the outcome of GPT 4. So we also showed that it is important
+[2824.50s -> 2834.98s]  to use this on policy data. Okay. Then we did particularly RL AIF, where we asked GPT 4.0 to
+[2834.98s -> 2840.90s]  tell us which of these completions are better. And we asked it to measure across these four
+[2840.90s -> 2846.42s]  categories, helpfulness, instruction following, how accurately it could follow instructions,
+[2846.42s -> 2852.66s]  how truthful and how honest these responses are. And then we binarized them according to,
+[2852.98s -> 2860.66s]  and then said which is chosen, which is rejected. To optimize the algorithm for optimization,
+[2860.66s -> 2868.58s]  we did a DPO, PPO, and SIMPO. Again, similarly, we didn't see much gains from PPO,
+[2868.58s -> 2875.38s]  and for simplicity, we stick with DPO for this. Okay. So here are these bottom figures
+[2875.38s -> 2885.54s]  show some of our ablations. Actually, let's look at the right-hand one, which is what LLM
+[2885.54s -> 2892.82s]  as judge we used for telling us which is preferred, which is rejected. And we looked
+[2892.82s -> 2902.90s]  at many different highly capable models, like GPT 4.0, LAMA 4.05, and so on. And we saw a little
+[2902.98s -> 2911.94s]  bit better results on GPT 4.0, and that's what we stick with. This middle figure evaluates the off
+[2911.94s -> 2920.58s]  policy versus on policy preferences. And as you see, this is the initial SFT. With off policy,
+[2920.58s -> 2928.58s]  we got to 60, adding on policy, only with on policy, we get 60.7, and then combining all
+[2928.58s -> 2938.50s]  of them, we got the best numbers. Here, we also checked if it is useful to bring in new
+[2938.50s -> 2943.78s]  out-of-domain prompts, or we just reuse some of the prompts that we had from the initial
+[2943.78s -> 2949.30s]  SFT. And as you see, again, bringing new prompts also improves results.
+[2950.10s -> 2958.18s]  Okay, so what happened up to here? We did all our instruction tuning, supervised fine tuning,
+[2958.18s -> 2963.78s]  we did our preference tuning, and now I want to talk about our third step, which we introduced
+[2964.34s -> 2969.22s]  as part of our 2.0.3 effort, reinforcement learning with verifiable reward.
+[2970.10s -> 2986.18s]  Okay, so let's look at these curves. At the end of DPO, or preference tuning stage,
+[2986.98s -> 2994.42s]  I'm going to show you these three figures, okay? So this is training steps on the x-axis,
+[2994.42s -> 3002.26s]  and on the y-axis, we are looking at evaluation performance. And as you see, over time,
+[3002.26s -> 3009.78s]  for example, in the alpaca eval, we see the improvements are almost getting plateaued,
+[3009.78s -> 3016.66s]  okay? For if eval, which is how we do instruction following, interestingly, we see
+[3017.22s -> 3024.42s]  when we increase the training steps for our DPO, we see a little bit dropping performance.
+[3025.30s -> 3033.06s]  And for GSM8K, which is our kind of proxy for reasoning, we see initial improvement,
+[3033.06s -> 3040.82s]  but then after some time, we started seeing overfitting and then dropping performance, okay?
+[3040.82s -> 3048.58s]  So particularly for these more complex tasks, like following instructions and doing reasoning,
+[3048.58s -> 3054.02s]  over time, we see overoptimization is happening, okay? Which is not good.
+[3055.22s -> 3062.90s]  Then we started thinking a little bit about this. We are using this neural reward model
+[3062.90s -> 3074.18s]  to tell us if some preferences are good or bad, okay? This neural network tries to assign a score
+[3074.18s -> 3081.62s]  to every instance now, okay? So it tells us for this reward model is trained to tell
+[3081.62s -> 3088.82s]  which is chosen, which is rejected, but at the end of the day, for every completion, it tells us
+[3088.82s -> 3093.78s]  what is the score of this completion, okay? For example, for something like this,
+[3093.78s -> 3098.10s]  for some prompt like this, it would give us this score of 10.5, okay?
+[3099.62s -> 3104.74s]  If we change the input, it might give us another score, okay? Also, there are studies
+[3104.74s -> 3112.34s]  in the literature that this human feedback that, okay, this A is preferred over B, it's not the
+[3112.42s -> 3119.54s]  gold standard of saying what is the outcome, what is a good reward score for this sentence,
+[3119.54s -> 3128.90s]  for example, okay? Instead, we thought for tasks that we can verify their correctness,
+[3129.54s -> 3136.74s]  we can use a much, much simpler reward model, okay? Or in fact, we can replace this reward
+[3136.74s -> 3142.90s]  model with something rule-based. For example, if my query is what is two plus two,
+[3144.10s -> 3151.78s]  we can easily say if the answer is gold, return one, otherwise return zero, okay? If we were
+[3151.78s -> 3158.66s]  only using that neural reward model, it might have given us another score like 1,000 or it
+[3158.66s -> 3163.94s]  might have given us something like, I don't know, 5.5, right? What is the intuition or what is
+[3163.94s -> 3169.86s]  the meaning behind that score that the reward model is giving us, okay? So that was where we
+[3169.86s -> 3178.42s]  questioned this. And then we said for tasks that we can verify their final outcome, what if
+[3178.42s -> 3184.74s]  we just remove that complex setup and use a much simpler rule-based model, okay? And this
+[3184.74s -> 3192.34s]  is exactly what we did. So let's look at our RL setting. The prompts come in, the state gets
+[3192.34s -> 3199.86s]  updated, the actions are generating next tokens, and then this reward model tells us what is the
+[3199.86s -> 3207.70s]  good outcome or what is a good score associated with this generation. However, in problems like
+[3207.70s -> 3214.66s]  math that we have ground truth answer, we can have this verification function where the reward
+[3214.66s -> 3222.90s]  tells us one if the final answer is correct, zero otherwise, okay? Pretty much we had that for GSM 8k
+[3222.90s -> 3228.82s]  which is one of our reasoning evals in math and also precise instruction following. Let's imagine
+[3228.82s -> 3236.50s]  we are giving the model a bunch of constraints like make sure to start the sentence with S
+[3237.06s -> 3245.86s]  or to write a poem that has five words, right? So you could verify if the generated outcome
+[3245.86s -> 3253.70s]  follows these constraints or not. And then we can kind of evaluate how we can easily verify
+[3253.70s -> 3261.86s]  how good the generated outcome is, okay? So that was pretty much what we did. We replaced
+[3261.86s -> 3270.26s]  the reward model with the verification function. And this, the DeepSeq R1 model that released
+[3270.26s -> 3276.98s]  earlier this year also is using similar thing which I think they call it a different name
+[3276.98s -> 3287.54s]  but very similar intuitions. Okay, to summarize, this is our setup. We use gold final answer
+[3287.54s -> 3293.70s]  or verifiable constraints as this kind of environment, as a proxy for environment.
+[3295.14s -> 3300.42s]  This is good because for this we don't need intermediate chain of thought. We just need the
+[3300.42s -> 3306.74s]  final answers. Then we applied classical reinforcement learning algorithm to optimize this
+[3306.74s -> 3314.34s]  and here we use PPO for the optimization. And we tried it for three data sets, GSM 8k, math
+[3314.34s -> 3320.82s]  and if verification and kind of we show the results. Roughly this is the number of training
+[3320.82s -> 3330.66s]  instances that we have used almost in the order of 100, 110k. We also evaluated on big bench
+[3330.66s -> 3337.30s]  hard which is kind of also roughly reasoning type tasks. And then we found that this FLAM
+[3337.30s -> 3346.98s]  data set could be a good proxy to give us boosts on BPH. Some of the verification steps are
+[3346.98s -> 3351.94s]  very easy like math and reasoning. It's pretty much just this if then else which is if
+[3351.94s -> 3359.22s]  prediction is equal to this number say yes otherwise zero. Some of it for example for
+[3359.22s -> 3364.98s]  constraints and constraint satisfaction and verifications it's a little bit more challenging
+[3364.98s -> 3369.30s]  because we want to see which of these constraints are satisfied and then we see
+[3369.30s -> 3374.34s]  which percentage of those constraints are satisfied. But in general pretty similar, pretty easy.
+[3375.54s -> 3382.34s]  So now let's look at the curves. So I'm just showing this whole graph but now let me
+[3382.34s -> 3392.66s]  go a little bit deeper here. Okay so what does this curve tell us? So on the x-axis we see
+[3392.66s -> 3400.82s]  the training steps and then on the y-axis we show the GSM8K the math reasoning capability.
+[3402.02s -> 3407.70s]  This dashed green line is the outcome of the supervised fine-tuning model, the pink one is
+[3407.70s -> 3414.98s]  the outcome of the DPO model. Okay so we applied RLVR at two stages just to see if it
+[3414.98s -> 3421.06s]  makes improvement both at the end of supervised fine-tuning and also at the end of DPO.
+[3421.78s -> 3428.26s]  What do we see? This is interesting. Curves show results are going up. We don't see that much
+[3428.26s -> 3435.38s]  over parameter optimization here. The gains on top of SFT is much higher but the biggest gain
+[3435.38s -> 3442.58s]  or like the highest number is achieved by when we apply it on DPO. Same things on math.
+[3442.58s -> 3448.42s]  Again at the beginning we saw a little bit drop when we started with DPO but then again
+[3448.42s -> 3458.98s]  start to see improvements. If eval, which is the verification on the constraint optimization
+[3458.98s -> 3466.50s]  and like instruction following, when we start from SFT we saw significant gains. On DPO we saw
+[3466.50s -> 3471.14s]  less gains. We are still investigating on this but we think the reason is we did not have
+[3471.14s -> 3480.42s]  enough data. And interestingly when we used FLAN data, we did not finally
+[3480.42s -> 3486.10s]  include this in our RLVR mix but it was an interesting observation just to see that
+[3487.14s -> 3494.02s]  doing some reinforcement learning on FLAN it shows some improvements on some of the reasoning
+[3494.02s -> 3500.26s]  tasks and it's worth exploring this much more and we are doing it just seeing what other types
+[3500.26s -> 3504.66s]  of verifiable tasks out there such that we can apply RLVR on that.
+[3507.70s -> 3514.42s]  We also applied the same recipe on OLMO too and we can kind of build upon this. This is
+[3514.42s -> 3522.34s]  actually a very interesting setting. We stacked a bunch of reinforcement learning steps, one on
+[3522.34s -> 3529.30s]  top of each other. So here we started doing a bunch of training and we kind of cut it here.
+[3529.30s -> 3536.74s]  This is the average score and then again started a little bit another step and then kind of
+[3536.74s -> 3542.18s]  stacked multiple RLVRs and then did multiple stages and over time we saw even more improvements.
+[3542.18s -> 3549.38s]  So the pipeline is there. We can do multiple kind of tries with this to see if we see
+[3550.02s -> 3558.42s]  bigger gains or not. Okay, I want to take a step back and then talk about this thing.
+[3558.42s -> 3567.30s]  RLVR is not really new. This is actually the simplest way of using RL with kind of data.
+[3568.18s -> 3575.62s]  But why did it work now? We realize it's because now base model qualities have improved a lot,
+[3576.34s -> 3582.02s]  therefore RL can boost upon them. Okay, so what does this curve show me? So
+[3582.90s -> 3592.10s]  these are training steps. This is the accuracy and the green bar shows when we do RLVR applying
+[3592.10s -> 3598.74s]  on GPT-2, like the model that existed long time ago, which was really bad. So the original
+[3598.74s -> 3603.54s]  number, like the base numbers, are very low, unlike some of these reasoning tasks. Therefore
+[3603.54s -> 3610.18s]  reinforcement learning didn't show improvements. However, because now our base models are improving,
+[3610.18s -> 3615.06s]  then applying RLVR on top of them shows significant gains. And this is very interesting
+[3615.06s -> 3622.02s]  to observe because now model can start exploring more and then exploit it once it sees it is
+[3622.02s -> 3629.46s]  following with this rule-based reward. Okay, so putting all these together,
+[3630.58s -> 3638.90s]  we scale this up from 7B to 70B to 405B. And this is kind of our results, how it looks.
+[3640.26s -> 3647.06s]  On the pink portion, you see the results of the TULU model applied on LAMA 405B.
+[3648.74s -> 3656.02s]  Here are the results of SFT, DPO, and the final out of RLVR. Again, this is the result
+[3656.02s -> 3663.54s]  comparing with DeepSeqv3 and GPT-4.0, the latest version. On average, we are very close
+[3663.54s -> 3669.62s]  to GPT-4.0, better than DeepSeqv3. And it's a very exciting area.
+[3671.86s -> 3679.62s]  Here are showing our results on 8B and 70B models, again, comparing with open-weight models
+[3679.62s -> 3688.10s]  like Kuen instruct and LAMA instruct, which like better significantly, and also at 70B, where
+[3688.10s -> 3694.26s]  the smaller model are also comparable to the kind of a smaller size of GPT-4.0 or cloud HICU.
+[3695.78s -> 3705.86s]  Okay, one other interesting observation was RLVR works better at scale. So here shows our
+[3705.86s -> 3714.34s]  improvement on math in two cases. Oh, I didn't put legend. So here on the left-hand side,
+[3714.34s -> 3722.34s]  you see how much improvement we see on 70B model. And this is how much improvement we saw
+[3722.34s -> 3727.94s]  on the right-hand side. You see how much improvement we saw at 405B. And as you see here,
+[3727.94s -> 3733.54s]  we started from 60 went all the way to 67, like seven point improvement on math.
+[3734.66s -> 3744.10s]  Whereas at the 70B scale, we go from 42 to 45. So it was interesting and kind of
+[3744.10s -> 3748.50s]  aligned with our hypotheses that when we have better base, we can start seeing a lot
+[3748.50s -> 3756.50s]  more improvement during this RLVR step. So we are exploring a lot and we know the
+[3756.50s -> 3762.74s]  community is also exploring a lot in this setup. For example, we have changed our
+[3762.74s -> 3769.46s]  optimization algorithm from PPO to GRPO, which I'm not going to go into the details, but now
+[3769.46s -> 3778.82s]  here are our significant improvements. So as a reference, 203, 405B has 67%. And now
+[3780.58s -> 3787.70s]  when we apply our recipe on QUEN math model, and then we apply GRPO, now we are already
+[3787.70s -> 3794.66s]  getting 84.6, which is very exciting, shows a lot of progress can be done in this domain.
+[3795.22s -> 3803.94s]  Okay. So this is it. So these are putting together all our 203 recipe. I first talked
+[3803.94s -> 3811.46s]  about how we got ingredients ready by collecting data. Then we have different types of data at
+[3811.46s -> 3816.98s]  different stages. And we showed how we do supervised fine tuning or instruction fine tuning,
+[3816.98s -> 3822.82s]  preference tuning, which we looked at the preference data and RLVR, which we just looked
+[3823.46s -> 3828.90s]  at this verification step. And then putting all these together, we have 203.
+[3830.26s -> 3838.74s]  Here is the model. We also have the demo of the model available in playground.lnai.org,
+[3838.74s -> 3845.54s]  where you can play with this. We are using this data to improve the next version of the models
+[3846.50s -> 3854.50s]  and kind of improve capabilities of 203. Also all our code data and the pipeline and the
+[3854.50s -> 3861.62s]  framework is ready. So whatever post-trained model or adapted model you want to build,
+[3861.62s -> 3868.34s]  we argue it's really important to bring in some of the general capabilities to get better model.
+[3868.34s -> 3876.66s]  So I would encourage you to use that data. Okay. So this is a fully open post-training recipe.
+[3876.66s -> 3882.98s]  We have applied it to Loma-based model, Kuem-based model, and also on our Olmo models,
+[3883.62s -> 3888.90s]  which shows significant boosts on the kind of Olmo-based models as well.
+[3889.78s -> 3896.90s]  Okay. So with that, I would end my discussions on post-training and I want to very briefly
+[3896.98s -> 3904.50s]  talk about test time inference. Okay. Which is a very kind of popular topic these days.
+[3904.50s -> 3911.30s]  And a lot of people are looking at how to bring in test improvements, particularly in reasoning
+[3911.30s -> 3920.42s]  during test time inference. So I first want to talk about this paper called SWAN, which is led
+[3920.42s -> 3929.06s]  by amazing Nicholas Manninghoff. And it is actually the very minimal recipe for reasoning
+[3929.06s -> 3937.94s]  and test time scaling. So let me tell you how it works. Very similar to almost everything
+[3937.94s -> 3946.02s]  else that is happening in language models, it relies on really carefully curated data. We call
+[3946.02s -> 3952.74s]  it S1K. Then we apply test time scaling algorithm, a very simple one, and this is the
+[3952.74s -> 3962.82s]  outcome, SWAN. Okay. How do we curate data? We looked at a very large collection of math,
+[3962.82s -> 3971.06s]  logical reasoning, probability questions, and so on, like kind of more higher level reasoning data.
+[3971.06s -> 3977.22s]  It's even beyond the 2.3 data where we mostly looked at grade school and kind of math, which was
+[3978.34s -> 3983.06s]  highest school, a little bit college level math. Here we are looking at much more complex,
+[3983.06s -> 3990.02s]  like even Olympiad or math competition type data. So we looked at all these logic puzzles,
+[3990.02s -> 3998.26s]  math, and we collected 59K questions. But then we did a lot of filtering here. We filtered
+[3998.26s -> 4006.02s]  for quality. We got into 52K data. We picked the ones that were more difficult, and then we
+[4006.02s -> 4013.06s]  moved to 24K. And then we emphasized diversity, and we kind of removed the ones that they were
+[4013.06s -> 4021.78s]  very similar. We ended up having 1K. So spoiler alert on our benchmarks using 59K data and 1K
+[4021.78s -> 4029.94s]  data, almost similar, which is very interesting. So once we collected these prompts, we started to
+[4029.94s -> 4037.30s]  distill reasoning traces and answers. So for example, when we have a problem like this,
+[4037.30s -> 4045.38s]  we gave this problem, which is among our like S1K data, and then we annotated the kind of
+[4045.46s -> 4050.66s]  reasoning chains, chain of thoughts with Google thinking Gemini model.
+[4052.02s -> 4058.10s]  Also, we made sure that this data also includes some of the thinking tokens like,
+[4058.10s -> 4063.38s]  okay, this happens, but let me think more, and so on. So we use that kind of Google
+[4063.38s -> 4071.14s]  thinking annotations. And most recently in S1.1, we replaced Google Gemini result annotations with
+[4071.14s -> 4076.42s]  DeepSeek R1 results, where it actually improved the final results,
+[4076.42s -> 4082.26s]  which was very interesting to see. Okay, so this is the final collection of data.
+[4083.54s -> 4089.54s]  The data varies across all these domains, from geometry, number theory, to even
+[4090.42s -> 4094.02s]  very smaller portion on control theory, astronomy, and so on.
+[4094.98s -> 4100.58s]  Okay, so this is the data. Test time scaling, the simplest method possible,
+[4100.58s -> 4108.34s]  which kind of made all of us very surprised and kind of excited, where we focused on
+[4108.34s -> 4113.38s]  budget forcing, where we have a question like this, how many Rs are in Raspberry?
+[4113.38s -> 4122.02s]  We let the model generate a response, but then if it didn't hit the allocated token budget,
+[4122.66s -> 4130.34s]  we added a token called weight, and then let the model generate and basically force the model
+[4130.34s -> 4135.70s]  generate more in order to respond to that. We are kind of using this weight token,
+[4135.70s -> 4140.42s]  we are hinting the model that we are not sure if your answer is correct.
+[4140.42s -> 4146.34s]  Okay, so one more thing to add, we did not train a model to decide when to add weight,
+[4146.34s -> 4151.22s]  we kind of naturally added weight when it didn't hit our token budget.
+[4152.10s -> 4157.38s]  And then we let the model generate more until the final answer is achieved, is obtained.
+[4158.18s -> 4166.10s]  Okay, so now training our results, we trained a QAN32B model on this data,
+[4166.10s -> 4173.30s]  and here are our results. On the x-axis, we are seeing the number of tokens,
+[4173.30s -> 4178.90s]  the average thinking time or the number of tokens that are generated, and then the accuracy.
+[4178.90s -> 4186.50s]  So when we push the model to just generate 512 tokens, here is the accuracy, right, it's like 65.
+[4187.30s -> 4194.74s]  One more thing, if the model wants to generate more tokens than the budget,
+[4194.74s -> 4198.82s]  we put end of token there, or end of a sentence there.
+[4198.82s -> 4209.70s]  Okay, so with that we control the generation, so we go from 512 to 2048 for MAT 500 data,
+[4209.70s -> 4214.98s]  and as you see over time with more generated tokens, we see this scaling trend.
+[4216.58s -> 4221.46s]  On this MAT competition data, which is kind of much more challenging data,
+[4221.46s -> 4229.22s]  we even want the model to generate longer and longer outcome, and as you see here,
+[4229.22s -> 4234.66s]  we see again the same trend, and also PhD level GPQA diamond, again,
+[4234.66s -> 4238.34s]  generating longer and longer tokens, which is very exciting.
+[4239.54s -> 4247.54s]  Okay, so zooming in, here are a little bit of how it works. I kind of explained it already.
+[4247.54s -> 4251.94s]  So when the model wants to generate more tokens,
+[4251.94s -> 4257.06s]  we push end of sentence to be able to get these kind of shorter sequences,
+[4258.34s -> 4262.98s]  and when we want the model to generate longer, like even go beyond
+[4263.62s -> 4268.66s]  a thousand tokens, we push these away tokens and force the model to generate more.
+[4270.66s -> 4275.22s]  We compare different types of test time scaling methods.
+[4275.62s -> 4282.26s]  Here are the budget forcing, this kind of steeper curve shows the budget forcing or
+[4282.26s -> 4289.62s]  sequential scaling. We also did parallel scaling versus real majority voting, where
+[4289.62s -> 4294.18s]  we let the model generate multiple paths and then kind of do majority voting or like the
+[4294.18s -> 4299.86s]  self-consistency check, and we saw some gains but not that significant, right? So
+[4299.86s -> 4303.86s]  this kind of budget forcing seemed much more successful.
+[4306.02s -> 4311.78s]  And much simpler. So here are some of these ablations that we have done in the model.
+[4313.62s -> 4319.14s]  So this is the final results on the left hand side of S1K on all those three data sets.
+[4320.42s -> 4329.14s]  Comparing with full collection of data, like using 59k, we see that a little bit higher numbers
+[4329.78s -> 4340.02s]  we get with the full data on AIME, but in other cases pretty much similar. And our S1K
+[4340.02s -> 4346.18s]  data is really high quality. If we just use random or like just do a bunch of kind
+[4346.18s -> 4351.62s]  of constraints to find that 1,000 data points, the results are much, much worse.
+[4352.42s -> 4360.26s]  We also did a bunch of scaling ablations. When we don't increase any kind of, let the model
+[4360.26s -> 4365.70s]  to train longer, this is the base number. So this is, these are the gains that we are having
+[4365.70s -> 4373.14s]  with this test time scaling. If we replace weight with other tokens, like alternatively,
+[4373.14s -> 4379.30s]  or just let the model generate without adding any strings, we saw less gains.
+[4382.42s -> 4389.54s]  Okay. So these are our results for test time scaling. I also want to highlight
+[4389.54s -> 4397.14s]  two other approaches that we have been cooking up over time. And the idea is,
+[4397.14s -> 4402.50s]  and I'm not going to talk about any details on these next two methods, but the idea is we
+[4402.50s -> 4410.02s]  want to be very aware and do self-guided generation at inference time. In this work, self-reg,
+[4410.82s -> 4418.82s]  we build a rag-based model, retrieval augmented generation model. But in this setting,
+[4418.82s -> 4426.26s]  we train the language model to generate tokens, but then criticize its outcomes and self-improve.
+[4426.26s -> 4432.50s]  And we did it total, the whole loop with generating these critic tokens,
+[4433.30s -> 4439.46s]  where the model generates responses, but once in a while it generates tokens to say,
+[4439.46s -> 4447.22s]  if the generated response makes sense or not, or if the retrieved documents make sense or not.
+[4447.22s -> 4454.50s]  So these are also very promising directions in pushing for test time scaling. We also showed
+[4454.50s -> 4463.62s]  that how this kind of self-guided improvement loop helps in synthesizing scientific literature
+[4463.62s -> 4470.02s]  and answering very complex questions about scientific tasks that require lots and lots
+[4470.02s -> 4475.14s]  of reasoning. So please check out these two papers. The results are very interesting.
+[4476.42s -> 4484.26s]  We also have a demo, which is openscholar.alan.ai, where you can play with this system,
+[4485.38s -> 4491.62s]  type your question, and then see how it can answer and combine different pieces of information,
+[4491.62s -> 4495.54s]  synthesize knowledge, and then answer queries for this type of task.
+[4497.14s -> 4507.94s]  Okay. This is a demo and I would let you play with it. So I want to very briefly also talk
+[4507.94s -> 4516.66s]  about how reasoning can get integrated during pre-training. So far, what I talked about was
+[4516.66s -> 4524.34s]  post-training, integrating things at inference time, and now let's kind of go backward and then
+[4524.34s -> 4530.90s]  see how these things can be added during training. Remember when I said RLVR didn't work
+[4530.90s -> 4537.78s]  when we had weaker base model. So we need to push to have stronger and stronger base models.
+[4537.78s -> 4544.98s]  Okay. So this is kind of a, when we say training base model, it's not just training with the
+[4544.98s -> 4551.62s]  next token prediction where learning rate stays the same and so on. We usually do multiple stages
+[4551.62s -> 4559.30s]  of training. In this first stage, we have the warm-up period, which is a very standard method,
+[4559.94s -> 4566.82s]  but then we use cosine learning rate to train these models with the next token prediction on
+[4566.82s -> 4574.66s]  trillions of tokens. Okay. But then toward the end of training, we curate really, really high
+[4574.66s -> 4581.62s]  quality data in a lot of cases designed to do more complex reasoning. And then we take the
+[4581.62s -> 4587.38s]  model that is here, the learning rate that is here, and then kind of a newly to zero.
+[4588.42s -> 4596.10s]  Sometimes this stage is called mid-training. The role of these 50 billion tokens is very
+[4596.10s -> 4602.34s]  important because we still do next token prediction, but these tokens are very kind of,
+[4602.34s -> 4610.18s]  are trying to focus on very complex tasks and emphasize on more reasoning oriented setting.
+[4610.82s -> 4616.90s]  Okay. And roughly this is called nowadays pre-training and then mid-training.
+[4618.82s -> 4625.38s]  So the pre-training stage, it uses most of the budget in the training stage.
+[4625.38s -> 4632.26s]  It uses trillions of tokens. It's pretty much unstructured, diverse text, lots of it come from
+[4632.26s -> 4638.50s]  web data. And we try to use the best type of data that we could collect given the compute
+[4638.50s -> 4645.70s]  budget that we have. During mid-training, it's almost 1% of training. The idea is we're going
+[4645.70s -> 4651.78s]  to up-sample high quality data that we have during pre-training and then to make sure that
+[4651.78s -> 4657.70s]  we have some in-domain data. But then we make sure to bring some even supervised fine-tuning
+[4657.70s -> 4664.90s]  data. We bring in a lot of reasoning type data, coding data, and we kind of try to emphasize
+[4664.90s -> 4670.58s]  the quality of the data here. Okay. So this is, for example, the pre-training data mix that
+[4670.58s -> 4678.74s]  we use for OMA2, which some of the web pages, some code data, I mean, the left most column
+[4678.74s -> 4684.82s]  matters less, the right most, the categories make more sense to follow right now. Web pages,
+[4684.82s -> 4690.90s]  code data, academic papers, STEM papers, some math web pages, and math proof, and so on.
+[4690.90s -> 4698.90s]  And in total, we have roughly 4 trillion tokens. But then during mid-training stage,
+[4698.90s -> 4706.66s]  we started to bring in lots and lots of math data, which started to patch the math reasoning
+[4706.66s -> 4711.22s]  capabilities that the model didn't originally have. For example, this was a very interesting
+[4711.22s -> 4718.02s]  observation. We realized at the end of this stage, the OMA model was not that good in doing
+[4718.02s -> 4724.98s]  multiplication, but much better in doing addition and subtraction. So we started integrating
+[4724.98s -> 4732.74s]  some multi-synthetic multiplication data in the mid-training set, right? So you kind of observe,
+[4732.74s -> 4738.18s]  do a lot of evaluations, and then figure out, do some patching to improve the model,
+[4738.18s -> 4744.82s]  and then inject that type of knowledge in the model. So as you see in our mid-training mix,
+[4744.82s -> 4755.14s]  we included a lot of reasoning type data. And then we started evaluating these models.
+[4755.14s -> 4762.34s]  So this is kind of evaluating our pre-training and mid-training together. On average,
+[4762.42s -> 4770.02s]  we see significant boost in both settings, like from 50 we go to 60, from 56 we go to 68.
+[4770.02s -> 4777.46s]  And the biggest gains are on GSM8K, which is our math reasoning capabilities, and DROP,
+[4777.46s -> 4782.82s]  which is also question answering with math data, which is showing significant boost there,
+[4782.82s -> 4791.46s]  which is very interesting. Okay. So putting all these together, here are our OMA2 results,
+[4791.46s -> 4799.46s]  which is on par with OMA3-8B. Please refer to the paper to look at the kind of the 13B,
+[4799.46s -> 4806.58s]  and most recently we're going to have 32B results. Okay. So with that, I want to finish
+[4806.58s -> 4813.86s]  this, that we've seen a lot of progress in today's AI work. Still, we need a lot of
+[4813.86s -> 4820.34s]  research and innovation in many newer tasks. So here I've listed a lot of them, a lot of them
+[4820.34s -> 4827.62s]  relevant to reasoning, agents, language models for other domains, and so on, which I really
+[4827.62s -> 4836.34s]  would be excited if I see you work on that. With that, I want to thank a lot of people who
+[4836.34s -> 4843.62s]  are in my team, in the OMA and Tulu projects, and also my students at UW, and a lot of people
+[4843.62s -> 4851.46s]  at AI2. So thank you very much. Also, if you are interested, we are hiring for all these projects.
+[4852.02s -> 4853.46s]  Thank you.

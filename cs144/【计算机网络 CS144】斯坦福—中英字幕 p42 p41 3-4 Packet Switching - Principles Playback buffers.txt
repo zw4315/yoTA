@@ -1,0 +1,222 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.56s]  By now you know how to calculate the end-to-end delay of a packet across a network, and you
+[4.56s -> 9.52s]  know that the queuing delay makes the end-to-end delay variable.
+[9.52s -> 13.24s]  Most of the applications that we use don't particularly care about this variability
+[13.24s -> 14.24s]  in end-to-end delay.
+[14.24s -> 18.04s]  For example, when we're downloading a web page or sending an email, we want it to
+[18.04s -> 23.24s]  complete quickly, but we don't particularly mind if individual packets take 10 or 12
+[23.24s -> 26.28s]  milliseconds to reach the other end.
+[26.28s -> 29.12s]  But there are some applications that really do care.
+[29.12s -> 34.28s]  They have to care about the queuing delay, particularly what we call real-time applications
+[34.28s -> 37.32s]  like streaming video and voice.
+[37.32s -> 39.68s]  So let's take a look at an example.
+[39.68s -> 44.20s]  Over the next few minutes I'm going to explain why queuing delay makes life hard
+[44.20s -> 46.88s]  for these applications.
+[46.88s -> 51.36s]  It serves as a good illustration of queuing delay and how we might mitigate the problem
+[51.36s -> 53.12s]  in practice.
+[53.12s -> 57.44s]  Basically, because the applications don't know precisely when the packets are going
+[57.44s -> 64.20s]  to show up, they can't be sure they will have a voice or video sample in time to deliver
+[64.20s -> 66.04s]  it to the user.
+[66.04s -> 71.88s]  So they build up a reserve of packets in something called the playback buffer.
+[71.88s -> 75.40s]  So we're going to take a look at playback buffers.
+[75.40s -> 78.80s]  You've actually all seen a playback buffer before.
+[78.80s -> 86.12s]  This is a little screenshot from the bottom of a YouTube client, and the red line on
+[86.12s -> 93.32s]  the left over here, this shows the video that we've already watched.
+[93.32s -> 98.44s]  This here is the point of playback, this dot shows where we've got to.
+[98.44s -> 106.28s]  And this area over here, this grey line shows the video that has been buffered, or the
+[106.28s -> 110.76s]  packets that have been buffered, that have not yet been played back to the user.
+[110.76s -> 113.24s]  And this is the part that we're going to be interested in.
+[113.28s -> 115.80s]  This here is the playback buffer.
+[118.80s -> 123.96s]  So the client deliberately tries to build up that playback buffer to try and get ahead
+[123.96s -> 128.84s]  just in case some of the packets are delayed or they don't arrive in time, and in case
+[128.84s -> 131.80s]  there's some kind of temporary outage.
+[131.80s -> 137.00s]  So when designing the playback buffer, we have to think about how far ahead we want
+[137.00s -> 137.92s]  the buffer to get.
+[137.92s -> 142.52s]  So if we were to build up the buffer all the way over here and build up more packets,
+[142.52s -> 149.08s]  then we've absorbed more data and we can write out more variability in the queuing delay.
+[149.08s -> 154.84s]  If we make it very short down here, if there's a big change in the queuing delay or a sudden
+[154.84s -> 159.24s]  increase in the queuing delay, we may run out of packets because they may not show
+[159.24s -> 160.16s]  up in time.
+[160.16s -> 166.08s]  So designing this playback buffer is pretty key to making this application work.
+[166.08s -> 169.72s]  So how much we want to accumulate in the buffer when we start playing back the video
+[169.72s -> 171.04s]  to the user is key.
+[171.08s -> 176.04s]  So let's take a closer look at this.
+[176.04s -> 179.20s]  This is the point that we're playing.
+[179.20s -> 181.20s]  This is the amount that we've buffered.
+[181.20s -> 183.04s]  This is the contents of the playback buffer.
+[183.04s -> 186.88s]  If we look down into a little bit more detail, so we're going to take as an example
+[186.88s -> 190.44s]  this setup here.
+[190.44s -> 196.20s]  So imagine we're watching a YouTube video on the laptop on the right, so over here,
+[196.20s -> 203.88s]  and it's streaming video from the server, the YouTube server, on the left over here.
+[203.88s -> 209.80s]  So we're going to assume that the video is being streamed at one megabit per second.
+[209.80s -> 211.76s]  Now this is just a made-up number.
+[211.76s -> 213.84s]  There's all sorts of rates that it could be streamed out.
+[213.84s -> 217.56s]  This is just going to make it easy for us to think about.
+[217.56s -> 221.52s]  And it's going to pass through several routers along the path, one, two, and three
+[221.52s -> 223.92s]  on the figure here, but it could be many more than that.
+[224.16s -> 230.12s]  It'd be very common for our packets to go through 10 or 15 routers on the path from
+[230.12s -> 232.92s]  YouTube to our client.
+[232.92s -> 241.56s]  And the thing that we're going to be concerned most about is the queuing delay here.
+[241.56s -> 245.32s]  So there's three places where we can experience queuing delay, and that variable
+[245.32s -> 251.04s]  queuing delay is going to mean that our packets show up at slightly unpredictable times.
+[251.08s -> 254.08s]  So let's look at a graph of what this might look like.
+[254.08s -> 259.80s]  This graph shows the cumulative number of bytes sent by the server over time as a
+[259.80s -> 260.92s]  function of time.
+[260.92s -> 267.32s]  Because it's sending at a fixed rate of one megabit per second, it means that the
+[267.32s -> 272.32s]  line is straight, the cumulative number of bits or bytes that it sent as a function
+[272.32s -> 274.64s]  of time is a straight line.
+[274.64s -> 279.64s]  And so after one second, it will have sent a megabit, a million bits, and after 10
+[279.68s -> 283.80s]  seconds, it will have sent 10 million bits.
+[283.80s -> 289.04s]  Because of the variable queuing delay in the network, the cumulative arrivals at the
+[289.04s -> 291.64s]  laptop look a little bit different.
+[291.64s -> 293.84s]  They might look like this.
+[293.84s -> 296.40s]  So you see this wiggly line that I've got here.
+[296.40s -> 297.12s]  What does this mean?
+[297.12s -> 300.72s]  It means that if we take the first byte here, because they're all arriving in first
+[300.72s -> 304.44s]  come first serve order, we can just draw horizontally across here and see when a
+[304.44s -> 306.48s]  particular byte arrived.
+[306.48s -> 309.68s]  So this one arrived here after that delay.
+[309.68s -> 316.00s]  So the x-axis is going to tell you how long that particular byte took together.
+[316.00s -> 318.12s]  Notice I'm saying bits and bytes.
+[318.12s -> 321.68s]  It doesn't matter what our units are here.
+[321.68s -> 327.24s]  So if we would take any point on here, let's say this particular byte, and we
+[327.24s -> 328.24s]  draw horizontally.
+[328.24s -> 331.60s]  I'm not very good at drawing straight lines, but that's supposed to be horizontal.
+[331.60s -> 337.12s]  And right here is the time at which that particular byte arrived at the laptop.
+[337.12s -> 342.40s]  So you can see that the delay is measured by the horizontal distance, the horizontal
+[342.40s -> 343.32s]  distance here.
+[343.32s -> 347.20s]  And you can see that it's a variable number depending on the queuing delay encountered
+[347.20s -> 351.64s]  by each of the individual packets.
+[351.68s -> 362.16s]  We can also see at a given time how big the amount of buffering along the path,
+[362.16s -> 367.76s]  basically how many bytes are in the path from the server to the client.
+[367.76s -> 373.56s]  And that would be shown by the vertical distance here, because it says that at a
+[373.56s -> 378.24s]  particular time, this is the number that have been sent, and this is the number
+[378.24s -> 380.12s]  that have been received.
+[380.20s -> 382.48s]  So we can tell quite a lot of information from this graph, and we're going to be
+[382.48s -> 385.84s]  seeing some more examples of this type of graph later.
+[385.84s -> 390.88s]  Horizontal axis is the delay, the vertical axis tells us how many bytes are
+[390.88s -> 394.92s]  buffered right now in the network.
+[394.92s -> 400.36s]  Okay, so let's get back to our example.
+[400.36s -> 405.00s]  So the biggest component of the delay is the propagation and packetization delay.
+[405.00s -> 407.72s]  That's the fixed component.
+[407.72s -> 414.80s]  So we actually know quite a bit about the shape of this line.
+[414.80s -> 417.60s]  So the actual shape could look very different.
+[417.60s -> 418.68s]  I just made up this shape.
+[418.68s -> 420.12s]  However, we do know a couple of things.
+[420.12s -> 425.44s]  First, the overall end-to-end delay can't be less than the packetization and
+[425.44s -> 426.12s]  propagation delay.
+[426.12s -> 427.64s]  They're a lower bound.
+[427.64s -> 432.84s]  So this has a lower bound in the horizontal distance between the two here.
+[432.84s -> 436.36s]  Whoops.
+[436.40s -> 438.56s]  It also has an upper bound.
+[438.56s -> 445.68s]  So the buffers in the routers, the packet buffers here, they're of finite size.
+[445.68s -> 450.12s]  So there's a maximum delay that any packet can experience going through one of
+[450.12s -> 451.36s]  those buffers.
+[451.36s -> 455.68s]  So if we add up the maximum of each of these, add it to the packetization delay
+[455.68s -> 458.60s]  and the propagation delay, it's going to represent an upper bound.
+[458.60s -> 461.48s]  So we have a lower bound and we have an upper bound.
+[461.48s -> 464.80s]  But the upper bound is not very useful because it can be very, very large.
+[464.84s -> 468.96s]  In practice, these routers may have half a second of buffering.
+[468.96s -> 473.24s]  So if we're going through many hops, it would mean a ridiculous difference
+[473.24s -> 475.72s]  between the lower bound and the upper bound.
+[475.72s -> 483.32s]  So that's of not much use to us.
+[483.32s -> 488.96s]  We also know that the cumulative arrivals on the right-hand side are
+[488.96s -> 490.28s]  non-decreasing.
+[490.28s -> 493.72s]  In other words, this value is always increasing because it's the cumulative
+[493.72s -> 499.40s]  number of bytes and obviously we can't have a negative number of bytes show up.
+[499.40s -> 504.80s]  Finally, one more thing that we know is because we know how fast or there is an
+[504.80s -> 509.76s]  upper bound on the rate of that last link, it could be a 100 megabit per second
+[509.76s -> 514.32s]  link or a gigabit per second link, it tells us that the instantaneous arrival
+[514.32s -> 518.52s]  rate here, the gradient of this line here, can't exceed the speed,
+[518.52s -> 521.08s]  the data rate of that link.
+[521.08s -> 527.44s]  Okay, so with all of those caveats, let's look at what the client actually needs to do
+[527.44s -> 530.36s]  to make all of this work.
+[530.36s -> 537.40s]  So this red line here shows the playback rate of the video to the user.
+[537.40s -> 544.56s]  So what this tells us is that at this time here, it's playing back the first byte that
+[544.56s -> 550.32s]  was sent by the server, which is, of course, the first byte received by the receiver.
+[550.36s -> 556.12s]  So if at any point we take a horizontal line across here, it will tell us the time that
+[556.12s -> 561.60s]  a particular byte was sent, received, and then played back.
+[561.60s -> 572.92s]  What that means is that the horizontal distance here tells us, for example, the horizontal
+[572.92s -> 579.52s]  distance here tells us how long a particular byte has been buffered.
+[579.52s -> 583.92s]  So at any one time, we can tell how long it sat in the playback buffer before it was
+[583.92s -> 586.92s]  played back to the receiver.
+[586.92s -> 590.56s]  We also know how many bytes there are in the playback buffer.
+[590.56s -> 594.40s]  It's the vertical distance here at any one time.
+[594.40s -> 597.32s]  It tells us what the occupancy of the playback buffer is.
+[597.32s -> 600.64s]  So we can see that the playback buffer was very small to start with.
+[600.64s -> 604.88s]  It accumulates, it accumulates, it accumulates, gets to a very large value here, then
+[604.88s -> 610.36s]  gets smaller as we fall behind, as we fall behind, fall behind, fall behind.
+[610.36s -> 611.36s]  Almost goes empty here.
+[611.36s -> 615.40s]  We're very lucky that there must have been some bytes that showed up late.
+[615.40s -> 621.04s]  We just avoided underrunning the buffer, and then at some time we built up a little
+[621.04s -> 624.44s]  bit more, et cetera, as we go up here.
+[624.44s -> 628.28s]  So we're playing back at a constant one megabits per second.
+[628.28s -> 631.44s]  That's what's being played back to the user.
+[631.44s -> 632.78s]  So this is a good example.
+[632.78s -> 634.12s]  We picked the right value.
+[634.36s -> 635.36s]  We waited long enough.
+[635.36s -> 637.08s]  We built up enough buffer.
+[637.08s -> 640.64s]  Everything worked out fine in the end.
+[640.64s -> 646.68s]  So if we take a look inside the client, it looks roughly like this.
+[646.68s -> 652.44s]  So the playback buffer is a buffer held in the memory of the client.
+[652.44s -> 657.04s]  The client is picking the playback point that's this here.
+[657.04s -> 662.76s]  This is the point at which it's reached, and that's that dot that we see on the YouTube
+[662.76s -> 663.76s]  client.
+[664.40s -> 667.40s]  After the bytes have been taken out of the playback buffer, they're put into a video
+[667.40s -> 673.40s]  decoder to turn them back into video, and then played out on the screen.
+[673.40s -> 678.24s]  Okay, let's look at an example of when things don't quite work out fine.
+[678.24s -> 682.86s]  So the same example again, bytes sent by the server on the left, received by the laptop
+[682.86s -> 684.82s]  on the right.
+[684.82s -> 688.72s]  But in this particular case, we didn't wait long enough before playing out the first
+[688.72s -> 691.22s]  byte.
+[691.22s -> 696.46s]  You can see that here we've waited a little less time from when the first byte was received
+[696.46s -> 699.22s]  until we play out that first byte.
+[699.22s -> 702.96s]  And of course, once we start playing out the bytes, we're committed.
+[702.96s -> 705.50s]  We've got to play them out at one megabits per second.
+[705.50s -> 710.08s]  Otherwise we can't keep putting the video on the screen.
+[710.08s -> 713.50s]  So on this particular case here, everything looks fine to start with.
+[713.50s -> 717.06s]  The buffer has a nice occupancy, nice occupancy, nice occupancy.
+[717.06s -> 721.82s]  It gets smaller and smaller and smaller until eventually at this point here we have a problem.
+[721.82s -> 727.86s]  The buffer goes empty, which means we've got no bytes to decode and put onto the screen.
+[727.86s -> 731.78s]  So all of this area here is a time in which we're in deficit.
+[731.78s -> 733.94s]  This is not good.
+[733.94s -> 735.06s]  What does the client do?
+[735.06s -> 737.28s]  Well, we've all seen this before.
+[737.28s -> 741.38s]  It has to make the buffer bigger, and it does this by rebuffering, by freezing the
+[741.38s -> 745.62s]  screen, waiting for some bytes to accumulate, and so that it can continue.
+[746.22s -> 747.22s]  Okay?
+[747.22s -> 754.22s]  So if you've been watching a video over, this particular video right now, over a slow
+[754.22s -> 760.38s]  link or if you're a long way away and your packets are going through many routers,
+[760.38s -> 763.30s]  you might experience a rebuffering event watching this video.
+[763.30s -> 767.58s]  You can fix the problem by streaming at a slower rate or just simply by downloading
+[767.58s -> 771.76s]  the video ahead of time.
+[771.76s -> 774.70s]  So in summary, with a playback buffer.
+[774.70s -> 777.06s]  When we have packet switching, end-to-end delay is variable.
+[777.06s -> 780.46s]  We use a playback buffer to absorb the variation.
+[780.46s -> 783.66s]  We could just make the playback buffer very big, but then the video would be delayed
+[783.66s -> 785.42s]  at the start.
+[785.42s -> 789.14s]  That was the time that we were waiting from the first byte to arrive until we play it
+[789.14s -> 791.40s]  out onto the screen.
+[791.40s -> 794.56s]  We could make the buffer bigger, but if we were to make that buffer bigger, then
+[794.56s -> 797.74s]  we would have to delay the starting point of the video, which would be kind
+[797.74s -> 800.90s]  of annoying when we're watching our videos.
+[800.90s -> 803.38s]  So therefore applications try to estimate the delay.
+[803.38s -> 807.78s]  They try and estimate the delay from the server to the laptop, set the playback value,
+[807.78s -> 812.30s]  and then resize the buffer if the delay changes.
+[812.30s -> 818.62s]  Okay, so now let's go back to our original expression for the end-to-end delay.
+[818.62s -> 823.88s]  So now we've seen that it has these three components to it.
+[823.88s -> 828.06s]  Packetization delay, propagation delay, and then the variable queuing delay.
+[828.06s -> 834.10s]  And the queuing adds variable and unpredictable delay to the path and to the packets from
+[834.10s -> 835.10s]  end-to-end.
+[835.10s -> 841.10s]  Okay, so in summary, end-to-end delay consists of three components.
+[841.10s -> 842.62s]  The first two are fixed.
+[842.62s -> 847.38s]  Propagation delay, which is the time that it takes for a bit to propagate over a link.
+[847.38s -> 852.66s]  The packetization delay, which is the time that it takes to put a packet onto a link.
+[852.66s -> 857.98s]  And then the queuing delay, which is variable, which is dictated by the time that a
+[857.98s -> 862.82s]  packet spends in the buffers in the routers along the path.
+[862.82s -> 868.06s]  Some applications, as we saw, use playback buffers to absorb this variable queuing delay
+[868.06s -> 874.02s]  to help the applications stream the video back to us at a fixed rate.
+[874.02s -> 876.62s]  So this is the end of packet switching two.
+[876.62s -> 880.58s]  I will see you again in packet switching three, where I'm going to tell you about
+[880.58s -> 885.18s]  a simple, deterministic model that helps us understand this variable queuing delay.

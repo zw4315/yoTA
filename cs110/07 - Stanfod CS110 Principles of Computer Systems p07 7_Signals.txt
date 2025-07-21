@@ -1,0 +1,1814 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 2.48s]  Welcome to Wednesday.
+[2.48s -> 4.48s]  Hope the assignment's going well.
+[4.48s -> 7.12s]  I will go back to my office right after class today.
+[7.12s -> 9.12s]  I guess you get the benefit of coming to class
+[9.12s -> 9.84s]  and overhearing this.
+[9.84s -> 10.72s]  I'll go back to my office today
+[10.72s -> 12.48s]  and then stay there for about 45 minutes
+[12.48s -> 16.00s]  to an hour for anybody who has questions on homework.
+[16.00s -> 18.20s]  I also have office hours tomorrow morning
+[18.20s -> 21.24s]  from 10 until noon.
+[21.24s -> 24.00s]  So feel free to stop by Gates 201
+[24.00s -> 28.24s]  if you want to go to my office hours.
+[28.28s -> 30.40s]  And then, of course, there's regular office hours
+[30.40s -> 34.16s]  with the TAs this evening and tomorrow as well.
+[34.16s -> 36.92s]  The assignment is due tomorrow.
+[36.92s -> 38.36s]  Hopefully it's going all right.
+[38.36s -> 40.34s]  Remember, this is a real file system
+[40.34s -> 42.56s]  you guys are actually looking at.
+[42.56s -> 45.00s]  So all the little nuanced parts to it,
+[45.00s -> 46.20s]  well, that's real life.
+[46.20s -> 48.20s]  That happens in real programs.
+[48.20s -> 52.10s]  So you're getting a little bit of a taste of that.
+[52.10s -> 54.26s]  Let's see, I put a joke up here.
+[55.20s -> 57.80s]  The barman asks what the first one wants
+[58.32s -> 60.20s]  to race conditions to walk into a bar.
+[60.20s -> 62.74s]  So I know it's hilarious, isn't it?
+[64.92s -> 69.64s]  So the joke is, you always have to explain your jokes
+[69.64s -> 72.06s]  if they're not that hilarious, right?
+[72.06s -> 73.80s]  So the joke is that this is a race condition.
+[73.80s -> 75.24s]  We haven't really talked too much
+[75.24s -> 77.72s]  about race conditions yet,
+[77.72s -> 80.28s]  but we will start to see many, many race conditions.
+[80.28s -> 82.06s]  We've seen a few here and there.
+[82.06s -> 84.08s]  A race condition is simply
+[84.08s -> 87.28s]  when two things are happening simultaneously
+[87.64s -> 89.48s]  and you don't know and you can't predict
+[89.48s -> 92.12s]  which one will actually get to where
+[92.12s -> 93.64s]  it's trying to go first.
+[93.64s -> 97.46s]  That becomes an issue if you're doing things
+[97.46s -> 99.72s]  like trying to wait for something to happen
+[99.72s -> 101.16s]  or rather not wait for something,
+[101.16s -> 103.24s]  if you forget to wait for something to happen
+[103.24s -> 106.56s]  and it may be out of order from what you expected.
+[106.56s -> 108.14s]  So you have to think about that.
+[108.14s -> 112.26s]  It makes programming concurrently tricky
+[112.26s -> 113.72s]  because you have to think about that.
+[113.72s -> 115.40s]  So today we're gonna do a few examples
+[115.40s -> 117.32s]  where we're gonna see race conditions
+[117.32s -> 119.84s]  and we're gonna see how one way of handling them.
+[120.76s -> 125.76s]  Okay, so this is what I introduced on Monday.
+[125.76s -> 128.16s]  We're talking about signals now, okay?
+[128.16s -> 133.16s]  And signals are a way to send a message,
+[133.40s -> 134.24s]  or not even a message,
+[134.24s -> 137.68s]  basically a way to say to another process,
+[137.68s -> 139.10s]  something has happened.
+[139.10s -> 142.18s]  You don't even get to say like any message itself.
+[142.18s -> 144.16s]  The best you can do is you can actually pass
+[144.16s -> 148.40s]  a signal number which is the actual signal that gets sent,
+[148.40s -> 149.84s]  but you don't get any other information.
+[149.84s -> 152.14s]  If you want to pass other information
+[152.14s -> 152.98s]  to the other signal,
+[152.98s -> 154.44s]  you have to do it in such a way
+[154.44s -> 157.88s]  that both processes have access to it,
+[157.88s -> 160.00s]  which generally would mean shared memory
+[160.00s -> 163.36s]  or a file or something like that.
+[163.36s -> 165.72s]  And that becomes a little bit trickier to do too.
+[165.72s -> 168.52s]  So it's not like you have this situation
+[168.52s -> 170.12s]  where you're just signaling another process
+[170.12s -> 172.30s]  and then being able to tell it lots of stuff.
+[172.30s -> 174.34s]  It's gotta be a logic sort of thing
+[174.34s -> 176.26s]  like when this signal happens,
+[176.26s -> 179.14s]  you're going to do this because the signal happened.
+[179.14s -> 180.94s]  That's what we're gonna do.
+[180.94s -> 185.06s]  We're gonna see examples as we go through this, okay?
+[185.06s -> 190.06s]  A signal handler is a function that you write
+[191.06s -> 192.86s]  that goes into a process.
+[192.86s -> 195.06s]  And when that signal arrives at the process,
+[195.06s -> 197.58s]  the signal handler gets called, okay?
+[197.58s -> 199.86s]  And the ones that we're gonna focus on
+[199.86s -> 203.70s]  are when a child has some change of state,
+[203.70s -> 206.98s]  when it ends, when it stops, when it's continued.
+[206.98s -> 208.62s]  And we haven't even talked about how you continue
+[208.62s -> 210.72s]  a child that's stopped, but we'll get there.
+[210.72s -> 212.98s]  And that's a function that you write
+[212.98s -> 216.86s]  and it gets called when that happens, okay?
+[216.86s -> 220.90s]  All right, there are lots of different types of signals.
+[220.90s -> 223.22s]  As we said, there's signals that happen
+[223.22s -> 225.30s]  because something bad goes wrong,
+[225.30s -> 229.06s]  like you try to divide by zero, that sends a signal.
+[229.10s -> 231.02s]  Or if you try to, if you do control C,
+[231.02s -> 232.44s]  well, your program gets a signal
+[232.44s -> 234.42s]  that it actually can't block.
+[234.42s -> 237.30s]  It actually is going to kill your program, generally.
+[237.30s -> 239.38s]  There's some limited ways around that,
+[239.38s -> 241.58s]  but that's generally what's gonna happen.
+[241.58s -> 243.98s]  And there are other types of signals
+[243.98s -> 246.74s]  that you can send that are user signals.
+[246.74s -> 247.78s]  There's a couple of separate ones
+[247.78s -> 249.98s]  that are specifically for you to use
+[249.98s -> 251.14s]  for whatever purpose you want.
+[251.14s -> 255.16s]  That's another type of signal, okay?
+[255.16s -> 256.26s]  All right, so as I said,
+[256.26s -> 258.98s]  SIGCHILD is the one we're gonna care the most about,
+[259.86s -> 260.70s]  at least for this class,
+[260.70s -> 264.46s]  and it happens whenever a child process
+[264.46s -> 267.30s]  of a particular parent changes state.
+[267.30s -> 269.00s]  And so we're going to be able to capture that.
+[269.00s -> 271.50s]  That is generally when we're going to want
+[271.50s -> 275.40s]  to do our wait PID for the child
+[275.40s -> 277.42s]  to actually find out what happened to the child.
+[277.42s -> 278.54s]  What did it just do?
+[278.54s -> 279.38s]  Did it end?
+[279.38s -> 281.38s]  Did it die abnormally?
+[281.38s -> 282.34s]  What happened to it?
+[282.34s -> 284.50s]  So we're gonna generally see wait PIDs
+[284.50s -> 288.94s]  inside of the SIGCHILD handler, okay?
+[289.86s -> 293.38s]  The first one that we talked about is this program
+[293.38s -> 294.64s]  that I'm gonna just retype
+[294.64s -> 296.26s]  so that you kind of get the feeling
+[296.26s -> 298.90s]  or you actually kind of see what it is
+[298.90s -> 302.30s]  kind of in more, a little bit slower,
+[302.30s -> 303.78s]  so you can kind of process what's going on.
+[303.78s -> 305.88s]  I know a lot of times I've run through code really fast
+[305.88s -> 307.42s]  and you go, ah, I've never seen that before.
+[307.42s -> 308.36s]  How can I even process it?
+[308.36s -> 310.42s]  So I'll try to like slow down a little bit
+[310.42s -> 311.98s]  in that sense more often
+[311.98s -> 314.90s]  and actually type things out, explain as I'm typing,
+[314.90s -> 318.80s]  give you a second to process it, and so forth.
+[319.80s -> 322.28s]  So let's start out.
+[322.28s -> 323.98s]  We will write a main function.
+[323.98s -> 326.28s]  This is the example that you talked about on Monday
+[326.28s -> 330.20s]  where you have this model of a dad
+[330.20s -> 333.84s]  taking his five children to Disneyland
+[333.84s -> 335.92s]  and he lets them all go off and play.
+[335.92s -> 337.68s]  They each play for a certain amount of time
+[337.68s -> 338.72s]  and then they come back.
+[338.72s -> 341.40s]  In the meantime, dad sleeps, okay?
+[341.40s -> 343.46s]  And I actually said something on Monday
+[343.46s -> 346.00s]  that I was very confused about and I figured out why.
+[346.00s -> 347.96s]  It was because I hadn't typed the program in.
+[347.96s -> 350.68s]  When I get there, I'll show you what I'm talking about.
+[351.64s -> 353.42s]  But in this case, what we're gonna do
+[353.42s -> 354.56s]  is we're gonna start out.
+[354.56s -> 358.20s]  So let me put it a little higher on the screen here.
+[358.20s -> 359.04s]  Here we go.
+[359.04s -> 361.88s]  What we're gonna do is we're going to start out here
+[361.88s -> 363.68s]  and we're just gonna say, print F,
+[363.68s -> 368.68s]  let my five children play while I take a nap.
+[371.84s -> 373.24s]  Look, if I was a dad going to Disneyland,
+[373.24s -> 374.18s]  I'd be on all the rides too,
+[374.18s -> 375.60s]  so I don't know what he's doing with taking a nap.
+[375.60s -> 379.56s]  But anyway, that's what this dad is doing, okay?
+[379.56s -> 382.84s]  And then we're gonna set up the signal handler
+[382.84s -> 387.84s]  by saying, signal, sig, C-H-L-D.
+[387.84s -> 390.00s]  By the way, the reason they left out all those,
+[390.00s -> 392.88s]  like what they left out letters and things
+[392.88s -> 394.92s]  is because it used to be that you had to have
+[394.92s -> 398.04s]  a certain file length or your certain name length
+[398.04s -> 400.84s]  limitation and so a lot of these names
+[400.84s -> 403.28s]  are really short and kind of leaving out letters
+[403.28s -> 406.56s]  just because that's historical in this case.
+[406.56s -> 409.56s]  So we are gonna tell it what function we need
+[409.56s -> 412.50s]  to set as the signal handler.
+[412.50s -> 415.48s]  In this case, it's gonna be reap child, okay?
+[415.48s -> 417.10s]  And then we're going to start up
+[417.10s -> 418.94s]  all these children processes, okay?
+[418.94s -> 423.32s]  So we're just gonna go for size T, I equals zero,
+[423.32s -> 425.56s]  I, or actually we'll start with one.
+[425.56s -> 427.48s]  So we just get one, two, three, four, five.
+[427.48s -> 431.80s]  I is less than or equal to five, I plus plus.
+[431.80s -> 433.92s]  And then we're just gonna fork.
+[433.92s -> 434.92s]  So we're gonna have this kind of,
+[434.92s -> 437.70s]  we're not gonna actually capture the PID from the child.
+[437.70s -> 438.80s]  But in this case, we're just gonna say,
+[438.80s -> 442.48s]  if fork equals zero, that means we are the child
+[442.48s -> 443.96s]  if we're in this block.
+[443.96s -> 448.96s]  We're going to sleep for three times the,
+[449.56s -> 451.44s]  I guess I said kid before, didn't I?
+[452.32s -> 453.98s]  Do a kid like this.
+[455.04s -> 459.84s]  Okay, D and then kid, there we go.
+[459.84s -> 462.96s]  Sleep for three times, whatever the kid index is,
+[462.96s -> 466.28s]  index starting at one, right?
+[466.28s -> 469.48s]  Sleep in this case is gonna emulate playing,
+[470.68s -> 473.10s]  playing or whatever, playing at Disneyland, okay?
+[473.10s -> 476.32s]  And then after the child wakes up from the sleep
+[476.32s -> 479.84s]  or finishes playing, we're just gonna say print F.
+[479.84s -> 483.38s]  We're gonna say child and then because we use size T,
+[483.38s -> 487.94s]  we have to use like ZU or something like that is tired,
+[487.98s -> 492.02s]  returns to dad, not data, to dad.
+[492.02s -> 493.10s]  There we go.
+[493.10s -> 495.58s]  I guess it makes sense in computer science.
+[495.58s -> 497.42s]  Okay, so there we go.
+[497.42s -> 500.30s]  And I might need a quote on there.
+[500.30s -> 504.62s]  All right, and then we're going to just return zero
+[504.62s -> 506.66s]  from the child, okay?
+[506.66s -> 508.14s]  So that's what's gonna happen in the child.
+[508.14s -> 509.86s]  We're gonna do that five times.
+[509.86s -> 511.58s]  Boom, and they're gonna sleep for three seconds,
+[511.58s -> 513.70s]  six seconds, nine seconds, et cetera, yeah.
+[513.74s -> 514.58s]  Yeah.
+[517.70s -> 519.86s]  Probably, thank you very much.
+[519.86s -> 521.70s]  How about kid?
+[521.70s -> 522.54s]  Thank you very much.
+[522.54s -> 523.98s]  That would be a bad mistake.
+[523.98s -> 525.82s]  Probably would have gotten a warning, I hope.
+[525.82s -> 527.00s]  We'll see, good catch.
+[527.00s -> 530.02s]  All right, so anyway, that's gonna be the five children
+[530.02s -> 532.96s]  starting up and just sleeping for a while, okay?
+[532.96s -> 535.58s]  And then we're gonna have the parent,
+[535.58s -> 537.70s]  in this case, like the dad, okay?
+[537.70s -> 542.70s]  While numb children done playing
+[543.58s -> 548.58s]  is less than k-numb children, oops, hang on.
+[551.86s -> 554.42s]  Oh no, I knew I'd do something like this.
+[554.42s -> 557.02s]  I tried to do a special command
+[557.02s -> 558.62s]  and of course it's not working.
+[560.14s -> 564.92s]  Nope, ah, oh no, hang on.
+[564.92s -> 566.18s]  Match one of 76.
+[566.18s -> 571.18s]  How about we, no, oh no, what have I done?
+[573.06s -> 574.28s]  Let's try it again.
+[577.56s -> 580.10s]  I wonder if any of that got saved.
+[580.10s -> 581.46s]  Let's see, we'll find out.
+[581.46s -> 582.62s]  I don't think I saved it anyway.
+[582.62s -> 587.62s]  Spring, and let's see, it's live, lecture, crossing.
+[589.18s -> 591.54s]  Let's see, it did get a swap file.
+[591.54s -> 593.38s]  Let's see if we can recover it.
+[593.38s -> 598.38s]  Fivechildren.c, and looks like it doesn't wanna play.
+[599.38s -> 602.18s]  It looks like it doesn't wanna play.
+[602.18s -> 603.46s]  There it goes, okay.
+[603.46s -> 604.30s]  What does it say?
+[604.30s -> 606.86s]  It says file swap owned by that,
+[606.86s -> 608.70s]  another program to edit in the file.
+[610.38s -> 614.02s]  I want to recover it, enter.
+[615.06s -> 616.70s]  Okay, some of it got saved anyway.
+[616.70s -> 617.94s]  It looks like most of it did.
+[617.94s -> 619.78s]  Okay, well anyway, all right, let's try this again.
+[619.78s -> 621.70s]  I won't try to be fancy on this.
+[621.70s -> 625.54s]  So in this, so we got everything in there for the parent
+[625.54s -> 628.36s]  or for the child, and then the parent's going to do
+[629.20s -> 633.04s]  a while numChildren, what was the name of the variable there?
+[633.04s -> 635.68s]  It was numChildren done playing.
+[636.92s -> 641.92s]  NumChildren done playing
+[641.92s -> 646.92s]  is less than K numChildren.
+[650.72s -> 652.84s]  All right, so what are we going to do?
+[652.84s -> 657.84s]  We are going to printf at least one child
+[658.32s -> 663.32s]  is still playing, so dad nods off.
+[666.32s -> 670.08s]  Okay, and then the other day we use,
+[670.08s -> 672.76s]  but in fact, earlier in this program, we used sleep.
+[672.76s -> 675.04s]  I don't know if you remember that when I said that,
+[675.04s -> 677.88s]  hey, it looks like the dad is waking up
+[677.88s -> 679.76s]  or is not waking up when it should be,
+[679.76s -> 681.68s]  and I thought that was because sleep should,
+[681.68s -> 684.80s]  sleep normally stops sleeping at the point
+[684.80s -> 686.84s]  where a signal is handled, actually,
+[686.88s -> 687.92s]  or I guess it's not handled.
+[687.92s -> 691.96s]  But anyway, if a signal happens, sleep will generally return.
+[691.96s -> 694.04s]  What we want to do is we want to actually
+[694.04s -> 697.92s]  have the dad not wake up.
+[697.92s -> 698.78s]  So we're going to say snooze,
+[698.78s -> 700.14s]  which is a little function we wrote
+[700.14s -> 701.56s]  that just basically does this and says,
+[701.56s -> 703.48s]  don't wake up if you get a signal.
+[703.48s -> 704.32s]  Okay, so that's what we want to do.
+[704.32s -> 706.16s]  We want it to snooze for five seconds
+[706.16s -> 711.12s]  and then printf dad wakes up like that,
+[711.12s -> 714.08s]  and there we go.
+[714.08s -> 716.36s]  And then when you get all the children back,
+[716.80s -> 720.12s]  we're just going to say print at all children
+[720.12s -> 725.12s]  accounted for good job dad.
+[726.64s -> 729.84s]  Something like that, and then we're going to return zero.
+[729.84s -> 731.40s]  Okay, so that's our function.
+[731.40s -> 735.96s]  Let's run it, okay, make five children, okay.
+[735.96s -> 737.68s]  And when we run this, right,
+[737.68s -> 740.36s]  what it does is it does all those that forking
+[740.36s -> 741.44s]  and then dad nods off,
+[741.44s -> 743.82s]  child one returns after three seconds, dad wakes up,
+[743.82s -> 746.86s]  child's two, and then goes back to sleep.
+[746.86s -> 748.38s]  Child two and three wake up
+[748.38s -> 750.70s]  while dad's sleeping in that next five seconds,
+[750.70s -> 752.46s]  and then dad goes back to sleep again,
+[752.46s -> 755.64s]  and then child four and five also wake up,
+[755.64s -> 758.42s]  or return rather, and then that's it.
+[758.42s -> 761.04s]  So what did I forget to do?
+[763.14s -> 764.08s]  I forgot to write the function
+[764.08s -> 766.46s]  that actually does anything, right?
+[766.46s -> 768.38s]  So let's see, now this one I want to delete it.
+[768.38s -> 769.58s]  There we go, okay.
+[769.58s -> 774.58s]  So in this case, let's see,
+[775.70s -> 778.06s]  actually, hang on one sec, John.
+[778.06s -> 780.54s]  PS, no, it doesn't say it's in there.
+[780.54s -> 784.58s]  Anyway, okay, so we have to actually write reap child.
+[784.58s -> 786.94s]  Well, this is going to be a really simple
+[786.94s -> 788.90s]  reap child in this case, okay?
+[788.90s -> 789.90s]  All it's going to do,
+[789.90s -> 791.36s]  it's going to clean up after the children.
+[791.36s -> 794.50s]  So it's going to do wait PID, all right?
+[794.50s -> 798.50s]  And then negative one says wait for any child, okay?
+[798.50s -> 800.24s]  No, because we don't care about capturing
+[800.24s -> 801.94s]  the return values at this point.
+[801.94s -> 803.06s]  You would if you were doing this
+[803.06s -> 805.50s]  for a little more robust program.
+[805.50s -> 806.94s]  And then zero, which we'll get
+[806.94s -> 808.82s]  to changing that today actually,
+[808.82s -> 812.82s]  just basically says just block until that child returned,
+[812.82s -> 815.02s]  but it's going to have just ended
+[815.02s -> 818.10s]  because that's why the signal handler got called, okay?
+[818.10s -> 822.10s]  And then at this point we need to update
+[822.10s -> 824.34s]  the num, what was it again?
+[824.34s -> 829.34s]  Num children done playing, okay?
+[829.70s -> 831.18s]  And then that should do that.
+[831.18s -> 834.10s]  Now, this signal handler is in the parent
+[834.10s -> 837.76s]  and it's getting called when the child ends, okay?
+[837.76s -> 839.76s]  That's how this is getting called, question.
+[843.58s -> 846.46s]  If you didn't write the wait PID there,
+[846.46s -> 847.28s]  that's a good question.
+[847.28s -> 849.22s]  All that would really happen is it would be
+[849.22s -> 850.90s]  as if you were leaking the memory.
+[850.90s -> 852.18s]  I mean, you wouldn't clean up after the child.
+[852.18s -> 854.86s]  Nothing else would actually happen in that case.
+[854.86s -> 856.34s]  It would still actually work.
+[856.34s -> 857.94s]  We can test it if you want, but that's it.
+[857.94s -> 858.78s]  Any other questions on that?
+[858.78s -> 860.54s]  Let's see if this one works now.
+[861.66s -> 864.14s]  I just made it, five children, there we go, okay.
+[864.14s -> 866.36s]  So same thing again, waiting for three seconds
+[866.36s -> 869.22s]  and then returns to dad, dad wakes up,
+[869.22s -> 870.94s]  two more children are going to end
+[870.94s -> 872.78s]  in the next five seconds.
+[872.78s -> 877.74s]  And then finally the last two children end
+[877.74s -> 880.70s]  and then dad wakes up and then we can say
+[880.70s -> 882.10s]  that all children are accounted for.
+[882.86s -> 883.90s]  Okay, so that's what's happening.
+[883.90s -> 886.78s]  The main parent or the parent function
+[886.78s -> 888.38s]  is in that while loop, but just sleeping
+[888.38s -> 892.02s]  for five seconds and the signal handler is happening.
+[892.02s -> 895.30s]  And when the dad gets done sleeping,
+[895.30s -> 898.14s]  it goes, hey, all my children back, we're leaving.
+[898.14s -> 899.48s]  Question.
+[899.48s -> 902.10s]  So if you didn't write the reach out function,
+[902.10s -> 904.22s]  dad would just keep waking up?
+[904.22s -> 905.30s]  Yes, that's exactly what we did
+[905.30s -> 906.18s]  when I didn't write that.
+[906.18s -> 907.62s]  The question was, wait, if you didn't write
+[907.62s -> 910.86s]  the reach out function, what would happen?
+[910.90s -> 913.04s]  Dad would keep waking up and then that global variable
+[913.04s -> 915.74s]  wouldn't be updated, so it would just stay at zero
+[915.74s -> 918.10s]  as it turns out, yeah.
+[918.10s -> 918.92s]  Yeah.
+[918.92s -> 920.76s]  When you call signal, read child,
+[920.76s -> 922.50s]  are you giving it like a function pointer
+[922.50s -> 924.30s]  to read child or like one?
+[924.30s -> 925.56s]  Yeah, very good question.
+[925.56s -> 930.08s]  When you call the signal function,
+[930.08s -> 933.54s]  you are passing in a function pointer to read child.
+[934.74s -> 938.02s]  Why don't we need to give it to arguments?
+[938.02s -> 940.02s]  Good question, well, you generally don't need
+[940.02s -> 941.58s]  to give it arguments, it's a good question,
+[941.58s -> 944.62s]  but when you say signal, all it needs to know
+[944.62s -> 947.62s]  is read child, there's only one argument
+[947.62s -> 949.46s]  that read child must take and it happened
+[949.46s -> 951.62s]  to be an integer for the signal number.
+[951.62s -> 953.18s]  Which is it, yeah, good question.
+[953.18s -> 954.02s]  Yeah, you're in there.
+[954.02s -> 956.70s]  How does cleaning up after the children
+[956.70s -> 959.74s]  make the dad stop the number?
+[959.74s -> 961.66s]  Cleaning up after the children does not do that.
+[961.66s -> 962.66s]  And a good question, like you're saying,
+[962.66s -> 964.78s]  why does cleaning up after the children make it happen?
+[964.78s -> 967.10s]  It's this that makes the dad,
+[967.10s -> 969.98s]  because it's a global variable that is being updated
+[970.82s -> 972.22s]  by the signal handler.
+[972.22s -> 973.36s]  Now, if you're thinking, wait a minute,
+[973.36s -> 976.18s]  I thought children and parents have different memories
+[976.18s -> 977.90s]  and so if I update the global variable here,
+[977.90s -> 979.26s]  it's not gonna update the parent.
+[979.26s -> 982.38s]  Remember, it's not, none of these,
+[982.38s -> 984.54s]  this function is not happening in the child,
+[984.54s -> 986.38s]  this function is happening in the parent
+[986.38s -> 988.24s]  when the child ends.
+[988.24s -> 990.48s]  So it in fact is the same global variable.
+[992.38s -> 995.98s]  All right, so that's what happens here.
+[995.98s -> 998.10s]  What if we, so let's change it here.
+[998.14s -> 1000.50s]  What if we change something and say,
+[1000.50s -> 1002.70s]  let's let all the children
+[1005.22s -> 1009.50s]  sleep for the same amount of time?
+[1009.50s -> 1011.06s]  Okay, so in other words, they're all gonna go out
+[1011.06s -> 1012.30s]  and play and they're all gonna come back
+[1012.30s -> 1013.30s]  with the exact same amount of time.
+[1013.30s -> 1016.58s]  Let's find out what happens if we do this.
+[1020.54s -> 1022.10s]  Five children, okay.
+[1022.10s -> 1025.18s]  So now, same thing's gonna happen,
+[1025.18s -> 1026.36s]  they all come back at the same time,
+[1026.36s -> 1028.06s]  maybe in some other different order,
+[1028.90s -> 1032.50s]  right, dad wakes up and then five seconds later,
+[1032.50s -> 1037.46s]  dad wakes up again and we got all the children back,
+[1037.46s -> 1040.48s]  but somehow numb children done
+[1040.48s -> 1043.08s]  must not have been updated correctly.
+[1043.08s -> 1045.18s]  Okay, let's actually see what happens.
+[1045.18s -> 1047.62s]  Let's look at this again like this.
+[1047.62s -> 1050.82s]  Let's do this, in the handler,
+[1050.82s -> 1055.82s]  let's just do this, print f numb children done playing,
+[1056.82s -> 1061.82s]  like that and let's see, that should do it
+[1064.46s -> 1067.10s]  and it is going to be numb.
+[1067.10s -> 1068.22s]  I'm gonna try this again.
+[1068.22s -> 1070.30s]  Oh, that time it worked, okay.
+[1070.30s -> 1073.42s]  All right, and then that should do it.
+[1074.66s -> 1079.04s]  Okay, so no, five children, there we go.
+[1079.04s -> 1082.30s]  All right, and so let's see what happens.
+[1082.30s -> 1085.26s]  Oh, well, it looks like four of them
+[1085.26s -> 1088.50s]  seem to have come back all at once
+[1088.50s -> 1091.28s]  and called that signal handler once.
+[1092.46s -> 1095.30s]  It turns out that if children end
+[1095.30s -> 1098.26s]  at roughly the same time, this is by the way,
+[1098.26s -> 1100.02s]  this is a kernel race condition
+[1100.02s -> 1101.82s]  and this is how the kernel handles it.
+[1101.82s -> 1104.76s]  If a bunch of children end at the same time,
+[1104.76s -> 1107.78s]  the kernel will just say, fine,
+[1107.78s -> 1110.02s]  I am going to call one instance
+[1110.02s -> 1112.50s]  of the child handler function.
+[1112.50s -> 1114.70s]  You get to deal with whether or not
+[1114.70s -> 1117.74s]  like what the ramifications of that is.
+[1117.74s -> 1119.18s]  Okay, so it's kind of a race condition
+[1119.18s -> 1120.82s]  in the sense that in this case,
+[1120.82s -> 1125.06s]  four of them were handled by only one child handler process
+[1125.06s -> 1126.98s]  like happening at the same time.
+[1126.98s -> 1130.38s]  The nice thing about it is that if you are already
+[1130.38s -> 1134.54s]  in the child, that signal handler and another child ends,
+[1134.54s -> 1137.52s]  it will call the signal handler again.
+[1137.56s -> 1140.20s]  So it's not that you lose any children,
+[1140.20s -> 1142.34s]  it's just that you have to deal with all the ones
+[1142.34s -> 1145.56s]  that have ended already immediately.
+[1145.56s -> 1148.36s]  Okay, and you have to do that inside the child handler.
+[1148.36s -> 1149.44s]  We'll see how that goes.
+[1149.44s -> 1150.28s]  Yeah, question.
+[1150.28s -> 1152.28s]  Just to make sure I get what you just said.
+[1152.28s -> 1155.68s]  It's not that children are interrupting each other
+[1155.68s -> 1158.52s]  before it's incremented, it's that they're coming in
+[1158.52s -> 1160.28s]  at the same time and the kernel says,
+[1160.28s -> 1162.08s]  run it once, increment it once.
+[1162.08s -> 1162.92s]  It's not like they're trying to.
+[1162.92s -> 1164.64s]  Exactly, so the question, the comment,
+[1164.64s -> 1165.60s]  it's a perfect comment.
+[1165.60s -> 1169.44s]  The comment was, it's not that the children are ending
+[1169.44s -> 1171.80s]  and not being processed and not,
+[1171.80s -> 1173.54s]  like the signal handler is not getting called for them.
+[1173.54s -> 1175.48s]  It's that they're all coming in at the same time.
+[1175.48s -> 1177.84s]  The function is only getting called once
+[1177.84s -> 1181.80s]  and therefore when, and they've already ended
+[1181.80s -> 1184.04s]  and that function only ends up incrementing
+[1184.04s -> 1186.48s]  num children done once.
+[1186.48s -> 1190.36s]  What we can do is we can modify our program
+[1190.36s -> 1192.52s]  to actually say, oh, all right, well,
+[1192.56s -> 1196.20s]  maybe if all those children are,
+[1196.20s -> 1198.04s]  if all those children have ended
+[1198.04s -> 1201.16s]  when the signal handler happens, let's do this.
+[1201.16s -> 1205.82s]  While true, inside our signal handler,
+[1205.82s -> 1207.52s]  I'm gonna get rid of this for now,
+[1207.52s -> 1210.32s]  just so we don't, because we don't need that right now.
+[1210.32s -> 1215.32s]  Okay, when the, while true, okay,
+[1216.04s -> 1217.86s]  what we're gonna do is we're gonna wait
+[1217.86s -> 1221.32s]  for all of the children, okay,
+[1221.32s -> 1223.76s]  and if the return value for wait PID,
+[1223.76s -> 1227.96s]  which normally is the child that was just waited for,
+[1227.96s -> 1232.96s]  if it returns negative, or if it returns negative one,
+[1233.32s -> 1235.06s]  there were, I guess, a negative number,
+[1235.06s -> 1237.60s]  it means that there are no more children waiting
+[1237.60s -> 1238.82s]  in that one like thing.
+[1238.82s -> 1240.36s]  Now, if another one happens to end,
+[1240.36s -> 1243.04s]  it will call the signal handler again, okay?
+[1243.04s -> 1245.00s]  So it's not like you have to kind of keep waiting
+[1245.00s -> 1245.84s]  and maybe it's happened.
+[1245.84s -> 1248.36s]  There's no more race conditions in that case, okay?
+[1248.36s -> 1250.00s]  So what you need to do in this case is you need to say,
+[1250.52s -> 1252.84s]  we better capture the PID for this, right?
+[1252.84s -> 1257.52s]  And if PID is less than zero, we're just gonna return, okay?
+[1257.52s -> 1259.08s]  So we're basically gonna break out of the while loop
+[1259.08s -> 1262.18s]  after we've now handled all of the potential children
+[1262.18s -> 1266.08s]  that may have ended in that case, okay?
+[1266.08s -> 1266.92s]  Question, yeah?
+[1266.92s -> 1271.92s]  So why is the PID less than one for the last child?
+[1272.80s -> 1274.44s]  It's not less than one for the last child.
+[1274.44s -> 1276.08s]  It's that we're recalling,
+[1276.08s -> 1278.10s]  we're gonna call wait PID again.
+[1278.18s -> 1280.70s]  There are no more children that have to end,
+[1280.70s -> 1281.94s]  therefore, wait PID says,
+[1281.94s -> 1286.00s]  there's no more children that have ended now,
+[1286.00s -> 1290.26s]  therefore, we are going to return.
+[1291.74s -> 1292.90s]  Why would that help?
+[1294.14s -> 1295.06s]  Why would that help?
+[1295.06s -> 1296.62s]  Like, I'm not allowed to make it-
+[1296.62s -> 1298.06s]  This will, well, this will,
+[1298.06s -> 1300.10s]  for every child that's ended in this little loop here,
+[1300.10s -> 1303.34s]  right, it's going to stay in that loop
+[1303.34s -> 1307.98s]  until it says no more children are left.
+[1307.98s -> 1309.80s]  That's what's happening here.
+[1309.80s -> 1310.90s]  You know, I get that?
+[1310.90s -> 1314.42s]  If they finish at the same time, that's okay,
+[1314.42s -> 1315.38s]  but then we've got a while loop
+[1315.38s -> 1316.22s]  that's gonna get the first one,
+[1316.22s -> 1317.30s]  then the second one, then the third one,
+[1317.30s -> 1318.14s]  then the fourth one,
+[1318.14s -> 1319.90s]  and it's gonna keep going in the while loop
+[1319.90s -> 1321.02s]  and just keep asking.
+[1321.02s -> 1323.22s]  And one of them will end up being the one
+[1323.22s -> 1325.10s]  that the wait PID captures.
+[1325.10s -> 1327.06s]  We don't know which one, but one of them will.
+[1327.06s -> 1328.22s]  Then we'll go through the while loop again
+[1328.22s -> 1329.70s]  and it will return a PID.
+[1329.70s -> 1331.26s]  So we'll go, oh, we're not gonna break.
+[1331.26s -> 1333.06s]  We're then gonna go do it again and do it again
+[1333.06s -> 1337.38s]  and do it again until all the children are captured, okay?
+[1338.66s -> 1339.94s]  Still don't get it.
+[1339.94s -> 1340.78s]  You have a question about it?
+[1340.78s -> 1341.62s]  Go ahead.
+[1341.62s -> 1342.46s]  Think of a question, yeah.
+[1342.46s -> 1345.86s]  Just to clarify, so wait PID is getting called once,
+[1345.86s -> 1347.30s]  but that doesn't necessarily,
+[1347.30s -> 1350.54s]  so, but wait PID is getting called multiple times
+[1350.54s -> 1353.74s]  until all the children have been taken care of.
+[1353.74s -> 1355.54s]  Yes, wait PID is getting called,
+[1355.54s -> 1357.02s]  well, wait PID is getting called once
+[1357.02s -> 1359.02s]  when any child ends,
+[1359.02s -> 1360.82s]  and then we're going into this while loop saying,
+[1360.82s -> 1362.38s]  oh, let's keep waiting for children
+[1362.38s -> 1364.70s]  until there are no more left, okay?
+[1364.70s -> 1366.58s]  And then we're gonna end.
+[1366.58s -> 1367.90s]  Question in the back.
+[1368.82s -> 1373.06s]  Does wait PID stop after all the children are done
+[1373.06s -> 1374.82s]  or all the children that were called
+[1374.82s -> 1376.02s]  as part of this one return?
+[1376.02s -> 1377.34s]  That is a good question.
+[1377.34s -> 1379.62s]  In this case, the way we're running it right now,
+[1379.62s -> 1382.54s]  it blocks while there are still children not done.
+[1382.54s -> 1384.06s]  So it will wait, yeah,
+[1384.06s -> 1386.14s]  it'll actually wait for all of them to be done.
+[1386.14s -> 1387.06s]  Now, they're all gonna come back
+[1387.06s -> 1389.58s]  in roughly the same amount of time in this case,
+[1389.58s -> 1390.58s]  but that's a good point
+[1390.58s -> 1392.22s]  and we'll see how to handle that in a second
+[1392.22s -> 1393.22s]  if you wanna deal with it differently.
+[1393.22s -> 1394.06s]  Hosman, you have a question?
+[1394.06s -> 1395.70s]  Yeah, okay.
+[1395.70s -> 1397.74s]  All right, okay.
+[1398.58s -> 1400.90s]  Let's see what happens when we run this.
+[1405.10s -> 1407.74s]  Okay, five children, okay.
+[1407.74s -> 1409.70s]  Now it's going to go into that while loop,
+[1409.70s -> 1410.70s]  they're gonna return to dad.
+[1410.70s -> 1412.74s]  All five of them end up getting captured
+[1412.74s -> 1414.42s]  in that while loop,
+[1414.42s -> 1418.62s]  and then dad wakes up and it did increment all five of,
+[1418.62s -> 1422.38s]  there are incremented num children done each time.
+[1422.38s -> 1423.22s]  Yeah.
+[1423.22s -> 1425.34s]  So how many times is a single handler called?
+[1425.34s -> 1426.42s]  Yeah, very good question.
+[1426.46s -> 1428.70s]  In this case, the signal handler,
+[1428.70s -> 1430.62s]  it turns out that the signal handler
+[1430.62s -> 1434.10s]  is called once as it turns out.
+[1434.10s -> 1437.46s]  It may get called again, although it doesn't matter.
+[1437.46s -> 1440.18s]  It doesn't actually matter because we're calling wait PID.
+[1440.18s -> 1443.18s]  Remember what wait PID does,
+[1443.18s -> 1444.82s]  and this is a very good point.
+[1444.82s -> 1449.82s]  In this form, when we say wait PID like this,
+[1450.62s -> 1452.58s]  when we say wait PID like that,
+[1452.66s -> 1457.66s]  what it says is, okay, wait for any child to finish,
+[1457.70s -> 1460.26s]  if there are outstanding children to finish.
+[1460.26s -> 1461.94s]  Like if there's any children out there,
+[1461.94s -> 1465.34s]  wait for any one of them to finish, okay?
+[1465.34s -> 1470.30s]  And it will actually block until a child finishes.
+[1470.30s -> 1471.98s]  If there are no more children,
+[1471.98s -> 1473.82s]  cause they're all already finished,
+[1473.82s -> 1475.78s]  it will return negative one immediately
+[1475.78s -> 1478.30s]  and that's when we'll break out of that loop.
+[1478.30s -> 1479.14s]  Yeah.
+[1481.94s -> 1483.30s]  So to be clear here,
+[1483.30s -> 1486.46s]  if you switch back to the sleep statement there,
+[1486.46s -> 1488.42s]  sleep three times kids,
+[1488.42s -> 1492.10s]  would we never get the written statement about the dad?
+[1492.10s -> 1493.34s]  Yeah, let's do that.
+[1493.34s -> 1495.26s]  So Colin says, whoa, wait a minute.
+[1495.26s -> 1499.78s]  What if we made the following change and just said,
+[1499.78s -> 1501.34s]  oh, let's see if our new method,
+[1501.34s -> 1502.74s]  which we proved works for the other,
+[1502.74s -> 1504.74s]  the one where they're all ending at the same time.
+[1504.74s -> 1507.06s]  What if we did this now, what's gonna happen?
+[1507.06s -> 1509.50s]  And the, his comment was,
+[1509.50s -> 1512.26s]  oh, is it gonna mean that we're never going to like,
+[1512.26s -> 1514.50s]  it's, we're not gonna see all that dad wakes up business
+[1514.50s -> 1516.18s]  until way at the end.
+[1516.18s -> 1517.02s]  Let's find out.
+[1522.18s -> 1524.42s]  All right, now the child's playing,
+[1524.42s -> 1526.74s]  remember now they're doing three seconds each, right?
+[1526.74s -> 1528.86s]  Okay, child one returned after three seconds,
+[1528.86s -> 1531.10s]  child two returned after three seconds,
+[1531.10s -> 1532.94s]  dad still hasn't woken up yet,
+[1532.94s -> 1534.58s]  child three returned,
+[1534.58s -> 1537.02s]  child four returned, dad still hasn't woken up.
+[1537.86s -> 1539.34s]  In fact, dad's trying to wake up, but guess what?
+[1539.34s -> 1541.18s]  The signal handler is the part of the program
+[1541.18s -> 1543.06s]  that's running, it will not also,
+[1543.06s -> 1544.76s]  it's only one process now.
+[1544.76s -> 1546.82s]  Even though there's two functions that could happen,
+[1546.82s -> 1549.78s]  the signal handler is the one that's in this while loop
+[1549.78s -> 1552.62s]  and the dad never has a chance to actually wake up
+[1552.62s -> 1555.06s]  and see if the children have ended yet.
+[1555.06s -> 1559.38s]  So yes, we broke this one by doing that fancy while loop.
+[1559.38s -> 1561.02s]  We got to do something else, yeah.
+[1561.02s -> 1563.86s]  So when it's running, when the signal handler is running,
+[1563.86s -> 1566.18s]  it's running for the first child that returned.
+[1566.30s -> 1569.86s]  It's like running on the call of the first child.
+[1569.86s -> 1570.70s]  Yeah, the question is,
+[1570.70s -> 1573.06s]  is the signal handler running on the call
+[1573.06s -> 1574.58s]  of when the first child ends?
+[1574.58s -> 1576.08s]  It could be the first or it's,
+[1576.08s -> 1577.94s]  in this case it is the first,
+[1577.94s -> 1579.90s]  because they're ending at different times.
+[1579.90s -> 1582.70s]  It could be many ending at the same time calling at once
+[1582.70s -> 1583.92s]  but in this case, yes.
+[1583.92s -> 1587.66s]  The signal handler starts when the first child finishes
+[1587.66s -> 1588.74s]  and then it doesn't,
+[1588.74s -> 1590.66s]  it never leaves the signal handler
+[1590.66s -> 1592.54s]  until all of them finish.
+[1592.54s -> 1594.42s]  This is actually not good programming.
+[1594.42s -> 1597.90s]  You want your signal handler to be fast.
+[1597.90s -> 1600.90s]  If you did 107E, you know that's true about interrupts.
+[1600.90s -> 1602.50s]  This is basically the same sort of thing.
+[1602.50s -> 1604.78s]  You want your signal handler to be in and out
+[1604.78s -> 1606.18s]  as fast as you can.
+[1606.18s -> 1608.82s]  So you don't want to wait for all those other children.
+[1608.82s -> 1610.34s]  Remember, the dad had a job to do.
+[1610.34s -> 1612.54s]  The dad was supposed to wake up and say,
+[1612.54s -> 1614.18s]  oh, I'm gonna see if all my children are back
+[1614.18s -> 1617.66s]  but he couldn't until all the children got back, right?
+[1617.66s -> 1619.20s]  So that's the big problem there.
+[1619.20s -> 1620.04s]  Yeah.
+[1620.04s -> 1622.62s]  The first child actually ended when the signal handler
+[1622.62s -> 1624.80s]  is called or is it just right before it ends
+[1624.80s -> 1627.04s]  because otherwise, wouldn't the wait PID
+[1627.04s -> 1629.48s]  not be able to capture the first child?
+[1629.48s -> 1631.36s]  No, no, good question.
+[1631.36s -> 1634.92s]  Does the, is the wait PID called
+[1634.92s -> 1636.68s]  before or after the child ends?
+[1636.68s -> 1641.08s]  It is called because the child has ended, okay?
+[1641.08s -> 1643.22s]  So in other words, read child gets called
+[1643.22s -> 1645.26s]  when the child has ended
+[1645.26s -> 1646.80s]  and it has not been cleaned up yet.
+[1646.80s -> 1647.64s]  There's no wait PID.
+[1647.64s -> 1649.68s]  So the operating system is basically saying,
+[1650.20s -> 1651.16s]  oh, this child has ended.
+[1651.16s -> 1653.68s]  Well, I'm gonna wait around until somebody cleans it up,
+[1653.68s -> 1654.92s]  until the parent cleans it up.
+[1654.92s -> 1658.80s]  And so it's in the process of being finished
+[1658.80s -> 1660.72s]  but the child hasn't been cleaned up yet.
+[1660.72s -> 1663.64s]  That's why it gets the PID returned at that point.
+[1663.64s -> 1664.72s]  Yeah, question.
+[1664.72s -> 1667.12s]  So the wait PID that happened on the kid's end
+[1667.12s -> 1668.96s]  doesn't have time?
+[1668.96s -> 1671.76s]  If we print it out here,
+[1671.76s -> 1674.00s]  yeah, let's see what happens when we do that.
+[1675.88s -> 1676.80s]  All right, what it's gonna do,
+[1676.80s -> 1679.12s]  it's going to, when each child gets back,
+[1679.44s -> 1681.36s]  it's going to just do that, right?
+[1681.36s -> 1684.68s]  Because by the way, it's still inside the loop, right?
+[1684.68s -> 1686.12s]  It's still inside that while loop,
+[1686.12s -> 1687.44s]  not leaving that while loop.
+[1687.44s -> 1689.16s]  I'll show it to you again.
+[1689.16s -> 1691.80s]  And then we'll see, we'll let it finish here
+[1691.80s -> 1694.06s]  and then we'll see, there we go.
+[1694.06s -> 1697.10s]  Okay, so it's still in this while loop.
+[1697.10s -> 1700.52s]  Remember, forever, true, while true.
+[1700.52s -> 1704.96s]  It's in that while loop until wait PID returns
+[1704.96s -> 1708.12s]  a negative number saying there are no more children left.
+[1708.16s -> 1710.80s]  And in this case, that's really not what we'd like to do.
+[1710.80s -> 1712.14s]  It's not the best coding style
+[1712.14s -> 1715.52s]  because we're staying in that signal handler
+[1715.52s -> 1716.60s]  until they all finish.
+[1716.60s -> 1718.40s]  What if one was supposed to go on for days?
+[1718.40s -> 1719.60s]  Well, the rest of the program
+[1719.60s -> 1720.68s]  wouldn't be able to do anything.
+[1720.68s -> 1722.60s]  So you shouldn't stay in the signal handler that long.
+[1722.60s -> 1723.44s]  Yeah.
+[1723.44s -> 1725.72s]  So if, when the other children
+[1725.72s -> 1727.96s]  that are waiting for it to return,
+[1727.96s -> 1729.00s]  when they do return,
+[1729.00s -> 1730.32s]  do they call ReapChild again
+[1730.32s -> 1731.92s]  because the signal says again?
+[1731.92s -> 1733.28s]  Yeah, this is a good question.
+[1733.28s -> 1737.28s]  When, I believe it does, as it turns out,
+[1737.28s -> 1738.44s]  call ReapChild again.
+[1738.44s -> 1739.84s]  Yeah, I mean, let's do that.
+[1739.84s -> 1741.44s]  Let's find out.
+[1741.44s -> 1742.48s]  Let's see if we can test this.
+[1742.48s -> 1744.22s]  I'm not 100% sure this is gonna do anything,
+[1744.22s -> 1745.54s]  but let's test this.
+[1746.48s -> 1751.40s]  ReapChild just called, okay?
+[1751.40s -> 1752.48s]  I think the question was,
+[1752.48s -> 1755.40s]  what happens if they've been cleaned up in here?
+[1755.40s -> 1757.86s]  Does another signal get generated?
+[1757.86s -> 1758.78s]  I believe it will.
+[1758.78s -> 1760.00s]  I'm not 100% sure.
+[1760.00s -> 1761.20s]  Once it's cleaned up,
+[1761.20s -> 1764.04s]  it might be removed from the, it probably is.
+[1764.04s -> 1765.36s]  It's probably, once it's cleaned up,
+[1765.36s -> 1767.38s]  it goes, oh, I don't need to send another signal
+[1767.38s -> 1768.34s]  because it's been cleaned up.
+[1768.34s -> 1769.64s]  I'm guessing that's the case.
+[1769.64s -> 1771.48s]  Well, let's just find out.
+[1771.48s -> 1773.20s]  Okay, let's see how many times it's,
+[1773.20s -> 1775.82s]  so what we actually need to do here is,
+[1776.88s -> 1779.56s]  we also need to,
+[1779.56s -> 1780.84s]  let's say all children are accounted for.
+[1780.84s -> 1782.74s]  Let's just see if there's any other issues,
+[1782.74s -> 1784.72s]  maybe down here later.
+[1784.72s -> 1785.96s]  So let's do another,
+[1785.96s -> 1789.28s]  let's do another smooze for like three more seconds
+[1789.28s -> 1790.64s]  or something like that.
+[1790.64s -> 1792.88s]  Okay, make five children,
+[1793.84s -> 1794.92s]  five children.
+[1795.40s -> 1796.88s]  So,
+[1797.84s -> 1799.52s]  boom, reap child just got called.
+[1799.52s -> 1800.84s]  Now it's gonna be in reap child,
+[1800.84s -> 1803.44s]  not calling it again until all five get done.
+[1803.44s -> 1804.96s]  We know because it's in that while loop
+[1804.96s -> 1807.68s]  and it's just gonna sit there and do that.
+[1807.68s -> 1810.02s]  And it can't, you can't call the same signal
+[1810.02s -> 1811.44s]  from inside, there it goes again.
+[1811.44s -> 1812.80s]  It did get called again.
+[1812.80s -> 1815.56s]  So, yeah, it looks like it got called for it once more
+[1815.56s -> 1817.84s]  because all those children that triggered it.
+[1817.84s -> 1818.68s]  So I was wrong.
+[1818.68s -> 1820.50s]  It does get called at least one more time.
+[1820.50s -> 1821.64s]  Now, it didn't matter
+[1821.64s -> 1823.46s]  because what would go into that while loop
+[1823.50s -> 1824.34s]  and it would immediately say,
+[1824.34s -> 1825.82s]  there's no more children, goodbye.
+[1825.82s -> 1826.66s]  And that's it.
+[1826.66s -> 1828.50s]  So there's some logic there you have to handle.
+[1828.50s -> 1829.34s]  Yeah.
+[1829.34s -> 1831.22s]  The SIG parameter in reap child
+[1831.22s -> 1833.50s]  not have any information about how many children
+[1833.50s -> 1834.70s]  were called together.
+[1834.70s -> 1835.94s]  Good question.
+[1835.94s -> 1836.90s]  The signal parameter,
+[1836.90s -> 1837.94s]  I'm gonna get rid of some of these things
+[1837.94s -> 1840.52s]  because we're gonna change it again in a second.
+[1840.52s -> 1844.96s]  The signal here, over here,
+[1844.96s -> 1847.10s]  that parameter, all it says in this case
+[1847.10s -> 1849.08s]  is that it's a SIG child.
+[1849.08s -> 1850.06s]  That's the only thing it gives you.
+[1850.06s -> 1851.46s]  It doesn't give you any other information.
+[1851.46s -> 1852.38s]  Just says which signal,
+[1852.42s -> 1854.02s]  you could ask which signal got called.
+[1854.02s -> 1854.86s]  I mean, you basically look at it and go,
+[1854.86s -> 1855.90s]  oh, is it the SIG child?
+[1855.90s -> 1856.72s]  Yes.
+[1856.72s -> 1857.56s]  That's it.
+[1857.56s -> 1859.40s]  Maybe we want this to be an encompassing function
+[1859.40s -> 1860.94s]  to capture many signals.
+[1860.94s -> 1861.78s]  And maybe you wanna know
+[1861.78s -> 1863.62s]  which signal actually triggered it.
+[1863.62s -> 1864.72s]  So that's how you do that.
+[1864.72s -> 1865.56s]  Yeah, Erin.
+[1865.56s -> 1866.40s]  So in this case,
+[1866.40s -> 1869.70s]  aren't all the child processes not created yet
+[1869.70s -> 1871.54s]  with the reap child as called at the start?
+[1871.54s -> 1873.30s]  So do we just like pause it?
+[1873.30s -> 1874.14s]  Ah, be careful.
+[1874.14s -> 1876.14s]  Do you mean reap child's called right here?
+[1877.14s -> 1878.46s]  It is not called there.
+[1878.46s -> 1880.86s]  This is just simply calling signal
+[1880.86s -> 1882.92s]  with a function pointer to reap child,
+[1882.92s -> 1885.18s]  saying that when a child ends,
+[1885.18s -> 1886.92s]  that's when reap child gets called.
+[1886.92s -> 1888.68s]  When the first one ends,
+[1888.68s -> 1892.10s]  the rest of them still have a new key.
+[1892.10s -> 1892.94s]  That's a good question.
+[1892.94s -> 1894.50s]  It may be the case
+[1894.50s -> 1896.54s]  that the rest of them haven't been created yet
+[1896.54s -> 1897.46s]  by the time, you're right.
+[1897.46s -> 1899.34s]  In this for loop here,
+[1899.34s -> 1901.82s]  if we had made it sleep zero or no sleep at all,
+[1901.82s -> 1904.26s]  then it might've jumped into the loop
+[1904.26s -> 1905.10s]  and then it would have done it.
+[1905.10s -> 1906.38s]  But it still would have worked okay
+[1906.38s -> 1908.66s]  because let's say it didn't have any children
+[1908.66s -> 1909.48s]  at that point.
+[1909.48s -> 1910.32s]  It would have exited the reap child,
+[1910.76s -> 1912.32s]  and then the next child would have gotten created
+[1912.32s -> 1913.76s]  and it would have gone back and called.
+[1913.76s -> 1915.32s]  So, I mean, it's not like anything would have broken
+[1915.32s -> 1916.80s]  in that case, but you're right.
+[1916.80s -> 1919.20s]  It could have been that we ended up in reap child
+[1919.20s -> 1920.94s]  before any of the other children were created,
+[1920.94s -> 1922.22s]  but it's still gonna get called later
+[1922.22s -> 1925.40s]  when they do get created and then eventually finish.
+[1927.54s -> 1929.44s]  Good, lots of good questions here.
+[1929.44s -> 1930.54s]  I'm glad I'm going over this again,
+[1930.54s -> 1932.32s]  or at least this part of it here.
+[1932.32s -> 1937.32s]  Okay, so what do we want to do in this case?
+[1937.82s -> 1939.56s]  So now we've got this problem here.
+[1939.72s -> 1942.36s]  Remember, we've changed the behavior
+[1942.36s -> 1945.12s]  by adding this while loop up here.
+[1945.12s -> 1948.28s]  Okay, we've said, wait, block until all the children
+[1948.28s -> 1950.74s]  are done, and if we've got five children outstanding,
+[1950.74s -> 1952.00s]  then it's gonna sit there and block
+[1952.00s -> 1953.12s]  until all the children are done,
+[1953.12s -> 1953.96s]  and that's not what we want.
+[1953.96s -> 1955.40s]  We want the signal handler to be in
+[1955.40s -> 1956.96s]  and out really quickly.
+[1956.96s -> 1958.92s]  That's the basic idea.
+[1958.92s -> 1963.00s]  So it turns out that we will finally get a chance
+[1963.00s -> 1966.96s]  to use this final parameter for wait PID.
+[1966.96s -> 1969.04s]  Okay, this parameter, there's a bunch of flags
+[1969.48s -> 1972.20s]  you can put in there, you just OR them together.
+[1972.20s -> 1975.08s]  One of the flags that we care about,
+[1975.08s -> 1976.72s]  and in fact, specifically for this,
+[1976.72s -> 1981.72s]  is called wnohang, and wnohang is a flag that says,
+[1984.92s -> 1987.64s]  wait for any child, except if there are none
+[1987.64s -> 1990.04s]  that are finished, just return immediately
+[1990.04s -> 1992.48s]  with a return value of zero.
+[1992.48s -> 1996.52s]  So that means, a return value of zero means
+[1996.52s -> 2000.88s]  that there are children remaining that have not ended yet,
+[2002.00s -> 2004.16s]  but I'm gonna return now because I don't wanna block
+[2004.16s -> 2006.28s]  on this, I don't wanna stick around waiting
+[2006.28s -> 2008.24s]  for those in this while loop.
+[2008.24s -> 2009.88s]  So the only other thing we have to change here
+[2009.88s -> 2013.32s]  is we have to say, oh fine, if PID is less than
+[2013.32s -> 2016.12s]  or equal to zero, because if the zero case,
+[2016.12s -> 2020.32s]  there are still children, but they're still going,
+[2020.32s -> 2022.76s]  so I'm not gonna stick around and try to wait for them.
+[2022.76s -> 2025.58s]  I'm gonna come back later when they finish
+[2026.06s -> 2028.14s]  and call this function.
+[2028.14s -> 2029.64s]  That's what's going on here.
+[2029.64s -> 2031.90s]  Let's try this and see if it works.
+[2031.90s -> 2034.78s]  Five children, okay, five children.
+[2034.78s -> 2036.34s]  So remember, now we've got this idea
+[2036.34s -> 2037.86s]  where we want the dad to wake back up
+[2037.86s -> 2039.30s]  after the first two children.
+[2039.30s -> 2041.62s]  Oh, we got the reaped children.
+[2041.62s -> 2043.06s]  I'll take that out so you can see
+[2043.06s -> 2044.06s]  what's going on in a second here,
+[2044.06s -> 2046.78s]  but you can see that dad's waking up now,
+[2046.78s -> 2048.18s]  which is exactly what we wanted,
+[2048.18s -> 2050.58s]  which is exactly what we had in the very first one,
+[2050.58s -> 2053.06s]  but now we're doing it in a way that we can capture
+[2053.06s -> 2056.42s]  in case some children end at exactly the same time,
+[2056.42s -> 2057.82s]  or roughly the same time.
+[2057.82s -> 2059.66s]  Okay, let me just run it again
+[2059.66s -> 2062.62s]  without this line in there anymore,
+[2062.62s -> 2066.86s]  and we'll just see it work in general.
+[2069.14s -> 2071.78s]  What questions do you have about this,
+[2071.78s -> 2073.62s]  the purpose of w no hang?
+[2073.62s -> 2077.26s]  We will use that very often, okay?
+[2077.26s -> 2080.28s]  And we'll use that because, specifically because,
+[2080.28s -> 2082.70s]  we wanna keep our program going.
+[2083.22s -> 2084.06s]  We don't wanna sit there and go,
+[2084.06s -> 2084.90s]  oh, let's wait for the child,
+[2084.90s -> 2085.74s]  let's wait around for the child,
+[2085.74s -> 2087.06s]  let's do something else,
+[2087.06s -> 2091.22s]  let the signal handler get called when the child ends
+[2091.22s -> 2092.98s]  and deal with it at that point.
+[2092.98s -> 2093.82s]  Question.
+[2093.82s -> 2096.26s]  So basically the flag just says,
+[2096.26s -> 2098.62s]  don't like stop the program anymore,
+[2098.62s -> 2102.14s]  just deal with any children that have already ended,
+[2102.14s -> 2103.58s]  whereas if we didn't have the flag,
+[2103.58s -> 2105.82s]  we would just wait and remember.
+[2105.82s -> 2107.90s]  Yeah, so the question is this flag,
+[2107.90s -> 2111.42s]  or the comment is this flag w no hang,
+[2111.46s -> 2114.64s]  it says to the wait PID function,
+[2115.60s -> 2117.62s]  if there is a child that's ended,
+[2117.62s -> 2119.78s]  return that PID and clean it up.
+[2119.78s -> 2121.38s]  If any of the children have ended,
+[2121.38s -> 2122.22s]  pick one of them,
+[2122.22s -> 2123.92s]  clean it up and give me that PID back
+[2123.92s -> 2126.42s]  so I can do whatever else I want with it.
+[2126.42s -> 2129.52s]  If there are no children that have ended,
+[2129.52s -> 2132.06s]  but there are still children out there,
+[2132.06s -> 2132.98s]  don't wait for one,
+[2132.98s -> 2134.54s]  like we've always done in the past,
+[2134.54s -> 2135.94s]  just return zero and say,
+[2135.94s -> 2137.02s]  look, they're still there,
+[2137.02s -> 2137.86s]  but I'm not gonna wait.
+[2137.86s -> 2139.26s]  You asked me not to wait for them.
+[2139.26s -> 2140.70s]  That's what it's doing.
+[2141.18s -> 2142.00s]  Question.
+[2142.00s -> 2143.86s]  Can you call this 10 minutes after the process dies?
+[2143.86s -> 2145.34s]  Like is there a queue somewhere
+[2145.34s -> 2150.02s]  for processes that need to be cleaned up?
+[2150.02s -> 2151.40s]  Well, so the question is,
+[2151.40s -> 2153.10s]  is there a queue or process that needs to be cleaned up?
+[2153.10s -> 2155.74s]  Yes, I mean, it's operating system specific,
+[2155.74s -> 2157.34s]  and I don't know exactly how Linux does it,
+[2157.34s -> 2160.10s]  but the operating system is part of this whole game.
+[2160.10s -> 2161.30s]  When the child ends,
+[2161.30s -> 2162.38s]  the operating system says,
+[2162.38s -> 2166.28s]  oh, okay, I owe the parent a signal,
+[2166.28s -> 2168.42s]  and it sends the signal whenever that child ends.
+[2168.42s -> 2170.38s]  Now, if the parent has already ended,
+[2170.94s -> 2171.98s]  well then, you don't want that,
+[2171.98s -> 2173.38s]  but in this case, the parent,
+[2173.38s -> 2174.78s]  we've made it so the parent will not end
+[2174.78s -> 2176.18s]  until all the children end.
+[2176.18s -> 2177.58s]  But yeah, that's kind of what's happening.
+[2177.58s -> 2178.50s]  The operating system's saying,
+[2178.50s -> 2181.54s]  ah, I'm gonna build up a little queue of ended children,
+[2181.54s -> 2184.86s]  and then I'll call wait PID when I need to.
+[2184.86s -> 2185.98s]  Lots of other questions.
+[2185.98s -> 2186.82s]  Yeah.
+[2186.82s -> 2189.42s]  So is ReapChild still called to time only,
+[2189.42s -> 2191.74s]  or is it a time?
+[2191.74s -> 2192.56s]  Good question.
+[2192.56s -> 2193.66s]  We don't know how many times
+[2193.66s -> 2195.82s]  ReapChild is called in general.
+[2195.82s -> 2198.34s]  In this case, because they're staggered,
+[2198.34s -> 2199.30s]  three seconds, three seconds,
+[2199.30s -> 2200.20s]  three seconds, three seconds,
+[2200.88s -> 2201.72s]  it's called five times,
+[2201.72s -> 2203.84s]  because there aren't two that end at the same time.
+[2203.84s -> 2207.16s]  Any time two or more will end at the same time,
+[2207.16s -> 2208.68s]  it could only get called once,
+[2208.68s -> 2210.68s]  and that's why you have to handle them all inside that,
+[2210.68s -> 2213.10s]  because you may not get another call later.
+[2213.10s -> 2215.26s]  And it's just a race condition
+[2215.26s -> 2217.12s]  that's kind of built into the operating system,
+[2217.12s -> 2218.70s]  and this is the way they've said,
+[2218.70s -> 2221.96s]  look, you have to plan for if ReapChild gets called,
+[2221.96s -> 2224.24s]  maybe more than one child has ended,
+[2224.24s -> 2225.08s]  you better deal with that,
+[2225.08s -> 2227.54s]  because we're not gonna call it again in that case.
+[2227.54s -> 2228.38s]  Yeah.
+[2228.86s -> 2230.82s]  So if we do go back to when multiple,
+[2230.82s -> 2233.14s]  say like two can finish at the same time.
+[2233.14s -> 2234.98s]  Well, two can finish at the same time, yeah.
+[2234.98s -> 2238.90s]  Then this could only get called once or those two,
+[2238.90s -> 2241.90s]  and you'd get two PIDs,
+[2241.90s -> 2243.82s]  like you'd go through the while loop twice,
+[2243.82s -> 2245.34s]  and then be done.
+[2245.34s -> 2246.82s]  Correct, you would go through the,
+[2246.82s -> 2249.38s]  so yes, if two ended at the same time,
+[2249.38s -> 2251.74s]  you would end up getting called once, probably,
+[2251.74s -> 2253.14s]  and then it would go,
+[2253.14s -> 2254.78s]  then this while loop here
+[2254.78s -> 2257.02s]  would go through both of them,
+[2257.02s -> 2259.00s]  and clean both of them up,
+[2259.00s -> 2262.98s]  and then find out that none of the others have finished,
+[2262.98s -> 2265.68s]  return zero, and then you return from the function.
+[2265.68s -> 2266.52s]  Yeah.
+[2266.52s -> 2268.42s]  What is null in this case?
+[2268.42s -> 2270.90s]  Null in this case, remember this was the status,
+[2270.90s -> 2272.66s]  so we could have done,
+[2272.66s -> 2275.14s]  in fact, you normally should do something like this,
+[2275.14s -> 2280.14s]  status, and then you paste in status like that,
+[2281.14s -> 2283.12s]  and it gives you more information.
+[2283.12s -> 2285.10s]  What was the return value of the child?
+[2285.10s -> 2286.66s]  Did it end abnormally?
+[2287.62s -> 2288.86s]  There's lots of information,
+[2288.86s -> 2290.50s]  some more information you can get from that.
+[2290.50s -> 2292.66s]  What status did it, how did it end?
+[2292.66s -> 2294.62s]  Did it, was it stopped, or rather,
+[2294.62s -> 2296.70s]  did it end, or was it stopped, or was it continued?
+[2296.70s -> 2298.90s]  That gives you more information about that.
+[2298.90s -> 2299.94s]  Good questions.
+[2299.94s -> 2300.78s]  Yeah.
+[2300.78s -> 2302.38s]  Could you run this without the,
+[2302.38s -> 2305.82s]  inside the kids, instead of just us three?
+[2305.82s -> 2308.22s]  Could I run it without which?
+[2308.22s -> 2311.30s]  Now you have to see three times kids.
+[2311.30s -> 2312.80s]  Oh, yeah, you want me to run it without the,
+[2312.80s -> 2314.20s]  so they all end at the same time.
+[2314.20s -> 2315.04s]  Sure.
+[2316.04s -> 2319.34s]  Let's see, so if they all end at the same time,
+[2320.84s -> 2323.72s]  you do that, and,
+[2326.56s -> 2327.40s]  let's see.
+[2327.40s -> 2328.48s]  Okay, so remember, they're all gonna go boom,
+[2328.48s -> 2330.92s]  and end after three seconds or whatever, right?
+[2330.92s -> 2333.64s]  Boom, they all ended, dad finally wakes up,
+[2333.64s -> 2335.78s]  and says, oh, they've all ended, we're done,
+[2335.78s -> 2338.00s]  and they got handled inside that.
+[2338.00s -> 2338.84s]  Good question.
+[2340.08s -> 2340.92s]  Right.
+[2341.92s -> 2343.92s]  That's a lot of, that's a lot of stuff
+[2343.92s -> 2345.28s]  packed into one program,
+[2345.28s -> 2347.08s]  a lot of different things going on,
+[2347.08s -> 2349.04s]  but what we've learned now is,
+[2349.04s -> 2352.12s]  well, these signal handlers have some nuance to them,
+[2352.12s -> 2356.28s]  they have some, they have this ability to get called,
+[2356.28s -> 2358.90s]  but sometimes it's a little bit odd,
+[2358.90s -> 2361.58s]  because two things could kind of call it at the same time,
+[2361.58s -> 2363.02s]  so that's nuanced.
+[2363.02s -> 2366.46s]  We've got wait PID, which will wait for any children,
+[2366.46s -> 2368.56s]  and you can use negative one for the first parameter
+[2368.56s -> 2370.32s]  to wait for any of the children,
+[2370.40s -> 2372.92s]  and now we've said, yeah, but what if we don't want you
+[2372.92s -> 2374.76s]  to block and wait for that child,
+[2374.76s -> 2376.16s]  we want you to just return immediately,
+[2376.16s -> 2378.30s]  and we capture the information about that,
+[2378.30s -> 2381.22s]  saying, oh, there's no, if it's zero,
+[2381.22s -> 2383.24s]  there are children still remaining
+[2383.24s -> 2385.32s]  that have not been captured yet, okay?
+[2385.32s -> 2388.60s]  Now, we didn't care if it was children still remaining,
+[2388.60s -> 2390.72s]  or all the children are done,
+[2390.72s -> 2393.24s]  because we just know that we're counting correctly,
+[2393.24s -> 2395.08s]  so ReapChild will get called again
+[2395.08s -> 2396.40s]  if we haven't counted,
+[2396.40s -> 2398.00s]  or if all the children are still remaining,
+[2398.00s -> 2400.68s]  just because the parent program,
+[2400.68s -> 2402.60s]  or the parent part of the process
+[2402.60s -> 2406.58s]  is kind of doing its own thing, okay?
+[2407.62s -> 2410.32s]  All right, I know there's a lot going on there,
+[2410.32s -> 2413.24s]  but do ask more questions,
+[2413.24s -> 2415.16s]  and feel free to go run the code yourself
+[2415.16s -> 2416.76s]  if you want to, you can download it.
+[2416.76s -> 2418.32s]  I didn't put it in the slideshow today,
+[2418.32s -> 2419.96s]  I'm not sure if that screwed up my tablet or not,
+[2419.96s -> 2423.24s]  but the other day, I'll try that again in the future.
+[2423.24s -> 2425.24s]  So anyway, we went through all these different cases,
+[2425.24s -> 2428.12s]  so I don't think we need to redo these,
+[2428.12s -> 2430.20s]  because we did them kind of as we go along,
+[2430.20s -> 2432.04s]  but feel free to read the slides about that.
+[2432.04s -> 2435.48s]  It's just basically going through exactly what we did live
+[2435.48s -> 2438.64s]  and you saw that we had some various cases
+[2438.64s -> 2441.68s]  where we needed to do more logic
+[2441.68s -> 2445.04s]  and different type of logic, okay?
+[2445.04s -> 2449.84s]  All right, so let's see, that, I think it's that for,
+[2449.84s -> 2454.84s]  there are other flags besides W,
+[2455.56s -> 2460.08s]  no hang, there's also W untraced,
+[2460.08s -> 2463.20s]  which is a weird name, but basically what it means is,
+[2463.20s -> 2466.88s]  block until a child process has either ended
+[2466.88s -> 2470.58s]  or been stopped, and stopped is paused, not ended,
+[2470.58s -> 2472.96s]  and we'll see lots of cases where they get paused.
+[2472.96s -> 2476.00s]  If you use W untraced with W no hang,
+[2476.00s -> 2478.24s]  it removes that blocking part,
+[2478.24s -> 2480.68s]  it doesn't actually block in that case.
+[2480.68s -> 2483.38s]  W no hang always says, well, I'm not gonna block,
+[2483.46s -> 2486.78s]  but the other ones, W untraced is if it stops,
+[2486.78s -> 2489.82s]  and then you also have W continued
+[2489.82s -> 2493.42s]  for the situation where the child process has been stopped
+[2493.42s -> 2496.30s]  and then gets started back up again,
+[2496.30s -> 2498.26s]  your parent will also get a notice about that,
+[2498.26s -> 2500.78s]  get a signal about that, okay?
+[2500.78s -> 2503.54s]  So often we will see three of them together,
+[2503.54s -> 2507.70s]  W untraced or W continued or W no hang,
+[2507.70s -> 2511.10s]  and that just says, look, I want you to wait
+[2511.10s -> 2513.70s]  and return information about a child process
+[2513.70s -> 2515.68s]  that has changed any kind of its state,
+[2515.68s -> 2520.54s]  not just ended, not just stopped, not just continued,
+[2520.54s -> 2523.50s]  and by the way, don't actually block
+[2523.50s -> 2525.88s]  when you're doing that, okay?
+[2526.98s -> 2531.10s]  All right, so that's the basic idea
+[2531.10s -> 2533.88s]  of signal handlers so far.
+[2533.88s -> 2536.14s]  We have some more nuance in race conditions
+[2536.14s -> 2539.54s]  that we have to deal with going forward, okay?
+[2539.54s -> 2543.78s]  So we have to talk about
+[2543.78s -> 2546.98s]  some more synchronization issues, okay?
+[2548.50s -> 2552.72s]  When you talk about signal handlers, okay,
+[2552.72s -> 2557.20s]  remember that the signal handler gets called
+[2557.20s -> 2561.56s]  when the whatever thing happens happens, okay?
+[2561.56s -> 2563.40s]  So the question came up earlier and said,
+[2563.40s -> 2567.62s]  and somebody said, what if the child process ends
+[2567.62s -> 2570.70s]  before the parent actually gets to something or whatever?
+[2570.70s -> 2572.68s]  That could happen, all right?
+[2572.68s -> 2575.42s]  And because of the way you write your code,
+[2575.42s -> 2577.46s]  that might actually happen
+[2577.46s -> 2580.46s]  and it might not be what you want,
+[2580.46s -> 2582.54s]  or at least what happens might not be what you want.
+[2582.54s -> 2585.30s]  So we have to actually deal with this.
+[2585.30s -> 2586.14s]  Here's what we're gonna do.
+[2586.14s -> 2587.78s]  I'm gonna write another program
+[2587.78s -> 2592.10s]  and it's going to be basically a job list
+[2592.10s -> 2592.92s]  toward a program.
+[2592.92s -> 2595.54s]  In other words, we're gonna start up a bunch of programs
+[2595.54s -> 2598.46s]  using fork exec CVP, like we've done before.
+[2598.46s -> 2599.30s]  We're gonna start them up
+[2599.30s -> 2601.78s]  and we're gonna add them to a job list.
+[2601.78s -> 2604.60s]  Now, in fact, you're gonna do this for assignment four
+[2604.60s -> 2607.70s]  coming up, not this week, but next week.
+[2607.70s -> 2610.86s]  You're gonna do this coming up for that assignment
+[2610.86s -> 2612.14s]  and you're gonna have to do this
+[2612.14s -> 2613.66s]  because your shell does that.
+[2613.66s -> 2615.54s]  Whenever you type a command, guess what?
+[2615.54s -> 2618.10s]  The shell takes that command and puts it into some list
+[2618.10s -> 2619.26s]  that it's keeping track of
+[2619.26s -> 2621.14s]  to know which programs are running.
+[2621.14s -> 2622.18s]  That's what it's doing.
+[2622.18s -> 2623.02s]  So that's what we're gonna do.
+[2623.02s -> 2624.32s]  We're gonna run these programs,
+[2624.32s -> 2625.88s]  three of them, as it turns out,
+[2625.88s -> 2628.76s]  and then we're going to, every second, by the way,
+[2628.76s -> 2629.96s]  we're gonna do it one second after the other
+[2629.96s -> 2631.20s]  after the other.
+[2631.20s -> 2635.84s]  And then we're gonna have a signal handler
+[2635.84s -> 2640.84s]  that gets called when the child's state changes.
+[2641.02s -> 2641.92s]  Remember, it always gets called
+[2641.92s -> 2643.34s]  when the child's state changes.
+[2643.34s -> 2646.68s]  And we are going to add it to this job list
+[2646.68s -> 2649.26s]  through the signal handler.
+[2650.02s -> 2650.86s]  Okay?
+[2650.86s -> 2655.26s]  All right, and then the parent is also going to maintain,
+[2655.26s -> 2658.10s]  well, it's kind of the parent is maintaining
+[2658.10s -> 2660.62s]  this job list is really what it is.
+[2660.62s -> 2662.34s]  Okay, in fact, we're not really maintaining it all.
+[2662.34s -> 2663.22s]  We're just printing it out.
+[2663.22s -> 2665.24s]  Okay, let me show you the program
+[2665.24s -> 2668.42s]  and then we will see it in action.
+[2668.42s -> 2669.26s]  Okay?
+[2669.26s -> 2672.74s]  This is gonna be called joblistsynchronization.c
+[2672.74s -> 2674.06s]  and it's gonna be the following.
+[2674.06s -> 2677.18s]  Again, we'll write the main part first
+[2677.18s -> 2681.44s]  just to kind of show you what it's actually doing here.
+[2681.44s -> 2682.28s]  Okay?
+[2682.28s -> 2685.80s]  I have, I'm gonna call, by the way, the date function.
+[2685.80s -> 2687.90s]  You haven't seen the date function before.
+[2687.90s -> 2691.26s]  It just does the date, just prints out the date.
+[2691.26s -> 2693.22s]  Okay, so I'm gonna call the date function
+[2693.22s -> 2697.10s]  and it's going to run that
+[2697.10s -> 2699.00s]  and then print it out to the screen.
+[2699.00s -> 2700.12s]  Okay, that's all the date function
+[2700.12s -> 2701.50s]  is actually going to do.
+[2701.50s -> 2703.22s]  Okay, and so what we're going to do
+[2703.22s -> 2705.38s]  is we're going to set up a signal handler,
+[2705.38s -> 2707.86s]  signal sig child,
+[2707.86s -> 2711.24s]  and it's going to be, in this case, reap processes.
+[2712.18s -> 2715.80s]  All right, that's setting up the signal handler.
+[2715.80s -> 2717.28s]  Okay?
+[2717.28s -> 2720.30s]  And then we are going to do what we call,
+[2720.30s -> 2721.46s]  we are going to,
+[2722.72s -> 2724.14s]  we are going to just,
+[2724.14s -> 2726.02s]  actually, we're gonna do this in a minute.
+[2726.02s -> 2727.72s]  Right now, we're just going to
+[2729.34s -> 2731.78s]  start the actual for loop to start the process.
+[2731.78s -> 2735.62s]  So for size T, I equals zero,
+[2735.62s -> 2738.98s]  I is less than three in this case, I plus plus.
+[2738.98s -> 2743.48s]  Okay, PID, T, PID equals fork.
+[2743.48s -> 2746.22s]  Okay, if, I don't know why this is not,
+[2747.70s -> 2749.20s]  okay, there we go, anyway.
+[2749.20s -> 2751.66s]  All right, fork, did I have,
+[2751.66s -> 2752.70s]  I might have had a mistake in there,
+[2752.70s -> 2756.70s]  so anyway, if the PID is zero,
+[2756.70s -> 2758.98s]  means we're in the child.
+[2758.98s -> 2761.64s]  Okay, what are we gonna do in there, in this case?
+[2762.48s -> 2766.84s]  We are actually going to just call exe vp.
+[2766.84s -> 2771.68s]  Okay, and it's K arguments, zero, and K arguments.
+[2771.68s -> 2775.44s]  Remember, this is how exec vp works, okay?
+[2775.44s -> 2776.88s]  And that's that.
+[2776.88s -> 2779.06s]  Okay, remember that will not return if it works,
+[2779.06s -> 2780.36s]  and we're gonna assume the date function
+[2780.36s -> 2781.84s]  is gonna work in this case.
+[2781.84s -> 2784.00s]  We're not doing any error checking in that case.
+[2784.00s -> 2784.84s]  Okay?
+[2784.84s -> 2788.84s]  And then we're going to sleep for one second.
+[2789.68s -> 2792.92s]  Okay, which basically forces the CPU,
+[2792.92s -> 2796.00s]  or forces the parent off the CPU.
+[2796.00s -> 2797.28s]  What do I mean by that?
+[2797.28s -> 2799.60s]  I mean that it's gonna tell the parent go to sleep,
+[2799.60s -> 2802.78s]  and then the child is actually gonna get to do its thing.
+[2802.78s -> 2804.12s]  If you have multiple processors,
+[2804.12s -> 2805.52s]  this will probably happen anyway,
+[2805.52s -> 2807.32s]  but in this case, we're just forcing it
+[2807.32s -> 2808.96s]  to make the parent wait for a second.
+[2808.96s -> 2809.78s]  Why?
+[2809.78s -> 2810.62s]  Well, who knows?
+[2810.62s -> 2812.60s]  Maybe this is a system where, you know,
+[2812.60s -> 2813.72s]  you're typing commands in,
+[2813.72s -> 2815.42s]  and it's waiting for commands to go, but whatever.
+[2815.42s -> 2818.32s]  We're just, for now, we're just forcing it off the CPU,
+[2818.76s -> 2822.60s]  and then we're going to print job percent D
+[2822.60s -> 2825.84s]  added to the job list,
+[2825.84s -> 2829.92s]  and we're going to print the actual PID of the child.
+[2829.92s -> 2830.74s]  Okay?
+[2830.74s -> 2833.88s]  And then we're going to return zero, and that's that.
+[2833.88s -> 2836.12s]  Okay, so everybody gets what's going on here.
+[2836.12s -> 2839.34s]  We're gonna start a process, three processes,
+[2839.34s -> 2840.60s]  the date command.
+[2840.60s -> 2842.48s]  It's going to, we're gonna print out,
+[2842.48s -> 2845.12s]  hey, I've started these processes after one second.
+[2846.04s -> 2846.88s]  Okay?
+[2846.88s -> 2848.08s]  That's what's happening there.
+[2849.08s -> 2852.00s]  In reap processes, in this case, okay,
+[2852.00s -> 2853.44s]  what we're gonna do is we're still gonna do this
+[2853.44s -> 2855.80s]  while true, because we don't know,
+[2855.80s -> 2857.64s]  we're almost always gonna do this from now on,
+[2857.64s -> 2860.00s]  because we don't know how many children have ended
+[2860.00s -> 2862.80s]  or have changed state, okay?
+[2862.80s -> 2867.44s]  And we're gonna say PID equals wait PID,
+[2867.44s -> 2870.52s]  negative one, null, and W, no hang,
+[2870.52s -> 2871.64s]  because we don't wanna wait,
+[2871.64s -> 2873.80s]  we don't wanna block on these.
+[2873.80s -> 2874.64s]  Okay?
+[2874.64s -> 2875.72s]  And then we're gonna say,
+[2875.76s -> 2878.60s]  if PID is less or equal to zero,
+[2878.60s -> 2879.48s]  we're simply gonna break,
+[2879.48s -> 2881.44s]  same exact things we did before.
+[2881.44s -> 2882.28s]  Okay?
+[2882.28s -> 2883.28s]  And then now we're going to,
+[2883.28s -> 2884.64s]  if we were keeping track of this,
+[2884.64s -> 2886.24s]  which you'll do for assignment four,
+[2886.24s -> 2888.68s]  we're gonna print job percent,
+[2888.68s -> 2889.80s]  we're just gonna print it in this case,
+[2889.80s -> 2893.60s]  percent D removed from the job list.
+[2893.60s -> 2894.44s]  Okay?
+[2894.44s -> 2897.52s]  So in this case, what it's going to do
+[2898.84s -> 2901.52s]  is when the job ends,
+[2901.52s -> 2903.00s]  remember no hang, actually in this case,
+[2903.04s -> 2906.60s]  it's just when the job actually finishes, okay?
+[2906.60s -> 2909.44s]  It will say it's removed from the job list.
+[2909.44s -> 2910.64s]  When the child ends,
+[2910.64s -> 2912.36s]  well, why are we keeping it in the job list?
+[2912.36s -> 2914.04s]  Let's remove it from the job list.
+[2914.04s -> 2914.88s]  Okay?
+[2914.88s -> 2917.36s]  So again, the parent is creating all these processes
+[2917.36s -> 2919.80s]  and putting it into the job list.
+[2919.80s -> 2920.64s]  We're just printing it out,
+[2920.64s -> 2922.32s]  but it's like putting it into a job list.
+[2922.32s -> 2925.48s]  When the signal handler gets called for the child
+[2925.48s -> 2928.24s]  process, it says, oh, the job is now removed
+[2928.24s -> 2931.00s]  from the job list.
+[2931.00s -> 2931.92s]  Okay?
+[2931.92s -> 2934.12s]  Let's run this and see what happens.
+[2937.80s -> 2938.64s]  Okay.
+[2938.64s -> 2939.92s]  Job list synchronization.
+[2939.92s -> 2940.76s]  All right.
+[2940.76s -> 2945.68s]  It says, job 23735, which is the PID of the child,
+[2945.68s -> 2947.60s]  removed from the job list.
+[2947.60s -> 2951.20s]  And then it says, job 23735 added to the job list.
+[2951.20s -> 2953.20s]  And then it says the date, great.
+[2953.20s -> 2954.68s]  Or actually it said the date first, in fact,
+[2954.68s -> 2957.72s]  because it said the date and then ended.
+[2957.72s -> 2959.12s]  And then it did the same thing,
+[2959.12s -> 2961.12s]  and then it says the next job was removed
+[2961.16s -> 2963.88s]  and then added and then removed and then added.
+[2963.88s -> 2966.72s]  Now, you're probably saying to yourself,
+[2966.72s -> 2968.16s]  well, that's kind of dumb.
+[2968.16s -> 2972.00s]  The job lists here, they're being removed
+[2972.00s -> 2974.20s]  before they're being added.
+[2974.20s -> 2975.04s]  Right?
+[2975.04s -> 2975.86s]  And you've got to say to yourself,
+[2975.86s -> 2977.48s]  well, why is that happening?
+[2978.28s -> 2979.12s]  Right?
+[2979.12s -> 2980.44s]  Well, what did we do to make it happen?
+[2980.44s -> 2981.88s]  That's the bigger question.
+[2981.88s -> 2982.72s]  Yeah.
+[2982.72s -> 2983.56s]  Comment or question.
+[2983.56s -> 2985.08s]  I just want to do that because we,
+[2985.08s -> 2986.96s]  like, force the parent on the CPU.
+[2986.96s -> 2987.80s]  Yeah.
+[2987.80s -> 2990.08s]  We did this little sleep for one second, right?
+[2990.32s -> 2993.00s]  Well, by the time it gets to that sleep,
+[2993.00s -> 2995.84s]  the child is already on its way.
+[2995.84s -> 2998.60s]  And the date does not take more than one second to happen.
+[2998.60s -> 3001.32s]  It happens, like, instantly, right?
+[3001.32s -> 3004.36s]  When the date function is done, command is done,
+[3004.36s -> 3005.96s]  it calls the signal handler.
+[3005.96s -> 3009.66s]  All of that happens before one second is done.
+[3009.66s -> 3011.04s]  Now, you'll notice when I run it
+[3011.04s -> 3012.96s]  that one second actually doesn't happen
+[3012.96s -> 3013.76s]  by the time it says.
+[3013.76s -> 3016.88s]  It's because sleep does not wait that one second.
+[3016.92s -> 3021.00s]  If I change the snooze, it would actually wait one second.
+[3021.00s -> 3023.52s]  But in this case, it just wakes up immediately in that case.
+[3023.52s -> 3024.36s]  Hasna?
+[3024.36s -> 3025.52s]  If you remove the sleep,
+[3025.52s -> 3028.20s]  wouldn't it also sometimes run to the issue
+[3028.20s -> 3032.64s]  because if that didn't do automatically return to the child
+[3032.64s -> 3033.92s]  then you would...
+[3033.92s -> 3035.08s]  Yeah, very good question.
+[3035.08s -> 3035.92s]  Very good comment.
+[3035.92s -> 3036.92s]  The question and comment was,
+[3036.92s -> 3037.76s]  wait, wait, wait.
+[3037.76s -> 3038.76s]  If we removed sleep one,
+[3038.76s -> 3041.52s]  wouldn't it still have this potential problem?
+[3041.52s -> 3043.36s]  Because you don't know if the date command
+[3043.36s -> 3046.08s]  is going to run faster than this command is going to get to.
+[3046.12s -> 3047.12s]  Absolutely.
+[3047.12s -> 3047.96s]  Like you don't know that.
+[3047.96s -> 3051.32s]  And we're purposely putting in this sleep in here to say,
+[3051.32s -> 3053.12s]  hey, this is something that could happen
+[3053.12s -> 3054.64s]  even though we're forcing it to,
+[3054.64s -> 3055.60s]  so we know what's going to happen
+[3055.60s -> 3056.78s]  because we're forcing it to.
+[3056.78s -> 3058.72s]  But yeah, these are race conditions.
+[3058.72s -> 3060.04s]  You can't predict them.
+[3060.04s -> 3061.30s]  Very good point.
+[3063.08s -> 3063.92s]  Yeah.
+[3063.92s -> 3065.32s]  So if you had the print,
+[3065.32s -> 3067.60s]  like that's the print you would add to the list
+[3067.60s -> 3070.60s]  before you checked if it was the child,
+[3070.60s -> 3072.04s]  what would happen?
+[3072.04s -> 3074.14s]  If you had this right here
+[3074.14s -> 3076.18s]  before you checked if it was the child,
+[3077.22s -> 3078.98s]  it would all, well,
+[3078.98s -> 3080.86s]  remember that you would get parent printed twice
+[3080.86s -> 3084.66s]  in that case because the child and the parent would do it.
+[3084.66s -> 3087.82s]  So that's not really what we wanted to do in this case.
+[3087.82s -> 3088.94s]  But you see the issue here.
+[3088.94s -> 3090.14s]  We've got this race condition
+[3090.14s -> 3091.98s]  and really what we want to do
+[3091.98s -> 3095.10s]  is we want the child not to send that signal
+[3095.10s -> 3098.82s]  until after this command.
+[3098.82s -> 3100.42s]  That's what we want.
+[3100.42s -> 3102.66s]  Okay, we want the child to,
+[3102.66s -> 3103.70s]  maybe it ends.
+[3104.22s -> 3105.54s]  We don't care if the child ends.
+[3105.54s -> 3107.54s]  We just don't want that signal to be sent
+[3107.54s -> 3111.30s]  until we're ready for that signal to be sent.
+[3111.30s -> 3112.42s]  Okay, and in this case,
+[3112.42s -> 3115.22s]  it's going to be after we've added the job to the list
+[3115.22s -> 3116.54s]  because that would be kind of hard.
+[3116.54s -> 3117.74s]  This is especially true
+[3117.74s -> 3120.02s]  if you literally were keeping some list
+[3120.02s -> 3121.34s]  that you needed to,
+[3121.34s -> 3123.46s]  like if it was a queue or something
+[3123.46s -> 3126.26s]  or some set or something of like the list
+[3126.26s -> 3128.48s]  and you tried to remove it before you added it,
+[3128.48s -> 3130.18s]  well, you're going to crash, right?
+[3130.18s -> 3131.06s]  Or there's some other like,
+[3131.06s -> 3132.18s]  oh, I can't remove that job
+[3132.18s -> 3133.02s]  even though it ended.
+[3133.62s -> 3136.98s]  Right, so you need to somehow be able to say,
+[3136.98s -> 3141.66s]  don't call that signal until after this printf
+[3141.66s -> 3142.84s]  in this case.
+[3142.84s -> 3144.82s]  All right, so how are we going to do that?
+[3144.82s -> 3146.62s]  Okay, there's the thing we just did.
+[3147.58s -> 3148.78s]  What we need to do,
+[3148.78s -> 3149.62s]  okay, well, this is,
+[3149.62s -> 3151.78s]  we actually kind of went through all this detail here.
+[3151.78s -> 3153.48s]  What we need to do is we need to use
+[3153.48s -> 3156.92s]  a different type of system call here.
+[3156.92s -> 3159.38s]  Okay, we need to have this idea
+[3159.38s -> 3163.94s]  of a signal set.
+[3163.94s -> 3168.94s]  And this signal set is going to be a data structure
+[3169.82s -> 3174.34s]  that says, when you call this function called
+[3174.34s -> 3177.90s]  SIGPROCMASK, it says,
+[3177.90s -> 3181.34s]  don't let a particular signal get called
+[3181.34s -> 3183.10s]  until we unblock it.
+[3184.02s -> 3186.54s]  Okay, so we're going to block some signal.
+[3186.54s -> 3188.62s]  In fact, sometimes you can block as many signals
+[3188.74s -> 3190.38s]  as you want, but we're going to, in particular,
+[3190.38s -> 3193.54s]  block the SIGCHILD until we're ready
+[3193.54s -> 3196.94s]  for that SIGCHILD to be okay to be fired.
+[3197.82s -> 3199.10s]  That's all we're doing.
+[3199.10s -> 3202.38s]  Okay, there's three different types,
+[3202.38s -> 3204.52s]  like functions we have to deal with in this case.
+[3204.52s -> 3208.34s]  The one is called SIGEMPTYSET.
+[3208.34s -> 3209.94s]  Let me make this a little bigger.
+[3209.94s -> 3211.34s]  One is called SIGEMPTYSET,
+[3211.34s -> 3216.34s]  and SIGEMPTYSET basically takes this SIGSETT type
+[3216.60s -> 3218.82s]  that we have, and it kind of initializes it.
+[3218.82s -> 3221.78s]  It says there are no signals in that set.
+[3221.78s -> 3223.26s]  Okay, it's just an initialization.
+[3223.26s -> 3225.74s]  And by the way, this signal set's basically an integer.
+[3225.74s -> 3226.94s]  It's got a bunch of bits,
+[3226.94s -> 3228.78s]  obviously it's got a bunch of bits in it.
+[3228.78s -> 3231.34s]  The bits are set depending on the signal.
+[3231.34s -> 3232.54s]  And it's a 32-bit integer.
+[3232.54s -> 3235.26s]  It turns out there's less than 32 signals.
+[3235.26s -> 3237.22s]  So we can get away with that.
+[3237.22s -> 3242.10s]  Then if you want to add a particular signal to a set,
+[3242.10s -> 3245.84s]  you say, okay, I'm going to pass in the set
+[3246.20s -> 3247.72s]  that I'm going to add, and then I'm going to tell it
+[3247.72s -> 3252.20s]  which signal I want to actually add to that set.
+[3252.20s -> 3253.16s]  Okay, you can also remove them.
+[3253.16s -> 3254.40s]  The three that we're going to care about right now
+[3254.40s -> 3255.56s]  are these three.
+[3255.56s -> 3260.56s]  And then if you want to, say, go block this signal,
+[3260.94s -> 3265.94s]  you call SIGPROCMASK with a value called SIGBLOCK,
+[3270.20s -> 3274.24s]  then you pass in the SIGSET that you care about.
+[3274.24s -> 3278.32s]  You can also get back the signal
+[3278.32s -> 3281.02s]  that have already been set.
+[3281.02s -> 3282.52s]  Like it's kind of one of those weird things
+[3282.52s -> 3284.24s]  where they're like, well, we're not going to tell you.
+[3284.24s -> 3288.44s]  Remember like from day one where we talked about UMASK
+[3288.44s -> 3289.72s]  and there was that weird thing where the only way
+[3289.72s -> 3291.52s]  to check UMASK was to actually change it
+[3291.52s -> 3292.92s]  and you get back what you checked?
+[3292.92s -> 3295.04s]  It's the same sort of thing here.
+[3295.04s -> 3297.32s]  Why they did this is just historical, I'm guessing.
+[3297.32s -> 3298.60s]  But anyway, most of the time,
+[3298.60s -> 3301.00s]  we're not going to care about the existing set.
+[3301.00s -> 3302.96s]  We're just going to say, look, here's our new set.
+[3303.00s -> 3304.64s]  I don't care what signals are already done.
+[3304.64s -> 3305.62s]  Let's just go with it.
+[3305.62s -> 3307.60s]  If you're writing a more robust program,
+[3307.60s -> 3309.56s]  you might care about that.
+[3309.56s -> 3310.44s]  Okay, all right.
+[3310.44s -> 3314.12s]  So let's see how this actually works in practice.
+[3314.12s -> 3319.12s]  So let's go modify our main function here.
+[3323.98s -> 3325.48s]  We're not going to have to do anything, by the way,
+[3325.48s -> 3326.52s]  to the reprocesses.
+[3326.52s -> 3329.24s]  We're just going to have to change main here
+[3329.24s -> 3331.34s]  to have this signal set that we're going to block
+[3331.34s -> 3333.02s]  and you'll see how that happens.
+[3333.02s -> 3334.86s]  Okay, all right.
+[3334.86s -> 3337.06s]  So what we're going to do is we're going to the same thing.
+[3337.06s -> 3338.50s]  We're going to set up this signal
+[3338.50s -> 3340.74s]  and then we are going to say, okay, fine.
+[3340.74s -> 3343.38s]  I'm going to get a SIG set underscore T
+[3343.38s -> 3344.98s]  and I'm just going to call it my set.
+[3344.98s -> 3349.18s]  I'm going to initialize it by calling SIG empty set.
+[3350.46s -> 3352.74s]  SIG empty set.
+[3352.74s -> 3355.98s]  And then we pass in a pointer to the set.
+[3355.98s -> 3360.34s]  And then we say, let's add the SIG child to that.
+[3360.34s -> 3363.20s]  SIG add set.
+[3364.14s -> 3369.14s]  SIG, or sorry, set and SIG CHLD.
+[3371.46s -> 3372.50s]  Okay, all right.
+[3372.50s -> 3376.02s]  So at this point, now we've got our set
+[3376.02s -> 3377.46s]  that we're going to be able to say,
+[3377.46s -> 3379.14s]  hey, wait for this signal,
+[3379.14s -> 3381.82s]  like block this signal until we're ready for it.
+[3381.82s -> 3384.14s]  Okay, we don't need to quite block it yet, right?
+[3384.14s -> 3388.78s]  We want to block it before we actually have the chance
+[3388.78s -> 3392.74s]  to call it, like before we actually do fork
+[3392.74s -> 3397.74s]  because at that point we needed to be blocked, okay.
+[3397.86s -> 3401.74s]  So at this point, we're going to say SIG proc mask.
+[3401.74s -> 3403.72s]  Okay, SIG block.
+[3404.88s -> 3407.22s]  And then we are going to pass in our set
+[3407.22s -> 3410.98s]  and we're not going to care about the other set.
+[3410.98s -> 3413.06s]  So at this point, right before fork,
+[3413.06s -> 3414.98s]  we have blocked the signals.
+[3414.98s -> 3417.14s]  It turns out, and this is a good thing
+[3417.18s -> 3420.14s]  as it turns out, blocked signals
+[3420.14s -> 3421.94s]  are passed along to your children.
+[3421.94s -> 3423.92s]  Whatever signals are blocked in the parent
+[3423.92s -> 3426.52s]  are also blocked in the children.
+[3426.52s -> 3428.38s]  And the reason for that is so that we can do this.
+[3428.38s -> 3429.46s]  I mean, that's really the basic,
+[3429.46s -> 3431.82s]  the main reason that we did this
+[3431.82s -> 3432.78s]  is so that we can do that.
+[3432.78s -> 3435.86s]  So by the time you get to this child part,
+[3436.94s -> 3439.18s]  by the time we actually run the date command,
+[3439.18s -> 3440.62s]  we are not allowed,
+[3440.62s -> 3442.28s]  in fact, the program is not allowed
+[3442.28s -> 3446.30s]  to call the SIG child signal.
+[3446.34s -> 3450.22s]  Now, it doesn't mean that it gets like ignored forever.
+[3450.22s -> 3451.86s]  If once we unblock the signals,
+[3451.86s -> 3454.06s]  that queue of signals that need to be sent,
+[3454.06s -> 3455.74s]  we'll go, oh, okay, the operating system will go,
+[3455.74s -> 3457.98s]  oh, great, I've got this child that's ended,
+[3457.98s -> 3458.82s]  I'd better call it.
+[3458.82s -> 3461.78s]  But it's only after we unblock it, okay.
+[3461.78s -> 3463.34s]  All right.
+[3463.34s -> 3466.06s]  So what do we have to do at this point?
+[3466.06s -> 3471.06s]  We now need to in the child,
+[3471.26s -> 3473.66s]  this is going to seem a little strange,
+[3473.66s -> 3477.82s]  but in the child, we're going to do SIG proc mask, okay.
+[3477.82s -> 3480.76s]  Actually, I kind of lied to you a little bit earlier.
+[3481.76s -> 3485.82s]  The reason the signals get blocked in the children
+[3485.82s -> 3487.26s]  is not because of this actually,
+[3487.26s -> 3489.60s]  it's because you may want the children
+[3489.60s -> 3493.30s]  to also be able to block on their signal.
+[3493.30s -> 3495.26s]  And it might be because you're running
+[3495.26s -> 3496.58s]  the same sort of program.
+[3496.58s -> 3498.38s]  We will see why that's actually not important
+[3498.38s -> 3500.66s]  because of what I'm exactly going to do right now.
+[3500.66s -> 3505.66s]  We're going to unblock for the child only right there.
+[3510.54s -> 3515.54s]  So in other words, what if date call the child process?
+[3516.22s -> 3519.26s]  If we didn't unblock at that point,
+[3519.26s -> 3521.00s]  the date function would start out
+[3521.00s -> 3523.42s]  with its child process blocked.
+[3523.42s -> 3524.66s]  And date doesn't do that,
+[3524.66s -> 3526.22s]  so it doesn't actually matter that much.
+[3526.22s -> 3528.46s]  But if date had its own child,
+[3528.46s -> 3531.90s]  because the signal sets are passed along
+[3531.90s -> 3534.62s]  to their children, date would also have that issue
+[3534.62s -> 3537.42s]  and it might not be able to handle that, okay.
+[3537.42s -> 3539.94s]  So who knows, that might be an issue.
+[3539.94s -> 3541.16s]  But for now, what we're doing is we're saying,
+[3541.16s -> 3543.08s]  in the child, go ahead and unblock
+[3543.08s -> 3544.30s]  because it doesn't matter.
+[3544.30s -> 3545.94s]  The child, we don't care if the child
+[3545.94s -> 3548.02s]  gets a child handler called.
+[3548.02s -> 3551.22s]  We care about the parent's child handler getting called
+[3551.22s -> 3553.10s]  and we don't want it to unblock
+[3553.10s -> 3558.10s]  until right here after the printf, okay.
+[3558.18s -> 3562.82s]  So after the printf, sig proc mask,
+[3562.82s -> 3567.82s]  sig unblock in the parent set.
+[3568.52s -> 3570.68s]  We don't care about what the previous one was,
+[3570.68s -> 3572.30s]  no, like that.
+[3572.30s -> 3576.74s]  After this, now, when the child signal,
+[3576.74s -> 3579.46s]  or the parent's signal handler can get called
+[3579.46s -> 3582.34s]  when the child ends, it probably already will have ended
+[3582.34s -> 3584.54s]  because we just waited for a whole second.
+[3584.54s -> 3587.00s]  And in this case, it's a really fast function.
+[3588.00s -> 3588.84s]  Question.
+[3588.84s -> 3590.40s]  Can you explain again why
+[3590.40s -> 3594.40s]  on the unblock inside the child doesn't unblock?
+[3596.36s -> 3597.80s]  Yes, very good question.
+[3597.80s -> 3599.48s]  The question is, wait a minute, go back a second
+[3599.48s -> 3603.40s]  and explain why unblocking the child,
+[3603.40s -> 3605.42s]  unblocking the signal in the child
+[3605.42s -> 3608.88s]  doesn't have anything to do with the parent, okay.
+[3608.88s -> 3612.20s]  The parent, forget about the child for a second.
+[3612.20s -> 3614.48s]  The parent has a main function
+[3614.48s -> 3616.48s]  and it has a child, a signal handler
+[3616.52s -> 3617.70s]  for the sig child.
+[3618.76s -> 3622.68s]  The parent's sig child handler gets called
+[3622.68s -> 3626.96s]  when the child ends, unless we have told the parent,
+[3626.96s -> 3630.12s]  we're not gonna let you accept that signal,
+[3630.96s -> 3631.80s]  really what it is,
+[3631.80s -> 3635.68s]  or you can't send that signal to the parent, okay.
+[3635.68s -> 3637.76s]  So it doesn't matter if the child's signal
+[3637.76s -> 3639.24s]  is blocked or not.
+[3639.24s -> 3642.32s]  That's dealing with its own children if it had some.
+[3642.32s -> 3643.16s]  So it doesn't matter.
+[3643.16s -> 3647.52s]  So when you say sig proc mask sig unblock inside the child,
+[3647.52s -> 3649.78s]  it's just saying, I'm making sure the child
+[3649.78s -> 3652.68s]  doesn't have any signals of its own blocked right now.
+[3653.76s -> 3655.28s]  And then, and that might,
+[3655.28s -> 3658.84s]  cause that might be important to the child, right.
+[3658.84s -> 3661.48s]  In the parent though, even here,
+[3661.48s -> 3663.88s]  we are still blocking that signal for the parent
+[3663.88s -> 3666.44s]  because the last thing the parent saw
+[3666.44s -> 3670.74s]  was this block right here before it forked.
+[3670.74s -> 3673.50s]  So the parent's child handler
+[3673.50s -> 3678.06s]  is not going to get called until line 45 down here,
+[3678.06s -> 3683.06s]  when we call unblock, we'd say sig proc mask unblock,
+[3683.18s -> 3685.18s]  sig unblock on that set.
+[3685.18s -> 3688.26s]  At that point, now the parent's signal handler
+[3688.26s -> 3690.54s]  can get called and it will get called
+[3690.54s -> 3692.04s]  because the operating system goes,
+[3692.04s -> 3693.38s]  oh, now you're accepting signals,
+[3693.38s -> 3696.06s]  I've got one for you, and it calls it then.
+[3696.06s -> 3698.78s]  Hopefully, this will actually,
+[3701.70s -> 3704.70s]  see how this works, jobless synchronization.
+[3704.70s -> 3706.90s]  And hopefully, there we go.
+[3706.90s -> 3710.10s]  Now we actually are waiting for one second
+[3710.10s -> 3711.94s]  and now the jobs are added
+[3711.94s -> 3715.06s]  and then removed in the proper order.
+[3715.06s -> 3715.88s]  Why?
+[3715.88s -> 3716.94s]  Because we wouldn't, we didn't allow them
+[3716.94s -> 3719.50s]  to be removed until they've been added.
+[3719.50s -> 3720.60s]  And in this case, that just took,
+[3720.60s -> 3723.26s]  it took us a little time to add it.
+[3723.26s -> 3724.82s]  And that's the way it goes.
+[3726.78s -> 3727.86s]  Question.
+[3727.86s -> 3732.44s]  Yeah, the date gets printed before we have the job.
+[3732.44s -> 3733.94s]  We don't really care about that
+[3733.94s -> 3735.34s]  because we've said to the,
+[3735.34s -> 3736.58s]  that's a good point though.
+[3736.58s -> 3739.14s]  We said, hey, go run, right?
+[3739.14s -> 3741.02s]  We're trying to do our own like adding,
+[3741.02s -> 3742.24s]  we're trying to do our own bookkeeping,
+[3742.24s -> 3744.06s]  but yeah, you're off and running, right?
+[3744.06s -> 3745.26s]  Now, if you want to do that,
+[3745.26s -> 3747.90s]  yeah, you wouldn't, if you needed to do that,
+[3747.90s -> 3750.90s]  we would have done something like this.
+[3750.90s -> 3753.12s]  If you said, wait, I don't even want date to run,
+[3753.12s -> 3756.64s]  before we did the exec CVP, right?
+[3756.64s -> 3759.28s]  Like we would have to, before we even forked,
+[3759.28s -> 3761.60s]  we would have to then figure out like how to do,
+[3761.60s -> 3762.44s]  you know, do that now.
+[3762.44s -> 3765.24s]  This might actually, this also might be like an issue.
+[3765.24s -> 3766.48s]  You can't, in this case,
+[3766.48s -> 3769.36s]  we would have to do something else to try to figure out
+[3769.36s -> 3770.28s]  like how to do,
+[3770.28s -> 3774.02s]  how to wait to print until the parent has done it.
+[3774.02s -> 3775.24s]  But once you've got a child and a parent,
+[3775.24s -> 3777.12s]  they're kind of independent anyway.
+[3777.12s -> 3779.00s]  So you're not really gonna wanna,
+[3779.00s -> 3780.24s]  you're not gonna be able to wait
+[3780.24s -> 3781.40s]  for the parent on the child.
+[3781.40s -> 3782.76s]  The child is not really gonna be able to wait
+[3782.76s -> 3784.80s]  for the parent itself.
+[3784.80s -> 3786.74s]  So you've gotta be able to figure some other logic out
+[3786.74s -> 3787.84s]  to do that.
+[3787.84s -> 3788.98s]  Yeah.
+[3788.98s -> 3790.38s]  Yeah.
+[3790.38s -> 3791.22s]  Right.
+[3791.22s -> 3793.60s]  Very good question.
+[3793.60s -> 3794.64s]  The question was, wait,
+[3794.64s -> 3798.88s]  is reprocesses also passed down to the child?
+[3798.88s -> 3802.88s]  It certainly is, because it's part of the program.
+[3802.88s -> 3804.04s]  Very good question.
+[3804.04s -> 3805.08s]  The question was, wait,
+[3805.08s -> 3808.80s]  is reprocesses also passed down to the child?
+[3808.80s -> 3812.02s]  It certainly is, because it's part of the program, right?
+[3812.02s -> 3814.96s]  So the child has access to all its own functions.
+[3814.96s -> 3817.92s]  Now, the child's reprocess won't get called
+[3817.92s -> 3821.58s]  when the child ends,
+[3821.58s -> 3825.00s]  because it doesn't have a child that's ended.
+[3825.00s -> 3826.08s]  That was a good inception, Mike.
+[3826.08s -> 3828.16s]  You mentioned earlier how the might have a child process.
+[3828.16s -> 3829.92s]  Yeah, yeah, right.
+[3829.92s -> 3831.84s]  The date might have a child process,
+[3831.84s -> 3834.00s]  in which case, then it would get called.
+[3834.00s -> 3837.04s]  And in that case, we would have more job reform
+[3837.04s -> 3838.00s]  than job access.
+[3839.20s -> 3841.64s]  Because we never did a job at it.
+[3841.64s -> 3842.92s]  Yeah, yeah, so the question was,
+[3842.92s -> 3845.28s]  wait, wait, wait, if the date did have a child,
+[3845.28s -> 3847.76s]  then this signal might get called.
+[3847.76s -> 3852.30s]  Now, likely, the child would set up its own,
+[3852.30s -> 3854.02s]  well, actually, that's a good point.
+[3854.02s -> 3855.80s]  In this case, this one would have, sure,
+[3855.80s -> 3857.08s]  it might have gotten called
+[3857.08s -> 3859.52s]  if the child process had a child process.
+[3859.52s -> 3862.38s]  Yeah, if the child process had a child process.
+[3862.38s -> 3864.60s]  Yeah, the child's one would get called.
+[3864.60s -> 3866.44s]  It wouldn't get added to the parent's job list.
+[3866.48s -> 3869.04s]  It would get added to the child's job list.
+[3869.04s -> 3871.92s]  Or I guess it would get removed from the child's job list.
+[3871.92s -> 3873.20s]  So you would have to put more logic in there
+[3873.20s -> 3874.58s]  if you cared about that.
+[3874.58s -> 3875.96s]  Yeah, yeah, good point.
+[3875.96s -> 3879.72s]  Yeah, what you could also do is you can basically say,
+[3879.72s -> 3881.98s]  you can set up the signal.
+[3881.98s -> 3885.32s]  You can say signal with a null value.
+[3885.32s -> 3888.12s]  Well, basically, it's saying don't handle it anymore.
+[3888.12s -> 3890.28s]  You could do that in the child if you cared about that.
+[3890.28s -> 3892.28s]  We happen to not care about that for this part.
+[3892.28s -> 3893.44s]  Good, very good, good point.
+[3893.44s -> 3894.68s]  There are lots of things to think about
+[3894.80s -> 3896.56s]  when you're building these real programs.
+[3896.56s -> 3897.40s]  Yeah?
+[3898.52s -> 3901.52s]  So sigblock, does that not allow the program
+[3901.52s -> 3903.68s]  to receive signals or send signals?
+[3903.68s -> 3905.28s]  It does not allow, good question.
+[3905.28s -> 3907.40s]  The question was, does sigblock not allow
+[3907.40s -> 3909.08s]  the program to receive signals or send it?
+[3909.08s -> 3913.44s]  It doesn't allow the parent, in this case,
+[3913.44s -> 3915.80s]  to receive that signal.
+[3915.80s -> 3917.92s]  Its signal handler will not get called.
+[3917.92s -> 3919.74s]  It may be queued up to get called later,
+[3919.74s -> 3921.20s]  but it will not get called.
+[3921.20s -> 3923.04s]  Yeah, good question.
+[3923.04s -> 3923.88s]  Yeah?
+[3924.04s -> 3925.60s]  Is there a limit to how many signals
+[3925.60s -> 3930.60s]  the operating system will block and store?
+[3930.80s -> 3931.64s]  Oh, good question.
+[3931.64s -> 3935.12s]  Is there some list or some queue limit
+[3935.12s -> 3936.40s]  on the number of signals?
+[3936.40s -> 3937.68s]  I don't know of any.
+[3937.68s -> 3939.72s]  It's probably big enough that it's not gonna matter.
+[3939.72s -> 3941.36s]  Like, it's probably thousands,
+[3941.36s -> 3942.76s]  and you probably likely won't be able
+[3942.76s -> 3946.48s]  to even create thousands of children anyway or whatever.
+[3946.48s -> 3948.30s]  So it's probably some limit
+[3948.30s -> 3949.54s]  that we aren't gonna worry about.
+[3949.54s -> 3950.64s]  Yeah, good question.
+[3951.44s -> 3956.44s]  If we commented this out, it's gonna run exactly the same,
+[3959.44s -> 3961.64s]  because the child isn't gonna get any children,
+[3961.64s -> 3963.88s]  and it's not gonna matter anyway.
+[3963.88s -> 3967.60s]  Although, if we ran another program that had children,
+[3967.60s -> 3968.96s]  yeah, it probably would print
+[3968.96s -> 3970.52s]  that some job has been added.
+[3970.52s -> 3971.36s]  Well, that's weird.
+[3971.36s -> 3972.84s]  Why would that happen, right?
+[3972.84s -> 3975.88s]  But no, in this case, not gonna matter.
+[3978.12s -> 3979.84s]  Did I delete the wrong one?
+[3979.84s -> 3981.00s]  Oh, no, thank you for,
+[3983.44s -> 3985.88s]  oh, you wanna do this one.
+[3985.88s -> 3988.86s]  That one would just make you behave as it did before.
+[3988.86s -> 3990.10s]  That one, thank you.
+[3993.04s -> 3996.64s]  Job synchronization, yeah, same sort of thing.
+[3996.64s -> 3999.24s]  No children for the children are getting,
+[3999.24s -> 4000.08s]  calling that function.
+[4000.08s -> 4001.68s]  But if you had one that did.
+[4001.68s -> 4002.84s]  If you had one that did.
+[4002.84s -> 4004.48s]  If you had one that did.
+[4004.48s -> 4007.12s]  Right, if date had its own child process,
+[4007.12s -> 4008.88s]  yeah, we probably would have gotten a weird printf
+[4008.96s -> 4010.16s]  in there that said some other process
+[4010.16s -> 4011.76s]  have been added to the job list.
+[4011.76s -> 4014.22s]  So again, when you're trying to do these things,
+[4014.22s -> 4017.00s]  you have to kind of keep track of some of the details
+[4017.00s -> 4020.12s]  of these because it's tricky.
+[4020.12s -> 4021.64s]  Yeah, good question.
+[4021.64s -> 4022.48s]  Yeah.
+[4022.48s -> 4024.72s]  Is there a way to remove the connection
+[4024.72s -> 4028.88s]  between the function pointer and the signal?
+[4028.88s -> 4029.92s]  Yeah, good question.
+[4029.92s -> 4034.92s]  If you want to say, stop calling my signal handler,
+[4035.80s -> 4037.88s]  I forget exactly what it is,
+[4037.92s -> 4040.12s]  but it's another, you basically do signal.
+[4040.12s -> 4043.16s]  And then instead of SIG child, it's like, no signal.
+[4043.16s -> 4045.20s]  It's not that, but it's something like that.
+[4045.20s -> 4046.44s]  I don't remember exactly what it is,
+[4046.44s -> 4048.10s]  but that's what it is.
+[4048.10s -> 4050.56s]  In fact, we can look it up.
+[4050.56s -> 4055.56s]  If we do man signal, let's see, here we go.
+[4057.40s -> 4058.86s]  Let's see, SIG, here we go.
+[4058.86s -> 4063.12s]  SIGIGN means the signal is gonna get ignored.
+[4063.12s -> 4067.28s]  Or SIGDFL means that the default action will happen.
+[4068.40s -> 4070.52s]  You just pass that in the signal and it goes,
+[4070.52s -> 4072.48s]  oh, all right, no more SIG child.
+[4072.48s -> 4075.16s]  It's gonna be called in my process.
+[4075.16s -> 4075.98s]  Good question.
+[4078.36s -> 4080.24s]  Kind of nice when you have the manual right there,
+[4080.24s -> 4081.12s]  your fingertips.
+[4082.92s -> 4086.36s]  All right, so those are the signals there.
+[4086.36s -> 4091.36s]  We have gone through the different types of signals.
+[4091.76s -> 4093.60s]  We can actually write a little function
+[4093.60s -> 4095.36s]  to kind of capture this instead of writing
+[4095.36s -> 4097.52s]  each little part out individually.
+[4098.04s -> 4100.36s]  In this case, we can write impose SIG child block,
+[4100.36s -> 4102.32s]  which does sets up a set,
+[4102.32s -> 4105.04s]  and then calls SIGPROCMAS to block,
+[4105.04s -> 4107.16s]  and then we can do the exact lift one,
+[4107.16s -> 4109.82s]  which does the same sort of thing except unblocks it.
+[4109.82s -> 4111.96s]  You could also have one that toggles it if you want to,
+[4111.96s -> 4113.16s]  and you'll see those functions.
+[4113.16s -> 4115.94s]  We've written some of those functions for you there.
+[4119.84s -> 4122.54s]  We already did this, the improved job list,
+[4122.54s -> 4126.16s]  and what else can we say for it?
+[4127.00s -> 4131.00s]  Yeah, as I said, fork process inherits the block signal sets,
+[4131.00s -> 4133.32s]  so it should lift that signal
+[4133.32s -> 4135.44s]  just in case the child cares about it,
+[4135.44s -> 4137.28s]  and as people have already mentioned,
+[4137.28s -> 4141.96s]  it probably should also get rid of that signal handler too
+[4141.96s -> 4144.00s]  so it doesn't get called when the child ends
+[4144.00s -> 4145.64s]  because that's not part of our program.
+[4145.64s -> 4147.16s]  So again, things you have to think about
+[4147.16s -> 4148.84s]  when you're building these for real.
+[4148.84s -> 4150.32s]  You have to do lots and lots of testing
+[4150.32s -> 4151.64s]  on this sort of stuff.
+[4151.64s -> 4153.12s]  Okay, two more quick signal,
+[4153.12s -> 4156.96s]  or two more quick system calls here.
+[4156.96s -> 4160.28s]  Processes can send messages to other processes
+[4160.28s -> 4162.24s]  without something happening.
+[4162.24s -> 4165.26s]  You are allowed to send a signal to another process.
+[4165.26s -> 4168.68s]  You do it using a slightly ill-defined command
+[4168.68s -> 4170.16s]  called kill.
+[4170.16s -> 4172.64s]  Now, kill was named because the only signal
+[4172.64s -> 4175.60s]  that they originally sent was one to terminate a process.
+[4175.60s -> 4177.24s]  Basically said, kill this process,
+[4177.24s -> 4179.98s]  and it means make it stop running, right?
+[4179.98s -> 4180.96s]  So that was the original, and then they said,
+[4180.96s -> 4182.72s]  well, what if we want to send other signals?
+[4182.72s -> 4183.76s]  Let's just keep kill.
+[4183.76s -> 4185.28s]  Why didn't you call it send signal or something?
+[4185.28s -> 4186.12s]  I don't know.
+[4186.12s -> 4188.48s]  But they kept it as called kill, okay?
+[4188.48s -> 4189.56s]  So it doesn't actually kill.
+[4189.56s -> 4191.48s]  If you send a SIG kill, yes,
+[4191.48s -> 4194.24s]  it will terminate the process,
+[4194.24s -> 4199.20s]  but otherwise, you are allowed to give a PID,
+[4199.20s -> 4201.72s]  send a particular signal, okay?
+[4201.72s -> 4204.52s]  So if you want to send the SIG child signal
+[4204.52s -> 4207.12s]  to a particular process, you can send it.
+[4207.12s -> 4210.12s]  You can also send, I think there's two other ones
+[4210.16s -> 4214.16s]  called like it's SIG, I think it's SIG USR1,
+[4215.60s -> 4218.40s]  which is like a generic one that you're allowed to send,
+[4218.40s -> 4220.04s]  just because, hey, maybe you want to send one
+[4220.04s -> 4221.72s]  that's not a special one that says kill,
+[4221.72s -> 4225.84s]  or that says stop, or that says continue, or whatever.
+[4225.84s -> 4229.56s]  We will see lots of use of these as we go.
+[4229.56s -> 4233.74s]  You can also send a signal to yourself,
+[4233.74s -> 4238.52s]  which is you do by the raise system call,
+[4238.52s -> 4241.36s]  which basically just takes the signal number you're trying
+[4241.36s -> 4242.72s]  and it sends it to your own process.
+[4242.72s -> 4246.48s]  It is exactly like saying kill with get PID
+[4246.48s -> 4248.64s]  for your own PID signal number.
+[4248.64s -> 4251.80s]  You could use either and they're interchangeable, okay?
+[4254.06s -> 4259.06s]  You can also get the value of,
+[4259.16s -> 4263.44s]  you can change PID to not be the actual PID.
+[4263.44s -> 4268.14s]  You can make it affect other processes
+[4268.98s -> 4272.66s]  that are tangentially related to a particular process.
+[4272.66s -> 4274.98s]  And you handle that with a thing called groups,
+[4274.98s -> 4276.98s]  which I'm not gonna go into right now.
+[4276.98s -> 4281.98s]  But if you send a negative number less than one to kill,
+[4284.02s -> 4286.38s]  it actually goes and finds the group
+[4286.38s -> 4287.78s]  that's associated with that process.
+[4287.78s -> 4288.86s]  What you can do with processes,
+[4288.86s -> 4291.98s]  you can set them up such that they're in same group.
+[4291.98s -> 4294.52s]  So if you want to send a signal to one process,
+[4294.52s -> 4296.40s]  it can then, or it can,
+[4296.40s -> 4298.92s]  if you want to send one kill signal,
+[4298.92s -> 4301.44s]  it can go to a whole bunch of different processes.
+[4301.44s -> 4302.96s]  So it's nice to have these groups.
+[4302.96s -> 4305.84s]  We'll get into groups when you get to assignment four.
+[4306.84s -> 4308.64s]  And then you can also be zero or negative one.
+[4308.64s -> 4311.40s]  We're not gonna worry about that for right now.
+[4311.40s -> 4313.72s]  Okay, that was a lot of stuff.
+[4316.72s -> 4319.52s]  You have assignment two due tomorrow,
+[4319.52s -> 4323.44s]  assignment three will come out tomorrow morning.
+[4323.88s -> 4325.16s]  Release it first thing in the morning
+[4325.16s -> 4327.20s]  for anybody who wants to get going on it.
+[4328.08s -> 4331.52s]  And I will explain a little bit
+[4331.52s -> 4334.66s]  about assignment three on Monday.
+[4334.66s -> 4336.88s]  So if you wanna get started on it,
+[4336.88s -> 4338.56s]  well, maybe I'll do a little video.
+[4338.56s -> 4341.28s]  I don't know when I'm gonna do a little video.
+[4341.28s -> 4342.62s]  But anyway, I will do some explaining
+[4342.62s -> 4346.24s]  about assignment three on Monday.
+[4346.24s -> 4348.84s]  All right, last minute questions on this stuff or otherwise?
+[4348.84s -> 4349.68s]  Yeah.
+[4349.84s -> 4353.00s]  So assignment three is actually gonna be due
+[4353.00s -> 4354.72s]  a week from Sunday.
+[4354.72s -> 4357.04s]  So it's a little longer amount of time.
+[4357.04s -> 4358.40s]  And then the next one is gonna be out that day.
+[4358.40s -> 4359.80s]  And then the midterm happens.
+[4359.80s -> 4362.38s]  So you've got an extra time for the next one as well.
+[4362.38s -> 4363.84s]  So it's a little stretched out
+[4363.84s -> 4365.84s]  because midterms and so forth.
+[4365.84s -> 4367.20s]  All right, see you guys Monday.
+[4367.20s -> 4368.12s]  We're in lab.
+[4368.12s -> 4370.04s]  Oh, that reminds me, I totally forgot.
+[4370.04s -> 4371.24s]  Sorry, one last thing.
+[4373.08s -> 4374.24s]  So there are a lot of people
+[4374.24s -> 4377.04s]  who wanted to do the Thursday,
+[4377.04s -> 4379.80s]  I forget which one, 3 p.m. lab.
+[4379.80s -> 4381.96s]  We are adding another Thursday lab.
+[4381.96s -> 4385.24s]  So we're changing like one of the Thursday morning labs,
+[4385.24s -> 4386.98s]  which not many people are in.
+[4386.98s -> 4390.60s]  We're adding a Thursday afternoon lab.
+[4390.60s -> 4393.14s]  We're gonna combine the two Thursday morning ones.
+[4393.14s -> 4394.52s]  And it's only like four or five extra people.
+[4394.52s -> 4395.48s]  So it's not a big deal.
+[4395.48s -> 4396.58s]  I will put that up later today.
+[4396.58s -> 4399.16s]  So if you want to add the Thursday section,
+[4399.16s -> 4400.44s]  you don't like the section you're in,
+[4400.44s -> 4402.78s]  an afternoon one, you'll be able to do that.
+[4402.78s -> 4404.44s]  All right, see you guys later.

@@ -1,0 +1,596 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.66s]  All right, in the last portion of today's lecture, we're going to talk about something
+[4.66s -> 5.76s]  a little different.
+[5.76s -> 9.82s]  We're going to go away from these classic models that try to represent the probability
+[9.82s -> 14.14s]  of the next state given the current state in action, and talk about something called
+[14.14s -> 15.78s]  successive representations.
+[15.78s -> 20.60s]  Now, this part of the lecture is a little bit more advanced, and it really does deviate
+[20.60s -> 25.26s]  a little bit from the mainstream in model-based RL, but I wanted to tell you about these
+[25.26s -> 28.34s]  ideas because I do think they're quite interesting, and they might give you some
+[28.36s -> 32.78s]  ideas for final projects, or more generally, directions where model-based RL could go in
+[32.78s -> 33.78s]  the future.
+[33.78s -> 38.38s]  But keep in mind that as I discuss these, this is getting very much into sort of the
+[38.38s -> 43.26s]  current state of research and things that are not yet fully formed model-based RL
+[43.26s -> 48.30s]  algorithms, but just some ideas that are good to know about and some concepts in RL that
+[48.30s -> 51.46s]  could be useful perhaps in the future.
+[51.46s -> 53.72s]  So let's start with this question.
+[53.72s -> 57.30s]  What kind of model do we need to evaluate a policy?
+[57.30s -> 62.02s]  So so far we've just assumed that when we do model-based RL, the model that we're learning
+[62.02s -> 65.66s]  predicts the next state given the current state in action.
+[65.66s -> 68.70s]  And it kind of makes sense to think about models in that way, because that's kind
+[68.70s -> 73.06s]  of roughly how you would expect the transition operator in the MDP to work, and it's kind
+[73.06s -> 76.38s]  of how you would expect physics to work, like you would expect that a good model
+[76.38s -> 81.10s]  of physics tells you what happens next given the current state in action.
+[81.10s -> 83.98s]  But let's go back to this diagram of the RL algorithm.
+[83.98s -> 87.50s]  Remember that the RL algorithms are going to consist of three parts.
+[87.50s -> 92.14s]  The orange box, which is to generate samples, the green box, which fits some kind of model,
+[92.14s -> 95.06s]  and the blue box that improves the policy.
+[95.06s -> 99.34s]  And whatever we do in the green box, essentially its purpose is to allow us to understand
+[99.34s -> 102.98s]  how good our policy is, because if we can understand how good our policy is, then
+[102.98s -> 104.70s]  we can improve it.
+[104.70s -> 108.38s]  I know that's a little bit abstract, but I'll make this more concrete in a second.
+[108.38s -> 113.50s]  So if we're talking about model-based RL, classically, in the green box, we would fit
+[113.50s -> 117.38s]  a model, some kind of F of SA that predicts S prime.
+[117.38s -> 121.18s]  And then in the blue box, we would use either planning or the algorithms we discussed
+[121.18s -> 124.88s]  in the previous parts to improve the policy.
+[124.88s -> 128.26s]  So really, this makes it, I think, quite clear that the role of the model is really
+[128.26s -> 129.90s]  to evaluate the policy.
+[129.90s -> 134.38s]  A model is something under which you should be able to simulate your policy and get back
+[134.38s -> 138.78s]  an estimate of the policy's expected return.
+[138.78s -> 141.38s]  The expected return is a number, right?
+[141.38s -> 144.62s]  That's really all we need from the model, because if you can evaluate it using the
+[144.62s -> 147.66s]  model, then you can make it better, right?
+[147.66s -> 150.38s]  So there's a variety of ways to make it better.
+[150.38s -> 152.98s]  But in the end, as long as you have a way to evaluate the goodness of a policy,
+[152.98s -> 153.98s]  that's really the main thing.
+[153.98s -> 158.66s]  From there, you can figure out how to get a better policy.
+[158.66s -> 160.78s]  So what does it mean to evaluate the policy?
+[160.78s -> 163.50s]  Well, it really means computing this quantity.
+[163.50s -> 168.34s]  The expected value over the distribution of initial states of the value of the policy
+[168.34s -> 171.50s]  in those states.
+[171.50s -> 178.54s]  And the value can be defined, I have it defined here, it's the sum, the value at some state
+[178.54s -> 183.98s]  st is the sum over all future time steps, gamma to the t prime minus t, times the
+[183.98s -> 189.66s]  expected value over the next state under the policy, times the expected value over
+[189.66s -> 195.46s]  the action at the next time step of the reward at that next state and action.
+[195.46s -> 199.90s]  And for simplicity in this discussion, I'm going to just switch entirely to only state-dependent
+[199.90s -> 200.90s]  rewards.
+[200.90s -> 205.46s]  So I'll do all the derivations with rewards that depend only on state and not on action.
+[205.46s -> 208.22s]  That's just for simplicity so that the notation doesn't get too cluttered.
+[208.22s -> 211.70s]  It's very easy to put in the action-dependent rewards at the end, because the actions
+[211.70s -> 213.62s]  are always just obtained from the policy.
+[213.62s -> 219.14s]  But just to keep it simple, let's just say that we're talking entirely about state-dependent
+[219.14s -> 222.62s]  rewards, in which case the value function can be written like this, as a sum over all
+[222.62s -> 228.46s]  future time steps, gamma to the t prime minus t, expected value under the probability of
+[228.46s -> 233.90s]  getting st prime given that you started in st and then followed your policy of the
+[233.90s -> 234.90s]  reward.
+[234.90s -> 239.34s]  And keep in mind that this probability p of st prime given st, that probability depends
+[239.34s -> 240.34s]  on your policy.
+[240.34s -> 245.74s]  So that's the probability that for all the time steps in between t and t prime, you
+[245.74s -> 250.66s]  followed your policy and then landed in st prime.
+[250.66s -> 257.10s]  So long story short, if we can evaluate this quantity, we can evaluate our policy.
+[257.10s -> 260.70s]  So the perspective that we're going to take in this part of the lecture is we're
+[260.70s -> 265.18s]  going to ask, what is kind of the bare minimum model that will allow us to evaluate this
+[265.18s -> 268.06s]  quantity?
+[268.06s -> 269.22s]  So we'll keep it simple.
+[269.22s -> 270.70s]  We can re-derive it.
+[270.70s -> 273.18s]  Everything I'm going to talk about, we can re-derive fraction-dependent rewards, but for
+[273.18s -> 274.58s]  now we'll make them action-independent.
+[274.58s -> 279.74s]  Okay, so let's do a little bit of manipulation here.
+[279.74s -> 284.10s]  This expectation over st prime, I'm just going to write it out as a sum over all possible
+[284.10s -> 286.02s]  states, assuming discrete states, right?
+[286.02s -> 290.86s]  So I've just replaced the definition of the expectation, sum over all future time steps,
+[290.86s -> 295.62s]  sum over all states, probability of landing in that state at time t prime given that
+[295.62s -> 299.66s]  you started in st, times the reward at that state.
+[299.66s -> 302.34s]  And now what I'm going to do is I'm going to rearrange the terms a little bit, and
+[302.34s -> 307.14s]  I'll put the sum over s on the outside.
+[307.14s -> 314.70s]  So now what I have is a sum over all possible states, and then in parentheses, I have the
+[314.70s -> 322.30s]  sum over all future time steps times the probability that you land in that state multiplied
+[322.30s -> 326.82s]  by the discount, okay?
+[326.82s -> 329.78s]  That's because the reward depends only on the state, it doesn't depend on where you
+[329.78s -> 330.78s]  start.
+[331.22s -> 334.86s]  So this gives a little bit of algebraic manipulation, I just took the sum, I just switched the
+[334.86s -> 341.58s]  order of the summation, but what this makes clear is that the value function is
+[341.58s -> 347.82s]  really a sum over all the states of the rewards of those states multiplied by something
+[347.82s -> 353.10s]  that looks like a probability of landing in those states in the future, okay?
+[353.10s -> 355.02s]  And that's the idea we're going to build on.
+[355.02s -> 359.18s]  So let's take this equation and let's manipulate it a little bit more.
+[359.18s -> 362.66s]  What I'm going to want to do is make this notion explicit, I'm going to want to construct
+[362.66s -> 367.82s]  a distribution that I'm going to call the distribution over future states.
+[367.82s -> 370.38s]  And it's a distribution that depends on pi, so that's why I'm going to write it as p
+[370.38s -> 374.06s]  pi, s future equals s, given s t.
+[374.06s -> 380.54s]  So s future is a random variable, and the distribution here is basically the probability
+[380.54s -> 384.58s]  that you will land in that state at some point in the future, with different points
+[384.58s -> 388.30s]  in the future weighted by gamma to a different palette.
+[388.30s -> 394.22s]  Now as a little detail, the quantity in parentheses there doesn't actually sum to one.
+[394.22s -> 399.46s]  In order for it to sum to one, you have to multiply it out front by one minus gamma.
+[399.46s -> 404.22s]  And if you want an intuition for what p of s future really represents, you can kind
+[404.22s -> 406.02s]  of think of it like this.
+[406.02s -> 411.26s]  Select a future time step at random from a geometric distribution with parameter gamma,
+[411.26s -> 416.78s]  and then evaluate p of s t prime equals s given s t for the time step t prime that
+[416.78s -> 420.46s]  you sampled.
+[420.46s -> 424.54s]  And that's a perfectly valid way to interpret the probability of s future.
+[424.54s -> 429.58s]  So it's the probability that you will land somewhere in the future where what future
+[429.58s -> 435.42s]  means is this gamma discounted distribution over time steps.
+[435.42s -> 439.90s]  Another way you could think about it, which is actually equivalent, is that at every
+[439.90s -> 445.50s]  time step, you have a probability of one minus gamma of terminating.
+[445.50s -> 449.78s]  And the probability of s future equals s is the probability that you will terminate in
+[449.78s -> 451.34s]  the state s.
+[451.34s -> 452.86s]  That's an equivalent interpretation.
+[452.86s -> 456.06s]  So if you prefer to think of it as kind of a more top-down process, you could think
+[456.06s -> 460.02s]  of it as sample a time step from the geometric distribution and evaluate the probability
+[460.02s -> 462.06s]  of landing in s at that time step.
+[462.06s -> 465.10s]  If you want to think of a more kind of dynamical interpretation, you can think of
+[465.10s -> 468.38s]  it as every time step you have a one minus gamma probability of exiting, what's
+[468.38s -> 470.46s]  the probability that you will exit in the state s.
+[470.46s -> 474.78s]  These are equivalent and they lead to exactly the same equation.
+[474.78s -> 479.18s]  So this equation for p of s future differs from the quantity in parentheses only by this
+[479.18s -> 482.90s]  constant one minus gamma out front.
+[482.90s -> 484.78s]  And that's just to ensure that everything sums to one over s.
+[484.78s -> 492.72s]  Okay, so I've constructed this distribution and what that means is that if I have this
+[492.72s -> 498.52s]  distribution p pi s future equals s given s t, then I can compute my value at state
+[498.52s -> 503.00s]  s t as just one over one minus gamma to get rid of that constant times the sum over
+[503.00s -> 509.64s]  all states of p pi s future equals s given s t times r of s.
+[509.64s -> 518.36s]  We can use a little bit of linear algebra if we define a vector mu pi s t as a vector
+[518.36s -> 525.12s]  of length equal to the number of states where every entry in mu pi s t is just p of
+[525.12s -> 528.52s]  s future equals the state corresponding to that entry.
+[528.52s -> 534.20s]  So this is the definition of the i-th entry, so mu pi i s t is the probability that
+[534.20s -> 536.34s]  s future equals i given s t.
+[536.34s -> 541.54s]  And then you can define a vector r, which is a vector that contains, with length equal
+[541.54s -> 544.66s]  to the number of states, that contains the reward for every state.
+[544.66s -> 548.86s]  Then the value function is just one over one minus gamma times the inner product between
+[548.86s -> 551.02s]  mu pi s t and r.
+[551.02s -> 557.34s]  Okay, so we've written out the value function in this very concise way, and what this
+[557.34s -> 562.84s]  suggests to us is that if we want to evaluate a policy, all we really need is
+[562.84s -> 568.08s]  to construct this mu pi vector.
+[568.08s -> 570.70s]  You can think of this mu pi as a kind of model.
+[570.70s -> 575.78s]  Mu pi is independent of the reward, but, and this is very important, it is not independent
+[575.78s -> 579.00s]  of the policy, and that's why I always put the policy as a superscript.
+[579.00s -> 582.74s]  Mu pi does depend on the policy, unlike the one-step model, but it does not depend
+[582.74s -> 583.74s]  on the reward.
+[583.74s -> 586.54s]  So you can think of it as a kind of model, a kind of multi-step model.
+[586.54s -> 590.58s]  Essentially, mu pi predicts where you will land, not at the next time step, but over
+[590.58s -> 595.94s]  this discounted future distribution of time steps.
+[595.94s -> 600.54s]  So this mu pi is called a successor representation, and it was first introduced in this
+[600.58s -> 603.86s]  paper called Improving Generalization for Temporal Difference Learning.
+[603.86s -> 606.38s]  And the successor representation is a very interesting object.
+[606.38s -> 611.42s]  You can think of it as a kind of hybrid between a value function and a model, because
+[611.42s -> 618.02s]  just like a model, it predicts future states, but like a value function, it's a discounted
+[618.02s -> 619.42s]  average.
+[619.42s -> 623.88s]  So it's not the next state, it's actually a distribution over states over this geometrically
+[623.88s -> 626.26s]  discounted future.
+[626.26s -> 629.58s]  So it's independent of rewards, but not independent of policies, and you can recover
+[629.62s -> 634.14s]  value functions for a particular reward as an inner product between the successor feature,
+[634.14s -> 639.26s]  the successor representation vector and the reward vector.
+[639.26s -> 644.82s]  In fact, successor representations turn out to obey a Bellman equation, and that's
+[644.82s -> 649.94s]  actually fairly straightforward to note just from looking at the definition.
+[649.94s -> 655.26s]  It becomes pretty clear that the probability that you will land in a particular state
+[655.26s -> 660.30s]  is basically one minus gamma times the probability that you're in that state right now, which
+[660.30s -> 664.42s]  is just one if you're in that state and zero otherwise, because ST is not random,
+[664.42s -> 669.86s]  ST is an input, plus gamma times the probability that you will land in it in the
+[669.86s -> 671.72s]  future from the next state.
+[671.72s -> 675.34s]  So the expectation here is over the action you will take now and the state that you
+[675.34s -> 680.38s]  will land in at time t plus one, and within the expectation, it's just the same
+[680.38s -> 683.02s]  mu i evaluated as t plus one.
+[683.02s -> 684.46s]  So this is a kind of Bellman equation.
+[684.50s -> 690.42s]  You can think of it as a Bellman backup with a pseudo reward given by this delta function.
+[690.42s -> 694.38s]  So the pseudo reward is one minus gamma times delta ST equals i.
+[694.38s -> 696.98s]  And remember the one minus gamma is just a constant out front.
+[696.98s -> 701.74s]  So really the important thing is that the reward is just one for the state i,
+[701.74s -> 706.02s]  basically for the dimension of mu that you're learning and zero everywhere else.
+[707.46s -> 710.70s]  And in practice, since you would want to learn every entry in mu,
+[710.70s -> 712.82s]  you would use a vectorized backup.
+[712.82s -> 716.34s]  So for the zeroth entry, it would be delta ST equals zero, for entry one,
+[716.34s -> 718.34s]  it would be delta ST equals one, et cetera, et cetera.
+[718.34s -> 720.30s]  So you would learn that whole vector all at once.
+[720.30s -> 723.38s]  So you would have these vector value Bellman backups, and you can do things
+[723.38s -> 726.14s]  like value iteration with this and recover these mus.
+[729.10s -> 732.62s]  So this is an object that you can train.
+[732.62s -> 734.06s]  It's a kind of a model.
+[734.06s -> 737.74s]  And if you can train it, then you can recover the value function for any reward
+[737.74s -> 739.62s]  you want for that policy.
+[739.62s -> 741.62s]  And if you can recover the value function for a particular policy,
+[741.66s -> 743.94s]  then you can improve that policy.
+[743.94s -> 746.02s]  But before talking about how all that works,
+[746.02s -> 748.98s]  there are a few issues that we need to address.
+[748.98s -> 751.50s]  So one issue is that it's not necessarily clear
+[751.50s -> 754.06s]  if learning successive representations is easier
+[754.06s -> 756.02s]  than just running model-free RL.
+[756.02s -> 758.30s]  And I'll discuss a little bit later on
+[758.30s -> 760.54s]  how in some cases you can get a little bit of benefit,
+[760.54s -> 762.34s]  but this is in general kind of a big question.
+[762.34s -> 766.54s]  So we've in some sense simplified the kind of model we need,
+[766.54s -> 769.50s]  but we might've gotten ourselves into a situation
+[769.50s -> 771.70s]  where training this type of model might not be any easier
+[771.70s -> 772.98s]  than just running model-free RL
+[772.98s -> 774.90s]  if we already know the reward function.
+[775.82s -> 777.10s]  The second issue is that it's not clear
+[777.10s -> 779.26s]  how to scale this to large state spaces.
+[779.26s -> 780.70s]  So as I've described this,
+[780.70s -> 782.34s]  this vector mu needs to have one entry
+[782.34s -> 783.98s]  for every possible state.
+[783.98s -> 786.50s]  And if your states are like images in an Atari game,
+[786.50s -> 789.62s]  the number of possible states could be enormous.
+[789.62s -> 791.62s]  It's also not even clear if this is well-defined
+[791.62s -> 793.22s]  for continuous state spaces,
+[793.22s -> 795.18s]  because for continuous state spaces,
+[795.18s -> 798.14s]  that delta function st equals i will always be zero,
+[798.62s -> 800.02s]  your probability of randomly landing
+[800.02s -> 802.74s]  in a very specific state is always zero.
+[802.74s -> 804.98s]  That's why you use densities rather than probabilities
+[804.98s -> 806.38s]  for continuous variables.
+[806.38s -> 807.58s]  So for continuous state spaces,
+[807.58s -> 809.94s]  we'll need to have kind of a density version of this
+[809.94s -> 811.34s]  rather than a probability version,
+[811.34s -> 814.26s]  and that will also be a little bit more elaborate.
+[814.26s -> 815.30s]  But let's first talk about
+[815.30s -> 817.10s]  how to scale this to large state spaces.
+[817.10s -> 819.10s]  And then from there, we'll discuss a little bit
+[819.10s -> 821.30s]  how this can actually give us a little bit of benefit
+[821.30s -> 822.78s]  over standard model-free RL.
+[823.82s -> 824.94s]  Okay, so for this,
+[824.94s -> 828.06s]  we need to talk about something called successor features.
+[828.94s -> 830.86s]  So for a successor representation,
+[830.86s -> 834.94s]  if you can learn these vectors mu pi as a function of st,
+[834.94s -> 836.46s]  then you can recover your value function
+[836.46s -> 837.50s]  as an inner product.
+[837.50s -> 839.62s]  Take the vector mu pi st,
+[839.62s -> 841.86s]  basically the probability of landing in all future states
+[841.86s -> 843.06s]  given you start in st,
+[843.06s -> 846.50s]  and take a dot part of it with a vector of all rewards.
+[846.50s -> 848.58s]  But of course, these vectors might be really huge,
+[848.58s -> 850.78s]  so you probably don't wanna construct them.
+[850.78s -> 852.94s]  So instead of constructing these vectors,
+[852.94s -> 856.70s]  what if we construct their projections onto some basis?
+[856.70s -> 859.42s]  So let's say that we're given some features,
+[859.42s -> 861.50s]  maybe our features are phi.
+[861.50s -> 862.78s]  What does phi represent?
+[862.78s -> 865.58s]  Well, maybe phi represents some basis of images,
+[865.58s -> 868.38s]  maybe it represents some hand-designed features,
+[868.38s -> 870.82s]  whatever it is, some kind of features.
+[870.82s -> 873.46s]  So you have features and we'll index them as phi j.
+[873.46s -> 875.22s]  So phi js is a number,
+[875.22s -> 877.66s]  and you can think of phi 1s, phi 2s, phi 3s,
+[877.66s -> 881.30s]  phi 4s, et cetera, phi ns, and that's n features.
+[881.30s -> 883.50s]  So each feature is a function over s,
+[883.50s -> 884.74s]  and there's n of them.
+[885.74s -> 888.54s]  Well, then we can construct
+[888.54s -> 893.46s]  what are called successor features, psi st,
+[893.46s -> 895.18s]  and these successor features
+[895.18s -> 899.78s]  are essentially going to be the projection of mu onto phi.
+[899.78s -> 902.82s]  So the jth successor feature at st
+[904.34s -> 909.34s]  is just the sum over all s of mu sst phi js, okay?
+[909.34s -> 914.34s]  So you're basically gonna average over all the states
+[915.02s -> 917.46s]  weighted by the feature values of those states.
+[917.46s -> 921.36s]  It's the expected value over the states of that feature.
+[924.66s -> 926.62s]  You can also write this with linear algebra
+[926.62s -> 929.22s]  if you represent mu as a vector,
+[929.22s -> 933.34s]  then psi j of st is just mu st
+[933.34s -> 935.34s]  dotted with the vector phi j,
+[935.34s -> 936.90s]  where the vector phi j is of length
+[936.90s -> 938.16s]  equal to the number of states
+[938.16s -> 940.08s]  with each entry corresponding to that state's
+[940.08s -> 941.44s]  feature value for phi j.
+[942.38s -> 945.52s]  So it's almost like phi j is like a pseudo reward
+[945.52s -> 950.08s]  and psi j is its pseudo value function, okay?
+[950.08s -> 952.28s]  And you're gonna construct many of these things.
+[953.20s -> 955.28s]  So now here's an interesting property.
+[955.28s -> 958.08s]  If we can express the reward function
+[958.08s -> 960.52s]  as a weighted combination of the features phi,
+[960.52s -> 962.96s]  so if r of s is equal to the sum over j
+[962.96s -> 965.80s]  of phi j of s times some weight wj,
+[965.80s -> 970.16s]  or put another way, if r of s is the dot product
+[970.16s -> 972.64s]  between the vector of features at state j,
+[972.64s -> 975.98s]  at state s and some weights w,
+[976.90s -> 978.56s]  then it turns out that the value function
+[978.56s -> 980.76s]  could be recovered with those same weights w.
+[980.76s -> 984.64s]  It turns out that v pi of st is psi pi st
+[984.64s -> 986.08s]  dotted with the same w.
+[988.16s -> 990.02s]  This is actually quite easy to prove.
+[990.02s -> 994.84s]  So all we have to do is first write this out,
+[994.84s -> 996.40s]  write this dot product out as a sum.
+[996.40s -> 1001.40s]  So it's a sum over all features j of psi j st times wj.
+[1001.60s -> 1004.56s]  And then we'll just take the definition of psi j up above
+[1004.56s -> 1005.92s]  and plug that in.
+[1005.92s -> 1010.92s]  So psi j is just the inner product of mu and phi j.
+[1012.24s -> 1016.52s]  Now phi j here is now a matrix.
+[1016.52s -> 1021.52s]  It's going to have one row for every possible state
+[1021.52s -> 1026.52s]  and one column for every feature, okay?
+[1030.88s -> 1032.16s]  Sorry, phi is gonna have that.
+[1032.16s -> 1034.76s]  So phi j then is just a vector
+[1034.76s -> 1037.92s]  which corresponds to rows of that matrix.
+[1039.36s -> 1042.36s]  So I've just substituted in the equation for psi up above.
+[1045.00s -> 1048.22s]  And now of course, mu pi st doesn't depend on j,
+[1048.26s -> 1051.66s]  so I can take mu pi st out.
+[1051.66s -> 1055.46s]  So it's mu pi st transpose times the sum over j
+[1055.46s -> 1058.82s]  of phi jw, but up above
+[1058.82s -> 1060.82s]  that's exactly how we define the reward.
+[1063.50s -> 1068.10s]  So this product between the phi's and w's
+[1068.10s -> 1069.54s]  is just the reward vector.
+[1069.54s -> 1072.54s]  So this is exactly mu st transpose
+[1072.54s -> 1074.10s]  times the vector of rewards.
+[1074.10s -> 1079.10s]  So this basically shows that instead of working
+[1080.10s -> 1082.10s]  with the successor representation itself,
+[1082.10s -> 1084.22s]  you can project the successor representation
+[1084.22s -> 1085.44s]  onto some basis.
+[1085.44s -> 1087.62s]  In this case, the base is defined by the features phi.
+[1087.62s -> 1089.58s]  And as long as your reward function lies
+[1089.58s -> 1090.90s]  in that same basis,
+[1090.90s -> 1093.46s]  meaning that you have some weights w
+[1093.46s -> 1097.26s]  such that the reward is equal to phi of s transpose w,
+[1097.26s -> 1099.46s]  then you can construct instead
+[1099.46s -> 1101.10s]  of the successor representation,
+[1101.10s -> 1103.28s]  these successor features psi,
+[1103.32s -> 1106.28s]  and for the same weights w will recover the value function.
+[1107.96s -> 1110.16s]  And of course the key to this is that the dimensionality
+[1110.16s -> 1112.20s]  of phi and psi can be a lot lower
+[1112.20s -> 1113.80s]  than the number of possible states.
+[1113.80s -> 1116.84s]  And this can give you a much more tractable algorithm.
+[1116.84s -> 1118.36s]  So if the number of features is much less
+[1118.36s -> 1121.08s]  than the number of states, learning this is much easier.
+[1121.08s -> 1123.64s]  So if you have, let's say, 10 million states,
+[1123.64s -> 1125.78s]  maybe doing vector value backups on mu
+[1125.78s -> 1127.68s]  with 10 million dimensions is impractical,
+[1127.68s -> 1130.32s]  but maybe you summarize them with a hundred features
+[1130.32s -> 1132.00s]  and doing the backups on a hundred features
+[1132.00s -> 1133.76s]  is much more tractable.
+[1133.76s -> 1137.20s]  So this is the Bellman backup equation for mu.
+[1137.20s -> 1139.20s]  The Bellman backup equation for psi
+[1139.20s -> 1140.76s]  is basically exactly the same.
+[1142.00s -> 1144.52s]  The only difference now is instead of this delta function
+[1144.52s -> 1149.04s]  s t equals i, we just put in the feature of phi j.
+[1150.00s -> 1152.70s]  And you can almost think of mu as a special case
+[1152.70s -> 1154.84s]  where phi is the delta function.
+[1154.84s -> 1157.72s]  So basically mu, the successor representation
+[1157.72s -> 1159.80s]  is a special kind of successor feature
+[1159.80s -> 1162.12s]  where the phi's happen to be canonical vectors,
+[1162.12s -> 1165.00s]  vectors that are one in one state and zero everywhere else.
+[1165.00s -> 1166.64s]  But in general, you can construct other bases
+[1166.64s -> 1168.24s]  including much smaller bases
+[1168.24s -> 1170.84s]  and recover much more tractable successor features.
+[1173.50s -> 1175.96s]  You can also construct a Q-function like version.
+[1175.96s -> 1178.64s]  So these successor features are functions
+[1178.64s -> 1180.32s]  of only the state and they can be used
+[1180.32s -> 1182.32s]  to recover the state value function.
+[1182.32s -> 1183.90s]  You can also construct successor features
+[1183.90s -> 1186.08s]  that are a function of the state and action.
+[1186.08s -> 1187.94s]  Exactly the same way, just use a Q backup
+[1187.94s -> 1189.76s]  instead of a value backup.
+[1190.68s -> 1192.24s]  So here the action is an input
+[1192.24s -> 1194.20s]  and then the expectation is taken over the next state
+[1194.20s -> 1195.24s]  and the next action.
+[1198.00s -> 1200.16s]  Same exact idea and then the Q-function
+[1200.16s -> 1204.36s]  could be recovered as psi pi transpose W
+[1204.36s -> 1207.58s]  as long as the reward is phi transpose W.
+[1209.88s -> 1212.54s]  So how can we use successor features?
+[1212.54s -> 1214.28s]  Well, here's one idea.
+[1214.28s -> 1217.46s]  What if we use it to recover a Q-function very quickly?
+[1217.46s -> 1221.44s]  So step one, train psi pi STAT
+[1221.44s -> 1224.18s]  for a particular policy pi with Bellman backups.
+[1224.18s -> 1225.46s]  So essentially what this means
+[1225.46s -> 1227.86s]  is that someone specifies a basis phi.
+[1227.86s -> 1229.74s]  We haven't defined how to specify that basis,
+[1229.74s -> 1231.28s]  that's a design choice you have to make,
+[1231.28s -> 1234.34s]  but let's say that you can specify a basis somehow,
+[1234.34s -> 1237.10s]  maybe you manually defined 128 features,
+[1237.10s -> 1239.54s]  you can learn their corresponding psi pis
+[1239.54s -> 1242.50s]  just with those Bellman backups with some data.
+[1242.50s -> 1244.22s]  You can run your policy or just use
+[1244.22s -> 1246.74s]  some off policy data and recover psi pi.
+[1247.90s -> 1250.62s]  Step two, someone gives you some reward samples,
+[1250.62s -> 1253.10s]  basically some tuples of state and reward.
+[1253.10s -> 1254.94s]  Maybe you gather these by running your policy,
+[1254.94s -> 1256.52s]  it doesn't matter, but somehow you obtained
+[1256.52s -> 1258.38s]  pairs of states and their rewards.
+[1259.54s -> 1262.90s]  Solve for a vector W to minimize the difference
+[1262.90s -> 1266.92s]  between phi SI times W and the sampled reward.
+[1266.92s -> 1269.98s]  So essentially do least squares regression onto those rewards.
+[1269.98s -> 1271.98s]  And this is where it's important for your features phi
+[1271.98s -> 1273.82s]  to be a sufficiently expressive basis
+[1273.82s -> 1276.42s]  so that you can actually approximate the reward accurately.
+[1277.30s -> 1278.66s]  And then you can recover the Q function
+[1278.66s -> 1282.78s]  just by taking those same Ws and multiplying your psi by them.
+[1284.10s -> 1285.70s]  Now the reason that this is quite elegant
+[1285.70s -> 1287.58s]  is because conceivably you could reuse
+[1287.58s -> 1290.18s]  the same successor feature of psi pi
+[1290.18s -> 1291.26s]  for many different rewards.
+[1291.26s -> 1292.94s]  So you can trade the psi pi once
+[1292.94s -> 1294.94s]  and then use it to evaluate Q functions
+[1294.94s -> 1297.58s]  for many different reward functions.
+[1297.58s -> 1299.22s]  And then if you want to take an action,
+[1299.22s -> 1301.02s]  you could choose the arg max action
+[1301.02s -> 1303.22s]  with respect to this approximate Q function.
+[1305.18s -> 1306.22s]  Now at this point we might ask,
+[1306.90s -> 1307.98s]  is this actually the optimal Q function?
+[1307.98s -> 1309.82s]  Meaning that if we choose the action this way,
+[1309.82s -> 1311.66s]  will we actually get the optimal policy
+[1311.66s -> 1316.00s]  for the reward that we've used to recover W?
+[1317.04s -> 1320.06s]  Unfortunately, the answer is in general, no.
+[1320.06s -> 1323.10s]  Because remember that the Q function you get here
+[1323.10s -> 1324.58s]  is not the optimal Q function,
+[1324.58s -> 1326.50s]  it's the Q function for the policy pi.
+[1326.50s -> 1329.64s]  So everything here is for a specific policy.
+[1329.64s -> 1331.50s]  So when you take the arg max here,
+[1331.50s -> 1334.72s]  what you're really doing is one step of policy iteration.
+[1334.72s -> 1336.64s]  So pi prime will be a better policy
+[1336.64s -> 1337.64s]  for this reward than pi,
+[1337.64s -> 1338.88s]  but it will not be the optimal one
+[1338.88s -> 1341.40s]  because it's just one step of policy iteration.
+[1342.86s -> 1343.96s]  It's better than nothing.
+[1343.96s -> 1346.08s]  So you do get a better policy from doing this,
+[1346.08s -> 1347.26s]  but it's not optimal.
+[1349.76s -> 1351.54s]  In general, this is one of the big challenges
+[1351.54s -> 1353.84s]  with successor features is that they cannot be used
+[1353.84s -> 1357.24s]  to directly recover the optimal Q function.
+[1357.24s -> 1359.04s]  But you can do a little bit better than this.
+[1359.04s -> 1361.96s]  So there is an idea too that works a little bit better.
+[1361.96s -> 1363.48s]  And what we can do
+[1363.48s -> 1365.70s]  is we can actually take many policies to begin with.
+[1365.70s -> 1368.26s]  Let's say someone gives you features.
+[1368.26s -> 1369.16s]  Let's say that someone gives you
+[1369.16s -> 1373.48s]  128 manually designed features and 1000 policies.
+[1373.48s -> 1374.68s]  Where did you get those policies?
+[1374.68s -> 1375.52s]  Well, I don't know.
+[1375.52s -> 1376.84s]  Maybe they're random policies.
+[1376.84s -> 1379.32s]  Maybe they were obtained from some demonstrations.
+[1379.32s -> 1381.24s]  Just a bunch of different candidate policies
+[1381.24s -> 1383.08s]  that you can play with.
+[1383.08s -> 1384.36s]  Different policies pi K.
+[1384.36s -> 1385.18s]  For each policy,
+[1385.18s -> 1388.46s]  you will learn a different successor feature, psi pi K.
+[1389.40s -> 1391.52s]  And then like before, you'll get some rewards.
+[1391.52s -> 1393.36s]  You'll solve for W,
+[1393.36s -> 1397.52s]  and then you'll recover a Q pi K for every policy pi K.
+[1398.40s -> 1400.64s]  And then when it comes time to choose the action,
+[1400.64s -> 1402.52s]  what we'll do is we'll actually take the art max
+[1402.52s -> 1405.56s]  over the action over the max over the policies
+[1406.44s -> 1407.40s]  for every single state.
+[1407.40s -> 1410.28s]  So for different states, we might pick different policies.
+[1410.28s -> 1411.90s]  The intuition here is that you're finding
+[1411.90s -> 1415.16s]  the highest reward policy in each state.
+[1415.16s -> 1416.68s]  And it turns out that you can actually show
+[1416.68s -> 1419.76s]  that when you do this, you will actually improve.
+[1419.88s -> 1422.60s]  In general, you will do as well or better
+[1422.60s -> 1424.80s]  than the best policy among pi K.
+[1426.04s -> 1427.68s]  So the reason that you could do better
+[1427.68s -> 1429.48s]  is because you might choose a different policy
+[1429.48s -> 1430.32s]  in different states.
+[1430.32s -> 1431.76s]  So you won't just improve on the best pi K,
+[1431.76s -> 1434.52s]  you'll actually improve on the best combination of pi Ks.
+[1435.72s -> 1438.26s]  So it's a little bit subtle as to why this works.
+[1438.26s -> 1441.68s]  So as an exercise at home,
+[1441.68s -> 1442.74s]  you could think a little bit more
+[1442.74s -> 1445.42s]  about why this max over K actually makes sense.
+[1445.42s -> 1446.26s]  But at a high level,
+[1446.26s -> 1448.66s]  the intuition is that we're simply taking the policy
+[1448.66s -> 1450.04s]  with the highest Q value.
+[1450.04s -> 1453.04s]  Remember, the Q value is the expected value of the reward
+[1453.04s -> 1454.32s]  that you will get from running that policy.
+[1454.32s -> 1456.54s]  So if you take the policy with the largest Q value,
+[1456.54s -> 1458.94s]  you'll take the policy that gets the largest reward.
+[1458.94s -> 1461.02s]  And we take the policy that gets the largest reward
+[1461.02s -> 1462.52s]  independently in every state.
+[1465.50s -> 1467.18s]  So if you wanna learn more about this,
+[1467.18s -> 1468.66s]  I would encourage you to check out this paper
+[1468.66s -> 1469.98s]  called successor features
+[1469.98s -> 1472.28s]  for transfer and reinforcement learning.
+[1472.28s -> 1474.94s]  But meanwhile, I'm gonna talk about the last topic,
+[1474.94s -> 1479.34s]  which is how to extend all this to continuous state spaces.
+[1479.34s -> 1480.94s]  So of course, in continuous state spaces,
+[1480.94s -> 1482.66s]  the problem you have is that this delta function
+[1482.66s -> 1484.90s]  is always zero for any sample state.
+[1484.90s -> 1486.64s]  Basically, the probability of landing in any state
+[1486.64s -> 1489.28s]  becomes zero as the states become more numerous.
+[1489.28s -> 1490.82s]  That's why with continuous variables,
+[1490.82s -> 1493.12s]  we tend to talk about probability densities
+[1493.12s -> 1495.06s]  rather than probabilities.
+[1495.06s -> 1499.48s]  But it's difficult to train successor representations
+[1499.48s -> 1501.82s]  classically as we discussed for densities.
+[1502.82s -> 1505.04s]  So here's an idea, a very different idea
+[1505.04s -> 1507.88s]  for how to describe successor representations.
+[1507.88s -> 1510.76s]  What if we frame the problem of learning
+[1510.76s -> 1511.94s]  successor representations
+[1511.94s -> 1514.34s]  as the problem of learning classifiers?
+[1514.34s -> 1516.02s]  So we're going to have this very funny object.
+[1516.02s -> 1521.02s]  It's a classifier where there's a binary decision
+[1521.98s -> 1526.62s]  and the decision is, does S future follow from S to AT?
+[1528.18s -> 1531.06s]  So it's a binary classifier where F equals one
+[1531.06s -> 1534.22s]  means that S future is a future state from S to AT.
+[1534.22s -> 1536.94s]  More precisely, the set of positives,
+[1536.94s -> 1538.88s]  the set of positive examples is sampled
+[1538.88s -> 1540.82s]  from P pi S future.
+[1540.82s -> 1542.62s]  So this is the distribution that we get
+[1542.62s -> 1544.00s]  by sampling a future time step
+[1544.00s -> 1545.46s]  from the geometric distribution
+[1545.46s -> 1547.74s]  and then sampling the state from the probability
+[1547.74s -> 1549.48s]  of landing in a particular state at that time step.
+[1549.48s -> 1551.46s]  So that's the positive set.
+[1551.46s -> 1554.70s]  And the negative set is sampled randomly
+[1554.70s -> 1557.56s]  from all possible states the policy might visit anywhere.
+[1558.56s -> 1561.42s]  Okay, so it's like a background distribution.
+[1563.04s -> 1565.40s]  Now we know that the Bayes optimal classifier
+[1565.40s -> 1569.80s]  is given by the probability of a particular tuple
+[1569.80s -> 1572.12s]  from the positive set divided by its probability
+[1572.12s -> 1572.96s]  from the positive set
+[1572.96s -> 1574.84s]  plus its probability from the negative set.
+[1574.84s -> 1576.16s]  So plugging in these definitions
+[1576.16s -> 1579.12s]  for the positive and negative distributions,
+[1579.12s -> 1581.70s]  the optimal classifier is the probability
+[1581.70s -> 1583.42s]  of S future given S to AT
+[1583.42s -> 1586.00s]  divided by the probability of S future given S to AT
+[1586.00s -> 1588.60s]  plus the probability of that same S future
+[1588.60s -> 1589.84s]  from the state marginal.
+[1590.84s -> 1592.12s]  Okay, this is just the definition
+[1592.12s -> 1593.72s]  of a Bayes optimal classifier.
+[1595.08s -> 1597.28s]  So the insight that we're going to use
+[1597.28s -> 1599.76s]  is that it's a lot easier to train this classifier
+[1599.76s -> 1603.48s]  than it is to directly learn P pi S future given S to AT.
+[1603.48s -> 1604.92s]  But if we can train this classifier,
+[1604.92s -> 1608.64s]  then we can recover P pi S future given S to AT
+[1608.64s -> 1609.84s]  from that classifier.
+[1611.30s -> 1613.68s]  So here's the classifier for,
+[1614.00s -> 1617.00s]  the Bayes optimal classifier for F equals one.
+[1617.00s -> 1619.66s]  For F equals zero, it's one minus that same quantity.
+[1619.66s -> 1623.08s]  So just for completeness, we can write it like this.
+[1623.08s -> 1625.84s]  So P of F equals zero is just the probability
+[1625.84s -> 1628.60s]  from S future divided by the same denominator.
+[1628.60s -> 1631.20s]  So if you take the ratio of these two classifiers,
+[1631.20s -> 1632.74s]  the denominators cancel out
+[1632.74s -> 1636.08s]  and you just get the probability of S future given S to AT
+[1636.08s -> 1638.68s]  divided by the probability of S future.
+[1638.68s -> 1642.52s]  So if you take the ratio and multiply it by P pi S future,
+[1642.52s -> 1644.92s]  then you get exactly the quantity we want,
+[1644.92s -> 1647.36s]  P pi S future given S to AT.
+[1647.36s -> 1648.68s]  And for continuous states,
+[1648.68s -> 1651.22s]  this will give you a probability density.
+[1651.22s -> 1652.92s]  And again, the definition of this probability density
+[1652.92s -> 1653.88s]  is just like before,
+[1653.88s -> 1656.04s]  sample a random future time step
+[1656.04s -> 1657.40s]  from the geometric distribution,
+[1657.40s -> 1659.24s]  and then evaluate the density
+[1659.24s -> 1662.28s]  of hitting the state S future at that time step.
+[1664.12s -> 1666.16s]  Now, if we're going to use these quantities
+[1666.16s -> 1668.04s]  to recover things like Q functions,
+[1668.04s -> 1669.10s]  the most important thing to us
+[1669.10s -> 1671.76s]  is the dependence of this quantity on S to AT.
+[1671.76s -> 1674.44s]  This P pi S future is a difficult quantity to compute,
+[1674.44s -> 1677.60s]  but it's a constant that is independent of AT and ST.
+[1678.52s -> 1680.92s]  So as long as we can train these classifiers,
+[1680.92s -> 1683.72s]  we can recover essentially almost everything we want.
+[1683.72s -> 1685.44s]  There'll be some constant out front
+[1685.44s -> 1686.88s]  that is hard for us to deal with,
+[1686.88s -> 1688.68s]  but that constant, it doesn't matter, for example,
+[1688.68s -> 1690.36s]  if you're maximizing over AT
+[1690.36s -> 1692.80s]  to choose the optimal action for reaching some state
+[1692.80s -> 1695.36s]  or the optimal action for maximizing some reward.
+[1696.86s -> 1699.88s]  So how do we actually train this classifier?
+[1699.88s -> 1702.56s]  Well, it's actually pretty straightforward.
+[1702.56s -> 1704.88s]  If you can generate on policy data,
+[1704.88s -> 1706.96s]  we have our definition of the positive distribution
+[1706.96s -> 1707.88s]  and the negative distribution.
+[1707.88s -> 1710.92s]  So D plus is P pi S future given ST AT,
+[1710.92s -> 1712.72s]  D minus is P pi S.
+[1712.72s -> 1716.00s]  So we can simply sample a state from P pi S
+[1716.00s -> 1718.80s]  by running the policy and just choosing random states
+[1718.80s -> 1720.16s]  that the policy visited.
+[1720.16s -> 1723.80s]  And we can sample from P pi S future given ST AT
+[1723.80s -> 1725.64s]  by picking some time step T,
+[1725.64s -> 1727.24s]  then picking a random future time step
+[1727.24s -> 1728.84s]  from the geometric distribution
+[1728.84s -> 1732.40s]  and selecting the corresponding time step in the trajectory.
+[1732.40s -> 1734.32s]  And then we can train this classifier
+[1734.32s -> 1735.88s]  with a cross-entropy loss.
+[1736.80s -> 1738.64s]  Now, this is an on-policy algorithm.
+[1740.12s -> 1741.24s]  What you really want in practice
+[1741.24s -> 1742.64s]  is typically an off-policy algorithm
+[1742.64s -> 1744.44s]  because that could be much more data efficient.
+[1744.44s -> 1745.40s]  The off-policy algorithm
+[1745.40s -> 1747.52s]  is actually a pretty straightforward extension of this.
+[1747.52s -> 1749.12s]  I'm not gonna go into in too much detail
+[1749.12s -> 1749.96s]  in today's lecture
+[1749.96s -> 1751.52s]  because the lecture has already gotten very long.
+[1751.52s -> 1752.80s]  But if you wanna learn about that,
+[1752.80s -> 1754.20s]  I would recommend checking out this paper
+[1754.20s -> 1755.48s]  called C-Learning,
+[1755.48s -> 1757.92s]  and you can learn about that in much more detail.
+[1758.84s -> 1760.68s]  Thank you.

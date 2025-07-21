@@ -1,0 +1,457 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.96s]  In today's lecture, we're going to continue our discussion of offline reinforcement learning,
+[5.96s -> 12.24s]  and we'll cover more modern offline RL algorithms based on value function estimation that take
+[12.24s -> 18.88s]  explicit steps to mitigate the ill effects of distributional shift.
+[18.88s -> 24.54s]  So first, to briefly recap from Monday, on-policy reinforcement learning algorithms
+[24.54s -> 28.36s]  are algorithms that interact with the world, collect a little bit of data, use that data
+[28.36s -> 32.44s]  to update the model, then discard that data and collect more data.
+[32.44s -> 36.04s]  Off-policy RL algorithms, which we learned about before, are essentially a buffered version
+[36.04s -> 40.80s]  of this, where all the data that is collected so far is stored in a replay buffer, and
+[40.80s -> 46.76s]  is used for each update, so you might load all the transitions to augment the amount
+[46.76s -> 50.52s]  of data available for each update for something like a Q-function, but you still
+[50.52s -> 55.74s]  iteratively collect additional data with the latest policy that you have.
+[55.74s -> 59.48s]  Offline reinforcement learning dispenses with active data collection entirely.
+[59.48s -> 63.18s]  In offline reinforcement learning, we assume that we are given a dataset, and that that
+[63.18s -> 68.90s]  dataset was collected by some unknown behavior policy, which we denote with pi-beta.
+[68.90s -> 74.38s]  So the definitions are D is our dataset, which we can think of as just an unordered
+[74.38s -> 77.74s]  set of state-action, next-state, and reward tuples.
+[77.74s -> 82.30s]  In practice, those tuples are typically arranged into trajectories, but value-based methods
+[82.30s -> 86.38s]  of the sort that we will describe in today's lecture generally do not make use of this,
+[86.38s -> 89.90s]  so they just assume that you're given transitions.
+[89.90s -> 95.74s]  We will use a D with a superscript pi-beta to denote a state distribution, or D superscript
+[95.74s -> 99.46s]  pi-theta for the current policy state distribution.
+[99.46s -> 103.62s]  Pi-beta represents the behavior policy, the policy that collected the dataset.
+[103.62s -> 105.66s]  In general, we don't know what this is.
+[105.66s -> 110.70s]  We have our transition probabilities, our rewards, and the behavior policy, you know, it could
+[110.70s -> 111.70s]  really be anything.
+[112.10s -> 116.54s]  It could be humans collecting data, it could be a hand-designed controller, so we just
+[116.54s -> 120.78s]  assume that something like it exists, which is not really assuming anything at all.
+[120.78s -> 126.14s]  So if you see the simple pi-beta, basically, in most of these algorithms, we'll either
+[126.14s -> 130.38s]  only use samples from pi-beta, or if we need access to the probabilities, we will
+[130.38s -> 134.02s]  fit some model to estimate those probabilities.
+[134.02s -> 139.66s]  Our objective, just like before, is to maximize expected reward, and as we learned
+[139.70s -> 145.54s]  on Monday, a major problem with using value-based methods, like Q-learning style methods, is
+[145.54s -> 147.74s]  the problem of distributional shift.
+[147.74s -> 153.34s]  So for any kind of method that uses a Q-function, whether it's actor-critic or Q-learning,
+[153.34s -> 157.98s]  the Q-function needs to be fitted to its target values using the data, and when the
+[157.98s -> 163.98s]  data isn't changing, then the objective for fitting the Q-functions is the Bellman error
+[163.98s -> 170.18s]  in expectation under the behavior policy, and this expectation is approximated by using
+[170.18s -> 172.62s]  the samples in D.
+[172.62s -> 177.90s]  What this means is that our Q-function can be expected to provide accurate estimates
+[177.90s -> 180.46s]  in expectation under pi-beta.
+[180.46s -> 185.70s]  The problem is that when we perform Bellman backups, we use estimates of the expected
+[185.70s -> 190.60s]  value of the Q-function under our latest policy, pi-nu.
+[190.60s -> 194.32s]  We would expect good accuracy if pi-nu is equal to pi-beta, but that's usually not
+[194.32s -> 199.76s]  the case, because the whole point is to get pi-nu to improve over pi-beta.
+[199.76s -> 203.36s]  So we experience distributional shift, which means that our estimates of the Q-values
+[203.36s -> 206.88s]  under pi-nu will not be very accurate.
+[206.88s -> 211.68s]  The situation is further exacerbated by the fact that pi-nu is directly selected to
+[211.68s -> 217.24s]  maximize the expected value of the Q-function, which means, in a sense, that pi-nu is
+[217.24s -> 223.24s]  strongly incentivized to find adversarial actions that will fool the Q-function into
+[223.24s -> 226.38s]  outputting erroneously large Q-values.
+[226.38s -> 231.16s]  And that is in fact exactly what we see happening in practice, as shown in the plots
+[231.16s -> 237.08s]  in the lower right, where the actual reward of policies trained with offline RL using
+[237.08s -> 242.68s]  standard Q-function act of critic methods is very low, but the Q-function estimates
+[242.68s -> 244.32s]  that the return will be extremely high.
+[244.32s -> 249.12s]  So the y-axis in the rightmost plot is a log scale, where the red curve, which gets
+[249.12s -> 254.76s]  a reward of negative 250, has estimated Q-values that are 10 to the seventh power.
+[254.76s -> 259.52s]  So what all this means is that if we want to develop practical deep offline RL algorithms,
+[259.52s -> 264.36s]  we need to somehow solve this distributional shift problem.
+[264.36s -> 270.48s]  So how do current and prior methods typically address this?
+[271.00s -> 275.56s]  Well, one very widely studied class of methods is what I'm going to refer to as policy constraint
+[275.56s -> 277.28s]  methods.
+[277.28s -> 281.78s]  These are methods that adopt some sort of actor critic structure, and they're going
+[281.78s -> 286.40s]  to update their Q-function with an expected value under pi-nu, but they will modify
+[286.40s -> 293.42s]  the policy update to not just maximize the Q-values, but also impose some sort of constraint.
+[293.42s -> 297.48s]  For example, a constraint that the KL divergence between pi and pi-beta should be bounded
+[297.48s -> 301.36s]  by epsilon.
+[301.36s -> 303.74s]  So in principle, this should solve distributional shift, right?
+[303.74s -> 309.20s]  Because if you choose epsilon to be small enough, then in principle, you should not
+[309.20s -> 312.00s]  get too many erroneous values.
+[312.00s -> 313.32s]  That's the idea, at least.
+[313.32s -> 318.56s]  I will, to sort of give away the punchline, I'll say right away that while policy constraint
+[318.56s -> 325.76s]  methods provide good tools for analysis and kind of a reasonable basis to start with,
+[325.76s -> 329.44s]  generally the best performing current methods do something a little more sophisticated.
+[329.44s -> 334.32s]  So typically, just policy constraint methods implemented naively don't actually work all
+[334.32s -> 337.36s]  that well.
+[337.36s -> 339.26s]  But it is a very old idea.
+[339.26s -> 343.10s]  As far as I could tell, it doesn't have a single name, but it comes up in work by
+[343.10s -> 347.76s]  Emmanuel Totoro from the early 2000s, work by Bert Kappen, trust regions, covariant
+[347.76s -> 352.08s]  policy gradients, natural policy gradients, they all make use of some kind of constrained
+[352.08s -> 357.56s]  actor update idea, and also this idea has been used in a number of recent papers from
+[357.56s -> 362.16s]  Fox et al., Fujimoto, Jacks, Kumar, Wu, and many others.
+[362.16s -> 367.50s]  So it's a very well-studied idea that goes back many decades.
+[367.50s -> 371.58s]  But it has a number of issues, if applied naively.
+[371.58s -> 376.46s]  One obvious issue is that we usually don't know what the behavior policy is, and that
+[376.46s -> 382.22s]  means that we have to be very careful when estimating the KL divergence term.
+[382.22s -> 387.10s]  So the data could have come from humans, it could have come from a hand-designed controller,
+[387.10s -> 391.42s]  it could have come from many past RL runs, so it could be a mixture policy, or even
+[391.42s -> 393.98s]  a combination of all of the above.
+[393.98s -> 398.26s]  In practice, what this means is that if we want to employ a policy constraint method
+[398.26s -> 404.54s]  of this sort, we need to either fit another model with behavioral cloning to estimate
+[404.54s -> 410.26s]  pi-beta, or we need to be very clever in how we implement the constraint, so that we
+[410.26s -> 415.74s]  can get away with only samples from pi-beta without having to have access to its probabilities.
+[415.74s -> 419.02s]  And both of those are viable options, and I'll say right now that the latter actually
+[419.02s -> 425.30s]  tends to work a lot better than the former, but they can both be reasonable choices.
+[425.30s -> 429.26s]  There's a second issue which is actually a little bit more severe, which is that for
+[429.26s -> 436.06s]  many choices of this constraint, this approach can be both too pessimistic and not pessimistic enough.
+[436.06s -> 440.50s]  I'll describe this a little bit more later, but basically the reasoning here is the following.
+[440.50s -> 445.50s]  Remember how when we talked about distributional shift, we asked, well, what if x-star,
+[445.50s -> 448.78s]  the test point, is sampled from p of x?
+[448.78s -> 450.78s]  Do we expect low error then?
+[450.78s -> 455.26s]  The answer is usually no, because if we're minimizing error in expectation, we can only
+[455.26s -> 457.26s]  expect it to be low in expectation.
+[457.26s -> 463.54s]  So in general, you could have two distributions that are very close together in terms of standard
+[463.54s -> 468.90s]  divergence metrics like KL divergence, and still have highly erroneous predictions for
+[468.90s -> 471.44s]  samples from your new policy.
+[471.44s -> 476.02s]  More precisely, this imposes a kind of a constant trade-off between staying close enough to
+[476.02s -> 480.22s]  pi-beta to not experience too many errors, and deviating enough from pi-beta to improve
+[480.22s -> 482.96s]  the policy substantially.
+[482.96s -> 485.02s]  But then there's this other part about being too pessimistic.
+[485.02s -> 490.30s]  The issue is that at the same time, we'd like to intuitively find the best policy
+[490.30s -> 492.64s]  that is kind of inside the support of the data.
+[492.64s -> 496.18s]  We'd like to say, well, the data tells us about what is possible, and we'd like to
+[496.18s -> 500.12s]  pick good stuff within the set of what is possible.
+[500.12s -> 505.66s]  And a naive constraint like a KL divergence constraint can actually prevent us from doing that.
+[505.66s -> 512.14s]  Imagine that pi-beta is uniformly random, which means that essentially any action
+[512.14s -> 516.14s]  is equally likely, which means that no action is out of distribution.
+[516.14s -> 522.58s]  A KL divergence constraint in this case would tell us that pi should remain maximally random,
+[522.58s -> 523.58s]  and that doesn't really make sense.
+[523.58s -> 528.34s]  Like, why should we make pi more random just because pi-beta was more random?
+[528.34s -> 533.12s]  So while this framework seems very reasonable, it actually in practice doesn't lead to
+[533.12s -> 538.72s]  such great results for these reasons, but let's talk about it a little bit more.
+[538.72s -> 541.76s]  So first, what kind of constraints can we use?
+[541.76s -> 543.44s]  There are a number of choices.
+[543.44s -> 548.00s]  The most straightforward choice implementation-wise is to use a KL divergence constraint because
+[548.00s -> 552.14s]  this kind of constraint has a convenient functional form that makes it fairly easy
+[552.14s -> 556.14s]  to write it down, to differentiate it, and to optimize it.
+[556.14s -> 560.08s]  So it's easy to implement, but it's not necessarily what we want.
+[560.08s -> 564.20s]  And I alluded to this a little bit on the previous slide, but let me explain it a little
+[564.20s -> 566.88s]  bit more with a picture.
+[566.88s -> 570.96s]  So let's say that this pi-beta is our policy, and I'm visualizing it here.
+[570.96s -> 572.96s]  You can imagine this in a single state.
+[572.96s -> 576.56s]  So for different actions, it has different probabilities, and you can see that it has
+[576.56s -> 580.36s]  fairly good coverage of these actions in the middle.
+[580.36s -> 585.76s]  And let's say that these orange dots represent samples in our data set, and the y-axis
+[585.76s -> 589.88s]  here for the orange dots corresponds to their Q value.
+[589.88s -> 594.34s]  So just from looking at these dots, you can see that that really tall dot, the second
+[594.34s -> 597.88s]  one from the left, that must correspond to a pretty good action.
+[597.88s -> 601.40s]  So if we're just seeing this, we probably want to take the action corresponding to that
+[601.40s -> 605.58s]  second dot from the left, because it's so much better than all the others.
+[605.58s -> 609.68s]  If we were to fit a Q function to this by minimizing the difference to the target
+[609.68s -> 614.36s]  values, we might get a curve that looks a little bit like this orange one.
+[614.36s -> 618.16s]  Now you'll notice that in regions that have a low probability under pi-beta, here on
+[618.16s -> 623.12s]  the right, the Q function will attempt to extrapolate, and its extrapolated values
+[623.12s -> 625.18s]  are probably quite unreliable.
+[625.18s -> 629.58s]  So even though the largest values that it takes on are actually over there on the right,
+[629.58s -> 634.58s]  we probably don't want to trust those values because they are far out of distribution.
+[634.58s -> 638.30s]  And we might say that the values here in the middle are maybe more reliable, although
+[638.30s -> 644.10s]  remember what I said before, that in general you're not guaranteed to have low error even
+[644.10s -> 648.06s]  for in-distribution actions, you're only guaranteed low error in expectation.
+[648.06s -> 654.82s]  But nonetheless, we might surmise that the values are more reliable here in the middle.
+[654.82s -> 662.34s]  If we train a new policy pi that maximizes the Q values and minimizes the divergence
+[662.34s -> 666.66s]  to pi-beta, we might get something like this green curve.
+[666.66s -> 670.96s]  Notice that the green curve doesn't concentrate entirely on the good action because it is
+[670.96s -> 673.80s]  forced to stay somewhat close to pi-beta.
+[673.80s -> 677.66s]  So if we were to reduce the variance further, if we were to tighten up that green curve
+[677.66s -> 682.54s]  around that really good action, we would increase the KL divergence to pi-beta and perhaps
+[682.54s -> 685.18s]  violate our constraint.
+[685.18s -> 688.46s]  So this might be the best policy we can get under our constraint.
+[688.46s -> 692.98s]  But notice that this policy does still assign pretty high probability even to actions
+[692.98s -> 695.30s]  with a very low value on the tails.
+[695.30s -> 698.22s]  It does assign the highest probability to the best action, but it still assigns high
+[698.22s -> 700.86s]  probability to some pretty bad actions.
+[700.86s -> 705.52s]  Intuitively what we want is something like this other curve, this darker green curve,
+[705.52s -> 708.58s]  which really only assigns high probability to the really good actions and falls off
+[708.58s -> 710.74s]  much more rapidly.
+[710.74s -> 715.78s]  But this better policy might violate our KL divergence constraint because it reduces
+[715.78s -> 717.30s]  the variance too much.
+[717.30s -> 721.46s]  So this might be the best in-support policy, meaning the best policy that only assigns
+[721.46s -> 725.62s]  high probabilities to actions that had high probabilities under pi-beta, but it might
+[725.62s -> 728.74s]  violate our KL divergence constraint.
+[728.74s -> 732.74s]  So based on this intuition, what we might choose to do instead is to employ a support
+[732.74s -> 733.74s]  constraint.
+[734.26s -> 743.22s]  A support constraint basically means that you're only going to give actions non-trivial
+[743.22s -> 744.22s]  probability.
+[744.22s -> 747.58s]  There's a typo here, that first inequality should be a greater than sign, so pi A given
+[747.58s -> 752.90s]  S is greater than zero, only for actions where pi-beta has a probability that's greater
+[752.90s -> 756.82s]  than or equal to some threshold epsilon, and that's kind of a crude way to write
+[756.82s -> 757.82s]  a support constraint.
+[757.82s -> 762.98s]  And of course, in reality, it's very difficult to enforce exactly as written, but there are
+[763.02s -> 765.62s]  various approximations that we can employ.
+[765.62s -> 770.74s]  One common choice is to use something like a maximum mean discrepancy estimator, and
+[770.74s -> 774.42s]  that can crudely estimate a support constraint.
+[774.42s -> 778.66s]  Now the trouble with these is that they're in general significantly more complex to implement.
+[778.66s -> 781.58s]  So KL divergences are very easy to evaluate.
+[781.58s -> 784.26s]  Things like MMD are more complicated.
+[784.26s -> 787.54s]  But it's generally much closer to what we really want.
+[787.54s -> 791.50s]  So this is a very high-level summary, but hopefully this just gives you a taste for what
+[791.54s -> 794.66s]  kind of trade-offs we have to make when we're deciding on these constraints.
+[794.66s -> 799.06s]  And a lot of what I'll talk about next actually does deal with KL divergence constraints,
+[799.06s -> 800.90s]  because they're so much easier to work with.
+[800.90s -> 804.18s]  But I just want to emphasize that they do have some pretty fundamental shortcomings
+[804.18s -> 808.62s]  when it comes to actual practical offline RL methods.
+[808.62s -> 812.74s]  If you want to learn more about the details, here are three papers that I might recommend.
+[812.74s -> 816.18s]  The first one is a survey review paper, and the other two discuss various kinds
+[816.18s -> 817.50s]  of constraints.
+[817.50s -> 819.86s]  And I would encourage you to check out those papers if you want to learn a lot
+[819.86s -> 821.40s]  more about these.
+[821.40s -> 826.00s]  Most of our discussion today will focus on the simpler types of constraints.
+[826.00s -> 828.76s]  How do we implement constraints?
+[828.76s -> 835.32s]  I'll talk about kind of a high-level overview of methods that enforce constraints explicitly.
+[835.32s -> 838.64s]  Then I'll do a deep dive into methods that enforce constraints implicitly, which
+[838.64s -> 843.20s]  can be very effective and simple in practice, and then I'll talk about a few other approaches.
+[843.20s -> 845.64s]  But first, let's talk about some explicit approaches.
+[845.64s -> 848.92s]  I will say right away these are generally not the methods that work well, but it's
+[848.92s -> 853.84s]  good to be aware of how they work to better contextualize some of the other things I'll cover.
+[853.84s -> 858.44s]  So a very simple way to do this is to directly modify the actor objective.
+[858.44s -> 862.82s]  So in a conventional actor-critic algorithm with a Q function, our actor objective would
+[862.82s -> 868.28s]  basically be this, maximize the expected value under the policy of the Q values where
+[868.28s -> 872.54s]  the states are sampled from the data set.
+[872.54s -> 876.50s]  Now let's write down the form of the KL divergence between pi and pi-beta.
+[876.50s -> 879.78s]  I know I said before the KL divergence is not a great choice, but it is simple, so it's
+[879.78s -> 883.34s]  much easier to discuss this first.
+[883.34s -> 888.02s]  The KL divergence between pi and pi-beta is just the expected value under pi of log
+[888.02s -> 894.06s]  pi minus log pi-beta, which we can also write as the negative of the expected value
+[894.06s -> 897.50s]  of log pi-beta minus the entropy of pi.
+[897.50s -> 901.26s]  Now notice that there is a close similarity between this equation and the actor objective
+[901.26s -> 905.66s]  I have written above, in that both of them are expected values under pi, although
+[905.82s -> 909.22s]  the KL divergence also has this additional entropy term.
+[909.22s -> 915.94s]  So what I can do is I can incorporate the KL divergence into the actor objective.
+[915.94s -> 920.10s]  The log pi-beta term simply gets added to the Q values, because it doesn't depend
+[920.10s -> 923.66s]  on pi, and then I have this additional entropy term.
+[923.66s -> 926.74s]  Both of them are multiplied by a Lagrange multiplier lambda.
+[926.74s -> 932.32s]  Remember that if we have a constrained optimization problem, you know, maximize f of x subject
+[932.32s -> 936.80s]  to c of x equals zero, we can write it as an unconstrained problem, where the constraint
+[936.80s -> 939.08s]  is multiplied by a Lagrange multiplier.
+[939.08s -> 943.28s]  So if we can find the value of the Lagrange multiplier, then solving this problem will
+[943.28s -> 947.60s]  actually enforce the constraint, and in practice we can either use the dual gradient
+[947.60s -> 951.72s]  descent approach that we covered before to find lambda, or we can even treat lambda
+[951.72s -> 955.88s]  as a hyperparameter and just tune the value of lambda directly.
+[955.88s -> 962.92s]  So here, lambda is our Lagrange multiplier, and h is the entropy, which is very easy to
+[962.92s -> 967.52s]  compute in closed form and differentiate for either Gaussian or categorical policies.
+[967.52s -> 970.32s]  So the entropy term is actually very easy to deal with, you literally just code up
+[970.32s -> 974.40s]  a formula for the entropy, and then let your automatic differentiation software compute
+[974.40s -> 975.44s]  the gradients.
+[975.44s -> 978.56s]  And then the log pi-beta term is simply added to the Q function.
+[978.56s -> 983.48s]  Now you do need to know what log pi-beta is, which means that in practice, if your
+[983.48s -> 987.72s]  data comes from some unknown policy, you would do something like behavioral cloning
+[987.72s -> 990.52s]  to fit pi-beta in order to allow you to estimate this.
+[990.52s -> 995.16s]  And that can be quite difficult, actually.
+[995.16s -> 1001.48s]  Another approach to enforcing these constraints is to instead directly modify the reward
+[1001.48s -> 1002.48s]  function.
+[1002.48s -> 1008.72s]  So you can simply subtract a penalty from the reward, which is determined by the divergence
+[1008.72s -> 1013.40s]  of your choice, such as KL divergence or MMD or anything else.
+[1014.20s -> 1015.36s]  This works a little bit differently.
+[1015.36s -> 1019.40s]  So it's a simple modification to directly penalize divergence that forces the policy
+[1019.40s -> 1020.92s]  to basically deal with it.
+[1020.92s -> 1023.44s]  It also accounts for future divergence, so it'll actually have a slightly different
+[1023.44s -> 1028.16s]  effect because now the policy will avoid actions that incur a large divergence now.
+[1028.16s -> 1031.96s]  It'll also avoid actions that have a low divergence now but lead to higher divergence
+[1031.96s -> 1032.96s]  later.
+[1032.96s -> 1035.84s]  And that can actually be quite desirable in many cases.
+[1035.84s -> 1040.48s]  So this approach has slightly different theoretical properties and can actually work better.
+[1040.48s -> 1044.32s]  So for more on this, check out this paper.
+[1044.32s -> 1049.56s]  But generally, from my experience, both approaches don't really work all that well, and there
+[1049.56s -> 1052.72s]  are actually better ways to do this.
+[1052.72s -> 1058.86s]  So generally, the best modern offline RL methods don't do either of these things.
+[1058.86s -> 1064.00s]  One approach that removes the need to explicitly estimate pi-beta is to use what are called
+[1064.00s -> 1068.48s]  implicit policy constraints.
+[1068.48s -> 1072.44s]  So here's our constrained optimization again, and I'm going to use a KL divergence constraint
+[1072.44s -> 1074.80s]  for now to keep it simple.
+[1074.80s -> 1082.52s]  It turns out that if you write down the Lagrangian of this problem and actually
+[1082.52s -> 1088.46s]  solve for the closed form solution for the optimal policy, you get this equation.
+[1088.46s -> 1091.24s]  It's straightforward to show by Lagrangian duality.
+[1091.24s -> 1094.32s]  I won't go through the derivation on this slide because I have a lot to cover in today's
+[1094.32s -> 1100.52s]  lecture, but you can check out a few prior papers that derive this.
+[1100.52s -> 1103.72s]  This is actually a very widely studied idea.
+[1103.72s -> 1107.64s]  There's a work by Peters et al. called REPS, a work by Rollick et al. called PSI learning.
+[1107.64s -> 1109.32s]  They all basically derive the same thing.
+[1109.32s -> 1114.14s]  Essentially what this equation is saying is that the optimal solution to this constrained
+[1114.14s -> 1120.68s]  optimization problem above is given by the behavior policy multiplied by the exponential
+[1120.68s -> 1125.96s]  of the advantage function divided by a Lagrangian multiplier lambda.
+[1125.96s -> 1131.12s]  Now if we dissect a little bit what this means, it's actually, in my opinion actually
+[1131.12s -> 1133.04s]  somewhat intuitive.
+[1133.04s -> 1142.56s]  If lambda goes to zero, then that means that the advantage is multiplied by infinity,
+[1142.56s -> 1146.12s]  and the only thing that is proportional to the exponential of that is a greedy policy
+[1146.12s -> 1150.04s]  that assigns a probability of one to the action that maximizes the advantage of zero
+[1150.40s -> 1151.40s]  to everything else.
+[1151.40s -> 1156.48s]  But for finite values of lambda, essentially what this is doing is it's making suboptimal
+[1156.48s -> 1160.34s]  actions exponentially less likely, but also multiplying them by pi beta.
+[1160.34s -> 1163.68s]  So any action that has a very low probability under pi beta, even if it has a very high
+[1163.68s -> 1167.40s]  advantage, will end up with a very low probability.
+[1167.40s -> 1171.44s]  And then lambda has to be chosen as a Lagrangian multiplier to satisfy that constraint, but
+[1171.44s -> 1176.16s]  as I mentioned before, lambda can also be treated directly as a hyperparameter of the algorithm
+[1176.40s -> 1180.44s]  and just tuned based on the desired performance.
+[1180.44s -> 1187.08s]  Now of course, directly creating the functional form of pi star here requires knowing pi
+[1187.08s -> 1191.60s]  beta, so we haven't actually done anything to simplify our problem yet.
+[1191.60s -> 1196.96s]  But looking at this equation, one of the things we can recognize is that we can approximate
+[1196.96s -> 1202.44s]  pi star here by using samples from pi beta, because any time that you want some quantity
+[1202.56s -> 1207.56s]  which is given by the product of a distribution and some other stuff, well, expected values
+[1207.56s -> 1211.38s]  under the distribution actually give you basically exactly that.
+[1211.38s -> 1216.72s]  So you can approximate the solution via weighted max likelihood.
+[1216.72s -> 1223.40s]  So to train pi nu, what you can do is you can sample from pi beta, so that gives
+[1223.40s -> 1228.24s]  you the pi beta term pi star, multiply that sample by a weight corresponding to all the
+[1228.28s -> 1233.80s]  other terms in the equation, put that weight on the sample, and then maximize the likelihood
+[1233.80s -> 1235.44s]  on that sample with that weight.
+[1235.44s -> 1239.44s]  So the loss function you're seeing here is basically the behavior cloning loss, that's
+[1239.44s -> 1243.48s]  why the log pi shows up in there, except the samples are weighted by all the other
+[1243.48s -> 1247.36s]  terms in the equation above, which is one over z times the exponential of one over
+[1247.36s -> 1250.56s]  lambda times the advantage.
+[1250.56s -> 1254.92s]  So in practice what you would do is you would generate samples from the data set,
+[1254.92s -> 1260.36s]  so this is basically the data set you're given, use the critic to get the advantage,
+[1260.36s -> 1263.76s]  and that gives you a weight, and you can put that weight on every sample from the
+[1263.76s -> 1268.84s]  data set, and then just do a weighted max likelihood, essentially weighted behavioral
+[1268.84s -> 1274.36s]  cloning, where the weights are given by the advantage function, and the advantage
+[1274.36s -> 1278.32s]  function comes from your critic.
+[1278.32s -> 1282.76s]  This has some interesting implications, because one of the things that this suggests is that
+[1282.76s -> 1288.12s]  a constrained actor update really just corresponds to a kind of weighted behavior
+[1288.12s -> 1291.48s]  cloning, where the weights depend on how good the actions are.
+[1291.48s -> 1294.60s]  So what this algorithm is really doing is it's imitating the actions in your data
+[1294.60s -> 1300.36s]  set, but it's imitating the good actions more than the bad actions.
+[1300.36s -> 1309.80s]  And the math shows that that actually corresponds to solving this constrained actor objective.
+[1309.80s -> 1314.12s]  So if you want to implement this in practice, you would create a critic loss, which is just
+[1314.12s -> 1318.84s]  the regular Q-function critic that we had in the actor-critic discussion, and you would
+[1318.84s -> 1323.16s]  have an actor loss, which is this weighted maximum likelihood, and then you would alternate
+[1323.16s -> 1326.64s]  between taking gradient steps on the critic loss and taking gradient steps on the actor
+[1326.64s -> 1329.12s]  loss.
+[1329.12s -> 1334.04s]  So this essentially implements the constrained actor-critic framework that I showed before,
+[1334.04s -> 1338.48s]  using this implicit constraint trick, meaning that it doesn't actually require you to know
+[1338.48s -> 1340.12s]  the functional form of pi-beta.
+[1340.12s -> 1346.28s]  It only requires you to have samples from it, which is what you have in your data set.
+[1346.28s -> 1352.92s]  So this algorithm with Q-function estimation goes under the name of advantage-weighted
+[1352.92s -> 1354.84s]  actor-critic, or AWAKE.
+[1354.84s -> 1358.24s]  If you use Monte Carlo returns, which is also possible, you get an algorithm called
+[1358.24s -> 1360.12s]  advantage-weighted regression.
+[1360.12s -> 1366.88s]  And the citations, if you want to read more about this, are shown at the bottom of this slide.
+[1366.88s -> 1370.68s]  Now the trouble with this kind of approach, well let me rewind a little bit, the trouble
+[1370.68s -> 1375.48s]  with this kind of approach is that in order to estimate those advantage values, you do
+[1375.48s -> 1382.28s]  still need to query out-of-distribution actions, because there's no guarantee that
+[1382.28s -> 1387.32s]  at intermediate stages in training, your policy pi-theta will perfectly respect the constraint.
+[1387.32s -> 1390.68s]  If you choose lambda appropriately, the constraint will be respected at convergence, but over
+[1390.68s -> 1394.90s]  the course of training, the constraint may not be respected, which means that you can
+[1394.94s -> 1397.98s]  still get out-of-distribution actions with this.
+[1397.98s -> 1402.58s]  So there's actually two places where you end up querying out-of-distribution actions.
+[1402.58s -> 1405.88s]  One is in the target value, where you're computing the expectation under pi-theta.
+[1405.88s -> 1408.90s]  So as I said, at convergence, pi-theta should obey the constraint, but it may not obey
+[1408.90s -> 1411.14s]  the constraint over the course of training.
+[1411.14s -> 1415.22s]  And also when you're estimating the advantage, that's again Q minus the expected value
+[1415.22s -> 1421.10s]  of Q under pi-theta, so that also requires querying actions from pi-theta into the
+[1421.10s -> 1422.10s]  Q-function.
+[1422.10s -> 1425.30s]  And both of those can have errors.
+[1425.30s -> 1426.62s]  Can we actually avoid that?
+[1426.62s -> 1432.66s]  Can we somehow avoid all out-of-distribution action queries when computing the target
+[1432.66s -> 1434.38s]  values?
+[1434.38s -> 1443.50s]  Well, here's the target value computation, and let's say that the second term, that's
+[1443.50s -> 1444.74s]  V of S prime.
+[1444.74s -> 1445.74s]  Okay?
+[1445.74s -> 1449.66s]  So that's the value, ideally the value for pi-nu, but let's just say it's just another
+[1449.66s -> 1451.06s]  neural network.
+[1451.06s -> 1454.66s]  Well, we can train this neural network with some loss function.
+[1454.66s -> 1459.18s]  So we could take, for example, all the sampled state action tuples in our data set and
+[1459.18s -> 1464.14s]  regress V of S i onto Q of S i A i using some loss function, like for example a mean
+[1464.14s -> 1466.38s]  squared error loss.
+[1466.38s -> 1471.42s]  Now that won't really work, because when you do this, V of S i is going to match
+[1471.42s -> 1476.30s]  Q of S i A i, but A i in the data set comes from pi-beta, not from pi-nu.
+[1476.30s -> 1480.06s]  So you're actually estimating the value of pi-beta, not of pi-nu.
+[1480.06s -> 1481.34s]  So this is not really going to work.
+[1481.34s -> 1488.58s]  It's going to give you the Q function of the behavior policy, not of your latest policy.
+[1488.58s -> 1492.58s]  Because the action comes from pi-beta.
+[1492.58s -> 1494.64s]  But now here's a funny thought.
+[1494.64s -> 1498.06s]  If you consider all the trajectories that you have in the data set, and you look at
+[1498.06s -> 1502.10s]  one of the states along those trajectories, well, in that state, there's probably only
+[1502.10s -> 1503.38s]  one action that you ever saw.
+[1503.66s -> 1507.06s]  The state was probably only visited once, if you have a continuous value state or a very
+[1507.06s -> 1508.82s]  large state space.
+[1508.82s -> 1514.14s]  But there may be other states nearby that are similar, where a different action was
+[1514.14s -> 1515.14s]  taken.
+[1515.14s -> 1523.16s]  So because of that, in reality, when you're regressing onto Q S i A i at a state S i,
+[1523.16s -> 1526.94s]  the target for this value function consists of a distribution.
+[1526.94s -> 1530.46s]  It consists of a distribution over different values.
+[1530.46s -> 1533.10s]  Even in the case where you've only seen one action in a single state, you've probably
+[1533.10s -> 1535.46s]  seen other actions in other similar states.
+[1535.46s -> 1541.12s]  So insofar as your value function network generalizes, it really has a distribution
+[1541.12s -> 1544.92s]  of values.
+[1544.92s -> 1547.04s]  And what I'm showing here is basically a histogram of that.
+[1547.04s -> 1553.34s]  So for different values, for different targets, they have a different probability.
+[1553.34s -> 1556.30s]  This distribution is induced only by the actions.
+[1556.30s -> 1559.78s]  And if you use a mean-squared error loss, what the mean-squared error loss actually
+[1559.78s -> 1565.28s]  estimates is the expected value with respect to this distribution, where the expectation
+[1565.28s -> 1569.38s]  is taken under pi-beta.
+[1569.38s -> 1572.34s]  But what if we don't try to estimate the expected value?
+[1572.34s -> 1577.94s]  What if we instead try to estimate an upper quantile or, well, we're actually going
+[1577.94s -> 1580.90s]  to use something called an expectile, but an expectile is just like a quantile only
+[1580.90s -> 1583.58s]  with a squared error.
+[1583.58s -> 1587.66s]  So you can think of an upper quantile of this distribution as essentially the value
+[1587.66s -> 1589.70s]  of the best policy supported by the data.
+[1589.70s -> 1592.74s]  So it's kind of like saying, in all the states that you visited that are similar
+[1592.74s -> 1598.86s]  to this state, what was the best value that you saw?
+[1598.86s -> 1600.54s]  So here's a question.
+[1600.54s -> 1605.56s]  If the mean-squared error loss gives us the expected value under this distribution,
+[1605.56s -> 1611.66s]  is there some other loss that gives us something like an upper quantile?
+[1611.66s -> 1616.62s]  Basically could we still use SIAI but just change the form of the loss function and
+[1616.62s -> 1621.86s]  get something that looks more like the upper end of this histogram?
+[1621.86s -> 1625.62s]  So we can use something called an expectile loss.
+[1625.62s -> 1629.78s]  The equation for an expectile loss might look a little bit messy, but there's actually
+[1629.78s -> 1631.22s]  pretty simple intuition.
+[1631.22s -> 1633.80s]  So a mean-squared error loss looks like a parabola.
+[1633.80s -> 1638.64s]  It penalizes negative errors and positive errors equally, and it penalizes errors more
+[1638.64s -> 1642.50s]  as they get larger because it's a square.
+[1642.50s -> 1648.86s]  The expectile loss is a kind of tilted parabola where negative errors have a different coefficient
+[1648.86s -> 1652.14s]  than positive errors.
+[1652.14s -> 1657.78s]  So if we choose the value of tau here, the multiplier, appropriately, then we can
+[1657.78s -> 1663.78s]  basically penalize negative errors much more than positive errors, which means that
+[1663.78s -> 1670.38s]  it's much better for V of S to be larger than QSIAI than it is for it to be smaller.
+[1670.38s -> 1676.10s]  If we choose a large value of tau like 0.9, for example, then we're penalizing small values
+[1676.10s -> 1679.02s]  of V a lot less than large values.
+[1679.02s -> 1683.64s]  And this gives us something on the upper end of this distribution.
+[1683.64s -> 1686.62s]  Now at this point you might be thinking, hang on, our problem all along was that
+[1686.62s -> 1689.74s]  our Q values were turning out to be much larger than they should be.
+[1689.74s -> 1694.98s]  And now we're going to penalize large values a lot less than small values, so isn't
+[1694.98s -> 1697.66s]  that going to exacerbate the problem?
+[1697.66s -> 1704.64s]  But it actually won't because, remember here, we're only using the states and actions in the data set.
+[1704.64s -> 1708.98s]  So we're never going to query Q with any action that was not in the data set, meaning
+[1708.98s -> 1712.34s]  we'll never query Q with any action that was not trained on.
+[1712.34s -> 1716.10s]  So that already eliminates the overestimation problem completely.
+[1716.10s -> 1722.38s]  In fact, we actually get underestimation because we're not using actions from our learned policy.
+[1722.38s -> 1729.42s]  So by tilting our loss to penalize positive errors a lot less, we actually recover something
+[1729.42s -> 1734.18s]  that is closer to the correct optimal Q function.
+[1734.18s -> 1740.30s]  Formally, it's actually possible to show that what this expectile loss is doing is
+[1740.30s -> 1744.58s]  that it's training the value function to be the maximum of the Q function over all
+[1744.58s -> 1749.30s]  the actions that are within the support of the behavior policy.
+[1749.30s -> 1753.22s]  And the reason that it's doing this for support is that any action that is out of support
+[1753.22s -> 1757.74s]  won't appear in the training set and therefore won't participate in the loss.
+[1757.74s -> 1765.18s]  So essentially we're regressing to the best action we've seen at states similar to this state.
+[1765.18s -> 1768.66s]  But this is not just as simple as copying the best behavior in the data set because
+[1768.66s -> 1770.90s]  we're doing this at every state separately.
+[1770.90s -> 1774.86s]  So we're really combining the best things in all the states together, which could result
+[1774.86s -> 1785.18s]  in a final policy that is much better than the very best trajectory that we saw in the data set.
+[1785.18s -> 1790.14s]  And this is true if you use the expectile loss with a large enough value of tau.
+[1790.14s -> 1794.58s]  So this basic principle can be used to devise an algorithm called implicit Q-learning.
+[1794.58s -> 1796.18s]  This is a very new algorithm.
+[1796.18s -> 1802.10s]  It only came out a short time ago, but I wanted to tell you about it because it performs quite well.
+[1802.10s -> 1805.38s]  So the principle is that we're going to use this expectile loss.
+[1805.38s -> 1812.18s]  The theory behind it is that it sets the values to be the maximum over the actions for all in-support actions.
+[1812.18s -> 1821.38s]  And practically this basically corresponds to doing Bellman backups with an implicit policy,
+[1821.38s -> 1828.26s]  which is the argmax policy, but only over those actions that are in support.
+[1828.26s -> 1831.26s]  So now we can actually do value function updates.
+[1831.26s -> 1837.10s]  We get Q functions that are going to be approximating these optimal in-support Q functions,
+[1837.10s -> 1841.38s]  but we never have to actually feed in an action into our Q function that it was not trained on,
+[1841.38s -> 1849.46s]  because both losses only ever use states and actions that are in the data set.
+[1849.46s -> 1854.58s]  I'll talk about how well this works later, but before that I'm going to talk about an alternative design,
+[1854.58s -> 1856.86s]  and that's actually in the next part of the lecture.
+[1856.86s -> 1862.54s]  But before I get into that, just to briefly summarize the practical implementation of this approach,
+[1862.54s -> 1867.34s]  essentially you're going to be alternating between updates to a Q function and updates to a value function.
+[1867.34s -> 1871.02s]  The Q function is updated with mean squared error using the value function as the target,
+[1871.02s -> 1872.94s]  so that's the top left equation.
+[1872.94s -> 1877.98s]  The value function is updated by regressing onto the Q function at all the states and actions in the data set,
+[1877.98s -> 1879.98s]  but using this expectile loss.
+[1879.98s -> 1882.98s]  And that's it, that's how you train the Q function.
+[1882.98s -> 1887.82s]  Now, once you're done with this process, you do need to actually recover a policy from this.
+[1887.82s -> 1893.38s]  Notice that in the Q and V updates, the policy doesn't actually participate explicitly at all,
+[1893.38s -> 1894.98s]  that's why we call this implicit.
+[1894.98s -> 1900.82s]  So once this is all done, this approach does require a separate step to actually extract the policy,
+[1900.82s -> 1905.58s]  and that separate step is typically done with something like the advantage-weighted method before.
+[1905.58s -> 1913.30s]  So for that step, we would do something like the equation here, the LA loss at the top,
+[1913.30s -> 1918.38s]  but using the Q function trained with this implicit Q-learning approach.

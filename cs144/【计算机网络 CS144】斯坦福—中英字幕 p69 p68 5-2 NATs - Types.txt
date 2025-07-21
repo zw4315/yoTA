@@ -1,0 +1,206 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.00s]  So in this video, I'm gonna go over all the different kinds of NATs, or not all
+[4.00s -> 7.00s]  of them, many of the different kinds of NATs that exist.
+[7.00s -> 11.00s]  So it seems like a very simple abstraction of translating addresses from
+[11.00s -> 14.00s]  an internal to external, internal to external interface.
+[14.00s -> 17.00s]  Well, it turns out there's all kinds of different ways you might implement
+[17.00s -> 19.00s]  that. And a lot of them are deployed out in
+[19.00s -> 21.00s]  the wild. And understanding these differences gives
+[21.00s -> 24.00s]  you a sense then of why NATs can be such a complicating factor when
+[24.00s -> 27.00s]  building applications. So recall, the model of a NAT is that, or
+[28.00s -> 33.00s]  generally the way it works is that when there's some kind of communication from a
+[33.00s -> 38.00s]  node behind the NAT to an external node on the Internet, the NAT sets up an
+[38.00s -> 44.00s]  internal mapping between the, a mapping, you know, internally in its, in its
+[44.00s -> 50.00s]  memory, between an internal IP address and associated port to an external IP
+[50.00s -> 54.00s]  address and port. And so when this server A tries to
+[54.00s -> 60.00s]  open a connection to the web server on S at 18, 181,031, so it's going to port 80
+[60.00s -> 64.00s]  on this host, and it's coming from port 4512.
+[64.00s -> 70.00s]  The NAT rewrites that, that say, all of those packets, including TCP SAN and
+[70.00s -> 76.00s]  then all the data packets, to be coming from its own IP address and port
+[76.00s -> 79.00s]  6641. That's what the server sees, and then
+[79.00s -> 83.00s]  when the server sends messages back, the NAT translates them back to port 4512.
+[84.00s -> 88.00s]  So that's the simple model, and there are two basic questions that come up.
+[88.00s -> 92.00s]  First is, what packets does a NAT allow to traverse these mappings?
+[92.00s -> 96.00s]  The second is, how and when does a NAT assign these mappings?
+[96.00s -> 98.00s]  When does it create them? So I said when you, you generate
+[98.00s -> 101.00s]  packets, but turns out it can be a little more complicated than that.
+[101.00s -> 103.00s]  Like, when does it tear down those mappings?
+[103.00s -> 107.00s]  It doesn't keep them mapping forever. So it turns out there's a nice RFC
+[107.00s -> 110.00s]  that sort of goes through some, the classifications and terminology I'm
+[110.00s -> 112.00s]  going to use in the rest of this video, 3489.
+[112.00s -> 115.00s]  So if you want to read a little bit more about some details and really the
+[115.00s -> 119.00s]  precise way these are laid out, take a look at RFC 3489.
+[119.00s -> 123.00s]  So the first kind of NAT is what's called a full cone NAT.
+[123.00s -> 127.00s]  And this in some ways is the, is the one that plays the nicest.
+[127.00s -> 132.00s]  And a full cone NAT is called, is called that because it is the least
+[132.00s -> 137.00s]  restrictive in terms of what packets it allows to traverse a mapping.
+[138.00s -> 143.00s]  And that way it's a full cone and the, sort of the things which are allowed in
+[143.00s -> 147.00s]  are large. And so the basic model of a full cone
+[147.00s -> 152.00s]  NAT is that any packet that, say, this is for the particular, say,
+[152.00s -> 156.00s]  particle TCP. Any TCP packet that comes into the
+[156.00s -> 162.00s]  NAT to this IP address port pair will be translated to this IP address, this
+[162.00s -> 165.00s]  port pair. Regardless of what the source address
+[165.00s -> 169.00s]  and source port are. This is the least restrictive.
+[169.00s -> 175.00s]  So if I have some other server say S2 that has, you know, some IP address A
+[175.00s -> 179.00s]  and it's sending a packet from port A prime.
+[179.00s -> 186.00s]  And that packet with source A, source port A prime is sent to 120,
+[186.00s -> 190.00s]  3422.8, port 6641. The NAT will translate it.
+[190.00s -> 198.00s]  And my server my, my host here will see something coming from A, A prime arriving
+[198.00s -> 203.00s]  at port 10.0.0.101, port 4512. Now it might discard that packet.
+[203.00s -> 207.00s]  It might send an ICMP error. But the point is the NAT will do the
+[207.00s -> 209.00s]  translation. It's the least restrictive.
+[209.00s -> 212.00s]  It's a full cone. So in addition to full cone NATs,
+[212.00s -> 217.00s]  there are also restricted cone NATs. And what restricted cone NAT does is it
+[217.00s -> 223.00s]  filters based on the source IP address. So in restricted cone NAT, the NAT will
+[223.00s -> 229.00s]  translate packets that come from the same source address as is intended on
+[229.00s -> 233.00s]  the external mapping. So when the NAT sets up the mapping
+[233.00s -> 239.00s]  between the internal address and port pair and the external address and port
+[239.00s -> 244.00s]  pair, it includes the address of the other endpoint.
+[244.00s -> 250.00s]  And so in this case, if I have S2, which tries to send a packet from A colon A
+[250.00s -> 256.00s]  prime, address A, A prime, the NAT will not allow that packet to traverse.
+[256.00s -> 260.00s]  It'll discard, it'll either send an ICMP error or generally will not
+[260.00s -> 263.00s]  translate that packet and host A will never see it.
+[263.00s -> 270.00s]  However, if server S were to send a packet from IP address S and then let's
+[270.00s -> 277.00s]  just say port, let's say port, you know, 10,099, that will be able to traverse
+[277.00s -> 282.00s]  the mapping in the sense of it's coming from 18.181.0.31.
+[282.00s -> 289.00s]  And so host A will see a packet from 18.181.0.31, port 1099.
+[289.00s -> 294.00s]  It'll come in destined to 10.0.0.101, port 4512.
+[294.00s -> 298.00s]  So that's a restricted cone NAT. It will filter based on the IP address,
+[298.00s -> 301.00s]  but not the port. So the last kind of a NAT, or of
+[301.00s -> 305.00s]  these three major classifications, is a port restricted NAT, where it behaves
+[305.00s -> 308.00s]  like a restricted cone, except it also filters on port.
+[308.00s -> 318.00s]  So in this case, when a packet comes in from some external host to 128.34.22.8.6641,
+[318.00s -> 323.00s]  the NAT is storing also what the expected IP address and port are.
+[323.00s -> 327.00s]  And so in this case, if I, again, I have some server S2 that tries to send
+[327.00s -> 331.00s]  something from A, A prime, the NAT will not translate that.
+[331.00s -> 335.00s]  That's seen as an error in ICMP, etc. No route to host, whatever error it
+[335.00s -> 338.00s]  thinks is correct to specify, depending on the conditions.
+[338.00s -> 344.00s]  But similarly, if server S tries to send a message from port 1099, that will not
+[345.00s -> 350.00s]  traverse either, because it doesn't match the port in the mapping.
+[350.00s -> 357.00s]  So only packets from this IP address port pair 18.181.031, port 80, will be
+[357.00s -> 365.00s]  allowed to translate to 10.0.01.4512. So only this particular pair can
+[365.00s -> 371.00s]  traverse the mapping. So the last and the final kind of NAT
+[371.00s -> 376.00s]  is something called a symmetric NAT. And what makes a symmetric NAT different
+[376.00s -> 381.00s]  is not only is that first of all it's sort of by definition port restricted.
+[381.00s -> 387.00s]  But there's the fact that packets coming from the same source address and port
+[387.00s -> 393.00s]  internal to the NAT that are going to different destination addresses and ports
+[393.00s -> 397.00s]  are given different external address port mappings.
+[397.00s -> 401.00s]  So if you look at this figure you'll see what I'm saying.
+[401.00s -> 407.00s]  So here I have host A and it's sending packets from 10.0.0.101, port 4512.
+[407.00s -> 412.00s]  Right? And first it's sending them to 18.181.031, port 3311.
+[412.00s -> 418.00s]  So the NAT sets up a mapping. And the mapping between this internal address
+[418.00s -> 425.00s]  port pair and this internal address port pair is 128.34.22.8.6641.
+[425.00s -> 433.00s]  And so packets that A sends to port 3311 on this IP address will be translated to
+[433.00s -> 439.00s]  have this IP address and this port. However, if A sends packets to a
+[439.00s -> 444.00s]  different external IP address and port, like let's say even the same port and IP
+[444.00s -> 449.00s]  addresses differs in one bit, so it's also sending packets to S prime of 18.181.032,
+[449.00s -> 453.00s]  port 3311. The NAT sets up a completely different
+[453.00s -> 459.00s]  port. So even though this port address pair is the same for both of these
+[459.00s -> 465.00s]  streams of packets, the fact that the destination port address pair is
+[465.00s -> 474.00s]  different means the NAT sets up a separate mapping, port 6641 and port 9821.
+[474.00s -> 487.00s]  So different destinations receive different mappings.
+[495.00s -> 500.00s]  So it turns out that, and this is just to give you one concrete example of ways
+[500.00s -> 506.00s]  in which NATs can really disrupt applications. So let's pretend that host A
+[506.00s -> 510.00s]  is sending UDP traffic. And this UDP traffic is for a massively
+[510.00s -> 513.00s]  multiplayer online game. So this is a, this is a true story.
+[513.00s -> 516.00s]  There's a friend of mine who was working on the servers for this when
+[516.00s -> 518.00s]  this happened. It's back in the late 90s and he had
+[518.00s -> 521.00s]  made an angry call to the Linux NAT developers.
+[521.00s -> 525.00s]  And so the issue is that this massively multiplayer game runs on many servers
+[525.00s -> 528.00s]  and there's times when, you know, somebody runs from one island to
+[528.00s -> 531.00s]  another or wherever and they need to change which server they're on.
+[531.00s -> 535.00s]  And so what the system would do is it would tell the, the client, oh, okay,
+[535.00s -> 540.00s]  hey, you've been talking to server 18181031.
+[540.00s -> 546.00s]  You should start talking to server S prime at 18181032 on this port.
+[546.00s -> 551.00s]  Even the same part, doesn't matter. Like here, say port 3311.
+[551.00s -> 553.00s]  And both of them are going to talk port 3311.
+[553.00s -> 557.00s]  So hey, please start trans, talking on this other, to this other host.
+[557.00s -> 562.00s]  And the issue is that the NAT, this symmetric NAT, would create a new mapping.
+[562.00s -> 567.00s]  And so S was seeing the client coming from port 6641, but now suddenly the
+[567.00s -> 572.00s]  client is coming from port 9821. And there was no way for the system
+[572.00s -> 575.00s]  back here to know that, because the NAT just sets this up and it can
+[575.00s -> 577.00s]  arbitrarily decide, so the connection would break.
+[577.00s -> 581.00s]  So the observed behavior was that because there was a symmetric NAT, that
+[581.00s -> 584.00s]  whenever someone would try to migrate from one server to another, they
+[584.00s -> 587.00s]  would disconnect. So here's an example of by adding the
+[587.00s -> 591.00s]  smarts into the network, suddenly you're seeing a behavior different from the
+[591.00s -> 594.00s]  simple, you know, strong end to end argument.
+[594.00s -> 599.00s]  And there's this added behavior which is really hard to manage and really hard to
+[599.00s -> 602.00s]  take into consideration. Because there's no way really for S
+[602.00s -> 606.00s]  prime to know that port 9821 is the port that A is going to start
+[606.00s -> 609.00s]  communicating on. So this is just the most basic
+[609.00s -> 612.00s]  overview of some ways in which NATs can differ in their behavior.
+[612.00s -> 615.00s]  Turns out that there is many more complications, all kinds of different
+[615.00s -> 618.00s]  things NATs could do. And at that RFC I mentioned earlier, in
+[618.00s -> 622.00s]  fact goes through all the really diverse behaviors you saw when NATs first
+[622.00s -> 626.00s]  became popular, before there was really standardization of what should
+[626.00s -> 628.00s]  happen. There's all kinds of things like
+[628.00s -> 630.00s]  static mappings. You can tell the NAT, hey, just set
+[630.00s -> 634.00s]  up this static mapping into an external host IP port pair, my external IP
+[634.00s -> 636.00s]  address and port, then to an internal one.
+[636.00s -> 639.00s]  This is, say, if you have a web server behind your NAT, you can tell it,
+[639.00s -> 642.00s]  hey, anything that comes to port 84 to this server on port 80.
+[642.00s -> 646.00s]  You have things like triggers, if you see packets going out in one direction,
+[646.00s -> 648.00s]  then also set up this additional mapping.
+[648.00s -> 652.00s]  This is really useful in some of the early days of first person shooters,
+[652.00s -> 655.00s]  online games, where again, they hadn't been built with NATs in mind.
+[655.00s -> 657.00s]  There was really diverse NAT behavior.
+[657.00s -> 659.00s]  There's all kinds of more complex things that happen.
+[659.00s -> 663.00s]  But so it turns out, you know, because of all of the headaches and messes
+[663.00s -> 666.00s]  that NATs started creating applications, the IETF went and came up with a
+[666.00s -> 669.00s]  bunch of recommendations as to how NAT should behave.
+[669.00s -> 675.00s]  So the general behavioral recommendations specified in RFC 5382 for TCP and 4787
+[675.00s -> 678.00s]  for UDP. So just to give you one example of
+[678.00s -> 682.00s]  kind of some of the weird edge cases that a NAT can consider and some of the
+[682.00s -> 686.00s]  things that are specified here, I'm going to talk about hair pinning,
+[686.00s -> 691.00s]  which is this process of what happens when you have a node that's behind your
+[691.00s -> 697.00s]  NAT and it sends a packet to an, to one of the external interface port pairs
+[697.00s -> 700.00s]  that the NAT has, one of its mappings.
+[700.00s -> 705.00s]  So basically, I have a NAT node that's behind the NAT and is trying to
+[705.00s -> 708.00s]  traverse one of the NAT's mappings.
+[708.00s -> 713.00s]  So here's the, the example. I have this NAT 1283422.8.
+[713.00s -> 716.00s]  And I have hosts A and B that are behind the NAT.
+[716.00s -> 718.00s]  And they're both connected to a switch.
+[718.00s -> 724.00s]  Alright, so A has port has address 10.0.0.101, B has 10.0.0.99.
+[724.00s -> 730.00s]  Now let's say we're doing some kind of IP telephony which is coming from port,
+[730.00s -> 734.00s]  this is UDP traffic, so it's port 4512 on host A.
+[734.00s -> 740.00s]  So it's using port 4512. And this is translated to port 6641 on
+[740.00s -> 744.00s]  the NAT. So the question is, what happens
+[744.00s -> 750.00s]  when B tries to send traffic to 1283422.8, port 6641?
+[750.00s -> 756.00s]  Basic question is, so the NAT is going to arrive at the NAT, and the NAT is
+[756.00s -> 761.00s]  going to translate it. It's going to translate this, assuming
+[761.00s -> 768.00s]  that it is a full cone NAT. It's going to translate this to 10.0.101,
+[768.00s -> 772.00s]  port 4512. One question you can ask is that, well,
+[772.00s -> 777.00s]  why is the NAT going to translate the destination IP address in port?
+[777.00s -> 780.00s]  What should it do to the source IP address in port?
+[780.00s -> 784.00s]  Should it translate that as well? That is, should this packet arrive at
+[784.00s -> 789.00s]  A seemingly coming from 1283422.8? Or should this packet arrive at A
+[789.00s -> 796.00s]  coming from 10.0.0.99? Well, so let's walk through what
+[796.00s -> 800.00s]  happens if the NAT doesn't translate the source address in port.
+[800.00s -> 804.00s]  So this packet will go through the switch. It'll go to the NAT.
+[804.00s -> 809.00s]  The NAT will rewrite it to be going to 10.0.101.4512.
+[809.00s -> 815.00s]  And so what A will see is a packet with source 10.0.0.99.
+[815.00s -> 819.00s]  Let's just say port X, doesn't really matter.
+[819.00s -> 825.00s]  Destination 10.0.0.101, port 4512. And let's say it likes this packet,
+[825.00s -> 828.00s]  it wants to respond, and it sends a response.
+[828.00s -> 831.00s]  That packet is never going to reach the NAT.
+[831.00s -> 835.00s]  It's going to possibly just go directly through the switch.
+[835.00s -> 839.00s]  And because it doesn't go through the NAT, it's not going to be translated.
+[839.00s -> 845.00s]  So B is going to send a packet to 1283422.8, port 6641, and will see in
+[845.00s -> 852.00s]  response a packet from 10.0.0.101, 4512.
+[852.00s -> 855.00s]  So this breaks. This is not what you want to do.
+[855.00s -> 860.00s]  Instead, when this packet goes up to the NAT, the NAT needs to translate it.
+[860.00s -> 870.00s]  So what comes in as a packet from, so source 10.0.0.99, port X, destination
+[870.00s -> 883.00s]  1283422.8, 6641, needs to be rewritten to be source 128.34.22.8 with some port,
+[883.00s -> 891.00s]  let's just call it X prime, destination 10.0.0.101, port 4512.
+[891.00s -> 895.00s]  And by so doing then, because now the source is coming from the NAT, when A
+[895.00s -> 898.00s]  sends a response, it'll go back up to the NAT where the NAT can retranslate it
+[898.00s -> 901.00s]  and forward it back to B. So it's called hairpinning through the model
+[901.00s -> 904.00s]  because you have to actually go back through this device sort of like a
+[904.00s -> 909.00s]  hairpin. It comes back from telephony networks as the terminology.
+[909.00s -> 913.00s]  And so here's this example of a very specific behavior the NAT has to have.
+[913.00s -> 917.00s]  And if it doesn't, then this little edge case where B ends up sending a
+[917.00s -> 922.00s]  packet to A based on an external mapping, if you don't do this, it will break.
+[922.00s -> 926.00s]  So this is just one of the many tricky edge cases that NAT introduce, NATs
+[926.00s -> 928.00s]  introduce, and which are specified in these RFCs.

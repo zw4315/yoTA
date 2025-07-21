@@ -1,0 +1,1611 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 13.64s]  Okay, well, welcome back to CS224N, it's welcome back for me to CS224N too, since
+[13.64s -> 19.60s]  I was traveling for a couple of weeks, I hope everything went smoothly in the meantime.
+[19.60s -> 25.12s]  So today I'm delighted to introduce our first invited speaker, Nathan Lambert.
+[25.12s -> 34.56s]  So Nathan did his PhD at UC Berkeley, so you're allowed to boo and hiss for that.
+[34.56s -> 43.00s]  But since then, he worked first for a couple of years at Hugging Face, and now he's working
+[43.00s -> 50.84s]  at AI2, the Allen Institute for Artificial Intelligence in Seattle.
+[50.84s -> 56.76s]  So Nathan comes from a background in reinforcement learning, like quite a few of the people who
+[56.76s -> 60.04s]  are now applying reinforcement learning to language models.
+[60.04s -> 65.36s]  He had an earlier background applying reinforcement learning to robots, but it turns out it's
+[65.36s -> 67.36s]  more fun to do it with language models.
+[67.36s -> 69.84s]  No, it's not.
+[69.84s -> 70.84s]  Okay.
+[70.84s -> 78.26s]  But anyway, I mean, he's been very influential in both developing ideas as to how to do
+[78.26s -> 85.02s]  post-training with RLHF and other ideas that come since then, including DPO that he'll
+[85.02s -> 87.94s]  definitely mention in today's talk.
+[87.94s -> 94.94s]  And so he's one of the best experts on the post-training phase of language model
+[94.94s -> 100.40s]  development, which has just proven as time has passed by that more and more of the action
+[100.40s -> 106.62s]  of the large language model companies is happening, not in the initial pre-training language
+[106.62s -> 109.98s]  model training phase, but in the subsequent post-training phase.
+[109.98s -> 112.50s]  And Nathan will have a lot to say about that today.
+[112.50s -> 114.14s]  Thanks a lot for coming to do this.
+[114.14s -> 115.14s]  Yeah.
+[115.14s -> 116.70s]  Thanks for the wonderful intro.
+[116.70s -> 121.26s]  You can see my talk is Life After DPO, which is a little bit of an unclear title,
+[121.26s -> 125.70s]  so I apologize about this, but it's trying to capture what is the moment that we're
+[125.70s -> 128.36s]  at in alignment and alignment research.
+[128.36s -> 132.78s]  And really, DPO is the paper, the story of last year, which is this paper that came
+[132.78s -> 134.68s]  out, and I'll get to the map.
+[134.68s -> 138.16s]  And now a lot more people are interested and able to do alignment, and it's building
+[138.16s -> 139.16s]  on from there.
+[139.16s -> 142.60s]  So it's like, what are we going to be interested in after DPO?
+[142.60s -> 147.28s]  And a tidbit talking with Chris that isn't explicitly in my slides is what we're
+[147.28s -> 148.28s]  trying to close.
+[148.28s -> 152.88s]  And the labs like Meta and people with the amount of data that they're using for
+[152.88s -> 158.56s]  this kind of post-training, fine-tuning, there's all these words I'll define, is so
+[158.56s -> 163.16s]  big that the amount of data points that Meta bought in Llama 2 from one of these
+[163.16s -> 167.56s]  providers is much more data than all of the data that's been collected on Chatbot Arena
+[167.56s -> 168.56s]  from LMSIS.
+[168.56s -> 172.68s]  So Chatbot Arena has like 800,000 data points that have been collected, and Meta
+[172.68s -> 176.60s]  2's paper says they bought about 1.5 million comparisons.
+[176.60s -> 180.84s]  And these are years outdated, and Chatbot Arena's data, that's as of a few weeks
+[180.84s -> 181.84s]  ago.
+[181.84s -> 186.20s]  So you can only imagine what OpenAI, Anthropic, et cetera, are buying at this scale.
+[186.20s -> 190.56s]  And this is the kind of reality that we need to adapt to, is like, what is different?
+[190.56s -> 194.78s]  We don't have that type of resource doing research, and what are we going to do?
+[194.78s -> 200.08s]  So this lecture is some history on things that lead up to DPO that I saw that I think
+[200.08s -> 204.84s]  are important to remember, and then really we'll kind of go 0 to 100 and talk about
+[204.84s -> 208.40s]  recent research that we're doing to try to answer this question and define
+[208.40s -> 211.78s]  what is happening.
+[211.78s -> 215.48s]  So I'll start with the heavily abbreviated history of language models.
+[215.48s -> 216.88s]  I won't go through all of this.
+[216.88s -> 218.32s]  There's a bunch of this in the class already.
+[218.32s -> 219.72s]  This is late in the lecture.
+[219.76s -> 223.76s]  I like to start with Claude Shannon, and then you skip a whole bunch of stuff where
+[223.76s -> 229.70s]  this autoregressive loss function shows a lot of promise, and this was not fast.
+[229.70s -> 234.68s]  You can see how many years that it took to build language modeling as a field here,
+[234.68s -> 240.40s]  and deep learning is brewing in the background of one of many things that went into this.
+[240.40s -> 244.84s]  And then you have these years with 2017, the transformer paper that you hear about,
+[244.84s -> 250.60s]  2018 with GPT-1, ELMO and BERT, kind of these foundational topics in language processing
+[250.60s -> 256.44s]  and how embeddings are created, and then with GPT-2 and scaling laws become this kind
+[256.44s -> 261.64s]  of key idea that people are looking at and tracking and how these models are improving.
+[261.64s -> 267.12s]  And then in 2020 is when people really started to wake up to how useful these large-scale
+[267.12s -> 269.00s]  trained language models were.
+[269.00s -> 273.44s]  At this time, I wasn't even a language modeling person, but for a lot of people in AI, this
+[273.44s -> 278.44s]  is when the kind of gravity of the situation was starting to suck people in, and there's
+[278.44s -> 279.92s]  a lot of cadence to these things.
+[279.92s -> 284.92s]  In 2021, we had the stochastic parrots paper, which before ChatGPT is raising the
+[284.92s -> 289.90s]  warnings of what are we actually putting into these models, and what are they learning?
+[289.90s -> 293.96s]  Are they actually learning something meaningful from language, or are they repeating the
+[293.96s -> 294.96s]  language that we have?
+[294.96s -> 300.04s]  And this is the kind of philosophical debate depending on where you land on what language
+[300.04s -> 302.80s]  is, what these language models are doing today.
+[302.80s -> 306.80s]  But it's important that it came out before ChatGPT, and it's like these foundations of
+[306.80s -> 309.88s]  debates of what language models are doing.
+[309.88s -> 314.76s]  End of 2022 is when ChatGPT actually came out, which was supposed to be this kind
+[314.76s -> 321.32s]  of quiet launch of a demo from open AI, and it has since captured the attention
+[321.32s -> 324.28s]  of the world that we have seen.
+[324.28s -> 328.80s]  And the simple question is, can ChatGPT exist without RLHF?
+[328.80s -> 333.28s]  I think it's important to acknowledge that so much of this is from pre-training, but at
+[333.28s -> 337.48s]  every point of the line in ChatGPT and then a lot of these popular models since then,
+[337.48s -> 343.64s]  RLHF and these human-related or other fine-tuning technologies seem to be necessary,
+[343.64s -> 344.64s]  but not sufficient.
+[344.64s -> 348.36s]  You need the pre-training, but you also need this kind of RLHF or this post-training
+[348.36s -> 355.28s]  to really shift the needle on what the most important models are at that certain moment.
+[355.28s -> 360.04s]  Some examples, you can list so many of them, where RLHF is relied upon.
+[360.04s -> 364.36s]  I like to look at these plots from the Anthropic Constitutional AI paper, where they kind
+[364.36s -> 368.00s]  of show this iterative improvement of their different RLHF methods.
+[368.00s -> 372.20s]  It kind of shows how you have these multiple model versions that are evolving over time
+[372.20s -> 374.40s]  as you add more fine-tuning data.
+[374.40s -> 377.92s]  This is a dense paper, but one of the most representative figures of kind of what
+[377.92s -> 378.92s]  RLHF can do.
+[378.92s -> 381.96s]  There's a lot of information in here that you don't need to follow right now.
+[381.96s -> 385.64s]  And then like Mehta's LAMA2 paper is pretty funny, where they have this quote that's
+[385.64s -> 390.48s]  like, reinforcement learning known for its instability seemed a somewhat shadowy field
+[390.48s -> 392.64s]  for those in the NLP research community.
+[392.64s -> 396.40s]  However, reinforcement learning proved highly effective, particularly given its cost and
+[396.40s -> 397.76s]  time effectiveness.
+[397.76s -> 401.52s]  So this is from the technical report directly, which I find really entertaining.
+[401.52s -> 404.44s]  This is back in the day when we were like, oh, we don't know if RLHF is really
+[404.44s -> 406.04s]  going to take off.
+[406.04s -> 410.48s]  This is July of 2023 in this building period.
+[410.48s -> 413.56s]  And it's just directly from the report, and that's aged really well, where people are
+[413.56s -> 415.04s]  still using this today.
+[415.04s -> 420.08s]  But there's just a lot of interesting hints and kind of history of culture of RLHF in
+[420.08s -> 423.64s]  the releases of these models, where these companies like to talk about it and give
+[423.64s -> 428.08s]  us kind of these cultural details to what's going on.
+[428.08s -> 431.64s]  So I'm going to kind of go through some definitions, and I don't spend too much time
+[431.64s -> 438.00s]  on doing RLHF 101 and exactly what is happening with these kind of mathematical terms.
+[438.00s -> 441.04s]  But it's important to get on the same page of what some of these things do and don't
+[441.04s -> 442.04s]  mean.
+[442.04s -> 443.60s]  There's a lot of definitions.
+[443.60s -> 447.40s]  I think some of the interesting ones that if they don't make sense right now to come
+[447.40s -> 450.40s]  back to is like, what's the difference between instruction fine tuning and supervised
+[450.40s -> 451.60s]  fine tuning?
+[451.60s -> 455.48s]  I think instruction fine tuning is what's become really popular, where it's like you're
+[455.48s -> 457.48s]  training a model to follow instructions.
+[457.48s -> 459.20s]  And I have another slide on this after.
+[459.20s -> 462.08s]  And supervised fine tuning is like this domain-specific thing.
+[462.08s -> 463.56s]  And we want to do both of them.
+[463.56s -> 467.32s]  I think instruction fine tuning is more linked to RLHF.
+[467.32s -> 471.88s]  It's about making these models really useful and really engaging and kind of easy to work
+[471.88s -> 472.88s]  with.
+[472.88s -> 477.28s]  And then there's other things like alignment, which is like super vague, but it's in the
+[477.28s -> 478.28s]  word.
+[478.28s -> 479.28s]  It's aligned.
+[479.28s -> 481.88s]  It's training a model to be mirrored to what a user wants.
+[481.88s -> 483.88s]  And there's a lot of things that you can align to.
+[483.88s -> 488.76s]  RLHF is a mouthful, which is one specific tool for doing alignment, where you have
+[488.76s -> 493.84s]  this kind of human feedback data, which is like feedback is a really loaded word there,
+[493.84s -> 498.24s]  where there can be preferences, and learning to rank is related to actually putting feedback
+[498.24s -> 499.24s]  on preferences.
+[499.24s -> 500.36s]  There's a lot of little things.
+[500.36s -> 503.52s]  I tried to make preference fine tuning a phrase at one point, but didn't really
+[503.52s -> 504.52s]  double down on it.
+[504.52s -> 508.72s]  I think it's a little bit clearer than RLHF, especially in the context of DPO.
+[508.72s -> 512.44s]  But there's just a lot of spheres that are overlapping in this kind of post-training
+[512.44s -> 516.68s]  or fine tuning space of models these days.
+[516.68s -> 522.00s]  Instruction fine tuning is still the foundation of a lot of this.
+[522.00s -> 526.04s]  This is where things called system prompts are added, where we're making the model
+[526.04s -> 529.24s]  ready for a specific style of input.
+[529.24s -> 532.12s]  OpenAI is still kind of innovating on this.
+[532.12s -> 535.44s]  They have this model spec document they released a few weeks ago where they said they're
+[535.44s -> 539.84s]  going to have a second level system prompt here, which this just adds some structure
+[539.84s -> 544.38s]  to how the models can take in data so that you can do a lot more of this fine tuning
+[544.38s -> 548.94s]  down the line and how user data actually gets passed to the model or how the developer
+[548.94s -> 552.86s]  passes information that the user doesn't see.
+[552.86s -> 557.86s]  So what this can often look like is Stack Overflow, Reddit data, where you have a question
+[557.86s -> 559.34s]  at the top and then an answer.
+[559.34s -> 562.42s]  And this is still, I think, a lot of what is happening behind the scenes.
+[562.42s -> 565.26s]  There's a lot of data sets of Stack Overflow out there.
+[565.26s -> 567.30s]  Reddit has these data partnerships.
+[567.30s -> 570.52s]  And this still uses the autoregressive loss function that we started with.
+[570.52s -> 574.26s]  We haven't branched out into kind of different loss functions yet.
+[574.26s -> 575.30s]  But it's still super-informant.
+[575.34s -> 580.50s]  A lot of academic research shows that this is all you need in some ways, which I think
+[580.50s -> 581.70s]  is a much more mixed bag.
+[581.70s -> 585.70s]  But it's the simple method, and it's the right place to start.
+[585.70s -> 592.02s]  And where we kind of go is then we go to this RLHF objective, which this looks really
+[592.02s -> 594.70s]  familiar to people that are trained in reinforcement learning.
+[594.70s -> 598.42s]  I think this is a little different from the NLP loss function.
+[598.42s -> 602.18s]  On the left side is like the standard reinforcement learning objective, which is you're
+[602.18s -> 606.74s]  learning a policy pi to maximize some reward, which is a function of something,
+[606.74s -> 608.42s]  depending how you set up the problem.
+[608.42s -> 613.42s]  And then on the right side is going to be this kind of KL constraint.
+[613.42s -> 616.14s]  It's a distance so that the policy doesn't change too much.
+[616.14s -> 619.14s]  It's related to this whole idea of overoptimization
+[619.14s -> 622.22s]  that I don't go into too much of this talk.
+[622.22s -> 627.74s]  But the key idea is that we want to optimize a reward but not overoptimize it.
+[627.74s -> 631.94s]  And the primary questions when doing RLHF is like, how do we implement a reward function?
+[631.94s -> 633.42s]  What is our reward actually going to be?
+[633.42s -> 635.14s]  And then how do we optimize it?
+[635.14s -> 638.58s]  You see this abstracted later as we train a specific reward model,
+[638.58s -> 640.66s]  and then we have specific policy updates.
+[640.66s -> 645.54s]  And DPO, direct preference optimization, handles this a little bit differently.
+[645.54s -> 650.06s]  So before we get there, it's like the actual preference model that people use
+[650.06s -> 653.18s]  for RLHF is, well, I find this interesting.
+[653.18s -> 658.58s]  It's from this Bradley Terry model, which is from economics in the 1950s, which is
+[658.82s -> 663.46s]  essentially a probability distribution over a pairwise choice.
+[663.46s -> 667.18s]  And what ends up happening for various technical reasons is that if we train a
+[667.18s -> 669.94s]  preference model, it needs to output a scalar value.
+[669.94s -> 674.22s]  And by some coincidence that I think is still very convenient,
+[674.22s -> 678.22s]  they just take the output of this learned probability distribution as a reward.
+[678.22s -> 681.82s]  They say that, OK, our reward is going to be proportional to this probability,
+[681.82s -> 683.06s]  and it's going to work.
+[683.06s -> 684.38s]  And it ends up doing so.
+[684.38s -> 687.78s]  But that's even a big leap to accept that.
+[687.78s -> 691.82s]  We have this pairwise preference probability that's saying the probability
+[691.82s -> 694.58s]  that one answer is chosen over another.
+[694.58s -> 697.34s]  And then you have this mental crazy step of saying,
+[697.34s -> 700.26s]  we just pass in one number or one piece of text,
+[700.26s -> 702.82s]  and we're getting the probability that that one piece of text
+[702.82s -> 705.50s]  is chosen over any arbitrary other one.
+[705.50s -> 710.66s]  So there's a lot of assumptions that make this kind of deep concepts in here.
+[710.66s -> 716.14s]  But what we're getting is a model that's giving us a score out.
+[716.18s -> 719.18s]  And the kind of question is, why do we have to do this?
+[719.18s -> 723.42s]  And what if we can just take our original objective and use gradient
+[723.42s -> 726.98s]  ascent on this equation, ascent because it's a maximum?
+[726.98s -> 728.98s]  And this is really what DPO does.
+[728.98s -> 731.10s]  I'm blurring through a ton of math.
+[731.10s -> 734.94s]  It's a great paper to learn a lot of this math of language modeling,
+[734.94s -> 738.86s]  where you learn how these probabilities of different pieces of text
+[738.86s -> 743.02s]  are handled by the model, and how it ends up being a lot of these log
+[743.02s -> 746.54s]  probability ratios, and seeing how the prompt and the completion
+[746.54s -> 747.90s]  are handled differently.
+[747.90s -> 750.98s]  It's worth digging into and understanding the derivation.
+[750.98s -> 755.14s]  But the core idea is, why can't we just do gradient descent
+[755.14s -> 758.42s]  or gradient ascent to solve RLHF optimization?
+[758.42s -> 763.50s]  And this is like, it becomes incredibly simple.
+[763.50s -> 766.98s]  So if you look at the code, on the right is the reference code
+[766.98s -> 768.94s]  from the original implementation.
+[768.94s -> 771.64s]  It's extremely simple to implement, and it has this characteristic
+[771.64s -> 774.24s]  where if you work with something like transformers before,
+[774.24s -> 778.00s]  it's pretty easy to write a loss function that
+[778.00s -> 781.68s]  uses DPO rather than building an entire infrastructure
+[781.68s -> 782.68s]  stack to start with.
+[782.68s -> 786.92s]  When you do something like PPO and this full RLHF stuff that OpenAI
+[786.92s -> 790.04s]  does, you normally need almost an entire new infrastructure stack.
+[790.04s -> 793.72s]  But you can get started with DPO in a much, much simpler way.
+[793.72s -> 796.60s]  And there's some kind of characteristics that I'll get to later,
+[796.60s -> 798.76s]  which is DPO still has a reward model, which
+[798.80s -> 801.60s]  is really important to the math actually checking out,
+[801.60s -> 803.80s]  whereas you're using your original language
+[803.80s -> 806.12s]  model as a different type of reward model.
+[806.12s -> 809.16s]  But that quickly takes us down a whole bunch of derivations
+[809.16s -> 812.72s]  that is probably at least not the lecture that I
+[812.72s -> 815.02s]  think is as fun to give.
+[815.02s -> 817.72s]  And the key thing is, which is why this lecture is called
+[817.72s -> 821.16s]  what it is, is that the first two points mean we'll see more DPO
+[821.16s -> 822.44s]  models than anything else.
+[822.44s -> 824.90s]  DPO is where everyone will start with if they
+[824.90s -> 826.64s]  want to do alignment research.
+[826.64s -> 828.12s]  And it's for a good reason.
+[828.16s -> 830.74s]  It is the right place to start if you're thinking about doing this.
+[830.74s -> 832.68s]  It scales more easily on compute.
+[832.68s -> 834.36s]  It's easier to debug.
+[834.36s -> 835.68s]  It's even easier to learn.
+[835.68s -> 839.20s]  So it's not really worth second guessing that.
+[839.20s -> 842.24s]  And it is a good place to start.
+[842.24s -> 845.08s]  But it also leads into these ridiculous conversations
+[845.08s -> 847.84s]  online where everyone is trying to figure out,
+[847.84s -> 850.96s]  is DPO better than other RL methods?
+[850.96s -> 855.88s]  PPO, which is this older, popular deep RL algorithm, which
+[855.92s -> 858.40s]  John Shulman wrote, reinforced, which
+[858.40s -> 862.20s]  is a slightly different parameterization of policy
+[862.20s -> 862.68s]  gradient.
+[862.68s -> 863.84s]  They're very similar.
+[863.84s -> 867.08s]  And DPO ends up being much simpler.
+[867.08s -> 868.48s]  It's just simpler to work with.
+[868.48s -> 871.08s]  So there's this meme where it's like if you just
+[871.08s -> 873.28s]  do gradient descent, it'll work.
+[873.28s -> 876.28s]  In reality, they're different loss functions.
+[876.28s -> 878.00s]  And they're doing very different things.
+[878.00s -> 880.64s]  But you can get similar results with both of them,
+[880.64s -> 882.64s]  which is why if something is much easier to do,
+[882.64s -> 884.02s]  you should just start with it.
+[884.02s -> 886.78s]  And I come back to this much later in the talk, which is,
+[886.78s -> 889.38s]  what is fundamentally different about these RL algorithms
+[889.38s -> 892.90s]  and how your data is processed and where the signals actually
+[892.90s -> 893.74s]  come from?
+[893.74s -> 897.06s]  But for now, we don't need to say one versus the other.
+[897.06s -> 900.34s]  We can do both, and they are different.
+[900.34s -> 904.64s]  So that's a quick one-on-one of what the core ideas are.
+[904.64s -> 908.10s]  I'm going to take a path to how we actually
+[908.10s -> 909.86s]  got to training models with DPO,
+[909.86s -> 912.78s]  because I think this slide was from a different talk
+[912.98s -> 915.46s]  where this subsection is reduced from.
+[915.46s -> 917.94s]  But DPO really came out months before we
+[917.94s -> 920.26s]  started getting popular models trained with it.
+[920.26s -> 921.66s]  So it's like, how did we actually
+[921.66s -> 924.30s]  get to the point where the community was training models
+[924.30s -> 927.56s]  with DPO, which is much more recently than the paper was
+[927.56s -> 929.66s]  actually released?
+[929.66s -> 931.02s]  And this comes all the way back
+[931.02s -> 933.60s]  to these first instruction-tuned models that you saw.
+[933.60s -> 937.34s]  So the Alpaca, the Vicuna, Koala, Dali of the world,
+[937.34s -> 940.10s]  all in April of 2023.
+[940.10s -> 943.06s]  And these are all built on kind of similar things
+[943.06s -> 944.06s]  and slight iterations.
+[944.06s -> 947.10s]  So there's kind of figuring out how to use synthetic data,
+[947.10s -> 948.94s]  building off this first llama release.
+[948.94s -> 950.94s]  There's some other things that I'll talk about.
+[950.94s -> 952.38s]  But this is where we started.
+[952.38s -> 954.34s]  They're all using instruction tuning.
+[954.34s -> 956.34s]  Most of them use synthetic data.
+[956.34s -> 959.90s]  And what Vicuna actually did was
+[959.90s -> 962.14s]  they used this thing called ShareGPT, which
+[962.14s -> 964.42s]  was the first time that people working
+[964.42s -> 966.18s]  in kind of this academic alignment space
+[966.18s -> 969.22s]  had access to data that was from humans.
+[969.26s -> 971.58s]  It ended up being a bit of a legal gray area,
+[971.58s -> 975.58s]  because it was logging data that people used in a Google
+[975.58s -> 978.42s]  Chrome extension called ShareGPT to make it
+[978.42s -> 980.50s]  so ChatGPT had a Share button.
+[980.50s -> 982.50s]  But this data was really important for things
+[982.50s -> 984.46s]  like Vicuna and a lot of the other models
+[984.46s -> 987.42s]  that came down the line and is still used in models today
+[987.42s -> 990.06s]  as one subset of the training data set.
+[990.06s -> 993.14s]  So just having access to these human prompts
+[993.14s -> 995.98s]  was unlocked a lot of potential back in the day
+[995.98s -> 997.60s]  and is still something that we're seeing.
+[997.60s -> 1000.32s]  Thankfully, now we're starting to get data sets like this
+[1000.32s -> 1002.40s]  that were collected in more permissive ways,
+[1002.40s -> 1004.40s]  like this kind of LMSIS data has
+[1004.40s -> 1007.16s]  prompts that are collected with consent,
+[1007.16s -> 1009.36s]  and WildChat, which was a project from AI2,
+[1009.36s -> 1011.88s]  which essentially gave people free access to ChatGPT
+[1011.88s -> 1014.84s]  in exchange for their data.
+[1014.84s -> 1016.84s]  The thing that came after ShareGPT
+[1016.84s -> 1019.84s]  was the realization that we need more human data.
+[1019.84s -> 1021.52s]  And this Open Assistant project is one
+[1021.52s -> 1023.88s]  that we honestly need more of.
+[1023.88s -> 1027.36s]  It shows how hard it is to create human data
+[1027.36s -> 1029.88s]  that we haven't seen more things like this.
+[1029.88s -> 1032.60s]  This was run by a few people in a Discord community working
+[1032.60s -> 1035.68s]  extremely long hours to generate prompts, responses,
+[1035.68s -> 1039.80s]  and preference pairs to common requests, the language models.
+[1039.80s -> 1042.52s]  And this was from April of 2023,
+[1042.52s -> 1046.08s]  and we haven't seen anything like it.
+[1046.08s -> 1048.20s]  LMSIS's data is similar, but there's not
+[1048.20s -> 1050.80s]  the same level of controls and voting and ranking
+[1050.80s -> 1052.80s]  that went into this Open Assistant data.
+[1052.80s -> 1054.72s]  And it, again, is a data set that we're still
+[1054.72s -> 1056.56s]  training models with, and many people still
+[1056.56s -> 1059.08s]  train models with, and come up time and time again.
+[1059.08s -> 1061.80s]  So it's just like these one or two influential data sets
+[1061.80s -> 1063.36s]  from over a year ago are still
+[1063.36s -> 1065.00s]  what are used to train models.
+[1065.00s -> 1068.32s]  So you'll get the theme as I keep going.
+[1068.32s -> 1072.44s]  There's actually RLHF models trained in April of 2023
+[1072.44s -> 1074.44s]  as well.
+[1074.44s -> 1076.28s]  This was from Carper AI that was doing
+[1076.28s -> 1078.68s]  a lot of work in the space.
+[1078.68s -> 1081.88s]  They've fallen back a bit in recent times.
+[1081.88s -> 1084.38s]  But there were people that were doing the similar methods
+[1084.38s -> 1086.70s]  to what I'm going to talk about at the end of the talk.
+[1086.70s -> 1089.22s]  That kind of knowledge and infrastructure
+[1089.22s -> 1092.26s]  was not translated into things that were easy to use.
+[1092.26s -> 1096.26s]  So there's also this vein of even if things are open,
+[1096.26s -> 1098.70s]  it doesn't mean that it's going to immediately catch
+[1098.70s -> 1099.86s]  on and be useful.
+[1099.86s -> 1102.38s]  You have to have the resources, the data,
+[1102.38s -> 1103.92s]  and your code base set up in a way
+[1103.92s -> 1105.42s]  that people can build on it, which
+[1105.42s -> 1107.22s]  is what DPO did really well.
+[1107.22s -> 1110.50s]  This RLHF model from Carper was successful.
+[1110.50s -> 1112.46s]  It was better than the Vicuna model,
+[1112.46s -> 1114.58s]  but no one really built on it right away,
+[1114.58s -> 1117.38s]  which I always find confusing.
+[1117.38s -> 1119.94s]  And then later in the year, another key thing
+[1119.94s -> 1122.30s]  for this open alignment was the LAMA2 backlash,
+[1122.30s -> 1125.54s]  where the LAMA2 was asked to kill a Linux process
+[1125.54s -> 1127.06s]  if it would refuse.
+[1127.06s -> 1130.40s]  And this bred a whole series of models
+[1130.40s -> 1134.54s]  which are still referred to as uncensored, which I don't think
+[1134.54s -> 1136.98s]  is the best name, because I don't think there was ever
+[1136.98s -> 1138.78s]  actually any censoring to the model.
+[1138.78s -> 1140.70s]  It wasn't intentional censorship.
+[1140.74s -> 1144.02s]  But the goal is to make models that don't refuse any request,
+[1144.02s -> 1146.22s]  which is useful as a research artifact, which
+[1146.22s -> 1148.22s]  is like, what do you get out of a model
+[1148.22s -> 1149.66s]  if it answers every question?
+[1149.66s -> 1151.86s]  What are the limits in that regard?
+[1151.86s -> 1155.82s]  There are other ways to use that, which are up to you.
+[1155.82s -> 1159.34s]  But what ended up happening is a lot of these shared GPT
+[1159.34s -> 1161.62s]  data sets, because they're from chat GPT,
+[1161.62s -> 1163.70s]  there's data that says, oh, as a language model,
+[1163.70s -> 1164.98s]  I shouldn't answer that.
+[1164.98s -> 1167.22s]  So people started filtering all of that out.
+[1167.22s -> 1169.56s]  And you still see a lot of people releasing
+[1169.56s -> 1174.88s]  these uncensored models today as a popular area of development.
+[1174.88s -> 1176.90s]  I think that we should understand
+[1176.90s -> 1178.74s]  what people need when doing research.
+[1178.74s -> 1183.40s]  And researching a model that doesn't refuse is reasonable.
+[1183.40s -> 1186.32s]  But if you're to deploy a model for free use to users,
+[1186.32s -> 1188.28s]  you should consider whether or not everything
+[1188.28s -> 1189.16s]  should be answered.
+[1189.16s -> 1193.00s]  So as a researcher, how your artifacts are used
+[1193.00s -> 1197.44s]  depends on the work that you're actually going to be doing.
+[1197.44s -> 1200.04s]  Then in the alignment space, there's this long series.
+[1200.04s -> 1201.64s]  I'm almost done with the end lens.
+[1201.64s -> 1202.98s]  But there's this long series of models
+[1202.98s -> 1205.52s]  that are really interesting to people like me that never
+[1205.52s -> 1207.20s]  really broke through the narrative, where they're
+[1207.20s -> 1209.44s]  saying they're things like, we used RLHF.
+[1209.44s -> 1212.76s]  We're the first model to beat GPT-4 on a pack of VAL
+[1212.76s -> 1214.64s]  and these other VAL tools.
+[1214.64s -> 1216.16s]  They're scaling things up.
+[1216.16s -> 1217.86s]  But they don't always have papers.
+[1217.86s -> 1219.24s]  They don't always have code bases.
+[1219.24s -> 1222.84s]  And it's like, things are happening around.
+[1222.84s -> 1225.68s]  It's not just the hugging face of the world.
+[1225.72s -> 1227.76s]  There's a lot of different organizations
+[1227.76s -> 1229.12s]  in the US and elsewhere that we're
+[1229.12s -> 1231.64s]  aligning models and getting similar numbers
+[1231.64s -> 1233.48s]  or beating these kind of mainstream tech
+[1233.48s -> 1236.40s]  companies in these places that you look for models to these.
+[1236.40s -> 1240.14s]  So these are all in the summer of 2023.
+[1240.14s -> 1241.88s]  And this is kind of all this.
+[1241.88s -> 1244.52s]  I bring these up because this comes before the first big
+[1244.52s -> 1245.96s]  splash of DPO.
+[1245.96s -> 1249.12s]  So this Zephyr model was really the first model
+[1249.12s -> 1251.40s]  that I remember making a splash with DPO.
+[1251.40s -> 1254.44s]  And this is when it took until this time, which
+[1254.48s -> 1257.22s]  was in September after the May release of the paper,
+[1257.22s -> 1260.52s]  for people to really be like, oh, DPO is the real deal.
+[1260.52s -> 1261.92s]  It took four months.
+[1261.92s -> 1264.28s]  And now the paper has best paper.
+[1264.28s -> 1265.40s]  Everyone uses it.
+[1265.40s -> 1266.64s]  There's tons of derivations.
+[1266.64s -> 1269.08s]  But in industry and people trying to train models,
+[1269.08s -> 1271.52s]  there was a lot of skepticism until this moment.
+[1271.52s -> 1273.20s]  So this is a classic academic story
+[1273.20s -> 1277.84s]  of needing to wait a bit until your work is
+[1277.84s -> 1278.92s]  vindicated in some ways.
+[1278.92s -> 1280.36s]  But the two crucial things here
+[1280.36s -> 1283.04s]  was new data set, the ultrafeedback data set,
+[1283.04s -> 1287.36s]  which is a data set of synthetically-generated text
+[1287.36s -> 1289.60s]  labeled by GPT-4.
+[1289.60s -> 1291.52s]  So it's, again, this kind of new ways
+[1291.52s -> 1295.12s]  of making data where it's a preference data set.
+[1295.12s -> 1296.04s]  We didn't make it.
+[1296.04s -> 1298.72s]  It was made by OpenBnB.
+[1298.72s -> 1300.96s]  I think they're based in China and should know more.
+[1300.96s -> 1303.32s]  And then we also just had to do a lot of experiments
+[1303.32s -> 1304.06s]  to make it work.
+[1304.06s -> 1306.08s]  There's a weird, really low learning rate
+[1306.08s -> 1308.36s]  that was needed to make this kind of chat model work
+[1308.36s -> 1311.04s]  with DPO, which is like 5e minus 7.
+[1311.04s -> 1314.24s]  If you're really plugged into AI, you'll know that 3e minus 4
+[1314.24s -> 1317.24s]  is the lore of the best learning rate.
+[1317.24s -> 1319.60s]  So it's many orders of magnitude lower.
+[1319.60s -> 1321.72s]  So that's kind of what it took to get this to work.
+[1321.72s -> 1323.34s]  We probably could have done it months earlier if we just
+[1323.34s -> 1325.04s]  did more hyperparameter sweeps.
+[1325.04s -> 1329.20s]  But this is the random happenstance of the stories
+[1329.20s -> 1332.10s]  that people now backcast as being like,
+[1332.10s -> 1333.68s]  this is the super important model.
+[1333.68s -> 1335.96s]  It's just somewhat random.
+[1335.96s -> 1337.92s]  And then at the same time, I was switching jobs
+[1337.92s -> 1338.88s]  to the Allen Institute.
+[1338.88s -> 1340.88s]  And they were already working on this project,
+[1341.44s -> 1345.24s]  trying to do a systematic study of instruction tuning data,
+[1345.24s -> 1347.88s]  along with some of this preference tuning recipes
+[1347.88s -> 1348.88s]  that were coming out.
+[1348.88s -> 1351.50s]  Because once this Zephyr model came out,
+[1351.50s -> 1352.60s]  there's always skeptics who are like,
+[1352.60s -> 1354.24s]  oh, doing it at 7b is easy.
+[1354.24s -> 1356.08s]  Like, that's a small model.
+[1356.08s -> 1357.60s]  So it's like, oh, is it going to actually scale
+[1357.60s -> 1359.36s]  to the real deal, to bigger models,
+[1359.36s -> 1361.12s]  to be what like chat GPT does?
+[1361.12s -> 1363.68s]  So it was like, okay, we have some more compute,
+[1363.68s -> 1366.36s]  and we tried it on this 70 billion parameter scale.
+[1366.36s -> 1367.84s]  And we showed similar gains.
+[1367.84s -> 1370.84s]  All we did was use the same ultrafeedback recipe
+[1370.84s -> 1372.32s]  with a low learning rate.
+[1372.32s -> 1374.08s]  And it largely worked.
+[1374.08s -> 1376.44s]  So this is within two months.
+[1376.44s -> 1379.04s]  And then this is when, and since then
+[1379.04s -> 1381.28s]  is when there's tons of new DPO models.
+[1381.28s -> 1383.48s]  Anyone, all these startups that are releasing
+[1383.48s -> 1385.48s]  their own models will release an instruct version
+[1385.48s -> 1388.04s]  that is a DPO thing.
+[1388.04s -> 1389.60s]  And that kind of continued for six months.
+[1389.60s -> 1392.12s]  I think just today I'm starting to see less DPO models,
+[1392.12s -> 1393.36s]  which is interesting.
+[1393.36s -> 1395.20s]  I've been keeping track of them
+[1395.20s -> 1397.20s]  for another evaluation project.
+[1397.20s -> 1399.20s]  And it has finally kind of slowed down a little bit.
+[1399.20s -> 1401.24s]  I don't know if that's alignment at large,
+[1401.24s -> 1402.44s]  but there is so many.
+[1402.44s -> 1404.56s]  I should add a slide that's like a list
+[1404.56s -> 1408.96s]  of the ridiculous amount of DPO models after these two.
+[1408.96s -> 1411.40s]  This is really when the floodgates kind of started
+[1411.40s -> 1414.88s]  and when we're like, okay, DPO really works.
+[1416.08s -> 1418.92s]  So this is kind of why I say like, what comes next?
+[1418.92s -> 1420.48s]  It's like, we could retrain models
+[1420.48s -> 1422.24s]  on data sets that we have.
+[1422.24s -> 1424.30s]  We don't have that many data sets,
+[1424.30s -> 1426.20s]  but it kind of feels like we're fishing in the dark.
+[1426.20s -> 1428.08s]  Like Zephyr was built on the success
+[1428.08s -> 1429.96s]  of needing the low learning rate.
+[1429.96s -> 1432.56s]  This Tulu2 model is actually trained on TPUs
+[1432.56s -> 1435.04s]  because we have the Google Tensor Research Cloud.
+[1435.04s -> 1437.40s]  So we have bigger TPUs to train these models.
+[1437.40s -> 1440.12s]  And it's like, how do we do this more systematically?
+[1440.12s -> 1443.16s]  And that's kind of where most of what I talk about today
+[1443.16s -> 1445.60s]  on the technical matter is the recent research
+[1445.60s -> 1447.76s]  that we've been doing to just kind of make sense of this
+[1447.76s -> 1450.32s]  and answer the fundamental questions of like,
+[1450.32s -> 1452.04s]  what do we need to change about DPO?
+[1452.04s -> 1453.96s]  Is PPO better and so on.
+[1454.96s -> 1458.80s]  So this is kind of the reality that I go back and forth
+[1458.80s -> 1461.36s]  in between, which is we don't really have the human data
+[1461.36s -> 1462.84s]  to do our LHF like industry,
+[1462.84s -> 1465.56s]  but it is getting much easier to do alignment research.
+[1465.56s -> 1467.24s]  So you can kind of choose your narrative.
+[1467.24s -> 1469.36s]  I think sometimes because I'm so close to industry
+[1469.36s -> 1470.28s]  and hear about what people have,
+[1470.28s -> 1471.76s]  I'm like too often on this side,
+[1471.76s -> 1474.24s]  but there is a lot of opportunity to do things.
+[1474.24s -> 1478.52s]  It feels crowded, but being crowded at this point
+[1478.52s -> 1479.52s]  when there's so much investment
+[1479.52s -> 1481.48s]  is just because you're in the right area.
+[1482.48s -> 1485.64s]  And most people in this room aren't trying to be professors,
+[1485.64s -> 1487.72s]  so if you get scooped, it's okay.
+[1487.72s -> 1491.08s]  But I find it very fun.
+[1491.08s -> 1493.68s]  And so like, how do we actually understand
+[1493.68s -> 1494.92s]  what we're doing with alignment
+[1494.92s -> 1496.44s]  and can we improve on these models?
+[1496.44s -> 1498.44s]  Like we have to loop two, it has a number
+[1498.44s -> 1500.76s]  because we want to keep releasing more models.
+[1500.76s -> 1502.44s]  So it's like, how do we get better evaluating
+[1502.44s -> 1504.96s]  what we're doing to try to understand this process?
+[1504.96s -> 1506.92s]  And then how do we train better models?
+[1506.92s -> 1509.80s]  So these are the sort of things that I'm up to.
+[1509.88s -> 1512.60s]  I have a few examples of things I've been working on.
+[1512.60s -> 1514.88s]  I built an evaluation tool for reward models.
+[1514.88s -> 1517.52s]  I'll talk more about reward models to start here.
+[1517.52s -> 1519.36s]  And we need better evaluation
+[1519.36s -> 1521.16s]  because when you're training models,
+[1521.16s -> 1523.20s]  you need to be able to do kind of
+[1523.20s -> 1525.08s]  what I call like local evaluation.
+[1525.08s -> 1526.32s]  You need to be able to get a number
+[1526.32s -> 1528.00s]  that tells you if your training technique
+[1528.00s -> 1531.28s]  is improving the end result.
+[1531.28s -> 1534.16s]  You can't wait until Chatbot Arena evaluates your model
+[1534.16s -> 1535.32s]  because that takes you about a month
+[1535.32s -> 1536.24s]  to get your numbers back.
+[1536.24s -> 1538.88s]  You need to be able to run something at your desk
+[1538.92s -> 1541.52s]  that gives you signal on if you're actually doing a good job.
+[1541.52s -> 1544.24s]  And we're still pretty behind on those evaluation tools
+[1544.24s -> 1547.00s]  and there are more coming, which is promising.
+[1547.00s -> 1549.44s]  And then given DPO's simplicity,
+[1549.44s -> 1550.92s]  can we actually improve on that
+[1550.92s -> 1553.76s]  and can we catch on to some of the industry rumors
+[1553.76s -> 1556.36s]  that they've let it drift aside?
+[1558.20s -> 1561.32s]  So reward bench is this project that I started
+[1561.32s -> 1564.56s]  because there are no evaluation tools for reward models.
+[1564.56s -> 1567.20s]  My motivation was mostly for transparency
+[1567.24s -> 1570.68s]  given how much industry says reward models
+[1570.68s -> 1571.64s]  are what you need to focus on.
+[1571.64s -> 1573.04s]  They're really important for getting
+[1573.04s -> 1574.08s]  good models out the door.
+[1574.08s -> 1575.84s]  And it's like, what does that mean?
+[1575.84s -> 1579.20s]  What does it mean for a reward model to be good?
+[1579.20s -> 1581.76s]  If we look at this kind of feedback diagram,
+[1581.76s -> 1585.08s]  which is the one kind of homage to the RL background,
+[1585.08s -> 1589.32s]  just feedback loops, is like a reward model is,
+[1589.32s -> 1591.84s]  in this case, the agent is your actual language model.
+[1591.84s -> 1593.36s]  Pi is the policy.
+[1593.36s -> 1595.76s]  The training data is prompts that you get.
+[1595.76s -> 1599.56s]  So in this kind of RLHF framework,
+[1599.56s -> 1602.64s]  you have this feedback loop where the policy generates
+[1602.64s -> 1605.44s]  something A, which is the action, which is the completion.
+[1605.44s -> 1607.96s]  It goes to the reward model, which then scores it.
+[1607.96s -> 1609.40s]  But you kind of, on the side,
+[1609.40s -> 1611.68s]  are looking at all these evaluation tools.
+[1611.68s -> 1614.24s]  And it's like, none of these evaluation tools
+[1614.24s -> 1616.60s]  are giving us internal insight
+[1616.60s -> 1618.28s]  into what's happening in this feedback loop.
+[1618.28s -> 1620.96s]  It seems kind of external to what we're doing
+[1620.96s -> 1623.04s]  when we're training these models.
+[1623.04s -> 1625.56s]  So we really wanted to zoom in on this reward model.
+[1626.32s -> 1630.36s]  And reward models are trained in another kind of weird way,
+[1630.36s -> 1632.36s]  the many quirks of RLHF.
+[1632.36s -> 1634.08s]  So in order to train a reward model,
+[1634.08s -> 1636.40s]  you need to collect this pairwise preference data.
+[1636.40s -> 1638.72s]  If you're kind of using chatTPT a lot,
+[1638.72s -> 1640.60s]  you'll sometimes see it give you two answers
+[1640.60s -> 1642.32s]  and ask you which one is better.
+[1642.32s -> 1646.32s]  This data is literally what is used to train a reward model.
+[1646.32s -> 1649.48s]  It's a prompt and then two completions,
+[1649.48s -> 1651.96s]  a chosen completion and a rejected completion.
+[1651.96s -> 1653.48s]  But in order to train these models,
+[1653.48s -> 1656.16s]  you have to pass both of them in at the same time.
+[1656.16s -> 1657.92s]  So you pass both of them in at the same time
+[1657.92s -> 1659.88s]  and it gives you two scalar values.
+[1659.88s -> 1662.40s]  You use a language model that outputs a scalar
+[1662.40s -> 1664.92s]  just by some modifications of the last layers,
+[1664.92s -> 1666.64s]  rather than outputting text.
+[1666.64s -> 1667.68s]  And then this loss function,
+[1667.68s -> 1669.12s]  I'll show you on the next slide,
+[1669.12s -> 1673.20s]  is essentially why you need to use this batch mode idea,
+[1673.20s -> 1675.04s]  which is you pass multiple things at once
+[1675.04s -> 1676.92s]  and you get multiple numbers out.
+[1676.92s -> 1678.96s]  So this loss function is essentially,
+[1678.96s -> 1683.28s]  here this R is the output directly from the reward model
+[1683.28s -> 1685.56s]  for the rejected completion and the chosen completion.
+[1685.56s -> 1688.52s]  So you're trying to separate the distance between them
+[1688.52s -> 1690.20s]  and then automatic differentiation
+[1690.20s -> 1691.56s]  kind of updates the parameters
+[1691.56s -> 1693.52s]  so that this distance is bigger.
+[1693.52s -> 1695.84s]  So you can't just kind of do supervised learning
+[1695.84s -> 1700.28s]  directly on one thing to say for the reward model.
+[1700.28s -> 1703.04s]  There are alignment methods researching that now,
+[1703.04s -> 1705.12s]  but it's really built on this idea
+[1705.12s -> 1707.80s]  of separating two things and creating a margin
+[1707.80s -> 1710.52s]  in the preferences to kind of learn the decision boundary.
+[1710.52s -> 1712.64s]  There's a lot of really specific details in industry,
+[1712.64s -> 1715.44s]  such as these models are only trained for one epoch.
+[1715.44s -> 1717.48s]  They get really low accuracy scores
+[1717.48s -> 1720.08s]  when you compare them to other kind of train test set
+[1720.08s -> 1722.36s]  things in machine learning.
+[1722.36s -> 1724.84s]  And there's some additional tweaks that people do.
+[1724.84s -> 1727.28s]  You can do ensembles.
+[1727.28s -> 1729.68s]  LAMA2 did this weird margin loss,
+[1729.68s -> 1732.32s]  but none of it really is transformative
+[1732.32s -> 1734.04s]  in how these models are trained.
+[1734.04s -> 1736.12s]  They're in this weird place where you can only get
+[1736.12s -> 1739.44s]  about 70% agreement with your annotators.
+[1739.44s -> 1741.52s]  It's kind of the sort of thing of,
+[1741.52s -> 1744.40s]  is the noise part of the signal, or is it a bug?
+[1744.40s -> 1746.80s]  So in preferences, it could make sense that it's a signal
+[1746.80s -> 1750.04s]  because not everyone's preferences here are the same.
+[1750.04s -> 1752.32s]  So not getting full agreement would be like,
+[1752.32s -> 1753.48s]  this system might be working.
+[1753.48s -> 1756.08s]  We don't want chatgpt to be fully narrow-minded
+[1756.08s -> 1756.92s]  all the time.
+[1758.60s -> 1760.36s]  And this kind of reads the thing of like,
+[1760.36s -> 1762.32s]  how do we actually evaluate these reward models
+[1762.32s -> 1763.64s]  that I was talking about?
+[1763.64s -> 1765.36s]  I hear all the time that reward models
+[1765.36s -> 1769.42s]  are crucial to RLHF, but how do we know exactly
+[1769.46s -> 1771.98s]  what types of the final policy they're improving?
+[1771.98s -> 1774.70s]  Should we include safety in these reward models?
+[1774.70s -> 1777.02s]  How do scaling laws impact reward models?
+[1777.02s -> 1778.74s]  And it's kind of basic machine learning questions
+[1778.74s -> 1780.54s]  that it's like, can we evaluate these?
+[1780.54s -> 1781.94s]  What should we think about?
+[1783.38s -> 1786.82s]  So what we did is we collected a bunch of prompts,
+[1786.82s -> 1788.86s]  and then we manually created chosen
+[1788.86s -> 1791.30s]  and rejected answers for each prompt.
+[1791.30s -> 1793.98s]  And then we can see whether or not the reward model
+[1793.98s -> 1796.22s]  agrees with our human-created data
+[1796.22s -> 1797.70s]  and call that a win or a loss
+[1797.70s -> 1799.30s]  in an accuracy point of view.
+[1800.06s -> 1800.90s]  And it's really direct.
+[1800.90s -> 1802.90s]  We're just doing inference on existing models,
+[1802.90s -> 1804.14s]  and we're gonna see whether or not
+[1804.14s -> 1805.58s]  they agree with human data.
+[1806.94s -> 1809.82s]  And this is a slide, if you want to go
+[1809.82s -> 1811.46s]  into the academic side of things.
+[1811.46s -> 1814.58s]  This was built on a lot of existing evaluation tools
+[1814.58s -> 1815.54s]  that were out there.
+[1815.54s -> 1816.82s]  You'll see some common names,
+[1816.82s -> 1820.14s]  AlpacaVal, MTBent, or things that you've heard about.
+[1820.14s -> 1821.62s]  ExcessTest was on the slide
+[1821.62s -> 1825.14s]  when I mentioned Lambda2 being overly safe.
+[1825.14s -> 1827.50s]  And there's some other things that are really good,
+[1827.50s -> 1828.74s]  but you might not have heard about,
+[1829.62s -> 1831.70s]  this LLM bar data set from Princeton
+[1831.70s -> 1832.90s]  is a bunch of trick questions
+[1832.90s -> 1834.82s]  that I'll have an example on later,
+[1834.82s -> 1836.66s]  and some kind of normal names
+[1836.66s -> 1839.46s]  from Anthropic and OpenAI in here as well.
+[1839.46s -> 1840.98s]  So a lot of different things that we're testing
+[1840.98s -> 1841.82s]  with this data set,
+[1841.82s -> 1844.34s]  and then we're trying to get the full picture
+[1844.34s -> 1847.06s]  of what is going on with these models.
+[1848.26s -> 1850.70s]  We released this in March of 24,
+[1850.70s -> 1852.54s]  and you can see a key in the bottom
+[1852.54s -> 1855.46s]  where these kind of red circles with the arrow in them
+[1855.46s -> 1858.50s]  are DPO models, which you can use as a reward model,
+[1859.22s -> 1862.26s]  and then these dice which look like gray squares
+[1862.26s -> 1864.42s]  when you zoom out are what I described
+[1864.42s -> 1867.94s]  in this kind of classifier type of training.
+[1867.94s -> 1870.42s]  And you can see that there's reasonable scores,
+[1870.42s -> 1873.02s]  the benchmark isn't saturated,
+[1873.02s -> 1874.30s]  bunch of open models,
+[1874.30s -> 1875.78s]  some names that you've seen before,
+[1875.78s -> 1879.18s]  like the Tulu models and the Zephyr models are on here,
+[1879.18s -> 1881.82s]  kind of normal stuff where this is what we expected,
+[1881.82s -> 1883.50s]  it's not too saturated.
+[1883.50s -> 1885.38s]  But if you look here,
+[1885.38s -> 1888.18s]  I'll show you where this model has moved in a few months.
+[1888.70s -> 1890.14s]  So today we have a lot more models,
+[1890.14s -> 1891.74s]  and there's a lot more information here.
+[1891.74s -> 1893.58s]  So I get to tell you about more interesting things,
+[1893.58s -> 1896.38s]  which is like how OpenAI and Cohere's models do on this,
+[1896.38s -> 1898.30s]  which is like I mentioned wanting to do this
+[1898.30s -> 1899.70s]  for transparency,
+[1899.70s -> 1901.78s]  but we also add new types.
+[1901.78s -> 1903.58s]  So this is where the fifth model ended up.
+[1903.58s -> 1905.26s]  So in two months, the model that was fifth
+[1905.26s -> 1907.42s]  on our leaderboard is now at 31st.
+[1907.42s -> 1909.38s]  So we're getting the saturation
+[1909.38s -> 1911.86s]  from people doing research in the area
+[1911.86s -> 1914.38s]  to actually have places that compare their models.
+[1915.30s -> 1918.42s]  And, but we also have models from some closed labs,
+[1918.42s -> 1920.46s]  and I'll kind of get into the details here.
+[1920.46s -> 1923.46s]  So like, some of these are labeled as,
+[1923.46s -> 1927.34s]  are different types of models with this LLM as a judge.
+[1928.50s -> 1930.18s]  LLM as a judge is the idea
+[1930.18s -> 1934.58s]  if you can ask a language model, which answer is better.
+[1934.58s -> 1936.26s]  This is kind of how things like Alpaca,
+[1936.26s -> 1938.02s]  Val and MT-Vent are built,
+[1938.02s -> 1939.90s]  but you can also use that as a reward model.
+[1939.90s -> 1941.38s]  I told you that I have prompts
+[1941.38s -> 1942.54s]  and then chosen and rejected.
+[1942.54s -> 1944.26s]  I can just ask chat GPT,
+[1944.26s -> 1946.14s]  which one is better and see what it does.
+[1946.14s -> 1948.26s]  And this is what we added in as a baseline.
+[1948.26s -> 1949.98s]  And this ends up being really interesting
+[1949.98s -> 1953.50s]  because GPT-4 and GPT-4-0
+[1953.50s -> 1957.30s]  are not actually as good in this closed domain
+[1957.30s -> 1960.22s]  as a reward model that coheres training.
+[1960.22s -> 1961.70s]  So we don't have full information
+[1961.70s -> 1963.82s]  because we don't have OpenAI's reward models,
+[1963.82s -> 1965.98s]  but we can use their models to compare.
+[1965.98s -> 1967.62s]  So we have a lot of different information
+[1967.62s -> 1971.26s]  going into one system about how language models
+[1971.26s -> 1973.06s]  in different parts of the alignment process
+[1973.06s -> 1975.34s]  choose different categories.
+[1975.34s -> 1978.74s]  So I'll kind of go back and you can see
+[1978.74s -> 1980.62s]  this coheres across two different months.
+[1980.62s -> 1982.30s]  Theirs has improved a lot.
+[1982.30s -> 1984.74s]  And then these kind of earlier DPO models
+[1984.74s -> 1986.38s]  that we saw higher up on the leaderboard
+[1986.38s -> 1988.26s]  have been shifting down by more people
+[1988.26s -> 1990.10s]  training reward models to begin with.
+[1993.30s -> 1995.78s]  And the specific category that I'll focus most on
+[1995.78s -> 1998.18s]  is this kind of chat hard thing.
+[1998.18s -> 2000.50s]  If you think about evaluation a lot,
+[2000.50s -> 2002.30s]  it's actually surprisingly common
+[2002.30s -> 2004.58s]  as a topic covered in kind of tech coverage
+[2004.58s -> 2006.98s]  is how evaluation is saturating.
+[2006.98s -> 2008.74s]  This is the one feature of our benchmark
+[2008.74s -> 2010.50s]  that hasn't fully saturated.
+[2010.50s -> 2012.54s]  And it's really important to kind of having
+[2012.54s -> 2014.34s]  some sort of longevity to the benchmark.
+[2014.34s -> 2017.34s]  And I'll talk more about this kind of as we go from here.
+[2017.34s -> 2020.22s]  So I mentioned this data set and it's
+[2020.22s -> 2023.38s]  interesting to understand if you could actually
+[2023.38s -> 2024.82s]  do this problem.
+[2024.82s -> 2028.02s]  So what we have is a prompt chosen and rejected.
+[2028.02s -> 2029.82s]  And the prompt is give an example
+[2029.86s -> 2032.70s]  of a metaphor that uses the following object, stars.
+[2032.70s -> 2034.14s]  And then the chosen and rejected
+[2034.14s -> 2037.14s]  are two similar metaphors.
+[2037.14s -> 2040.86s]  But you can see if you read these
+[2040.86s -> 2042.14s]  what the differences are.
+[2044.46s -> 2047.26s]  I'm just pausing for the people that are paying attention
+[2047.26s -> 2048.10s]  to reading these.
+[2048.10s -> 2049.74s]  But essentially what happens is that the chosen one
+[2049.74s -> 2052.74s]  is about the sky and the rejected is about the moon.
+[2052.74s -> 2055.70s]  Or, yeah, so the twinkling diamonds in the sky.
+[2055.70s -> 2057.18s]  See, I messed it up reading the slide.
+[2057.18s -> 2059.30s]  But it asks for stars and it's about
+[2059.34s -> 2061.18s]  this kind of metaphor of stars where the rejected
+[2061.18s -> 2063.78s]  is about the moon, which is also in the sky at night.
+[2063.78s -> 2065.82s]  And this data set is a whole bunch of things like this
+[2065.82s -> 2068.82s]  where what they do to create this is they either manually
+[2068.82s -> 2074.02s]  or by chat GPT ask to rephrase a prompt.
+[2074.02s -> 2076.18s]  And then you create a new generation from it.
+[2076.18s -> 2078.42s]  So you can kind of get these rejected generations that
+[2078.42s -> 2080.22s]  are just off topic.
+[2080.22s -> 2081.90s]  And it makes sense for something
+[2081.90s -> 2083.78s]  that would be really hard for language models
+[2083.78s -> 2086.06s]  because they have this association between the stars
+[2086.06s -> 2087.14s]  and the moon.
+[2087.14s -> 2089.98s]  But we want our language models to be able to answer
+[2089.98s -> 2091.26s]  questions like this.
+[2091.26s -> 2094.18s]  And this is the type of thing where our reward model
+[2094.18s -> 2096.30s]  benchmark, which is something that is training language
+[2096.30s -> 2099.10s]  models, has the best correlation as something
+[2099.10s -> 2099.94s]  that is hard.
+[2099.94s -> 2101.86s]  So this is promising.
+[2101.86s -> 2104.62s]  This is the sort of thing that if you're in research
+[2104.62s -> 2105.62s]  is really interesting.
+[2105.62s -> 2107.54s]  So it's really in the weeds.
+[2107.54s -> 2109.58s]  But it shows that we still have things
+[2109.58s -> 2111.02s]  to learn about these models.
+[2111.02s -> 2113.74s]  And there are things that we can't do yet.
+[2113.74s -> 2116.18s]  But another interesting pattern is safety.
+[2116.22s -> 2119.62s]  I mentioned this kind of uncensored models.
+[2119.62s -> 2123.54s]  And in safety, we see all the patterns we would expect.
+[2123.54s -> 2125.74s]  They break down at the top of this table.
+[2125.74s -> 2127.90s]  Refusals is things that we want the language model
+[2127.90s -> 2128.86s]  to refuse.
+[2128.86s -> 2131.94s]  And then this XS test data set can be split into something
+[2131.94s -> 2135.26s]  that we want models to refuse and we want models to respond.
+[2135.26s -> 2137.48s]  And you can kind of see that there's
+[2137.48s -> 2141.18s]  multiple categories of either GPO models or reward models,
+[2141.18s -> 2143.42s]  where the model that handles safety really well
+[2143.42s -> 2147.94s]  refuses things like asking for advice on causing harm
+[2147.94s -> 2150.38s]  and responds to something that is borderline.
+[2150.38s -> 2152.30s]  But there's actually a lot of models out there
+[2152.30s -> 2153.54s]  that just refuse everything.
+[2153.54s -> 2155.14s]  So that'll tank your score on things
+[2155.14s -> 2159.38s]  that responds to everything, which is kind of the safe bet.
+[2159.38s -> 2161.72s]  We were seeing a lot of tech companies release models
+[2161.72s -> 2164.38s]  like this, which it just feels like it doesn't feel
+[2164.38s -> 2165.70s]  right when you talk to them.
+[2165.70s -> 2168.32s]  But there's also the models that just respond to everything.
+[2168.32s -> 2171.94s]  It's not my job to gate whether or not I should.
+[2171.94s -> 2174.54s]  It's not the language model's job to gate the question.
+[2174.54s -> 2176.86s]  It's the philosophy there, which is something
+[2176.86s -> 2179.90s]  that we hear a lot about in the discourse of alignment.
+[2179.90s -> 2182.54s]  But to see it in these reward models and DPO models
+[2182.54s -> 2185.94s]  when directly probing them without asking them
+[2185.94s -> 2188.34s]  to generate text is nice to be able to confirm
+[2188.34s -> 2191.02s]  a lot of suspicions that we have.
+[2191.02s -> 2194.38s]  So this is back to some of the DPO math, which is,
+[2194.38s -> 2195.74s]  again, good to know.
+[2195.74s -> 2198.30s]  So if you go into the DPO paper,
+[2198.30s -> 2200.20s]  you'll see equation 3 here, which
+[2200.20s -> 2202.32s]  is the reward that is defined in order
+[2202.32s -> 2204.08s]  to make the math actually work.
+[2204.08s -> 2206.84s]  And this is very different than just outputting a scalar.
+[2206.84s -> 2210.24s]  It ends up being a ratio of the probability of the policy
+[2210.24s -> 2211.88s]  relative to the original policy
+[2211.88s -> 2214.24s]  during training, which is called the reference model.
+[2214.24s -> 2220.20s]  And this is a very complicated mathematical representation.
+[2220.20s -> 2221.82s]  So if you actually take a piece of text
+[2221.82s -> 2223.72s]  and pass it through a DPO model,
+[2223.72s -> 2227.04s]  the reward will be something like minus 200 or something,
+[2227.04s -> 2229.14s]  because it's a bunch of log probabilities.
+[2229.14s -> 2230.98s]  Probabilities are between 0 to 1.
+[2230.98s -> 2232.78s]  You take the log, you get negative numbers,
+[2232.78s -> 2234.18s]  and you sum all of these up.
+[2234.18s -> 2235.86s]  So you get a big negative number.
+[2235.86s -> 2238.58s]  And that intuitively is like the score
+[2238.58s -> 2240.10s]  that these models are providing, which
+[2240.10s -> 2242.66s]  is very different than the other type of reward models
+[2242.66s -> 2244.74s]  that I talked about training earlier.
+[2244.74s -> 2247.94s]  And if you have two prompts with a chosen and a rejected,
+[2247.94s -> 2249.86s]  equation 4 is the math that you actually
+[2249.86s -> 2254.62s]  need to do to decide whether or not one of the answers
+[2254.62s -> 2255.26s]  was better.
+[2255.26s -> 2257.58s]  You're kind of comparing these ratios of probabilities
+[2257.58s -> 2259.14s]  from two different models with respect
+[2259.14s -> 2261.30s]  to this reference model, which was the starting
+[2261.30s -> 2262.56s]  point of training.
+[2262.56s -> 2265.60s]  And the question is, when people release a DPO model,
+[2265.60s -> 2268.10s]  they normally release a model, and they don't release all
+[2268.10s -> 2269.30s]  the intermediate checkpoints.
+[2269.30s -> 2271.98s]  So this reference model would be an intermediate checkpoint
+[2271.98s -> 2273.18s]  in the training process.
+[2273.18s -> 2275.58s]  So the question is, can you do this?
+[2275.58s -> 2277.26s]  Can you use it as a reward model
+[2277.26s -> 2279.74s]  if you don't have access to all the information?
+[2279.74s -> 2282.62s]  And the short answer is no, which
+[2282.62s -> 2284.18s]  is all the scores on our benchmark
+[2284.18s -> 2286.26s]  plummet across all the DPO models
+[2286.30s -> 2290.02s]  that we have, which makes sense, because this extra model
+[2290.02s -> 2293.94s]  is a regularizer in the probabilities.
+[2293.94s -> 2296.06s]  It's in the actual reward equation,
+[2296.06s -> 2297.30s]  if you go back a few slides.
+[2297.30s -> 2298.26s]  It's in the equation.
+[2298.26s -> 2300.46s]  So what we do is we get rid of this,
+[2300.46s -> 2303.10s]  and we stop normalizing equation 4,
+[2303.10s -> 2304.82s]  and we just see if it works.
+[2304.82s -> 2307.96s]  And it doesn't, but this is important,
+[2307.96s -> 2310.94s]  because DPO is training a reward model.
+[2310.94s -> 2313.14s]  But if we don't always have access to it,
+[2313.14s -> 2314.48s]  we just can't learn from it.
+[2314.68s -> 2317.24s]  We can't use that in another system as clearly.
+[2317.24s -> 2319.72s]  So it's just a lot to ask for when getting
+[2319.72s -> 2322.24s]  people to release models.
+[2322.24s -> 2326.12s]  And this is an interesting slide showing Cohere's progress
+[2326.12s -> 2327.28s]  on reward models.
+[2327.28s -> 2329.16s]  In just a few months, they released something
+[2329.16s -> 2331.64s]  that was clearly state of the art on our benchmark.
+[2331.64s -> 2336.92s]  A alignment lab, this kind of RLHF flow
+[2336.92s -> 2338.44s]  work released something in May.
+[2338.44s -> 2339.78s]  And then just a few days later,
+[2339.78s -> 2342.16s]  Cohere sent another number that was like,
+[2342.16s -> 2343.24s]  here's our new model.
+[2343.24s -> 2344.80s]  It's still better than everyone else.
+[2344.80s -> 2348.04s]  So it's nice to kind of have this academic industry
+[2348.04s -> 2349.76s]  intersection, but it's very rare
+[2349.76s -> 2352.28s]  and takes a lot of work in terms of networking
+[2352.28s -> 2353.52s]  and building relationships.
+[2353.52s -> 2355.96s]  But we're trying to do it, at least in these small niches
+[2355.96s -> 2359.12s]  where the companies are willing to share.
+[2359.12s -> 2361.88s]  Rewardbench 2 is going to need to just mostly make
+[2361.88s -> 2364.76s]  everything harder and make everything more human.
+[2364.76s -> 2366.72s]  And kind of the last point is
+[2366.72s -> 2369.44s]  what I'm going to transition into next is everything
+[2369.44s -> 2372.62s]  I've told you about is about part of this RLHF pipeline.
+[2372.62s -> 2375.64s]  But I haven't told you how it is impacting the final model
+[2375.64s -> 2377.34s]  that you use at the end of the day,
+[2377.34s -> 2378.74s]  which is very rightful criticism,
+[2378.74s -> 2380.64s]  which is like, if you're evaluating part
+[2380.64s -> 2383.16s]  of the alignment pipeline, you should be telling me
+[2383.16s -> 2385.74s]  whether or not the final model is actually useful.
+[2385.74s -> 2388.08s]  So this is kind of where I talk about our journey
+[2388.08s -> 2391.06s]  into trying to train PPO models.
+[2391.06s -> 2392.54s]  So we're trying to fine tune a good model.
+[2392.54s -> 2396.26s]  We spent a lot of time on DPO with this 2.0.2 work.
+[2396.26s -> 2398.26s]  And we wanted to know if we could do better
+[2398.26s -> 2400.06s]  by switching to PPO.
+[2400.06s -> 2403.34s]  So this is a lot of, it's not yet published work,
+[2403.34s -> 2404.86s]  but it's going to be out soon.
+[2404.86s -> 2406.58s]  So the numbers aren't entirely final.
+[2406.58s -> 2408.86s]  But we're just trying to disentangle
+[2408.86s -> 2410.94s]  what the difference between DPO and PPO
+[2410.94s -> 2414.30s]  is at a very empirical level.
+[2414.30s -> 2417.50s]  So we're trying to answer if it's better or not.
+[2417.50s -> 2419.20s]  So what we're going to do is kind of walk
+[2419.20s -> 2421.26s]  through a series of design decisions
+[2421.26s -> 2424.10s]  and see how it affects the suite of evaluations.
+[2424.10s -> 2426.94s]  We're starting with this LAMA2-13b model.
+[2426.94s -> 2428.78s]  And that has already been instruction tuned.
+[2428.82s -> 2430.50s]  The difference between the blue and the red
+[2430.50s -> 2432.70s]  is the gains from instruction tuning.
+[2432.70s -> 2435.86s]  For these kind of reasoning, coding, chat tasks,
+[2435.86s -> 2438.22s]  instruction tuning does the biggest delta
+[2438.22s -> 2439.98s]  that you'll see among all of these slides.
+[2439.98s -> 2442.22s]  Instruction tuning kind of puts the model on the map
+[2442.22s -> 2443.70s]  as being useful.
+[2443.70s -> 2446.80s]  And it is easy to see gains at the beginning.
+[2446.80s -> 2448.46s]  And then it's harder and harder for us
+[2448.46s -> 2450.90s]  to really keep improving these models.
+[2450.90s -> 2454.14s]  So what we start with is we add this anthropic, helpful,
+[2454.14s -> 2457.02s]  harmless RLHF data with DPO.
+[2457.02s -> 2460.42s]  And you can see that there is a small bump across all
+[2460.42s -> 2462.26s]  of the metrics that we did.
+[2462.26s -> 2464.86s]  This data set is known as being particularly noisy
+[2464.86s -> 2466.58s]  among researchers in the area.
+[2466.58s -> 2468.26s]  But it is kind of the starting point
+[2468.26s -> 2469.62s]  when you're doing research on alignment.
+[2469.62s -> 2471.08s]  It's been around for a few years.
+[2471.08s -> 2471.58s]  It's big.
+[2471.58s -> 2473.58s]  It's multi-turn.
+[2473.58s -> 2475.26s]  But it's known to be noisy.
+[2475.26s -> 2476.70s]  And it still gives improvement.
+[2476.70s -> 2479.46s]  And then what you do is if we switch to this data that
+[2479.46s -> 2482.42s]  was used for both Zephyr and 2x2,
+[2482.42s -> 2485.18s]  officially this ultra feedback data,
+[2485.18s -> 2486.42s]  we get an even bigger bump.
+[2486.42s -> 2488.50s]  So this is just kind of showing the difference that
+[2488.50s -> 2493.02s]  changing only the data can give you in a DPO recipe.
+[2493.02s -> 2496.78s]  It's normally increases of kind of like 0% to 2%.
+[2496.78s -> 2499.34s]  And in the research sphere, trying to ship a model,
+[2499.34s -> 2501.82s]  that's a big deal.
+[2501.82s -> 2504.70s]  So this is kind of where we treaded into new territory.
+[2504.70s -> 2506.62s]  Grad students worked really hard
+[2506.62s -> 2509.10s]  and implemented PPO and JAX in addition
+[2509.10s -> 2510.62s]  to what they already had.
+[2510.62s -> 2513.78s]  And we were like, OK, what happens when we add PPO?
+[2513.78s -> 2518.58s]  And reliably across multiple experiments,
+[2518.58s -> 2521.70s]  this is one example with the 13 billion parameters,
+[2521.70s -> 2524.34s]  PPO just happens to do a little bit better.
+[2524.34s -> 2525.82s]  It's like 1% better.
+[2525.82s -> 2528.02s]  And we try to change a lot of things.
+[2528.02s -> 2530.50s]  And the changing things is where
+[2530.50s -> 2532.74s]  things get a bit messier.
+[2532.74s -> 2535.78s]  So we've heard from industry that using a bigger reward
+[2535.78s -> 2539.94s]  model can be really helpful to getting a better policy model.
+[2539.94s -> 2541.62s]  Essentially, these bigger reward models
+[2541.62s -> 2542.78s]  will be better at nuance.
+[2542.78s -> 2545.34s]  They should give more label, better scores,
+[2545.34s -> 2546.98s]  which are used as rewards.
+[2546.98s -> 2548.74s]  They should just kind of make this process
+[2548.74s -> 2551.74s]  a little bit more stable if we have the compute for it.
+[2551.74s -> 2554.58s]  We see that it does improve some things,
+[2554.58s -> 2557.42s]  but it doesn't actually make the model overall much better.
+[2557.42s -> 2560.26s]  It's kind of flatlined with pretty similar data
+[2560.26s -> 2562.82s]  and then just making the reward model bigger,
+[2562.82s -> 2565.30s]  which is a little bit surprising to us.
+[2565.30s -> 2570.58s]  And this is the most realistic few slides of the talk.
+[2570.58s -> 2572.02s]  But it's like we did this thing
+[2572.02s -> 2576.54s]  where we even were trying to see if our reward model training
+[2576.54s -> 2578.50s]  was bad as we scaled it up.
+[2578.50s -> 2580.58s]  So we used the reward bench on the right,
+[2580.58s -> 2582.02s]  which I had told you about earlier,
+[2582.02s -> 2584.98s]  which it's not clearly correlated
+[2584.98s -> 2588.50s]  whether or not these two 13b models or 70b are better.
+[2588.50s -> 2590.74s]  We also did this best event sampling idea,
+[2590.74s -> 2592.70s]  which is if you generate a bunch of completions
+[2592.70s -> 2594.78s]  from a language model, you can rank them
+[2594.78s -> 2596.90s]  by your reward model and then re-evaluate
+[2596.90s -> 2599.10s]  on the top ranked completions.
+[2599.10s -> 2601.06s]  That shows that our reward models
+[2601.10s -> 2602.54s]  are better at the bigger scale,
+[2602.54s -> 2604.14s]  but we couldn't get this to really click
+[2604.14s -> 2608.30s]  into a downstream model in a PPO notion of the world.
+[2609.46s -> 2611.82s]  We even tried adding more prompts to RLHF.
+[2611.82s -> 2613.74s]  We added more code and reasoning prompts
+[2613.74s -> 2617.02s]  because that's something that OpenAI talks about a lot
+[2617.02s -> 2618.94s]  and we want to improve our models on.
+[2620.14s -> 2622.22s]  It doesn't really shift the needle
+[2622.22s -> 2626.26s]  on this kind of cohesive average over many tasks.
+[2626.26s -> 2627.94s]  In the paper, what you'll see when it's out
+[2627.94s -> 2629.82s]  is it shows that we added prompts
+[2629.86s -> 2632.30s]  really similar to two math and code evaluations
+[2632.30s -> 2635.18s]  and those specific evaluations got a bit better,
+[2635.18s -> 2637.46s]  but adding the full noise into the fact
+[2637.46s -> 2640.22s]  that some other evaluations might go down
+[2640.22s -> 2641.70s]  makes it just like this process
+[2641.70s -> 2643.66s]  is really hard to disentangle.
+[2643.66s -> 2646.10s]  This is why it's like we're getting
+[2646.10s -> 2648.50s]  the zero to 2% improvement out of PPO,
+[2648.50s -> 2651.78s]  but DPO doesn't have this sort of mess.
+[2651.78s -> 2654.46s]  So what we ended up getting to is
+[2654.46s -> 2656.58s]  there's always one more thing for us to ablate
+[2656.58s -> 2658.90s]  when you're trading these models with PPO.
+[2658.90s -> 2662.46s]  The sort of things like different regularization,
+[2662.46s -> 2664.58s]  we're learning a value function in RL,
+[2664.58s -> 2667.74s]  different warmup, different size parameters.
+[2667.74s -> 2670.78s]  Like there's just so many knobs to turn in PPO
+[2670.78s -> 2673.74s]  and it was reliably getting us a pretty good model,
+[2673.74s -> 2675.74s]  but it's like we're staring into the abyss
+[2675.74s -> 2678.74s]  trying to improve this right now in the next few months.
+[2678.74s -> 2682.70s]  And the bottleneck in terms of the actual technical side
+[2682.70s -> 2685.82s]  is that PPO generates new responses from the model
+[2685.82s -> 2688.78s]  as it trains to kind of refresh the data.
+[2688.78s -> 2691.42s]  And that is by far and away the biggest bottleneck
+[2691.42s -> 2692.82s]  when you're actually training these models
+[2692.82s -> 2696.14s]  is it's just way slower than DPO.
+[2696.14s -> 2698.46s]  So all these resources for PPO things
+[2698.46s -> 2700.38s]  are somewhat available to academics.
+[2700.38s -> 2702.42s]  The Google Tensor Research Cloud I think
+[2702.42s -> 2704.14s]  is pretty available to grad students
+[2704.14s -> 2706.30s]  I work with seem to sign up.
+[2706.30s -> 2707.54s]  The code base is open.
+[2707.54s -> 2709.66s]  So if you're interested in a grad student
+[2709.66s -> 2711.22s]  and are trying to do PPO alignment
+[2711.22s -> 2713.86s]  and have access to TPUs, please get in touch.
+[2713.86s -> 2716.62s]  It's a very fun can of worms.
+[2716.70s -> 2718.38s]  But kind of as a summary,
+[2718.38s -> 2722.46s]  this is the many different DPO data sets that we tried.
+[2722.46s -> 2726.38s]  This is almost all of the well-received data sets
+[2726.38s -> 2727.94s]  that are out there in the open.
+[2727.94s -> 2730.22s]  And they all look at like the factuality column.
+[2730.22s -> 2732.70s]  Like some of these things just don't matter at all
+[2732.70s -> 2734.14s]  when you're aligning these models.
+[2734.14s -> 2736.82s]  So we need to get new data sets
+[2736.82s -> 2739.94s]  that are really adding different capabilities to these models.
+[2739.94s -> 2742.46s]  And something that matches
+[2742.46s -> 2745.06s]  these kind of ultra feedback numbers at the bottom.
+[2745.06s -> 2749.26s]  And I'm surprised whenever I look at this,
+[2749.26s -> 2750.54s]  but this is where we are at.
+[2750.54s -> 2753.06s]  And we need to try to keep building data sets
+[2753.06s -> 2756.46s]  and keep adding freshness to this system.
+[2756.46s -> 2758.42s]  Ultra feedback at this point
+[2758.42s -> 2760.58s]  is maybe six months old or so.
+[2760.58s -> 2761.62s]  I don't know the exact age,
+[2761.62s -> 2763.30s]  but in terms of people training models
+[2763.30s -> 2766.34s]  that feels old to things that are happening.
+[2767.78s -> 2770.10s]  And these are the actual sort of numbers that you get
+[2770.10s -> 2772.58s]  when you compare DPO versus PPO.
+[2772.62s -> 2775.34s]  This is all with this 13 billion parameter.
+[2775.34s -> 2778.02s]  Again, we changed the data set.
+[2778.02s -> 2779.78s]  And every one of these PPO comes out
+[2779.78s -> 2780.94s]  a little bit better on average.
+[2780.94s -> 2783.94s]  And this is a few grad students and people like me,
+[2783.94s -> 2787.14s]  this is not a big team in industry doing this.
+[2787.14s -> 2788.54s]  We're scraping by.
+[2788.54s -> 2791.82s]  And I don't know if it's worth the effort.
+[2791.82s -> 2793.76s]  I see why OpenAI uses this,
+[2793.76s -> 2795.90s]  because we're able to get a bit more signal out of it.
+[2795.90s -> 2800.90s]  But it's a ton of effort to get a bit better signal out.
+[2801.78s -> 2805.22s]  And I'll kind of transition into a bit more
+[2805.22s -> 2807.90s]  of a open-ended discussion of this,
+[2807.90s -> 2808.90s]  and then we'll have questions.
+[2808.90s -> 2813.38s]  But it's like, what about PPO is actually special?
+[2813.38s -> 2816.94s]  Like this generation and this online nature.
+[2816.94s -> 2819.64s]  And can we just change DPO to be like this?
+[2819.64s -> 2822.14s]  Or where are the new things going to go?
+[2822.14s -> 2824.90s]  And I had the pleasure of advising one project
+[2824.90s -> 2825.78s]  that was related to this,
+[2825.78s -> 2827.70s]  but this is much more general.
+[2828.62s -> 2831.38s]  So it's like, what is special about online data?
+[2831.38s -> 2833.88s]  There's multiple ways that you can get new data
+[2833.88s -> 2836.70s]  into your RLHF process.
+[2836.70s -> 2838.66s]  And then there's also this related question
+[2838.66s -> 2841.18s]  in reinforcement learning literature,
+[2841.18s -> 2843.06s]  which is like on versus off policy,
+[2843.06s -> 2844.58s]  which is a technical distinction
+[2844.58s -> 2847.98s]  that often gets looped in with these discussions
+[2847.98s -> 2850.04s]  of DPO versus PPO.
+[2850.04s -> 2851.78s]  They're actually related,
+[2851.78s -> 2853.90s]  but the reinforcement learning discussions
+[2853.90s -> 2857.50s]  have a very much more like definitional flavor to them,
+[2858.14s -> 2859.58s]  while in this alignment space,
+[2859.58s -> 2863.10s]  we're more focused on if we need to get fresh data in
+[2863.10s -> 2865.90s]  and how we need to label our data for language models.
+[2865.90s -> 2868.26s]  So I'd make this distinction between these two things,
+[2868.26s -> 2870.82s]  which is freshly generated data from the policy.
+[2870.82s -> 2873.18s]  If you zoom into a data set like Ultra Feedback,
+[2873.18s -> 2875.50s]  it has generations from all sorts of models,
+[2875.50s -> 2880.50s]  from Alpaca, Vicuna, GPT 3.5, GPT 4, Llama.
+[2880.86s -> 2882.94s]  There's generations from all sorts of models
+[2882.94s -> 2884.46s]  in this data set we are using.
+[2884.46s -> 2886.90s]  So when we train these Zephyr, these TULU models,
+[2887.18s -> 2888.62s]  we're incorporating information
+[2888.62s -> 2892.18s]  from a lot of different models down into our one policy,
+[2892.18s -> 2895.10s]  whereas what PPO is doing is only generating data
+[2895.10s -> 2896.50s]  from your existing model
+[2896.50s -> 2899.02s]  and kind of changing this distribution over time.
+[2899.02s -> 2901.66s]  So like that is a very different idea
+[2901.66s -> 2904.66s]  of where the signal is coming from, from the models.
+[2904.66s -> 2906.78s]  And then the second thing is whether or not
+[2906.78s -> 2909.50s]  you're refreshing the data labels over time.
+[2909.50s -> 2912.74s]  If I have human labelers comparing chosen and rejected,
+[2912.74s -> 2914.06s]  that's one data point,
+[2914.06s -> 2917.02s]  but I can also later on take this reward model
+[2917.02s -> 2919.70s]  that I trained and generate a chosen and rejected
+[2919.70s -> 2920.94s]  and change the label.
+[2920.94s -> 2922.50s]  So these kind of two things of like
+[2922.50s -> 2924.34s]  what the actual text is
+[2924.34s -> 2927.50s]  and when the chosen slash rejected label was given
+[2927.50s -> 2929.66s]  are what people mean when they're talking about
+[2929.66s -> 2932.98s]  is something special about online in RLHF.
+[2932.98s -> 2935.06s]  And it's clear to see that PPO
+[2935.06s -> 2937.10s]  does it very differently than DPO,
+[2937.10s -> 2938.82s]  but we're not restricted to this.
+[2940.14s -> 2942.74s]  In the last few weeks, I have the dates all in here.
+[2942.74s -> 2946.50s]  So April, April and May of 2024,
+[2946.50s -> 2948.66s]  there's started to be a lot of papers on this
+[2948.66s -> 2953.22s]  about DPO, PPO, online, offline.
+[2953.22s -> 2956.54s]  And they really kind of say similar things,
+[2956.54s -> 2959.06s]  which is that online is important.
+[2959.06s -> 2960.30s]  And these papers on this slide,
+[2960.30s -> 2963.02s]  they show these kind of more theoretical
+[2963.02s -> 2965.54s]  and closed form experiments on like
+[2965.54s -> 2967.70s]  what is special about online data
+[2967.70s -> 2968.90s]  and what performance drops
+[2968.90s -> 2971.50s]  if you use this kind of offline data.
+[2971.50s -> 2972.70s]  It's good to dig into these,
+[2973.62s -> 2974.46s]  but this is what I say,
+[2974.46s -> 2975.30s]  it's like nice to do research now
+[2975.30s -> 2976.26s]  because if you have an idea,
+[2976.26s -> 2978.30s]  a lot of times people have like three papers
+[2978.30s -> 2980.66s]  that confirm the notion that you have.
+[2980.66s -> 2983.10s]  It's a lot easier to be confident in things
+[2983.10s -> 2986.42s]  if three independent institutions say something similar.
+[2986.42s -> 2987.58s]  At the same time,
+[2987.58s -> 2989.26s]  there's a lot of methods coming out
+[2989.26s -> 2992.62s]  where people are trying to modify DPO
+[2992.62s -> 2995.18s]  to actually use this kind of online notion.
+[2995.18s -> 2997.02s]  I think self-rewarding language models
+[2997.02s -> 2999.70s]  from meta was the first really popular one
+[2999.70s -> 3000.66s]  where they just had,
+[3000.66s -> 3002.46s]  they asked the DPO model,
+[3003.06s -> 3004.46s]  hey, which of these answers is better
+[3004.46s -> 3005.70s]  in between each iteration?
+[3005.70s -> 3007.34s]  So they did this like LLM as a judge
+[3007.34s -> 3009.30s]  to relabel their own data.
+[3009.30s -> 3011.66s]  And then they did multiple iterations of DPO
+[3011.66s -> 3014.70s]  and the model had really strong stores.
+[3014.70s -> 3017.54s]  There's now ideas like not using all of your data at once
+[3017.54s -> 3019.34s]  so you can kind of do batches of DPO
+[3019.34s -> 3021.02s]  and update your data.
+[3021.02s -> 3022.10s]  The paper that I was on
+[3022.10s -> 3024.54s]  with this discriminatory guided DPO,
+[3024.54s -> 3025.98s]  which I'll talk about in a second,
+[3025.98s -> 3029.26s]  is using reward models plus this DPO training objective.
+[3029.26s -> 3031.18s]  There's just a lot of things that we can change.
+[3031.18s -> 3032.58s]  And I think the community, again,
+[3032.58s -> 3034.30s]  is in this expansion phase
+[3034.30s -> 3036.62s]  where I even get messages from people
+[3036.62s -> 3038.50s]  that are like, oh, my paper was really similar
+[3038.50s -> 3040.70s]  to this other paper that we did at first.
+[3040.70s -> 3041.54s]  They didn't cite us.
+[3041.54s -> 3043.38s]  And I'm like, this is kind of the point,
+[3043.38s -> 3044.26s]  but it's hard.
+[3044.26s -> 3046.58s]  It's like, it's gonna be like this
+[3046.58s -> 3047.70s]  for a little bit longer.
+[3047.70s -> 3049.02s]  And then hopefully in the end of the year,
+[3049.02s -> 3050.22s]  in a few years, we're gonna be like,
+[3050.22s -> 3052.02s]  okay, this is clearly what we need to do
+[3052.02s -> 3053.78s]  on the method side of things.
+[3053.78s -> 3056.70s]  So this is one example, D2PO,
+[3056.70s -> 3058.82s]  Discriminatory Guided DPO,
+[3058.86s -> 3061.66s]  which I, as an advisor to,
+[3061.66s -> 3063.66s]  which is an undergrad researcher.
+[3063.66s -> 3067.46s]  And the idea is comparing these three different things.
+[3067.46s -> 3069.62s]  So like A is the standard DPO.
+[3069.62s -> 3070.70s]  You have a data set.
+[3070.70s -> 3072.54s]  You apply the loss function on it.
+[3072.54s -> 3073.50s]  B is what we call
+[3073.50s -> 3077.06s]  some sort of online preference optimization,
+[3077.06s -> 3080.74s]  which is where you can repeatedly label your data
+[3080.74s -> 3082.38s]  with a reward model.
+[3082.38s -> 3084.34s]  It just kind of like the self-reward paper
+[3084.34s -> 3085.18s]  that I mentioned,
+[3085.18s -> 3087.98s]  which is you can reshuffle your preference data
+[3087.98s -> 3089.70s]  based on a reward model.
+[3089.70s -> 3092.14s]  And that kind of adds some notion of online-ness
+[3092.14s -> 3093.10s]  to your data.
+[3093.10s -> 3094.78s]  And then the third thing is like,
+[3094.78s -> 3096.54s]  what if we're relabeling data
+[3096.54s -> 3099.30s]  and we're retraining our reward model over time?
+[3099.30s -> 3101.74s]  So we're just really trying to keep our,
+[3101.74s -> 3103.26s]  kind of what our policy is doing
+[3103.26s -> 3104.66s]  related to our reward model
+[3104.66s -> 3107.58s]  and keep everything really updated in real time
+[3107.58s -> 3109.66s]  so that it's all lined up.
+[3109.66s -> 3112.06s]  And this is wondering how much of a gain do you have
+[3112.06s -> 3114.82s]  by retraining the reward model over time
+[3114.82s -> 3116.18s]  in a DPO framework?
+[3117.18s -> 3118.54s]  And part of why I like this paper
+[3118.54s -> 3121.94s]  is there's things like closed-form tasks.
+[3121.94s -> 3124.74s]  So the biggest question that I get for alignment
+[3124.74s -> 3127.02s]  is like, how do we actually evaluate it?
+[3127.02s -> 3129.34s]  Like, what tasks is it good for?
+[3129.34s -> 3130.90s]  There's a whole philosophical discussion
+[3130.90s -> 3133.06s]  where I think information transformation
+[3133.06s -> 3134.46s]  is a valuable task.
+[3134.46s -> 3136.54s]  Writers tell the same stories in different ways,
+[3136.54s -> 3137.82s]  but the best told story
+[3137.82s -> 3139.58s]  is the one that resonates with people.
+[3139.58s -> 3140.62s]  That has value.
+[3141.70s -> 3143.14s]  But at the other time,
+[3143.14s -> 3145.46s]  we're academics and we need to be able to measure things.
+[3145.62s -> 3147.10s]  So this paper has things like,
+[3147.10s -> 3150.26s]  your reward is counting the number of nouns in a sentence.
+[3150.26s -> 3152.06s]  And then you're using these alignment methods
+[3152.06s -> 3153.70s]  to increase the number of nouns
+[3153.70s -> 3156.22s]  in the outputted sentences from the model.
+[3156.22s -> 3157.58s]  So you can measure that a lot better
+[3157.58s -> 3159.70s]  because we have classifiers which know our nouns.
+[3159.70s -> 3161.50s]  And you can see on this left figure
+[3161.50s -> 3164.94s]  is that just by retraining this reward model a few times
+[3164.94s -> 3166.26s]  and it converges better
+[3166.26s -> 3169.50s]  than if you were just to relabel your preference data.
+[3169.50s -> 3170.34s]  It's a mouthful,
+[3170.34s -> 3172.50s]  but it's just like keeping your model,
+[3172.50s -> 3174.62s]  your training process a little bit more online
+[3174.62s -> 3176.42s]  can improve at performance.
+[3176.42s -> 3177.26s]  And on the right
+[3177.26s -> 3179.78s]  is a more standard open-ended evaluation task
+[3179.78s -> 3183.06s]  where we're asking a language model like chatTBT
+[3183.06s -> 3184.58s]  which answer is better.
+[3184.58s -> 3186.18s]  And that has all sorts of problems
+[3186.18s -> 3188.38s]  where we can show similar results.
+[3188.38s -> 3192.06s]  I think the big takeaway is really these few slides
+[3192.06s -> 3194.90s]  which is the literature is moving.
+[3194.90s -> 3197.78s]  We have studies that show that online is better
+[3197.78s -> 3200.06s]  and people are coming up with really cool clever ways
+[3200.06s -> 3202.18s]  to actually use online data.
+[3202.18s -> 3204.58s]  So I combined with new data sets
+[3205.54s -> 3207.34s]  that like DPO of this year,
+[3207.34s -> 3209.90s]  it's like online methods and how they work.
+[3211.74s -> 3214.70s]  So this kind of goes back to what industry is doing.
+[3214.70s -> 3217.98s]  And I showed this figure earlier on the left with Claude
+[3217.98s -> 3220.34s]  where you can see the little points along the lines.
+[3220.34s -> 3222.10s]  And these are these different iterations.
+[3222.10s -> 3224.14s]  We don't know exactly what they're doing
+[3224.14s -> 3226.10s]  but it seems a little bit different
+[3226.10s -> 3227.56s]  where the dots on these figures
+[3227.56s -> 3229.86s]  are new data sets from humans
+[3229.86s -> 3233.14s]  rather than this kind of redo a reward model,
+[3233.14s -> 3234.42s]  relabel your data.
+[3235.10s -> 3235.94s]  This is what happens when you have access
+[3235.94s -> 3237.46s]  to different types of scale.
+[3237.46s -> 3239.54s]  The Lama 2 paper makes this much clearer.
+[3239.54s -> 3241.06s]  They say they work with an annotator.
+[3241.06s -> 3242.86s]  They get batches of data
+[3242.86s -> 3244.82s]  when they're generating this new batch of data.
+[3244.82s -> 3248.26s]  The previous model's checkpoint was used for generations.
+[3248.26s -> 3250.02s]  They do this many times
+[3250.02s -> 3250.86s]  and you can kind of see
+[3250.86s -> 3252.30s]  that they're collecting new human data,
+[3252.30s -> 3254.26s]  new human data, new human data.
+[3254.26s -> 3256.58s]  And each time they generate human data,
+[3256.58s -> 3258.98s]  it is trained for a new model.
+[3258.98s -> 3260.90s]  They're doing a lot of training updates
+[3260.90s -> 3262.66s]  and they're kind of building on each other.
+[3262.74s -> 3264.86s]  And this kind of leads into the last section
+[3264.86s -> 3267.10s]  that I'll talk about in the conclusions
+[3267.10s -> 3270.26s]  is like what did Meta do with Lama 3?
+[3270.26s -> 3273.22s]  This is one of the most funny blog post sentences.
+[3273.22s -> 3275.52s]  It's like the ridiculous things that they give us
+[3275.52s -> 3277.96s]  and then we parse the tea leaves.
+[3277.96s -> 3279.10s]  They say in the blog post
+[3279.10s -> 3280.62s]  is that our approach to post training
+[3280.62s -> 3282.58s]  is a combination of supervised fine tuning,
+[3282.58s -> 3286.42s]  rejection sampling, proximal policy optimization, PPO,
+[3286.42s -> 3288.30s]  and direct preference optimization.
+[3288.30s -> 3289.82s]  So it's like when people ask me
+[3289.82s -> 3291.22s]  like what the heck did they do?
+[3291.42s -> 3293.02s]  I mean I kind of agree.
+[3293.02s -> 3295.86s]  But it really goes back to this slide in my mind
+[3295.86s -> 3298.66s]  which is that they're getting new data
+[3298.66s -> 3301.78s]  and then they're training a new model over time.
+[3301.78s -> 3304.98s]  So what I think is happening at each one of these points
+[3304.98s -> 3306.86s]  they tried a few methods
+[3306.86s -> 3309.14s]  and they chose the training method that worked best.
+[3309.14s -> 3310.32s]  It's really, it's practical.
+[3310.32s -> 3312.34s]  Meta is a really practical organization
+[3312.34s -> 3314.78s]  especially in the Gen AI org right now.
+[3314.78s -> 3315.62s]  And that just makes sense.
+[3315.62s -> 3317.86s]  It's like at different points in the model,
+[3317.86s -> 3319.50s]  your model has different capabilities
+[3319.50s -> 3321.82s]  and it's ready to be trained in different ways.
+[3321.82s -> 3324.22s]  Rejection sampling which I didn't cover here
+[3324.22s -> 3325.96s]  is the simplest training method.
+[3325.96s -> 3327.78s]  You take a reward model,
+[3327.78s -> 3330.30s]  you rank some supervised fine tuning outputs
+[3330.30s -> 3333.90s]  and then you use this auto regressive loss function again.
+[3333.90s -> 3337.68s]  And then from there, DPO is much simpler to PPO
+[3337.68s -> 3341.42s]  but it might not give you the highest end performance.
+[3341.42s -> 3343.66s]  And then as your model really starts kicking into gear
+[3343.66s -> 3345.58s]  or you have more time to train this model
+[3345.58s -> 3347.06s]  once all of your data is collected
+[3347.06s -> 3349.24s]  and you're not on a weekly time crunch,
+[3349.84s -> 3352.52s]  you can experiment with all the little knobs of PPO
+[3352.52s -> 3354.68s]  and you can really try to get the best model out
+[3354.68s -> 3356.18s]  at the end of the day.
+[3356.18s -> 3359.08s]  It's just, hopefully they release a technical report
+[3359.08s -> 3360.86s]  that confirms some of my hypotheses
+[3360.86s -> 3363.60s]  but I think this is normally what people are interested in
+[3363.60s -> 3367.16s]  when somebody from industry comes up to give a lecture.
+[3367.16s -> 3370.84s]  And it's, I wish we had more details
+[3370.84s -> 3373.20s]  on what industry was doing.
+[3373.20s -> 3374.60s]  But in terms of current directions
+[3374.60s -> 3377.74s]  that I'm most interested in RLHF,
+[3377.74s -> 3379.78s]  I talked about data a lot.
+[3379.78s -> 3381.78s]  We are very bottlenecked on data.
+[3381.78s -> 3384.56s]  Even as academics with very limited compute,
+[3384.56s -> 3387.54s]  we literally try every data set that is available.
+[3387.54s -> 3390.14s]  Like that is not, like we don't have a lot of compute
+[3390.14s -> 3392.86s]  but we need to keep innovating there.
+[3392.86s -> 3396.14s]  We're gonna see more DPO methods.
+[3396.14s -> 3400.22s]  It's here to say there's a ton that I didn't cover here.
+[3400.22s -> 3402.78s]  Things like removing the reference model,
+[3402.78s -> 3404.76s]  changing the loss function slightly,
+[3406.06s -> 3407.64s]  not using pairwise preferences
+[3408.40s -> 3409.92s]  but single-wise preferences.
+[3409.92s -> 3411.40s]  There's a lot going on there.
+[3411.40s -> 3412.92s]  We should use more model sizes
+[3412.92s -> 3415.44s]  than seven and 13 billion parameters.
+[3415.44s -> 3419.04s]  Or in Lama's case, like seven and 70 billion parameters.
+[3419.04s -> 3421.64s]  Particularly scaling down is very useful.
+[3421.64s -> 3424.78s]  It's a place where academia can still play.
+[3424.78s -> 3427.42s]  There's kind of less of a weird marketing dynamic
+[3427.42s -> 3429.36s]  where all the companies are racing to go bigger
+[3429.36s -> 3431.64s]  for certain strategic reasons.
+[3431.64s -> 3434.28s]  But this is something that's accessible to many people.
+[3434.28s -> 3435.80s]  Aligning small models,
+[3435.80s -> 3437.52s]  it's hard to get signal out of them
+[3438.36s -> 3440.68s]  because the models show more or less random scores
+[3440.68s -> 3442.50s]  on many benchmarks that people care about
+[3442.50s -> 3443.92s]  or really low scores.
+[3443.92s -> 3446.28s]  So even just kind of breaking through in that domain
+[3446.28s -> 3447.96s]  would be really impactful work
+[3447.96s -> 3450.76s]  to kind of get more people working on alignment.
+[3450.76s -> 3453.18s]  And then kind of evaluations I covered at length
+[3453.18s -> 3455.76s]  which is we need to keep getting more specific
+[3455.76s -> 3457.24s]  on things we care about.
+[3457.24s -> 3459.52s]  And personalization is something in alignment
+[3459.52s -> 3461.90s]  that I didn't cover in this talk
+[3461.90s -> 3465.08s]  but is something that is good to compete
+[3465.08s -> 3466.04s]  with this kind of big tech
+[3466.04s -> 3467.84s]  which is like how do we train models
+[3467.84s -> 3470.04s]  that are good for you as an individual
+[3470.04s -> 3471.86s]  rather than one big model
+[3471.86s -> 3474.32s]  for one big technology organization.
+[3475.66s -> 3478.20s]  So these slides will get to you
+[3478.20s -> 3480.44s]  but these are the kinds of places that I follow
+[3480.44s -> 3483.46s]  when I'm trying to see open models or open data sets
+[3483.46s -> 3486.12s]  that are reputable and easy to keep track of
+[3486.12s -> 3489.38s]  so you don't have to try to follow everyone.
+[3489.38s -> 3491.20s]  And I write about this a lot
+[3491.20s -> 3493.42s]  without doing too much self-promotion.
+[3493.42s -> 3497.26s]  But I ended like 10 minutes early for questions
+[3497.26s -> 3500.86s]  that I'm happy to take in a Q&A format
+[3500.86s -> 3503.46s]  and then but you don't have to stay in wait
+[3503.46s -> 3504.56s]  if you don't want to.
+[3505.50s -> 3506.70s]  Thank you.
+[3506.70s -> 3507.64s]  Thank you.
+[3507.64s -> 3508.46s]  Thank you.
+[3508.46s -> 3509.30s]  Thank you.
+[3509.30s -> 3510.14s]  Thank you.
+[3510.14s -> 3511.04s]  Thank you.
+[3511.04s -> 3511.88s]  Thank you.
+[3511.88s -> 3512.50s]  Thank you.
+[3512.50s -> 3513.34s]  Thank you.
+[3513.34s -> 3514.20s]  Thank you.
+[3514.20s -> 3515.00s]  Thank you.
+[3515.00s -> 3515.84s]  Thank you.
+[3515.84s -> 3516.66s]  Thank you.
+[3516.66s -> 3517.50s]  Thank you.
+[3517.50s -> 3518.34s]  Thank you.
+[3518.34s -> 3519.72s]  Okay, thank you Nathan.
+[3519.72s -> 3520.94s]  Questions.
+[3520.94s -> 3522.46s]  Anyone got questions?
+[3524.92s -> 3527.44s]  This week we're gonna do a lower model
+[3527.44s -> 3528.92s]  which is a larger assumption I agree
+[3528.92s -> 3532.08s]  but what is the key challenge to doing online DPL
+[3532.08s -> 3536.32s]  you're a war model, and you can iterate just that way.
+[3536.32s -> 3541.36s]  So what is the hard thing that stops you from doing that?
+[3541.36s -> 3543.08s]  Yeah, I'm going to repeat the question
+[3543.08s -> 3545.64s]  so that people can hear them and it gets recorded.
+[3545.64s -> 3548.76s]  The idea is if you have a good reward model, what
+[3548.76s -> 3552.08s]  is stopping you from doing online DPO
+[3552.08s -> 3554.58s]  and kind of just improving the policy from there?
+[3554.58s -> 3557.36s]  I think there's kind of multiple angles to this
+[3557.36s -> 3562.84s]  that they're both technical and kind of industry-wide.
+[3562.84s -> 3565.40s]  But the technical thing is I think the prompt matching ends
+[3565.40s -> 3567.08s]  up being really important.
+[3567.08s -> 3571.48s]  So prompt matching, so what your reward model can learn
+[3571.48s -> 3573.12s]  is specific to the prompts.
+[3573.12s -> 3575.10s]  They're the technical detail where
+[3575.10s -> 3576.80s]  the prompts used for your policy
+[3576.80s -> 3580.16s]  often are exactly the same as your reward model in PPO,
+[3580.16s -> 3582.88s]  which is really strange because we talk about generalization
+[3582.88s -> 3585.62s]  in machine learning, but we're kind of softballing ourselves
+[3585.62s -> 3589.06s]  at the PPO stage, which is we're only grading PPO answers,
+[3589.06s -> 3591.70s]  which our reward model is trained to answer,
+[3591.70s -> 3592.86s]  which is kind of strange.
+[3592.86s -> 3595.66s]  So people think that some of that might break down,
+[3595.66s -> 3597.98s]  and we see some of that when trying
+[3597.98s -> 3600.88s]  to train PPO models with off-the-shelf reward
+[3600.88s -> 3603.70s]  models, which is kind of a long answer.
+[3603.70s -> 3609.54s]  And then I think it's mostly distribution matching,
+[3609.54s -> 3610.54s]  if I had to guess.
+[3610.54s -> 3612.90s]  But if we had truly a good model,
+[3612.90s -> 3615.02s]  it should work for some things.
+[3615.06s -> 3617.42s]  And that could be one of the reasons why there aren't that
+[3617.42s -> 3619.68s]  many in the open, because it would kind of help people
+[3619.68s -> 3620.82s]  catch up in alignment.
+[3620.82s -> 3623.66s]  As a reward model, if it is as important as people say
+[3623.66s -> 3625.22s]  it is, it might be easy.
+[3628.82s -> 3630.42s]  Other questions?
+[3630.42s -> 3632.42s]  Yeah.
+[3632.66s -> 3636.66s]  So seeing us data-poorly, are we going to have this always
+[3636.66s -> 3638.66s]  going to be these pair-wise temperatures?
+[3638.66s -> 3640.66s]  Or are there, I guess, artificial structures
+[3640.66s -> 3642.16s]  that you can use when you still
+[3642.16s -> 3643.66s]  have these, like, 9th graders
+[3643.66s -> 3647.66s]  that are going to be more complicated than otherwise?
+[3647.66s -> 3649.16s]  I mean, like, for example, if a fraction
+[3649.16s -> 3651.66s]  is more than 10 to the 4th, it's
+[3651.66s -> 3653.66s]  going to be more than 10 to the 5th.
+[3653.66s -> 3656.66s]  I think, at least, I don't know if a story, for example,
+[3656.66s -> 3658.66s]  was measured by, like, the opacity of the camera.
+[3658.66s -> 3661.66s]  That's a lot harder to catch.
+[3661.66s -> 3662.16s]  Yeah.
+[3662.40s -> 3665.40s]  This is the whole conversation, so if I don't cover it.
+[3665.40s -> 3668.16s]  If you want more after I answer, you can come up.
+[3668.16s -> 3669.82s]  But the question is, like, is there
+[3669.82s -> 3671.66s]  more than pair-wise preferences
+[3671.66s -> 3673.52s]  that could be used in RLHF?
+[3673.52s -> 3675.76s]  And there's a lot of different lines of work
+[3675.76s -> 3678.06s]  that are studying this.
+[3678.06s -> 3679.10s]  One is methods.
+[3679.10s -> 3680.76s]  Like, there's a method out of Stanford
+[3680.76s -> 3683.26s]  that's KTO, like, covert ski.
+[3683.26s -> 3684.26s]  I always mess it up.
+[3684.26s -> 3685.80s]  These names are so hard to pronounce.
+[3685.80s -> 3689.26s]  But it's the idea of using one-sided preference data.
+[3689.26s -> 3690.84s]  So a lot of customer apps have,
+[3691.04s -> 3694.64s]  like, did you get good support from this agent, yes or no?
+[3694.64s -> 3696.68s]  And you could use data like that.
+[3696.68s -> 3698.32s]  Is it just a different loss function
+[3698.32s -> 3701.24s]  for using single-sided preferences, or just
+[3701.24s -> 3702.40s]  a yes or no?
+[3702.40s -> 3704.72s]  There are other things, like learning
+[3704.72s -> 3706.96s]  to rank from multiple answers.
+[3706.96s -> 3710.76s]  So this is something I slightly insinuated,
+[3710.76s -> 3713.44s]  but binary preferences is kind of,
+[3713.44s -> 3715.00s]  like, there's a lot of literature
+[3715.00s -> 3716.52s]  on learning preferences.
+[3716.52s -> 3719.72s]  And one of the models that got reduced down
+[3719.72s -> 3723.56s]  is the Starling model, and they use a K-wise preference.
+[3723.56s -> 3727.36s]  So they have, like, five or nine answers to every prompt.
+[3727.36s -> 3729.68s]  And then they collect answers, and then they
+[3729.68s -> 3731.32s]  have a different loss function.
+[3731.32s -> 3732.44s]  And this is one of the models that's
+[3732.44s -> 3734.64s]  kind of, like, broken through in the open alignment space.
+[3734.64s -> 3736.60s]  It's one of the few that I left in and skipped
+[3736.60s -> 3738.44s]  in my slide deck.
+[3738.44s -> 3739.64s]  So that's kind of interesting.
+[3739.64s -> 3741.44s]  And then there's other research that's, like,
+[3741.44s -> 3743.68s]  fine-grained preferences.
+[3743.68s -> 3746.72s]  So for every completion to a prompt,
+[3746.72s -> 3750.52s]  we get labels like conciseness, helpfulness, honesty.
+[3750.52s -> 3752.84s]  So there's a few things on that regards.
+[3752.84s -> 3755.80s]  There's, like, a Steer LM paper from NVIDIA,
+[3755.80s -> 3758.16s]  and then there's work from UW that
+[3758.16s -> 3761.52s]  does, like, learning from fine-grained preferences.
+[3761.52s -> 3763.92s]  So that one's probably, like, the one that's
+[3763.92s -> 3765.64s]  emerging most in the academic sense,
+[3765.64s -> 3767.48s]  but there's so much to learn here.
+[3767.48s -> 3770.88s]  There's, like, literally all the field of social choice
+[3770.88s -> 3773.16s]  needs to get condensed into these things.
+[3776.72s -> 3783.08s]  Any other questions?
+[3783.08s -> 3784.08s]  OK.
+[3784.08s -> 3785.08s]  Perfect.
+[3785.08s -> 3786.08s]  All right.
+[3786.08s -> 3796.08s]  Let's have a round of applause for our panelists.
+[3796.08s -> 3807.44s]  Yeah, so the question is, broadly,
+[3807.44s -> 3809.48s]  is, like, how can we exceed human performance
+[3809.48s -> 3813.48s]  with fine-tuning or any training for that regards?
+[3813.48s -> 3815.72s]  And I think this is where some older ideas in CS
+[3815.72s -> 3816.44s]  will come back.
+[3816.44s -> 3818.28s]  I think one of the foundational ideas in CS
+[3818.28s -> 3821.08s]  is search, which is really also motivated
+[3821.08s -> 3823.36s]  as, like, exploration in RL.
+[3823.36s -> 3826.64s]  And therefore, we need to have some sort of language models
+[3826.64s -> 3829.16s]  that can search and generate new data.
+[3829.16s -> 3832.00s]  I was talking with somebody before I grad student,
+[3832.00s -> 3834.04s]  and I think that it's, like, search
+[3834.04s -> 3835.76s]  will be a large part of synthetic data,
+[3835.76s -> 3837.20s]  but then the human aspect will
+[3837.20s -> 3838.60s]  be what gets it across the line
+[3838.60s -> 3840.64s]  if it can't solve a certain area.
+[3840.64s -> 3843.56s]  And this is, like, the Q star rumors are ridiculous,
+[3843.56s -> 3847.76s]  but that seems to be the best argument for the sort of thing
+[3847.76s -> 3851.76s]  that OpenAI is trying with that is, like,
+[3851.76s -> 3854.88s]  how to get that barrier broken with AI.
+[3859.08s -> 3860.72s]  Thank you so much for coming in.
+[3860.72s -> 3863.76s]  You mentioned data sets were a big limitation,
+[3863.76s -> 3868.68s]  and I was curious how one goes about creating a new data set.
+[3868.68s -> 3870.80s]  Yeah, this is another thing that's hard,
+[3870.80s -> 3872.72s]  and I think community efforts are
+[3872.72s -> 3874.12s]  what people have tried to do.
+[3874.12s -> 3876.76s]  I mentioned Open Assistant, but most people
+[3876.76s -> 3878.36s]  that do a community effort are like,
+[3878.36s -> 3880.20s]  I never want to do this again.
+[3880.20s -> 3884.04s]  So while I still think it's worth doing things once that
+[3884.04s -> 3886.64s]  are highly impactful, even if you might not
+[3886.64s -> 3888.96s]  want to do it again, other avenues
+[3888.96s -> 3891.88s]  for building these in a sustainable manner
+[3891.88s -> 3893.36s]  are very important.
+[3893.36s -> 3896.88s]  I think that there's some ways that this is being done.
+[3896.88s -> 3899.48s]  Like, chatbot arena returns some of the prompts
+[3899.48s -> 3901.28s]  and the labels to users.
+[3901.28s -> 3903.68s]  There's specific concerns I have with that data
+[3903.68s -> 3907.56s]  around being too noisy, but that is the sort of thing
+[3907.56s -> 3908.20s]  that can happen.
+[3908.20s -> 3911.04s]  If AI2 has a demo for their models,
+[3911.04s -> 3915.00s]  it's going to be about science and generating information
+[3915.00s -> 3917.00s]  rather than being a chat GPT competitor.
+[3917.00s -> 3917.88s]  It's a nonprofit.
+[3917.88s -> 3919.40s]  It can't do a product competitor,
+[3919.40s -> 3922.00s]  but that's the sort of data that we would want to release.
+[3922.00s -> 3924.56s]  And something that I might just have to do,
+[3924.56s -> 3928.20s]  but I'm interested in academic workshops and competitions
+[3928.20s -> 3930.12s]  as a ground where you could have communities
+[3930.12s -> 3932.44s]  meet every three, six, eight months
+[3932.44s -> 3934.44s]  and have work that's focused on the area
+[3934.44s -> 3937.60s]  and or focus time to have people contribute to it.
+[3937.60s -> 3939.44s]  But it's a good question.
+[3939.44s -> 3940.16s]  It's not.
+[3940.16s -> 3941.92s]  It's probably why there aren't very many.
+[3946.00s -> 3949.24s]  How do you feel the various places where you've done research?
+[3949.24s -> 3953.52s]  Reward requirements are subject to reward hacking as well.
+[3953.52s -> 3955.20s]  Can we get to one at the front first?
+[3955.20s -> 3958.16s]  Yeah, close first, and then we'll come to you.
+[3958.16s -> 3961.20s]  The various places you've done research at over the years,
+[3961.20s -> 3964.92s]  do you have any sense of how they compare in terms
+[3964.92s -> 3968.48s]  of specifically alignment research?
+[3968.48s -> 3971.08s]  I mean, obviously, you weren't doing alignment research
+[3971.08s -> 3975.08s]  specifically at those times.
+[3975.08s -> 3977.60s]  I think generally it represents different culture
+[3977.60s -> 3979.96s]  and investments of the company.
+[3979.96s -> 3982.76s]  I wasn't doing language models until my time at Hugging Face,
+[3982.76s -> 3985.24s]  so I can really only speak to these kind of two
+[3985.24s -> 3986.80s]  open companies.
+[3986.80s -> 3989.56s]  And from a Hugging Face perspective,
+[3989.56s -> 3991.88s]  it's to show that more people can do this.
+[3991.88s -> 3993.68s]  We're not trying to compete with chat GPT,
+[3993.68s -> 3996.00s]  but we're trying to foster an ecosystem of doing this.
+[3996.00s -> 3999.76s]  And AI2 is similar, but more about what is happening.
+[3999.76s -> 4000.88s]  How do we learn about this?
+[4000.88s -> 4001.76s]  How do we do science?
+[4001.76s -> 4003.38s]  How do we study the science of this
+[4003.38s -> 4004.80s]  and communicate that clearly?
+[4004.80s -> 4006.96s]  And I'm sure if you do the exercise,
+[4006.96s -> 4009.04s]  you can map this to every company.
+[4009.04s -> 4011.24s]  What is their important thing?
+[4011.24s -> 4013.04s]  They have different goals in their products
+[4013.04s -> 4016.44s]  and their corporate structure and things like that.
+[4016.44s -> 4017.92s]  I will talk more when not recorded.
+[4020.92s -> 4022.76s]  OK, off the deck.
+[4023.28s -> 4027.04s]  Are these reward models also subject to reward hacking?
+[4027.04s -> 4030.24s]  They achieve a good result on the outcome,
+[4030.24s -> 4036.16s]  but actually in reality the outcome was not expected.
+[4036.16s -> 4038.96s]  Yeah, so when talking about reward models,
+[4038.96s -> 4041.04s]  this is probably the most established line of work.
+[4041.04s -> 4043.42s]  The question is, are reward models subject to reward
+[4043.42s -> 4044.24s]  hacking?
+[4044.24s -> 4047.40s]  And reward hacking is a classic problem in RL.
+[4047.40s -> 4049.12s]  I should bring back from my RL slides
+[4049.12s -> 4051.38s]  where you have the boat swimming going in circles
+[4051.42s -> 4053.30s]  and then be like, this happens to your language model
+[4053.30s -> 4054.58s]  and what happens.
+[4054.58s -> 4055.18s]  But it is.
+[4055.18s -> 4057.74s]  And there's a lot of research to mitigate it,
+[4057.74s -> 4059.34s]  but it's a fundamental problem, which
+[4059.34s -> 4061.42s]  is you have a very powerful optimizer
+[4061.42s -> 4064.42s]  and you have an incomplete representation of your reward.
+[4064.42s -> 4067.28s]  And it will always find where your representation of reward
+[4067.28s -> 4068.18s]  is wrong.
+[4068.18s -> 4070.58s]  So it's like, we will always be doing the best we can,
+[4070.58s -> 4072.58s]  but I think saying it's perfect
+[4072.58s -> 4074.90s]  is not possible in the map.
+[4082.38s -> 4085.02s]  I can also say, the ways that it fails are pretty funny.
+[4085.02s -> 4086.34s]  Because if you train these models,
+[4086.34s -> 4087.46s]  you'll end up with a model that just
+[4087.46s -> 4091.22s]  says JavaScript to every answer, to infer infinity.
+[4091.22s -> 4092.86s]  It's like, sometimes it's really easy
+[4092.86s -> 4095.78s]  to see when that is happening, which is good.
+[4095.78s -> 4097.46s]  Or you could change your loss function
+[4097.46s -> 4099.82s]  so that it will always exploit.
+[4099.82s -> 4102.38s]  It's a good way to make sure that things are working,
+[4102.38s -> 4105.26s]  which is you should be able to easily exploit
+[4105.26s -> 4106.46s]  if you turn the brakes off.
+[4111.38s -> 4113.10s]  Any last public question?
+[4118.34s -> 4121.46s]  If not, thank you to Nathan for giving this talk.
+[4121.46s -> 4129.14s]  And if there's anything you'd like to ask off the record,
+[4129.14s -> 4131.74s]  he'll be here for a bit longer.

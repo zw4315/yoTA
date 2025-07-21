@@ -1,0 +1,156 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.00s]  In the next three videos, I'm going to explain how TCP's congestion control works.
+[6.00s -> 11.00s]  The basic summary is that TCP uses additive increase, multiplicative decrease.
+[11.00s -> 14.00s]  But there are a lot of details on how this is achieved.
+[14.00s -> 17.00s]  TCP is considered a tremendous achievement in networking.
+[17.00s -> 23.00s]  It's reliable, a high-performance transport layer that can operate well in a huge range of network environments.
+[23.00s -> 28.00s]  Of course it's not perfect, but you can see its strength and how many applications depend on it.
+[28.00s -> 35.00s]  This video explains how TCP uses a simple finite-state machine to control the number of packets it has outstanding in the network.
+[35.00s -> 43.00s]  This finite-state machine implements an AMD-like algorithm as well as handling a connection setup and significant network disruptions.
+[45.00s -> 51.00s]  So recall, congestion controls how a network or protocol or system tries not to overload the network between two endpoints.
+[51.00s -> 54.00s]  Say we're transmitting data between San Francisco and Boston.
+[54.00s -> 59.00s]  There are many routers between these two endpoints, each with its own queues and traffic load.
+[61.00s -> 66.00s]  If we send packets below the rate the route can support, we can expect to see reasonably low packet drop rates.
+[66.00s -> 72.00s]  Most of the packets from San Francisco to Boston will arrive, and most of the packets from Boston to San Francisco will arrive.
+[72.00s -> 77.00s]  But if we send more packets than the route can support, then they'll be dropped from queues.
+[77.00s -> 81.00s]  The sender needs to somehow detect that this packet was lost and retransmit it.
+[81.00s -> 83.00s]  This takes time and reduces performance.
+[84.00s -> 90.00s]  So the purpose of congestion control is to control how many packets the sender has outstanding in the network.
+[90.00s -> 93.00s]  The goal is to send as many packets as the network can support, but not more.
+[93.00s -> 97.00s]  Sending more will cause queues to fill up and drop packets.
+[97.00s -> 99.00s]  At a high level, this seems simple.
+[99.00s -> 107.00s]  What makes it difficult, as we'll see, is that in TCP's case, the senders have very limited information on the internal state of the network,
+[107.00s -> 111.00s]  and so must infer losses from these limited signals.
+[113.00s -> 118.00s]  The basic summary is that in its steady state, TCP uses AIMD.
+[118.00s -> 121.00s]  It maintains a variable called its congestion window.
+[121.00s -> 127.00s]  The congestion window specifies how many unacknowledged segments the connection can have outstanding in the network.
+[128.00s -> 135.00s]  As the sender receives acknowledgments, these indicate that segments have left the network, and so it can send more.
+[135.00s -> 143.00s]  Every round-trip time, RTT, TCP increases the size of the congestion window by one maximum segment size, one MSS.
+[143.00s -> 146.00s]  This is the additive increase of AIMD.
+[146.00s -> 154.00s]  When TCP detects a packet loss, it halves the congestion window, or in some cases, sets it to be one segment.
+[156.00s -> 161.00s]  So far, we've explained congestion control as a clear and obvious issue that arises,
+[161.00s -> 165.00s]  and AIMD is a simple and highly effective algorithm to manage congestion.
+[165.00s -> 168.00s]  But this wasn't realized from the beginning.
+[168.00s -> 172.00s]  I'm going to give a bit of history on how TCP evolved to use AIMD.
+[172.00s -> 174.00s]  This is a great story.
+[174.00s -> 176.00s]  The internet collapsed and became unusable.
+[176.00s -> 180.00s]  In response to this meltdown, some researchers came up with AIMD.
+[180.00s -> 182.00s]  I'll explain exactly how it works.
+[184.00s -> 187.00s]  This is the brief, early history of TCP.
+[187.00s -> 195.00s]  In the mid-to-late 70s, Vint Cerf and others developed a three-way handshake for connection establishment and split TCP into the two layers we know today,
+[195.00s -> 198.00s]  IP at the network layer and TCP at the transport layer.
+[198.00s -> 203.00s]  On January 1, 1983, the entire ARPANET switched to TCP IP.
+[203.00s -> 210.00s]  Three years later, in 1986, the internet began to suffer from a congestion collapse.
+[210.00s -> 214.00s]  As TCP streams started saturating links, routers dropped packets.
+[214.00s -> 217.00s]  But TCP didn't respond well to these dropped packets.
+[217.00s -> 224.00s]  TCP spent most of its time retransmitting packets as it arrived successfully, continuing to waste the capacity of these saturated links.
+[224.00s -> 230.00s]  This kept packet losses high, such that new segments were dropped often, and so applications saw very low data rates.
+[230.00s -> 234.00s]  The network was working furiously hard, sending wasted segments.
+[234.00s -> 237.00s]  This coined the term congestion collapse.
+[237.00s -> 242.00s]  The network was tremendously congested, but applications saw no useful work being done.
+[243.00s -> 254.00s]  In 1987-1988, Van Jacobsen dug into what was happening and fixed TCP, publishing the seminal TCP paper whose algorithms underlie all TCP implementations today.
+[254.00s -> 261.00s]  This version of TCP was called TCP Tahoe, named after the particular release of BSD Unix that it was packaged with.
+[261.00s -> 266.00s]  Two years later, some further improvements were added to TCP in a version called TCP Reno.
+[267.00s -> 274.00s]  Modern TCP layers add a bit more complexity on top of TCP Reno for modern network speeds, but have TCP Reno at their core.
+[277.00s -> 281.00s]  So we can boil down TCP to three questions.
+[281.00s -> 283.00s]  When should you send new data?
+[283.00s -> 285.00s]  When should you retransmit data?
+[285.00s -> 288.00s]  When should you send acknowledgements?
+[292.00s -> 295.00s]  In this video, I'm going to explain the answer to the first question.
+[295.00s -> 298.00s]  When should TCP send new data?
+[298.00s -> 303.00s]  I'll explain the answer to the second two in the next video on RTT estimation and self-clocking.
+[308.00s -> 317.00s]  Remember that TCP has a window field in its header, which one side of a connection uses to tell the other side the size of its flow control window.
+[317.00s -> 325.00s]  The TCP specification says that a TCP sender shouldn't send data past the last acknowledged byte plus the size of the flow control window.
+[325.00s -> 330.00s]  Flow control ensures that a sender doesn't send data that a receiver can't handle.
+[331.00s -> 338.00s]  The original version of TCP would, once the three-way handshake completed, send a full window of segments.
+[339.00s -> 349.00s]  So if a sender received a flow control window of 40 kilobytes and had 40 kilobytes to send, it would send 40 kilobytes worth of segments immediately.
+[350.00s -> 354.00s]  It would then start a retransmit timer for each packet, for each segment.
+[355.00s -> 360.00s]  If the timer fired and the segment hadn't been acknowledged, TCP would retransmit it.
+[360.00s -> 368.00s]  As acknowledgements come in, they can advance the sender's window when the sum of the acknowledgement number in the window fields indicates that the receiver can handle more data.
+[371.00s -> 375.00s]  This turns out to be a problem if the window is much larger than what the network can support.
+[376.00s -> 380.00s]  Suppose, for example, that the bottleneck between two endpoints can only queue a few packets.
+[381.00s -> 384.00s]  As soon as the handshake completes, the sender sends 30 or more packets.
+[385.00s -> 391.00s]  After the first few fill up the bottleneck link, the bottleneck queue, the rest will be dropped.
+[392.00s -> 394.00s]  And this is exactly what was observed.
+[395.00s -> 399.00s]  This plot is from the seminal paper that established TCP's congestion control mechanisms.
+[400.00s -> 403.00s]  The x-axis shows time in seconds.
+[404.00s -> 410.00s]  The y-axis shows, in terms of segment sequence numbers, what segments TCP transmits.
+[411.00s -> 421.00s]  A line up and to the right means TCP is sending more data, while a line that jumps down and to the right means that there's a retransmission because TCP is sending an older sequence number.
+[422.00s -> 426.00s]  Two points with the same y, but different x values, show retransmissions.
+[427.00s -> 433.00s]  The straight line shows the available bandwidth, about 20 kilowatts per second. Networks were much slower then.
+[434.00s -> 441.00s]  If TCP were behaving well, then we'd see the dark line track this light line, filling the available bandwidth.
+[442.00s -> 444.00s]  But that's not what we see.
+[445.00s -> 452.00s]  Instead, what we can see in this plot is that TCP immediately sends a lot of segments, much more than the network can handle.
+[457.00s -> 462.00s]  It then waits nearly a second until a timeout causes it to retransmit a packet.
+[463.00s -> 469.00s]  Then, with the window advanced, it sends a flurry of more segments, some of which, again, are lost.
+[470.00s -> 479.00s]  This jagged pattern means that TCP is losing packets from almost every burst it sends and the overall slope of the line is well below the capacity of 20 kilowatts per second.
+[481.00s -> 484.00s]  So TCP Tahoe added three improvements to properly control congestion.
+[485.00s -> 488.00s]  A congestion window, better timeout estimation, and self-clocking.
+[489.00s -> 492.00s]  In the rest of this video, I'll present the first one.
+[494.00s -> 501.00s]  Recall that flow control is about what an endpoint can handle. TCP won't send data past what the flow control window specifies.
+[502.00s -> 505.00s]  But what if the endpoint can handle more data than the network can?
+[506.00s -> 510.00s]  The flow control window is only an upper bound on how much data the sender should send.
+[511.00s -> 514.00s]  It could be, for good performance, that it should send much less.
+[515.00s -> 519.00s]  So TCP Tahoe estimates something called a congestion window for the network.
+[519.00s -> 524.00s]  Its sending window is the maximum of the flow window and the congestion window.
+[525.00s -> 529.00s]  Don't send more than the other side can handle, and don't send more than the network can handle.
+[530.00s -> 536.00s]  To manage this congestion window, TCP separates congestion control into two states, called slow start and congestion avoidance.
+[537.00s -> 543.00s]  In the steady state, TCP is in the congestion avoidance state, in which it follows an AIMD policy.
+[544.00s -> 552.00s]  When a connection starts up, or there is a packet timeout, TCP enters the slow start state, which does not follow an AIMD policy.
+[557.00s -> 565.00s]  The way to think about how the congestion avoidance and slow start states work is in terms of how much they increase their congestion window.
+[566.00s -> 573.00s]  When TCP enters the slow start state, its congestion window is the maximum segment size, MSS, or one segment.
+[574.00s -> 586.00s]  Every time it receives a new acknowledgement, that is, an acknowledgement segment that acknowledges data that hasn't been acknowledged before, TCP increases the congestion window by one maximum segment size.
+[587.00s -> 591.00s]  This policy in slow start means that the congestion window grows exponentially.
+[592.00s -> 601.00s]  The sender starts with a window of size MSS. It sends a segment. When it receives an acknowledgement, it increases the congestion window to two MSS and sends two new segments.
+[602.00s -> 608.00s]  When it receives acknowledgements for these segments, it increases the congestion window to four MSS, one for each acknowledgement, and sends four new segments.
+[609.00s -> 615.00s]  The name slow start might seem a bit misleading. Exponential increase is much faster than additive increase.
+[616.00s -> 623.00s]  But it's called slow start because it's slow in comparison to the old approach TCP used of sending the whole flow control window immediately.
+[629.00s -> 636.00s]  In the congestion avoidance state, TCP increases the window much more slowly and resembles AIMD.
+[637.00s -> 644.00s]  It increases the window by one MSS squared divided by the congestion window for each acknowledgement.
+[646.00s -> 653.00s]  Assuming no packets are dropped, this causes TCP to increase the congestion window by one MSS per round trip time.
+[654.00s -> 658.00s]  So think we want to increase the window by one MSS per round trip time.
+[659.00s -> 663.00s]  There are congestion window divided by MSS segments outstanding.
+[664.00s -> 669.00s]  If there are n outstanding segments, then each acknowledgement should add one nth of our desired increase to the congestion window.
+[670.00s -> 674.00s]  But in terms of bytes, this means MSS divided by congestion window.
+[675.00s -> 683.00s]  Since our desired increase is MSS, this means each acknowledgement increases the window by MSS times MSS divided by the congestion window.
+[684.00s -> 687.00s]  So this is the additive increase part of AIMD.
+[693.00s -> 694.00s]  So we have these two states.
+[695.00s -> 699.00s]  The first, slow start, allows TCP to quickly find the available network capacity.
+[699.00s -> 702.00s]  For example, suppose the network can support a congestion window of 40 packets.
+[703.00s -> 706.00s]  Waiting 40 round trip times to reach this value would take too long.
+[707.00s -> 712.00s]  But when we're close to the network capacity, we want to use congestion avoidance to more carefully probe using additive increase.
+[713.00s -> 716.00s]  So how should we choose to transition between these two states?
+[717.00s -> 719.00s]  TCP has three signals available to it.
+[720.00s -> 722.00s]  Increasing acknowledgements mean the transfer is going well.
+[723.00s -> 731.00s]  Since TCP uses cumulative acknowledgements, duplicate acknowledgements mean that a segment was lost or delayed, but other segments are arriving successfully.
+[732.00s -> 735.00s]  Finally, if there's a timeout, then something is very wrong.
+[740.00s -> 742.00s]  So this is what the TCP state machine looks like.
+[743.00s -> 746.00s]  A connection starts in the slow start state.
+[747.00s -> 750.00s]  From there, every time it receives an acknowledgement,
+[750.00s -> 755.00s]  it increases the congestion window Cwind by one MSS.
+[756.00s -> 764.00s]  It increases the congestion window so until it passes a threshold called SSThresh or slow start threshold.
+[765.00s -> 771.00s]  When the congestion window grows larger than this threshold, TCP transitions into the congestion avoidance state.
+[772.00s -> 779.00s]  While in the congestion avoidance state, it increases the congestion window more conservatively one MSS per round trip time.
+[781.00s -> 787.00s]  On a timeout or triple duplicate acknowledgement, TCP transitions back to the slow start state.
+[788.00s -> 795.00s]  TCP infers that three duplicate acknowledgements, so four of the same ACK, are good evidence that the next segment was lost.
+[796.00s -> 801.00s]  The receiver is continuing to receive segments but can't forward the acknowledgement number because it's missing one.
+[802.00s -> 809.00s]  When TCP transitions back to the slow start state, it sets the SSThresh variable to be half of the congestion window.
+[810.00s -> 814.00s]  This value sets the cutoff after which TCP will follow AIMD.
+[815.00s -> 820.00s]  So on a packet loss, TCP enters slow start, then AIMD.
+[823.00s -> 828.00s]  This figure shows an example of how TCP Tahoe's congestion window behaves over time.
+[829.00s -> 833.00s]  It starts with a size of one MSS and increases exponentially.
+[834.00s -> 836.00s]  The first drop is responsive to a timeout.
+[837.00s -> 846.00s]  The window is returned to one MSS and begins to climb exponentially again until it reaches half of its original value at which point it begins growing additively.
+[847.00s -> 851.00s]  It grows until a segment is lost and there are three duplicate acknowledgements.
+[852.00s -> 854.00s]  The window doesn't increase in response to these duplicate ACKs.
+[855.00s -> 862.00s]  It then drops to one MSS, increases exponentially following slow start until it reaches SSThresh and starts increasing additively again.
+[864.00s -> 873.00s]  If you look carefully, SSThresh is the same value both times in this example TCP returns to slow start and then it transitions to congestion avoidance at the same window size.
+[874.00s -> 881.00s]  For this simple plot, this occurs because I calculated SSThresh in terms of integer numbers of MSS and in both cases it rounded down to the same value.
+[883.00s -> 887.00s]  Note that TCP Tahoe doesn't strictly manage congestion using AIMD.
+[888.00s -> 902.00s]  While AIMD is an excellent algorithm for managing the steady state or a stable network, in practice TCP has to deal with a much wider range of conditions such as startup, transient network failures, and losing bursts of packets or sudden changes in the available bandwidth.
+[903.00s -> 904.00s]  So recall these three questions.
+[905.00s -> 909.00s]  When does TCP send new data, when does it retransmit data, and when does it acknowledge data?
+[910.00s -> 912.00s]  This answers the first question.
+[912.00s -> 919.00s]  TCP sends new data when its sender window, defined as the minimum of its congestion window and flow control window, allows it to do so.
+[920.00s -> 925.00s]  The congestion window is a value a sender maintains based on the acknowledgements and timeouts it observes.

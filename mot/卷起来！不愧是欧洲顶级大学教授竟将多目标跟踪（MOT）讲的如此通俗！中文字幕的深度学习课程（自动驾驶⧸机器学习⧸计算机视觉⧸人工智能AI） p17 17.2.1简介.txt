@@ -1,0 +1,75 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.36s]  Welcome. This week we will study single object tracking. We will learn about the most commonly
+[6.36s -> 12.02s]  used models and the techniques for handling the challenges that we face. These models
+[12.02s -> 16.96s]  and techniques are central also to multi-object tracking and will therefore help us when
+[16.96s -> 21.82s]  we later move on to tackle the full problem. In this video, we will explain
+[21.82s -> 26.24s]  what single object tracking is, how it differs from the more general multi-object
+[26.24s -> 31.44s]  tracking problem, and why it is an important problem to study. In this week, we will learn
+[31.44s -> 36.00s]  about single object tracking in Clutter, which is a special case of multi-object tracking that
+[36.00s -> 40.36s]  we study in later weeks. The main difference between single object tracking in Clutter and
+[40.36s -> 45.08s]  multi-object tracking, at least as defined in this course, is that single object tracking
+[45.08s -> 49.84s]  implies that we know that there is precisely one object present at all times. This makes
+[49.84s -> 54.88s]  single object tracking more similar to Kalman filtering and the type of nonlinear filtering
+[54.88s -> 59.60s]  problems that you have seen in the past. Now, is this significantly easier than multi-object
+[59.60s -> 64.44s]  tracking? Yes, it is. And the first reason is that we don't need to figure out how
+[64.44s -> 68.68s]  many objects that are present, since we know beforehand that there is precisely one.
+[68.68s -> 73.72s]  A second reason is that we obtain many fewer data association hypotheses if there is
+[73.72s -> 78.98s]  only one object present. And this is important since it reduces the computational complexity
+[78.98s -> 83.60s]  of our filters. If you don't really know what a data association hypothesis is, don't
+[83.60s -> 86.76s]  worry about it. We will learn more about this shortly.
+[86.76s -> 91.32s]  Single object tracking in Clutter involves several challenges. First of all, we have
+[91.32s -> 96.12s]  the same challenges as when we study Kalman filtering. That is, we would like to recursively
+[96.12s -> 101.84s]  estimate a state vector that varies stochastically across time. And we do this using measurements
+[101.84s -> 106.06s]  that are noisy. For instance, a simple example is when we have a four-dimensional
+[106.06s -> 111.38s]  state vector that contains position and velocity in 2D. If we observe noisy observations
+[111.42s -> 116.98s]  of the position states, the sequence of measurements could look something like this, where the blue
+[116.98s -> 122.98s]  diamonds represent two-dimensional measurements at different time instances.
+[122.98s -> 128.78s]  Now, single object tracking in Clutter also involves three new challenges which
+[128.78s -> 134.00s]  are closely related and that are all caused by a more complicated measurement model.
+[134.00s -> 138.46s]  First of all, we assume that the object is detected by some sort of external sensor
+[138.54s -> 145.18s]  like a camera or a radar, and these sensors are not perfect. Apart from the noise that we've already mentioned,
+[145.18s -> 149.58s]  it is also possible that the sensor will fail to detect the object every now and then,
+[149.58s -> 154.06s]  and we refer to these events as missed detections. Here is an example of what the sequence
+[154.06s -> 160.74s]  of measurements might look like under these assumptions. At time one, two, three, and four,
+[160.74s -> 166.66s]  we detect the object. But at time five, we have a missed detection and do not receive any measurements.
+[166.70s -> 173.90s]  Similarly, at time six, seven, eight, nine, ten, and eleven, the object is detected,
+[173.90s -> 178.34s]  but we can have a missed detection at time twelve. This challenge alone could prevent
+[178.34s -> 182.10s]  us from getting good performance, at least if the probability of detecting the object
+[182.10s -> 187.86s]  is small, which will depend on the sensor. Secondly, we normally receive false detections
+[187.86s -> 192.74s]  that are unrelated to our object, and we refer to these false detections as Clutter.
+[192.74s -> 196.90s]  The set of measurements that we observe therefore often contain both an object detection and
+[196.90s -> 201.38s]  one or several Clutter detections. The sequence of measurements could, for instance, look
+[201.38s -> 206.50s]  as follows, where we observe a few Clutter detections at all times, as well as object
+[206.50s -> 209.62s]  detections at all times except for time five and twelve.
+[215.62s -> 219.50s]  However, if indeed our measurement looked like this, with Clutter detections marked
+[219.50s -> 223.90s]  with red stars and object detections as blue diamonds, we could just ignore the Clutter
+[223.90s -> 227.30s]  detections, and they wouldn't complicate things much.
+[227.30s -> 231.78s]  This brings us to the third challenge, which is that we have unknown data associations.
+[231.78s -> 236.10s]  That is, at all times we receive a set of measurements, but no one is going to tell
+[236.10s -> 240.34s]  us which of these detections, if any, is an object detection.
+[240.34s -> 244.38s]  Let us look at the sequence of measurements under these assumptions. Clearly, the situation
+[244.38s -> 248.70s]  is much more complicated now, and it is far from trivial to perform filtering using
+[248.70s -> 252.74s]  these measurements. During this week you will learn how to do this, starting with how
+[252.74s -> 258.54s]  to model the data, moving on to describing what the exact posterior density is, and
+[258.54s -> 262.78s]  finally learning about practical algorithms to perform filtering by approximating the
+[262.78s -> 267.42s]  true posterior. In short, you will learn all the key components in a single object
+[267.42s -> 272.82s]  tracking algorithm. All this theory will come later, but right now you might ask yourself
+[272.82s -> 277.94s]  if it's even possible to perform filtering without knowing which measurements to use.
+[277.94s -> 282.30s]  Can we perhaps guess which of the detections that are object detections? The fact that
+[282.30s -> 287.22s]  you probably remember which detections are object detections obviously helps. But even
+[287.22s -> 290.78s]  without that, I think some of you might have been able to guess which detections
+[290.78s -> 295.78s]  pertain to the object, since the Clutter detections generally jump around much more
+[295.78s -> 300.54s]  over time. And it's difficult to find a sequence of Clutter detections that look like
+[300.54s -> 303.70s]  it could be a sequence of object detections. Let's have a look.
+[307.94s -> 322.82s]  Hopefully, this may convince you that we have enough information to estimate where the object is, even though it may be complicated to imagine a specific algorithm for doing so.
+[322.82s -> 328.82s]  Until now, you've learned about what single object tracking in Clutter is, and the challenges that it involves.
+[328.82s -> 336.82s]  The final aspect that I would like you to understand is why we study single object tracking first, instead of immediately going for multiple object tracking.
+[336.82s -> 348.30s]  The main reason is actually pedagogical, and we would like you to learn about models, techniques to handle data association uncertainties, and how to approximate the posterior density in this slightly simpler setting.
+[348.30s -> 355.62s]  In fact, most of the principles and techniques that you learn about this week are used repeatedly in later weeks.
+[355.62s -> 360.90s]  And we think single object tracking is a perfect setting for understanding these things properly.
+[360.90s -> 365.90s]  A second reason is that single object tracking is sometimes an important problem in itself.
+[365.90s -> 374.70s]  For instance, there are many cases where we really only care about tracking a single object, such as a robot, an athlete, or a vehicle.
+[374.70s -> 380.70s]  Also, some multi-object tracking systems depend heavily on single object tracking algorithms.
+[380.70s -> 395.86s]  One example is radar systems for tracking airplanes or ships where single object tracking algorithms are used to control the radar sensor and direct the radar beam towards individual objects, such as an airplane or a boat, to increase our chances of detecting them.
+[395.86s -> 405.94s]  Hopefully, this video has given you an idea about what single object tracking in Clutter is, why it is challenging, and why we study it, such that you are ready to learn more about the topic.

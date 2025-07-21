@@ -1,0 +1,283 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 10.32s]  Hi there, this is Chris and this is a video on Assignment 3 and I apologize
+[10.32s -> 14.64s]  for being late and I apologize that I didn't get to it in class today. So
+[14.64s -> 19.80s]  Assignment 3 is, as the title says, everything about multi-processing. So
+[19.80s -> 22.48s]  you're going to have to do lots of multi-processing here. Specifically
+[22.64s -> 30.40s]  you're going to use fork and exec CVP and you're going to use wait PID and you're
+[30.40s -> 34.80s]  going to use pipe and you're going to use dupe or probably dupe 2 as it turns
+[34.80s -> 40.64s]  out and all the different things that we've learned about in order to do four
+[40.64s -> 48.00s]  different programs. The first two are relatively minor and the third one and
+[48.60s -> 56.08s]  a little bit bigger. So let's dig right in. So the first assignment is
+[56.08s -> 60.12s]  pipeline. The first part of the assignment is pipeline. Now pipeline does
+[60.12s -> 68.44s]  the following. Pipeline takes in two parameters that are basically command
+[68.44s -> 74.08s]  line arguments that include the program name as the first argument and then all
+[74.08s -> 79.20s]  of its arguments after that and then a second argument list that's the same
+[79.20s -> 84.28s]  thing and basically and then it takes in an array of PIDs which is empty
+[84.28s -> 91.16s]  when you start. This will be filled when the pipeline function returns and
+[91.16s -> 96.76s]  we'll have two PIDs in it that are the two the two PIDs for the two
+[96.76s -> 102.76s]  children that your pipeline is going to create. The first of which will send
+[102.76s -> 109.48s]  its standard output into the second one's standard input. So what does
+[109.48s -> 114.32s]  that actually mean? Well what you're basically doing is you're setting up a
+[114.32s -> 121.00s]  system like the following. Let me pull up a terminal here and show you
+[121.00s -> 129.44s]  what's going on here. So you're basically setting up two programs
+[129.52s -> 133.72s]  it will basically do the following. Okay if you do something like the following
+[133.72s -> 139.84s]  let's see let's just say I have a test file about txt and inside it I'll
+[139.84s -> 147.52s]  put some fruit names and apple and doughnut which is not a fruit at all
+[147.52s -> 155.60s]  and let's put in cantaloupe and so you have these sorts of fruits and
+[155.72s -> 162.60s]  other things in your list okay and that is test file now let's say we wanted to
+[162.60s -> 170.04s]  cat test file in other words print it out right and we wanted to then pipe
+[170.04s -> 177.88s]  it through sort which would sort the words in the list so what's happening
+[177.88s -> 184.64s]  here well cat is taking the file and inputting from the file and outputting
+[184.64s -> 191.12s]  through standard out if you just type cat test file then it prints out to the
+[191.12s -> 196.32s]  terminal which is standard out okay this is important and then sort is
+[196.32s -> 200.60s]  taking input from standard in how do I know it's standard in if I just type
+[200.60s -> 207.24s]  sort and start typing things right and if I type and then these are
+[207.24s -> 211.40s]  standard in and it's just accepting this then when I do ctrl D it will
+[211.40s -> 217.32s]  actually end the input and it will sort it sort will actually sort it so
+[217.32s -> 222.44s]  sort is taking standard input and printing it to standard output and cat
+[222.44s -> 226.40s]  is taking input from this file as it turns out and printing it to standard
+[226.40s -> 230.48s]  output all right so what does that actually mean in terms of your
+[230.48s -> 235.76s]  pipeline file well when you do cat test file dot txt pipe through sort
+[235.76s -> 242.88s]  the standard out of text of cat standard out of cat becomes the
+[242.88s -> 248.32s]  standard in of sort and how do we do that well we have to do that via a
+[248.32s -> 254.20s]  pipe okay so you have to say basically you have to pipe the output
+[254.20s -> 259.88s]  of test file that our cat test file txt into sort okay in fact later in the
+[259.88s -> 265.36s]  next assignment you'll do you'll be able to do it through more different more
+[265.44s -> 271.44s]  pipes as well basically standard out of cat becomes standard in of sort standard
+[271.44s -> 275.84s]  out of sort becomes standard in for word count okay now pipeline is only
+[275.84s -> 283.84s]  two of these but that's how it works okay now let's talk a little bit
+[283.84s -> 289.52s]  more about the actual pipeline itself well remember what pipe does okay pipe
+[289.60s -> 296.64s]  when you say FDS when you have an array of file descriptors basically
+[296.64s -> 302.52s]  like this and FDS to you have it too and then you do that pipe creates a
+[302.52s -> 313.48s]  two file descriptors FDS zero is the reader and FDS one is the writer okay
+[313.56s -> 320.84s]  when you write from into FDS one you can read that text from FDS zero okay
+[320.84s -> 326.44s]  now let's talk just briefly about the example we had before we had cat file
+[326.44s -> 331.92s]  test txt or whatever it was okay well that is going to need to
+[331.92s -> 342.48s]  redirect its standard out okay and then we also have the sort right well
+[342.72s -> 353.04s]  and sort needs its standard in redirected okay so basically standard and
+[353.04s -> 358.76s]  I should do it this way I guess we should say that standard out so
+[358.76s -> 365.52s]  basically FDS one which is the writer okay okay needs to be kind of
+[365.52s -> 373.88s]  translated to SD standard out for file test and FDS zero needs to be translated
+[373.88s -> 380.64s]  to SD standard in for sort okay that's really all there is to it this is not
+[380.64s -> 385.12s]  a long program there will be two forks in this file one to fork the first
+[385.12s -> 388.24s]  program and one to fork the second program and not the third program in
+[388.24s -> 395.08s]  this case but one to fork let's say one to fork cat and then one to fork
+[395.16s -> 402.48s]  sort in this case okay so that's how pipeline works all right the next part
+[402.48s -> 408.32s]  of the assignment is sub process now sub process is this one in C++ by the
+[408.32s -> 414.28s]  way so make sure you get your C++ going it feels a lot like C still but
+[414.28s -> 422.44s]  it is technically C++ now this uses a struct called sub process underscore T
+[422.48s -> 426.80s]  and this product this sub process basically function does the following
+[426.80s -> 435.92s]  okay it the sub process function creates one executable okay and it and
+[435.92s -> 440.72s]  in fact here's the definition for it creates one executable which is the
+[440.72s -> 445.48s]  same as the pipeline one by the way it has a list command list in an array
+[445.60s -> 454.32s]  and it has two booleans which say do I want to provide the supply child input
+[454.32s -> 459.92s]  or do I want to ingest the child output okay so in other words if it's
+[459.92s -> 468.64s]  true I want to get returned to me in the sub process T struct a file
+[468.64s -> 476.44s]  descriptor which I am allowed to write to which will be input into the sub
+[476.44s -> 480.52s]  process into the child okay if I have true for the second or the third
+[480.52s -> 486.44s]  parameter actually the ingest child output okay basically this one says
+[486.44s -> 489.24s]  I'm going to get a file descriptor such that if I read from it it is
+[489.24s -> 496.16s]  whatever the child produced on standard out okay whatever the child produced on
+[496.16s -> 500.80s]  standard out and that's the that's how it works okay so it's kind of similar
+[500.80s -> 508.12s]  to the it's similar to the pipeline in the sense that you've got a pipe here
+[508.12s -> 513.48s]  or at least one pipe I probably said too much already that you need to
+[513.48s -> 521.44s]  handle such that you will be able to get back the pipe by the file
+[521.44s -> 527.08s]  descriptor such that you can either write to that sub process or you can read from
+[527.08s -> 532.00s]  it okay so that's basically the big idea I'm not sure there's much else to
+[532.00s -> 537.84s]  tell you about that one so the next one is a little more difficult to kind
+[537.84s -> 542.76s]  of understand this is the trace function now basically in some sense you
+[542.76s -> 547.84s]  are writing a little bit of a debugger okay you're writing a debugger that
+[547.92s -> 554.44s]  captures all system calls and reports the reports the output of those system
+[554.44s -> 558.52s]  call or actually the not necessarily the output the reports the details of
+[558.52s -> 564.84s]  those system calls to you okay so if we had a function like this main
+[564.84s -> 570.48s]  function okay and we used the trace function to do it well what it does is
+[570.48s -> 575.80s]  it says okay first we got a syscall 59 and it returns 0 and then we have a
+[575.84s -> 579.32s]  syscall 12 and it returned one four four three four three or four and by the way
+[579.32s -> 585.00s]  some of these numbers will be different for you than in the assignment handout
+[585.00s -> 588.64s]  here okay don't worry about some of the numbers some some of them have to
+[588.64s -> 591.60s]  the same as some of them are going to be a different insanity check will
+[591.60s -> 595.16s]  ignore values that are different I'll just look for a value and then
+[595.16s -> 598.48s]  ignore it if it's different okay and then there's lots of other things
+[598.48s -> 603.76s]  happen and then we get a bunch more syscalls here and then finally we get
+[604.40s -> 609.84s]  syscall 231 here that does not return anything and then the program exits and
+[609.84s -> 616.92s]  that should be the output of your trace okay so again trace captures all
+[616.92s -> 623.80s]  the system calls from a program that it runs and it reports those to you okay
+[623.80s -> 626.96s]  so it's an interesting way to see all the different system calls that your
+[626.96s -> 630.32s]  program is making and in fact there's more than you might think right there's
+[630.32s -> 633.08s]  lots of different system calls for things here some are by the way for
+[633.08s -> 636.28s]  opening and writing and closing and reading and closing and so forth some
+[636.28s -> 644.08s]  of those there's also a lot of other ones happening as well okay that is the
+[644.08s -> 649.52s]  simple trace by the way then we have a full trace where it gives you much more
+[649.52s -> 655.04s]  information about that okay about the actual system calls okay it doesn't just
+[655.04s -> 660.56s]  say what the system calls are then syscall it actually says like
+[660.56s -> 664.76s]  specifically which system call it is and you have to look this up in a map and in
+[664.76s -> 668.92s]  fact I think there's two maps here that you have to utilize to look the
+[668.92s -> 673.16s]  information up you know okay there's also an error map as well you have to
+[673.16s -> 675.72s]  look up so there's a few different maps here that you have to wrap your
+[675.72s -> 681.92s]  head around to get that okay trace is definitely more challenging because it
+[682.08s -> 687.92s]  has a lot more going on and so make sure you read through a lot of this here the
+[687.92s -> 693.40s]  big thing to understand is a little bit anyway is how p-trace works p-trace is
+[693.40s -> 700.04s]  another system call and it allows a program to make another program stop
+[700.04s -> 704.64s]  at various points particularly after system calls and so forth and it
+[704.64s -> 711.60s]  allows it to capture that information okay so we give you a kind of a basic
+[711.76s -> 717.00s]  one that doesn't do much in the starter code make sure you read through all the
+[717.00s -> 723.12s]  header files and make sure you understand the actual maps and things
+[723.12s -> 731.76s]  that we'll talk about in a few minutes okay the the initial starter
+[731.76s -> 738.76s]  code okay basically ignores a lot of things and then Eric narrows kind of the
+[738.80s -> 749.88s]  simple and rebuild and then it ends up using this process command line flags to
+[749.88s -> 754.68s]  to actually run the trace itself or to actual process and then it runs the
+[754.68s -> 762.68s]  trace based on on those okay we in this case we fork off a child which is
+[762.68s -> 766.56s]  the name of the program that you've that you've actually asked it to trace
+[766.56s -> 770.88s]  through okay and then it calls a p-trace on p-trace trace me which
+[770.88s -> 777.28s]  basically says hey I'm about to trace you okay and then it raises a signal
+[777.28s -> 782.88s]  stop on itself so remember this is in the child and it starts the child
+[782.88s -> 786.48s]  running and then stops it why because we're in the process of tracing it so
+[786.48s -> 790.92s]  it's kind of like a debugger where it runs maybe one line and stops in this
+[790.92s -> 798.20s]  case it runs a couple lines of the actual or it it stops it before it
+[798.20s -> 803.08s]  actually runs the program that we're trying to do okay why because we still
+[803.08s -> 807.72s]  need to set some things up in the parent okay so you can read through
+[807.72s -> 816.12s]  this about how it how it actually does its thing here okay and then the
+[816.20s -> 827.96s]  tracer itself okay has to basically run a wait PID and another p-trace here to
+[827.96s -> 834.84s]  say what happens when the child actually stops so in this case when we
+[834.84s -> 841.28s]  do wait PID in this case well it stop it ends up returning the PID of the
+[841.28s -> 846.56s]  child process that just stopped and so we know what the PID is and so forth
+[846.56s -> 851.04s]  okay and then it says well yes it actually stopped and then it sets some
+[851.04s -> 861.00s]  more tracing ability on the actual child process okay all right and then
+[861.00s -> 867.32s]  what do we have we have the this is basically a while true loop that goes
+[867.32s -> 874.04s]  through and for the basic one anyway just keeps the program running okay
+[874.04s -> 877.64s]  until it gets to a system call all right and then that's what this does
+[877.64s -> 883.28s]  those p-trace p-trace until a system call and then wait until the the
+[883.28s -> 887.08s]  function gets to it or the program gets to a system call and that's that
+[887.08s -> 893.80s]  okay and you can read down through all the details of this as well a couple
+[893.92s -> 900.28s]  interesting things are that you need to find the opcode which is in percent
+[900.28s -> 906.44s]  RAX which is one of the registers as you know from 107 107 e folks RAX is
+[906.44s -> 916.40s]  one of the registers it's kind of like r0 and then you end up getting the
+[916.40s -> 922.68s]  details of that register which by the way lives in the child process with
+[922.76s -> 928.28s]  another command called p-trace with p-trace peak user this is reading the
+[928.28s -> 936.64s]  information from the from the actual program itself okay that's where it
+[936.64s -> 940.32s]  stores that opcode okay and then you have to do a couple other things when
+[940.32s -> 946.08s]  you flush and so forth okay and then now you need to do another loop where
+[946.08s -> 953.20s]  you actually go ahead and print out the return value which you have to do by
+[953.20s -> 963.40s]  another p-trace function okay all of this is written for you okay and what
+[963.40s -> 967.88s]  you're going to do is you are going to modify it to actually get more
+[967.88s -> 974.56s]  details out of it okay so you need to change trace dot CC to support simple
+[974.80s -> 981.28s]  and print out these these details like this again this one's not getting the
+[981.28s -> 984.36s]  names or using those maps at all it's just saying look a system call
+[984.36s -> 988.80s]  happened the number was one here was the return value okay and that's that's
+[988.80s -> 992.32s]  what it was and then program exit in fact there should be a new line right
+[992.32s -> 998.48s]  in there I have to fix the fix the output here okay all right there's some
+[998.48s -> 1005.08s]  words of wisdom and for the simple trace and again don't worry about the
+[1005.08s -> 1010.04s]  details of the numbers they will they're important but they're not specific like
+[1010.04s -> 1014.04s]  they will be different on different times through the program okay then you
+[1014.04s -> 1020.24s]  have to go for full mode and full mode is basically the same idea okay again I
+[1020.24s -> 1026.32s]  have a missing new line here I'll have to fix that it has a it's
+[1026.32s -> 1032.84s]  basically the same idea except now you have to get the actual details of the
+[1032.84s -> 1038.08s]  what function call it is and this is where you're going to read through the
+[1038.08s -> 1042.96s]  maps that get the error number and get the actual names of all the
+[1042.96s -> 1047.50s]  function calls we've actually pulled those from some header files but we've
+[1047.50s -> 1055.90s]  given those those details to you okay all right let's see how do you
+[1055.90s -> 1061.18s]  actually get the argument the argument lists another map so these are all the
+[1061.18s -> 1064.70s]  little maps you have to read through and I'll let you read the details of all
+[1064.70s -> 1071.46s]  of those there okay this is pretty specific again I don't want to
+[1071.46s -> 1074.02s]  necessarily go through all the details it's all written out for you
+[1074.02s -> 1078.98s]  here but it's a matter of knowing the maps and knowing how to read through them
+[1079.50s -> 1088.66s]  and actually get those details okay all right it's more output here and again
+[1088.66s -> 1093.98s]  we've talked a little bit about p-trace as you go through here the
+[1093.98s -> 1098.96s]  maps here's where it talks about the different maps here that you have to
+[1098.96s -> 1104.42s]  use for getting the system call names and the error messages and so forth okay
+[1104.78s -> 1110.10s]  lots of details here that you have to read through okay so basically what's the
+[1110.10s -> 1113.94s]  takeaway on this this is one of the harder parts of this assignment I think
+[1113.94s -> 1118.30s]  it's it's challenging mainly because there's a lot going on and there's a lot
+[1118.30s -> 1123.10s]  of things like reading memory from another program through registers that
+[1123.10s -> 1130.70s]  seems tricky and it's it's it's not easy but it's not too too bad when you
+[1130.70s -> 1136.42s]  actually go and and dig into the details again feel free to ask questions
+[1136.42s -> 1139.88s]  on piazza come to office hours and we'll help you out if you have trouble
+[1139.88s -> 1147.54s]  understanding what you're trying to do okay so the final part of assignment
+[1147.54s -> 1153.98s]  three is kind of a cool program called farm which is basically going to use
+[1153.98s -> 1160.46s]  all the cores on a particular myth machine to factor numbers for you okay
+[1160.46s -> 1162.62s]  and there's going to be all sorts of processes that you're going to launch
+[1162.62s -> 1169.66s]  onto the various processors of the myth machines and they are going to wait for
+[1169.66s -> 1176.46s]  your program to feed them numbers and they are going to factor those numbers
+[1176.46s -> 1183.50s]  okay so here's how it actually works take a look at this Python program now
+[1183.50s -> 1188.10s]  the actual factoring is gonna be done live by a Python program you don't
+[1188.10s -> 1191.30s]  really need to understand Python necessarily it's although it's a fairly
+[1191.30s -> 1196.42s]  easy program here to understand but basically Python get this Python
+[1196.42s -> 1199.94s]  program checks the command-line arguments and see if it's self halting
+[1199.94s -> 1204.38s]  or not and then it and it is self halting as it turns out when we when
+[1204.38s -> 1208.38s]  we run it and it is going to get its own PID and then it's going to go
+[1208.38s -> 1211.74s]  through this while loop and in the while loop the first thing it's going
+[1211.74s -> 1214.62s]  to do is it's going to stop itself in other words it's going to pause
+[1214.66s -> 1221.70s]  itself to wait for input from your program okay so it's going to be a farm
+[1221.70s -> 1226.30s]  of all these different processes that are waiting for input from you as the
+[1226.30s -> 1232.62s]  coordinating process from your parent as it turns out okay once you your
+[1232.62s -> 1240.42s]  program continues this Python program it is going to read in a number okay
+[1240.50s -> 1247.46s]  and it's going to read the number and then start a timer immediately because
+[1247.46s -> 1250.18s]  we want to time how long it takes to factor these and it's going to
+[1250.18s -> 1256.10s]  actually factor it then it is going to stop the timer and then it is
+[1256.10s -> 1259.14s]  going to print out the factorization okay and then it's going to continue
+[1259.14s -> 1264.30s]  back in the while loop and wait for another number eventually you will close
+[1264.38s -> 1271.46s]  the input that you are sending to the to this Python program at which point it
+[1271.46s -> 1276.58s]  will close the actual Python program okay so that's how the Python program
+[1276.58s -> 1281.66s]  does it it's the one doing the factoring okay so what do you have to
+[1281.66s -> 1284.66s]  do for this well this is how it works you say something like print F 1
+[1284.66s -> 1289.66s]  3 or 5 7 new line 1 3 or 7 8 new line and then dot slash factor dot PI
+[1290.10s -> 1295.82s]  and they will take a those numbers one line after the other and factor each
+[1295.82s -> 1301.62s]  one of them that's how the factor program actually works okay and you can
+[1301.62s -> 1306.62s]  time it you can do multiple ones there okay now if you have it as self
+[1306.62s -> 1312.38s]  halting well you can start it out and then it just immediately stops okay and
+[1312.38s -> 1316.94s]  then you can send the kill system call which basically remember it doesn't
+[1316.94s -> 1322.42s]  necessarily kill it it actually in this case continues it okay and then the
+[1322.42s -> 1327.82s]  number you want to actually factor gets printed out here and it tells you
+[1327.82s -> 1334.62s]  how long it takes and so forth okay so that's how the the actual pro Python
+[1334.62s -> 1341.58s]  program works okay this factorization is not a fast factorization you will see
+[1341.58s -> 1344.10s]  that when you this is actually good for testing because you can test and
+[1344.10s -> 1347.94s]  see how long it takes to do these things it's not not fast which is good
+[1347.94s -> 1356.30s]  okay your job is to write a program that runs on the myths and spawns
+[1356.30s -> 1361.78s]  several what we call workers one for each core and then of the self halting
+[1361.78s -> 1368.54s]  factor and then sends numbers to that program to be factored okay so here's
+[1368.54s -> 1371.86s]  how it might work you might say time print F and then this long string
+[1371.86s -> 1376.22s]  separated by new line number separated by new lines and then send it into farm
+[1376.22s -> 1380.70s]  it's as if you typed those numbers on the standard in by the way and then it
+[1380.70s -> 1383.50s]  should say how many CPUs there are it should number them all it should send
+[1383.50s -> 1387.00s]  all the workers on different CPUs and then it should start factoring them
+[1387.00s -> 1394.34s]  okay and it will factor all those numbers one on each core as it turns
+[1394.34s -> 1397.84s]  out and it will take about the same amount of time for each one but the
+[1397.84s -> 1403.32s]  total time is only gonna be the basically the time to do one because
+[1403.32s -> 1409.24s]  they're all happening in parallel okay so that's some that's the the basic
+[1409.24s -> 1413.12s]  idea of course there is a struct here that you have to understand called
+[1413.12s -> 1425.30s]  worker okay and there's a let's see worker has a it is a c++ struct by
+[1425.30s -> 1428.18s]  the way so it has things like constructors in it so it's got a
+[1428.18s -> 1437.78s]  constructor that takes in an argument and the arguments for the constructor are
+[1437.78s -> 1442.10s]  the rather the parameters that end up getting processed for the constructor
+[1442.10s -> 1447.38s]  it basically sets SP to be this guess what that's a sub process which is
+[1447.38s -> 1452.98s]  from your other program and then it immediately sets it to be not
+[1452.98s -> 1459.42s]  available and it only becomes available when you actually allow it to
+[1459.42s -> 1464.58s]  become available you'll see that later okay and then it has the two variables
+[1464.58s -> 1471.10s]  that it has inside the struct okay alright and then there's a couple other
+[1471.10s -> 1479.14s]  constants in here and then in mean what we do is we have a signal okay
+[1479.14s -> 1485.14s]  which is SIG child and mark workers is available remember SIG child that gets
+[1485.14s -> 1491.14s]  SIG child actually gets called rather the signal handler for SIG child gets
+[1491.14s -> 1498.34s]  called when the your process continues or stops or halts okay all
+[1498.34s -> 1501.06s]  right and then you're going to spawn all the workers you're going to
+[1501.06s -> 1505.54s]  actually launch them all then you're going to send all the workers all the
+[1505.54s -> 1508.42s]  numbers to those workers then you're going to wait for them all to be done
+[1508.42s -> 1514.02s]  and then you're going to close them all okay that's the basic idea of this
+[1514.02s -> 1521.30s]  program okay so you can read all the details about this as far as what what
+[1521.30s -> 1528.86s]  is responsible what you're responsible for in there okay and but basically we
+[1528.86s -> 1532.66s]  have we've implemented a little bit of some of these things most of this
+[1532.66s -> 1536.22s]  in here to actually broadcast the numbers to workers you have to write a
+[1536.22s -> 1542.18s]  couple more lines of code down here and basically this just kind of sets it
+[1542.18s -> 1548.46s]  up so that you can send the numbers to the to the workers okay and you also
+[1548.46s -> 1553.02s]  should make sure that you send Chloe you have a close all workers routine
+[1553.02s -> 1557.26s]  that sends that stops all those programs and remember how do you stop
+[1557.26s -> 1563.78s]  those Python programs you close the file that they are reading in from okay
+[1563.78s -> 1567.54s]  since if you can control D on the command line or if the if it was reading
+[1567.54s -> 1572.30s]  from a file and the file ended okay all right so that's basically it we give
+[1572.30s -> 1578.50s]  you some details about farm here but for the most part got the main
+[1578.50s -> 1583.68s]  function you have to implement these functions here okay mark workers
+[1583.68s -> 1586.34s]  available you have to implement spawn all workers broadcast numbers worker
+[1586.34s -> 1590.54s]  wait wait for all workers and close all workers okay the basic idea is
+[1590.54s -> 1596.18s]  send all of these numbers to a bunch of Python processes that are waiting for
+[1596.18s -> 1602.06s]  you to send them numbers all right that should do it thanks and again put
+[1602.06s -> 1607.62s]  your questions on Piazza or stop by office hours thanks

@@ -1,0 +1,237 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 3.86s]  All right, in part four of the lecture,
+[3.86s -> 6.64s]  I'll talk about a few algorithmic approaches
+[6.64s -> 10.26s]  that can also make behavioral cloning work pretty well.
+[10.26s -> 14.04s]  The first one I'll discuss is to use multitask learning.
+[15.94s -> 18.38s]  So this might seem a little paradoxical at first,
+[18.38s -> 20.34s]  but it turns out that sometimes learning many tasks
+[20.34s -> 21.34s]  at the same time
+[21.34s -> 24.08s]  can actually make imitation learning easier.
+[24.08s -> 28.88s]  So let's say that you would like to train your agent,
+[28.88s -> 31.22s]  let's say your vehicle, to drive to a particular location.
+[31.22s -> 32.60s]  Let's call it location P1.
+[34.36s -> 36.06s]  And you might have lots of demonstrations
+[36.06s -> 37.52s]  of driving to location P1.
+[39.08s -> 41.44s]  And then you'll train a policy A given S.
+[41.44s -> 44.42s]  So that's a pretty straightforward thing to do.
+[44.42s -> 46.66s]  But as we discussed before,
+[46.66s -> 48.92s]  if you want to train a policy like this to be robust
+[48.92s -> 50.82s]  so that it doesn't suffer too much
+[50.82s -> 51.66s]  from compounding errors,
+[51.66s -> 55.56s]  maybe you would really want to get the expert
+[55.56s -> 56.88s]  to make some intentional mistakes,
+[56.88s -> 59.40s]  put it into some states where it can recover
+[59.40s -> 62.64s]  from those mistakes and teach the policy that way.
+[62.64s -> 65.00s]  Well, what if you instead don't have
+[65.00s -> 66.64s]  such optimal expert data?
+[66.64s -> 68.36s]  Instead, you have data of the expert
+[68.36s -> 71.16s]  attempting to drive to lots of different locations.
+[71.16s -> 73.80s]  What you can do is you can actually train a policy
+[74.96s -> 77.52s]  that receives the desired location as input.
+[78.52s -> 80.08s]  And the way that you get the desired location
+[80.08s -> 82.32s]  is by just looking at the last time step
+[82.32s -> 84.64s]  that the human expert landed into.
+[84.64s -> 87.78s]  And then you'll train a policy for reaching any P.
+[87.78s -> 89.80s]  One of the nice things about this is that of course,
+[89.80s -> 91.80s]  the expert will visit many more different states
+[91.80s -> 94.58s]  if they're trying to go to many different locations.
+[94.58s -> 97.48s]  So by conditioning the policy on the location,
+[97.48s -> 100.50s]  you can still get a policy for location P1 that you wanted
+[100.50s -> 102.08s]  but you're getting a lot more training data
+[102.08s -> 103.20s]  and perhaps more importantly,
+[103.20s -> 105.44s]  you're getting data from lots of different states
+[105.44s -> 106.76s]  that the expert might not have visited
+[106.76s -> 108.40s]  if they were just trying to reach P1
+[108.40s -> 110.24s]  and if they were behaving optimally.
+[112.08s -> 113.64s]  So what you can do is something called
+[113.64s -> 115.48s]  goal condition behavior planning.
+[115.48s -> 116.76s]  At training time, you might receive
+[116.76s -> 118.60s]  a collection of trajectories
+[118.60s -> 120.84s]  where you're not even told what the expert's trying to do
+[120.84s -> 123.32s]  they're just sequences of states and actions.
+[123.32s -> 125.64s]  And you assume that whatever the expert was doing
+[125.64s -> 127.64s]  was a good example for the state
+[127.64s -> 129.40s]  that they actually reached.
+[129.40s -> 131.42s]  So you say that, well, demo one is a good demo
+[131.42s -> 133.26s]  for reaching the state S capital T,
+[133.26s -> 135.12s]  demo two is a good state demo
+[135.12s -> 137.00s]  for reaching whatever state that reached.
+[137.00s -> 140.00s]  And then you just feed in the last state
+[140.00s -> 141.76s]  as an additional input into the policy
+[141.76s -> 143.56s]  and train the policy to take the action
+[144.44s -> 145.60s]  that the expert took whenever the expert
+[145.60s -> 146.92s]  was trying to reach that state.
+[146.92s -> 149.34s]  And that gives you access to a lot more training states
+[149.34s -> 151.08s]  that provide much better coverage
+[151.08s -> 154.52s]  and hopefully give you many more of those instances
+[154.52s -> 156.12s]  where you might learn corrections.
+[156.12s -> 157.30s]  So in this case,
+[157.30s -> 159.00s]  while you still suffer from distributional shift,
+[159.00s -> 160.44s]  you might still make mistakes
+[160.44s -> 162.44s]  and find yourself in states that are unfamiliar
+[162.44s -> 164.90s]  for the particular goal you're commanding,
+[164.90s -> 167.60s]  that state might be more familiar for some other goal.
+[167.60s -> 169.00s]  And the other really nice thing about this
+[169.00s -> 170.64s]  is that you can actually leverage data
+[170.64s -> 172.22s]  that is more suboptimal
+[172.22s -> 174.42s]  because maybe the expert failed
+[174.42s -> 175.74s]  at reaching position P one,
+[175.74s -> 177.54s]  but they succeed at reaching some other position
+[177.54s -> 179.26s]  and you can still learn from that.
+[181.22s -> 183.66s]  So for each demo,
+[183.66s -> 185.90s]  you maximize the log probability
+[185.90s -> 187.02s]  of the action in the demo,
+[187.02s -> 189.86s]  given the state and given the last state in the demo.
+[189.86s -> 191.14s]  That's basically the entirety of the method.
+[191.14s -> 192.90s]  And this is goal condition behavior plan.
+[192.90s -> 195.30s]  So you just feed in two states instead of one.
+[196.80s -> 199.62s]  Now, one thing I will note here is that
+[199.62s -> 203.18s]  while in practice, this often makes things work better.
+[203.18s -> 205.54s]  In theory, this methodology
+[205.54s -> 206.86s]  is actually a little bit problematic
+[206.86s -> 208.84s]  because now we actually see distributional shift
+[208.84s -> 210.06s]  in two places.
+[210.06s -> 212.86s]  We see distributional shift as before,
+[212.86s -> 214.66s]  in the sense that our state distribution is different,
+[214.66s -> 216.42s]  our P train is different from, sorry,
+[216.42s -> 219.30s]  our P data is different from P pi theta,
+[219.30s -> 222.62s]  but we also see distributional shift in another place
+[222.62s -> 224.02s]  when we do relabeling like this.
+[224.02s -> 227.50s]  And I'll leave that part as an exercise to the reader
+[228.42s -> 230.06s]  and something we could discuss in class.
+[230.06s -> 232.30s]  So as a hint, we see distributional shift
+[232.30s -> 234.28s]  actually in two places when we train this way.
+[234.28s -> 236.34s]  And you could think about
+[236.34s -> 238.18s]  what that second source of distributional shift is.
+[238.18s -> 240.54s]  So in theory, this is actually potentially worse,
+[240.54s -> 242.26s]  but in practice, it's often better.
+[243.14s -> 244.38s]  So let me show you a few examples
+[244.38s -> 245.94s]  of works that have done this.
+[246.98s -> 248.82s]  The goal condition behavior cloning method
+[248.82s -> 252.74s]  was arguably popularized by these two papers,
+[252.74s -> 253.90s]  learning latent plans for play
+[253.90s -> 255.50s]  and unsupervised visual motor control
+[255.50s -> 257.30s]  through distributional planning networks.
+[258.06s -> 258.90s]  And I'll talk about learning the latent plans
+[258.90s -> 260.66s]  from play a little bit first.
+[260.66s -> 263.18s]  So the concept there was to collect data
+[263.18s -> 265.30s]  with humans that were not actually told
+[265.30s -> 266.98s]  to do any task in particular,
+[266.98s -> 268.22s]  but they were just told to play around
+[268.22s -> 269.74s]  with objects in their environment.
+[269.74s -> 271.38s]  So in this data set,
+[271.38s -> 273.78s]  the people are using a VR controller
+[273.78s -> 275.22s]  to control the simulated robot,
+[275.22s -> 277.82s]  and they're kind of performing random stuff.
+[277.82s -> 279.14s]  So they're not moving the arm randomly there,
+[279.14s -> 281.18s]  but they're performing random tasks.
+[281.18s -> 283.70s]  And that of course covers lots of different states.
+[283.70s -> 285.60s]  So a policy train on this kind of data
+[285.64s -> 287.52s]  would have a really hard time
+[287.52s -> 289.40s]  trying to find a state that is out of distribution
+[289.40s -> 291.32s]  because almost all the reasonable states
+[291.32s -> 292.96s]  have actually been seen in here somewhere,
+[292.96s -> 295.08s]  or at least states very much like them.
+[296.28s -> 298.00s]  But of course, it's not clear what task
+[298.00s -> 299.84s]  is being performed in each of the trajectories.
+[299.84s -> 301.16s]  So by taking this data
+[301.16s -> 302.68s]  and performing this goal relabeling
+[302.68s -> 304.60s]  where every trajectory is labeled
+[304.60s -> 306.12s]  with the state that was actually reached
+[306.12s -> 307.74s]  later on in that trajectory,
+[307.74s -> 310.04s]  and using a latent variable policy
+[310.04s -> 312.16s]  that can express multimodality,
+[312.16s -> 313.40s]  the authors of this work were actually able
+[313.44s -> 315.40s]  to get a pretty effective policy
+[315.40s -> 316.84s]  for reaching a wide variety of goals.
+[316.84s -> 319.62s]  So this uses that latent variable model from before,
+[319.62s -> 321.80s]  and it uses the goal relabeling.
+[321.80s -> 322.76s]  And putting them together,
+[322.76s -> 324.32s]  you can get a policy where you can give it a goal
+[324.32s -> 326.00s]  like a state where the door is closed
+[326.00s -> 327.44s]  or a state where the drawer is open,
+[327.44s -> 329.72s]  and the robot arm will actually autonomously go and do that.
+[329.72s -> 331.16s]  So you can see that it actually does
+[331.16s -> 333.26s]  a pretty significant variety of behaviors,
+[333.26s -> 334.54s]  all in a single policy.
+[337.20s -> 338.52s]  One of the interesting things you could do
+[338.52s -> 340.72s]  with these goal condition behavior cloning methods
+[340.76s -> 342.12s]  is you can actually use them
+[342.12s -> 344.76s]  as online self-improvement methods,
+[344.76s -> 346.70s]  very similar in spirit to RL.
+[346.70s -> 348.58s]  So these are not, I guess, true RL methods,
+[348.58s -> 349.64s]  but they're RL-like
+[349.64s -> 351.56s]  in that they can improve through experience.
+[351.56s -> 354.16s]  So the idea is that you can start with a random policy,
+[354.16s -> 356.48s]  collect data by commanding the policy
+[356.48s -> 358.08s]  to go to random goals,
+[358.08s -> 360.04s]  treat this data as demonstrations
+[360.04s -> 361.56s]  for the state that was actually reached.
+[361.56s -> 362.68s]  So relabel them with a state
+[362.68s -> 365.42s]  that these random trajectories reached,
+[365.42s -> 367.92s]  use that to improve the policy, and then run it again.
+[367.92s -> 369.20s]  And the idea is that initially,
+[369.20s -> 371.08s]  the policy does mostly random things,
+[371.08s -> 373.84s]  but then it learns about the actions
+[373.84s -> 375.40s]  that led to the states that it actually reached,
+[375.40s -> 378.12s]  and then it can be more deliberate on the next iteration.
+[378.12s -> 380.92s]  So the method simply applies this goal relabeling
+[380.92s -> 383.42s]  imitation learning approach iteratively,
+[383.42s -> 386.56s]  running relabeling imitation, then more data collection,
+[386.56s -> 388.76s]  then more relabeling and then more imitation.
+[388.76s -> 391.64s]  And that can actually be a pretty decent
+[391.64s -> 394.14s]  and simple way to improve a policy.
+[396.66s -> 397.50s]  The other nice thing
+[397.50s -> 399.16s]  about these goal condition behavior cloning methods
+[400.08s -> 400.92s]  is they're quite scalable.
+[400.92s -> 403.36s]  So you can apply them at a huge scale.
+[403.36s -> 405.44s]  This next case study I'm gonna tell you about,
+[405.44s -> 410.44s]  this was a paper led by Dhruv Shah and Ajay Sridhar,
+[411.92s -> 415.20s]  where what they did is they developed a policy
+[415.20s -> 418.56s]  for driving ground robots, not autonomous cars yet,
+[418.56s -> 420.28s]  but smaller scale ground robots
+[420.28s -> 421.12s]  that could actually generalize
+[421.12s -> 422.80s]  across many different kinds of robots.
+[422.80s -> 424.80s]  So it's a goal condition imitation learning method
+[424.80s -> 427.44s]  that takes in the current observation and the goal image,
+[427.44s -> 429.76s]  and actually takes in a history
+[429.76s -> 432.68s]  to deal with that non-Markovianness problem,
+[432.68s -> 434.32s]  and then it outputs the action.
+[435.60s -> 437.00s]  And it's trained on data collected
+[437.00s -> 438.44s]  for many different kinds of robots,
+[438.44s -> 442.68s]  ranging from small scale RC cars to full large scale ATVs.
+[442.68s -> 444.04s]  And the cool thing about this policy
+[444.04s -> 445.72s]  is that it can then reach goals,
+[445.72s -> 448.20s]  even for new types of robots that it was not trained in.
+[448.20s -> 449.20s]  Like for example,
+[449.20s -> 451.80s]  this drone in the top left corner of the video,
+[451.80s -> 453.16s]  the policy was never trained on drones,
+[453.16s -> 455.64s]  but it can actually control drones in zero shot
+[455.64s -> 456.80s]  by generalizing to them
+[456.80s -> 459.08s]  from being trained on lots of different vehicles.
+[459.08s -> 460.24s]  And you can see that it's using
+[460.24s -> 461.28s]  some of the ideas we discussed.
+[461.28s -> 463.36s]  It's of course using this goal relabeling trick,
+[463.36s -> 466.64s]  and it's using a history that is read in,
+[466.64s -> 468.60s]  in this case by just concatenating the frames,
+[468.60s -> 469.56s]  although in later work,
+[469.56s -> 472.16s]  it's also read in with a sequence model transformer.
+[473.52s -> 474.92s]  The last thing I want to mention here
+[474.92s -> 477.56s]  is a paper called hindsight experience replay,
+[477.56s -> 479.88s]  which introduced a very similar principle,
+[479.88s -> 480.72s]  but in the context
+[480.72s -> 483.16s]  of off policy reinforcement learning algorithms.
+[483.16s -> 485.08s]  We'll talk about off policy reinforcement learning
+[485.08s -> 485.92s]  much more later.
+[485.96s -> 487.24s]  I wouldn't describe what this is yet,
+[487.24s -> 488.44s]  but I just wanted to mention this paper
+[488.44s -> 489.76s]  because it is something that often comes up
+[489.76s -> 491.04s]  in the context of this work.
+[491.04s -> 492.96s]  It is not doing goal condition behavior cloning,
+[492.96s -> 495.72s]  but it is applying a hindsight relabeling method
+[495.72s -> 499.16s]  to off policy RL and active critic methods.
+[499.16s -> 500.88s]  So we'll talk about off policy RL
+[500.88s -> 503.56s]  and we'll talk about active critic methods later,
+[503.56s -> 505.44s]  but I want to mention this because it is an idea
+[505.44s -> 508.92s]  that's also very widely used in current methods.

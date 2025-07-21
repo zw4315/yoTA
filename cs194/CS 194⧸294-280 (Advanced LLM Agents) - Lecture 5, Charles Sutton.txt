@@ -1,0 +1,929 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.88s]  introduction, let me start just by, before I get into the technical content, let me say,
+[8.88s -> 19.04s]  ah good, let me, I'll introduce myself because, so my journey is like, as Don said,
+[19.04s -> 25.28s]  I did a postdoc at Berkeley from 2007 to 2009 with Mike Jordan, which was fantastic.
+[25.76s -> 34.08s]  My, back during my PhD, what I worked on was machine learning, deep learning didn't exist then,
+[34.08s -> 39.52s]  and for natural language processing, so back when none of this stuff really worked.
+[40.72s -> 47.76s]  And then around the time I kind of left Berkeley, I started as a professor at Edinburgh,
+[47.76s -> 52.32s]  I started working on kind of machine learning for program synthesis, kind of co-generation
+[52.32s -> 56.64s]  and software engineering problems, these were very exciting to us at the time, but
+[56.64s -> 59.92s]  this was when we were just starting to get deep learning, so kind of none of this worked.
+[60.72s -> 65.36s]  And then I moved to Google in 2018, and it's only kind of very recently, and kind of when
+[65.36s -> 68.64s]  I've been at Google, I've been working on machine learning for code generation,
+[68.64s -> 72.80s]  and then kind of very recently, like in the past year, I've started to get interested in AI
+[72.80s -> 79.28s]  for security. So why am I telling you this? There's kind of three reasons, one is I always
+[79.28s -> 86.40s]  like to begin a lecture by professing my ignorance, so my background is very much more on the deep
+[86.40s -> 91.84s]  learning side than on the computer security side. So you're very welcome to ask me any
+[91.84s -> 95.52s]  questions you want about computer security, because fortunately Dawn Song is sitting in the
+[95.52s -> 100.96s]  front row, and we can get many of her group as well, so we can get kind of expert answers
+[100.96s -> 106.24s]  to a lot of these questions, even if I don't know them. And the other thing is just like,
+[106.48s -> 110.32s]  I like to give career advice, I have a blog where I give people kind of
+[110.32s -> 116.08s]  defined career advice and research, and because, you know, it's fun. And the one thing when I
+[116.08s -> 121.04s]  look back is that, you know, I mean, your career is very long, right? If you see, like,
+[121.04s -> 125.28s]  in the past couple of years, like things are febrile, you know, everything's changing
+[125.28s -> 131.12s]  every three months. You know, it's not the technologies that are on top now, you know,
+[131.12s -> 134.32s]  they're not gonna be on top in five years, they might not be on top in five weeks,
+[134.88s -> 138.96s]  the way things are. So like having kind of just like change is normal.
+[140.32s -> 144.88s]  Technologies change, and you want to learn how to change with them. And the other thing that I think
+[146.16s -> 153.92s]  is a theme of this talk and something that I liked in the course is kind of like thinking
+[153.92s -> 160.72s]  across different disciplines, right? So if you are working in machine learning, if you're working
+[160.72s -> 166.64s]  sometimes in applied research or product driven research, or if you're in tech building products,
+[167.36s -> 171.20s]  a lot of there's going to be the kind of machine learning tech, and there's also going to be the
+[171.20s -> 176.40s]  problem that you're trying to solve. And if you know only the machine learning part of it,
+[176.40s -> 180.64s]  and you don't think about, oh, kind of deeply about what problem you're trying to see,
+[180.64s -> 185.12s]  you're kind of missing a trick. Like the more you understand the kind of AI for computer
+[185.12s -> 188.32s]  security, the more you understand about computer security. Or if you're building a product,
+[188.32s -> 191.36s]  the more you understand about where your customers want, it'll help you to do better
+[191.36s -> 197.28s]  technical work. Okay, so that's the end of my sermon. And now I will start actually talking
+[197.28s -> 201.60s]  about kind of coding agents. So there's going to be three parts. I'll say a little bit kind
+[201.60s -> 206.64s]  of in general about kind of agents for code, like sweep bench, sweet agent type things,
+[206.64s -> 211.84s]  that'll be the first part of the talk. Then I'll start talking about AI and agents
+[211.84s -> 217.52s]  for computer security. And then at the end, I'll talk a little bit about a project that
+[217.52s -> 223.28s]  Dawn mentioned that I'm part of with a number of other people to do LL agents for finding
+[223.28s -> 233.36s]  security bugs. But I'm going to start off with being maybe a little bit philosophical about what
+[233.36s -> 237.44s]  LLM agents are since you're already partway through the class. And you've already seen
+[237.44s -> 242.32s]  a number of examples of agents. I wanted to give LLM agents a bit of a buzzword.
+[242.80s -> 248.72s]  So I wanted to give kind of my perspective on kind of what that buzzword means. Other people
+[248.72s -> 253.36s]  would say potentially different things and that's okay. But this is kind of what I would emphasize
+[253.36s -> 261.84s]  in terms of what seems kind of fundamental. So I would say the, so kind of the slide's a
+[261.84s -> 267.84s]  little bit abstract. I'll talk, start, I'll start talking about actual stuff in a few minutes in
+[267.84s -> 274.48s]  one more slide. But for me, if you asked me to define what an LLM agent is without the kind of
+[274.48s -> 280.64s]  buzzword, bullshit, whatever, I would say, look, it's a multi-turn LLM with tool, right?
+[280.64s -> 286.24s]  The mental thing is kind of this React loop that we're going to talk about. And what makes
+[286.24s -> 291.92s]  this fundamental? Like, why is this good? One is that you get dynamic computation time. So
+[291.92s -> 297.04s]  the point of like, if you just give, if you just prompt an LLM question answer, it has to
+[297.04s -> 302.16s]  start generating the answer right away. And maybe some of the earlier tokens kind of commit the LLM
+[302.16s -> 307.60s]  to an answer that it then has to like, that it doesn't want to contradict. Whereas if you
+[307.60s -> 312.72s]  give it kind of dynamic computation, if you give it, if the LLM can generate a thought,
+[312.72s -> 316.48s]  whether it's kind of a reasoning model or whether it's just prompted, that gives more
+[316.48s -> 322.48s]  computation time for harder problems. The other thing which we're going to talk a lot about
+[322.48s -> 328.00s]  is kind of information from external tools. And that's kind of another part of the point
+[328.00s -> 332.40s]  of agents is that you can actually, oh, I'm going to, is that for example, in coding agents,
+[332.40s -> 337.68s]  you actually run the code, see what happens, and then write different code based on the
+[337.68s -> 344.00s]  output. And it turns out that's incredibly powerful for kind of more complex code generation
+[344.00s -> 349.76s]  tasks. And we'll see examples of lots of other things you'd want to use external tools for in
+[349.76s -> 356.48s]  a, in kind of code generation software engineering type scenarios. The other thing that's maybe more
+[356.48s -> 364.32s]  from the, more from the kind of cognitive perspective of what's interesting about tool use
+[364.32s -> 369.20s]  is that tools give the agent the ability to test hypotheses, right? So the agent can,
+[369.20s -> 375.36s]  like in the thinking part of a loop, say, oh, I think that when I run this code on this input,
+[375.44s -> 379.44s]  it will break at line 13, and they can actually do it, see if it was right, and then kind of
+[379.44s -> 384.00s]  revise in later turns, like say something different if it turns out that this hypothesis was wrong.
+[384.80s -> 389.60s]  And then the, and I think that's something we're kind of, for some of these simpler tasks,
+[389.60s -> 395.92s]  you might not need that level of experimentation in the agent, but I think for more complex
+[395.92s -> 399.60s]  tasks, you will. And then the final thing this gives you, which I think is really good,
+[399.60s -> 403.52s]  it's like if you want the element to actually do anything, right, then it needs to interact
+[403.52s -> 406.32s]  with the external world. And that's, in one sense, that's what a tool is giving you.
+[407.44s -> 413.52s]  So the, I guess, so the main thing, maybe I disagree with what I wrote on the slides next.
+[414.32s -> 417.44s]  Like, so you could think of when people talk about planning or chain of thought,
+[417.44s -> 422.56s]  you can view these as like special cases of dynamic computation type, right? These are ways
+[422.56s -> 427.76s]  to use the extra computation that you get from having thinking tokens. This de-emphasizes
+[427.76s -> 431.20s]  multi-agent a little bit. That's, you know, maybe that'll turn out to be really important
+[431.20s -> 433.92s]  to have different interacting agents with different prompts. But I think the,
+[435.60s -> 438.80s]  you know, my sense is that that's still emerging. The jury is still out on that.
+[440.16s -> 446.72s]  Okay, so that is, okay, so that's the, that's going to be the end of the philosophy for now.
+[446.72s -> 454.16s]  I'll intersperse philosophy maybe into the rest of the lecture. I'm going to start by
+[454.16s -> 457.84s]  not talking about agents, though. I guess I've already started by not talking about agents.
+[457.92s -> 461.52s]  I'm going to continue starting the agents lecture by not talking about agents.
+[461.52s -> 465.60s]  And the next thing that's not agents that I'm going to talk about is evaluation.
+[466.72s -> 471.76s]  So, so the reason that I'm, the reason that I'm doing that will become kind of,
+[471.76s -> 480.32s]  I'll talk about that in a minute. So, before, when we first started to see big,
+[480.32s -> 486.24s]  but I want to talk a little bit first about, say, the prehistory of evaluating code generation
+[486.24s -> 496.72s]  in LLMs. So, when we start, there was a big kind of moment in, I guess, four years ago now,
+[496.72s -> 502.32s]  it doesn't feel that long, but it was, when we kind of saw a step change in the ability of
+[502.32s -> 508.00s]  LLMs to do code completion and code generation tasks. This was about the time the OpenAI Codex
+[508.00s -> 513.12s]  model came out, kind of the GPT-3 kind of iterations. And at that time, there were a
+[513.12s -> 518.00s]  couple of kind of evaluations of kind of code generation capabilities that people were doing at
+[518.00s -> 524.64s]  the time. And WPP that we were, we did at Google and kind of human eval from OpenAI. And these
+[524.64s -> 529.84s]  are kind of broadly similar things. And what these are is basically natural language to code.
+[529.84s -> 536.24s]  So, these would, each of these data sets would have, you know, order several hundred examples
+[536.24s -> 540.88s]  where you would generate a small Python program, maybe five or 10 lines of code.
+[540.88s -> 544.00s]  And you wanted to do that given like a one or two sentence prompt
+[544.00s -> 547.60s]  that says what the code is supposed to do and a series of assertions.
+[548.96s -> 554.16s]  And at the time, this was, you know, at the time that this came out, like,
+[554.88s -> 561.36s]  I'll say more later, and these were both kind of generated by people. So, we, there were kind
+[561.36s -> 568.24s]  of human annotators kind of wrote the programs and the problem descriptions. So, I don't
+[568.24s -> 574.80s]  recommend using these evaluations anymore. They're kind of more like MNIST. But I think they're,
+[574.80s -> 578.08s]  they let me talk about a couple of points. That's why I'm starting with this.
+[579.60s -> 583.20s]  One, and at the time that these came out, it was kind of amazing that a language model
+[583.20s -> 587.84s]  could generate, you know, an entire function of 10 lines of code, right? That's not amazing
+[587.84s -> 593.28s]  anymore. So, one thing that's interesting about this, I'll come back to later, is I want to
+[593.28s -> 599.28s]  talk about kind of both how you would use these to do evaluations and why you don't use them anymore.
+[599.84s -> 606.48s]  So, when we talk about how you use them to do evaluations, the, so what we would do for
+[606.48s -> 612.24s]  these data sets is we measure passive k. So, how often, given the kind of natural language prompt,
+[612.24s -> 620.00s]  do we get a correct answer in k samples? So, if we go, if I, so if you take, if you like my
+[620.00s -> 625.28s]  fancy AI-generated graphic there, if you take a prompt and get, say, k samples from the model
+[625.28s -> 630.56s]  and just say, kind of run them all on those, a set of assertions that maybe the model, the model,
+[630.56s -> 635.36s]  ones that model did see, maybe a few hidden ones the model didn't see, and then say, okay,
+[635.36s -> 640.48s]  how often does the program pass those assertions? And then if any of them pass, you get a score of
+[640.48s -> 645.44s]  one for pass at k for this example. So, the reason I'm telling you this is there's some
+[645.44s -> 650.64s]  principles of this that even though we don't use MPPP or human eval anymore, you probably shouldn't,
+[652.00s -> 655.60s]  there's some principles of this that you do want to use when you define evals.
+[655.60s -> 662.80s]  One is that this requires an automated correctness check to work. Having that, if you, if it's all
+[662.80s -> 666.16s]  possible for you to have that when you're defining an eval, you want to have that.
+[667.20s -> 671.20s]  The other thing that's kind of nice about this, you don't see this as much in agents because
+[671.20s -> 677.12s]  it's so much more expensive to run, is that you get to measure kind of explore exploit behavior
+[677.12s -> 683.12s]  if you can afford to do a pass at k eval. So, if you had a model that like always produced
+[683.12s -> 688.24s]  the correct answer, it was either always right or always wrong, and there was no diversity
+[688.24s -> 693.28s]  in its output, it's kind of pass at one would be the same as pass at k. Whereas like,
+[693.28s -> 696.88s]  if pass at k kind of goes up sharply, that's telling you, well, maybe the model's first
+[696.88s -> 700.16s]  solution is always correct, but it's giving you more diversity. That's kind of interesting.
+[700.72s -> 705.68s]  The other thing to point out here is kind of an interesting question, like does pass at k
+[705.68s -> 711.04s]  match what you want when you deploy the model? And the answer is sometimes yes and sometimes no.
+[712.40s -> 717.76s]  If you are doing code completion, you probably don't care as much about pass at k because I'm
+[717.76s -> 721.68s]  not going to show every time I hit the completion button, you get to see 10 examples and pick the
+[721.68s -> 726.96s]  one that's right. That's probably not so good. Whereas if you're doing something more agentic,
+[727.68s -> 731.68s]  it might be fine. It might be perfectly fair to say, I mean, it is perfectly fair to say,
+[731.68s -> 736.56s]  oh, in production, I'm going to generate k samples, keep the ones that pass the test cases
+[736.56s -> 742.32s]  and only show, say, a highly ranked one of them to the user. So, sometimes this is kind
+[742.32s -> 745.60s]  of reasonable, sometimes it's a good metric, sometimes it's not. So, it's always interesting
+[745.60s -> 752.00s]  to think about for this particular way in which I'm evaluating a coding tool, does it match
+[752.96s -> 759.28s]  the way I'm actually going to use it in production? Okay, this is maybe not, I'm just putting this
+[759.28s -> 763.84s]  because I think it's cool, it's a little statistical aside, which you may or may not know.
+[763.84s -> 768.56s]  And since like machine learning used to be based on statistics, you see less of that work anymore,
+[768.56s -> 775.84s]  I find it kind of interesting. So, if you are, so how do you want to compute, like say I care
+[775.84s -> 780.48s]  about pass at 10, right? How am I going to compute that? Well, the naive thing you could
+[780.48s -> 784.96s]  do is I could say, well, take a hundred samples from the model and say, okay, what percentage
+[784.96s -> 790.32s]  of them actually passed? So, maybe it's 20%. And then what I want to know is if I take 10 samples
+[790.32s -> 796.24s]  from this, how much does it, how likely I'm going to get it? And so, you can take 20%
+[796.24s -> 800.72s]  and plug it into that. It turns out that's bad, that's a really noisy statistical estimate.
+[801.28s -> 807.60s]  So, it turns out it's much better to say, take those 10 samples and then say,
+[807.60s -> 813.28s]  if I take those hundred samples and say, if I take a sub sample of 10 without replacement, right?
+[816.88s -> 822.08s]  How often do I get at least one success? And that's the estimate of this proposed in the
+[822.08s -> 825.52s]  codex paper where they talk about human eval. I don't know, I just think that's cool.
+[826.24s -> 829.60s]  Okay, so now let me, so I've gone through this at length. And the reason that I've gone
+[829.60s -> 834.88s]  through this is to get to this slide, which is like, what is the design of a good evaluation
+[834.88s -> 840.56s]  for coding agents or for agents in general? And in 2021, I think these were probably reasonable
+[840.56s -> 845.92s]  evals at the time. And there were kind of three, and the reason is that they could drive model
+[845.92s -> 850.64s]  development. The reason is, the reason they could is that they were kind of just hard enough
+[852.08s -> 856.24s]  so they're not floor, they're not at ceiling. So, that when you improve the base model,
+[856.24s -> 860.08s]  you would actually see a difference in these numbers. And then at the time they kind of
+[860.08s -> 865.12s]  weren't leaked, right? So, they weren't already on the internet. Now, probably not, right?
+[865.68s -> 869.84s]  They're kind of too easy. It's kind of too easy to over, you could overfit to the assertions
+[870.40s -> 874.72s]  and they're certainly leaked. So, these are probably more like the MNIST of code evals now.
+[875.36s -> 879.36s]  The reason I go through this is when we look at other evals, we can ask kind of the same
+[879.36s -> 887.68s]  question. So, the probably most influential so far kind of, so let's now move to evaluations kind
+[887.68s -> 894.96s]  of used for agents. So, the most influential evaluation has been SWE bench. So, let me kind
+[894.96s -> 899.36s]  of talk, which I didn't, maybe I have the citation on a different slide, but it's easy to find.
+[901.60s -> 907.12s]  So, what SWE bench is a way of kind of generate, it's a data set of real-world coding
+[907.12s -> 915.12s]  problems that have been collected from Python repositories on GitHub. So, one example of a,
+[916.00s -> 923.36s]  an example from the data set is here. So, the idea is that they would talk about filtering
+[923.36s -> 928.96s]  to the next step. So, the idea is you would have a problem statement, which is actually from
+[928.96s -> 933.76s]  kind of a statement from the GitHub issue tracker. This is, one thing I point out here
+[933.76s -> 939.20s]  is just kind of the issues will often contain kind of pointers to a part of the code or
+[940.16s -> 948.96s]  that you want to modify and all of these examples have test cases that were part of the patch
+[950.08s -> 955.12s]  and there's cases for which before the patch, the test case fails and after the patch,
+[955.12s -> 960.96s]  the test case succeeds. So, you have for each of these, you have kind of a test case,
+[961.60s -> 967.52s]  you have an issue description, you have a change to the tests and you have a patch. And so,
+[968.08s -> 974.72s]  the goal of the SWE bench is generate the patch from the description.
+[976.00s -> 981.76s]  And these are, okay, so I've talked about, so there's some steps of filtering you do,
+[981.76s -> 987.28s]  like kind of just fail to pass filtering and also the fact that you can actually install and
+[987.28s -> 995.52s]  run the projects. And I wanted to show in terms of looking at the domain. So, this has been
+[996.24s -> 1001.12s]  kind of very influential because at the time that it was introduced, it was kind of at the
+[1001.12s -> 1006.72s]  Goldilocks level, that the kind of baseline LLMs were getting like two or three percent
+[1007.52s -> 1011.76s]  and then as soon as we switched agents, we got kind of non-trivial boost. So, this was kind
+[1011.76s -> 1018.08s]  of introduced, it was interesting, a subset of real world tasks that was introduced just at
+[1018.08s -> 1022.32s]  the right time where this could drive model development. And so, it's kind of been very
+[1022.32s -> 1028.48s]  influential and a lot of people have used it. What I would point out from the things in the bottom
+[1028.48s -> 1034.16s]  is on the left is a kind of a pie chart of which 12 projects this came from. And you can see
+[1034.16s -> 1038.88s]  there's kind of like, it's kind of a small set of domains, right? These are Python packages
+[1038.88s -> 1043.84s]  that are kind of, you know, mathematical data analysis, you know, web, right? So, there's kind
+[1043.84s -> 1049.84s]  of a, it's not covering the full range of software engineering tasks, but it is covering tasks
+[1049.84s -> 1056.80s]  that are interesting. And look at, you know, the set of files edited, the set of functions edited,
+[1056.80s -> 1060.48s]  it's kind of a big step above previous evals, but there's a lot, again, that it's not covering.
+[1062.48s -> 1069.44s]  The, so there's also, and then there's also a kind of a small, so one thing that's both kind
+[1069.44s -> 1077.52s]  of nice and not nice about this is that you have the issue descriptions that are coming,
+[1077.52s -> 1082.16s]  the issue descriptions are the ones coming from GitHub. So, that means that, you know,
+[1082.16s -> 1087.92s]  sometimes these are under specified or they're test cases that are just somebody was, they're
+[1087.92s -> 1091.52s]  tangled, somebody was fixing something in the code, they wrote some more tests, but it doesn't
+[1091.52s -> 1096.32s]  actually test the problem. So, there's a subset where these have been, where these have been
+[1096.32s -> 1102.72s]  removed. So, now let me pop up and say, okay, now let's ask the same question that we asked
+[1102.72s -> 1109.04s]  of the previous slide, which is, are these evals good? And the answer is, well, yes and no, right?
+[1109.04s -> 1113.84s]  So, as we said, this is a significant step up in realism and it's came at the right time to drive
+[1113.84s -> 1118.24s]  the fields, that's great. What's wrong with it? Oh, there are lots of things that are wrong
+[1118.24s -> 1122.80s]  with it, that's okay, there are lots of things that are wrong with everything. So, what's wrong,
+[1122.80s -> 1127.60s]  what's wrong here is that, you know, you can overfit to the test, right? The tests aren't an
+[1127.60s -> 1133.68s]  exact verifier, so you can produce a patch that makes the test pass but isn't actually correct.
+[1134.88s -> 1139.28s]  Maybe even something where it's been a little bit more is the natural language is out of domain
+[1139.28s -> 1145.52s]  in the sense that if you are interacting with an agent in your IDE and you want to tell it to
+[1145.52s -> 1150.08s]  make a change, you're probably not going to use the same types of natural language as you
+[1150.08s -> 1155.76s]  would in a GitHub issue description, right? Like maybe you've diagnosed the problem a little bit
+[1155.76s -> 1159.92s]  more. If you're going to share it with other people, then if you're just asking an AI in your IDE,
+[1159.92s -> 1164.56s]  please fix this. And there might, and some issues might contain things about the solution,
+[1164.56s -> 1168.16s]  right? About what part of the code the issue should be fixed, sometimes you know that,
+[1168.16s -> 1174.40s]  sometimes you're not. And so, we've talked about coverage a bit already and we've talked
+[1174.40s -> 1180.24s]  data leakage is, you know, when this data set came out, a lot of people were kind of worried
+[1180.24s -> 1184.80s]  about, oh, these are all from GitHub, this is in the training set of all the large models,
+[1184.80s -> 1189.60s]  should we be worried about that? And I think the answer is when systems are getting 2% on
+[1189.60s -> 1193.52s]  sweep bench, no, we should not be worried about that. When systems are getting, you know, 50%,
+[1193.52s -> 1198.40s]  we probably should. And then the other thing, whenever you do these kinds of historical data
+[1198.40s -> 1203.36s]  sets, I think something that people often don't realize is these commits are tangled.
+[1203.92s -> 1210.80s]  It's kind of often the case on open source repositories that a commit will not just fix
+[1210.80s -> 1215.12s]  the one issue that it claims to fix, but it'll do some other things. Like maybe it fixes another
+[1215.12s -> 1218.80s]  issue, maybe it does some other cleanup, right? So, that kind of affects the quality.
+[1220.32s -> 1223.60s]  It certainly affects the test cases, but it also affects, like if you were going to do
+[1223.60s -> 1228.64s]  supervised fine tuning on patches, that might not be, might not be such, there's problems with
+[1228.64s -> 1238.88s]  that. Okay. So, the reason I'm going through this at such length is that I think in large part,
+[1238.88s -> 1244.16s]  the quality of either the base LLM or the agent that you develop is going to be driven by the
+[1244.16s -> 1250.40s]  quality of the evaluation. And the reason for this is, I don't know, sometimes I like making
+[1250.40s -> 1256.24s]  analogies to statistical machine learning methods. Any kind of organization that builds
+[1256.24s -> 1262.00s]  either LLMs or LM applications, it's just doing a giant combinatorial optimization, right? So,
+[1262.00s -> 1266.96s]  you have a design space, you have a bunch of knobs, like we'll talk about the knobs for
+[1266.96s -> 1276.00s]  agents in a minute, and you say, okay, what if I set this knob this way? What if I add this tool?
+[1276.00s -> 1280.56s]  What if I change the system instruction this way? What if I clean up this part of the post
+[1280.56s -> 1286.08s]  training mixture? And then you try it and you see how the numbers change. So, if your numbers
+[1286.08s -> 1290.80s]  aren't good, you're hill climbing on the wrong thing. And I think that has a direct impact on
+[1290.80s -> 1296.08s]  how, whether the quality of your evaluations has a direct impact on the final system,
+[1296.08s -> 1301.12s]  whether it does what you want. And so, the things you want to think about are, like,
+[1301.12s -> 1304.96s]  you know, some obvious, like, I think the main one is the level of difficulty. You have to be
+[1304.96s -> 1308.88s]  in the sweet spot. Also, you want things that are realistic, that test what you care about,
+[1308.88s -> 1315.76s]  and that aren't leaked. And the other thing, like, all evaluations have a shelf life,
+[1315.76s -> 1319.60s]  right? Like, once they start out, you're kind of, they start out like with, say,
+[1319.60s -> 1324.16s]  MBPP human eval, they start out being kind of hard and un-leaked, and then, like,
+[1324.16s -> 1327.76s]  a couple years later, they're easy and leaked. So, it's just, like, you have to keep making
+[1327.76s -> 1336.32s]  new ones continuously. Okay. So, I, hopefully, I've spent enough time. So, I am kind of going
+[1336.32s -> 1340.72s]  into kind of, you know, technically simple stuff at length, but I think it is important
+[1340.72s -> 1345.76s]  to actually building these things. So, now, I can actually kind of talk about a code agent,
+[1346.56s -> 1349.92s]  which is kind of a good thing to do in a lecture on coding agents.
+[1350.64s -> 1361.04s]  And, you know, one that I thought was kind of a particular milestone was SWE agent. So,
+[1361.04s -> 1365.20s]  this was kind of one of the early ones that was kind of specifically designed
+[1365.20s -> 1373.68s]  for SWE bench-style tasks. In some sense, this talk is going to be very repetitive,
+[1374.56s -> 1379.20s]  because I think that we're all working with the same set of three or four ideas,
+[1379.20s -> 1385.04s]  right, in the kind of the base models or in the kind of, you know, application layer on top of
+[1385.04s -> 1389.60s]  it, which an agent is an example of this, like crank. And there's a certain thing,
+[1389.60s -> 1394.80s]  like, if you want to do an agent for, I don't know, you know, fixing AV issues versus an
+[1394.80s -> 1399.68s]  agent for kind of making patches to repositories, it's going to be a lot of the same types of
+[1399.68s -> 1403.44s]  engineering that you do. First thing you're going to do is to find an eval. The second
+[1403.44s -> 1408.08s]  thing you're going to do is kind of create something that looks like SWE agent. So,
+[1408.08s -> 1412.72s]  what SWE agent is, it combines like a bunch of different things that kind of, you know,
+[1412.72s -> 1419.68s]  people had all done kind of before, but it's kind of a powerful combination. So, one is that it's
+[1419.68s -> 1424.24s]  going to give you that we're going to instruct the model in such a way that it does kind of
+[1424.24s -> 1429.12s]  chain of thought in the sense that it explains what it's going to do before it does it.
+[1429.12s -> 1433.92s]  There's going to be a set of tools that are specific software developed, and the agent is
+[1433.92s -> 1441.76s]  going to get execution feedback. So, that way, like I've said before, you can get information
+[1441.76s -> 1450.00s]  about what happens. So, the main loop, which is going to be kind of what I call the React loop,
+[1450.00s -> 1455.60s]  and I put those emoji on there for a reason. React loop from the React paper a couple years
+[1455.60s -> 1459.52s]  ago. Oh, because I think this kind of loop is kind of at the heart of what it was saying
+[1459.52s -> 1465.04s]  about agents, of kind of this idea of kind of chain of thought plus tool use.
+[1465.68s -> 1472.16s]  So, all you're doing is basically, it's basically like a very simple loop where you say you,
+[1472.16s -> 1476.16s]  at every point, you have what we call a trajectory, right? Some text that the LM has
+[1476.16s -> 1482.16s]  generated so far. At every step, we ask the LM to generate more text, and then that text will
+[1482.16s -> 1488.08s]  end in a tool call in whatever format that you like, and then you get the tool call, you actually
+[1488.08s -> 1493.84s]  run it. Every tool is basically, to a first approximation, a Python function that outputs
+[1493.84s -> 1497.76s]  more text. Like, I'm not going to talk about multimodal agents, because we don't really
+[1497.76s -> 1501.36s]  need them for code. There's been less work on multimodal agents for code so far.
+[1503.76s -> 1507.60s]  And then whatever the output is, you just append it to a trajectory, and then you repeat,
+[1507.60s -> 1516.56s]  right? And that's it. So, this kind of loop, we'll talk about alternatives to this kind of
+[1516.56s -> 1520.56s]  control flow as well, but that loop alone is kind of very powerful. It's at the heart
+[1520.56s -> 1525.60s]  of a lot of what these things are doing. And in principle, the LM can generate whatever text
+[1525.60s -> 1530.72s]  that it wants, right? We would hope that it's something that actually helps it decide
+[1530.72s -> 1535.04s]  what tool call to use, and so we instruct it. You know, it's a system instruction in
+[1535.04s -> 1539.84s]  the beginning. I guess I should have initialized this with what we call like a system instruction,
+[1539.84s -> 1542.72s]  and that's going to tell you, that says it. Please explain what you're doing,
+[1542.72s -> 1547.92s]  and so then it will. So, one of the main design decisions here is like,
+[1547.92s -> 1552.80s]  well, what tools do you want to use? One option that you could imagine is, okay,
+[1552.80s -> 1559.36s]  we'll just give the agent access to a Linux shell and an IDE. Then the person can do on that
+[1559.36s -> 1564.32s]  machine. You can write whatever code it wants. This seems, I'm not saying this will be true
+[1564.32s -> 1570.40s]  forever. Right now, this still feels a little bit futuristic, right? Two weeks from now,
+[1570.40s -> 1577.12s]  who knows, right? And this is kind of another theme when we talk about the design of agents.
+[1577.12s -> 1583.84s]  Maybe this is one of the things I forgot to write on the slides, is that the design of the agent
+[1583.84s -> 1589.52s]  harness and the tools, you have to co-design it with whatever the model can do, right? So,
+[1589.52s -> 1592.96s]  when you're doing, if you're doing prompt optimization to try to decide, okay,
+[1592.96s -> 1596.56s]  how do I summarize the output of this tool? Well, probably the way you're doing it is
+[1596.56s -> 1601.84s]  you're adapting either knowingly or if you're part of the, or unknowingly, you're adapting to
+[1601.84s -> 1607.28s]  whatever the model is seeing in post-training data, right? Because the more, the closer you
+[1607.28s -> 1613.28s]  want whatever format to use to be things the model's familiar with. So, where we are now is
+[1613.28s -> 1620.24s]  like, okay, maybe right now option one is a bit ambitious. So, let's do something different.
+[1620.24s -> 1624.48s]  Let's make things easier for the model. So, what we'll do is we'll say, we'll design tools in
+[1624.48s -> 1628.80s]  such a way that there's going to be a small number of them that are kind of, that are kind
+[1628.80s -> 1634.08s]  of good for this task. And they'll have out inputs and outputs that are friendly to the agent.
+[1634.08s -> 1638.96s]  And there's kind of a really catchy term they use in the SWE agent paper. This is like an
+[1638.96s -> 1644.16s]  agent computer interface instead of a user interface. So, instead of HCI, there'd be a science of
+[1644.16s -> 1650.16s]  ACI. That might be going a bit far, but there are design principles here. So, what are they
+[1650.16s -> 1656.00s]  doing in SWE agent? Oh, okay. Yeah. Before I get to that, so like I said, a tool is just
+[1656.00s -> 1662.64s]  a Python function or a code that the agent can call and to get a string from the context.
+[1662.64s -> 1669.04s]  What do you want these things to do is when you're thinking about them,
+[1669.04s -> 1675.12s]  well, they should be easy to describe to the agent, right? So, you don't want to like
+[1675.12s -> 1679.76s]  make up technical terms, right? That like if you're writing, when you're designing a piece of
+[1679.76s -> 1687.36s]  software, you can invent vocabulary by different objects in the thing. Here, like you want,
+[1687.36s -> 1695.28s]  like the closer, I've heard this, I think some of the guys, I think I heard this from
+[1695.28s -> 1700.88s]  some of the people who developed Copilot is, so there's a lot of the initial, probably still,
+[1700.88s -> 1705.20s]  but certainly the initial version of Copilot, there's some really clever prompt engineering
+[1705.20s -> 1709.68s]  to make things work with the LM of that time. I'm sure there still is. And one thing that
+[1709.68s -> 1713.12s]  they talked about, they call it like the little red riding hood principle, right? That when you're
+[1713.12s -> 1718.08s]  doing prompt engineering, you want to kind of lead the model down a familiar path
+[1719.12s -> 1725.20s]  from post-training data. And I think that's true here as well, that you want kind of
+[1725.20s -> 1728.48s]  to be able to describe what the tool does in a way that the agent will have understood.
+[1728.48s -> 1735.76s]  That like there are plenty of web pages that talk about go jump to this line of code,
+[1735.76s -> 1741.84s]  right? So that's something that's natural. The other thing is you want the actions to be
+[1741.84s -> 1747.20s]  compact, right? Like you don't want something where the agent has to call four or five tools
+[1747.20s -> 1755.04s]  to do one logical thing. The other thing is you design the output of the tools, right?
+[1755.04s -> 1759.20s]  So you might say, you know, it might make a difference, oh, how do you handle trailing new
+[1759.20s -> 1764.48s]  lines in the output of some tool? Or if the output, if you're doing a code browser tool
+[1764.48s -> 1768.40s]  and there are many, many results, like how do you summarize that? Like there's different,
+[1768.40s -> 1774.00s]  there's different options. And the other thing you want to think about is that guardrails is
+[1774.00s -> 1780.56s]  like state. So like if you're talking about code editing, right? Then, you know, you could
+[1780.56s -> 1785.60s]  imagine something where it, say the agent adds, the first thing the agent does is add a stupid
+[1785.60s -> 1790.32s]  syntax error to some file and it doesn't realize it. And so then the rest of the trajectory,
+[1790.32s -> 1794.64s]  the agent is just messed up because no matter what it does, it hasn't fixed the syntax error,
+[1794.64s -> 1801.44s]  right? So you want to kind of try to have some error checking to avoid, especially for like
+[1801.44s -> 1805.60s]  stateful tools like code editing, getting the agent into a state, bad state that's easy to
+[1805.60s -> 1812.96s]  get out of. Okay. So what tools do they have in SWE agent? One is, well, I think they
+[1812.96s -> 1818.40s]  did, they did have a Linux shell, but that's maybe sometimes useful, but not so useful.
+[1818.96s -> 1824.72s]  But, but often like these tools are helpful. I would say there's like three types of tools
+[1824.72s -> 1830.08s]  you could think about in kind of agent, in this style of agent. One would be kind of
+[1830.08s -> 1835.76s]  information gathering. So that doesn't, doesn't help the agent solve, it gathers information,
+[1835.76s -> 1844.64s]  right? So in the case of, in the case of code, these would be kind of doing code search
+[1844.64s -> 1852.48s]  and kind of viewing code files. So you can, so this would be, and so you see some of the design,
+[1852.48s -> 1858.00s]  like this would be things like, oh, find this term in this file, find this term in any file
+[1858.00s -> 1862.88s]  in this directory. You notice that it's kind of a nice shortcut, right? You could imagine having
+[1862.88s -> 1866.88s]  just doing LS in the Linux shell and then doing, then the agent could do search file in any of
+[1866.88s -> 1873.60s]  these, that seems cumbersome, right? And then, you know, how do you deal with files that are
+[1873.60s -> 1878.08s]  too long for context here? What you can do is call the open, open to see part of a file and
+[1878.08s -> 1884.64s]  then have a specific kind of scroll commands. The, so the second kind of thing to do is acting,
+[1884.64s -> 1889.20s]  right? Which is just in this case, you know, make edits or create new files. And then you
+[1889.20s -> 1894.00s]  can get feedback by saying, okay, I'm done, please submit this patch. So, and I think in
+[1894.00s -> 1901.12s]  general, if you want more complex tools, I think most tools will kind of fit in to some kind of,
+[1901.28s -> 1906.32s]  to fit into this. You know, there are guard rails here that like, you know, if you make a dumb edit
+[1906.32s -> 1911.44s]  that kind of syntax error, a lender error, it just gets rolled back for you. So, and you can do,
+[1911.44s -> 1918.08s]  there's things like this. So, I mean, give you a sense of kind of what the, I couldn't fit
+[1918.08s -> 1922.00s]  a full, I will show some trajectories throughout this. I couldn't fit a full
+[1922.00s -> 1929.28s]  Swedish and trajectory on here. The, but here's kind of an example of the kind of explanations
+[1929.28s -> 1934.24s]  you might get, right? That you say, okay, oh, now I know what to do. We need to add a check to ensure
+[1934.24s -> 1938.08s]  that all of these things are the same. Let's edit the code. And so, it says, oh, replace
+[1938.08s -> 1945.20s]  these lines of code with this. The, or if you want to do like a kind of file search, you might,
+[1945.20s -> 1950.80s]  perhaps you want to, you know, you might like a lead the lines, you might provide line numbers,
+[1950.80s -> 1955.04s]  like these are kind of like, you need the line numbers so that you can use them in a subsequent
+[1955.04s -> 1960.64s]  command. So, you can design the tools to kind of fit together in this way. Typically, what you will
+[1960.64s -> 1969.92s]  see for this agent, you would typically see the tools are called in the order that you
+[1969.92s -> 1976.00s]  would expect. Like if there are some identifiers used in the issue description, then the agent can
+[1976.00s -> 1981.28s]  call the code browser tools to find kind of code that's relevant to it. At some point, one of
+[1981.28s -> 1986.00s]  these thoughts will say, oh, let me make this change and you see edits and then you might see
+[1986.00s -> 1991.68s]  like kind of multiple edits and then a submit. But the agent is restricted to that, right? This is
+[1991.68s -> 1997.52s]  just, as far as the model is concerned, there is just a string and the model is continually
+[1997.52s -> 2004.64s]  appending to the string. So, okay, so let me say, I'll say a little bit about the results and
+[2004.64s -> 2009.60s]  the sweep bench data. So, the first thing is I did kind of set it up and say, well, sweep bench was
+[2009.60s -> 2016.40s]  really hard when it came out. And so, if you look at, you know, whatever the state-of-the-art LLMs at
+[2016.40s -> 2021.44s]  that time and say what percentage of the, I think a couple thousand issues in sweep bench were
+[2021.44s -> 2026.56s]  resolved by the model, it's like one or three percent. And I can tell a kind of fun,
+[2026.56s -> 2029.44s]  I don't know if it's fun for me, I don't know if it's fun for you, story there,
+[2031.60s -> 2037.76s]  which is that when sweep bench first came out, you know, I thought it was kind of,
+[2037.76s -> 2041.76s]  thought it was a pointless evaluation because it was just too hard, right? Like,
+[2041.76s -> 2045.84s]  how do you hill climb on a model when you're getting one or three percent? So, it turns out
+[2045.84s -> 2050.56s]  I was wrong. And the reason that I was wrong about that is because agents are actually
+[2050.56s -> 2055.84s]  really good. So, like when you put an agent loop on top of these base models, you go from like
+[2055.84s -> 2062.24s]  one percent to twelve percent, right? And I think now the state-of-the-art in full sweep bench is
+[2062.24s -> 2069.68s]  quite a bit higher than that. So, it's like the fact that the agents came out, sweep bench came
+[2069.68s -> 2076.40s]  out as part of the reason, part of the co-development that happened. The one thing to
+[2076.40s -> 2083.20s]  point out is you might, one thing I can kind of experimentally criticize here, although I think
+[2083.76s -> 2089.68s]  this is a good paper, the results are good, is the, you know, an agent is going to have to
+[2089.68s -> 2095.36s]  generate more tokens, right, to get the kind of same level of performance. So, you see that
+[2095.36s -> 2101.04s]  as represented as the dollar average cost per successful trajectory in the second column.
+[2102.72s -> 2107.52s]  So, the fact, you know, you would like to know, you would like to see computation normalized
+[2107.52s -> 2113.04s]  results, like it would be interesting, like if I ran ten times as much do I expect, if I ran
+[2113.04s -> 2118.08s]  ten times as many, if I generate the same number of tokens on average from both. You know,
+[2118.08s -> 2123.04s]  here I think, like, you know, agents work, it's fine, but I think when you're comparing other
+[2123.04s -> 2127.60s]  changes to the agent, you might say, well, there might be some changes to the agent
+[2127.60s -> 2130.88s]  that look really good, but it turns out what you're doing is getting higher,
+[2132.40s -> 2137.52s]  is getting, like maybe you add, I don't know, some kind of grep tool that puts lots of tokens
+[2137.52s -> 2142.00s]  in the environment, and if it helps, that's great, but it might be that, oh, it's helping
+[2142.00s -> 2146.64s]  because it's adding more tokens to the average trajectory, and if you didn't have the tool and
+[2146.88s -> 2154.40s]  generated more trajectories, you could get the same point on the kind of cost performance curve.
+[2154.40s -> 2158.00s]  So, it's something, you know, you want to think about that when you're running these comparisons.
+[2159.92s -> 2163.92s]  There was something that I wanted to say about the shell-only agent,
+[2164.72s -> 2172.88s]  which I don't remember. Oh, well, okay, maybe we'll come back later. Okay, so that's kind of
+[2172.88s -> 2176.56s]  maybe the kind of the first kind of very dynamic React-style agent.
+[2177.44s -> 2184.96s]  So, now I want to talk about a different kind of agent design, and that's kind of the other
+[2184.96s -> 2191.20s]  extreme, which is called agent-less, you know, it's kind of like, yeah, so this was kind of
+[2191.20s -> 2196.16s]  like in terms of like where does, this is the other extreme in terms of how much control
+[2196.16s -> 2201.52s]  flow do you hand write? So, what we've talked about is kind of dynamic where the control
+[2201.52s -> 2206.40s]  flow is am I pending to a string? Everything else the LLM decides. The LLM could in principle
+[2206.40s -> 2213.76s]  implement whatever algorithm it wants on top of these tools. The other extreme is just procedural.
+[2213.76s -> 2221.52s]  So, basically, I will write some say Python code that does something natural for solving
+[2221.52s -> 2228.64s]  program repair tasks, and every time where it's kind of like where I might say, oh, okay, so first
+[2228.64s -> 2237.28s]  I'm going to iterate through every file in the project, and then I'm going to do that file is
+[2237.28s -> 2242.80s]  relevant to the issue description or whatever. And so, whenever you get to a point in the
+[2242.80s -> 2248.96s]  algorithm where you need to say, quote, unquote, magic happens, you call the LLM. And so, this
+[2248.96s -> 2253.60s]  basically like you have code, you have the logics and code, but then you're asking the LLM to make
+[2253.60s -> 2258.16s]  the, to make certain decisions in the middle of the control flow. So, that's basically what
+[2258.24s -> 2265.60s]  agentless is doing. So, there's kind of three, I say hard coded, I don't mean that in a pejorative
+[2265.60s -> 2271.76s]  way, kind of three steps. One is like figure out what you want to edit, then generate a patch,
+[2271.76s -> 2277.20s]  and then validate the patch. And I will give you a colorful diagram that says the same thing.
+[2280.56s -> 2285.92s]  So, what you're going to do is you'll have this workflow where at various points you call an
+[2285.92s -> 2291.44s]  LLM. So, you'll start by saying, okay, you have some code base, you textify the structure of the
+[2291.44s -> 2296.96s]  repository, you prompt the model to say, oh, which file should I look at? So, then you get,
+[2296.96s -> 2303.04s]  the model will give you a list of kind of top end files. And then each of those, you could say,
+[2303.04s -> 2311.28s]  okay, here is a skeleton of the kind of methods and classes within each of those files. Then you
+[2311.28s -> 2316.08s]  call the LLM again to say, oh, where does it look like I should edit? And then you can do that one
+[2316.08s -> 2321.84s]  more time to get a set of lines that you might want to edit. So, each one, at every point you
+[2321.84s -> 2326.96s]  have kind of an invest list of potential things that you might want to edit. And then you go
+[2326.96s -> 2331.92s]  through and say, okay, now for each one of these, let me independently give this to an LLM and say,
+[2331.92s -> 2337.04s]  hey, here's a description of the issue, generate a patch. And then what you can do is, and then
+[2337.04s -> 2343.44s]  once you have that, you apply the patch, let me see which ones pass. Now, one thing that's kind
+[2343.44s -> 2349.52s]  of important about SWE agent is you don't know what the test cases are, right? So, the agent
+[2349.52s -> 2354.56s]  itself has to come up with its own tests that hopefully describe the issue. All the agent has
+[2354.56s -> 2359.60s]  is it has the previous tests, which probably don't test the bug it's trying to fix,
+[2359.60s -> 2365.76s]  because if they did, the test would fail and the bug wouldn't be there. So, the agent's
+[2365.76s -> 2369.28s]  going to have to generate, going to have to propose its own tests and then run the test
+[2369.28s -> 2378.72s]  in the proposed patches. And so, that gives you a set of patches that are kind of plausible
+[2378.72s -> 2383.52s]  that in the sense it's a technical term, it means that they pass the agent generated test case.
+[2384.16s -> 2394.64s]  And then we kind of rank them and then one of them we submit. So, there's a very big table.
+[2394.80s -> 2403.68s]  So, I'm not going to read the entire table to you. This is a subset of the SWE bench leaderboard
+[2403.68s -> 2410.24s]  at the time that the paper came out. The order has now changed, but at the time that
+[2410.24s -> 2416.72s]  this came out, this was one of the best open source agents and it still is. The
+[2416.72s -> 2423.28s]  order is slightly different, but it's still kind of near the top. So, what I want to
+[2425.44s -> 2431.92s]  take away from this is what are the advantages and disadvantages of different agent designs.
+[2433.04s -> 2438.40s]  So, under the more dynamic SWE agent type approach, the LLM gets to choose what problem
+[2438.40s -> 2447.84s]  solving strategy it's using. So, if the LLM, if the model produces a patch that's nearly right
+[2447.84s -> 2454.32s]  and then there is a whatever, one of the tests fail, then you can extend that trajectory.
+[2454.32s -> 2458.48s]  The model can decide, oh, do I need to do some more code search in order to figure out, oh,
+[2458.48s -> 2463.92s]  that this thing has failed, why I wasn't able to get the patch right. Or maybe I just want to make
+[2463.92s -> 2469.84s]  a small change to the patch that's going to make it correct, right? The model has the
+[2469.84s -> 2475.76s]  flexibility to decide what strategy it's going to do. Whereas on the other side, for the more
+[2475.76s -> 2481.44s]  procedural one, if you have a case where you know the problem can be solved with a simple
+[2481.44s -> 2489.28s]  workflow, then why make the LLM figure out what the workflow is, right? And let the model spend
+[2489.28s -> 2493.36s]  more time actually trying to solve the problem and you kind of avoid tool use errors because
+[2493.36s -> 2498.08s]  the tool use is happening on top of the LLM rather than within the LLM. And, you know,
+[2498.08s -> 2502.32s]  you can avoid things where the LLM makes some initial mistake and then the whole trajectory
+[2502.32s -> 2512.64s]  goes off the rails. So the, what was it, I missed one thing there. Okay, yeah. So a lot of these
+[2512.64s -> 2518.24s]  come down to how do you want to budget the set of compute, the amount of compute that you have
+[2518.24s -> 2523.60s]  at test time? Like if you imagine that I have one kind of partial patch where it's failed,
+[2523.60s -> 2528.08s]  is it a better idea to kind of extend that trajectory and try to fix that patch or is
+[2528.08s -> 2532.24s]  it a better idea to throw it away and generate a new one, right? Agentless is more going to be
+[2532.24s -> 2540.96s]  like generate and test, whereas dynamic could choose. And the second part of this is that
+[2542.16s -> 2549.36s]  this may be a case where the kind of winner between the two of these depends on what type of,
+[2551.60s -> 2556.56s]  what's the word, depends on what type of problem you're considering, right? So for simpler,
+[2557.20s -> 2563.20s]  smaller patches, generate and test might be better, kind of I'm speculating here, but the,
+[2564.96s -> 2569.20s]  perhaps for longer, more complex changes, we will start to see, if we move to that,
+[2569.20s -> 2574.00s]  we will start to see more advantages to having more flexibility in the problem solving side.
+[2575.12s -> 2579.20s]  So that's the, so you think there's kind of a continuum in terms of, we've actually talked
+[2579.20s -> 2583.52s]  about three different coding agents so far. One, which I didn't talk much about, was just give
+[2583.52s -> 2588.08s]  the agent a Linux prompt. So that's kind of all, there's almost all the control was in the model.
+[2588.08s -> 2591.28s]  Then, or you could do something like SWE agent or agentless, and there's kind of a continuum here.
+[2592.00s -> 2599.36s]  And it may be that has the base model capability changes, has the amount of,
+[2601.76s -> 2606.24s]  and it has the complexity of the task, changes the design point here that you do might want
+[2606.32s -> 2613.60s]  to change. Okay, so there are, I think, three more kind of coding agents I wanted to talk about,
+[2614.56s -> 2619.20s]  but these kind of go faster and faster because they are kind of more similar to each other.
+[2620.08s -> 2626.08s]  So another one of the kind of highest performing open source agents right now
+[2626.08s -> 2633.52s]  is this one autocode rover, which is from this University of Singapore.
+[2634.32s -> 2639.04s]  There's another, I think the last time I checked, I think it was open hands was the biggest,
+[2642.16s -> 2645.76s]  was the highest, highest on the SWE bench leaderboard that might've changed.
+[2646.64s -> 2650.00s]  But I think there's a lecture from last semester on that, so I won't go into it.
+[2651.84s -> 2657.36s]  So for autocode rover, the two things I wanted to talk about here are the first one is that
+[2657.36s -> 2663.04s]  it has a different set of search tools. So it's that rather than being, oh,
+[2663.04s -> 2671.84s]  let me find the string in a set of files, it's actually indexing the methods and classes
+[2671.84s -> 2678.32s]  in the files in the same way that an IDE would. So you can have the search tools are things like,
+[2678.32s -> 2682.00s]  you know, find a class with this name, find a method with this name in this class.
+[2682.64s -> 2686.32s]  So that kind of changes the type of code browsing behavior you see,
+[2686.32s -> 2691.52s]  it can do kind of more explicit command click. I also wanted to talk about the
+[2694.64s -> 2702.72s]  kind of control loop here, which is that it's sort of a concatenation of dynamic agents.
+[2703.36s -> 2709.60s]  So there's kind of, there are two phases to this. One is kind of try to collect kind of
+[2710.48s -> 2714.40s]  information gathering, try to do code retrieval. And then the second part of it is actually
+[2714.40s -> 2720.24s]  generate the patch. And each one of the separate trajectory with a different system instruction,
+[2720.24s -> 2726.96s]  a kind of different set of tools, and then you run them one after the other.
+[2726.96s -> 2734.08s]  So it is kind of like kind of a in between point between agentless and SWE agent with
+[2734.08s -> 2740.16s]  some procedural control, some that's more dynamic. And the other thing that you get from having
+[2740.16s -> 2746.40s]  these two agent loops is kind of information hiding. Like if they were particular, if in like
+[2746.40s -> 2750.40s]  one for code searches probably doesn't matter so much, but there might be other types of
+[2750.40s -> 2758.24s]  agents you design where you care about this, which is that if you have a, you might want one
+[2758.24s -> 2762.00s]  of these kind of agent loops to come up with an answer and then you want to throw away the
+[2762.00s -> 2766.16s]  intermediate reasoning, just get the answer that it came up with and give that to another agent.
+[2766.16s -> 2770.64s]  That's something because you're worried that if you keep irrelevant things in the context,
+[2770.64s -> 2779.12s]  it will confuse things. So let me then the, I think I have two. So I didn't want, okay,
+[2779.12s -> 2784.96s]  that's fine. So the other, no, I'm going to do things out of order. The one, I will come back
+[2784.96s -> 2792.40s]  to those. So you can take this, you could take this kind of procedural control to another extreme
+[2792.40s -> 2796.48s]  and say, rather than say, rather than do filtering, you can have a state machine.
+[2796.48s -> 2805.04s]  So this repair agent is another kind of recent one where it's a similar,
+[2805.60s -> 2809.44s]  the way it's, so these are four kind of program repair tasks, a different
+[2809.44s -> 2814.56s]  data set. It's not sweep bench, but that's not so important. The kind of main thing is
+[2814.56s -> 2819.92s]  for doing program fixing is the design of the agents given by the state machine. So where
+[2819.92s -> 2824.88s]  we kind of designed the, what are the steps that we think you do when you investigate and repair a
+[2824.88s -> 2832.56s]  bug, each state is, has a kind of specific system instruction that says, please try to do,
+[2832.56s -> 2839.12s]  please try to understand the bug if you're in the state. And depending on which tool the model
+[2839.12s -> 2843.60s]  does next at the end of this, and then the models, then given the system instruction,
+[2843.60s -> 2847.84s]  the model is going to do some thinking, output a tool call, depending on which tool call is
+[2848.80s -> 2852.64s]  chosen, you move to a different state of the state machine. So if you're currently in the
+[2852.64s -> 2857.76s]  collect information state, then when you do a code search, you stay in that state and you
+[2857.76s -> 2862.80s]  can do more code searching. If you call the kind of right fix, that's a tool that moves you
+[2862.80s -> 2866.72s]  into a different state and changes your system instruction. So that's kind of a different way to
+[2866.72s -> 2874.00s]  get dynamic control with more information hiding. Okay. So the final thing I wanted to talk
+[2874.00s -> 2880.16s]  about, which is, you know, try, there is, although there are, so what I've been talking
+[2880.16s -> 2885.28s]  about are more kind of, kind of academic agents there, although there are a lot of industrial
+[2885.28s -> 2890.64s]  coding agents, there's less technical detail about them. So this is one of the,
+[2890.64s -> 2895.52s]  of the ones that I know that's kind of like a research agent moving towards being used in
+[2895.52s -> 2901.84s]  industry. So this is kind of a research agent at Google called passerine. And these are kind of
+[2901.84s -> 2907.52s]  several of, so I'm not involved in this work, several of my friends in the kind of developer
+[2907.52s -> 2915.44s]  tools org built this. And so this is an agent that is designed to solve kind of internal kind
+[2915.44s -> 2922.96s]  of coding issues that Google developers have. And the, what makes the Google code base kind
+[2922.96s -> 2929.84s]  of different and it's, it is that everything is in a mono repo. So this thing is rather gigantic
+[2929.84s -> 2934.72s]  and therefore we have kind of special, the build system has to take into account the fact that
+[2934.72s -> 2938.96s]  there's a mono repo that's so big that we can kind of store all of Google's code in our laptops,
+[2938.96s -> 2946.48s]  for example. So there was, I've talked about agents. So the first thing you have to do is
+[2946.48s -> 2950.56s]  kind of make an evaluation if you want to have this kind of thing. So what they did is
+[2950.56s -> 2958.32s]  there's kind of a sweet bench-like loop where instead of using GitHub pull requests, we use kind
+[2958.32s -> 2965.04s]  of internal bugs and fixes from our issue tracker system. So we'll take cases where there are bugs
+[2965.04s -> 2969.60s]  that were fixed and kind of some heuristics that these are kind of reasonable things that we
+[2969.60s -> 2975.76s]  want to use for an agent, like there's a change in tests and the kind of size of the
+[2975.76s -> 2980.48s]  patch and so on. And then we do a list of filtering to have kind of a curated test set,
+[2980.48s -> 2987.36s]  both of two different kinds of bugs. One is ones where the bug report was written by a person
+[2989.04s -> 2993.04s]  but it had kind of a small enough patch size and so on. And the other one is kind of automatically
+[2993.04s -> 2998.16s]  generated bugs. So these are things that, I'm going to talk about this a bit more in the computer
+[2998.16s -> 3008.56s]  security part of the lecture, is that when we're doing testing of Google code,
+[3008.56s -> 3014.00s]  sometimes we will run sanitizers. So these are kind of dynamic analyzers that kind of sit
+[3014.00s -> 3017.68s]  underneath the code that's running and check that certain bad things aren't happening.
+[3017.68s -> 3021.60s]  So one bad thing that could happen is a buffer overflow. So there's a particular sanitizer
+[3021.60s -> 3029.52s]  called address sanitizer, which you can use at home as well, where it tries to detect
+[3029.52s -> 3034.08s]  at runtime whether your executable is reading or writing out of bounds. And if it does,
+[3034.08s -> 3040.80s]  it causes a crash. So internally when these kinds of bugs happen, it creates automatically
+[3040.80s -> 3044.48s]  a report in our issue tracking system. So we have a number of reports like this.
+[3045.36s -> 3054.56s]  And so this research agent is kind of a react style dynamic agent like SWE agent. The
+[3054.56s -> 3060.24s]  difference is the tools are actually our Google development tools. So there's an API to kind of
+[3060.24s -> 3067.52s]  Google code search, our build system, which is called Bazel, and you can kind of view and edit
+[3067.52s -> 3076.00s]  files. So that's kind of passed around. And one thing I wanted to point out since I've
+[3076.00s -> 3083.36s]  talked about evals is what are the differences between this curated evaluation set and
+[3084.40s -> 3094.80s]  say SWE bench. So these top three plots are kind of different. They are cumulative distribution
+[3094.88s -> 3101.04s]  functions of different statistics of SWE bench versus our internal evaluation for pass-through
+[3101.04s -> 3107.84s]  line. And the SWE bench is the blue one, and then the other two are kind of the machine or
+[3107.84s -> 3115.20s]  human subset. So generally what it is, especially the, so this one is like how many identifiers
+[3115.20s -> 3122.80s]  are in the patch, how many files, how many lines. And so for example, especially the human
+[3122.80s -> 3129.52s]  patches from this data set kind of are larger, affect more files, kind of have more identifiers
+[3131.12s -> 3138.00s]  than what we see on SWE bench. SWE bench is more similar to these kind of sanitizer reports.
+[3139.84s -> 3149.20s]  So the, and then, you know, there's also, maybe I won't get into reports about the,
+[3149.20s -> 3157.84s]  you can look into how this agent performs. Okay. So that's going to be, so this is maybe a good
+[3157.84s -> 3165.12s]  place to stop for the coding agents part of it. So I'll get into AI for security next.
+[3166.24s -> 3174.48s]  But the main thing to, so I've talked about how agents drive the design of these systems,
+[3174.48s -> 3178.24s]  evaluations drive the design of these systems. The other thing is like,
+[3179.12s -> 3182.40s]  all of these are kind of more similar than they are different. I think we're all working on the
+[3182.40s -> 3191.28s]  same three ideas right now. So the, and the other thing about these is the ideas, I mean,
+[3191.28s -> 3196.08s]  I don't mean this disparagingly, the ideas behind all of these agents are fairly simple.
+[3196.08s -> 3201.28s]  It's just the design space is large. So there's kind of a large set of hill climbing that
+[3201.28s -> 3207.92s]  you do when you have this. So we talk about, so what is the design space? So one is, okay,
+[3209.44s -> 3213.52s]  we've kind of, we've talked, seen different examples of that. How do you handle control flow?
+[3213.52s -> 3218.40s]  Is it dynamic? Is there a state machine? Do you kind of recursively call an agent within
+[3218.40s -> 3221.76s]  a lower level agent? Like, you know, whatever, right? Do you just write the control flow in
+[3221.76s -> 3225.92s]  code? And then there is kind of the design of the text. Like what do you write in the
+[3225.92s -> 3230.64s]  system instruction? You can do kind of the general things you do for prompt tuning.
+[3230.64s -> 3235.44s]  You can tell the agent in kind of stronger or less strong language, how you want it to
+[3235.44s -> 3241.12s]  solve the problem, what order you want it to call the tools, how you describe the tools,
+[3241.12s -> 3248.16s]  how you summarize tool outputs, and so on. All of these things have to have sandboxes,
+[3248.16s -> 3253.20s]  right? Because you're running model generated code. So I guess there's kind of a right way
+[3253.20s -> 3256.64s]  to do that, but that's something you have to deal with. If you want to have an agent that
+[3256.64s -> 3261.20s]  is communicating with external services, right? All of these are hermetic, right? If you were
+[3261.20s -> 3266.00s]  doing something like to presage the next set of the talk, like penetration testing
+[3266.88s -> 3270.00s]  as an agent, then you need to figure, oh, this is actually communicating with external
+[3270.00s -> 3273.84s]  services. Or if you wanted an agent to manage your email, right? Like how would you,
+[3273.84s -> 3277.60s]  you have to think about, okay, how do you even kind of prototype that when you have to
+[3277.60s -> 3281.84s]  communicate with external services? And one thing we haven't talked about because these are
+[3281.84s -> 3285.60s]  research agents is, you know, what do we do? How would you involve a human in the loop?
+[3285.60s -> 3289.68s]  Like when do you ask for clarification questions? When do you ask for approval?
+[3291.44s -> 3298.16s]  Okay. So I think, and I think I already talked about this. So that is kind of what I wanted to
+[3298.16s -> 3303.60s]  say about kind of general coding agents. So the next part of the lecture is going to be more
+[3303.60s -> 3308.64s]  kind of AI for computer security, and then some of our own work in AI security. So now I want
+[3308.64s -> 3314.16s]  to kind of finish by talking a little bit about AI for computer security, which is kind of like
+[3314.16s -> 3322.00s]  maybe a more emerging area than AI for co-generation. Why did, oh, was this,
+[3322.00s -> 3327.76s]  oh, no, I didn't see that. Sorry. I'm confusing myself. So let me start. I'm just,
+[3327.76s -> 3331.76s]  I'm going to kind of dive in and talk about, you know, talk about evaluations, but
+[3333.12s -> 3339.12s]  for particular though, I want to start like one type of work that I want to start by talking
+[3339.12s -> 3346.16s]  about is kind of capture the flag competition. So that's one. So if you say, oh, I want to do AI
+[3346.16s -> 3353.60s]  for, if you start by saying, hey, I want to do AI for computer security, the questions are, okay,
+[3353.60s -> 3361.84s]  what problem do you want to try to solve within that? And how do you, so there is a particular
+[3361.84s -> 3367.20s]  type of competition that people have like at schools and security conferences, things like that,
+[3367.76s -> 3373.12s]  which are called capture the flag. What I like, I mean, what I like about these,
+[3373.12s -> 3379.20s]  at least as a stepping stone is that it gives some idea of the breadth of the type of real
+[3379.20s -> 3385.60s]  problems that you'd like to solve in AI for security. So that's why I think it's interesting
+[3385.60s -> 3394.96s]  to talk about. There's different kinds of CTF competitions. And I am probably going to kind of
+[3394.96s -> 3402.16s]  butcher this description a little bit. So feel free if you are a computer security expert
+[3402.16s -> 3409.36s]  in the audience. But the idea is there are different types of tasks that are like toy
+[3409.36s -> 3415.04s]  versions of something that you might do as a professional researcher, and that the task is
+[3415.04s -> 3421.60s]  set up in such a way that for this particular type of jeopardy task where there's a special
+[3421.60s -> 3426.32s]  message, which I call a flag. And if you do the task for a while, you will see something where
+[3426.32s -> 3431.52s]  you're like, oh yeah, that's the flag. Like, hey, I'm the flag or whatever. Maybe it's not that.
+[3432.72s -> 3438.32s]  And so, and then you solve the task and you can submit it. So like one example would be like
+[3438.32s -> 3443.12s]  there are kinds that are like digital forensics where they might say, okay, here's a file system,
+[3443.12s -> 3447.36s]  you know, find the hidden message, or they might give you more hints about what it is.
+[3447.36s -> 3452.56s]  And then you have to know, okay, how do I kind of look through this file system, do clever searches,
+[3452.56s -> 3456.88s]  you know, maybe more complex ones. I might need to do steganography, or I might need to
+[3456.88s -> 3462.64s]  like find a QR code or whatever. So this would be more like kind of modeling digital
+[3462.64s -> 3467.76s]  investigations. You know, then there's like the ones that are just cryptography where you have
+[3467.76s -> 3473.92s]  an encrypted message, you want to decrypt it. There are ones where you want to kind of
+[3473.92s -> 3478.48s]  pwn challenges, you want to exploit kind of memory vulnerabilities, you want to kind of find
+[3478.48s -> 3484.88s]  vulnerability and get a service. There are ones where you want to kind of identify
+[3484.88s -> 3489.52s]  vulnerabilities or the web ones where you want to do kind of injection or kind of
+[3489.52s -> 3496.16s]  cross site scripting attacks. And the reason I like to go through this is two. One is you can
+[3496.16s -> 3501.28s]  kind of see how these map, even though these are kind of games in some sense, you can see how they
+[3501.28s -> 3505.84s]  map to kind of real world tasks that you might want an agent to do. And the other thing that's
+[3505.84s -> 3510.72s]  nice is I think if you've been sitting in this class or even just in this lecture,
+[3510.72s -> 3515.12s]  by the end of this, I think if I just took one of those and gave like a random one of these
+[3515.12s -> 3520.16s]  to like any of you and said design an LLM agent for this, you know, you could do it, right? It's
+[3520.16s -> 3526.80s]  pretty obvious why you would want an agent to do any one of these tasks. So I mean, again,
+[3526.96s -> 3531.52s]  like we're saying for coding, like a kind of toy game benchmark isn't the same. It's not as complex,
+[3531.52s -> 3535.12s]  has a real world task, but I think if you can't do these, you're probably not going to be able
+[3535.12s -> 3540.08s]  to do the real world tasks either. So, and I think we're currently at the stage of
+[3540.08s -> 3546.64s]  agent development where kind of CDF tasks are still a challenge. So there are kind of several
+[3546.64s -> 3551.92s]  different data sets. Like some of them are kind of recent with kind of CT historical CTF
+[3551.92s -> 3557.84s]  competitions of different difficulties. So like this top one, the NYU one is maybe the most
+[3557.84s -> 3564.32s]  recent one. There's also one with from kind of a high school level competitions. And, you know,
+[3564.32s -> 3568.72s]  each one of these will contain kind of the task description, kind of sandboxing environment
+[3569.28s -> 3574.96s]  and a way, a rater that will automatically check like whether you found the flag or not.
+[3576.64s -> 3580.72s]  So that gives you something to start with. And I want to go through kind of one
+[3580.72s -> 3588.80s]  recent paper to show, okay, how would you use an agent for one of these tasks? So this one
+[3588.80s -> 3594.32s]  called Enigma is going to be the last, maybe the second to last agent I'm going to show you.
+[3595.12s -> 3602.96s]  They do all run together after a while. So what this is, so this is an agent to solve
+[3603.60s -> 3611.84s]  these capture the flag competitions. So it is a React style loop. So here's an example.
+[3611.84s -> 3616.32s]  And the, do I see on the next slide? Yes, I do. So this is just an example of
+[3616.32s -> 3619.36s]  running some of the tools like you can do, you can edit files and so on.
+[3621.36s -> 3630.00s]  So the types of tools that you have, there are the kind of the general sweet agent
+[3630.00s -> 3634.64s]  suite. So you can do file search, you can edit code, you can have a command line.
+[3634.64s -> 3639.36s]  But there's a few, one of the things I liked about this, a few kind of interactive tools
+[3639.36s -> 3644.32s]  that the agent can call, which you probably want for security scenarios. One of which is
+[3644.32s -> 3649.92s]  having a debugger. So there are just different tools that are like the kind of stateful tools
+[3650.48s -> 3653.52s]  as a way this is designed. I'll show you a different debugger design in a minute
+[3653.92s -> 3659.84s]  where the debugger says there's a command debugger start, debugger stop, debugger step.
+[3659.84s -> 3665.60s]  And those are just different top level commands that the agent can use. And also there are tools
+[3665.60s -> 3669.84s]  for connecting to servers. And again, these are implemented as three different tools that
+[3669.84s -> 3674.96s]  change the trajectory state. So the agent can ask to start a connection, stop a connection or
+[3674.96s -> 3682.80s]  send the line. And the other thing that is, it kind of does a kind of a natural idea that you
+[3682.80s -> 3688.24s]  don't see very much is a lot of these, like if you need to like examine a binary file as
+[3688.24s -> 3694.24s]  part of digital forensics, like you're going to run up your context length very quickly.
+[3694.24s -> 3699.12s]  So there is one like for long tool outputs, there is this kind of natural thing where,
+[3699.12s -> 3706.40s]  oh, let me just ask an LLM to summarize this long output. So the, and then there are
+[3708.24s -> 3711.84s]  one thing which is kind of like a useful trick for when you're designing your own agents
+[3711.84s -> 3716.72s]  is, well, the first thing is always look at the trajectories, right? It's just like when
+[3716.72s -> 3720.96s]  you're doing regular supervised learning, always, or evaluation, always look at the data,
+[3720.96s -> 3724.24s]  always look at the data, right? So here it's like always look at the trajectories, right?
+[3724.24s -> 3728.32s]  You want to see what mistakes the agent's making and use that to design the harness.
+[3728.32s -> 3732.80s]  So like, you know, one thing that's here is like there are kind of bullet points in the system
+[3732.80s -> 3736.56s]  instruction that says, oh yeah, I noticed the agent screwed up on this. Let me add a bullet
+[3736.56s -> 3740.88s]  point that says, please don't screw up in this way. And then it makes that error less often.
+[3742.08s -> 3749.68s]  Okay. So this had where, okay, let me, so this is, so this is then kind of agent
+[3749.68s -> 3755.92s]  kind of versus on the left versus no agent on the right. And we see overall you kind of a similar
+[3755.92s -> 3761.12s]  set of increase that you saw from like the initial SWE agent results, like going from basically
+[3761.12s -> 3767.52s]  nothing is solved, like three to 4% to like double digit percentage. So it's kind of nice when you
+[3767.52s -> 3773.20s]  see the, so it seems like maybe this is the same thing as a SWE agent, SWE bench kind of
+[3773.20s -> 3780.48s]  leaderboard, but at a different point in the curve. Okay. So that's basically what I wanted to
+[3780.48s -> 3787.36s]  say about more general capture the flag challenges. So I wanted to talk and by talking about a kind
+[3787.36s -> 3794.80s]  of specific security task, which is kind of vulnerability detection. So this would be like,
+[3794.80s -> 3799.76s]  you know, if you want to exploit a computer system to get, you know, unauthorized access or
+[3799.76s -> 3805.20s]  something like that, one way you could do this is by targeting bugs, right? And this kind of
+[3805.20s -> 3810.00s]  software or hardware network layer or whatever. So I'm going to talk specifically about,
+[3810.56s -> 3814.96s]  so a vulnerability is basically a bug in the system that has security implications.
+[3814.96s -> 3818.72s]  So I'm going to talk specifically about software vulnerabilities, both because I'm talking
+[3818.72s -> 3824.80s]  about coding agents and because that's, I think where most of the, most of the work has
+[3824.80s -> 3829.44s]  happened so far. So some examples like, you know, reading out of bounds or kind of cross-site
+[3829.44s -> 3833.44s]  scripting or something like that, where there's kind of, it could be a potentially a small bug
+[3833.44s -> 3841.04s]  in the program that the attacker can use to do bad things. So let me take an example
+[3841.04s -> 3848.32s]  of like an out of bounds, right? Which is kind of a particular bad we'd have. So there is a kind
+[3848.32s -> 3853.36s]  of taxonomy of these different kinds of software bugs that you can go to. And if you go to the
+[3853.36s -> 3858.24s]  taxonomy and say, okay, what kind of bug is it out of bounds, right? It'll show you C code
+[3858.24s -> 3863.28s]  that looks like the code on the right, where it says, oh, okay. Like one kind of illustrative
+[3863.28s -> 3867.44s]  version of this bug is, oh, if you have a function that returns negative one on error,
+[3867.44s -> 3871.36s]  and then I use that as an index, well, the negative one is going to get cast to,
+[3871.36s -> 3875.52s]  it could get cast to something unsigned, which is now going to point someplace way off into
+[3875.52s -> 3879.12s]  oblivion. And then you'll kind of write something to memory you didn't want one to.
+[3879.76s -> 3883.60s]  And then when you look at that, it really seems like detecting vulnerability should be pretty
+[3883.60s -> 3887.20s]  easy, right? Because you just want to kind of find this data flow and find things that
+[3887.20s -> 3894.40s]  aren't within the bounds. So here's another example of an out of bounds, right? So this is
+[3894.40s -> 3900.40s]  an example of a kind of function from the Linux kernel. I mean, the first example was probably
+[3900.40s -> 3904.08s]  relatively simple. You might've seen the bug right away. No, do you see the bug in this one?
+[3905.28s -> 3912.56s]  That's a joke. So what this is, is, I mean, actually it's not like, I mean, it's too small
+[3912.56s -> 3916.80s]  for you to see, but this part of it isn't like if you kind of make reasonable assumptions
+[3916.80s -> 3921.44s]  about Linux kernel macros, this part of this code is not that difficult to understand.
+[3922.00s -> 3929.68s]  So what's happening here is this function is copying some data from a network packet.
+[3929.68s -> 3934.00s]  If you look at the two arguments to, I don't know what, I guess RCV stands for receive,
+[3934.00s -> 3938.48s]  but the first argument is the actual packet. The second argument is a header.
+[3938.48s -> 3944.56s]  And what it is doing is on, I just, I have it in my notes. This line here, it's doing a malloc.
+[3945.28s -> 3952.32s]  The size is this thing's size, which it's pulling from the header. And then on line, let me see,
+[3952.32s -> 3959.84s]  it's 40, oh yeah, 44, I think. It's like, it's doing a mem copy from something in the packet
+[3959.84s -> 3966.40s]  to this thing that's allocated based on the size. So what you can see here is that both
+[3966.40s -> 3969.92s]  of these things were read from the network and there hasn't been checking done of the size.
+[3970.56s -> 3976.80s]  So that means that, oh, you could actually, there's no, the actual payload might not match the size
+[3976.80s -> 3981.60s]  in the header. And so if it doesn't, then the buffer that's allocated will be too small and
+[3981.60s -> 3987.76s]  who knows how much you're going to be writing. So the reason that, so this is actually kind of
+[3988.80s -> 3994.00s]  a real vulnerability in the kernel. And the two things that I wanted to point out why this is
+[3994.00s -> 3998.96s]  hard, one is a bit of a needle in a haystack, right? There's going to be lots of functions
+[3998.96s -> 4003.28s]  like this in the Linux kernel, and it could be kind of difficult to craft inputs that reach them.
+[4003.28s -> 4008.24s]  I have to know which network protocol this thing is handling and so on. And so this kind of,
+[4008.24s -> 4013.44s]  you know, identifying the actual data flow that breaks is fairly simple, but kind of
+[4013.44s -> 4018.40s]  identifying it from a lot of things that look similar but are perfectly safe is very difficult.
+[4018.40s -> 4022.56s]  And the second thing is this function on its own, it's not vulnerable or non-vulnerable. That's
+[4022.56s -> 4028.72s]  not even a well-defined question to say, is this function vulnerable? Because if the caller checked,
+[4028.72s -> 4033.92s]  did the bounds checking, this function would be fine, right? So you actually can't understand
+[4033.92s -> 4038.88s]  whether this function is vulnerable or not without kind of knowing globally what's going on.
+[4040.08s -> 4045.84s]  Okay, so that's why AI for vulnerability detection is hard. In fact, this slide is
+[4045.84s -> 4051.28s]  basically a criticism of the next slide. So the next slide is, so we have this really nice
+[4051.28s -> 4056.88s]  source of data, which is the kind of vulnerability database. So there is a place where if you have
+[4056.88s -> 4061.76s]  public software and you discover a vulnerability, you can kind of get a unique tracking number,
+[4061.76s -> 4066.80s]  write a description, and you know, give links to the patch, any other information about the
+[4066.80s -> 4073.12s]  advisories, and there are kind of thousands of these collected. So this seems like great
+[4073.12s -> 4078.40s]  for machine learning, right? Because all I need to do is say, oh, let me kind of download
+[4078.40s -> 4084.08s]  all of these vulnerabilities and kind of the patches, and I'll try to have some classifier
+[4084.08s -> 4090.32s]  that says whether things are vulnerable or not. So I'm exaggerating my criticism of this,
+[4090.32s -> 4094.80s]  but it's a very natural thing to do, right? The first thing you see a big dataset on the web is
+[4094.80s -> 4098.64s]  let's download and use this. It's what you should do. And so there's a bunch of authors
+[4098.64s -> 4104.80s]  who have done this and kind of created datasets that say, oh, that the idea is that I'll take
+[4104.80s -> 4109.28s]  examples of code where we found a vulnerability, we've not found a vulnerability, and you know,
+[4109.28s -> 4115.68s]  try to have, you can measure kind of detection or patching kind of based on this. Seems like a
+[4115.68s -> 4122.24s]  natural thing to do. Unfortunately, you know, it's what I would have done too when I got started,
+[4122.24s -> 4126.56s]  and there's problems with it. The main, the first problem is like how much of the code you
+[4126.56s -> 4130.56s]  put in the input, right? Like we saw in the previous slide, if I just look at one function
+[4130.56s -> 4136.40s]  that's been patched, you know, that might not be where I might not know just looking at that
+[4136.40s -> 4141.44s]  function whether there's a problem or not. Or just because if I take a function in the patch,
+[4141.44s -> 4146.00s]  that might not be, what does it mean for a line of code to be vulnerable, right? There's a line of
+[4146.00s -> 4152.32s]  code where an incorrect memory access happens, sure, but that line of code might be correct,
+[4152.32s -> 4155.52s]  right? The part that's incorrect might be something upstream, did something wrong.
+[4156.48s -> 4161.44s]  So the patch might be very far from the line of code that crashed. So the idea even of a line
+[4161.44s -> 4166.48s]  of code or a function being vulnerable is something I'd argue it's not a meaningful concept.
+[4167.84s -> 4171.04s]  Then the other thing, like if you want it, so there is a question of like how much context
+[4171.04s -> 4175.28s]  do you want to give? And I'm not, it's a very difficult question to answer. Or another
+[4175.28s -> 4179.20s]  question, how do you handle tangled commits? So I kind of mentioned this a little bit in
+[4179.20s -> 4184.48s]  Sweetbench, like if you want to use this as a patching data set, well, lots of times
+[4184.48s -> 4188.96s]  the, a patch will do more than just fix the vulnerability. That's a very common case.
+[4188.96s -> 4196.24s]  So kind of learning is kind of difficult. The other thing is like maybe this is easier,
+[4196.24s -> 4201.28s]  like kind of judging correctness of patches is kind of tricky, is like if you can run the code,
+[4201.28s -> 4204.32s]  you could probably judge correctness. If you're trying to do it statically,
+[4205.20s -> 4208.88s]  then that's difficult, right? Because there are many ways to patch a vulnerability.
+[4209.76s -> 4216.96s]  And the fact I gave you this example of a vulnerability description, like these are vague.
+[4217.84s -> 4223.60s]  They will give you some information about where to start. They'll be vague, they'll be noisy.
+[4223.60s -> 4227.52s]  Sometimes just because people are busy, they make mistakes. Sometimes because you don't want to give
+[4227.52s -> 4232.16s]  out too much information about a security vulnerability. So I think these are really
+[4232.16s -> 4236.72s]  difficult issues. It's really difficult to come up with a static evaluation of vulnerability
+[4236.72s -> 4241.44s]  detection in this way. And I think these issues are fundamental. I think people have done a lot
+[4241.44s -> 4245.60s]  of great work trying to get around them to make the data sets cleaner and cleaner. But I think
+[4245.60s -> 4254.56s]  these data sets are really hard to use. So what I would recommend instead for working on this kind
+[4254.56s -> 4259.04s]  of problem is do something dynamic. So you need something like a sweep bench eval where you
+[4259.04s -> 4268.56s]  can actually run the code on an input that exposes the vulnerability. So there are some data
+[4268.56s -> 4272.96s]  sets. I left one out. That's one of the things you're supposed to ask me about. So I'll
+[4272.96s -> 4279.60s]  just tell you about it now. So there is a DARPA-sponsored competition going on
+[4279.60s -> 4286.40s]  now. The finals are later this year for AI-based vulnerability detection. There was
+[4286.40s -> 4292.48s]  kind of an older one, 2016. It's also kind of interesting both because you can get the kind
+[4292.48s -> 4296.00s]  of programs and also I think the story of it is interesting if you want to look it up.
+[4296.96s -> 4304.08s]  There is a more recent security evaluation from Meta that contains some. It tests various parts
+[4304.08s -> 4309.36s]  of security for AI and AI for security, but there is like a memory vulnerability thing.
+[4309.36s -> 4313.36s]  There is a more recent thing that I like, which I forgot to put on the slide,
+[4314.00s -> 4321.20s]  which is ARVO. It's for some past vulnerabilities that have been found by fuzzers,
+[4321.20s -> 4325.68s]  containerized so that you can run them. So you can act checking of whether you found or figured.
+[4326.16s -> 4333.28s]  I'm about to talk about one more agent, I promise.
+[4334.16s -> 4339.60s]  But there is a huge amount of research on automated techniques for vulnerability detection,
+[4339.60s -> 4346.96s]  like some AI but also kind of non-AI. So probably the most commonly used technique
+[4346.96s -> 4352.96s]  for automatically finding vulnerabilities is called fuzzing. So that is like you run the programs
+[4352.96s -> 4358.24s]  on many, many random inputs. You can choose them like a genetic algorithm type search.
+[4358.24s -> 4362.96s]  So you can flip bits in the inputs. You can mix and match them. So you try to find an input
+[4362.96s -> 4369.60s]  that causes vulnerability to happen, like an out of bounds write. Those are really important
+[4369.60s -> 4379.68s]  in practice. Security critical software is fuzzed extensively. So this is kind of important
+[4379.68s -> 4389.04s]  technology, but it also asymptotes. Like if you run a fuzzer for long enough on a software package,
+[4390.00s -> 4394.64s]  you don't continually find bugs even if they exist. And there are kind of famous examples
+[4394.64s -> 4398.88s]  of bugs where they've been found exploited in the wild. These are packages that are commonly
+[4398.88s -> 4404.16s]  fuzzed, but it was a difficult part of the code for the fuzzer to reach. There's a lot of
+[4404.16s -> 4410.08s]  work on, so I think there's an opportunity for AI to try to, well keep fuzzing things,
+[4410.08s -> 4416.32s]  but try to find deeper bugs maybe that require kind of complex invariants that fuzzers can reach.
+[4417.92s -> 4421.68s]  People work on static analysis for vulnerabilities, vulnerability detection.
+[4422.88s -> 4426.96s]  That's, you know, it's kind of, there's a lot of interesting work that's been done in that space.
+[4427.68s -> 4431.28s]  The downside is kind of combinatorial explosion and the false positive rate.
+[4431.28s -> 4436.32s]  It's kind of very, it's very difficult to define. It's kind of a very, very difficult
+[4436.32s -> 4441.60s]  business to be in. And then like on some of these other data sets, I've talked about like,
+[4441.60s -> 4445.12s]  you know, once you collect the vulnerability data sets on the previous slide, the ones that
+[4445.12s -> 4449.04s]  I don't like, you can try fine-tuning an LLM on them. And so a lot of papers,
+[4449.76s -> 4455.44s]  the papers that I say it, will show you some results for that. But, you know, we wanted to
+[4455.44s -> 4460.08s]  do something different, so we thought there was kind of an opportunity to try to use
+[4461.44s -> 4467.60s]  the, to try to kind of, you know, leverage AI in a more interesting way. And so that's this project
+[4467.60s -> 4472.16s]  that I'm involved in, which is called The Big Sleep. One thing I've noticed having named a
+[4472.16s -> 4477.68s]  project this is that most people do not have the same knowledge of classic cinema as I do. So
+[4477.68s -> 4483.44s]  The Big Sleep is kind of a, it's a famous movie from the 40s, but starring Humphrey Bogart.
+[4483.44s -> 4489.36s]  And if you like old movies, I recommend it. There's a story about why this is named
+[4489.36s -> 4494.08s]  that, that I won't get into. So this is a collaboration between some of us in Google
+[4494.08s -> 4500.40s]  DeepMind and some security experts from Google Project Zero. So these, which, you know, this is
+[4500.40s -> 4507.04s]  a kind of a really, a nice security group within Google that tries to find vulnerabilities,
+[4507.04s -> 4511.84s]  it tries, it does. They also, they try, they also succeed in kind of finding vulnerabilities
+[4511.84s -> 4516.40s]  in open source projects. And if you look at other things on their blog, you can see kind of how
+[4516.40s -> 4521.44s]  intense some of the vulnerabilities that they find are. So with this kind of group of collaborators,
+[4521.44s -> 4527.84s]  we've been kind of creating this agent. And the thing that motivated us about this was
+[4527.84s -> 4533.28s]  thinking about, or one way to motivate this is by thinking about kind of the experience of
+[4533.28s -> 4538.40s]  our collaborators in Project Zero as a human security researcher auditing code to try to find
+[4538.40s -> 4543.28s]  a vulnerability. They don't think of it like a classifier, right? You don't just read some
+[4543.28s -> 4548.24s]  code as a person then say yes, no, I think it's vulnerable, right? So instead what you do is you
+[4548.24s -> 4552.64s]  can read the code, try to understand it. You have some hypothesis about what would be going
+[4552.64s -> 4556.80s]  wrong. And then you try to run the code in a debugger or something, gain some information
+[4556.80s -> 4562.56s]  about whether your hypothesis is correct. And we wanted to see, and we think that if
+[4562.56s -> 4567.28s]  an AI is going to be successful, that it should do that too. So, and this kind of naturally
+[4567.28s -> 4572.56s]  suggested an agentic approach where you'd have kind of a code browser and a debugger.
+[4573.36s -> 4579.44s]  So one way you can think about this is like analysis versus static. If you're trying
+[4579.44s -> 4586.72s]  to train just an LLM, maybe with some reasoning tokens or whatever to examine code,
+[4586.72s -> 4590.32s]  do some reasoning, come up with a vulnerability, that's kind of like static analysis. You haven't
+[4590.32s -> 4594.16s]  run the code. Whereas if you do an agentic approach, that's more like running a fuzzer, it's more
+[4594.16s -> 4601.92s]  like dynamic analysis. So we're focusing on a particular type of security issue
+[4602.56s -> 4608.56s]  in the big sleep and that we're focusing on memory safety of vulnerabilities. And the idea
+[4608.56s -> 4614.96s]  is kind of given a code base, the goal of the agent is going to be like a fuzzer to
+[4614.96s -> 4620.64s]  generate an input that when it's run on this program under test causes bad memory behavior
+[4620.64s -> 4626.96s]  like an out of bounds read or something. And what some of this is, so you get some of the
+[4626.96s -> 4632.00s]  advantages of a react style loop, but the other advantage compared to static analysis approaches
+[4632.00s -> 4638.24s]  and even compared to say something like code editing is in some ways this is a simpler problem
+[4638.24s -> 4644.72s]  than code editing. And the reason is we have an oracle. So if we can, so I mentioned
+[4645.36s -> 4651.04s]  sanitizers to you earlier in the lecture. So when we are running the program in this agent, we are
+[4651.04s -> 4657.20s]  going to run it in a sanitizer in a debugger. So the goal of the agent is to actually generate
+[4657.20s -> 4662.88s]  an input that causes the program to crash and when it crashes we know you found a security bug.
+[4662.88s -> 4667.68s]  So you know, whereas if you're doing code generation, you don't know what the real, you don't know what
+[4667.68s -> 4671.84s]  the true tests are. So you have some part at the end where you have to figure out, oh which
+[4671.84s -> 4677.76s]  patch do I choose? Here it's like if you find a bug, you find a bug. And one thing that's nice
+[4677.76s -> 4681.76s]  about, well let me actually say the agent before I start telling you about how good it is.
+[4681.76s -> 4686.08s]  So what we're going to do in big sleep, it's going to be a react style agent.
+[4686.08s -> 4690.00s]  The goal of the agent is to generate an input that triggers a sanitizer crash.
+[4690.96s -> 4697.60s]  We have access to three different types of tools. So one is like a code browser tool. So
+[4697.60s -> 4702.80s]  this would be kind of similar to what I said about autocode rover, that we actually index the program,
+[4702.80s -> 4708.08s]  we know what all the identifiers are, so our tools are like the type of tools you do with
+[4708.08s -> 4712.56s]  IDE navigation. So like given the name of a method, jump to definition, or we can also
+[4712.56s -> 4718.40s]  follow cross-references. Then in order to generate inputs, we do that using, we don't
+[4718.40s -> 4724.24s]  actually ask the agent to generate text directly, we ask the agent to write a Python program
+[4724.24s -> 4729.36s]  that generates the input. And the reason we do that is like if you want to do a buffer overrun
+[4729.36s -> 4734.24s]  or something, you know, we don't want the agent to have to generate 2048 A's, we'd rather generate
+[4734.24s -> 4739.36s]  a Python program that says A times 28 A, right? It's just simpler. So we tell the agent,
+[4739.36s -> 4744.00s]  please generate a Python program that writes a string to a particular variable,
+[4744.00s -> 4749.04s]  we send that string to standard it. And then we can run the target program in a debugger.
+[4749.04s -> 4755.12s]  So we've talked about the enigma agent also had a debugger. The design of this tool is similar,
+[4755.12s -> 4760.16s]  but a little bit different. So in our tool right now, the agent doesn't call the debugger
+[4760.16s -> 4765.28s]  interactively. What it does is it can say, you know, at first it calls the Python interpreter
+[4765.28s -> 4769.92s]  to set up an input. And then when it calls the debugger, it just runs the whole program.
+[4769.92s -> 4775.28s]  And it can optionally specify a list of quote unquote breakpoints. So a breakpoint is a
+[4776.24s -> 4781.28s]  file line number and an expression optionally. And what it does is we tell the agent to break
+[4781.28s -> 4784.72s]  points, but they're really watch points. So we'll run the whole program without stopping.
+[4786.24s -> 4789.60s]  We'll run the whole program without stopping. And at the end, we tell the agent, here are the
+[4789.60s -> 4793.12s]  break points that were hit. And here's the value of the expressions you asked me for.
+[4793.12s -> 4797.36s]  So this way, this gives the agent another way to check whether when it generates an input,
+[4797.36s -> 4800.96s]  whether it's doing what it expects, whether it's having the control flow that the agent
+[4801.04s -> 4808.00s]  expects from the input. Okay. So let me show you an example of a trajectory. So I don't know what
+[4808.00s -> 4816.40s]  I meant. So this is a, let me see if I, this is an example of a program from the meta cyber
+[4816.40s -> 4820.80s]  sec eval benchmark that I kind of briefly mentioned in the previous slide. So there is
+[4820.80s -> 4824.88s]  a system instruction that I haven't told you that kind of explains the task to the agent,
+[4824.88s -> 4830.40s]  describes the tools and presents a problem solving strategy and some guidelines.
+[4830.96s -> 4835.12s]  To the agent. So the first thing he's going to do is say, okay, please show me the main method.
+[4836.72s -> 4841.84s]  So here, all of the, the, as I said, the control flow is completely dynamic, like react style.
+[4841.84s -> 4846.56s]  And there's no, the agent has to use the code browser tools to see the code. So then it gets
+[4846.56s -> 4850.96s]  a thing of the main method. And typically what the agent does is it summarizes the code
+[4850.96s -> 4854.96s]  sometimes longer, sometimes less whenever it sees it. And then it'll decide, okay,
+[4854.96s -> 4859.28s]  I see an identifier there. Okay. You can't see there's a reader class because I snipped it out,
+[4859.28s -> 4862.16s]  but somewhere in this, there's a class called reader. So the agent is, okay,
+[4862.16s -> 4865.92s]  let me look at the reader class. And so it says, okay, let me look at,
+[4865.92s -> 4868.80s]  so it looks at this and it'll do a bunch of terms of code browsing.
+[4870.16s -> 4874.40s]  And after a while, the agent gets tired of code browsing and it decides, okay,
+[4874.40s -> 4879.44s]  I think I found a vulnerability now. So what it does then what we've instructed it to do
+[4879.44s -> 4884.64s]  is to write a report that explains what the vulnerability is and what happens,
+[4885.52s -> 4889.76s]  how to exploit it. So the agent will generate this text after it's seen enough code where it says,
+[4889.76s -> 4894.64s]  oh, on line 70 you use string copy, but you didn't use bound checking. So if I create an
+[4894.64s -> 4899.60s]  input of this type, then this is, it loves saying a typical buffer overflow or a classic
+[4899.60s -> 4905.92s]  buffer overflow, really likes that. So this could be exploited in this way. Here's my report.
+[4905.92s -> 4912.08s]  Now let me generate an input. And so the input is going to, so I thought now this is a Python
+[4912.08s -> 4919.68s]  code. Here's an example of like what I said, where you can construct a long input. The agent can,
+[4919.68s -> 4925.44s]  you know, it can, it's helpful to have access to the library because, you know, if you want to,
+[4927.20s -> 4932.40s]  if you want to kind of generate, sorry, I'm having English. If you want to agent to generate
+[4932.40s -> 4939.36s]  binary strings, for example, can call, you know, number two bytes. It can, it can also,
+[4939.44s -> 4947.52s]  if it knows things about particular input formats. So if you have a program that takes JSON or images
+[4947.52s -> 4952.32s]  has input, then the Python program can generate that. So in this case, after it generates some
+[4952.32s -> 4957.68s]  Python input, it calls the debugger function. It says, oh, these were like tours that it
+[4957.68s -> 4962.00s]  thought was related to the vulnerable code paths. So it says, oh yeah, please show me those.
+[4962.64s -> 4967.92s]  And so now we run the program in the debugger and the agent is sad because the program exited
+[4967.92s -> 4972.72s]  without crashing. Generally that's what you want, but not if you're doing a security audit.
+[4972.72s -> 4977.76s]  So now the agent's like, okay, it didn't trigger the bug that it thought it did,
+[4977.76s -> 4984.72s]  so it can, let's keep iterating. And so then it writes some things about why it messed up.
+[4986.16s -> 4990.64s]  So here it says, oh, the program failed earlier than anticipated because I forgot to do such
+[4990.64s -> 4995.52s]  and such. And so let me update the input so that I don't make this mistake. And it might
+[4995.52s -> 5000.80s]  iterate through doing that multiple times and then run the debugger again after each one.
+[5000.80s -> 5004.40s]  And then at some point it says, oh, the program crashes. Yay, it crashed.
+[5006.24s -> 5009.04s]  And then it gives some information and then that means the agent has succeeded.
+[5010.48s -> 5016.88s]  So where are we right now? So I'd say the current kind of state of the agent is
+[5016.88s -> 5022.08s]  like we have kind of ways of testing it on kind of capture the flag challenges like for example
+[5022.08s -> 5029.84s]  this open L2 benchmark. And there it's kind of reasonably effective. There's still a lot
+[5029.84s -> 5035.92s]  that we need to do to scale it up. And we have found one real world of vulnerability
+[5035.92s -> 5043.76s]  that we've disclosed and that is kind of in SQLite. So one thing about this, it's kind of
+[5043.76s -> 5048.64s]  one of the advantages of agents for this type of security task is you can put any information
+[5048.64s -> 5052.40s]  that you have in the context. So in this case we did a type of variant analysis.
+[5052.96s -> 5060.80s]  So it turns out that when you find a security bug, a vulnerability in a project, there are
+[5060.80s -> 5065.52s]  often many similar vulnerabilities at different places in the same project. So those are called
+[5065.52s -> 5072.00s]  variants. And some like a very large number of vulnerabilities that we see exploited in the wild
+[5072.00s -> 5076.64s]  are variants of bugs that have already been fixed. So what we did here is we took kind
+[5076.64s -> 5082.40s]  of a recent bug that had been fixed in SQLite and we added the information about it into
+[5082.40s -> 5087.28s]  the context and then said, I don't know, try to find something similar. And, you know,
+[5087.28s -> 5092.24s]  eventually, and it did. One thing I want to comment on this is one thing that was kind of
+[5092.24s -> 5098.24s]  working in our favor. This is maybe like a best case in some sense because I mentioned
+[5098.24s -> 5103.52s]  the kind of little red riding hood principle. The agent has seen a lot of SQL queries,
+[5103.52s -> 5109.52s]  right, in the pretraining data. So if it sees kind of one SQL query that used to break the system,
+[5109.52s -> 5114.72s]  it's kind of easy for it, it's kind of reasonable that LLM could generate similar queries.
+[5115.84s -> 5119.52s]  And the other thing I mentioned, fuzzing, it turns out we did go back with general purpose
+[5119.52s -> 5124.08s]  fuzzers and try to see, okay, now that we know where the bug is, can I get a kind of
+[5124.08s -> 5127.76s]  state-of-the-art general purpose fuzzer to find it? And in some reason it was, and it was
+[5127.84s -> 5131.68s]  pretty hard to find, like after 150 hours, we weren't able to find it.
+[5132.56s -> 5140.40s]  So, yeah, so that's kind of our status so far. So finally, let me pop up and say,
+[5141.12s -> 5145.28s]  so I had to summarize just the security part of the lecture. So I think this is kind of a
+[5145.28s -> 5149.68s]  wide open area. We're just getting started. There's a lot to be done. I think it's an
+[5149.68s -> 5155.68s]  exciting application area for AI because agentic techniques seem really natural here. You need
+[5155.68s -> 5161.76s]  to interact with servers, you need to run debuggers. And it's also kind of a really nice
+[5163.20s -> 5169.68s]  testbed for code understanding methods, right? That to find a security issue and to say, oh,
+[5169.68s -> 5173.20s]  yeah, this is a software vulnerability, you've got to think really carefully
+[5173.20s -> 5176.08s]  about the corner cases that the developer maybe didn't think of,
+[5176.96s -> 5182.40s]  or you have to track kind of data flows on the stretches of the program. So it kind of,
+[5182.64s -> 5185.84s]  and if you're doing network or system security, you're going to have to do that across multiple
+[5185.84s -> 5191.92s]  interacting parts of programs in a system. So it really does require you to kind of understand
+[5191.92s -> 5195.92s]  at a deep level what programs are doing, which makes it kind of an interesting challenge model,
+[5195.92s -> 5203.52s]  challenge task for LLMs. And I've talked in depth about some capture the flag stuff and some
+[5203.52s -> 5207.04s]  vulnerabilities, but there's kind of a huge space here that we're kind of only starting to
+[5207.04s -> 5213.28s]  get into. And this is the time we're starting to scale it up. So it's kind of an
+[5213.28s -> 5219.76s]  exciting time to be part of this area. Okay. So that's kind of all I have to say.
+[5219.76s -> 5222.32s]  I'm kind of happy to take some more questions. Thank you.

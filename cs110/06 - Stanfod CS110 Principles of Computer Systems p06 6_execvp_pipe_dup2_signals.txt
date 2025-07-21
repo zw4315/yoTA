@@ -1,0 +1,1818 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 21.00s]  Welcome back to Monday. CS110. We are continuing with multi-processing, which is, like I said, the first time you're probably seeing things happening in parallel of a program you've written, so we're going to take the time we need to discuss that.
+[22.00s -> 34.00s]  Today we're going to talk about these things called pipes, which are basically a way for two processes to send data back and forth using read and write.
+[34.00s -> 59.00s]  Then we'll talk a little bit more, depending on how much time we have, about inter-process communication, which basically means that we'll talk about how two processes actually talk to each other and how you end up getting a message, a signal, which is another name for it, how you get a signal when a child actually finishes.
+[59.00s -> 73.00s]  So we'll get to that by the end of the class, I think. How's the assignment going? Biosystem going alright? I've seen a couple thumbs up. It's definitely, you know, it's got a lot of little moving parts to it.
+[73.00s -> 95.00s]  Somebody was just asking me in the hallway about, like, how do you know when you're reading data, what kind of data it holds? You kind of don't unless you're in a function where you're specifically reading data from the disk, where you already have information about, oh, I'm reading a file, or I'm reading a directory, or I'm reading an inode block, or something like that.
+[95.00s -> 114.00s]  You have to know that when you call these functions that read from the disk, because the disk itself could care less what's on it. It just matters to you as the actual operating system, and the file system has been put in place with certain things associated with each block.
+[114.00s -> 127.00s]  So that's how you know that. Anyway, I hope it goes well. Any questions on the assignment at this point? Piazza's been going along. Do you have any comments or questions about it? Yeah?
+[127.00s -> 146.00s]  Good question. So the question was, hey, you said that you're allowed to change some of the functions. You mean the ones we've already written for you? Things like that? No.
+[146.00s -> 164.00s]  You should not change the return values for functions if you can help. In general, leave them the same. If you need to for some reason, you should have a really good reason for it. But no, the spec we've laid out shouldn't need to be changed as far as the return values.
+[164.00s -> 170.00s]  If you have a specific question, come on up after and let me know what you're talking about, and we'll chat about whether or not. But most of the time, no.
+[170.00s -> 183.00s]  Anybody else? Okay, office hours are this evening and the rest of the week. I have my office hours tomorrow morning. There haven't been that many people showing up, so I may just add some office hours, kind of maybe in the afternoons.
+[183.00s -> 193.00s]  I'm thinking maybe Wednesday after class. Would more people be able to go to that? I don't see a couple people. Okay, I'll see about doing that in my own schedule. I've got to look at it.
+[193.00s -> 201.00s]  But we'll try to put some more office hours in there. Or Thursday around the same time might also work. So we'll do that.
+[201.00s -> 220.00s]  All right, so last week, we actually finished with the example I'm going to go back over again. Remember, we've been talking about this interesting system call called EXECVP, which is part of the EXEC or exec functions system calls.
+[220.00s -> 231.00s]  And what that does is it says, I want to run another program and basically replace my current process with that program.
+[231.00s -> 240.00s]  Now, if you want to do that, most of the time you're not going to be done with your program. I mean, there might be some cases where that's going to be true.
+[240.00s -> 250.00s]  But most of the time, you want your program to kind of spawn off this other process that's some other program, and you use fork to do that.
+[250.00s -> 262.00s]  So you fork, you get a child process, and you say to the child process, you will run this program, and while doing that, the child process will become that program, and that's it.
+[262.00s -> 271.00s]  Now, there is some communications between that child program and the parent, and we've got to talk about how that actually happens.
+[271.00s -> 284.00s]  So we wrote just a very basic program called My System. We're going to expand on this a little bit more in a few minutes, and then you're going to expand on it for assignment four, actually.
+[284.00s -> 293.00s]  You're going to make a much more robust My System kind of command, which is basically a little shell is what we're talking about.
+[293.00s -> 300.00s]  So here's what the program itself did. So let's look through this a little bit.
+[300.00s -> 314.00s]  Basically, the first thing the My System function does, it takes in a command, and that could be something like ls or catfile.txt.
+[314.00s -> 321.00s]  It just takes a command in, and it's going to run that command using the shell itself, the actual shell.
+[321.00s -> 324.00s]  We do that so that it's a little easier to parse it.
+[324.00s -> 331.00s]  When you get to yours for assignment four, you will figure out how to do it without using the shell as kind of training wheels.
+[331.00s -> 334.00s]  We'll see what that means in a little bit.
+[334.00s -> 339.00s]  And then it takes that command, and then it does this fork.
+[339.00s -> 353.00s]  It does this fork, and my pen has died.
+[353.00s -> 367.00s]  So it actually forks because we are about to call exec CVP, so we don't want the function to be done for our program.
+[367.00s -> 371.00s]  Oh, no, it's done. It didn't work at all. Hang on.
+[371.00s -> 377.00s]  Okay, hang on. Maybe we won't use these again. Hang on.
+[377.00s -> 381.00s]  Let's see. Nope, that's not working.
+[381.00s -> 388.00s]  I'll try this one more time, and then we will not use this.
+[388.00s -> 391.00s]  Nope, not working. Tablet, dead.
+[391.00s -> 395.00s]  So anyway, what it's doing is, I'll blow this up here.
+[395.00s -> 404.00s]  So basically, it's going to fork, and then if it's the child, it's going to spawn this other process, which is the program you want to run.
+[404.00s -> 414.00s]  And it's going to do that by basically saying, okay, actually run this program called bin slash sh, which is the shell program.
+[414.00s -> 419.00s]  Run it with the dash c option, which says, hey, run the following program.
+[419.00s -> 422.00s]  So it's kind of like two levels of indirection here.
+[422.00s -> 426.00s]  And then it's going to take your command, and it's going to run that command that you have typed in.
+[426.00s -> 431.00s]  And then this is an array that has to be null terminated, so that's what's happening here.
+[431.00s -> 439.00s]  It's basically creating an arguments array that is an array of string pointers, char star pointers.
+[439.00s -> 449.00s]  And then you call exec cvp, and it calls the first argument to exec cvp is the name of the program that is directly being run.
+[449.00s -> 457.00s]  In this case, it's slash bin slash sh, which also happens to be the first argument in the argument list, just like it is in main.
+[457.00s -> 461.00s]  And then the second one is the entire arguments list, second parameter.
+[461.00s -> 465.00s]  If that fails, then it returns to this function.
+[465.00s -> 470.00s]  If it doesn't fail, the entire rest of that child process is destroyed.
+[470.00s -> 474.00s]  It's cannibalized so that this other program can run.
+[474.00s -> 482.00s]  Remember, your parent is still running, but the child process you just created is now destroyed by running the other program.
+[482.00s -> 485.00s]  So that's what's going on there.
+[485.00s -> 491.00s]  Now, I'm actually trying something new. One of our TAs actually created this little system here.
+[491.00s -> 496.00s]  So you can actually, in the slides, run this, although I think the font is possibly a little too small.
+[496.00s -> 501.00s]  But you can actually run this in here, and here's what it looks like when it runs.
+[501.00s -> 508.00s]  And it puts up a little cursor here, like that.
+[508.00s -> 512.00s]  And you can type ls, and that's what the program is doing.
+[512.00s -> 515.00s]  It's actually running ls and doing that.
+[515.00s -> 520.00s]  And then, let's see, cat code.c should also print out the code.
+[520.00s -> 527.00s]  And so we've written kind of a little shell, and it always comes back to the prompt for us at the end.
+[527.00s -> 533.00s]  The standard in for the child process is just regular old standard in.
+[533.00s -> 536.00s]  We'll see how that might change in a little bit.
+[536.00s -> 543.00s]  And then to end this, by the way, just to end this function, we actually do Ctrl-D,
+[543.00s -> 548.00s]  which says we're done entering things from standard in.
+[548.00s -> 554.00s]  It basically closes standard in for the process that's being run.
+[554.00s -> 558.00s]  So let's look at the main and how main actually works here.
+[558.00s -> 564.00s]  Main basically says, oh, okay, we're going to do a while loop
+[564.00s -> 568.00s]  because we have to keep putting a little prompt, which is just this little arrow here.
+[568.00s -> 577.00s]  And it gets a line using fgets from standard in, and that's what you type, ls or cat whatever.
+[577.00s -> 580.00s]  And then if you type Ctrl-D, it would end.
+[580.00s -> 581.00s]  That's what's going on there.
+[581.00s -> 586.00s]  And then it just populates the new line, changes the new line into a zero
+[586.00s -> 592.00s]  so that we've actually got just a regular old string here without the new line in it.
+[592.00s -> 597.00s]  And then it actually calls my system with the command,
+[597.00s -> 600.00s]  gets the return value back from my system,
+[600.00s -> 605.00s]  which is the return value from whatever the my system command does,
+[605.00s -> 609.00s]  and then it continues the loop.
+[609.00s -> 611.00s]  Okay, do you see what's going on there?
+[611.00s -> 614.00s]  All right, so that's what we kind of covered the other day.
+[614.00s -> 617.00s]  Let's move on.
+[617.00s -> 620.00s]  And this is the test on it, so I just showed you that.
+[620.00s -> 625.00s]  Let's move on and we'll talk about a little bit more detail
+[625.00s -> 628.00s]  of the similar type of program in a few minutes.
+[628.00s -> 631.00s]  I want to introduce a couple of other topics.
+[631.00s -> 636.00s]  We're going to introduce the notion of a pipe, which I mentioned earlier,
+[636.00s -> 638.00s]  and then dup2.
+[638.00s -> 641.00s]  Now, in lab, you should have covered dup to some extent.
+[641.00s -> 647.00s]  We'll go over the details of what that's, what dup2 in particular is doing here.
+[647.00s -> 651.00s]  Okay, so now let's have a little more complicated shell.
+[651.00s -> 654.00s]  All right, in the actual, let's see,
+[654.00s -> 656.00s]  I just want to make sure that we're getting to the,
+[656.00s -> 658.00s]  because there's no piping yet.
+[658.00s -> 664.00s]  Let's actually go ahead and do this, the more advanced shell here.
+[664.00s -> 668.00s]  Okay, this is going to be simple shell.c,
+[668.00s -> 672.00s]  and, oh no, hang on.
+[672.00s -> 677.00s]  It is, yeah, it is simple shell.
+[677.00s -> 681.00s]  Hang on, I think I already had it in simple shell.
+[681.00s -> 683.00s]  Started it, nope, nope.
+[683.00s -> 684.00s]  All right, we'll just look at it.
+[684.00s -> 685.00s]  I won't type it all right now.
+[685.00s -> 687.00s]  We've got plenty of things to type a little bit later.
+[687.00s -> 690.00s]  Here's what we're going to, actually I can do it in the thing over here
+[690.00s -> 693.00s]  now that I think about it.
+[693.00s -> 697.00s]  Here's what the code is going to do in this case.
+[697.00s -> 703.00s]  We are going to create a shell that actually allows you to do a background command.
+[703.00s -> 704.00s]  Now, what is a background command?
+[704.00s -> 711.00s]  In the regular old shell, you can do the following.
+[711.00s -> 716.00s]  You can actually type a command that runs in the background,
+[716.00s -> 718.00s]  which means that you get your prompt back immediately,
+[718.00s -> 721.00s]  and now the other program is still running.
+[721.00s -> 722.00s]  Why might you want to do that?
+[722.00s -> 725.00s]  Well, there might be various reasons why,
+[725.00s -> 728.00s]  that you might want to have some other program running,
+[728.00s -> 731.00s]  and you still want to use your shell.
+[731.00s -> 734.00s]  It's a little weird if you do something like ls-al,
+[734.00s -> 735.00s]  but then you put it in the background,
+[735.00s -> 737.00s]  and that's how you put it in the background, by the way.
+[737.00s -> 739.00s]  You put an ampersand,
+[739.00s -> 744.00s]  and what it does is it actually immediately says,
+[744.00s -> 745.00s]  let me go back up here, here we go,
+[745.00s -> 748.00s]  it immediately says, hey, this is a process I just created,
+[748.00s -> 750.00s]  and then it gives you a prompt back,
+[750.00s -> 753.00s]  and the rest of it continues going, right?
+[753.00s -> 756.00s]  I think I showed you an example of this the other day,
+[756.00s -> 762.00s]  that actually kind of, what was it,
+[762.00s -> 764.00s]  it was like while one,
+[764.00s -> 766.00s]  actually I wouldn't think it was quite this one,
+[766.00s -> 772.00s]  but while one, echo, are you annoyed yet,
+[772.00s -> 777.00s]  something like that, semicolon, sleep one, done.
+[778.00s -> 784.00s]  Let's see, while one, do, echo, there we go, okay.
+[784.00s -> 786.00s]  So that's that, we can just run this,
+[786.00s -> 787.00s]  and it's just going to run every second.
+[787.00s -> 790.00s]  If I put that in the background,
+[790.00s -> 793.00s]  what it will do is it will, every second,
+[793.00s -> 796.00s]  just tell me that, which I can do other things,
+[796.00s -> 799.00s]  and every second it just says, are you, and then whatever,
+[799.00s -> 801.00s]  and I'm still able to run programs,
+[801.00s -> 802.00s]  and this is kind of the same sort of thing
+[802.00s -> 804.00s]  I showed you the other day,
+[804.00s -> 806.00s]  and it just basically does, it's running in the background.
+[806.00s -> 809.00s]  So I've now done that by doing the ampersand
+[809.00s -> 812.00s]  on the end of the program that says,
+[812.00s -> 816.00s]  hey, run this program, and then let me do other stuff.
+[816.00s -> 817.00s]  And you might think of various reasons
+[817.00s -> 818.00s]  why you want to do that,
+[818.00s -> 819.00s]  and this would be a bad thing to do
+[819.00s -> 822.00s]  unless you want to be annoyed lots, okay.
+[822.00s -> 825.00s]  And then actually you have to actually type fg
+[825.00s -> 829.00s]  and then control c, and it will actually stop the program.
+[829.00s -> 833.00s]  Fg says put it in the foreground, okay.
+[833.00s -> 835.00s]  You can actually do this a different way too.
+[835.00s -> 839.00s]  If I just run that same command without the ampersand
+[839.00s -> 843.00s]  and let it go, if I want to put this one in the background,
+[843.00s -> 847.00s]  I just type control z, not control c, control z,
+[847.00s -> 850.00s]  and it will put it in the background and stop it,
+[850.00s -> 852.00s]  which might be what I want, okay.
+[852.00s -> 858.00s]  And then if we want to actually continue it, let's see.
+[858.00s -> 862.00s]  Let's see, if we want to continue it, I think,
+[862.00s -> 865.00s]  let's see, I think if we, nope, hang on.
+[865.00s -> 868.00s]  Jobs, nope, ps, oop, I might have killed it accidentally.
+[868.00s -> 871.00s]  Hang on, might have killed it.
+[871.00s -> 874.00s]  Let's see, if I do control z, it stops it,
+[874.00s -> 878.00s]  and then I can put it back in foreground.
+[878.00s -> 879.00s]  Oh, I think it didn't,
+[879.00s -> 881.00s]  I think it only stops the final thing that I did.
+[881.00s -> 883.00s]  My while loop isn't gonna necessarily work.
+[883.00s -> 884.00s]  I can do it this way though.
+[884.00s -> 891.00s]  I could say like annoying.shell, let's see.
+[892.00s -> 895.00s]  We're going to check this.
+[895.00s -> 900.00s]  There we go, and then,
+[900.00s -> 905.00s]  dim annoying.shell, all right, there we go.
+[905.00s -> 912.00s]  Now, annoying.shell, annoying, okay, there we go.
+[912.00s -> 915.00s]  Now that's that, and then hopefully this will keep,
+[915.00s -> 917.00s]  if I keep doing, there we go, it'll keep, there we go.
+[917.00s -> 918.00s]  Now it's in the background.
+[918.00s -> 919.00s]  It's in the background.
+[919.00s -> 922.00s]  So what you basically do is you run a program,
+[922.00s -> 926.00s]  and then if you do control z, it stops it, pauses it,
+[926.00s -> 928.00s]  in the background, and then if you type bg,
+[928.00s -> 931.00s]  it will continue it running in the background, okay?
+[931.00s -> 934.00s]  And then that's it, and now I can still type ls,
+[934.00s -> 936.00s]  but every second it's gonna say are you annoyed yet, et cetera.
+[936.00s -> 938.00s]  And then if I want it to go in the foreground,
+[938.00s -> 941.00s]  I can do, I can take fg, it will go in the foreground,
+[941.00s -> 944.00s]  and then I can hit control c and get rid of the message final.
+[944.00s -> 947.00s]  All right, so what we are going to look at here
+[947.00s -> 956.00s]  is this program that basically will use the idea of a background
+[956.00s -> 959.00s]  to enable us to run background processes.
+[959.00s -> 963.00s]  So it's a little bit more advanced than what we had before, okay?
+[963.00s -> 966.00s]  So let's look at the actual code here, okay?
+[966.00s -> 971.00s]  Another while loop because we want our little shell
+[971.00s -> 975.00s]  to actually keep going and giving us back a prompt, okay?
+[975.00s -> 977.00s]  We're going to read a command which is another function
+[977.00s -> 981.00s]  which basically reads the command in from the line there, okay?
+[981.00s -> 985.00s]  We are going to create an arguments list
+[985.00s -> 988.00s]  which is going to have the command in it
+[988.00s -> 990.00s]  that's going to parse the command.
+[990.00s -> 992.00s]  If you want to look at all the details of these functions,
+[992.00s -> 993.00s]  you can see them.
+[993.00s -> 995.00s]  But basically we're going to type in a command,
+[995.00s -> 998.00s]  have it parsed, and that part is not really that important
+[998.00s -> 1000.00s]  to what we're trying to do here, okay?
+[1000.00s -> 1004.00s]  And then we are going to look for something
+[1004.00s -> 1007.00s]  called a built-in which is this quit thing.
+[1007.00s -> 1010.00s]  You know how before we had to type control D and it would end?
+[1010.00s -> 1012.00s]  Now we just type quit and it actually ends.
+[1012.00s -> 1015.00s]  So this is actually just a little kind of an extra part here
+[1015.00s -> 1018.00s]  where we say, oh look, if the arguments that we typed in was quit,
+[1018.00s -> 1020.00s]  then stop this while loop.
+[1020.00s -> 1022.00s]  That's nice, okay?
+[1022.00s -> 1027.00s]  And then if the last thing in the argument was the ampersand,
+[1027.00s -> 1029.00s]  we want to put this in the background.
+[1029.00s -> 1031.00s]  In other words, we want to go back to our prompt
+[1031.00s -> 1033.00s]  and let it keep running, okay?
+[1033.00s -> 1035.00s]  Well, how are we going to do that? We'll see.
+[1035.00s -> 1040.00s]  We are basically going to do the following.
+[1040.00s -> 1043.00s]  We're going to see if we are in the background,
+[1043.00s -> 1047.00s]  then we're going to get rid of the little ampersand
+[1047.00s -> 1049.00s]  so we can run the command correctly.
+[1049.00s -> 1051.00s]  Then we're going to fork,
+[1051.00s -> 1053.00s]  and if we are the child,
+[1053.00s -> 1055.00s]  remember if the return value from fork is zero,
+[1055.00s -> 1056.00s]  we are the child,
+[1056.00s -> 1060.00s]  we are going to call exec CVP on the arguments
+[1060.00s -> 1062.00s]  with the argument zero in the arguments,
+[1062.00s -> 1065.00s]  and that, of course, is going to not return
+[1065.00s -> 1067.00s]  because it's the child.
+[1067.00s -> 1069.00s]  We should do error checking on this,
+[1069.00s -> 1072.00s]  like if I type a command that doesn't work, it shouldn't do this.
+[1072.00s -> 1075.00s]  If it's the background, we're just going to print
+[1075.00s -> 1077.00s]  the actual child process PID,
+[1077.00s -> 1079.00s]  and then the command we did,
+[1079.00s -> 1084.00s]  and then we're going to continue going back to another prompt, okay?
+[1084.00s -> 1087.00s]  And then we are going, if not,
+[1087.00s -> 1090.00s]  if it's not in the background, we have to do a wait PID,
+[1090.00s -> 1092.00s]  and the wait PID does what?
+[1092.00s -> 1093.00s]  It tells the parent,
+[1093.00s -> 1097.00s]  don't do anything until the child process ends.
+[1097.00s -> 1100.00s]  Okay, so that's the one here,
+[1100.00s -> 1102.00s]  and again, you can go look up some of the details there.
+[1102.00s -> 1104.00s]  I think I actually have another, yeah,
+[1104.00s -> 1106.00s]  I can run it here as well.
+[1106.00s -> 1107.00s]  Okay, run it here.
+[1107.00s -> 1109.00s]  All right, this is simple,
+[1109.00s -> 1112.00s]  the prompt happens to be called simple SH.
+[1112.00s -> 1116.00s]  Okay, you will be writing one called STSH for Stanford Shell.
+[1116.00s -> 1118.00s]  Okay, if I type LS, there we go.
+[1118.00s -> 1122.00s]  If I type, let's see, if I type L,
+[1122.00s -> 1123.00s]  oh, you know what?
+[1123.00s -> 1125.00s]  I'm going to run this in the other one
+[1125.00s -> 1128.00s]  so I can show you the one that we just did.
+[1128.00s -> 1135.00s]  Simple, maybe not, make simple shell.
+[1135.00s -> 1136.00s]  There we go, simple shell.
+[1136.00s -> 1139.00s]  Okay, so if I type LS, then it will give me that.
+[1139.00s -> 1145.00s]  I can type cat my system dot C,
+[1145.00s -> 1146.00s]  and it will give me that.
+[1146.00s -> 1152.00s]  If I type the cat my system dot C with the ampersand on it,
+[1152.00s -> 1154.00s]  then it actually runs in the background
+[1154.00s -> 1157.00s]  and my prompt is going to be up here somewhere.
+[1157.00s -> 1159.00s]  All right, it's going to be way up here, there.
+[1159.00s -> 1161.00s]  It actually printed out the process number
+[1161.00s -> 1162.00s]  and then the name of the file,
+[1162.00s -> 1164.00s]  the function or the program that's in the background,
+[1164.00s -> 1166.00s]  and then it prints the prompt right there.
+[1166.00s -> 1173.00s]  Okay, so we should be able to run our annoying program as well,
+[1173.00s -> 1176.00s]  and, oh no, I forgot, I forgot to.
+[1176.00s -> 1182.00s]  We should be able to write annoying.sh in the background.
+[1182.00s -> 1186.00s]  There we go, and then now we're on our simple shell like that.
+[1186.00s -> 1188.00s]  Now, there happens to be no way to kill this.
+[1188.00s -> 1189.00s]  Well, that's not true.
+[1189.00s -> 1193.00s]  I could probably type, I probably could type PS,
+[1193.00s -> 1195.00s]  and it will tell me that,
+[1195.00s -> 1198.00s]  and if I do a command called kill, it may work,
+[1198.00s -> 1201.00s]  although I don't see annoying there yet, so maybe not.
+[1201.00s -> 1202.00s]  Anyway, how are we going to do it?
+[1202.00s -> 1205.00s]  We're going to type control C, or quit, and that's that.
+[1205.00s -> 1207.00s]  But anyway, the point is that now we've actually got
+[1207.00s -> 1210.00s]  a little bit more functionality to our simple shell,
+[1210.00s -> 1215.00s]  which is to say that we can now run a command in the background
+[1215.00s -> 1217.00s]  or what we call in the foreground,
+[1217.00s -> 1219.00s]  which actually pauses the parent.
+[1219.00s -> 1220.00s]  Yeah?
+[1220.00s -> 1223.00s]  Why do we want to wait PID for the parent
+[1223.00s -> 1227.00s]  if the child is the one that's supposed to be running in the background?
+[1227.00s -> 1228.00s]  Yeah, good question.
+[1228.00s -> 1234.00s]  So the question was, hey, why are we waiting on the PID in the parent?
+[1234.00s -> 1237.00s]  Okay, remember what the parent is doing.
+[1237.00s -> 1239.00s]  The parent is giving you back a prompt
+[1239.00s -> 1241.00s]  and waiting for you to type something, right?
+[1241.00s -> 1244.00s]  If I run a program normally without being in the background,
+[1244.00s -> 1246.00s]  in what we call the foreground,
+[1246.00s -> 1249.00s]  we don't want the parent to put the prompt
+[1249.00s -> 1252.00s]  until it's waiting for the child to end.
+[1252.00s -> 1253.00s]  Does that make sense?
+[1253.00s -> 1254.00s]  So that's what's happening here.
+[1254.00s -> 1256.00s]  It's waiting for the child to end
+[1256.00s -> 1258.00s]  when it's in the foreground
+[1258.00s -> 1263.00s]  because the child process is taking over the input-output.
+[1263.00s -> 1266.00s]  If it's in the background, we don't want to wait PID
+[1266.00s -> 1269.00s]  because we want to go, oh, okay, it's off running on its own,
+[1269.00s -> 1272.00s]  let's give you back a prompt so you can do more other things.
+[1272.00s -> 1273.00s]  Does that make sense?
+[1273.00s -> 1274.00s]  Yeah.
+[1274.00s -> 1279.00s]  Does the child not finish until after the argument
+[1279.00s -> 1283.00s]  or the command pass and the exact CBP ends?
+[1283.00s -> 1284.00s]  That's a good question.
+[1284.00s -> 1287.00s]  Wait, does the child not finish until the exact CBP ends?
+[1287.00s -> 1290.00s]  Yes, the exact CBP is the child at that point.
+[1290.00s -> 1293.00s]  Remember, the entire process gets taken over by that program
+[1293.00s -> 1295.00s]  and it is the child process.
+[1295.00s -> 1297.00s]  So even though you run that other program, that's a child,
+[1297.00s -> 1301.00s]  but when that program ends, then your wait PID will stop.
+[1301.00s -> 1302.00s]  Good question.
+[1302.00s -> 1304.00s]  Will the child ever get to the line
+[1304.00s -> 1305.00s]  that you're focusing on right now?
+[1305.00s -> 1307.00s]  The child will never get here
+[1307.00s -> 1309.00s]  if the command was a legitimate command.
+[1309.00s -> 1310.00s]  Why?
+[1310.00s -> 1312.00s]  Because exact CBP never returns
+[1312.00s -> 1316.00s]  if it cannibalizes the process and works correctly.
+[1316.00s -> 1317.00s]  Good question.
+[1317.00s -> 1320.00s]  Any other questions on that?
+[1320.00s -> 1321.00s]  Okay.
+[1321.00s -> 1323.00s]  Let us, and you can go, like I said,
+[1323.00s -> 1324.00s]  you can either run it in here
+[1324.00s -> 1327.00s]  or you can run it certainly on your own computer
+[1327.00s -> 1329.00s]  using the myth machines.
+[1329.00s -> 1330.00s]  All right.
+[1330.00s -> 1334.00s]  Let's talk about another system call called PIPE.
+[1334.00s -> 1335.00s]  All right.
+[1335.00s -> 1338.00s]  The PIPE system call enables you
+[1338.00s -> 1341.00s]  to have two file descriptors,
+[1341.00s -> 1343.00s]  one of which you read from,
+[1343.00s -> 1345.00s]  the other you write to,
+[1345.00s -> 1348.00s]  and whenever you write something to that other one,
+[1348.00s -> 1351.00s]  you can read that data from the first one.
+[1351.00s -> 1353.00s]  It basically sets up two file descriptors
+[1353.00s -> 1355.00s]  that communicate with each other.
+[1355.00s -> 1356.00s]  Okay.
+[1356.00s -> 1358.00s]  Well, let's see how that actually works.
+[1358.00s -> 1361.00s]  It takes in a little array,
+[1361.00s -> 1364.00s]  in fact, a very small array of two integers
+[1364.00s -> 1368.00s]  of FDS 0 and 1.
+[1368.00s -> 1369.00s]  Okay.
+[1369.00s -> 1371.00s]  So it takes a two-integer array,
+[1371.00s -> 1374.00s]  and those integers, when you call PIPE,
+[1374.00s -> 1381.00s]  it populates that array with two file descriptors.
+[1381.00s -> 1383.00s]  One of the file descriptors you're going to read from,
+[1383.00s -> 1385.00s]  the other one you're going to write to.
+[1385.00s -> 1386.00s]  Okay.
+[1386.00s -> 1391.00s]  And what it does is it actually sets it up
+[1391.00s -> 1394.00s]  so that parents and children can talk to each other,
+[1394.00s -> 1397.00s]  because remember, when you do fork,
+[1397.00s -> 1399.00s]  everything is copied,
+[1399.00s -> 1403.00s]  and the pointers into the open file table are also copied,
+[1403.00s -> 1405.00s]  so you get the data
+[1405.00s -> 1407.00s]  so that you can write to one and read from the other,
+[1407.00s -> 1410.00s]  and they're both in, both the parent and the child.
+[1410.00s -> 1411.00s]  Okay.
+[1411.00s -> 1412.00s]  We're going to see an example of this in a few minutes,
+[1412.00s -> 1413.00s]  and you can do that.
+[1413.00s -> 1416.00s]  And you can see why it actually becomes important.
+[1416.00s -> 1417.00s]  Okay.
+[1417.00s -> 1418.00s]  But that's what PIPE does.
+[1418.00s -> 1420.00s]  You call PIPE, you pass in this tiny array,
+[1420.00s -> 1422.00s]  you do not have to initialize the array, it doesn't matter.
+[1422.00s -> 1423.00s]  You just pass it in,
+[1423.00s -> 1426.00s]  and it populates that array with two file descriptors,
+[1426.00s -> 1427.00s]  one of which writes,
+[1427.00s -> 1430.00s]  and the other one reads from the one that was just written.
+[1430.00s -> 1431.00s]  Okay.
+[1431.00s -> 1432.00s]  That's how it works.
+[1432.00s -> 1433.00s]  All right.
+[1433.00s -> 1435.00s]  Let's look at a program.
+[1435.00s -> 1436.00s]  In fact, I'll write this one out
+[1436.00s -> 1438.00s]  so we can do it one line at a time.
+[1438.00s -> 1440.00s]  Okay.
+[1440.00s -> 1445.00s]  This one is going to be called pipe experiment dot C.
+[1445.00s -> 1446.00s]  Okay.
+[1446.00s -> 1448.00s]  So in here, what we're going to do,
+[1448.00s -> 1453.00s]  is we're going to do this int fds2.
+[1453.00s -> 1457.00s]  That's our file descriptor that the pipe is going to populate.
+[1457.00s -> 1458.00s]  Okay.
+[1458.00s -> 1460.00s]  Then we're going to say pipe fds.
+[1460.00s -> 1462.00s]  We're going to ignore the return value for now.
+[1462.00s -> 1464.00s]  Don't worry about the return value.
+[1464.00s -> 1465.00s]  It actually is not,
+[1465.00s -> 1467.00s]  I think it may give us negative one.
+[1467.00s -> 1469.00s]  If it doesn't work, just ignore it for now.
+[1469.00s -> 1470.00s]  Okay.
+[1470.00s -> 1474.00s]  And then we're going to do a fork.
+[1474.00s -> 1478.00s]  PID t PID equals fork.
+[1478.00s -> 1479.00s]  Okay.
+[1479.00s -> 1480.00s]  All right.
+[1480.00s -> 1484.00s]  If PID equals zero, which means we're the child.
+[1484.00s -> 1485.00s]  Okay.
+[1485.00s -> 1486.00s]  What are we going to do?
+[1486.00s -> 1488.00s]  We are going to, well,
+[1488.00s -> 1490.00s]  here's what this program is going to do.
+[1490.00s -> 1491.00s]  I guess I should tell you that first.
+[1491.00s -> 1495.00s]  The program is going to create a pipe,
+[1495.00s -> 1497.00s]  and the parent is going to write some data
+[1497.00s -> 1500.00s]  that the child will read.
+[1500.00s -> 1501.00s]  Okay.
+[1501.00s -> 1502.00s]  So the parent's going to write,
+[1502.00s -> 1503.00s]  the child is going to read.
+[1503.00s -> 1504.00s]  All right.
+[1504.00s -> 1506.00s]  By the way, this file descriptor,
+[1506.00s -> 1507.00s]  everybody always gets confused.
+[1507.00s -> 1508.00s]  Which one's the read?
+[1508.00s -> 1509.00s]  Which one's the write?
+[1509.00s -> 1511.00s]  The fds zero is the reader.
+[1511.00s -> 1513.00s]  And I always remember that because you learn to read
+[1513.00s -> 1514.00s]  before you learn to write.
+[1514.00s -> 1516.00s]  So it's the first one is the reader.
+[1516.00s -> 1519.00s]  And so the second one, fds one is the writer.
+[1519.00s -> 1520.00s]  That's the way I remember it.
+[1520.00s -> 1522.00s]  And what you can do is you can say,
+[1522.00s -> 1529.00s]  okay, because the child will read from the pipe.
+[1529.00s -> 1530.00s]  Okay.
+[1530.00s -> 1537.00s]  What we can do is we can immediately close the fds one.
+[1537.00s -> 1539.00s]  No need to write.
+[1539.00s -> 1542.00s]  In other words, we're going to close the pipe.
+[1542.00s -> 1544.00s]  When you create a pipe,
+[1544.00s -> 1547.00s]  it creates two file descriptors, right?
+[1547.00s -> 1549.00s]  And when you fork,
+[1549.00s -> 1551.00s]  now you've got a total of four file descriptors
+[1551.00s -> 1552.00s]  because everything's copied.
+[1552.00s -> 1555.00s]  And by the way, it updates the reference counts too.
+[1555.00s -> 1557.00s]  So now you've got a situation
+[1557.00s -> 1559.00s]  where you've got like four file descriptors
+[1559.00s -> 1560.00s]  floating around out there.
+[1560.00s -> 1563.00s]  You only really want to use two of them.
+[1563.00s -> 1565.00s]  The reader will be in the child
+[1565.00s -> 1567.00s]  and the writer will be in the parent.
+[1567.00s -> 1569.00s]  You could use both,
+[1569.00s -> 1571.00s]  but if both the parent and the child
+[1571.00s -> 1572.00s]  tried to write to the writer,
+[1572.00s -> 1574.00s]  they might get garbled up
+[1574.00s -> 1577.00s]  because there's no real easy way of determining
+[1577.00s -> 1580.00s]  who's going to be writing at one particular time.
+[1580.00s -> 1581.00s]  You could probably figure that out,
+[1581.00s -> 1583.00s]  but that's not what we're trying to do here.
+[1583.00s -> 1585.00s]  We're simply trying to get the child
+[1585.00s -> 1588.00s]  to read from this pipe when the parent writes to it.
+[1588.00s -> 1590.00s]  So we're going to close fds1
+[1590.00s -> 1593.00s]  because the child does not need to write.
+[1593.00s -> 1595.00s]  We're going to do a buffer
+[1595.00s -> 1597.00s]  that happens to have six characters.
+[1597.00s -> 1600.00s]  We're going to only pass six characters in here.
+[1600.00s -> 1602.00s]  We're going to, in the child,
+[1602.00s -> 1605.00s]  read from fds0
+[1605.00s -> 1607.00s]  and we're going to read into the buffer
+[1607.00s -> 1609.00s]  and we're going to read into,
+[1609.00s -> 1611.00s]  we're going to read six characters,
+[1611.00s -> 1615.00s]  which is basically the size of the buffer.
+[1615.00s -> 1617.00s]  And then we're going to print
+[1617.00s -> 1625.00s]  read from pipe bridging the processes,
+[1625.00s -> 1629.00s]  percent s, whatever we read,
+[1629.00s -> 1633.00s]  and we're going to write the buffer.
+[1633.00s -> 1635.00s]  So that's that.
+[1635.00s -> 1638.00s]  Now we are done reading in our child,
+[1638.00s -> 1641.00s]  so we need to close fds0
+[1641.00s -> 1643.00s]  because we just finished it.
+[1643.00s -> 1647.00s]  I'll just put done reading.
+[1647.00s -> 1651.00s]  And then we're going to return 0
+[1651.00s -> 1653.00s]  or we could exit as well.
+[1653.00s -> 1655.00s]  So that's what the child is doing.
+[1655.00s -> 1657.00s]  The child is
+[1657.00s -> 1660.00s]  got these two pipe parts,
+[1660.00s -> 1662.00s]  it's going to close one of them
+[1662.00s -> 1664.00s]  because it's not going to bother writing to it,
+[1664.00s -> 1666.00s]  and then it's going to read from the other one
+[1666.00s -> 1668.00s]  and when it's done it's going to close that.
+[1668.00s -> 1670.00s]  You should always close your file descriptors
+[1670.00s -> 1672.00s]  when you're done with them,
+[1672.00s -> 1674.00s]  so we don't need to close those.
+[1674.00s -> 1677.00s]  So that's what the child is going to do.
+[1677.00s -> 1680.00s]  The parent
+[1680.00s -> 1687.00s]  will write to fds1.
+[1687.00s -> 1690.00s]  So what's the one we're going to actually close?
+[1690.00s -> 1692.00s]  fds0.
+[1692.00s -> 1696.00s]  No reading necessary.
+[1696.00s -> 1698.00s]  That's what we're going to do there.
+[1698.00s -> 1700.00s]  And we know we're in the parent
+[1700.00s -> 1702.00s]  not the PID of 0.
+[1702.00s -> 1704.00s]  We got that.
+[1704.00s -> 1706.00s]  What we're going to do here
+[1706.00s -> 1708.00s]  is we're going to write fds1
+[1708.00s -> 1710.00s]  because that's the
+[1710.00s -> 1712.00s]  writer part of the pipe.
+[1712.00s -> 1714.00s]  And we're going to write just hello.
+[1714.00s -> 1716.00s]  And we're going to write 6 bytes.
+[1716.00s -> 1720.00s]  Why is it 6 bytes and not 5?
+[1720.00s -> 1722.00s]  Because there's a little null on the end there.
+[1722.00s -> 1724.00s]  Got to write that in there.
+[1724.00s -> 1726.00s]  And we are going to
+[1726.00s -> 1728.00s]  then just wait for the child.
+[1728.00s -> 1730.00s]  PID, PID.
+[1730.00s -> 1732.00s]  No, we could do this with the
+[1732.00s -> 1734.00s]  return values and all that.
+[1734.00s -> 1736.00s]  We're not going to worry about it.
+[1736.00s -> 1738.00s]  And then we are done
+[1738.00s -> 1740.00s]  with writing.
+[1740.00s -> 1742.00s]  Done writing.
+[1742.00s -> 1744.00s]  So we close that pipe, and then we return 0.
+[1744.00s -> 1746.00s]  Alright.
+[1746.00s -> 1748.00s]  Questions on that?
+[1748.00s -> 1750.00s]  Yeah?
+[1750.00s -> 1752.00s]  Do we have any guarantee
+[1752.00s -> 1754.00s]  that the parent is going to write
+[1754.00s -> 1756.00s]  for the child?
+[1756.00s -> 1758.00s]  That's a good question. Do you have a guarantee
+[1758.00s -> 1760.00s]  the parent will write before the child reads?
+[1760.00s -> 1762.00s]  No. But remember, read blocks
+[1762.00s -> 1764.00s]  until it gets the number of
+[1764.00s -> 1766.00s]  bytes that you request.
+[1766.00s -> 1768.00s]  So unless the parent closes
+[1768.00s -> 1770.00s]  that will wait until all 6
+[1770.00s -> 1772.00s]  bytes get in there.
+[1772.00s -> 1774.00s]  Generally, you actually
+[1774.00s -> 1776.00s]  it will wait if there are 6 available.
+[1776.00s -> 1778.00s]  If there were 4 and it closed, then it would only read 4.
+[1778.00s -> 1780.00s]  But in this case, we know we're sending 6.
+[1780.00s -> 1782.00s]  But no, that's a very good question.
+[1782.00s -> 1784.00s]  Alright, let's try to run this.
+[1784.00s -> 1786.00s]  Make pipe experiment.
+[1788.00s -> 1790.00s]  Alright, pipe experiment.
+[1790.00s -> 1792.00s]  This is going to be kind of anti-climactic, but
+[1792.00s -> 1794.00s]  read from pipe bridging process. Hello!
+[1794.00s -> 1796.00s]  Okay, so that's all it did.
+[1796.00s -> 1798.00s]  What
+[1798.00s -> 1800.00s]  questions do you have about this
+[1800.00s -> 1802.00s]  at this point? What other questions?
+[1802.00s -> 1804.00s]  Yeah?
+[1804.00s -> 1806.00s]  If you made the buffer 12 long,
+[1806.00s -> 1808.00s]  and then
+[1808.00s -> 1810.00s]  but you only wrote 6.
+[1810.00s -> 1812.00s]  Let's try it and see what happens.
+[1812.00s -> 1814.00s]  Alright, let's just try it and see what happens.
+[1814.00s -> 1816.00s]  Okay.
+[1816.00s -> 1818.00s]  If we made the buffer 12
+[1818.00s -> 1820.00s]  and said, hey, let's read 12.
+[1820.00s -> 1822.00s]  Okay.
+[1822.00s -> 1824.00s]  And then
+[1824.00s -> 1826.00s]  if we
+[1826.00s -> 1828.00s]  if we made the buffer 12
+[1828.00s -> 1830.00s]  and said, hey, let's read 12.
+[1830.00s -> 1832.00s]  Okay.
+[1832.00s -> 1834.00s]  Okay.
+[1834.00s -> 1836.00s]  Let's see. That was that.
+[1836.00s -> 1838.00s]  Size of buffer is okay. And there we go.
+[1838.00s -> 1840.00s]  Let's see. Make pipe
+[1840.00s -> 1842.00s]  experiment.
+[1842.00s -> 1844.00s]  Pipe experiment. Same thing.
+[1844.00s -> 1846.00s]  So what happened was, it tried to read
+[1846.00s -> 1848.00s]  12 bytes. It read only
+[1848.00s -> 1850.00s]  6. And then
+[1850.00s -> 1852.00s]  the file ended.
+[1852.00s -> 1854.00s]  Like in other words, the input file
+[1854.00s -> 1856.00s]  ended. And so it was able to
+[1856.00s -> 1858.00s]  continue. Now, what if we did
+[1858.00s -> 1860.00s]  this though? What if we said,
+[1860.00s -> 1862.00s]  oh, I'm going to forget
+[1862.00s -> 1864.00s]  to close my writer. Let's see if this actually
+[1864.00s -> 1866.00s]  changes. It may or may not. It may close it
+[1866.00s -> 1868.00s]  when it returned, when it actually ends.
+[1868.00s -> 1870.00s]  Let's just see. Pipe
+[1870.00s -> 1872.00s]  experiment.
+[1872.00s -> 1874.00s]  And let's see.
+[1874.00s -> 1876.00s]  Yeah, okay. So it did actually
+[1876.00s -> 1878.00s]  in that case close it. But
+[1878.00s -> 1880.00s]  I bet if we ran it in Valgrind. Oh,
+[1880.00s -> 1882.00s]  I don't know how the actual file ended. In Valgrind,
+[1882.00s -> 1884.00s]  you can check to see if the files
+[1884.00s -> 1886.00s]  are still open and it will tell you. Not a good
+[1886.00s -> 1888.00s]  idea to leave them open just for waste. Yeah.
+[1888.00s -> 1890.00s]  Alright, what other questions?
+[1898.00s -> 1900.00s]  Can you only read and write to one
+[1900.00s -> 1902.00s]  at a time? And if
+[1902.00s -> 1904.00s]  you had multiple children, would you be able to
+[1904.00s -> 1906.00s]  only use this once? You can use
+[1906.00s -> 1908.00s]  this pipe for whatever you want. As long as
+[1908.00s -> 1910.00s]  your logic is okay, you can have
+[1910.00s -> 1912.00s]  all your children reading from it. But you need
+[1912.00s -> 1914.00s]  to know what order things were happening
+[1914.00s -> 1916.00s]  back in the parent and so forth.
+[1916.00s -> 1918.00s]  But generally, if you're trying to write
+[1918.00s -> 1920.00s]  to multiple children, you will probably create a different
+[1920.00s -> 1922.00s]  pipe for each child and just keep them in
+[1922.00s -> 1924.00s]  an array and each child has its own
+[1924.00s -> 1926.00s]  reader
+[1926.00s -> 1928.00s]  pipe that it's trying to read from. And by the way,
+[1928.00s -> 1930.00s]  we could have swapped this and had the child write
+[1930.00s -> 1932.00s]  to the pipe and the parent read it as well.
+[1932.00s -> 1934.00s]  But that would work too.
+[1942.00s -> 1944.00s]  Oh, good question. Why is it implemented
+[1944.00s -> 1946.00s]  as an array of
+[1946.00s -> 1948.00s]  two file descriptors?
+[1948.00s -> 1950.00s]  This is the way they wrote it.
+[1950.00s -> 1952.00s]  They just said, nope, you've got to have an array.
+[1952.00s -> 1954.00s]  And it does have to be an array. It can't be
+[1954.00s -> 1956.00s]  like two. It's not two parameters. It's one
+[1956.00s -> 1958.00s]  parameter, which they pointer to an int
+[1958.00s -> 1960.00s]  array.
+[1960.00s -> 1962.00s]  And it can't be more than two. A pipe is only working
+[1962.00s -> 1964.00s]  on two. It creates a reader and a writer.
+[1964.00s -> 1966.00s]  That's it.
+[1966.00s -> 1968.00s]  Could you explain why we wait for the child
+[1968.00s -> 1970.00s]  process before closing the
+[1970.00s -> 1972.00s]  file descriptor?
+[1972.00s -> 1974.00s]  Yeah, good question. So why do we wait
+[1974.00s -> 1976.00s]  for the child process before closing the file
+[1976.00s -> 1978.00s]  descriptor? It
+[1978.00s -> 1980.00s]  could be that if you close, or it probably
+[1980.00s -> 1982.00s]  could be, and I'm not 100% sure on this, but
+[1982.00s -> 1984.00s]  it probably could be that if you close the file descriptor before
+[1984.00s -> 1986.00s]  the reader has done
+[1986.00s -> 1988.00s]  reading, it might actually say,
+[1988.00s -> 1990.00s]  oh, both the writers done, I'm not going to
+[1990.00s -> 1992.00s]  actually produce any more information. So you
+[1992.00s -> 1994.00s]  kind of want to wait. You definitely don't want to close it until
+[1994.00s -> 1996.00s]  you're sure that the other
+[1996.00s -> 1998.00s]  process has done all the reading. I think that's it.
+[1998.00s -> 2000.00s]  Any other questions
+[2000.00s -> 2002.00s]  on this one? Yeah.
+[2002.00s -> 2004.00s]  At fork, we have four
+[2004.00s -> 2006.00s]  processes?
+[2006.00s -> 2008.00s]  At fork, I didn't say four
+[2008.00s -> 2010.00s]  processes, or if I did, I apologize. We have
+[2010.00s -> 2012.00s]  four file descriptors
+[2012.00s -> 2014.00s]  now, because we have two file descriptors for
+[2014.00s -> 2016.00s]  FDS in the parent, and two
+[2016.00s -> 2018.00s]  file descriptors for FDS in the child.
+[2018.00s -> 2020.00s]  Only two processes. Whenever you fork,
+[2020.00s -> 2022.00s]  you get one more process.
+[2022.00s -> 2024.00s]  But you've got a copy of FDS.
+[2024.00s -> 2026.00s]  So the parent has FDS
+[2026.00s -> 2028.00s]  0 and 1, and the child has FDS 0
+[2028.00s -> 2030.00s]  and 1, which is why we had four
+[2030.00s -> 2032.00s]  closes in here. We closed
+[2032.00s -> 2034.00s]  FDS 1, and the child immediately, because we're not
+[2034.00s -> 2036.00s]  writing to it, we close
+[2036.00s -> 2038.00s]  it after we're done reading, because we're done with it
+[2038.00s -> 2040.00s]  completely, and then the exact opposite
+[2040.00s -> 2042.00s]  in the parent.
+[2042.00s -> 2044.00s]  I thought since they're copies, they don't
+[2044.00s -> 2046.00s]  update in each other's
+[2046.00s -> 2048.00s]  frames. Good question.
+[2048.00s -> 2050.00s]  The question is, wait, wait, if they're copies,
+[2050.00s -> 2052.00s]  they don't update in each frame. When you
+[2052.00s -> 2054.00s]  fork,
+[2054.00s -> 2056.00s]  they each end up getting,
+[2056.00s -> 2058.00s]  they both end up
+[2058.00s -> 2060.00s]  pointing to the open file table,
+[2060.00s -> 2062.00s]  which is one file that's open, right,
+[2062.00s -> 2064.00s]  for the actual file descriptors.
+[2064.00s -> 2066.00s]  And it does update the reference counts
+[2066.00s -> 2068.00s]  for who's pointing to them.
+[2068.00s -> 2070.00s]  It does not make new,
+[2070.00s -> 2072.00s]  there's no more opens in that case.
+[2072.00s -> 2074.00s]  Right. Yeah.
+[2074.00s -> 2076.00s]  So how does the child's copies
+[2076.00s -> 2078.00s]  know when the writing is finished?
+[2078.00s -> 2080.00s]  Good question. The question
+[2080.00s -> 2082.00s]  was, how does the child process know when
+[2082.00s -> 2084.00s]  the writing is finished?
+[2084.00s -> 2086.00s]  It reads as many bytes as are available,
+[2086.00s -> 2088.00s]  is really what it is. So I asked
+[2088.00s -> 2090.00s]  it to read six bytes,
+[2090.00s -> 2092.00s]  so it will read six bytes if they're
+[2092.00s -> 2094.00s]  available. That's how it knows.
+[2094.00s -> 2096.00s]  It waits until they're all ready.
+[2096.00s -> 2098.00s]  They're all available.
+[2098.00s -> 2100.00s]  Because if you are updating them,
+[2100.00s -> 2102.00s]  is it possible for the child to read before
+[2102.00s -> 2104.00s]  you write? No, no. It's possible
+[2104.00s -> 2106.00s]  for the child to try to read before the write is
+[2106.00s -> 2108.00s]  done. But it waits until those six are available.
+[2108.00s -> 2110.00s]  So they're not available?
+[2110.00s -> 2112.00s]  They might not be available when that
+[2112.00s -> 2114.00s]  read command is generated.
+[2114.00s -> 2116.00s]  Yeah, good question.
+[2116.00s -> 2118.00s]  Yeah.
+[2118.00s -> 2120.00s]  So by waiting, do you mean like
+[2120.00s -> 2122.00s]  there's a signal in like
+[2122.00s -> 2124.00s]  the read function and
+[2124.00s -> 2126.00s]  while it's in the child process that it'll
+[2126.00s -> 2128.00s]  wait until it receives that signal and then
+[2128.00s -> 2130.00s]  execute the rest of that child process
+[2130.00s -> 2132.00s]  after read? Like once it actually
+[2132.00s -> 2134.00s]  has the six bytes to read from?
+[2134.00s -> 2136.00s]  So what you're asking about, the question
+[2136.00s -> 2138.00s]  was basically, wait, how does this waiting work
+[2138.00s -> 2140.00s]  here? Read
+[2140.00s -> 2142.00s]  is a system command, or a system call.
+[2142.00s -> 2144.00s]  And the
+[2144.00s -> 2146.00s]  kernel says, oh, okay, you want to
+[2146.00s -> 2148.00s]  read six bytes from this other file.
+[2148.00s -> 2150.00s]  Or from this file descriptor.
+[2150.00s -> 2152.00s]  Are they available yet?
+[2152.00s -> 2154.00s]  No data has been
+[2154.00s -> 2156.00s]  read yet. Oh, okay.
+[2156.00s -> 2158.00s]  I'll just put you to sleep until they're available.
+[2158.00s -> 2160.00s]  And then when they're available, I'll
+[2160.00s -> 2162.00s]  give you them back, you will read them all,
+[2162.00s -> 2164.00s]  and then you will continue along with your program.
+[2164.00s -> 2166.00s]  Yeah, that's actually a very
+[2166.00s -> 2168.00s]  good question. Because
+[2168.00s -> 2170.00s]  later on, we'll see a function where
+[2170.00s -> 2172.00s]  we go, wait a minute, how does, we're
+[2172.00s -> 2174.00s]  going to use a sort function, how does the
+[2174.00s -> 2176.00s]  sort function know to wait for the data?
+[2176.00s -> 2178.00s]  It just says, hey, give me all the data
+[2178.00s -> 2180.00s]  until the file ends. And if there's no
+[2180.00s -> 2182.00s]  data, if the file hasn't ended,
+[2182.00s -> 2184.00s]  it'll just wait until data comes in.
+[2184.00s -> 2186.00s]  So we'll get to a little bit more of that later.
+[2186.00s -> 2188.00s]  So if we change the load to high,
+[2188.00s -> 2190.00s]  then we'll never have six characters,
+[2190.00s -> 2192.00s]  so will the child ever read it?
+[2192.00s -> 2194.00s]  Yeah, let's try this. It may actually,
+[2194.00s -> 2196.00s]  probably, yeah, if we don't close
+[2196.00s -> 2198.00s]  the thing, good question. The question was, wait, what if
+[2198.00s -> 2200.00s]  we changed it to, we only
+[2200.00s -> 2202.00s]  wrote
+[2202.00s -> 2204.00s]  high, and we only wrote
+[2204.00s -> 2206.00s]  three bytes instead of
+[2206.00s -> 2208.00s]  six. Let's see.
+[2208.00s -> 2210.00s]  Make pipe experiment.
+[2210.00s -> 2212.00s]  Pipe experiment.
+[2212.00s -> 2214.00s]  Make pipe experiment.
+[2214.00s -> 2216.00s]  Let's see. In that case, it looks like it,
+[2216.00s -> 2218.00s]  let's see, did we change anything else?
+[2218.00s -> 2220.00s]  We still, oh,
+[2220.00s -> 2222.00s]  we didn't, let's
+[2222.00s -> 2224.00s]  see.
+[2224.00s -> 2226.00s]  Yeah, in that case, it may have been
+[2226.00s -> 2228.00s]  because we actually, the parent ended
+[2228.00s -> 2230.00s]  and the file closed on its own. That's
+[2230.00s -> 2232.00s]  probably what happened. So in other words, the file,
+[2232.00s -> 2234.00s]  so, if we were to do something
+[2234.00s -> 2236.00s]  like this, let's do this.
+[2236.00s -> 2238.00s]  Let's do
+[2238.00s -> 2240.00s]  this. While
+[2240.00s -> 2242.00s]  on semicolon. Just keep going forever.
+[2242.00s -> 2244.00s]  Right? Like the parent won't end.
+[2244.00s -> 2246.00s]  We won't be able to tell if the child ends.
+[2246.00s -> 2248.00s]  Ah, yes we will.
+[2248.00s -> 2250.00s]  You guys are making me do all this crazy stuff.
+[2250.00s -> 2252.00s]  How about this?
+[2252.00s -> 2254.00s]  It probably won't actually, shouldn't actually print
+[2254.00s -> 2256.00s]  anything, but let's just do that. Print
+[2256.00s -> 2258.00s]  child is
+[2258.00s -> 2260.00s]  ending.
+[2260.00s -> 2262.00s]  Like that.
+[2262.00s -> 2264.00s]  Make pipe experiment.
+[2264.00s -> 2266.00s]  Pipe experiment there. Okay, so
+[2266.00s -> 2268.00s]  it did seem to do, it did seem to read
+[2268.00s -> 2270.00s]  but it's probably, possibly because
+[2270.00s -> 2272.00s]  the
+[2272.00s -> 2274.00s]  zero is on the end of the high. That might
+[2274.00s -> 2276.00s]  be what it is. I don't know, we can
+[2276.00s -> 2278.00s]  check again. There's some nuances
+[2278.00s -> 2280.00s]  in here that, let's see, that one
+[2280.00s -> 2282.00s]  is still, the parent is still
+[2282.00s -> 2284.00s]  three. What if we made it only
+[2284.00s -> 2286.00s]  two?
+[2286.00s -> 2288.00s]  Hang on. If we made it
+[2288.00s -> 2290.00s]  six, it would read past the end of the buffer.
+[2290.00s -> 2292.00s]  That's probably not what we want to do.
+[2292.00s -> 2294.00s]  But, I mean, that would just be like,
+[2294.00s -> 2296.00s]  let's see.
+[2296.00s -> 2298.00s]  There we go. Now we've only written two, so
+[2298.00s -> 2300.00s]  I think it, what happens
+[2300.00s -> 2302.00s]  is these file descriptors are what we call
+[2302.00s -> 2304.00s]  somewhat buffered. If it gets a zero
+[2304.00s -> 2306.00s]  it will pass it on to the
+[2306.00s -> 2308.00s]  end, to the other program possibly.
+[2308.00s -> 2310.00s]  That's probably what's going on there.
+[2310.00s -> 2312.00s]  Where's the what?
+[2312.00s -> 2314.00s]  Oh, hi, at. Because I
+[2314.00s -> 2316.00s]  didn't pass the actual zero on there.
+[2316.00s -> 2318.00s]  So, oh, you know what, that's the
+[2318.00s -> 2320.00s]  other thing. Yeah, so it did get a zero eventually.
+[2320.00s -> 2322.00s]  So it tried to pass, it tried to read,
+[2322.00s -> 2324.00s]  it must have read
+[2324.00s -> 2326.00s]  only two or whatever, and then
+[2326.00s -> 2328.00s]  there is no zero on the end. So that's actually another
+[2328.00s -> 2330.00s]  thing. So yeah, it's a little more nuanced
+[2330.00s -> 2332.00s]  than that. So what this
+[2332.00s -> 2334.00s]  tells you is that you do have to
+[2334.00s -> 2336.00s]  make sure your logic is
+[2336.00s -> 2338.00s]  correct so that you know how much
+[2338.00s -> 2340.00s]  data is being read and written.
+[2340.00s -> 2342.00s]  It's not as important as you
+[2342.00s -> 2344.00s]  think because normally we will actually close
+[2344.00s -> 2346.00s]  files when we're done writing to them.
+[2346.00s -> 2348.00s]  So you should just remember to do that. It may or may not work
+[2348.00s -> 2350.00s]  depending on what you're trying to do.
+[2350.00s -> 2352.00s]  Yeah.
+[2353.00s -> 2355.00s]  This didn't reveal anything
+[2355.00s -> 2357.00s]  as it turns out. Good question.
+[2357.00s -> 2359.00s]  Yeah, I thought it was going to maybe
+[2359.00s -> 2361.00s]  pause and say, no, I didn't get enough
+[2361.00s -> 2363.00s]  data, but it only wrote
+[2363.00s -> 2365.00s]  two and then it's closed
+[2365.00s -> 2367.00s]  anyway and it didn't actually
+[2367.00s -> 2369.00s]  wait for more data
+[2369.00s -> 2371.00s]  as it turns out. Yeah.
+[2371.00s -> 2373.00s]  I'm trying to think if there's a way to do that.
+[2373.00s -> 2375.00s]  Let's see. I don't
+[2375.00s -> 2377.00s]  yeah, I'm not sure exactly
+[2377.00s -> 2379.00s]  I'm not sure
+[2379.00s -> 2381.00s]  exactly how we would get it to pause
+[2381.00s -> 2383.00s]  in the child.
+[2383.00s -> 2385.00s]  I mean, maybe when it gets to this wait PID
+[2385.00s -> 2387.00s]  it says, it does something with it, but
+[2387.00s -> 2389.00s]  I'll have to look it up. I'll try to find out this
+[2389.00s -> 2391.00s]  actually if we can fool it into
+[2391.00s -> 2393.00s]  pausing in the child to wait for more data.
+[2393.00s -> 2395.00s]  There may be some timeout as well
+[2395.00s -> 2397.00s]  in the read. Yeah.
+[2397.00s -> 2399.00s]  What if you never wrote any data
+[2399.00s -> 2401.00s]  and it was just waiting to read and there was no data
+[2401.00s -> 2403.00s]  that wrote? Yeah, that's a good question.
+[2403.00s -> 2405.00s]  We can try it and see if there's no data
+[2405.00s -> 2407.00s]  we're actually writing at all.
+[2407.00s -> 2409.00s]  Make pipe experiment
+[2409.00s -> 2411.00s]  oops
+[2411.00s -> 2413.00s]  pipe experiment
+[2413.00s -> 2415.00s]  If we write no data
+[2415.00s -> 2417.00s]  it goes, ah, I'm waiting for some data
+[2417.00s -> 2419.00s]  and there's probably either a timeout in there
+[2419.00s -> 2421.00s]  or when the read write function
+[2421.00s -> 2423.00s]  finishes, it's right
+[2423.00s -> 2425.00s]  it tells the read, go ahead and read anything
+[2425.00s -> 2427.00s]  and so forth. So yeah. So this one told us something.
+[2427.00s -> 2429.00s]  It said if we don't write anything
+[2429.00s -> 2431.00s]  we'll get, you know, we'll get a pa
+[2431.00s -> 2433.00s]  we'll stop in the child
+[2433.00s -> 2435.00s]  and wait for more data.
+[2435.00s -> 2437.00s]  Okay. Lots of nuance
+[2437.00s -> 2439.00s]  I suppose in this.
+[2439.00s -> 2441.00s]  But anyway, that's how pipe works.
+[2441.00s -> 2443.00s]  Pipe creates two file descriptors
+[2443.00s -> 2445.00s]  one you can write to, one you can read from
+[2445.00s -> 2447.00s]  and whatever you wrote to the one you can write to
+[2447.00s -> 2449.00s]  gets read from the other one.
+[2449.00s -> 2451.00s]  This actually makes things very interesting
+[2451.00s -> 2453.00s]  as we go along.
+[2453.00s -> 2455.00s]  In fact, why don't I
+[2455.00s -> 2457.00s]  show you something first
+[2457.00s -> 2459.00s]  before we get to the next little part here.
+[2459.00s -> 2461.00s]  There is a program
+[2461.00s -> 2463.00s]  built into Unix called sort
+[2463.00s -> 2465.00s]  and what sort does
+[2465.00s -> 2467.00s]  it will sort input
+[2467.00s -> 2469.00s]  that you type in line by line
+[2469.00s -> 2471.00s]  it will sort it
+[2471.00s -> 2473.00s]  so if I type bat
+[2473.00s -> 2475.00s]  and cat and apple
+[2475.00s -> 2477.00s]  and dino
+[2477.00s -> 2479.00s]  sore
+[2479.00s -> 2481.00s]  and let's do some other things
+[2481.00s -> 2483.00s]  in here
+[2483.00s -> 2485.00s]  bling and
+[2485.00s -> 2487.00s]  cool and whatever and when I end
+[2487.00s -> 2489.00s]  if I do control D
+[2489.00s -> 2491.00s]  it will actually rewrite
+[2491.00s -> 2493.00s]  all the output in sorted
+[2493.00s -> 2495.00s]  order. That's what sort does.
+[2495.00s -> 2497.00s]  If I had a
+[2497.00s -> 2499.00s]  file, let's say
+[2499.00s -> 2501.00s]  unsorted
+[2501.00s -> 2503.00s]  dot txt
+[2503.00s -> 2505.00s]  and I put these words in
+[2505.00s -> 2507.00s]  the unsorted file, I could do the following
+[2507.00s -> 2509.00s]  I could say sort
+[2509.00s -> 2511.00s]  unsorted dot txt
+[2511.00s -> 2513.00s]  I could also do
+[2513.00s -> 2515.00s]  cat unsorted dot txt
+[2515.00s -> 2517.00s]  and then pipe it
+[2517.00s -> 2519.00s]  into sort.
+[2519.00s -> 2521.00s]  And what
+[2521.00s -> 2523.00s]  that does is sort
+[2523.00s -> 2525.00s]  member takes input as you're
+[2525.00s -> 2527.00s]  typing it, waits until it's all in,
+[2527.00s -> 2529.00s]  sorts all the lines and then spits them all
+[2529.00s -> 2531.00s]  out again. But this pipe
+[2531.00s -> 2533.00s]  idea, this little
+[2533.00s -> 2535.00s]  vertical bar
+[2535.00s -> 2537.00s]  says take the output
+[2537.00s -> 2539.00s]  from cat, which is the
+[2539.00s -> 2541.00s]  words, and send
+[2541.00s -> 2543.00s]  it into the input
+[2543.00s -> 2545.00s]  of sort.
+[2545.00s -> 2547.00s]  You have to think about what's going on there.
+[2547.00s -> 2549.00s]  There's actually the output of one file
+[2549.00s -> 2551.00s]  becomes the input of another file
+[2551.00s -> 2553.00s]  and we do that with a pipe.
+[2553.00s -> 2555.00s]  So that's actually what we're
+[2555.00s -> 2557.00s]  about to take a look at
+[2557.00s -> 2559.00s]  now.
+[2559.00s -> 2561.00s]  So let's see how we're going to
+[2561.00s -> 2563.00s]  this is the one we could run that again.
+[2563.00s -> 2565.00s]  We already did that.
+[2565.00s -> 2567.00s]  We've already
+[2567.00s -> 2569.00s]  talked about all this.
+[2569.00s -> 2571.00s]  All these things about how the actual
+[2571.00s -> 2573.00s]  pipe works.
+[2573.00s -> 2575.00s]  I think that's a duplicate.
+[2575.00s -> 2577.00s]  Here's an example
+[2577.00s -> 2579.00s]  of what we're going to do. You will redo
+[2579.00s -> 2581.00s]  this function and make it
+[2581.00s -> 2583.00s]  more robust for your
+[2583.00s -> 2585.00s]  next assignment, assignment 3, which is
+[2585.00s -> 2587.00s]  going to come out on Thursday.
+[2587.00s -> 2589.00s]  It is
+[2589.00s -> 2591.00s]  a process or a function
+[2591.00s -> 2593.00s]  we're going to create called
+[2593.00s -> 2595.00s]  subprocess.
+[2595.00s -> 2597.00s]  Subprocess uses
+[2597.00s -> 2599.00s]  all these
+[2599.00s -> 2601.00s]  pipe and fork and dupe
+[2601.00s -> 2603.00s]  and a thing called dupe2,
+[2603.00s -> 2605.00s]  which we'll get to what that means in a minute.
+[2605.00s -> 2607.00s]  And it uses exec cpp and so forth
+[2607.00s -> 2609.00s]  to produce
+[2609.00s -> 2611.00s]  to basically say I want to
+[2611.00s -> 2613.00s]  send my output of my
+[2613.00s -> 2615.00s]  program to some other file that's
+[2615.00s -> 2617.00s]  running. So it's kind of neat.
+[2617.00s -> 2619.00s]  The thing we need to first
+[2619.00s -> 2621.00s]  look at is this struct that we're
+[2621.00s -> 2623.00s]  going to create. It is called subprocess
+[2623.00s -> 2625.00s]  underscore t and here's what it has
+[2625.00s -> 2627.00s]  in it. It has a PID, which
+[2627.00s -> 2629.00s]  is the process of the
+[2629.00s -> 2631.00s]  the
+[2631.00s -> 2633.00s]  I guess it's the program you're
+[2633.00s -> 2635.00s]  running, the process of the program you're running, and
+[2635.00s -> 2637.00s]  it has a supply file
+[2637.00s -> 2639.00s]  descriptor. In other words, a file descriptor that if you
+[2639.00s -> 2641.00s]  write to it, it becomes
+[2641.00s -> 2643.00s]  the input to the file that you
+[2643.00s -> 2645.00s]  the program you're running.
+[2649.00s -> 2651.00s]  It gives you the process identifier
+[2651.00s -> 2653.00s]  for the program you're running
+[2653.00s -> 2655.00s]  and it also gives you a
+[2655.00s -> 2657.00s]  file descriptor
+[2657.00s -> 2659.00s]  that when you write to it,
+[2659.00s -> 2661.00s]  it becomes the input for
+[2661.00s -> 2663.00s]  the file you're running.
+[2663.00s -> 2665.00s]  So let's think about how we're going to use this for sort
+[2665.00s -> 2667.00s]  and that's actually the example we're going to use exactly.
+[2667.00s -> 2669.00s]  What we're going to do
+[2669.00s -> 2671.00s]  is we're going to create a subprocess
+[2671.00s -> 2673.00s]  of the sort program
+[2673.00s -> 2675.00s]  and then we're going to pass into it
+[2675.00s -> 2677.00s]  a bunch of strings
+[2677.00s -> 2679.00s]  and the sort program is going to sort them
+[2679.00s -> 2681.00s]  and print the output to the screen.
+[2681.00s -> 2683.00s]  Our program is going to
+[2683.00s -> 2685.00s]  pass in a bunch of strings
+[2685.00s -> 2687.00s]  to sort. And we're going to let
+[2687.00s -> 2689.00s]  sort do the sorting.
+[2689.00s -> 2691.00s]  That's what's going on. You'll see how it works
+[2691.00s -> 2693.00s]  in a minute. I'm getting some faces like, I don't get it. You'll see
+[2693.00s -> 2695.00s]  when it happens.
+[2701.00s -> 2703.00s]  It's the PID of the child
+[2703.00s -> 2705.00s]  process which is the one of, in this case,
+[2705.00s -> 2707.00s]  the sort for instance. And you'll see why we
+[2707.00s -> 2709.00s]  need to do that because
+[2709.00s -> 2711.00s]  we need to wait for it. We're going to create the
+[2711.00s -> 2713.00s]  subprocess and then wait for it to end
+[2713.00s -> 2715.00s]  after we send it all the data.
+[2715.00s -> 2717.00s]  You'll see how it works in a minute.
+[2717.00s -> 2719.00s]  Alright, so
+[2719.00s -> 2721.00s]  we're going to again
+[2721.00s -> 2723.00s]  pass in a command
+[2723.00s -> 2725.00s]  which is going to, in our case, be sort
+[2725.00s -> 2727.00s]  or whatever file or program
+[2727.00s -> 2729.00s]  we want to run. And it's
+[2729.00s -> 2731.00s]  going to
+[2731.00s -> 2733.00s]  create that process
+[2733.00s -> 2735.00s]  start that process running
+[2735.00s -> 2737.00s]  and it's going to
+[2737.00s -> 2739.00s]  basically tell the process, hey
+[2739.00s -> 2741.00s]  I'm going to give you a bunch of standard in
+[2741.00s -> 2743.00s]  as if you were typing it
+[2743.00s -> 2745.00s]  and then your job is to do whatever you want
+[2745.00s -> 2747.00s]  in this case it's going to sort, in our case
+[2747.00s -> 2749.00s]  it's going to sort it.
+[2749.00s -> 2751.00s]  That's what's going on.
+[2751.00s -> 2753.00s]  So
+[2753.00s -> 2755.00s]  let's actually look
+[2755.00s -> 2757.00s]  at it. So here's what I'm going to do.
+[2757.00s -> 2759.00s]  I'm going to type in
+[2759.00s -> 2761.00s]  I'm going to start with main
+[2761.00s -> 2763.00s]  actually. subprocess.c
+[2763.00s -> 2765.00s]  I'm going to start with
+[2765.00s -> 2767.00s]  main
+[2767.00s -> 2769.00s]  here. Here's the type, here's the
+[2769.00s -> 2771.00s]  struct that we're going to have.
+[2771.00s -> 2773.00s]  And in main, here's
+[2773.00s -> 2775.00s]  what we're going to do. We're going to
+[2775.00s -> 2777.00s]  make this program sort a bunch of
+[2777.00s -> 2779.00s]  words for us that we're going to pass to the sorting
+[2779.00s -> 2781.00s]  program.
+[2781.00s -> 2783.00s]  So we're going to start out and we're going to say
+[2783.00s -> 2785.00s]  we haven't written this function yet, we will.
+[2785.00s -> 2787.00s]  subprocess
+[2787.00s -> 2789.00s]  tsp equals
+[2789.00s -> 2791.00s]  subprocess
+[2791.00s -> 2793.00s]  and the
+[2793.00s -> 2795.00s]  sort program lives at
+[2795.00s -> 2797.00s]  slash user slash bin
+[2797.00s -> 2799.00s]  slash sort.
+[2799.00s -> 2801.00s]  Our subprocess
+[2801.00s -> 2803.00s]  is going to take that sort function, it's going to
+[2803.00s -> 2805.00s]  create this subprocess tstruct
+[2805.00s -> 2807.00s]  for us, it's going to create all the little
+[2807.00s -> 2809.00s]  pipe, the pipe that's necessary, and it's going to set
+[2809.00s -> 2811.00s]  it all up. We'll get to that.
+[2811.00s -> 2813.00s]  But that's what it's going to do. It's going to start the sort program
+[2813.00s -> 2815.00s]  going, waiting for our data.
+[2815.00s -> 2817.00s]  Alright.
+[2817.00s -> 2819.00s]  So then we're going to
+[2819.00s -> 2821.00s]  create some words, char star
+[2821.00s -> 2823.00s]  words, and this
+[2823.00s -> 2825.00s]  in this case is going to, I don't know, we'll use
+[2825.00s -> 2827.00s]  some words like
+[2827.00s -> 2829.00s]  let's use, Jerry calls them
+[2829.00s -> 2831.00s]  SAT words.
+[2831.00s -> 2833.00s]  Felicity
+[2833.00s -> 2835.00s]  Umbridge
+[2835.00s -> 2837.00s]  doesn't matter, whatever
+[2837.00s -> 2839.00s]  word you want.
+[2839.00s -> 2841.00s]  Susser
+[2841.00s -> 2843.00s]  creation, hopefully I'm spelling these right.
+[2843.00s -> 2845.00s]  Halcyon
+[2845.00s -> 2847.00s]  etc.
+[2847.00s -> 2849.00s]  Okay, we're just basically creating a bunch of
+[2849.00s -> 2851.00s]  words that we're going to pass into this sort
+[2851.00s -> 2853.00s]  because we want to do that.
+[2853.00s -> 2855.00s]  Pulpritude
+[2855.00s -> 2857.00s]  let's see, ablution
+[2857.00s -> 2859.00s]  somnost,
+[2859.00s -> 2861.00s]  somnost?
+[2861.00s -> 2863.00s]  Okay, and then
+[2863.00s -> 2865.00s]  how about
+[2865.00s -> 2867.00s]  indefatigable
+[2867.00s -> 2869.00s]  Okay, it doesn't matter if I didn't
+[2869.00s -> 2871.00s]  spell them right.
+[2871.00s -> 2873.00s]  Okay, anyway we're going to create a bunch of words.
+[2873.00s -> 2875.00s]  They are not sorted right now.
+[2875.00s -> 2877.00s]  Okay, they're in just kind of random order.
+[2877.00s -> 2879.00s]  Okay, and then we are
+[2879.00s -> 2881.00s]  going to take those words
+[2881.00s -> 2883.00s]  i equals zero
+[2883.00s -> 2887.00s]  i is less than
+[2887.00s -> 2889.00s]  size of the words
+[2889.00s -> 2891.00s]  divided by size of
+[2891.00s -> 2893.00s]  word zero
+[2893.00s -> 2895.00s]  That should be familiar from 107
+[2895.00s -> 2897.00s]  what we're doing there.
+[2897.00s -> 2899.00s]  And then i++
+[2899.00s -> 2901.00s]  Okay, and then we're going to use
+[2901.00s -> 2903.00s]  a new function call called
+[2903.00s -> 2905.00s]  dprintf
+[2905.00s -> 2907.00s]  Okay, dprintf says hey, print to
+[2907.00s -> 2909.00s]  a particular file descriptor.
+[2909.00s -> 2911.00s]  Okay, well we have a file descriptor
+[2911.00s -> 2913.00s]  because we created the subprocess
+[2913.00s -> 2915.00s]  up here, sp
+[2915.00s -> 2917.00s]  we're going to go right to
+[2917.00s -> 2919.00s]  the supply
+[2919.00s -> 2921.00s]  fd
+[2921.00s -> 2923.00s]  and we're going to write out
+[2923.00s -> 2925.00s]  each one of these strings
+[2925.00s -> 2927.00s]  separated by
+[2927.00s -> 2929.00s]  the
+[2929.00s -> 2931.00s]  newline
+[2931.00s -> 2933.00s]  Okay, so what we're going to do is we're going to say hey
+[2933.00s -> 2935.00s]  I'm going to take this file descriptor I got back from subprocess
+[2935.00s -> 2937.00s]  and I'm going to throw a bunch of words
+[2937.00s -> 2939.00s]  a bunch of words at it, followed by newlines
+[2939.00s -> 2941.00s]  just as if I were typing those words in
+[2941.00s -> 2943.00s]  to the sort function
+[2943.00s -> 2945.00s]  Alright
+[2945.00s -> 2947.00s]  and then after we're done with that
+[2947.00s -> 2949.00s]  we're done
+[2949.00s -> 2951.00s]  we're done with the
+[2951.00s -> 2953.00s]  closing of
+[2953.00s -> 2955.00s]  we're done writing the words so we should close our thing
+[2955.00s -> 2957.00s]  we'll have to test this and see if we don't close that
+[2957.00s -> 2959.00s]  if it stops the sort
+[2959.00s -> 2961.00s]  if sort actually stops, I doubt it will
+[2961.00s -> 2963.00s]  but it may, I don't know
+[2963.00s -> 2965.00s]  and then we could actually
+[2965.00s -> 2967.00s]  actually in this case, yeah, well we might as well
+[2967.00s -> 2969.00s]  PID t
+[2969.00s -> 2971.00s]  PID equals weight PID
+[2971.00s -> 2973.00s]  for the PID
+[2973.00s -> 2975.00s]  that we were given in the subprocess
+[2975.00s -> 2977.00s]  okay, status
+[2977.00s -> 2979.00s]  and zero
+[2979.00s -> 2981.00s]  and then
+[2981.00s -> 2983.00s]  we are going to, let's see
+[2983.00s -> 2985.00s]  return
+[2985.00s -> 2987.00s]  PID equal
+[2987.00s -> 2989.00s]  we're going to basically check and see if we got an actual
+[2989.00s -> 2991.00s]  good return value
+[2991.00s -> 2993.00s]  if we got the correct PID back
+[2993.00s -> 2995.00s]  from weight PID, then we have to check
+[2995.00s -> 2997.00s]  and see if we got an actual good return value
+[2997.00s -> 2999.00s]  if exited
+[2999.00s -> 3001.00s]  and if that is
+[3001.00s -> 3003.00s]  if we exited properly
+[3003.00s -> 3005.00s]  we better return the exit status
+[3005.00s -> 3007.00s]  from
+[3007.00s -> 3009.00s]  the file we created
+[3009.00s -> 3011.00s]  or
+[3011.00s -> 3013.00s]  let's just return negative 127
+[3013.00s -> 3015.00s]  which basically means not good
+[3015.00s -> 3017.00s]  we didn't return anything reasonable
+[3017.00s -> 3019.00s]  alright
+[3019.00s -> 3021.00s]  let's see
+[3021.00s -> 3023.00s]  this should actually almost work
+[3023.00s -> 3025.00s]  no subprocess function yet
+[3025.00s -> 3027.00s]  make subprocess, okay good
+[3027.00s -> 3029.00s]  so it worked, we have no
+[3029.00s -> 3031.00s]  everybody get what's going on here
+[3031.00s -> 3033.00s]  creating a subprocess that's about to take in all these words
+[3033.00s -> 3035.00s]  we're going to send into it
+[3035.00s -> 3037.00s]  we're going to de-printf to that file descriptor
+[3037.00s -> 3039.00s]  that we know that
+[3039.00s -> 3041.00s]  subprocess is listening on
+[3041.00s -> 3043.00s]  and then we're going to
+[3043.00s -> 3045.00s]  wait for that process to do all the sorting
+[3045.00s -> 3047.00s]  when it does
+[3047.00s -> 3049.00s]  we're going to end our program
+[3049.00s -> 3051.00s]  that's what main is doing
+[3051.00s -> 3053.00s]  so subprocess function itself
+[3053.00s -> 3055.00s]  okay
+[3055.00s -> 3057.00s]  well we're going to use our pipe in this case
+[3057.00s -> 3059.00s]  fds2, we're going to create that
+[3059.00s -> 3061.00s]  and then we're going to create a pipe
+[3061.00s -> 3063.00s]  pipe fds
+[3063.00s -> 3065.00s]  like that
+[3065.00s -> 3067.00s]  alright
+[3067.00s -> 3069.00s]  and then we're going to
+[3069.00s -> 3071.00s]  create a little subprocess
+[3071.00s -> 3073.00s]  tprocess
+[3073.00s -> 3075.00s]  we'll call it process
+[3075.00s -> 3077.00s]  in this case
+[3077.00s -> 3079.00s]  this is a struct remember
+[3079.00s -> 3081.00s]  so we can use the little curly braces to do this
+[3081.00s -> 3083.00s]  this seems a little weird
+[3083.00s -> 3085.00s]  but I'm basically going to call fork
+[3085.00s -> 3087.00s]  and then I'm going to pass in
+[3087.00s -> 3089.00s]  I'm going to make the fds1
+[3089.00s -> 3091.00s]  which is the writer
+[3091.00s -> 3093.00s]  which we're going to
+[3093.00s -> 3095.00s]  send back
+[3095.00s -> 3097.00s]  to the calling function
+[3097.00s -> 3099.00s]  this is what's going to get returned from this function
+[3099.00s -> 3101.00s]  okay, we've got the PID
+[3101.00s -> 3103.00s]  and then we're going to also
+[3103.00s -> 3105.00s]  populate it with the writing part
+[3105.00s -> 3107.00s]  so that we can write from our original calling function
+[3107.00s -> 3109.00s]  okay
+[3109.00s -> 3111.00s]  alright, so what we're going to do there
+[3111.00s -> 3113.00s]  if process.pid
+[3113.00s -> 3115.00s]  which we just created equals zero
+[3115.00s -> 3117.00s]  well, we're in the child
+[3117.00s -> 3119.00s]  okay, so what we need to do
+[3119.00s -> 3121.00s]  is we need to actually
+[3121.00s -> 3123.00s]  do some setup so that
+[3123.00s -> 3125.00s]  we can read from the file
+[3125.00s -> 3127.00s]  descriptor as standard in
+[3127.00s -> 3129.00s]  what does that mean?
+[3129.00s -> 3131.00s]  well, no writing necessary from the child
+[3131.00s -> 3133.00s]  right, so let's do that closed business
+[3133.00s -> 3135.00s]  before, fds1
+[3135.00s -> 3137.00s]  no writing necessary
+[3137.00s -> 3139.00s]  okay
+[3139.00s -> 3141.00s]  and then we're going to use this function
+[3141.00s -> 3143.00s]  called dup2
+[3143.00s -> 3145.00s]  okay, dup2
+[3145.00s -> 3147.00s]  and I'll write the whole thing out what we're going to do here
+[3147.00s -> 3149.00s]  we're going to take
+[3149.00s -> 3151.00s]  that reader
+[3151.00s -> 3153.00s]  yeah, that reader
+[3153.00s -> 3155.00s]  that we get back from the pipe
+[3155.00s -> 3157.00s]  and we're basically going to copy it
+[3157.00s -> 3159.00s]  such that standard in
+[3159.00s -> 3161.00s]  whenever we read from standard in
+[3161.00s -> 3163.00s]  in the child
+[3163.00s -> 3165.00s]  it is actually going to read from
+[3165.00s -> 3167.00s]  that pipe
+[3167.00s -> 3169.00s]  that's what this is doing
+[3169.00s -> 3171.00s]  okay, it's creating a copy of this
+[3171.00s -> 3173.00s]  fds0 descriptor
+[3173.00s -> 3175.00s]  and setting it
+[3175.00s -> 3177.00s]  such that fds
+[3177.00s -> 3179.00s]  or the standard in
+[3179.00s -> 3181.00s]  file number which is basically
+[3181.00s -> 3183.00s]  which is generally zero
+[3183.00s -> 3185.00s]  is now going to point to our new pipe
+[3185.00s -> 3187.00s]  so it's basically saying nope, no more typing
+[3187.00s -> 3189.00s]  we're going to get our input from
+[3189.00s -> 3191.00s]  this file descriptor
+[3191.00s -> 3193.00s]  that's what the dup2 is doing
+[3193.00s -> 3195.00s]  okay
+[3195.00s -> 3197.00s]  once we do that, because we've duplicated it
+[3197.00s -> 3199.00s]  we can actually close
+[3199.00s -> 3201.00s]  fds1
+[3201.00s -> 3203.00s]  or zero, because we're done with it
+[3203.00s -> 3205.00s]  already
+[3205.00s -> 3207.00s]  duplicated
+[3207.00s -> 3209.00s]  okay, and basically this is, again
+[3209.00s -> 3211.00s]  this is now, we've already said
+[3211.00s -> 3213.00s]  hey, standard in is going to come from
+[3213.00s -> 3215.00s]  this pipe, so we can close the original
+[3215.00s -> 3217.00s]  so we've made the copy that we need
+[3217.00s -> 3219.00s]  okay
+[3219.00s -> 3221.00s]  and then we're just going to do a little bit of
+[3221.00s -> 3223.00s]  a little bit
+[3223.00s -> 3225.00s]  of setup to actually call our command
+[3225.00s -> 3227.00s]  here, which is another
+[3227.00s -> 3229.00s]  like, slash bin slash
+[3229.00s -> 3231.00s]  sh with the dash c
+[3231.00s -> 3233.00s]  argument which says run the program
+[3233.00s -> 3235.00s]  I'm about to pass you in
+[3235.00s -> 3237.00s]  and then it is going to
+[3237.00s -> 3239.00s]  we need to do a little casting, because it's constant
+[3239.00s -> 3241.00s]  command
+[3241.00s -> 3243.00s]  and then we need to make it null
+[3243.00s -> 3245.00s]  and that's basically creating
+[3245.00s -> 3247.00s]  the command line that we're about to
+[3247.00s -> 3249.00s]  use exec
+[3249.00s -> 3251.00s]  vp on
+[3251.00s -> 3253.00s]  and then we're going to
+[3253.00s -> 3255.00s]  exec cvp
+[3255.00s -> 3257.00s]  argv zero
+[3257.00s -> 3259.00s]  argv
+[3259.00s -> 3261.00s]  and that's that
+[3261.00s -> 3263.00s]  okay
+[3263.00s -> 3265.00s]  if
+[3265.00s -> 3267.00s]  and that's it for the child
+[3267.00s -> 3269.00s]  the child is going to never return
+[3269.00s -> 3271.00s]  child will
+[3271.00s -> 3273.00s]  never get
+[3273.00s -> 3275.00s]  to here, sad face
+[3275.00s -> 3277.00s]  okay, alright
+[3277.00s -> 3279.00s]  and then we're ready to happy face
+[3279.00s -> 3281.00s]  so that's actually what we want
+[3281.00s -> 3283.00s]  in the
+[3283.00s -> 3285.00s]  parent, we are not going to
+[3285.00s -> 3287.00s]  use, not used
+[3287.00s -> 3289.00s]  in parent, we've also got to close
+[3289.00s -> 3291.00s]  fds zero there, because there's no
+[3291.00s -> 3293.00s]  reading that's happening in the parent
+[3293.00s -> 3295.00s]  we're just letting sort print out to the
+[3295.00s -> 3297.00s]  terminal, and then we have to return
+[3297.00s -> 3299.00s]  the process
+[3299.00s -> 3301.00s]  okay, so that's
+[3301.00s -> 3303.00s]  what's happening with this
+[3303.00s -> 3305.00s]  function, it's basically doing what
+[3305.00s -> 3307.00s]  creating a pipe, so we've got two file
+[3307.00s -> 3309.00s]  scripters, setting up
+[3309.00s -> 3311.00s]  this subprocess T struct
+[3311.00s -> 3313.00s]  with the PID of the child
+[3313.00s -> 3315.00s]  and then fds one
+[3315.00s -> 3317.00s]  for the parent, this is for the
+[3317.00s -> 3319.00s]  the only one we care about is the parent
+[3319.00s -> 3321.00s]  and the child, if it's the child
+[3321.00s -> 3323.00s]  we have to do some more setting up, we
+[3323.00s -> 3325.00s]  close fds one so we're not actually
+[3325.00s -> 3327.00s]  writing to it, we're going to
+[3327.00s -> 3329.00s]  duplicate fds zero
+[3329.00s -> 3331.00s]  so that we're able into
+[3331.00s -> 3333.00s]  standard in, so we can
+[3333.00s -> 3335.00s]  read from standard in from that file
+[3335.00s -> 3337.00s]  as standard in, then we're going to
+[3337.00s -> 3339.00s]  close that because we duplicated it, then we're
+[3339.00s -> 3341.00s]  going to set up the command to
+[3341.00s -> 3343.00s]  actually use exec cvp and then we're going to do exec cvp
+[3343.00s -> 3345.00s]  and
+[3345.00s -> 3347.00s]  if we're the parent, we are returning
+[3347.00s -> 3349.00s]  closing the
+[3349.00s -> 3351.00s]  reader and returning the parent
+[3351.00s -> 3353.00s]  okay
+[3353.00s -> 3355.00s]  question?
+[3355.00s -> 3357.00s]  how would you close
+[3357.00s -> 3359.00s]  the one you duplicated into
+[3359.00s -> 3361.00s]  well we closed the one there that we actually
+[3361.00s -> 3363.00s]  did there, you mean the other one?
+[3363.00s -> 3365.00s]  that will get closed by the
+[3365.00s -> 3367.00s]  program we call
+[3367.00s -> 3369.00s]  when it just closes all of its open
+[3369.00s -> 3371.00s]  or when a program ends
+[3371.00s -> 3373.00s]  standard in gets closed automatically
+[3373.00s -> 3375.00s]  that's what would happen there
+[3375.00s -> 3377.00s]  alright, let's actually try it
+[3377.00s -> 3379.00s]  make subprocess
+[3379.00s -> 3381.00s]  let's see if I have any
+[3381.00s -> 3383.00s]  so subprocess, we passed in
+[3383.00s -> 3385.00s]  all those words, and subprocess
+[3385.00s -> 3387.00s]  should sort them
+[3387.00s -> 3389.00s]  and it did
+[3389.00s -> 3391.00s]  okay, so subprocess used
+[3391.00s -> 3393.00s]  sort to actually
+[3393.00s -> 3395.00s]  do the sorting for the
+[3395.00s -> 3397.00s]  words that we passed in
+[3397.00s -> 3399.00s]  okay, it was exactly as if
+[3399.00s -> 3401.00s]  I had had
+[3401.00s -> 3403.00s]  these words
+[3403.00s -> 3405.00s]  they're going to be sorted now, hang on
+[3405.00s -> 3407.00s]  unsorted.text
+[3407.00s -> 3409.00s]  let's do this
+[3409.00s -> 3411.00s]  there's probably a
+[3411.00s -> 3413.00s]  command
+[3413.00s -> 3415.00s]  in vim
+[3415.00s -> 3417.00s]  to actually
+[3417.00s -> 3419.00s]  actually scramble up
+[3419.00s -> 3421.00s]  your words, but
+[3421.00s -> 3423.00s]  there we go, those are not sorted
+[3423.00s -> 3425.00s]  it would be exactly the same as doing this
+[3425.00s -> 3427.00s]  cat unsorted, pipe into sort
+[3427.00s -> 3429.00s]  and there it does
+[3429.00s -> 3431.00s]  the actual sorting for us
+[3431.00s -> 3433.00s]  okay, alright
+[3433.00s -> 3435.00s]  so
+[3435.00s -> 3437.00s]  now that you've seen it work
+[3437.00s -> 3439.00s]  and you've actually
+[3439.00s -> 3441.00s]  done that
+[3441.00s -> 3443.00s]  what other questions
+[3443.00s -> 3445.00s]  do you have about it?
+[3445.00s -> 3447.00s]  yeah
+[3447.00s -> 3449.00s]  that's such a good question
+[3449.00s -> 3451.00s]  the question was
+[3451.00s -> 3453.00s]  hey, does exec CVP discard
+[3453.00s -> 3455.00s]  the old file descriptors?
+[3455.00s -> 3457.00s]  no, right, file descriptors are actually
+[3457.00s -> 3459.00s]  passed on to the child
+[3459.00s -> 3461.00s]  or passed on
+[3461.00s -> 3463.00s]  to the program exactly
+[3463.00s -> 3465.00s]  as they are, and that's a good question
+[3465.00s -> 3467.00s]  about why they chose to do that, probably for this
+[3467.00s -> 3469.00s]  exact reason is why they do that
+[3469.00s -> 3471.00s]  but anything that's process related
+[3471.00s -> 3473.00s]  you kind of want to keep it with the process
+[3473.00s -> 3475.00s]  you don't want to destroy
+[3475.00s -> 3477.00s]  file descriptors and things
+[3477.00s -> 3479.00s]  because the
+[3479.00s -> 3481.00s]  new program might use it
+[3481.00s -> 3483.00s]  all the old memory
+[3483.00s -> 3485.00s]  right, I couldn't
+[3485.00s -> 3487.00s]  in the other program I wouldn't have no access to
+[3487.00s -> 3489.00s]  FDS0 and FDS1, they don't exist in that
+[3489.00s -> 3491.00s]  program, but the file descriptors are still
+[3491.00s -> 3493.00s]  open in that program
+[3493.00s -> 3495.00s]  very good question
+[3495.00s -> 3497.00s]  what do we have in this one?
+[3501.00s -> 3503.00s]  everybody gets how it's
+[3503.00s -> 3505.00s]  working?
+[3505.00s -> 3507.00s]  alright, you get why we might want to do this
+[3507.00s -> 3509.00s]  and how it's actually doing the piping
+[3509.00s -> 3511.00s]  ok
+[3511.00s -> 3513.00s]  alright
+[3513.00s -> 3515.00s]  ok, so we've got
+[3515.00s -> 3517.00s]  this, we've got the SAT words
+[3517.00s -> 3519.00s]  here's an important part
+[3519.00s -> 3521.00s]  the close call
+[3521.00s -> 3523.00s]  we'll have to check that, I promise we'll check that
+[3523.00s -> 3525.00s]  when you do the close
+[3525.00s -> 3527.00s]  in the actual parent
+[3527.00s -> 3529.00s]  that's what tells sort to start
+[3529.00s -> 3531.00s]  sorting, because it doesn't get any more data
+[3531.00s -> 3533.00s]  it's just F5 control D in the words
+[3533.00s -> 3535.00s]  that I typed, so let's actually try it
+[3535.00s -> 3537.00s]  it may
+[3537.00s -> 3539.00s]  depending on how
+[3539.00s -> 3541.00s]  it may actually does, but what if we forgot to
+[3541.00s -> 3543.00s]  close this after we did it
+[3543.00s -> 3545.00s]  make
+[3545.00s -> 3547.00s]  sub process
+[3547.00s -> 3549.00s]  and then sub process
+[3549.00s -> 3551.00s]  there we go, it's waiting
+[3551.00s -> 3553.00s]  sort is over there going hey, I haven't seen the
+[3553.00s -> 3555.00s]  end of the file yet, I'm just going to wait
+[3555.00s -> 3557.00s]  for the file to end
+[3557.00s -> 3559.00s]  so in this case we've crashed
+[3559.00s -> 3561.00s]  we've paused sort, we've frozen it
+[3561.00s -> 3563.00s]  it's still waiting for our data
+[3563.00s -> 3565.00s]  and since we can't wait for the data anymore
+[3565.00s -> 3567.00s]  or since there's no more data coming
+[3567.00s -> 3569.00s]  it will just, it will not actually
+[3569.00s -> 3571.00s]  end
+[3571.00s -> 3573.00s]  so that's another good reason for
+[3573.00s -> 3575.00s]  remembering to close your
+[3575.00s -> 3577.00s]  file descriptors
+[3581.00s -> 3583.00s]  yeah
+[3583.00s -> 3585.00s]  good question, why is it this close
+[3585.00s -> 3587.00s]  that prevents the
+[3587.00s -> 3589.00s]  and this is a good question
+[3589.00s -> 3591.00s]  what is this close
+[3591.00s -> 3593.00s]  actually doing
+[3593.00s -> 3595.00s]  well, remember
+[3595.00s -> 3597.00s]  we're now in the parent
+[3597.00s -> 3599.00s]  okay, we've set the sub process
+[3599.00s -> 3601.00s]  the sort program going
+[3601.00s -> 3603.00s]  what's the sort program doing?
+[3603.00s -> 3605.00s]  waiting for us to type in
+[3605.00s -> 3607.00s]  it's waiting for us to type things in, right?
+[3607.00s -> 3609.00s]  so at this point down here
+[3609.00s -> 3611.00s]  this is as if we are typing
+[3611.00s -> 3613.00s]  in a bunch of words
+[3613.00s -> 3615.00s]  okay, they go to our
+[3615.00s -> 3617.00s]  or the supply FD
+[3617.00s -> 3619.00s]  that we've created with the pipe earlier
+[3619.00s -> 3621.00s]  they are being read by standard
+[3621.00s -> 3623.00s]  in in sort
+[3623.00s -> 3625.00s]  which now has been duped so that it's
+[3625.00s -> 3627.00s]  standard in is
+[3627.00s -> 3629.00s]  the output
+[3629.00s -> 3631.00s]  the reader for
+[3631.00s -> 3633.00s]  the pipe
+[3633.00s -> 3635.00s]  and it's waiting
+[3635.00s -> 3637.00s]  sort waits until the file
+[3637.00s -> 3639.00s]  ends before it does the sorting
+[3639.00s -> 3641.00s]  and it has to, right? you can't sort
+[3641.00s -> 3643.00s]  you can start to sort as you go
+[3643.00s -> 3645.00s]  but you can't officially print anything out until you get
+[3645.00s -> 3647.00s]  the last word, because what if it was the first
+[3647.00s -> 3649.00s]  word in the list, you couldn't have already printed something
+[3649.00s -> 3651.00s]  so it needs to wait until
+[3651.00s -> 3653.00s]  no more words are incoming, well in this case
+[3653.00s -> 3655.00s]  the only way it knows no more words are incoming
+[3655.00s -> 3657.00s]  is when that file ends
+[3657.00s -> 3659.00s]  and it says, oh okay, no more words are incoming
+[3659.00s -> 3661.00s]  then it can continue
+[3661.00s -> 3663.00s]  that's why it's that close
+[3663.00s -> 3665.00s]  very good question
+[3665.00s -> 3667.00s]  okay, so
+[3667.00s -> 3669.00s]  let me reiterate
+[3669.00s -> 3671.00s]  so dprintf
+[3671.00s -> 3673.00s]  normally prints the terminal
+[3673.00s -> 3675.00s]  but since we piped it to the
+[3675.00s -> 3677.00s]  subprocess
+[3677.00s -> 3679.00s]  it will actually go into our sort
+[3679.00s -> 3681.00s]  dprintf
+[3681.00s -> 3683.00s]  prints to a file descriptor
+[3683.00s -> 3685.00s]  whatever file descriptor we give it
+[3685.00s -> 3687.00s]  printf just normally prints the terminal
+[3687.00s -> 3689.00s]  dprintf is new and it goes, oh look
+[3689.00s -> 3691.00s]  there's a parameter right here
+[3691.00s -> 3693.00s]  which is our file descriptor
+[3693.00s -> 3695.00s]  that file descriptor is what dprintf prints to
+[3695.00s -> 3697.00s]  so in this case we're going to print
+[3697.00s -> 3699.00s]  to the supply file descriptor
+[3699.00s -> 3701.00s]  which is the
+[3701.00s -> 3703.00s]  writer end of the pipe
+[3703.00s -> 3705.00s]  the reader end has now been
+[3705.00s -> 3707.00s]  turned into standard in for sort
+[3707.00s -> 3709.00s]  write to this end, read from this end
+[3709.00s -> 3711.00s]  into sort
+[3711.00s -> 3713.00s]  that make sense?
+[3713.00s -> 3715.00s]  now, did you ever follow up on more questions?
+[3715.00s -> 3717.00s]  okay, yeah, that's exactly what
+[3717.00s -> 3719.00s]  your, exactly what it was
+[3719.00s -> 3721.00s]  anybody else on this one?
+[3721.00s -> 3723.00s]  more questions on this?
+[3723.00s -> 3725.00s]  okay, good
+[3725.00s -> 3727.00s]  alright, you will get lots of practice
+[3727.00s -> 3729.00s]  for the next assignment
+[3729.00s -> 3731.00s]  alright
+[3731.00s -> 3733.00s]  oh, we've already done this
+[3733.00s -> 3735.00s]  subprocess
+[3735.00s -> 3737.00s]  so we have about
+[3737.00s -> 3739.00s]  15 minutes to go, let me introduce
+[3739.00s -> 3741.00s]  you to another topic, we may not actually
+[3741.00s -> 3743.00s]  write any code for this right now
+[3743.00s -> 3745.00s]  when you have two
+[3745.00s -> 3747.00s]  processes that you want to communicate
+[3747.00s -> 3749.00s]  when you want to communicate between the two
+[3749.00s -> 3751.00s]  okay, one way to do it
+[3751.00s -> 3753.00s]  is by reading and writing actual
+[3753.00s -> 3755.00s]  data, but that's not necessarily really
+[3755.00s -> 3757.00s]  what you want to do, you just want to basically tell another
+[3757.00s -> 3759.00s]  process, hey, I'm done with something
+[3759.00s -> 3761.00s]  or something has happened in my process
+[3761.00s -> 3763.00s]  that you might be waiting for
+[3763.00s -> 3765.00s]  or hey, go do this thing because it's time
+[3765.00s -> 3767.00s]  I'm done with my stuff, it's your turn to go
+[3767.00s -> 3769.00s]  take that and run with it
+[3769.00s -> 3771.00s]  okay, we do this with
+[3771.00s -> 3773.00s]  the idea of signals
+[3773.00s -> 3775.00s]  and a signal is just a message
+[3775.00s -> 3777.00s]  in fact, you can't even really
+[3777.00s -> 3779.00s]  pass data along with it
+[3779.00s -> 3781.00s]  as it turns out, it basically just says
+[3781.00s -> 3783.00s]  hey, this following thing, you can
+[3783.00s -> 3785.00s]  pass one number, it says what kind
+[3785.00s -> 3787.00s]  of a signal it is basically
+[3787.00s -> 3789.00s]  it's a small message that allows
+[3789.00s -> 3791.00s]  you to say some event
+[3791.00s -> 3793.00s]  has occurred
+[3793.00s -> 3795.00s]  okay, signals get sent by the
+[3795.00s -> 3797.00s]  kernel all the time, every time you've
+[3797.00s -> 3799.00s]  hit control C in your
+[3799.00s -> 3801.00s]  program, you have sent a signal
+[3801.00s -> 3803.00s]  to the program
+[3803.00s -> 3805.00s]  that basically kills it, that's
+[3805.00s -> 3807.00s]  a signal, there's a signal called
+[3807.00s -> 3809.00s]  SIGKILL
+[3809.00s -> 3811.00s]  which kills it and there's
+[3811.00s -> 3813.00s]  lots of other signals we'll talk about
+[3813.00s -> 3815.00s]  as we go along
+[3815.00s -> 3817.00s]  how do these signals get
+[3817.00s -> 3819.00s]  handled? In other words
+[3819.00s -> 3821.00s]  what function does
+[3821.00s -> 3823.00s]  the processing once a signal
+[3823.00s -> 3825.00s]  comes in? Well, you have a special function
+[3825.00s -> 3827.00s]  called a signal handler
+[3827.00s -> 3829.00s]  and a signal handler is a function
+[3829.00s -> 3831.00s]  that actually
+[3831.00s -> 3833.00s]  gets called only when some event
+[3833.00s -> 3835.00s]  happens, so the kernel is waiting
+[3835.00s -> 3837.00s]  around for some event to happen, it
+[3837.00s -> 3839.00s]  realizes there's a signal that needs to get sent and it
+[3839.00s -> 3841.00s]  tells that function in your program to do this
+[3841.00s -> 3843.00s]  if you took CS107E
+[3843.00s -> 3845.00s]  you've dealt with signal handlers a lot
+[3845.00s -> 3847.00s]  when you did
+[3847.00s -> 3849.00s]  interrupts and so forth, you created a function
+[3849.00s -> 3851.00s]  that when you typed a keyboard press let's say
+[3851.00s -> 3853.00s]  that function got called
+[3853.00s -> 3855.00s]  okay, it's called event handling
+[3855.00s -> 3857.00s]  and now we're able to do this in C
+[3857.00s -> 3859.00s]  okay
+[3859.00s -> 3861.00s]  there's a
+[3861.00s -> 3863.00s]  SIGSEGV
+[3863.00s -> 3865.00s]  which happens
+[3865.00s -> 3867.00s]  when you get a segfault
+[3867.00s -> 3869.00s]  whenever you dereference null
+[3869.00s -> 3871.00s]  you get a signal sent to your program that says
+[3871.00s -> 3873.00s]  ah, you segfaulted and it generally kills your program
+[3873.00s -> 3875.00s]  you could capture
+[3875.00s -> 3877.00s]  that and deal with it and not
+[3877.00s -> 3879.00s]  have your program killed
+[3879.00s -> 3881.00s]  some programs do that, but that's one thing we can do
+[3881.00s -> 3883.00s]  and this is what signal handlers allow you to do
+[3883.00s -> 3885.00s]  they allow you to take those signals
+[3885.00s -> 3887.00s]  and do something with them
+[3887.00s -> 3889.00s]  there are some signals you can't
+[3889.00s -> 3891.00s]  actually capture
+[3891.00s -> 3893.00s]  one is sigkill, you're not allowed to
+[3893.00s -> 3895.00s]  say hey, you can't kill my process
+[3895.00s -> 3897.00s]  and the other one is a stop
+[3897.00s -> 3899.00s]  which we'll talk about later as we go along too
+[3899.00s -> 3901.00s]  okay, so basically what we're trying to do
+[3901.00s -> 3903.00s]  is we're trying to say
+[3903.00s -> 3905.00s]  here's a process, when something happens
+[3905.00s -> 3907.00s]  some event happens, call this other function
+[3907.00s -> 3909.00s]  no matter where it is in our code
+[3909.00s -> 3911.00s]  by the way, some other external thing
+[3911.00s -> 3913.00s]  calls our function, our program
+[3913.00s -> 3915.00s]  stops everything, goes to that
+[3915.00s -> 3917.00s]  function and starts dealing with the signal
+[3917.00s -> 3919.00s]  that came in, which is a little weird
+[3919.00s -> 3921.00s]  to deal with when you
+[3921.00s -> 3923.00s]  get into it, we'll do lots of details on this
+[3923.00s -> 3925.00s]  okay, what other kinds of
+[3925.00s -> 3927.00s]  signals are there?
+[3927.00s -> 3929.00s]  there's sig
+[3929.00s -> 3931.00s]  floating point exception
+[3931.00s -> 3933.00s]  which is basically when you do things like
+[3933.00s -> 3935.00s]  divide by zero, you get this weird exception
+[3935.00s -> 3937.00s]  this weird signal that says, whoa, you did some math
+[3937.00s -> 3939.00s]  wrong, and that's bad, I can't deal with that
+[3939.00s -> 3941.00s]  so I'm going to send a signal
+[3941.00s -> 3943.00s]  I told you we got sigint, which is the
+[3943.00s -> 3945.00s]  interrupt, I think I call it sigkill, it's called sigint
+[3945.00s -> 3947.00s]  and that's the
+[3947.00s -> 3949.00s]  terminates your program
+[3949.00s -> 3951.00s]  there is sigstop
+[3951.00s -> 3953.00s]  remember I did control Z earlier?
+[3953.00s -> 3955.00s]  that actually stops your program
+[3955.00s -> 3957.00s]  and just pauses it
+[3957.00s -> 3959.00s]  for a while, okay, and brings you back to the terminal
+[3959.00s -> 3961.00s]  if you're in the terminal, okay
+[3961.00s -> 3963.00s]  and then you can have a sigcontinue
+[3963.00s -> 3965.00s]  or c-o-n-t, which continues
+[3965.00s -> 3967.00s]  the process running
+[3967.00s -> 3969.00s]  we'll see some really neat examples of when those two
+[3969.00s -> 3971.00s]  signals are used
+[3971.00s -> 3973.00s]  you can actually send signals to yourself
+[3973.00s -> 3975.00s]  by the way
+[3975.00s -> 3977.00s]  you can tell your own program
+[3977.00s -> 3979.00s]  stop, just wait
+[3979.00s -> 3981.00s]  that's what you can tell your program to do
+[3981.00s -> 3983.00s]  it basically says, wait for somebody else to continue you
+[3983.00s -> 3985.00s]  and we'll see that in some
+[3985.00s -> 3987.00s]  interesting examples of that
+[3987.00s -> 3989.00s]  okay, when pipes end
+[3989.00s -> 3991.00s]  you get a sigpipe
+[3991.00s -> 3993.00s]  when children end
+[3993.00s -> 3995.00s]  you get a sigchld
+[3995.00s -> 3997.00s]  for child ending
+[3997.00s -> 3999.00s]  and that's an interesting one that we'll use
+[3999.00s -> 4001.00s]  as you can imagine
+[4001.00s -> 4003.00s]  this is the one we're talking about right now
+[4003.00s -> 4005.00s]  sigchild is what happens
+[4005.00s -> 4007.00s]  whenever the child changes
+[4007.00s -> 4009.00s]  state
+[4009.00s -> 4011.00s]  in other words, your child process is going along
+[4011.00s -> 4013.00s]  doing something, if it
+[4013.00s -> 4015.00s]  stops, a sigchild
+[4015.00s -> 4017.00s]  message is sent to the parent saying
+[4017.00s -> 4019.00s]  hey, your child just stopped, do you care
+[4019.00s -> 4021.00s]  about that? maybe you do, maybe you don't
+[4021.00s -> 4023.00s]  a sigchild happens when
+[4023.00s -> 4025.00s]  the child ends
+[4025.00s -> 4027.00s]  the signal handler
+[4027.00s -> 4029.00s]  gets called, and it also gets called
+[4029.00s -> 4031.00s]  when it continues as well
+[4031.00s -> 4033.00s]  okay, the parent process
+[4033.00s -> 4035.00s]  should actually
+[4035.00s -> 4037.00s]  use wait PID
+[4037.00s -> 4039.00s]  to handle
+[4039.00s -> 4041.00s]  when a child state
+[4041.00s -> 4043.00s]  changes
+[4043.00s -> 4045.00s]  okay, we've done that already, we've kind of ignored it
+[4045.00s -> 4047.00s]  in a couple of cases by the way
+[4047.00s -> 4049.00s]  if you go back and look at the simple SH
+[4049.00s -> 4051.00s]  you'll see that when you have a
+[4051.00s -> 4053.00s]  background process, we actually ignore
+[4053.00s -> 4055.00s]  the wait PID and we never do it
+[4055.00s -> 4057.00s]  it's actually not the best way to do it, you should have handled it
+[4057.00s -> 4059.00s]  at some point, even though we didn't
+[4059.00s -> 4061.00s]  okay, but we'll get to this
+[4061.00s -> 4063.00s]  you
+[4063.00s -> 4065.00s]  can get a
+[4065.00s -> 4067.00s]  sigchild sent to
+[4067.00s -> 4069.00s]  a particular function in your
+[4069.00s -> 4071.00s]  program, that's when
+[4071.00s -> 4073.00s]  you end up calling wait PID
+[4073.00s -> 4075.00s]  okay, you don't actually normally do it in the main
+[4075.00s -> 4077.00s]  loop in the program, sometimes you do
+[4077.00s -> 4079.00s]  but normally you don't, you actually wait until
+[4079.00s -> 4081.00s]  the child handler function is called
+[4081.00s -> 4083.00s]  most of the time
+[4083.00s -> 4085.00s]  we ignore all the signals
+[4085.00s -> 4087.00s]  most of them we ignore, we can't ignore
+[4087.00s -> 4089.00s]  sigint and we can't ignore stop
+[4089.00s -> 4091.00s]  but we can ignore all the other ones, and normally you do
+[4091.00s -> 4093.00s]  so far in C and C++
+[4093.00s -> 4095.00s]  you've never handled a signal before
+[4095.00s -> 4097.00s]  unless you're in 107E
+[4097.00s -> 4099.00s]  but in CS107 or CS106B
+[4099.00s -> 4101.00s]  you just ignored them, these signals were
+[4101.00s -> 4103.00s]  happening and whatever, and you were just ignoring them
+[4103.00s -> 4105.00s]  or they were killing your program
+[4105.00s -> 4107.00s]  so that's what's happening in
+[4107.00s -> 4109.00s]  there, we will write some functions
+[4109.00s -> 4111.00s]  that actually do this
+[4111.00s -> 4113.00s]  okay, and the purpose
+[4113.00s -> 4115.00s]  of a sigchild handler is almost always
+[4115.00s -> 4117.00s]  do a wait PID and
+[4117.00s -> 4119.00s]  maybe handle some other things
+[4119.00s -> 4121.00s]  alright
+[4121.00s -> 4123.00s]  so here's some code, we'll just take a
+[4123.00s -> 4125.00s]  real quick look at this program
+[4125.00s -> 4127.00s]  okay
+[4127.00s -> 4129.00s]  this program is a little Disneyland
+[4129.00s -> 4131.00s]  example actually, Jerry
+[4131.00s -> 4133.00s]  wrote it, and it is
+[4133.00s -> 4135.00s]  what it's doing is
+[4135.00s -> 4137.00s]  it is basically
+[4137.00s -> 4139.00s]  setting up a
+[4139.00s -> 4141.00s]  bunch of forks
+[4141.00s -> 4143.00s]  and it's modeling
+[4143.00s -> 4145.00s]  okay, the parent takes a bunch
+[4145.00s -> 4147.00s]  of his children to Disneyland
+[4147.00s -> 4149.00s]  and sends them
+[4149.00s -> 4151.00s]  off, and they all go play
+[4151.00s -> 4153.00s]  and the dad goes to sleep
+[4153.00s -> 4155.00s]  while the children are out playing
+[4155.00s -> 4157.00s]  and then one by one they come back
+[4157.00s -> 4159.00s]  dad wakes up and he says, oh
+[4159.00s -> 4161.00s]  I'm glad you're back, when all the children are back
+[4161.00s -> 4163.00s]  they leave the park
+[4163.00s -> 4165.00s]  that's what this is modeling
+[4165.00s -> 4167.00s]  and here's what it actually looks like
+[4167.00s -> 4169.00s]  it's pretty simple
+[4169.00s -> 4171.00s]  it's got a printf that says let my five children
+[4171.00s -> 4173.00s]  play while I take a nap
+[4173.00s -> 4175.00s]  okay, and then
+[4175.00s -> 4177.00s]  it sets up a signal
+[4177.00s -> 4179.00s]  to a function that we are
+[4179.00s -> 4181.00s]  about to see, function is not here yet
+[4181.00s -> 4183.00s]  it's going to set up a signal
+[4183.00s -> 4185.00s]  a sigchild signal
+[4185.00s -> 4187.00s]  to that function called
+[4187.00s -> 4189.00s]  reapchild, as it turns out, that's the name
+[4189.00s -> 4191.00s]  of the function we'll write, okay
+[4191.00s -> 4193.00s]  then it's going to do a for loop for the number of kids
+[4193.00s -> 4195.00s]  five kids in this case
+[4195.00s -> 4197.00s]  and then if it's the child
+[4197.00s -> 4199.00s]  process
+[4199.00s -> 4201.00s]  it is going to make the child
+[4201.00s -> 4203.00s]  go to sleep, basically
+[4203.00s -> 4205.00s]  for 3 seconds
+[4205.00s -> 4207.00s]  based on the number
+[4207.00s -> 4209.00s]  of the child. The first child
+[4209.00s -> 4211.00s]  is going to come back immediately, the second child is going to sleep
+[4211.00s -> 4213.00s]  for 3 seconds, and so actually
+[4213.00s -> 4215.00s]  that's not true, the first child is going to sleep 3 seconds
+[4215.00s -> 4217.00s]  because it's 1, and it's going to
+[4217.00s -> 4219.00s]  the second child is going to sleep for 3 seconds, the next child
+[4219.00s -> 4221.00s]  is going to sleep for 6, etc
+[4221.00s -> 4223.00s]  okay, and then
+[4223.00s -> 4225.00s]  it's going to, when the child
+[4225.00s -> 4230.32s]  wakes up, pretend they're off playing, it's going to close that child, finish
+[4230.32s -> 4236.28s]  that child. At that point, this signal handler will get called, okay? And then
+[4236.28s -> 4242.00s]  that is about it, okay? Actually, there's a little bit more to it in
+[4242.00s -> 4246.16s]  terms of like what happens in the parent. In the parent, you actually
+[4246.16s -> 4249.28s]  have to wait for them. While the number of children done is less than
+[4249.28s -> 4252.12s]  the total number of children you have, which is five in this case, okay?
+[4252.12s -> 4258.60s]  Print f, at least one child is still playing, so dad sleeps, nods off. And the dad
+[4258.60s -> 4263.76s]  is going to sleep for five seconds, okay? And then after the dad, when the dad
+[4263.76s -> 4267.16s]  wakes up, when the child handler happens, the dad will actually wake up.
+[4267.16s -> 4271.48s]  Sleep is an interesting command. When you get any signal, sleep actually stops.
+[4271.48s -> 4273.96s]  So you think it's doing it for five seconds, but it's actually going to do
+[4273.96s -> 4279.80s]  it until some signal handles happens, okay? And down here, we have the tiny
+[4279.80s -> 4286.72s]  little function called reap child, which basically waits for the child that just
+[4286.72s -> 4290.24s]  ended using negative one, because we don't know which one ended. We just know that
+[4290.24s -> 4294.84s]  some child just ended, and then it increments the number of done. Num done,
+[4294.84s -> 4298.88s]  because it's in a different function than main, we actually have to use a
+[4298.88s -> 4302.88s]  global variable. It's kind of too bad because we don't necessarily like
+[4302.88s -> 4306.20s]  global variables, but this is a case where you kind of have to use a global
+[4306.20s -> 4311.48s]  variable, because there's no other real way to pass information between two
+[4311.48s -> 4320.64s]  functions, okay? One other thing, the reap child function is in the parent, so
+[4320.64s -> 4328.52s]  the parent's process gets called when the child has a change of state, okay?
+[4328.52s -> 4335.32s]  So let me actually quickly type this in and run it. Let's see, this
+[4335.32s -> 4342.24s]  one's called five children. Actually, let's do this. Copy five children to five
+[4342.24s -> 4349.32s]  children dot C. Yes, okay. Make five children. Five children. Here's what it
+[4349.32s -> 4352.28s]  does. At least one child is playing, so dad nods off. The first child comes
+[4352.28s -> 4355.92s]  back after three seconds, returns to dad. The first child is after six seconds,
+[4355.92s -> 4360.76s]  returns to dad. The third child's after nine seconds, returns to dad. The fourth
+[4360.76s -> 4366.28s]  child returns to dad after the next second. The fifth child returns to dad
+[4366.28s -> 4371.80s]  after the last time. So actually, I guess in this case, the sleep didn't actually
+[4371.80s -> 4376.28s]  stop. So the parent one didn't. I'm going to look that up. I
+[4376.28s -> 4380.76s]  thought it happened. I guess it's only when it's... I'll have to look this up. I
+[4380.76s -> 4383.54s]  thought it stopped, but it didn't in this case. Basically, that's what happens
+[4383.54s -> 4387.32s]  in the thing, okay? Every child comes back after three seconds, after three
+[4387.88s -> 4395.20s]  seconds. The reap child function gets called when the child finishes, okay? Let's
+[4395.20s -> 4399.88s]  look at the code again, and in the last two minutes, or four minutes, we will talk
+[4399.88s -> 4405.96s]  about whatever questions you have about it. What questions do you have about
+[4405.96s -> 4411.12s]  this code at this point? Like, what's happening here? Maybe that you just
+[4411.12s -> 4418.18s]  haven't understood. Yes? Why is there a parameter for reap child? Oh, good
+[4418.18s -> 4427.24s]  question. That is, I believe, the signal that was triggered. So in other
+[4427.24s -> 4430.16s]  words, it's going to be SIG child as it turns out. That's a good question. The
+[4430.16s -> 4433.44s]  question was, why is this parameter here? We're not using it here because we
+[4433.44s -> 4436.24s]  don't care. We know there's only one signal that could get into this
+[4436.24s -> 4439.20s]  function. But yeah, if we had multiple signals that we sent to the
+[4439.20s -> 4452.40s]  same function, you might want to know that. Good question. Yes? Yes, good question.
+[4452.40s -> 4455.76s]  The question was, wait, why is it happening in order? Remember how we set
+[4455.76s -> 4461.36s]  this up, right? We said that each child waits for three seconds times the
+[4461.36s -> 4466.20s]  number it is. So first child waits for three, then six, then nine, right? So
+[4466.20s -> 4470.56s]  that's the only reason it's happening in that order. On Wednesday,
+[4470.56s -> 4472.64s]  we'll see an example where we're trying to do them all at the same time,
+[4472.64s -> 4475.84s]  and we'll see that this actually breaks, which is not really what we
+[4475.84s -> 4488.76s]  want. Hasna? The output. Yes? Yeah, this is a good question. Why is the dad
+[4488.76s -> 4492.40s]  wake up here? The dad is sleeping for five seconds. The first child comes back
+[4492.40s -> 4495.84s]  up for three, and the dad's still got two more seconds of sleeping, right? But
+[4495.88s -> 4499.48s]  then the dad goes back to sleep for five, but in the meantime, second six
+[4499.48s -> 4502.64s]  happens and second nine happens, so that's two in a row before dad wakes
+[4502.64s -> 4505.00s]  up again. I was thinking the dad would wake up every time the signal, but
+[4505.00s -> 4512.32s]  that's not true. Yeah? Yes, good question. The question is, why are we
+[4512.32s -> 4519.28s]  doing a wait PID in the REAP child? We do want to clean up after children,
+[4519.28s -> 4524.40s]  right? When a child ends, we should call wait PID to do the cleanup. That's
+[4524.56s -> 4529.68s]  the function that tells the kernel, go clean up after this child, okay? So
+[4529.68s -> 4532.60s]  we might as well do it in REAP child because we got to clean up for it
+[4532.60s -> 4539.64s]  sometime. Might as well do it right then. Good question. If you didn't
+[4539.64s -> 4542.68s]  wait, good question, if you didn't wait with the REAP memory leak, it
+[4542.68s -> 4546.88s]  wouldn't necessarily be a memory leak, but it's kind of like a
+[4546.88s -> 4549.12s]  memory leak. I guess it's a memory leak in the sense that when your
+[4549.12s -> 4552.60s]  program ends, all the children get handled, and in the meantime, we're
+[4552.60s -> 4556.16s]  done with them, why are they still available? So yeah, in some
+[4556.16s -> 4558.60s]  sense, it's a little bit of a memory leak. There's extra resources
+[4558.60s -> 4570.12s]  being used, why use them? Any other questions on this? Yeah. Yes,
+[4570.12s -> 4572.88s]  good question. Wait PID does clean up the memory from the child,
+[4572.88s -> 4579.08s]  and it returns any resources that the child might be using. Yeah.
+[4583.32s -> 4588.56s]  REAP child, yeah, that's a good question. REAP child could have done anything.
+[4588.56s -> 4592.08s]  There are any signal, and there's less than 30, but a bunch of
+[4592.08s -> 4595.60s]  different signals, any signal we could have this function handle. And
+[4595.60s -> 4599.08s]  remember, this function gets called no matter what. Dad happens to be
+[4599.08s -> 4603.04s]  sleeping, this function gets called and starts running when that
+[4603.04s -> 4605.56s]  happens. So there's two parts of your program now in the same process,
+[4605.56s -> 4608.48s]  which could be doing two things at the same time now. So it's another
+[4608.64s -> 4613.20s]  parallelism that we have to kind of deal with. Alright, last
+[4613.20s -> 4614.64s]  question, and then we're gonna let you guys go. Yeah.
+[4623.64s -> 4625.88s]  You could have given Yes, good question. When you type when you
+[4625.88s -> 4629.36s]  say signal SIG child reach out, whatever you type here, that's
+[4629.36s -> 4631.68s]  what you end up getting. That's the signal that the REAP child
+[4631.68s -> 4638.04s]  is going to look for or get caught triggered. We're passing SIG
+[4638.04s -> 4640.20s]  child because we know we're creating a bunch of children that
+[4640.20s -> 4644.36s]  we want to handle. That's why we're called. That's why we're
+[4644.36s -> 4647.76s]  having SIG child. The SIG child signal gets sent no matter
+[4647.76s -> 4651.08s]  what. In this case, we're letting it we're making it
+[4651.24s -> 4655.32s]  call our function. Okay, if you have other questions, come
+[4655.32s -> 4657.32s]  on up. I will see you guys Wednesday.

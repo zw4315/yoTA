@@ -1,0 +1,253 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.80s]  To continue on our theme of packet switching, in this video I'm going to tell you how packet
+[4.80s -> 6.02s]  switches work.
+[6.02s -> 14.38s]  That's things like Ethernet switches, Internet routers, and so on.
+[14.38s -> 18.82s]  In this video we're going to learn about what a packet switch looks like, what a packet
+[18.82s -> 23.90s]  switch does, whether it's an Ethernet switch or an Internet router, and how address
+[23.90s -> 25.72s]  lookups work.
+[25.72s -> 29.18s]  So let's start with a picture of a generic packet switch.
+[29.18s -> 34.54s]  The three main stages of a packet switch are that when a packet arrives, the first thing
+[34.54s -> 36.40s]  that we do is look up at the address.
+[36.40s -> 40.66s]  This means looking at the destination address to figure out where it's going to go next.
+[40.66s -> 42.88s]  We do this by looking up in a forwarding table.
+[42.88s -> 46.76s]  We send the destination address down to the forwarding table, which will tell us
+[46.76s -> 50.84s]  the egress link, or the port that it's going to, and that helps us decide where
+[50.84s -> 52.54s]  to send it next.
+[52.54s -> 56.18s]  The next thing that we may need to do is to update the header.
+[56.30s -> 60.80s]  For example, if it's an Internet router, we have to decrement the TTL and update the
+[60.80s -> 62.80s]  checksum.
+[62.80s -> 65.36s]  The next thing we have to do is to queue the packet.
+[65.36s -> 68.12s]  This is because there may be some congestion.
+[68.12s -> 72.52s]  There may be many packets trying to get to this outgoing link at the same time.
+[72.52s -> 77.68s]  So we use a buffer memory to hold some packets that are waiting their turn to depart
+[77.68s -> 79.32s]  on the egress line.
+[79.32s -> 84.76s]  Of course, this one-input, one-output packet switch is not very interesting.
+[84.76s -> 87.54s]  Packets switches in general will have multiple inputs and multiple outputs.
+[87.54s -> 90.04s]  Here's one with three inputs and three outputs.
+[90.04s -> 91.54s]  Packets will arrive.
+[91.54s -> 93.50s]  I've color-coded these ones.
+[93.50s -> 98.06s]  The red packets are going to the red output over here, and the blue one is going to
+[98.06s -> 102.82s]  the blue output up here.
+[102.82s -> 105.26s]  Just as before, the packets are going to be processed.
+[105.26s -> 106.90s]  The address is going to be looked up.
+[106.90s -> 108.50s]  We're going to update the header if we need to.
+[108.50s -> 111.02s]  Then we're going to transfer it across that backplane.
+[111.02s -> 116.18s]  This is supposed to represent a shared bus over which all of these packets are going
+[116.18s -> 117.24s]  to pass.
+[117.24s -> 119.30s]  And then they're going to find their way to the output queue.
+[119.30s -> 124.92s]  In this case, we've got two red packets that are going to contend for the same output.
+[124.92s -> 128.76s]  So what we'll need to do is we can send the blue one to its output.
+[128.76s -> 132.96s]  We can send one of the red ones all the way through to its output.
+[132.96s -> 137.66s]  But because we can only send one packet at a time, the other red packet is going to have to
+[137.66s -> 142.00s]  wait in the buffer memory until the first one is gone.
+[142.00s -> 144.92s]  Once it's gone, this one can go on its way.
+[144.92s -> 149.00s]  So this is sort of the generic structure of a packet switch.
+[149.00s -> 155.16s]  More specifically, one very common type of packet switch is an Ethernet switch.
+[155.16s -> 159.84s]  These are the four basic operations that an Ethernet switch must perform.
+[159.84s -> 162.64s]  So an Ethernet switch is an example of a packet switch.
+[162.64s -> 167.24s]  It's just a very specific one that's dealing with Ethernet frames.
+[167.24s -> 172.02s]  So the first thing it does is it examines the header of each arriving frame.
+[172.02s -> 178.34s]  If the Ethernet destination address, and these are 48-bit addresses with Ethernet,
+[178.34s -> 182.50s]  if it finds that address in the forwarding table, it's going to forward the frame to
+[182.50s -> 189.74s]  the correct outgoing port or maybe a selection of ports if it's a multicast packet.
+[189.74s -> 196.38s]  If it finds that the Ethernet destination address is not in the table, in an Ethernet
+[196.44s -> 203.44s]  switch, it broadcasts the frames to all ports except the one through which the frame arrived.
+[203.44s -> 206.04s]  In other words, it doesn't know where to send it, so it's going to flood it
+[206.04s -> 211.58s]  to everybody in the hope that it will reach its destination.
+[211.58s -> 213.56s]  How does it populate the table in the first place?
+[213.56s -> 217.52s]  Well it does this by learning addresses that it sees on the wire.
+[217.52s -> 223.32s]  More specifically, when a packet arrives, the entries in the table are learned by examining
+[223.34s -> 228.74s]  the Ethernet source address of arriving packets.
+[228.74s -> 234.74s]  So when packets first come through, the destination address is not in the table, it's broadcast
+[234.74s -> 240.18s]  to everybody, hopefully the other end will respond, send a packet back, we'll see its
+[240.18s -> 244.58s]  source address, and we will therefore learn that in future we must send packets through
+[244.58s -> 247.42s]  that particular port to reach that particular address.
+[247.42s -> 250.54s]  So these are the four basic operations of an Ethernet switch.
+[250.54s -> 256.72s]  Let's contrast that with an Internet router, another type of packet switch, which processes
+[256.72s -> 260.88s]  the IP destination address instead.
+[260.88s -> 264.08s]  So there's seven basic operations.
+[264.08s -> 269.80s]  Because it's dealing with IP datagrams that are encapsulated in Ethernet packets,
+[269.80s -> 274.60s]  first of all it's going to check to see whether the Ethernet destination address
+[274.60s -> 277.66s]  of the arriving frame belongs to the router.
+[277.66s -> 281.56s]  In other words, is it specifically addressed to this router?
+[281.56s -> 285.36s]  If it is, it accepts it, if it doesn't, it drops it, because it's clearly not destined
+[285.36s -> 288.40s]  for us.
+[288.40s -> 293.48s]  The next thing it does is to check that the IP version number is 4 if it's an IPv4
+[293.48s -> 297.64s]  router, and checks the length of the datagram.
+[297.64s -> 302.60s]  Next it's going to decrement the TTL and update the IP header checksum, because the
+[302.60s -> 305.02s]  checksum includes the TTL.
+[305.02s -> 307.60s]  It checks to see if the TTL equals zero.
+[307.60s -> 309.40s]  If it does, it drops the packet.
+[309.40s -> 313.34s]  If it doesn't, then it can continue to forward it.
+[313.34s -> 318.50s]  Next it's going to look up in the forwarding table if the IP destination address is in
+[318.50s -> 322.42s]  the forwarding table, it's going to forward it to the correct egress port or ports
+[322.42s -> 324.22s]  if it's multicast.
+[324.22s -> 329.20s]  And this is the correct ports to reach the next hop, because IP is doing hop-by-hop
+[329.20s -> 331.96s]  routing.
+[331.98s -> 336.50s]  Now it's decided which port it's going to depart from, it encapsulates the IP datagram
+[336.50s -> 341.80s]  back into an Ethernet frame, and it has to figure out the correct Ethernet destination
+[341.80s -> 343.58s]  address to use for the next hop router.
+[343.58s -> 347.56s]  We'll learn this process later, it's something called ARP.
+[347.56s -> 353.38s]  So it'll encapsulate the IP datagram into the Ethernet frame, create the new Ethernet
+[353.38s -> 358.50s]  frame, and then send it on to the wire.
+[358.50s -> 361.64s]  The basic operations of a packet switcher are to look up the address.
+[361.64s -> 364.90s]  So we're going to ask the question, how is this address looked up in the forwarding
+[364.90s -> 365.90s]  table?
+[365.90s -> 368.20s]  I'm going to show you some examples in a moment.
+[368.20s -> 370.08s]  The second operation is switching.
+[370.08s -> 374.66s]  Once it's figured out which egress port it needs to go to, it now has to send it
+[374.66s -> 375.66s]  to that correct output.
+[375.66s -> 379.94s]  It's got to deliver it to that correct output port so it can leave on the correct
+[379.94s -> 380.94s]  outgoing link.
+[380.94s -> 385.62s]  I'm going to start with the lookup address, and then in the next video we're going
+[385.62s -> 390.86s]  to learn about switching.
+[390.86s -> 395.52s]  So for Ethernet switches, looking up the address is very straightforward.
+[395.52s -> 400.88s]  It will have a forwarding table, which I've drawn in very simplified form here.
+[400.88s -> 404.78s]  This is the match that it's going to perform.
+[404.78s -> 408.20s]  This is what it's going to try and match the Ethernet destination address on, and this
+[408.20s -> 412.64s]  is then the action it's going to perform if it finds a match.
+[412.64s -> 419.56s]  If an incoming Ethernet frame has a destination address that matches this one here, then it's
+[419.56s -> 422.80s]  going to forward it to port 7.
+[422.80s -> 425.84s]  If it matches on this address here, then it's going to forward it to port 3.
+[425.84s -> 430.36s]  I've just drawn the 48-bit addresses here as hexadecimal numbers.
+[430.36s -> 438.16s]  Okay, so the Ethernet forwarding table has a number of rows, one for each address,
+[438.16s -> 442.08s]  and for each address it's going to tell it which port that it needs to forward to.
+[442.08s -> 446.16s]  And if it misses, then it broadcasts, because that's what Ethernet switches do when they
+[446.16s -> 449.88s]  don't know the address to send it to.
+[449.88s -> 455.68s]  Now to do this lookup, the way that it performs this lookup, is that typically it stores
+[455.68s -> 459.92s]  these addresses in a hash table, because these are 48-bit addresses, but there's nothing
+[459.92s -> 461.52s]  like 2 to the 48 entries.
+[461.52s -> 466.00s]  There may be 100,000, maybe even a million entries, so nothing like 2 to the power
+[466.00s -> 467.00s]  of 48.
+[467.00s -> 468.12s]  So it's a very sparse table.
+[468.12s -> 471.56s]  So typically they store addresses in a hash table.
+[471.56s -> 478.84s]  It might be a two-way hash to increase the probability of having a hit on the first try.
+[478.84s -> 483.20s]  And then it will look up the match by looking for an exact match in the hash table.
+[483.20s -> 487.44s]  In other words, it's looking for an exact match on that 48-bit address.
+[487.44s -> 491.56s]  So that's how address lookups are done in an Ethernet switch.
+[491.56s -> 497.80s]  Now let's look at how they're done in an IP router, an Internet router.
+[497.80s -> 500.16s]  So IP addresses are a bit more complicated.
+[500.16s -> 504.32s]  IP addresses, we don't just look up on an exact match.
+[504.32s -> 507.64s]  We look up on what's called a longest prefix match.
+[507.64s -> 512.44s]  We'll learn about why that is later when we learn about IP addresses.
+[512.44s -> 517.68s]  But suffice to know right now, we're performing a longest prefix match rather than an exact
+[517.68s -> 519.08s]  match.
+[519.08s -> 524.60s]  So just as before, we've got some matches here of some IP prefixes, and I'll tell you
+[524.60s -> 526.48s]  what those are in a moment.
+[526.48s -> 529.34s]  And then this is the action that we would perform.
+[529.34s -> 535.38s]  So for example, if we had a match on this IP destination address, this one here, and
+[535.38s -> 543.90s]  this is a specific IP destination address, 127.43.57.99, so that'll be a 32-bit address.
+[543.90s -> 546.54s]  We're going to forward it to this IP address.
+[546.54s -> 551.26s]  So this is actually the IP address of the interface of the next router that we're
+[551.26s -> 554.20s]  going to.
+[554.20s -> 556.52s]  After it's made this decision, it's going to resolve this.
+[556.52s -> 561.26s]  It's going to turn this IP address into the equivalent Ethernet destination address
+[561.26s -> 566.60s]  of that interface so that it knows what to encapsulate the packet into.
+[566.60s -> 570.60s]  But anyway, for inside the forwarding table, it maintains it as an IP address.
+[570.60s -> 575.96s]  So if we see something that matches here, then this is the action that we perform.
+[575.96s -> 580.00s]  So let's look at what a longest prefix match is.
+[580.00s -> 585.08s]  Along here, I've got the IP version 4 address number line.
+[585.08s -> 591.60s]  In other words, all of the possible 2 to the 32 different addresses that we can have
+[591.60s -> 593.40s]  in an IP destination address.
+[593.40s -> 598.20s]  And what I've got up here are some line segments.
+[598.20s -> 605.84s]  These line segments are prefixes, and they're always represented as in the following form.
+[605.84s -> 612.04s]  This line segment here corresponds to all of the addresses that start with 65.
+[612.04s -> 618.72s]  The interpretation of this is all of those with 65 as the first 8 bits.
+[618.72s -> 625.80s]  So if a packet, an incoming destination address, has 65 as the first 8 bits of address, then
+[625.80s -> 627.44s]  it's going to match on this line segment.
+[627.44s -> 633.16s]  And this line segment represents all the IP addresses that start with 65 in their first
+[633.16s -> 635.04s]  8-bit locations.
+[635.04s -> 641.92s]  Similarly, this line segment here corresponds to all of the IP addresses that their first
+[641.92s -> 645.56s]  16 bits are 128.9.
+[645.56s -> 652.14s]  So there are 2 to the power of 16 addresses here, all with the first 16 bits, 128.9.
+[652.14s -> 660.52s]  And so we represent that prefix as 128.9.00 slash 16, corresponding to those first 16
+[660.52s -> 661.52s]  bits.
+[661.52s -> 663.66s]  Finally, one more example.
+[663.66s -> 668.44s]  This one up here, which is a very short line segment, is all those addresses that
+[668.44s -> 671.48s]  share the first 24 bits.
+[671.48s -> 675.84s]  This means there are 2 to the 8 of them, or 256 different addresses, that all start
+[675.84s -> 676.84s]  with 128.9.176.
+[676.84s -> 683.52s]  OK, so when a packet arrives with a particular destination address, and here's an example
+[683.52s -> 692.08s]  here, this one is clearly going to match on this line segment right here.
+[692.08s -> 694.56s]  So this is the address on the number line.
+[694.56s -> 699.00s]  This is where it matches here, so that we know that the prefix that we've matched
+[699.00s -> 700.60s]  on in the table is this one.
+[700.60s -> 702.76s]  So the table will contain this entry here.
+[702.76s -> 706.32s]  This address will match on this entry in the table.
+[706.32s -> 714.50s]  Similarly, this address, 128.9.16.14, is going to match on this line segment here.
+[714.50s -> 720.56s]  Notice that it matched on this one, but this one is a longer matching prefix.
+[720.56s -> 723.82s]  More of the bits match on this one than they do on this one.
+[723.82s -> 729.42s]  This is a longer prefix, it's 21-bits prefix, whereas this one is only a 16-bit prefix.
+[729.42s -> 736.14s]  So because it matches on both, and this is the longest one, this address here will
+[736.14s -> 739.92s]  match on this prefix here in the table.
+[739.92s -> 745.98s]  So in routing lookups, what we do is we find the longest matching prefix, also known
+[745.98s -> 754.22s]  as the most specific route, amongst all the prefixes that match the destination address.
+[754.22s -> 758.70s]  Let's look at how we might implement this in a table.
+[758.70s -> 764.02s]  One common implementation is to use what's called a binary try, T-R-I-E, and there are
+[764.02s -> 768.50s]  many variations of this, but this is the most common one here.
+[768.50s -> 771.34s]  Let's say that we had a prefix table that looked like this.
+[771.34s -> 775.30s]  This prefix table is a bit strange because all the prefixes are very short.
+[775.30s -> 779.30s]  I'm just doing that so that they can be clearly represented in this table.
+[779.30s -> 783.98s]  So I've got one, two, three, four, five, six, seven, eight, nine, ten different
+[783.98s -> 790.78s]  entries in the table, and I'm going to populate them on this try right here.
+[790.78s -> 797.30s]  Because the matching of an incoming address is going to have variable length, we need
+[797.30s -> 800.90s]  a data structure to hold variable length entries.
+[800.90s -> 806.38s]  So the way that this data structure holds these entries is, let's take the zero, zero,
+[806.38s -> 808.48s]  zero, zero, one.
+[808.48s -> 812.34s]  This is zero, this is zero, this is zero, this is zero, and then this is one.
+[812.34s -> 816.22s]  In other words, we take the left branch for a zero and the right branch for a one,
+[816.22s -> 821.26s]  and so we encode or store this entry A at this particular leaf corresponding to that
+[821.26s -> 822.26s]  entry.
+[822.26s -> 829.30s]  And similarly, at the other extreme, let's take a look at J. That's one, one, one,
+[829.30s -> 833.74s]  one, zero, zero, zero, zero, corresponding to this entry here, and this is where we'll
+[833.74s -> 836.50s]  find J at the leaf.
+[836.50s -> 839.98s]  Once we've got this data structure for storing the entries, when a packet comes in
+[840.02s -> 844.66s]  with a particular destination address, we can just do a bit-by-bit comparison, traverse
+[844.66s -> 849.50s]  this tree, and it will tell us which entry is the longest matching prefix.
+[849.50s -> 853.78s]  If we get to a leaf and find that there's nothing there, we go back to the nearest
+[853.78s -> 857.34s]  matching one that shared bits in common with that address.
+[857.34s -> 860.78s]  You might want to experiment with this with these other entries in the table.
+[860.78s -> 866.70s]  So this is one common way of storing and performing the lookup for a longest matching
+[866.70s -> 867.70s]  prefix.
+[867.70s -> 871.86s]  And here's another entry, another mechanism, which is quite commonly used too, that's
+[871.86s -> 876.70s]  to use a special type of memory device called a ternary content addressable memory, or
+[876.70s -> 878.42s]  a TCAM.
+[878.42s -> 885.38s]  And a TCAM, here's the table again that we had before, and we start by storing
+[885.38s -> 888.58s]  it in a slightly different representation in the table.
+[888.58s -> 895.02s]  So entry A would be stored as four zeros and a one, and here we've rounded everything
+[895.06s -> 898.82s]  out to eight bits, as if they're eight-bit prefixes.
+[898.82s -> 906.54s]  And this mask value here is telling us which bits in the value above actually matter.
+[906.54s -> 910.38s]  So wherever there was a zero or one, we put a one to say these are all valid.
+[910.38s -> 913.42s]  And wherever we have an x, we put a zero.
+[913.42s -> 917.82s]  So these two bits, these two representations here, we can either think of them as a ternary
+[917.82s -> 921.36s]  value or two binary values that are storing this entry.
+[921.36s -> 926.28s]  They tell us which bits have which values and which ones don't matter.
+[926.28s -> 929.84s]  So the process of performing a lookup is kind of brute force.
+[929.84s -> 934.80s]  We compare an incoming address against every masked entry at the same time in parallel
+[934.80s -> 935.92s]  in the table.
+[935.92s -> 940.52s]  So these specialized memories consume quite a bit of power because they're doing all
+[940.52s -> 943.16s]  of that at the same time, but they can be really, really fast.
+[943.16s -> 948.92s]  And so they're quite commonly used for doing longest prefix matches in routers.
+[948.92s -> 952.26s]  Some of that last thing I wanted to point out is there's a sort of an increasing interest
+[952.26s -> 956.68s]  these days in what we might call generic lookups.
+[956.68s -> 962.26s]  You know, I made the observation before that these tables are holding a match field
+[962.26s -> 963.84s]  and an action field.
+[963.84s -> 968.56s]  And so we can generalize this or abstract this and say pretty much any packet switch
+[968.56s -> 972.42s]  is doing a lookup which is a match followed by an action.
+[972.42s -> 977.42s]  And the match might be on any fields like an IP address or Ethernet destination address
+[977.42s -> 979.46s]  and an IP address if we wanted.
+[979.46s -> 984.14s]  And we might have actions like forward or drop or encapsulate or do other things.
+[984.14s -> 987.94s]  So we can generalize the specification of a packet switch.
+[987.94s -> 992.54s]  And nowadays packet switches are designed that can do all sorts of different types of forwarding
+[992.54s -> 996.34s]  for layer 2, layer 3 at the same time.
+[996.34s -> 1003.14s]  Or they could be for things like switches, routers, firewalls, all sorts of devices
+[1003.14s -> 1004.32s]  like that.
+[1004.32s -> 1007.76s]  So in summary, packet switches perform two basic operations.
+[1007.76s -> 1011.76s]  They perform the lookups for looking up addresses in a forwarding table.
+[1011.76s -> 1015.12s]  And then they switch the packet to the correct outgoing port.
+[1015.12s -> 1019.68s]  At high level, Ethernet switches and Internet routers perform very similar operations.
+[1019.68s -> 1024.14s]  They're basically processing these packets in a very similar way.
+[1024.14s -> 1027.24s]  Address lookup is different in switches and routers.
+[1027.24s -> 1032.84s]  And we saw some examples of those for both Ethernet addresses and IP addresses.
+[1032.84s -> 1033.68s]  That's the end of this video.

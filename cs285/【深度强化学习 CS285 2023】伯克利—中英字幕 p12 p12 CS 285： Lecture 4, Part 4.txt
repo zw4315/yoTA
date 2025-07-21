@@ -1,0 +1,74 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.90s]  In the next part of today's lecture, I'm going to give you a kind of a whirlwind
+[5.90s -> 10.36s]  tour through different types of reinforcement learning algorithms. We'll
+[10.36s -> 14.82s]  talk about each of these types in much more detail in the next few
+[14.82s -> 18.70s]  lectures, but for now we'll just discuss what these types are so they
+[18.70s -> 25.80s]  don't come as surprise later. So the RL algorithms we'll cover will generally be
+[25.80s -> 32.16s]  optimizing the RL objective that I defined before. Policy gradient algorithms
+[32.16s -> 36.68s]  attempt to directly calculate a derivative of this objective with
+[36.68s -> 41.04s]  respect to theta, and then perform a gradient descent procedure using that
+[41.04s -> 47.32s]  derivative. Value-based methods estimate value functions or Q functions
+[47.32s -> 51.80s]  for the optimal policy, and then use those value functions or Q functions,
+[51.80s -> 54.72s]  which are typically themselves represented by a function approximator
+[54.76s -> 59.64s]  like a neural network, to improve the policy. Oftentimes pure value-based
+[59.64s -> 63.40s]  functions don't even represent the policy directly, but rather represented
+[63.40s -> 69.90s]  implicitly as something like an argmax of a Q function. Actor-critic methods
+[69.90s -> 74.48s]  are a kind of hybrid between the two. Actor-critic methods learn a Q function
+[74.48s -> 79.52s]  or value function, and then use it to improve the policy, typically by using
+[79.52s -> 84.32s]  them to calculate a better policy gradient. And then model-based
+[84.32s -> 88.12s]  reinforcement learning algorithms will estimate a transition model. They'll
+[88.12s -> 92.84s]  estimate some model of the transition probabilities T, and then they
+[92.84s -> 97.16s]  will either use a transition model for planning directly without any
+[97.16s -> 103.84s]  explicit policy, or use a transition model to improve the policy. And there
+[103.84s -> 107.84s]  are actually many variants in model-based RL for how the transition model can be
+[107.84s -> 114.08s]  used. All right, let's start our conversation with model-based RL
+[114.08s -> 120.36s]  algorithms. So for model-based RL algorithms, the green box will typically
+[120.36s -> 126.24s]  consist of learning some model for P of ST plus one given ST comma AT. So this
+[126.24s -> 130.12s]  could be a neural net that takes in ST comma AT, and either outputs a
+[130.12s -> 134.10s]  probability distribution over T plus one, or if it's a deterministic model, just
+[134.10s -> 139.46s]  attempts to predict ST plus one directly. And then the blue box has a
+[139.46s -> 143.90s]  number of different options. So let's focus in on that blue box, since
+[143.90s -> 147.50s]  model-based RL algorithms will differ greatly in terms of how they implement
+[147.50s -> 152.66s]  this part. So one option for model-based RL algorithms is to simply
+[152.66s -> 158.70s]  use the learned model directly to plan. So you could, for example, learn how the
+[158.70s -> 165.78s]  rules of chess game work, and then use your favorite discrete planning algorithm
+[165.78s -> 170.14s]  like Monte Carlo Tree Search to play chess, or you can learn the physics of
+[170.14s -> 175.14s]  a continuous environment for a robot, and then use some optimal control or
+[175.14s -> 178.94s]  trajectory optimization procedure through that learned physics model to
+[178.94s -> 186.14s]  control the robot. Another option is to use the learned model to compute
+[186.18s -> 190.10s]  derivatives of the reward function with respect to the policy, essentially
+[190.10s -> 194.98s]  through backpropagation. This is a very simple idea, but it actually requires
+[194.98s -> 198.82s]  quite a few tricks to make it work well, typically in order to account for
+[198.82s -> 202.38s]  numerical stability. So for example, second-order methods tend to work a
+[202.38s -> 206.38s]  lot better than first-order methods for backpropagating to the policy.
+[206.38s -> 210.58s]  Another common use of a model is to use the model to actually learn a
+[210.58s -> 215.22s]  separate value function or Q function, and then use that value function or Q
+[215.22s -> 218.70s]  function to improve the policy. So the value function or Q function would be
+[218.70s -> 224.42s]  learned using some type of dynamic programming method. And it's also fairly
+[224.42s -> 228.94s]  common to kind of extend number 3 to essentially use a model to generate
+[228.94s -> 232.86s]  additional data for a model-free reinforcement learning algorithm, and
+[232.86s -> 240.18s]  that can often work very well. Alright, value function based algorithms. So for
+[240.18s -> 244.58s]  value function based algorithms, the green box involves fitting some
+[244.58s -> 249.94s]  estimate of V of s or Q of s comma a, usually using a neural network to
+[249.94s -> 255.34s]  represent V of s or Q of s comma a, where the network takes in s or s
+[255.34s -> 260.90s]  comma a as input and outputs a real valued number. And then the blue box, if
+[260.90s -> 265.94s]  it's a pure value-based method, would simply choose the policy to be the
+[265.94s -> 270.86s]  argmax of Q s, a. So in a pure value-based method, we wouldn't
+[270.86s -> 273.90s]  actually represent the policy explicitly as a neural net, we would just
+[273.90s -> 280.26s]  represent it implicitly as an argmax over a neural net representing Q s, a.
+[280.70s -> 287.18s]  Direct policy gradient methods would implement the blue box simply by taking
+[287.18s -> 291.66s]  a gradient step, a gradient ascent step on theta, using the gradient of the
+[291.66s -> 295.70s]  expected value of the reward. We'll talk about how this gradient can be
+[295.70s -> 299.82s]  estimated in the next lecture, but the green box for policy gradient algorithms
+[299.82s -> 304.50s]  is very very simple. It just involves computing the total reward along each
+[304.50s -> 308.42s]  trajectory simply by adding up the rewards that were obtained during the
+[308.42s -> 312.58s]  rollout. By the way, when I use the term rollout, that simply means sample
+[312.58s -> 316.46s]  of your policy. It means run your policy one step at a time, and the
+[316.46s -> 319.90s]  reason we call it a rollout is because you're unrolling your policy one step at
+[319.90s -> 325.46s]  a time. Actor-critic algorithms are a kind of hybrid between value-based
+[325.66s -> 330.58s]  methods and policy gradient methods. Actor-critic algorithms also fit a value
+[330.58s -> 334.82s]  function or a Q function in the green box, just like value-based methods, but
+[334.82s -> 338.82s]  then in the blue box they actually take a gradient ascent step on the
+[338.82s -> 343.14s]  policy, just like policy gradient methods, utilizing the value function or Q
+[343.14s -> 348.78s]  function to obtain a better estimate of the gradient, a more accurate gradient.

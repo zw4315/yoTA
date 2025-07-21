@@ -1,0 +1,199 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 11.84s]  The Hypertext Transfer Protocol, or HTTP, is a cornerstone of the modern internet.
+[11.84s -> 15.72s]  Originally intended to transfer documents, it's now used for so much more, such as
+[15.72s -> 20.16s]  streaming media from companies like Netflix and applications through scripts that your
+[20.16s -> 22.18s]  browser downloads and runs.
+[22.18s -> 26.12s]  In this segment, I'll explain the basic conceptual model behind HTTP and present
+[26.12s -> 34.60s]  some analytical tools for understanding how it performs.
+[34.60s -> 41.00s]  HTTP stands for Hypertext Transfer Protocol.
+[41.00s -> 43.16s]  So what's hypertext?
+[43.16s -> 47.10s]  Hypertext is a document format that lets you include formatting and content information
+[47.10s -> 49.28s]  inside a document.
+[49.28s -> 53.76s]  Whenever you download a webpage, you're downloading a hypertext document.
+[53.76s -> 58.44s]  Unlike many other document formats, such as Microsoft Word or PDF, hypertext is all ASCII
+[58.44s -> 59.74s]  text.
+[59.74s -> 63.48s]  If you look at a document, though generally speaking, aren't any characters your regular
+[63.48s -> 67.12s]  text editor can't display.
+[67.12s -> 72.36s]  So let's take as an example this excerpt from the Wikipedia page on HTTP's history.
+[72.36s -> 78.84s]  It has the word history in a larger font, some links shown in blue, an embedded image,
+[78.84s -> 81.90s]  and a few other nice bits of formatting such as the line under history that make
+[81.90s -> 84.68s]  it easier to read.
+[84.68s -> 88.00s]  Under the covers, the document looks like this.
+[88.00s -> 92.56s]  This is the hypertext my browser downloaded to display this section.
+[92.56s -> 96.04s]  All of the formatting information is inside angle brackets.
+[96.04s -> 101.94s]  This less than, h2, greater than, for example, means that this is a heading, so should
+[101.94s -> 103.76s]  be displayed bigger.
+[103.76s -> 108.12s]  You can see the word history outside any such formatting information.
+[108.12s -> 113.40s]  The word history on this snippet is displayed as a header, as you can see.
+[113.40s -> 117.52s]  So at a basic level, a hypertext document is just a text document which your browser
+[117.52s -> 123.72s]  displays based on these special formatting commands and controls, called tags.
+[123.72s -> 128.76s]  A hypertext link, for example, is just a formatting tag that says, this stuff inside
+[128.76s -> 132.60s]  the tag, if clicked, should load this URL.
+[132.60s -> 136.16s]  The tag that does this is the a tag.
+[136.20s -> 142.52s]  You can see here, for an example, the a tag on line 227 for a link to the HTTP version
+[142.52s -> 143.52s]  0.9.
+[143.52s -> 151.52s]  When you click on that link, it takes you to this URL, http www.w3.org, pub, etc.
+[151.52s -> 169.76s]  But there's one way in which a hypertext document is more than just formatting.
+[169.76s -> 174.72s]  With hypertext, you can embed documents or files inside other files.
+[174.72s -> 178.96s]  The simplest example of this on the Wikipedia page is the image.
+[178.96s -> 182.60s]  The bits of this image aren't stored in the hypertext document.
+[182.60s -> 184.60s]  That wouldn't be human-readable ASCII text.
+[184.60s -> 190.44s]  Instead, there's a way to, in a hypertext document, say, load this other document
+[190.44s -> 192.24s]  and put it there.
+[192.24s -> 199.42s]  Take a look at line 220, you'll see an image, or IMG tag.
+[199.42s -> 204.48s]  The IMG tag says, load the image from this URL and display it here.
+[204.48s -> 207.96s]  When your browser loads the hypertext for the Wikipedia page, it sees tags like this
+[207.96s -> 211.20s]  one and automatically requests the files they reference.
+[211.20s -> 214.92s]  So when you load the page, your browser automatically requests the image and displays
+[214.92s -> 216.84s]  it.
+[216.84s -> 222.40s]  There are all kinds of resources besides images that a webpage can reference.
+[222.40s -> 227.16s]  Other pages, style sheets, fonts, scripts, and more.
+[227.16s -> 228.16s]  Let's look at an example.
+[228.16s -> 232.60s]  I'm going to request the webpage for the New York Times and use my browser's developer
+[232.60s -> 236.60s]  tools to see all of the requests this results in.
+[236.60s -> 241.56s]  As you can see, I request something on the order of 20 documents ranging from hypertext
+[241.56s -> 246.06s]  to images to ads.
+[246.06s -> 252.12s]  In HTTP, a client opens a TCP connection to a server and sends commands to it.
+[252.12s -> 257.24s]  The most common command is GET, which requests a page.
+[257.24s -> 261.96s]  HTTP was designed to be a document-centric way for programs to communicate.
+[261.96s -> 267.28s]  For example, if I type HTTP www.stanford.edu in my browser, the browser opens a connection
+[267.28s -> 272.16s]  to the server www.stanford.edu and sends a GET request for the root page of that
+[272.16s -> 273.20s]  site.
+[273.20s -> 276.64s]  The server receives the request, checks if it's valid, if the user can access that
+[276.64s -> 279.16s]  page, and sends a response.
+[279.16s -> 281.92s]  The response has a numeric code associated with it.
+[281.92s -> 286.24s]  For example, if the server sends a 200 OK response to a GET, this means that the
+[286.24s -> 295.22s]  request was accepted, and the rest of the response is in the document data.
+[295.22s -> 300.16s]  In the example of www.stanford.edu, a 200 OK response would include the hypertext
+[300.16s -> 302.84s]  that describes the main Stanford page.
+[302.84s -> 306.16s]  There are other kinds of requests such as put, delete, and info, as well as other responses
+[306.16s -> 309.48s]  such as 400 bad request.
+[309.48s -> 314.52s]  Like hypertext itself, HTTP is all in ASCII text—it's human readable.
+[314.52s -> 320.52s]  For example, the beginning of a GET request for the New York Times looks like this, GET
+[320.52s -> 329.68s]  slash HTTP 1.1.
+[329.68s -> 342.24s]  The beginning of a response to a successful request looks like this, HTTP 1.1, 200 OK.
+[342.24s -> 343.88s]  But the basic model is simple.
+[343.88s -> 346.88s]  The client sends a request by writing to the connection, the server reads the request,
+[346.88s -> 350.84s]  processes it, and writes a response to the connection, which the client then reads.
+[350.84s -> 356.52s]  The data the client reads might then cause it to issue more GET requests.
+[356.52s -> 358.36s]  This is what an HTTP request looks like.
+[358.36s -> 362.96s]  The first line, ASCII text, says the methods such as GET, the URL for the method, and
+[362.96s -> 365.32s]  then the version of the HTTP being used.
+[365.32s -> 369.40s]  The white boxes represent spaces, so there's a space between method and URL, as well
+[369.40s -> 371.60s]  as between URL and version.
+[371.60s -> 375.52s]  The left arrow means carriage return, a way to say go to the beginning of the line, and
+[375.52s -> 378.52s]  the down arrow means new line, a way to say go to a new line.
+[378.52s -> 383.32s]  So, for example, in my prior example of requesting this URL, the method will be GET,
+[383.32s -> 391.36s]  the URL will be fullduplexindex.html, and the version will most likely be HTTP 1.1.
+[391.36s -> 395.12s]  After this first line, the request itself, there's zero or more headers.
+[395.12s -> 396.72s]  There's one header per line.
+[396.72s -> 401.56s]  Each header line starts with the header field name, followed by the value.
+[401.56s -> 406.52s]  After the headers, there's an empty line, followed by the body of the message.
+[406.52s -> 409.32s]  Wait, why might a request have a body?
+[409.32s -> 411.12s]  What's the body of a request?
+[411.12s -> 416.04s]  In the case of the GET method, to request a page, the body is empty.
+[416.04s -> 421.32s]  But HTTP supports other requests, other methods, such as POST, which sends data, for example
+[421.32s -> 423.56s]  when you fill out a form and submit it.
+[423.56s -> 426.90s]  POST requests often have a body.
+[426.90s -> 428.72s]  So let's see what this looks like.
+[428.72s -> 434.60s]  I'm going to request HTTP www.syng.edu slash fullduplex slash index dot html.
+[434.60s -> 439.04s]  This is a webpage some of my now graduated PhD students wrote to describe some neat research
+[439.04s -> 441.44s]  they did in wireless networks.
+[441.44s -> 445.60s]  I'm going to open up the developer tools in Firefox, which lets me see requests and
+[445.60s -> 446.60s]  responses.
+[446.60s -> 451.98s]  You can see there's a request for fullduplex slash index.html HTTP 1.1, followed by a
+[451.98s -> 453.60s]  bunch of headers.
+[453.60s -> 457.20s]  One header that's important for this request is if modified since.
+[457.72s -> 461.82s]  This is a way for the client to tell the server to only give the document if it's been modified
+[461.82s -> 462.82s]  since that time.
+[462.82s -> 467.48s]  If the document has been modified since that timestamp, the server responds with a
+[467.48s -> 470.22s]  200 OK the new copy of the document.
+[470.22s -> 473.48s]  Otherwise it responds with a 304 not modified.
+[473.48s -> 476.68s]  This header is useful when your client caches pages, which most web browsers do.
+[476.68s -> 480.40s]  Rather than transfer the same document again and again, the client can tell the server
+[480.40s -> 482.40s]  to transfer it conditionally.
+[482.40s -> 487.60s]  If the server responds with a 304, the client can just use its cached copy.
+[487.60s -> 489.76s]  An HTTP response looks similar.
+[489.76s -> 493.06s]  The first line has the HTTP version, the status code, and the phrase associated with
+[493.06s -> 497.40s]  that status code, such as 200 OK or 404 not found.
+[497.40s -> 501.72s]  Then there's zero or more headers, a blank line, and the body of the response.
+[501.72s -> 504.50s]  Let's see what the response to my GET request looks like.
+[504.50s -> 505.64s]  It's a 304.
+[505.64s -> 511.88s]  This webpage has not been modified since my browser first put it in its cache.
+[511.88s -> 515.44s]  Now if I clear my browser cache and request the page again, the request doesn't have
+[515.44s -> 519.48s]  a modified since header, and so the response is a 200 OK.
+[519.48s -> 523.86s]  The developer tools on Firefox let you see the request-response pair, but not their
+[523.86s -> 525.36s]  actual formats.
+[525.36s -> 527.28s]  For that, I'm going to do something much simpler.
+[527.28s -> 531.28s]  I'm going to use the telnet program to connect to a web server.
+[531.28s -> 533.24s]  Telnet opens a TCP connection.
+[533.24s -> 536.16s]  It writes what you type to the socket and prints out what it reads.
+[536.16s -> 544.24s]  So I'll telnet to sing.stanford.edu, port 80, and type get slash full duplex slash index.html
+[544.24s -> 546.88s]  HTTP slash 1.0.
+[546.88s -> 549.20s]  A lot of HTML comes back.
+[549.20s -> 553.84s]  If I scroll to the top, I can see the HTTP response 200 OK with a bunch of headers,
+[553.84s -> 556.98s]  a new line, then the body, the HTML of the page.
+[556.98s -> 560.12s]  The content length header tells me how long the body is.
+[560.12s -> 563.60s]  HTTP is a cornerstone protocol of the modern internet.
+[563.60s -> 567.24s]  While it was originally document-centric, designed to fetch pages and documents, today
+[567.24s -> 568.24s]  it's used for much more.
+[568.24s -> 573.88s]  A document, for example, can be a script that your browser executes as part of an application.
+[573.88s -> 580.12s]  The basic model, however, of requesting URLs and receiving responses still holds.
+[580.12s -> 583.12s]  One nice thing about HTTP is that it's human-readable text.
+[583.12s -> 587.12s]  You can type in HTTP request and read the response, as you saw me doing by telnetting
+[587.12s -> 588.12s]  to port 80.
+[588.12s -> 591.44s]  I encourage you to play around a bit, to use the developer tools in your browser to
+[591.44s -> 595.36s]  see what's requested, and learn more about the details of the protocol.
+[595.36s -> 597.16s]  So that's the basics of the protocol.
+[597.16s -> 598.16s]  Request.
+[598.16s -> 599.16s]  Response.
+[599.16s -> 600.68s]  HTTP 1.0 is very simple.
+[600.68s -> 604.44s]  A client wanting to request a document opens a connection.
+[604.44s -> 605.92s]  It sends a GET request.
+[605.92s -> 610.86s]  The server responds with a status code, such as 200 OK, the document, and closes the
+[610.86s -> 612.96s]  connection once the response is complete.
+[612.96s -> 618.68s]  If the client wants to request a second document, they must open a second connection.
+[618.68s -> 623.42s]  When the web was mostly text with maybe an image or two, this approach worked just fine.
+[623.42s -> 627.02s]  People handwrote their web pages, putting in all of the formatting.
+[627.02s -> 629.24s]  So let's walk through how long this takes.
+[629.24s -> 631.32s]  Let's make some simplifying assumptions.
+[631.32s -> 635.48s]  The web server can respond immediately, so there's no processing delay.
+[635.48s -> 639.32s]  The latency between the client and server is 50 milliseconds.
+[639.32s -> 643.44s]  An HTTP request is a full TCP segment.
+[643.44s -> 647.44s]  Response is two full segments, so the size of a small initial slow start congestion
+[647.44s -> 648.44s]  window.
+[648.60s -> 652.64s]  That way we're not going to have to worry about window sizes or congestion control.
+[652.64s -> 656.56s]  The packetization delay of a full segment is 10 milliseconds.
+[656.56s -> 662.12s]  So the total packetization delay of a request is 10 milliseconds, and a reply is 20 milliseconds.
+[662.12s -> 666.44s]  You can assume that the links are full duplex, such that a node can simultaneously
+[666.44s -> 669.52s]  receive and transmit on the same link.
+[669.52s -> 672.64s]  This means that the packetization delay of a request does not affect the packetization
+[672.64s -> 674.92s]  delay of a response.
+[674.92s -> 678.92s]  Let's finally assume that TCP segments with no data, such as a three-way handshake and
+[678.92s -> 682.28s]  ACK packets, have a packetization delay of zero.
+[682.28s -> 686.12s]  Finally, we can have up to two open connections.
+[686.12s -> 689.40s]  So let's consider our first case.
+[689.40s -> 691.84s]  You want to load a single page.
+[691.84s -> 693.96s]  How long will this take?
+[693.96s -> 699.40s]  First, there is the latency of sending a SYN, so 50 milliseconds.
+[699.40s -> 703.16s]  There's the latency of the SYN ACK, so another 50 milliseconds.
+[703.16s -> 707.68s]  On receiving the SYN ACK, the client can send the ACK of the three-way handshake, followed
+[707.68s -> 709.52s]  by the request.
+[709.52s -> 715.28s]  The request has a packetization delay of 10 milliseconds, so this takes 60 milliseconds.
+[715.28s -> 717.92s]  The server then needs to send the response back.
+[717.92s -> 725.60s]  The packetization delay of the response is 20 milliseconds, so this step takes 70 milliseconds.
+[725.60s -> 730.28s]  The total delay is 50 milliseconds plus 50 milliseconds plus 60 milliseconds plus 70
+[730.28s -> 735.72s]  milliseconds, or 230 milliseconds.
+[735.72s -> 737.60s]  Let's look at a more complex example.
+[737.60s -> 740.82s]  There's a page that loads two images.
+[740.82s -> 742.24s]  We can break this into two steps.
+[742.24s -> 744.72s]  In the first step, the client requests the page.
+[744.72s -> 749.52s]  In the second step, it uses two connections to request the images.
+[749.52s -> 754.16s]  The first step will take the same length as our single page example.
+[754.16s -> 759.64s]  There's 100 milliseconds for the setup, then 130 milliseconds for the request and response.
+[759.64s -> 761.56s]  The second step is a bit trickier.
+[761.56s -> 767.00s]  Remember, while we have separate TCP connections, they are sharing the same link.
+[767.00s -> 771.32s]  This means that the packetization delay of one request affects the other.
+[771.32s -> 774.88s]  Setting up the two connections will take 100 milliseconds.
+[774.88s -> 778.24s]  But how long will it take for the two request responses to complete?

@@ -1,0 +1,106 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.98s]  So, so far, when we talked about Q-learning algorithms, we mainly focused on algorithms
+[5.98s -> 11.18s]  with discrete action spaces. It is actually possible, but somewhat more complicated,
+[11.18s -> 15.60s]  to extend Q-learning procedures to the case when we have continuous actions. And that's
+[15.60s -> 20.32s]  what I'm going to discuss in the next section of this lecture.
+[20.32s -> 24.96s]  So let's talk about Q-learning with continuous actions. What's the problem with continuous
+[24.96s -> 29.30s]  actions? Well, the problem is that when you select your actions, you need to perform
+[29.30s -> 35.30s]  this argmax. And argmax over discrete actions is pretty straightforward. You simply evaluate
+[35.30s -> 40.62s]  the Q-value for every possible action and take the best one. But when you have continuous
+[40.62s -> 46.62s]  actions, this is, of course, much harder. This comes up in two places. When evaluating
+[46.62s -> 51.86s]  the argmax policy, and when computing the target value, which requires the max, or
+[51.86s -> 59.94s]  in the case of double Q-learning, also an argmax. So this is, the target value max is particularly
+[59.94s -> 63.74s]  problematic because that happens in the inner loop of training. So you really want this
+[63.74s -> 68.34s]  to be very fast and very efficient. So how can we perform this max when you have
+[68.34s -> 76.14s]  continuous actions? Well, we basically have three choices. Option one is to use a continuous
+[76.14s -> 82.38s]  optimization procedure, like, for instance, gradient descent. Now gradient descent by itself
+[82.38s -> 87.62s]  can be pretty slow because it is, you know, it requires multiple steps, gradient calculations,
+[87.62s -> 92.10s]  and it happens in the inner loop of an outer loop learning procedure, so there are better
+[92.10s -> 99.30s]  choices that we could use. And our action space is typically low-dimensional, so in some sense
+[99.30s -> 103.70s]  it presents a slightly easier optimization problem than the kind of problems we typically take on
+[103.74s -> 109.54s]  with SGD. So it turns out that for evaluating the max with optimization, a particularly good
+[109.54s -> 115.58s]  choice is to use a derivative-free stochastic optimization procedure. So let's talk about that
+[115.58s -> 123.94s]  a little bit. A very simple solution is to simply approximate the max over a continuous action
+[123.94s -> 130.18s]  as the max over a discrete set of actions that are sampled randomly. So, for instance,
+[130.18s -> 135.54s]  you could sample a set of n actions, maybe uniformly at random from the set of valid actions,
+[135.54s -> 141.58s]  and then take the Q-value with the largest of those actions. Now that's not going to give
+[141.58s -> 147.26s]  you an exact max, it'll give you a very approximate max, but if your action space
+[147.26s -> 151.46s]  is pretty low-dimensional and you can bombard it with enough samples, this max might actually
+[151.46s -> 156.04s]  be pretty good. And, of course, if overestimation is your problem, this might actually
+[156.24s -> 161.80s]  suffer from overestimation or less, because the max is less effective. This has the advantage
+[161.80s -> 166.88s]  of being dead simple. It's very efficient to parallelize, because you can essentially use
+[166.88s -> 172.72s]  your favorite deep learning framework and just treat these different actions as different
+[172.72s -> 177.68s]  points in a mini-batch and evaluate all of them in parallel. The problem is that it's not
+[177.68s -> 182.32s]  very accurate, especially as the action space dimensionality gets larger, this random sampling
+[182.32s -> 188.44s]  method just doesn't actually give you a very accurate max. But maybe we don't care about
+[188.44s -> 194.72s]  that. Maybe if overestimation is our issue, maybe a worse max is actually alright. If you
+[194.72s -> 199.92s]  do want a more accurate solution, there are better algorithms that are based on basically
+[199.92s -> 205.56s]  the same principle. So cross-entropy method is a simple iterative stochastic optimization scheme,
+[205.56s -> 208.68s]  which we'll discuss a lot more when we talk about model-based RL later,
+[208.80s -> 214.00s]  but intuitively cross-entropy method simply consists of sampling sets of actions just like
+[214.00s -> 218.68s]  in the simple solution above, but then instead of simply taking the best one, cross-entropy
+[218.68s -> 224.36s]  method refines the distribution from which you sample to then sample more samples in the
+[224.36s -> 229.12s]  good regions and then repeat. And this can also be a very, very fast algorithm if you're willing
+[229.12s -> 234.60s]  to parallelize and you have a low dimensional action space. CMAES, you can kind of think
+[234.64s -> 242.68s]  of it as a much fancier version of CEM. So it's substantially less simple, but structurally
+[242.68s -> 248.40s]  very similar. And these kinds of methods work okay for up to about 40 dimensional action
+[248.40s -> 255.00s]  spaces. So if you use one of these solutions, you simply plug this in place of your Rmax to
+[255.00s -> 259.16s]  find the best action, and the rest of your Q-learning procedure stays basically the same.
+[259.16s -> 266.72s]  Another option that you could use, option 2, is to use a function class that is inherently
+[266.72s -> 272.04s]  easy to optimize. So arbitrary neural networks are not easy to optimize with respect to one of
+[272.04s -> 276.80s]  their inputs, but other function classes have closed form solutions for their optima.
+[276.80s -> 282.96s]  One example of such a function class is the quadratic function. So you could, for example,
+[283.32s -> 289.84s]  express your Q function as a function that is quadratic in the action, and the optimum for
+[289.84s -> 294.08s]  quadratic as a closed form solution. So one of the ways you could do this, this is something
+[294.08s -> 300.04s]  called the NAF architecture proposed in this paper by Shishiang Gu in 2016, is to have a
+[300.04s -> 306.36s]  neural network that outputs three quantities, a scalar-valued bias, a vector value, and a
+[306.36s -> 312.48s]  matrix value. And the vector and matrix together define a quadratic function in the action. So
+[312.52s -> 316.52s]  this function is completely nonlinear in the state. It can represent any function of the state,
+[316.52s -> 322.80s]  but for a given state, the shape of the Q value in terms of the action is always quadratic. And
+[322.80s -> 329.40s]  when it's always quadratic, then you can always find the maximum. In this case, the maximum
+[329.40s -> 336.08s]  is just mu phi of s, as long as p phi of s is positive definite. So this is called the
+[336.08s -> 340.96s]  normalized advantage function, and the reason that it's called normalized is that if you
+[340.96s -> 346.52s]  exponentiate it, then you get a normalized probability distribution. So the arc max of
+[346.52s -> 353.74s]  q phi is mu phi, and the max is v phi. So now we've just made this maximization operation
+[353.74s -> 359.04s]  very easy at the cost of reducing the representational capacity of our Q function,
+[359.04s -> 363.72s]  because if the true Q function is not quadratic in the action, then of course the problem we have
+[363.72s -> 369.48s]  is that we can't represent it exactly. So there's no change to the algorithm. It's just as
+[369.52s -> 377.04s]  efficient as Q-learning, but it loses some representational power. All right. The last
+[377.04s -> 382.56s]  option I'm going to discuss is to perform Q-learning with continuous actions by learning
+[382.56s -> 386.96s]  an approximate maximizer. This is going to be a little bit similar to option one,
+[386.96s -> 392.52s]  only instead of running the optimization separately for every single arc max that we have to take,
+[392.52s -> 398.24s]  we'll actually train a second neural network to perform the maximization. So the
+[398.24s -> 403.04s]  particular algorithm that I'll describe is most closely related to DDPG by Lilliprop et al. in
+[403.04s -> 408.96s]  iClear2016, but DDPG itself is almost identical to another algorithm called NFQCA,
+[408.96s -> 413.60s]  which was proposed much earlier. So you could equivalently think of this as basically NFQCA.
+[413.60s -> 419.88s]  This algorithm can also be interpreted as a kind of deterministic after critic method,
+[419.88s -> 424.04s]  but I think it's actually simplest to think of it conceptually as a Q-learning algorithm.
+[424.04s -> 431.96s]  So remember that our max over A of Q phi SA is just Q phi evaluated at the arg max,
+[431.96s -> 437.32s]  so as long as we can do that arg max, we can perform Q-learning. So the idea is to
+[437.32s -> 444.72s]  train another network, mu theta s, such that mu theta s is approximately the arg max of Q phi.
+[444.72s -> 449.72s]  And you can also think of mu theta s as a kind of policy, because it looks at a state
+[449.80s -> 456.28s]  and outputs the action, specifically the arg max action. How do we do this? Well,
+[456.28s -> 463.08s]  you just solve for theta to find the theta that maximizes Q phi at s comma mu theta s.
+[463.08s -> 471.08s]  So you basically push gradients through your Q function and maximize. And you can use the
+[471.08s -> 477.64s]  chain rule to evaluate this derivative. So dQ phi d theta is just dA d theta, which is the
+[477.64s -> 484.00s]  derivative of mu theta times dQ phi dA. So you can obtain this derivative by backpropagating
+[484.00s -> 491.56s]  through the Q function and into the mu and then into the mu parameters. So now our targets
+[491.56s -> 500.52s]  are going to be given by as yj equals rj plus gamma times Q phi prime evaluated at sj
+[500.52s -> 506.24s]  prime comma mu theta sj prime, which is really an approximation for the arg max as long
+[506.24s -> 513.56s]  as mu theta is a good estimate of the arg max. So here's what that algorithm would look like.
+[513.56s -> 520.12s]  Step one, take some action ai, observe the corresponding transition si ai si prime
+[520.12s -> 526.80s]  ri and add it to your buffer, just like in Q learning. Step two, sample a mini-batch
+[526.80s -> 535.96s]  sj aj sj prime rj from your buffer uniformly at random. Step three, compute your target
+[536.00s -> 542.56s]  value and now instead of using the arg max you're going to use mu theta and in fact you're going
+[542.56s -> 547.12s]  to use mu theta prime, so you have a target network for Q phi prime and a target network
+[547.12s -> 554.04s]  for mu theta prime. And then step four, just like in Q learning, perform a gradient update on phi
+[554.04s -> 561.08s]  and additionally we'll now perform a gradient update on theta. So the gradient on theta uses
+[561.08s -> 565.00s]  that chain rule derivation for the gradient that I showed in the previous slide. So it
+[565.04s -> 569.08s]  takes the derivative of the Q value with respect to the action and then multiplies that by the
+[569.08s -> 575.16s]  derivative of the action with respect to theta, which is just back propagation through mu. Then
+[575.16s -> 580.04s]  we're going to update our target parameters, phi prime and theta prime, for example using
+[580.04s -> 586.32s]  polyach averaging. And then we'll repeat this process. So this is the basic pseudocode for
+[586.32s -> 591.32s]  continuous action Q learning algorithm. In this case this particular algorithm is DDPG but there
+[591.32s -> 595.52s]  are many more recent variants as well as older variants. So for classic work on this you could
+[595.52s -> 600.60s]  check out an algorithm called NFQCA. For more recent variants you can check out TD3NSAC.

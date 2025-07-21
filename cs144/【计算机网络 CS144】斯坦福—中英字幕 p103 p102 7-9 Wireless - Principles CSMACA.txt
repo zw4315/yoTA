@@ -1,0 +1,140 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.80s]  So in this video, I'm going to talk about CSMA-CA, Carrier Sense Multiple Access
+[4.80s -> 9.40s]  Collision Avoidance, a MAC protocol or a MAC algorithm used in wireless networks.
+[9.40s -> 13.80s]  So for a wireless network to be able to detect that there's a collision, it needs
+[13.80s -> 17.80s]  to know whether or not a packet collided or whether it was delivered
+[17.80s -> 20.80s]  successfully. So because in a wireless network, due to
+[20.80s -> 24.80s]  the signal strength attenuation, you can't detect that there was a collision
+[24.80s -> 28.30s]  at a receiver, because you can't observe the receiver directly, you need some
+[28.30s -> 31.30s]  information from the receiver as to what's happened.
+[31.30s -> 35.30s]  And so the way this is commonly achieved is with link layer acknowledgements.
+[35.30s -> 39.30s]  And so the idea is that if say A is transmitting a packet, a data packet to
+[39.30s -> 43.30s]  B, if B successfully receives this packet, then what it does is it sends an
+[43.30s -> 53.30s]  acknowledgement back. This acknowledgement packet can be very,
+[53.30s -> 57.30s]  very short, and this is occurring at the link layer.
+[57.30s -> 60.30s]  It doesn't go across multiple hops of the network.
+[60.30s -> 64.30s]  It's directly, say, using a wireless ethernet between A and B.
+[64.30s -> 69.30s]  And so the advantage of this is if A starts transmitting, say, a data packet
+[69.30s -> 75.30s]  to B, but at the same time, C transmits a data packet, and the two collide,
+[75.30s -> 80.30s]  then B will not send an acknowledgement. It doesn't successfully receive either
+[80.30s -> 82.30s]  packet. It sends no acknowledgement.
+[82.30s -> 85.30s]  A knows that it might need to retransmit, or that it should possibly
+[85.30s -> 87.30s]  retransmit. Of course, you can have collisions on
+[87.30s -> 89.30s]  acts. Acts aren't perfect, so it can be that
+[89.30s -> 93.30s]  A does some unnecessary retransmissions, but generally speaking, A needs some
+[93.30s -> 97.30s]  feedback from B to know whether or not the data was delivered successfully.
+[97.30s -> 101.30s]  If these were very, very uncommon, right, so in the same way to say in
+[101.30s -> 105.30s]  wire ethernet, where it's possible, very uncommon that a packet doesn't
+[105.30s -> 109.30s]  collide and yet doesn't arrive successfully, then you might not need an
+[109.30s -> 112.30s]  acknowledgement. But the fact that wireless, the signal
+[112.30s -> 116.30s]  doesn't move so much over time and that data, bidders are common means that
+[116.30s -> 118.30s]  you want to have some positive feedback.
+[118.30s -> 121.30s]  So using link layer acknowledgements this is how CSMA CA works.
+[121.30s -> 125.30s]  So the idea is you start off with some initial random back off.
+[125.30s -> 128.30s]  It can be very small, say if the channel is idle.
+[128.30s -> 132.30s]  You sense the local channel and you transmit after the back off.
+[132.30s -> 136.30s]  So the basic idea here is listen, if the channel is idle, then transmit.
+[136.30s -> 139.30s]  If you don't hear the packet acknowledged, if you don't hear an
+[139.30s -> 142.30s]  acknowledgement, then back off again and retry, so transmit again.
+[142.30s -> 146.30s]  If you hear the packet acknowledged, then you can send the next packet.
+[146.30s -> 150.30s]  This is the basic CSMA carrier sense multiple access CA collision avoidance
+[150.30s -> 153.30s]  algorithm. And it's collision avoidance because
+[153.30s -> 157.30s]  you do this back off again. So let's look at this more concretely.
+[157.30s -> 160.30s]  What is 802.11, so Wi-Fi, what does it do?
+[160.30s -> 164.30s]  So, 802.11 has two modes. One is CSMA CA, or it has many modes,
+[164.30s -> 168.30s]  but it's, the common mode that everybody uses today is CSMA CA.
+[168.30s -> 171.30s]  Another mode, common, reasonably common, called request to send, clear to send,
+[171.30s -> 173.30s]  which we'll talk about in a future video.
+[173.30s -> 178.30s]  But here, let's talk about CSMA CA. So the basic approach is that you pick
+[178.30s -> 182.30s]  an initial wait period T, this often starts off as being very small.
+[182.30s -> 187.30s]  And what the transmitter does is it periodically checks the channel.
+[187.30s -> 191.30s]  If the channel is idle on one of those checks, it decrements T.
+[191.30s -> 194.30s]  So it's counting down T. So T represents the amount of idle time
+[194.30s -> 197.30s]  the transmitter wants to hear before it'll transmit.
+[197.30s -> 200.30s]  So when T reaches zero, it tries to transmit.
+[200.30s -> 204.30s]  If it hears an acknowledgement, then it accepts the next packet of
+[204.30s -> 207.30s]  transmission, all's good. If it doesn't hear an
+[207.30s -> 211.30s]  acknowledgement, it doubles T. So it'll exponentially back off
+[211.30s -> 215.30s]  longer and longer. If T grows to be larger than some
+[215.30s -> 218.30s]  large T value, then it just drops the packet.
+[218.30s -> 222.30s]  Rather than waiting or blocking on a given packet, it'll just drop that
+[222.30s -> 224.30s]  packet and try to go on to the next one.
+[224.30s -> 227.30s]  And so here's a little, little walk through.
+[227.30s -> 231.30s]  So here's our sender S, and it picks an initial T value here.
+[234.30s -> 237.30s]  T. The channel here is busy, so it's not
+[237.30s -> 240.30s]  decrementing T. It starts decrementing T.
+[240.30s -> 243.30s]  T becomes zero here. And so it transmits.
+[243.30s -> 247.30s]  It transmits this packet. Unfortunately, it doesn't hear an
+[247.30s -> 251.30s]  acknowledgement. So then it picks a new T, which is
+[252.30s -> 255.30s]  in a range twice as large as the original T.
+[255.30s -> 258.30s]  It decrements that T. There are periods of busyness.
+[258.30s -> 262.30s]  There are periods of idleness. Then finally, T decrements, let's
+[262.30s -> 265.30s]  call this T2. Finally, T2 decrements to zero.
+[265.30s -> 267.30s]  It transmits. It hears an acknowledgement.
+[267.30s -> 269.30s]  Great. It goes on to the next packet
+[269.30s -> 273.30s]  transmission with the initial small T value as the back off.
+[273.30s -> 278.30s]  So CSMA works, CSMA CA works pretty well, but it has a bunch of problems
+[278.30s -> 282.30s]  which really do occur in practice. So the first one is something called
+[282.30s -> 286.30s]  hidden terminals. And so this occurs when say we have
+[286.30s -> 290.30s]  this node B in the middle like this could be say your access point.
+[290.30s -> 294.30s]  And you have two nodes A and C who both want to transit to the access
+[294.30s -> 297.30s]  point. So the basic problem with CSMA CA is
+[297.30s -> 301.30s]  that a transmitter is listening as to whether the channel is idle at it.
+[301.30s -> 305.30s]  When really what it cares about is whether the channel is idle at the
+[305.30s -> 307.30s]  receiver. It could be that the receiver is
+[307.30s -> 310.30s]  hearing something and so can't hear the transmitter's packet, but the transmitter
+[310.30s -> 312.30s]  can't tell because it can't hear what's happening at the receiver.
+[312.30s -> 316.30s]  It wants to sense the receiver's state, but can actually only sense its own.
+[316.30s -> 321.30s]  And so a hidden terminal is when two nodes, say A and C, both try to
+[321.30s -> 328.30s]  transmit to a receiver, or it could be even to adjacent receivers.
+[328.30s -> 333.30s]  And the receivers can hear both of them, so B can hear both A and C.
+[333.30s -> 340.30s]  But A and C cannot hear each other. So A is hidden to C.
+[340.30s -> 346.30s]  And C is hidden. And so A starts transmitting, B starts
+[346.30s -> 350.30s]  receiving the packet, C doesn't hear it, so C says aha, I think the channel's
+[350.30s -> 355.30s]  clear, it transmits. B hears C and A's packets, there's a
+[355.30s -> 358.30s]  collision, B hears nothing, both are lost.
+[358.30s -> 362.30s]  So this is something which CSMA CA can't solve because you're sensing locally
+[362.30s -> 365.30s]  but you want to be sensing what's happening at the receiver.
+[365.30s -> 367.30s]  So you can imagine this happens a lot in AP networks.
+[367.30s -> 370.30s]  So the second problem is what's called an exposed terminal.
+[370.30s -> 373.30s]  And this is kind of the, the reverse of a hidden terminal.
+[373.30s -> 378.30s]  So imagine this case where B wants to transmit a packet to A and C wants to
+[378.30s -> 383.30s]  transmit a packet to D. But now A can't hear C, right?
+[383.30s -> 388.30s]  So A can't hear C. What's going to happen?
+[388.30s -> 391.30s]  B starts transmitting to A. All is good.
+[391.30s -> 394.30s]  A is receiving the packet. Now C wants to transmit to D.
+[394.30s -> 403.30s]  D can't hear B. And so this is fine.
+[403.30s -> 408.30s]  D is absolutely capable to receive a packet from C while B is transmitting.
+[408.30s -> 412.30s]  But C senses its local channel. And it hears, aha, wait, wait, B is
+[412.30s -> 415.30s]  transmitting, I can't transmit. And so it doesn't transmit.
+[415.30s -> 419.30s]  And so C is exposed to B. And so, whereas a hidden terminal is a
+[419.30s -> 423.30s]  case where someone transmits when they shouldn't, an exposed terminal is when
+[423.30s -> 428.30s]  someone doesn't transmit when they could. So the third problem that occurs, in
+[428.30s -> 433.30s]  CSMA CA or even in just wireless networks in general, is that, let's say
+[433.30s -> 439.30s]  we have our nodes A and B. And A transmits a packet to B, but
+[439.30s -> 446.30s]  there's no acknowledgement. So, is this because there was a collision?
+[446.30s -> 451.30s]  That is, there was some other node C transmitting at the same time and that
+[451.30s -> 454.30s]  interfered? Or is this because suddenly the channel
+[454.30s -> 458.30s]  between A and B became very poor, that the signal to noise ratio went down?
+[458.30s -> 465.30s]  There's a weak signal, like say, you know, somebody, some person walked
+[465.30s -> 471.30s]  between the two. Problem is, A can't tell.
+[471.30s -> 475.30s]  It doesn't know whether or not this was, this loss was due to a collision or
+[475.30s -> 478.30s]  just poor signal. And you can imagine, it might want to
+[478.30s -> 482.30s]  respond differently, because a collision is going to want to back off, because
+[482.30s -> 485.30s]  it can't, it doesn't want to contend with the channel.
+[485.30s -> 490.30s]  But, if it was due to a low SNR, then it wants to perhaps reduce its bit
+[490.30s -> 494.30s]  rate, transmit slower, so it can support more bit errors due to the, the
+[494.30s -> 499.30s]  lower, signal strength. And so there's often this issue, and
+[499.30s -> 503.30s]  people are starting to solve this problem now and figure it out.
+[503.30s -> 508.30s]  But, where A tries to transmit to B, if the loss due to a collision, A
+[508.30s -> 512.30s]  interprets that as being a low SNR, so it starts transmitting at a slower
+[512.30s -> 516.30s]  bit rate, which then means its packets are longer, which increases the chance of
+[516.30s -> 518.30s]  collisions. Or, it transmits to B, it thinks
+[518.30s -> 521.30s]  that it's because it's due to a collision, so it backs off more, when
+[521.30s -> 525.30s]  really, if it just transmitted again immediately, it would have been fine.
+[525.30s -> 529.30s]  And so, in a standard CSMA, a simple CSMA algorithm, distinguishing these two, it's
+[529.30s -> 532.30s]  really, really hard. Nevertheless, because it's so simple,
+[532.30s -> 536.30s]  and when there isn't tremendous contention, when you do have good SNRs,
+[536.30s -> 541.30s]  CSMA works pretty well. CSMA CA is the general MAC protocol you
+[541.30s -> 543.30s]  see used in Wi-Fi networks today.

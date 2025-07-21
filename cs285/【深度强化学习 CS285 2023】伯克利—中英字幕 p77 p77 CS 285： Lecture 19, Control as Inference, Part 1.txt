@@ -1,0 +1,223 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 7.00s]  All right, welcome to lecture 19 of CS285. In today's lecture, we're going to talk about
+[7.00s -> 11.52s]  how we can reframe the control problem as an inference problem, and we'll actually
+[11.52s -> 16.04s]  see some of the ideas from the variational inference lectures last week come up in today's
+[16.04s -> 21.60s]  lecture as ways to actually solve reinforcement learning problems once they've been reframed
+[21.60s -> 28.32s]  as inference problems. So in today's lecture, we're going to discuss the following questions.
+[28.32s -> 34.44s]  Does reinforcement learning and optimal control provide a reasonable model of human behavior?
+[34.44s -> 38.44s]  Is there perhaps a better explanation than the conventional notion of optimality that
+[38.44s -> 44.48s]  we've seen so far? And can we derive optimal control, reinforcement learning, and planning
+[44.48s -> 49.88s]  as probabilistic inference? And if so, in what model are we doing that inference?
+[49.88s -> 53.64s]  And how does this change our reinforcement learning algorithms? Do we actually derive
+[53.64s -> 58.88s]  better algorithms based on this foundation? And then in the next lecture, we'll see how
+[58.88s -> 63.44s]  these ideas are actually crucial for inverse reinforcement learning methods, which attempt
+[63.44s -> 69.68s]  to recover reward functions for observing near-optimal human behavior. So the goals
+[69.68s -> 75.08s]  for today's lecture will be to understand the connection between inference and control,
+[75.08s -> 79.60s]  understand how specific RL algorithms can be instantiated in this framework, and understand
+[79.64s -> 85.40s]  why this might actually be a good idea. So let's start with a discussion of how we might
+[85.40s -> 90.68s]  model human behavior, right? We know that, you know, humans sometimes do goal-directed things,
+[90.68s -> 94.84s]  and we can argue over how rational humans are, but I think it's reasonable to say that,
+[94.84s -> 101.36s]  you know, some portion of what humans do is goal-directed and intentional. And, you know,
+[101.36s -> 106.96s]  people have studied this going back, you know, over a hundred years, studying how notions
+[107.00s -> 113.72s]  of optimality can best represent human behavior, ranging from the lowest level primitive behavior,
+[113.72s -> 118.40s]  like how we walk and how we navigate to places and how we reach for locations,
+[118.40s -> 124.56s]  all the way to higher level concepts like how do we plan a route to navigate a city.
+[124.56s -> 130.64s]  And it's fairly reasonable to think that if humans are being rational, intelligent beings,
+[130.72s -> 138.00s]  then we should perform our tasks from the lowest level motor control to the highest level cognitive
+[138.00s -> 143.44s]  skills in ways that reflect some notion of optimality, that there is some utility function
+[143.44s -> 149.60s]  with respect to which we are near optimal. Indeed, one of the ways to define rationality
+[149.60s -> 156.12s]  is by saying that a rational decision-maker is one whose behavior can be expressed with
+[156.28s -> 162.92s]  well-defined utilities. So we could say, well, we have this nice framework to think about
+[162.92s -> 168.88s]  optimal decision-making that we learned about when we discussed reinforcement learning and
+[168.88s -> 174.72s]  optimal control. Can we use this framework to try to understand human behavior? One of the
+[174.72s -> 180.04s]  things we could do, for instance, is we could say, well, let's assume that a person or an
+[180.04s -> 186.00s]  animal is behaving in a way that is optimal, that they're a rational decision-maker. Can we
+[186.00s -> 190.16s]  figure out with respect to which reward function are they optimal? That's actually what we're going
+[190.16s -> 196.60s]  to discuss for Wednesday's lecture on inverse reinforcement learning. So you could do this in
+[196.60s -> 205.28s]  the deterministic setting, you could do it in the stochastic setting. So before we talked
+[205.28s -> 209.56s]  about settings where you know the reward function, you'd like to recover a policy. Now
+[209.56s -> 214.28s]  we might think that we're observing a person, we're observing their policy, and we'd like to
+[214.28s -> 221.12s]  find a suitable reward function to explain the data, to explain the behavior that we observed. So
+[221.12s -> 226.92s]  this is a very tempting idea if we're studying human animal behavior, because the principle of
+[226.92s -> 232.28s]  optimality provides a really powerful tool to understand why somebody might do something, and
+[232.28s -> 236.98s]  if you can explain their behavior with a simple and compact objective function, then you can
+[236.98s -> 241.24s]  predict what they will do in other situations. This is, of course, very intuitive. If you
+[241.24s -> 245.76s]  know what somebody wants, then you can much more effectively predict what they will do.
+[245.76s -> 253.44s]  All right, so imagine yourself in the role of a scientist, and you'd like to think about how
+[253.44s -> 261.36s]  optimal control and reinforcement learning explain behavior, let's say with animals. So you're going
+[261.36s -> 267.28s]  to get a monkey, and you're going to get this monkey to perform some tasks, and you want to
+[267.28s -> 273.36s]  understand its objective function. So one of the ways you might do this is you might pick a task
+[273.36s -> 281.44s]  where the objective function is known. Maybe the monkey has to move a lever so that a particular
+[281.44s -> 286.56s]  dot on the screen matches with another dot, and then the monkey gets a reward if it does
+[286.56s -> 291.60s]  that right. Now you might say, well, I know the reward function, so if optimal behavior is a
+[291.60s -> 297.72s]  good explanation of animal behavior, then I would expect the monkey to behave similarly to an
+[297.72s -> 303.80s]  optimal controller or a reinforcement learning algorithm. So let's say the monkey has to move
+[303.80s -> 311.36s]  from this orange circle to this red cross, and the optimal trajectory is this one, and the researcher
+[311.36s -> 317.24s]  runs the experiment and finds that the monkey is a pretty good monkey, like it usually gets to
+[317.92s -> 323.16s]  the red cross, but it does so in a variety of different ways. So it doesn't always go for a
+[323.16s -> 327.64s]  straight line. Maybe one day the monkey is feeling a bit lazy, but it still gets to the
+[327.64s -> 333.56s]  destination and still gets the reward. So what's going on? Is it just that the monkey is
+[333.56s -> 338.60s]  kind of stupid? Like, you know, maybe a really smart person would be more accurate, but the
+[338.60s -> 345.84s]  monkey is just not very accurate. Is there something else going on? Well, it turns out that, you know,
+[345.84s -> 352.16s]  unsurprisingly monkeys and humans are usually not perfectly optimal. We usually make mistakes,
+[352.16s -> 359.48s]  but crucially those mistakes are, you know, with more practice tend to occur in ways that matter
+[359.48s -> 364.40s]  or less for the success of the task. So intuitively the reason the monkey might take an
+[364.40s -> 368.24s]  indirect route to the goal is that it's feeling kind of lazy, it's not really paying attention,
+[368.24s -> 374.16s]  but also it knows that the particular manner in which it reaches the goal doesn't matter all that
+[374.32s -> 380.40s]  much. So this is something that current reinforcement learning algorithms that we've discussed don't
+[380.40s -> 384.32s]  really account for. They don't have a notion of being lazy, and they don't have a notion of
+[384.32s -> 391.72s]  understanding that something matters less and therefore can be done less perfectly. So some
+[391.72s -> 395.60s]  mistakes matter more than others, and it turns out that taking this into account appropriately
+[395.60s -> 402.04s]  is critical for developing models that explain intelligent behavior in humans and animals,
+[402.48s -> 407.88s]  and also turns out to be a tool that will allow us to build better reinforcement learning algorithms
+[407.88s -> 415.32s]  and later on to build inverse reinforcement learning algorithms. Natural behavior in humans
+[415.32s -> 421.32s]  and animals is, you know, up to a first-order approximation, stochastic, meaning that faced
+[421.32s -> 426.52s]  with the same situation twice, the monkey won't do exactly the same thing. Now again, we might
+[426.52s -> 431.08s]  argue as to whether it's truly random or whether it's simply affected by a plethora of other
+[431.88s -> 435.64s]  internal factors that are not accounted for in the experiment, like for instance,
+[435.64s -> 440.76s]  maybe the monkey is hungry, maybe its finger itches, maybe it's just a little more tired,
+[441.80s -> 446.04s]  you know, maybe it got distracted and accidentally swerved the joystick a little to the left,
+[446.92s -> 451.88s]  but we could, up to first-order approximation, think of these effects as being random.
+[453.88s -> 459.72s]  But good behavior is still the most likely. So while the monkey might accommodate some
+[459.72s -> 463.16s]  moderate mistakes, it'll still make sure it reaches the goal,
+[463.16s -> 466.36s]  because that's what gets it that reward that it wants so much.
+[468.76s -> 475.40s]  So if we believe that the behavior of natural rational decision makers is stochastic,
+[476.04s -> 481.32s]  then we need a probabilistic model of near-optimal behavior, and the existing models
+[481.32s -> 486.60s]  that we've had don't really do this. They don't really tell us why we might choose to be random
+[486.60s -> 493.24s]  and not optimal. In fact, for both the deterministic and stochastic formulations
+[493.24s -> 499.40s]  of optimal control and reinforcement learning, we can actually prove that in all fully observed
+[499.40s -> 507.08s]  settings, there exist deterministic policies that are optimal. Indeed, this would be true
+[507.08s -> 512.84s]  for any objective that is linear in the state-action marginals. So anything that can
+[512.84s -> 516.60s]  be expressed as an expected value under the state-action distribution
+[516.60s -> 522.20s]  of some reward that doesn't depend on the policy will admit a deterministic policy as a solution.
+[524.28s -> 529.56s]  So clearly this framework cannot explain random behavior as rational.
+[531.08s -> 536.92s]  So we need a kind of a different notion of rationality. When we want to represent stochastic
+[537.88s -> 544.68s]  events, a very powerful tool that we often turn to is the tool of probabilistic graphical models.
+[544.68s -> 547.88s]  So that's what we're going to do in today's lecture. We're actually going to draw
+[547.88s -> 554.04s]  a probabilistic graphical model such that inference in that model results in near-optimal
+[554.04s -> 559.64s]  behavior. And crucially, this near-optimal behavior will not always be the same as the
+[559.64s -> 564.84s]  solution from reinforcement learning and optimal control, but it will be quite similar. It will
+[564.84s -> 569.72s]  look very much like the suboptimal monkey behavior that we saw in the previous slide,
+[569.72s -> 574.36s]  where the agent will, all else being equal, attempt to accomplish the task,
+[574.36s -> 578.76s]  but for the aspects of the task that matter less, that affect the reward
+[578.76s -> 583.32s]  very little, the agent would prefer to do those largely at random.
+[584.68s -> 590.68s]  All right, so in thinking how to draw a graphical model for decision making and control,
+[590.68s -> 594.28s]  we of course have to include the usual variables that we see in MDP,
+[594.84s -> 599.40s]  namely the states and the actions, and we already know how the states and actions
+[601.24s -> 605.64s]  relate to one another. For now we'll stick to fully observed settings, so we could also
+[605.64s -> 610.44s]  add observations to this picture, but we won't bother with that for now just to avoid
+[611.00s -> 617.08s]  cluttering up the notation. What we do, however, need to add is some additional variables
+[617.08s -> 623.80s]  that represent the task, that represent why the agent may choose to take one action or another.
+[625.00s -> 631.24s]  And so far we have the transition probabilities p of s prime given s comma a,
+[632.92s -> 637.88s]  and our goal will be to model joint distributions over trajectories, so p of s1
+[637.88s -> 644.28s]  through t and a1 through t, that's our trajectory tau. So what can we set this
+[644.28s -> 651.88s]  probability to? Well, if all we have is the CPDs in the MDP, the transition probabilities and the
+[651.88s -> 657.64s]  initial state distribution, there's no assumption of optimal behavior, so we have to add something
+[657.64s -> 663.24s]  else to represent why you might choose to take a more optimal action over a less optimal action.
+[664.28s -> 670.44s]  And we'll call these optimality variables, and I'll denote them as script O. These optimality
+[670.44s -> 676.60s]  variables are observed. You know that the monkey is trying to perform the task. If you didn't know
+[676.60s -> 681.48s]  that, then you would make a different inference about its behavior. Now we're going to make a
+[681.48s -> 686.44s]  slightly weird modeling choice, but later on we'll see that that modeling choice actually
+[686.44s -> 693.80s]  leads to a very convenient and elegant mathematical formulation. The modeling choice we will make is
+[693.80s -> 700.20s]  that these variables are binary. You can think of them as basically true or false variables saying
+[700.20s -> 705.96s]  is the monkey trying to be optimal at this point in time? And if the monkey is always trying to be
+[705.96s -> 710.20s]  optimal, then all of these variables are observed and all of them are set to true.
+[711.64s -> 717.80s]  So then the inference problem we need to solve is what is the probability of a trajectory given
+[717.80s -> 724.68s]  that all of the optimality variables from time 1 to capital T are true? Or we might want to
+[724.68s -> 730.12s]  make this inference condition on an initial state, so we could either do p of tau given O1 through t
+[730.20s -> 738.68s]  or p of tau given O1 through t comma s1. And the particular form of the distribution that we will
+[738.68s -> 747.56s]  choose for p of O t given s t comma a t is that we will set the probability that O t is equal to true
+[748.52s -> 755.72s]  to be the exponential of the reward at s t comma a t. Now this again is going to seem like a
+[755.72s -> 761.88s]  somewhat arbitrary decision, and we will see later that this seemingly arbitrary decision
+[761.88s -> 767.64s]  actually leads to a very convenient and elegant mathematical framework. But for now we just have
+[767.64s -> 772.28s]  to take it as a given. So let's just give this a shot, set this to be the probability,
+[772.28s -> 777.48s]  and see where that leads us with the math. Now there is a technical condition we need in
+[777.48s -> 781.56s]  order to to make this statement, which is that we need the rewards to all be negative,
+[781.56s -> 790.60s]  because the probability of a discrete, in this case Bernoulli, random variable has to be less than one,
+[791.88s -> 795.24s]  and the exponential of any positive number is going to be greater than one.
+[795.88s -> 802.12s]  So we need the rewards to all be negative, but fortunately optimal behavior is invariant to additive
+[802.12s -> 807.16s]  factors in the reward. So if the reward is not negative, you can simply construct an equivalent
+[807.16s -> 812.36s]  decision-making problem with the reward equal to the old one minus the maximum possible reward.
+[813.40s -> 818.36s]  So essentially saying that the reward is always negative just means you subtracted the maximum,
+[818.36s -> 823.88s]  which means all of the remaining rewards are negative. So that's not actually a limitation.
+[823.88s -> 828.20s]  We can do this without any loss of generality, as long as the rewards are bounded. If the
+[828.20s -> 831.56s]  rewards are unbounded, of course this is impossible, so you can get infinite reward.
+[831.56s -> 834.76s]  Then that doesn't work, but I don't know how to deal with infinite reward anyway,
+[834.76s -> 841.80s]  so that's not much of a limitation either. All right, so now we've defined a probabilistic
+[841.80s -> 847.80s]  graphical model. It has dynamics, it has rewards. It seems like we can do Bayes' rule style
+[847.80s -> 851.96s]  crunching and get out some distribution and see if the equation for that distribution is
+[851.96s -> 858.28s]  actually reasonable. So I'll plug in the definition of conditional probability to write
+[858.28s -> 865.32s]  p of tau given O one through t as p of tau comma O one through t divided by p of O one through t.
+[866.76s -> 875.72s]  And then I can plug in all of the CPDs into this. I'll just ignore the denominator because
+[876.84s -> 880.84s]  I'm only interested in probability of trajectory, so I'll write that this is proportional to,
+[880.84s -> 886.28s]  and what it's proportional to is the product of all of our CPDs, which I'll write as the
+[886.28s -> 891.96s]  probability of tau, which just accounts for the dynamics and initial state, times the product of
+[891.96s -> 897.32s]  all of these Bernoulli random variable probabilities from time step one until t,
+[897.32s -> 903.64s]  which basically means we take the product of p of tau and all of the exponentiated rewards
+[903.64s -> 909.64s]  over all the time steps. Okay, that seems fairly sensible. Now we know that a product
+[909.64s -> 914.60s]  of exponentials is the exponential of the sum of the exponents, so we're going to equivalently
+[914.60s -> 920.60s]  write it in a way that is maybe a little bit more suggestive of what this thing is doing, as p of tau
+[920.60s -> 924.28s]  times the exponential of the sum of rewards along that trajectory.
+[926.20s -> 931.24s]  Now this should immediately give us some fairly appealing intuition for what this framework is doing.
+[933.32s -> 939.88s]  For instance, imagine that the dynamics are deterministic, which means that p of tau is
+[939.88s -> 944.84s]  basically just an indicator variable. It's one if tau is a physically consistent trajectory,
+[944.84s -> 952.28s]  and zero otherwise. In that special case, we will see that the most likely trajectory
+[952.28s -> 958.92s]  is the one with the highest reward. However, trajectories that are sub-optimal
+[958.92s -> 964.76s]  still have a non-zero probability, which decreases exponentially as their reward decreases.
+[965.48s -> 971.08s]  And that actually seems fairly intuitive. It basically means that the monkey, given multiple
+[971.08s -> 976.04s]  different choices that all have equal reward, will choose among them randomly. But if there is
+[976.04s -> 979.80s]  a choice that has much lower reward, it is exponentially less likely to choose it.
+[980.84s -> 984.44s]  So the reason that it might deviate from the straight-line trajectory when reaching for the goal
+[985.24s -> 988.92s]  is because the reward that it gets for reaching the goal in any other way
+[989.72s -> 993.64s]  is about the same. Maybe it's a little bit lower because it takes longer, so because of its
+[994.36s -> 999.32s]  discount it gets hungrier, but mostly it's about the same, whereas failing to reach the goal
+[999.32s -> 1002.92s]  leads to a much much worse reward, and therefore it's not going to do that.
+[1006.52s -> 1011.80s]  So this intuitively seems to explain the kind of behavior that we saw in the previous slide.
+[1012.36s -> 1016.76s]  We essentially construct a probabilistic model where the most optimal trajectory is the most
+[1016.76s -> 1021.80s]  likely, but sub-optimal trajectories can also happen just with probability that decreases
+[1021.80s -> 1029.64s]  exponentially as the reward decreases. All right, so why is all this interesting? I mean,
+[1029.64s -> 1033.64s]  you know, if we want to model monkeys, of course this is probably interesting to you,
+[1033.64s -> 1040.84s]  but what if you don't care about monkeys? Well, the ability to represent sub-optimal behavior
+[1040.84s -> 1046.28s]  as being approximately optimal under some relaxed notion of optimality is generally very very
+[1046.28s -> 1051.48s]  important for understanding the behavior of sub-optimal agents and also for imitation
+[1051.48s -> 1056.84s]  learning. If you want to figure out what reward function a human is trying to demonstrate to you,
+[1056.84s -> 1060.36s]  you have to account for the fact that they're not going to do it perfectly, and that turns
+[1060.36s -> 1064.84s]  out to be very important for inverse reinforcement learning, as we'll discuss for Wednesday's lecture.
+[1067.16s -> 1072.20s]  You can also apply inference algorithms to solve control and planning problems based on this
+[1072.20s -> 1077.72s]  framework. So because we drew a probabilistic graphical model where inference corresponds
+[1077.72s -> 1083.16s]  to solving the control problem, it means that we can bring to bear a wide array of inference
+[1083.16s -> 1088.12s]  methods to actually solve control and planning problems, and that turns out to be a fairly
+[1088.12s -> 1095.00s]  powerful idea. And lastly, this provides an explanation for why stochastic behavior
+[1095.00s -> 1099.40s]  might be preferred, even if the deterministic behavior is possible,
+[1100.52s -> 1105.00s]  and this turns out to be quite useful for things like exploration and transfer learning.
+[1106.52s -> 1111.64s]  The reason that this is useful for exploration and transfer learning is that if you perform a
+[1111.64s -> 1116.28s]  task in multiple different ways, then you're more likely to transfer to new settings,
+[1116.28s -> 1118.92s]  where the task now needs to be performed a little bit differently.
+[1119.64s -> 1124.76s]  All right, so for the bulk of today's lecture, we're actually going to talk about how we can
+[1124.76s -> 1129.80s]  perform this inference problem, and we'll see that applying both exact and approximate inference
+[1129.80s -> 1135.16s]  to this graphical model leads to algorithms that bear a lot of resemblance to the reinforcement
+[1135.16s -> 1140.52s]  learning algorithms we've already learned about. So how do we do inference in this model?
+[1141.72s -> 1146.52s]  Well, there are three operations that we need to know about. The first operation that we're
+[1147.16s -> 1151.64s]  The first operation that we're going to need is how to compute backward messages.
+[1153.32s -> 1158.60s]  So if you've studied hidden Markov models or Kalman filters, or you've heard of variable
+[1158.60s -> 1163.24s]  elimination, then you probably already have some thoughts about how inference in this model
+[1163.24s -> 1168.60s]  needs to be done. It's a chain-structured dynamical Bayes net, and that means that
+[1168.60s -> 1173.88s]  it should be very amenable to inference by message passing, message passing being, of course,
+[1173.88s -> 1179.24s]  a particular instance of variable elimination. So there are two kinds of messages that we want
+[1179.24s -> 1184.36s]  to compute in a graph like this, very much like you would in HMM or Kalman filtering.
+[1185.16s -> 1189.48s]  The first message is a backward message. The backward message tells you what is the probability
+[1189.48s -> 1194.12s]  of being optimal now until the end of the trajectory, given the state and action that you
+[1194.12s -> 1200.92s]  are in. And we'll call these backward messages beta. It turns out that using beta, you
+[1200.92s -> 1207.08s]  can actually recover the policy. So the policy is the probability of an action at time step t,
+[1207.08s -> 1212.92s]  given the state at time step t, and given the evidence that the entire trajectory from 1 to
+[1212.92s -> 1219.96s]  capital T is optimal. This is the stochastic optimal policy in this graphical model, and it
+[1219.96s -> 1223.64s]  turns out that if you can calculate backward messages, you can calculate the policy.
+[1225.40s -> 1229.80s]  A third operation that turns out to be very useful, especially when we deal with inverse
+[1229.80s -> 1235.16s]  reinforcement learning, is to compute what are called forward messages. Forward messages are
+[1235.16s -> 1239.40s]  kind of the backward analog of backward messages. A forward message says what's the
+[1239.40s -> 1245.40s]  probability of landing in a particular state s, t if you are optimal through time step t minus 1.
+[1247.40s -> 1251.40s]  If we put together backward messages and forward messages, we can actually recover state
+[1251.40s -> 1256.52s]  occupancies, which are not technically necessary to recover the optimal policy, but they are
+[1256.52s -> 1262.84s]  necessary to do inverse reinforcement learning. So we'll learn how to calculate these three things
+[1262.84s -> 1264.92s]  in the next part of today's lecture.

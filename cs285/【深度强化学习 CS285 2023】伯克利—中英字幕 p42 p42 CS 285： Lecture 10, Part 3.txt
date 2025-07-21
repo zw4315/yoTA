@@ -1,0 +1,302 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.44s]  Okay, so, so far we've covered black box optimization methods for planning and
+[5.44s -> 9.52s]  Monte Carlo tree search, which is suitable primarily for kind of discrete
+[9.52s -> 13.12s]  actions and stochastic environments. Next we're going to talk about
+[13.12s -> 18.00s]  trajectory optimization with derivatives. So, so far the methods we've
+[18.00s -> 21.72s]  discussed don't actually use derivatives of the dynamics, but in many cases in
+[21.72s -> 25.92s]  continuous environments we might actually know what the derivatives of
+[25.92s -> 31.84s]  the dynamics are. And as a bit of notation, I mentioned before that in
+[31.84s -> 35.52s]  reinforcement learning and dynamic programming we like to use ST and AT
+[35.52s -> 39.60s]  to denote the state of action, and we like to use R for rewards. In optimal
+[39.60s -> 45.88s]  control it's much more common to use XT and UT for the state and action, and
+[45.88s -> 50.28s]  to use costs instead of rewards. Since this part of the lecture
+[50.28s -> 54.12s]  deals with trajectory optimization and optimal control methods that are most
+[54.16s -> 59.68s]  commonly studied in the optimal control community, I like to use X's and U's just
+[59.68s -> 62.32s]  so that, you know, the notation is more similar to what you might find in a
+[62.32s -> 67.08s]  textbook. Don't be confused by this, and it's probably a good mental exercise
+[67.08s -> 72.36s]  to try to mentally substitute SS for X's and A's for U's and think about what
+[72.36s -> 76.56s]  these methods would look like if we're maximizing rewards instead of
+[76.56s -> 80.68s]  minimizing costs. But the basic principles are exactly the same. It's
+[80.72s -> 87.36s]  just the difference of a sign and some letters. Okay, so to think about how we
+[87.36s -> 91.24s]  can use derivatives for planning, let's go back to our original constrained
+[91.24s -> 95.88s]  optimization problem. So back when we defined the model-based planning
+[95.88s -> 99.52s]  problem we said, well, we want to minimize your cost or maximize your
+[99.52s -> 104.12s]  reward with respect to a sequence of actions, but just that isn't enough. You
+[104.12s -> 107.32s]  have to also incorporate your dynamics into this, which you can think of as a
+[107.32s -> 111.72s]  constraint. So you could say, well, I'm minimizing my sequence of actions u1
+[111.72s -> 116.16s]  through u capital T, subject to the constraint that Xt is equal to f of
+[116.16s -> 123.04s]  Xt minus 1 comma ut minus 1. And when you have a constrained optimization
+[123.04s -> 127.52s]  problem with equality constraints, you could always substitute in the
+[127.52s -> 131.56s]  constraint value for the variable and get an unconstrained optimization. So
+[131.56s -> 135.52s]  this constrained optimization problem I have written here is the same as
+[135.56s -> 144.84s]  minimizing c of x1 comma u1 plus c of f of x1 comma u1 comma u2 plus c of f of f
+[144.84s -> 151.76s]  of x1 comma u1 comma u2 comma u3, and so on and so on and so on. It's just a huge
+[151.76s -> 159.00s]  pain to write this out, but it is an unconstrained optimization problem. So
+[159.00s -> 162.88s]  if we want to optimize this using derivatives, we could do kind of the
+[162.92s -> 166.32s]  obvious thing. We could say, well, we have an unconstrained optimization problem, we
+[166.32s -> 169.84s]  know how to solve those, you just compute derivatives by back propagation
+[169.84s -> 174.84s]  and optimize. So specifically the derivatives that you need in order to
+[174.84s -> 179.24s]  apply chain rule, which is what back propagation is, to this minimization
+[179.24s -> 184.64s]  problem, you need to know df dx t, you need to know df dut, and you need to know
+[184.64s -> 189.96s]  dc dx t and dc dut. So you need to know the derivatives of both the cost and the
+[189.96s -> 197.88s]  dynamics with respect to both of their inputs. And in practice, just using
+[197.88s -> 204.48s]  first-order gradient descent on these kinds of objectives, while possible, tends
+[204.48s -> 207.68s]  to work very, very poorly. So in practice, it actually really helps to
+[207.68s -> 210.44s]  use a second-order method for solving these kinds of optimization
+[210.44s -> 213.36s]  problems, and it turns out that if you want to use a second-order method,
+[213.36s -> 216.88s]  essentially Newton's method, there's a very convenient structure to this
+[216.88s -> 220.72s]  problem that provides us with a very efficient algorithm that does not
+[220.72s -> 225.36s]  require computing giant Hessian matrices. You could use first-order
+[225.36s -> 229.00s]  gradient descent, and first-order gradient descent will typically produce
+[229.00s -> 234.08s]  quite poor solutions, because since you are, you know, for something like the
+[234.08s -> 237.60s]  last term in the sum, since you're multiplying many, many, many Jacobians
+[237.60s -> 241.80s]  together, unless all those Jacobians just happen to have eigenvalues close
+[241.80s -> 245.92s]  to one, you will end up with either vanishing or exploding gradients. But
+[245.96s -> 251.40s]  second-order methods can effectively compensate for this. One aside that I
+[251.40s -> 254.72s]  want to mention before I get into describing how second-order methods
+[254.72s -> 258.28s]  for trajectory optimization work is the difference between shooting methods and
+[258.28s -> 261.76s]  collocation. So if you study trajectory optimization, you might hear these
+[261.76s -> 266.52s]  terms being thrown around a fair bit. A shooting method is a method that
+[266.52s -> 272.64s]  optimizes over actions. So this equation describes a shooting method. If
+[272.64s -> 276.44s]  you want to minimize the sum with respect to the actions, the reason this
+[276.44s -> 280.60s]  is called a shooting method is that you can think of the actions in the
+[280.60s -> 284.80s]  beginning of the trajectory as having a big effect on the result later on. So it's
+[284.80s -> 287.88s]  like when you pick the first action, you're sort of shooting into the state space
+[287.88s -> 293.44s]  and seeing where the result will land. And this also describes why shooting
+[293.44s -> 298.12s]  methods can be so numerically unstable with first-order optimization algorithms,
+[298.12s -> 302.24s]  because while that last action has a minimal effect on your objective, the
+[302.24s -> 305.60s]  first action has an enormous effect. Essentially the sensitivity of your
+[305.60s -> 310.96s]  objective to that first action is very large, and for nonlinear objectives, you
+[310.96s -> 315.52s]  know, most objectives will be at least quadratic, the sensitivity translates
+[315.52s -> 319.72s]  into very poor numerical conditioning, meaning that you have some very large
+[319.72s -> 324.16s]  eigenvalues in your Hessian and some very small eigenvalues. And we have a
+[324.16s -> 327.44s]  mix of very small eigenvalues for those later actions and very large
+[327.44s -> 331.36s]  eigenvalues for those earlier actions. The result is poor numerical
+[331.36s -> 338.28s]  stability, which first-order gradient descent methods struggle with. A
+[338.28s -> 343.04s]  collocation method is a method that optimizes over actions and states with
+[343.04s -> 347.16s]  additional constraints. So in a collocation method, you would go back to
+[347.16s -> 350.72s]  the original constrained optimization problem, which is to minimize the sum
+[350.72s -> 355.96s]  of costs such as the constraint that x t equals f of x t minus 1 comma u t
+[355.96s -> 361.76s]  minus 1, but now you would optimize over either both states and actions, or
+[361.76s -> 366.80s]  sometimes you would optimize over only states with the actions themselves
+[366.80s -> 371.28s]  determined by an equality constraint. This is sometimes referred to as inverse
+[371.28s -> 374.72s]  dynamics. But the simplest way to think about this is if you're optimizing
+[374.72s -> 379.12s]  over states and actions. So in that case, you can imagine your optimization
+[379.12s -> 383.04s]  variables are all the dots along this trajectory, and you can move any of them
+[383.04s -> 387.36s]  however you please, so long as the constraints are obeyed. Now for this
+[387.36s -> 391.48s]  kind of problem, the conditioning tends to be a lot better, because now you
+[391.48s -> 396.60s]  don't have actions having these enormous effects, you know, to the end of
+[396.60s -> 399.72s]  the trajectory, but it of course depends very much on how you choose to
+[399.72s -> 402.78s]  enforce that constraint. So there are different methods of constraint
+[402.78s -> 406.44s]  enforcement, some of which act as relaxations, some of which are exact,
+[406.44s -> 409.88s]  some of which act as linearizations, and they all have different effects on
+[409.88s -> 414.16s]  the difficulty of this problem. So I won't discuss collocation methods too
+[414.16s -> 417.20s]  much in today's lecture, they tend to be a little bit more complex, but they
+[417.20s -> 420.92s]  do tend to be more numerically well-conditioned, and typically would
+[420.92s -> 426.40s]  work better with first-order methods than the shooting algorithms. What I'm
+[426.40s -> 428.48s]  going to do instead, however, is I'm going to talk about a very classic
+[428.48s -> 432.72s]  shooting method that is a second-order method, which is based on the linear
+[432.72s -> 438.80s]  quadratic regulator. So in presenting the linear quadratic regulator, I'll
+[438.84s -> 443.88s]  actually start with a special case of a linear control problem, and then I will
+[443.88s -> 448.64s]  tell you what happens in the nonlinear case. So this is our optimization
+[448.64s -> 453.60s]  problem, minimize the sum of costs with respect to the actions, and it
+[453.60s -> 456.64s]  really corresponds to that original constraint optimization problem, but I've
+[456.64s -> 461.24s]  just substituted in the variables for the constraints, just to make it clear
+[461.24s -> 463.72s]  to you that it really is an unconstrained problem, and the
+[463.72s -> 469.76s]  constraints are really to help us write it. So the linear case refers to a
+[469.76s -> 474.28s]  setting where f of x t comma u t is a linear function, meaning that you can
+[474.28s -> 480.20s]  express f of x t comma u t as some matrix times the vector where you stack
+[480.20s -> 486.56s]  x t and u t, plus some constant vector little f t. Notice that this is a
+[486.56s -> 490.32s]  deterministic dynamics. We'll talk about how LQR can be extended to the
+[490.36s -> 496.08s]  stochastic case by introducing the linear quadratic
+[496.08s -> 500.16s]  Gaussian regulator later, the LQG setting, but for now this is
+[500.16s -> 505.36s]  deterministic. And we're going to assume that our cost function is
+[505.36s -> 509.08s]  quadratic. It's important for the cost to be quadratic because if the
+[509.08s -> 512.80s]  cost was linear, then we would have a minimization of a fully linear
+[512.80s -> 518.00s]  objective without constraints, which in general has its solution at infinity, and
+[518.08s -> 522.72s]  that's not useful. So we need our cost to be at least quadratic, which means
+[522.72s -> 526.60s]  that it can be written as one half times a quadratic form with some
+[526.60s -> 535.88s]  matrix capital C t plus the linear term with little c t. So in the
+[535.88s -> 542.04s]  same way the dynamics is linear, the cost function is quadratic, linear and
+[542.04s -> 544.60s]  quadratic, and that's why this is called the linear quadratic regulator.
+[544.80s -> 548.92s]  What are we regulating? Well, we're regulating our trajectory and we have a
+[548.92s -> 556.00s]  linear dynamics and a quadratic cost. So this goes in for f and this goes in for
+[556.00s -> 561.48s]  c. And notice that we are allowed to have a different f matrix and f vector
+[561.48s -> 567.04s]  and a different c matrix and c vector for every time step. So even though we
+[567.04s -> 570.24s]  have a linear dynamics, we might actually have a different linear dynamics every single
+[570.24s -> 573.72s]  time step, and that's going to be important later when we try to extend
+[573.72s -> 581.84s]  this to the nonlinear case. Okay, so here's our problem set up, and the
+[581.84s -> 584.88s]  question that we're going to start with is the base case. We're going to
+[584.88s -> 589.08s]  solve for just the last action and we're going to solve for the action
+[589.08s -> 597.04s]  u t as a function of the last state x t. So the last state x t is unknown, but
+[597.04s -> 601.40s]  what we can do is we can express the optimal u t for this linear quadratic
+[601.40s -> 607.20s]  system as an expression that depends on the last state x t. So here's how we can
+[607.20s -> 612.56s]  do it. The total portion of the objective that depends on the last
+[612.56s -> 617.68s]  action is the Q function at the last time step, right, because changing the
+[617.68s -> 622.20s]  last action won't change the reward or the cost at time step capital T minus
+[622.20s -> 626.96s]  1. So we know that the only portion of the subject that is influenced by u t
+[626.96s -> 632.44s]  is the cost at the last time step, and that's given by some constant plus the
+[632.44s -> 637.64s]  quadratic cost function. So really choosing u t is just a matter of
+[637.64s -> 643.48s]  choosing the value of u t that minimizes this expression, and this
+[643.48s -> 650.60s]  expression is quadratic in u t. Now it also depends on x t, so in order to
+[650.60s -> 655.48s]  solve this quadratic equation it'll help us to break up capital C and
+[655.48s -> 660.20s]  lowercase c into parts that influence u and parts that
+[660.20s -> 665.68s]  influence x. So x t can be written as a matrix consisting of four parts, a top
+[665.68s -> 672.68s]  left corner, c x x, and a bottom right corner, c u u, and then a bottom left
+[672.68s -> 678.00s]  and a top right, c u x and c x u. We would in general assume that the cost is
+[678.00s -> 687.00s]  symmetric, so c x u would be c u x transpose. Now the objective is
+[687.00s -> 692.52s]  a quadratic form in u t where the quadratic term is just c u u, and then
+[692.52s -> 696.48s]  all the other terms add up to make a linear term that also depends on the x,
+[696.48s -> 700.68s]  and then the linear term can also be broken up into an x-dependent term and
+[700.68s -> 709.00s]  a u-dependent term. So if we take the derivative of this with respect to u, we
+[709.00s -> 713.72s]  would get the component of the quadratic form that depends on only on
+[713.72s -> 720.28s]  x, so its derivative is 0. We would have the cross term which would be u c u x x and x
+[720.28s -> 726.52s]  c x u u, and since we assume these are symmetric, the sum of the
+[726.52s -> 729.76s]  derivatives of those would just be c u x x, so it's actually one-half c u x x
+[729.84s -> 736.88s]  plus one-half c x u x transpose c x u transpose, but if you add those up and
+[736.88s -> 741.64s]  assume symmetry, then together it's just c u x x. Then you have the
+[741.64s -> 746.00s]  derivative of the quadratic term which is u transpose c u u times one-half,
+[746.00s -> 750.88s]  and if you take the derivative of that, the one-half goes away and you're left with c u u, and
+[750.88s -> 757.16s]  then you have the constant component that comes from u transpose c u, so you
+[757.16s -> 761.64s]  take the derivative of that and you get c u. So now you have an expression that has some
+[761.64s -> 765.88s]  terms that are linear in u and some terms that don't depend on u, so what
+[765.88s -> 768.24s]  you're going to do is you're going to take all the linear terms to the
+[768.24s -> 772.80s]  right-hand side of this equation and hit them by c u inverse and you get
+[772.80s -> 778.72s]  the solution which is that u equals negative c u inverse times c u x x plus
+[778.72s -> 783.80s]  c u. So this is the solution where the gradient is equal to 0 and that's the
+[783.84s -> 786.64s]  optimum, there goes the quadratic function, and we know the quadratic
+[786.64s -> 792.52s]  functions are convex. So this is the optimal choice for the last action. The
+[792.52s -> 795.12s]  trouble is that it's not a fixed value, it's actually a value that
+[795.12s -> 804.00s]  depends on x. You can simplify this by writing u t as some matrix k t times x
+[804.00s -> 810.04s]  plus some vector little k, where the matrix big K is negative c u inverse
+[810.04s -> 816.84s]  c u x and the vector little k is negative c u inverse little c u. So there
+[816.84s -> 819.76s]  are a lot of symbols and a lot of linear algebra but the actual
+[819.76s -> 822.60s]  derivation is very very simple. You have a quadratic objective for the last
+[822.60s -> 827.36s]  action, you solve that quadratic function by setting the derivative to 0 and you
+[827.36s -> 831.60s]  get this rule for selecting u t. Of course the trouble is that it depends
+[831.60s -> 836.40s]  on x capital T, so in order to actually get a number for u t you have
+[836.40s -> 844.32s]  to figure out what x capital T should be. So here's our Q function for the
+[844.32s -> 850.08s]  last time step and since u capital T is fully determined by x capital T we
+[850.08s -> 854.76s]  can eliminate it by a substitution. So what we can do now is we can just plug
+[854.76s -> 859.28s]  in the rule for u capital T that we derived on the previous slide and now
+[859.28s -> 862.80s]  we get an expression that doesn't depend on u capital T. So this is the
+[862.80s -> 866.96s]  value function, this is the total cost that you will get if you start in state
+[866.96s -> 871.48s]  x capital T and then follow the optimal action, the action that minimizes
+[871.48s -> 877.24s]  cost. So it's a complicated expression but it's still quadratic so it has
+[877.24s -> 881.00s]  only linear and quadratic and constant terms and depends only on x
+[881.00s -> 887.26s]  capital T. If you want to expand this out, here is the expansion of this so
+[887.26s -> 892.16s]  all I did is I just crunched the matrix algebra and after crunching the
+[892.16s -> 896.72s]  matrix algebra I'm left with a mess of an equation but if you look at this
+[896.72s -> 900.68s]  equation carefully you'll notice that this equation only has terms that are
+[900.68s -> 904.34s]  quadratic in x or terms that are linear in x. So that means that I can
+[904.34s -> 908.20s]  collect all the quadratic terms into some matrix that I'm going to call v
+[908.20s -> 912.48s]  capital T and I can collect all the linear terms into some vector that
+[912.48s -> 916.24s]  I'm going to call little v capital T. Now the expressions for capital V and
+[916.24s -> 920.48s]  lowercase v are pretty complicated but they're all just multiplications of
+[920.52s -> 926.04s]  matrices and vectors that we saw on the previous slide. So while it takes a long
+[926.04s -> 930.48s]  time to write it's actually very very simple to derive. So long story short
+[930.48s -> 935.48s]  I'm left with an expression for v of x t that has one quadratic term one
+[935.48s -> 943.36s]  half v transpose x transpose vx and one linear term x transpose little v.
+[943.36s -> 947.24s]  So now let's think about the previous time step. Let's think about the time
+[947.24s -> 954.52s]  step t minus 1. My objective here will be to express the value for ut minus 1 in
+[954.52s -> 959.24s]  terms of xt minus 1 and the expression for the value at xt that we derived
+[959.24s -> 965.56s]  previously. So ut minus 1 affects xt in turn it also affects ut but we've
+[965.56s -> 971.36s]  eliminated ut from our calculation. So the way that ut minus 1 affects xt of
+[971.36s -> 976.24s]  course is governed by the dynamics. So xt is equal to f of xt minus 1 ut
+[976.24s -> 980.44s]  minus 1 which from our linearity assumption is just given by the matrix
+[980.44s -> 986.32s]  ft minus 1 times the vector xt minus 1 ut minus 1 plus the constant vector
+[986.32s -> 994.28s]  ft minus 1. So that means that the Q value at time step t minus 1 is our
+[994.28s -> 1000.08s]  quadratic cost at time sub t minus 1 plus the value evaluated f of xt
+[1000.08s -> 1004.48s]  minus 1 ut minus 1. And now what I'm going to do is I'm going to
+[1004.48s -> 1009.20s]  substitute my linear equation for xt in place of this f and I'm going to
+[1009.20s -> 1013.88s]  substitute my quadratic expression for the value function at xt for this
+[1013.88s -> 1019.96s]  function v. So I know that v is some constant plus this quadratic form which
+[1019.96s -> 1024.52s]  means that I can substitute that in there and I can express my v in terms
+[1024.52s -> 1029.40s]  of xt minus 1 and ut minus 1. So all I've done is I've taken my
+[1029.40s -> 1033.82s]  expression for v and everywhere that xt occurs I replaced it
+[1033.86s -> 1038.86s]  with the expression for xt that I obtained from my dynamics. And again it's an
+[1038.86s -> 1042.26s]  expression that takes a long time to write but it's actually very simple
+[1042.26s -> 1048.14s]  because it just has a collection of linear and quadratic terms. So here
+[1048.14s -> 1050.74s]  are the quadratic terms and here are the linear terms. Everything here is
+[1050.74s -> 1058.70s]  either quadratic or linear in xt minus 1 and ut minus 1. So here's what I'm
+[1058.70s -> 1063.00s]  left with. I have my Q function at time step t minus 1 which consists of the
+[1063.00s -> 1067.24s]  cost which is quadratic and the value function and for the value function I
+[1067.24s -> 1071.56s]  can plug in the expression from the dynamics and I get something that's
+[1071.56s -> 1077.12s]  quadratic that's also quadratic and linear in xt minus 1 and ut minus 1.
+[1077.12s -> 1081.72s]  So then I can collect all the quadratic and the linear terms from
+[1081.72s -> 1086.48s]  both the costs and the value function and I can express my Q xt minus 1
+[1086.48s -> 1093.76s]  ut minus 1 as a quadratic term and a linear term. If you're getting lost in
+[1093.76s -> 1097.08s]  the linear algebra at this point what I would recommend is to actually get out
+[1097.08s -> 1101.12s]  a sheet of paper and follow along with these derivations. So again these
+[1101.12s -> 1104.16s]  derivations are very simple mathematically but they take a long
+[1104.16s -> 1107.88s]  time to write so if it's unclear to you you can get excellent clarity on the
+[1107.88s -> 1111.60s]  LQR algorithm by just following along with the lecture and writing out the
+[1111.60s -> 1115.16s]  derivation making sure that each step of the derivation is completely clear to
+[1115.16s -> 1120.40s]  you. Okay so the expression for the quadratic term and the linear term are
+[1120.40s -> 1125.56s]  given here they have the quadratic and linear term from the cost plus this
+[1125.56s -> 1130.48s]  second set of terms which comes from the value function and the form of
+[1130.48s -> 1133.24s]  these is actually pretty elegant so the quadratic term for the value
+[1133.24s -> 1137.72s]  function is just hit on either side by the dynamics matrix and the linear
+[1137.72s -> 1141.56s]  term has a term that comes from the quadratic value function term which
+[1141.60s -> 1147.08s]  is dynamics matrix transpose times v little f plus the linear term which is
+[1147.08s -> 1151.36s]  just the dynamics matrix times little v. So it actually intuitively kind of
+[1151.36s -> 1155.00s]  makes sense but if it's not clear to you please follow along on a sheet of
+[1155.00s -> 1160.40s]  paper and work this out. Okay so just like before we can write the
+[1160.40s -> 1165.04s]  derivative of this Q function with respect to ut minus 1. Notice that its
+[1165.04s -> 1168.84s]  form is exactly identical to what we had for ut only now instead of having
+[1169.00s -> 1173.80s]  capital C and lowercase c we have capital Q and lowercase q but the form
+[1173.80s -> 1177.40s]  is exactly identical which means that the solution is exactly identical. So
+[1177.40s -> 1181.96s]  the solution for ut minus 1 is just some matrix kt minus 1 times xt
+[1181.96s -> 1188.32s]  minus 1 plus some vector little kt minus 1 and big K is negative qu
+[1188.32s -> 1196.28s]  inverse qux and little k is negative qu inverse times little qu. Okay so
+[1196.32s -> 1201.44s]  the derivation here was actually pretty much the same as for the case of ut with
+[1201.44s -> 1204.66s]  the main difference that we have a different matrix and vector which we
+[1204.66s -> 1210.52s]  derived by combining the cost and the value function of the next time step.
+[1210.52s -> 1216.68s]  All right so what this suggests is that we can express our solution as a
+[1216.68s -> 1220.56s]  kind of recursive algorithm where we start at the very last time step and
+[1220.56s -> 1225.48s]  from time step capital T all the way back to time step one we calculate a
+[1225.48s -> 1230.80s]  q matrix and a q vector where at the last time step capital T the v's are
+[1230.80s -> 1234.48s]  just 0 because there is no capital vt plus 1 and there's no lowercase vt plus
+[1234.48s -> 1239.00s]  1 but of all others we calculate them using this formula. We express our Q
+[1239.00s -> 1244.84s]  function as a quadratic form and we choose our action ut as the arg min
+[1244.84s -> 1249.32s]  of this Q which is a linear expression in terms of x where capital K is
+[1249.32s -> 1257.00s]  negative qu inverse qux and lowercase k is negative qu inverse qu. Then we
+[1257.00s -> 1261.84s]  express our value function as a quadratic form in terms of these Q's
+[1261.84s -> 1264.72s]  and the expression for the value function is a little bit complicated
+[1264.72s -> 1269.20s]  but it's still very easy to derive just by plugging in the expression for
+[1269.20s -> 1274.12s]  u in place of u in that formula for the Q function and then collecting all
+[1274.12s -> 1277.14s]  the quadratic and linear terms to express the value function as a
+[1277.18s -> 1283.10s]  function only of v of x with a quadratic term and a linear term. Again if at this
+[1283.10s -> 1285.78s]  point you're having a little bit of trouble following the algebra it's a
+[1285.78s -> 1290.90s]  very good idea to get out a sheet of paper and just re-derive this you
+[1290.90s -> 1293.98s]  know following along with the slides it's quite easy to re-derive it just
+[1293.98s -> 1298.58s]  takes a long time to write. All right so now we have a value function at
+[1298.58s -> 1302.42s]  time step T which means that we can repeat and go to time step T minus 1
+[1302.54s -> 1307.66s]  and use that value function to compute the preceding Q function. When we're all
+[1307.66s -> 1311.78s]  done with this what we've produced is an expression for capital K and
+[1311.78s -> 1316.78s]  lowercase k at every single time step. So going backwards through time we've
+[1316.78s -> 1321.26s]  expressed our action at every time step as a function that is linear in the
+[1321.26s -> 1327.42s]  state and has this constant term. And when we get all the way back to u1 the
+[1327.42s -> 1331.46s]  nice thing at time step 1 is that we actually know x1. x1 is the one
+[1331.50s -> 1335.02s]  thing that we are given which means that we know x1 and therefore we can
+[1335.02s -> 1341.74s]  compute an numerical value for u1. And once we know both x1 and u1 then we
+[1341.74s -> 1347.06s]  can use our known transition dynamics to calculate x2. And once we know x2
+[1347.06s -> 1354.14s]  then we can calculate u2 as capital K2 times x2 plus lowercase k2. So once we
+[1354.14s -> 1358.54s]  know once we get to the beginning they perform a forward recursion where
+[1358.54s -> 1365.42s]  for every time step from t equals 1 to capital T we can compute ut as k t x t
+[1365.42s -> 1371.02s]  plus little k t and we can calculate xt plus 1 by using our dynamics and then
+[1371.02s -> 1375.34s]  repeat this process. So you can think of it as kind of unzipping everything
+[1375.34s -> 1378.56s]  going backwards expressing in terms of xt and zipping it back up going
+[1378.56s -> 1382.22s]  forward plugging in those xt's as you compute them. And that will get you
+[1382.22s -> 1386.66s]  numerical values for a sequence of x's and u's that describes the optimal
+[1386.66s -> 1394.50s]  trajectory in this linear quadratic system. And remember that the Q function
+[1394.50s -> 1398.42s]  here really is the the Q function it's the total cost from now until the end
+[1398.42s -> 1402.70s]  if you take the action ut and state xt and then follow the optimal
+[1402.70s -> 1406.54s]  policy. And this is the value function the total cost from now until
+[1406.54s -> 1413.38s]  the end if you start in xt and then follow the optimal policy. Okay so
+[1413.38s -> 1417.22s]  that's it for the basic LQR derivation but again if something here is unclear
+[1417.22s -> 1420.70s]  to you the linear algebra is actually pretty simple it just takes a long time
+[1420.70s -> 1423.90s]  to write so if it's not clear I would highly encourage you to go back
+[1423.90s -> 1427.38s]  through the slides and redo their derivation following along on a sheet
+[1427.38s -> 1429.66s]  of paper.

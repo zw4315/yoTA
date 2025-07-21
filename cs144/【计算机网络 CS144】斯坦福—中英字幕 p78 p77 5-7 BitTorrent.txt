@@ -1,0 +1,98 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.72s]  Let's talk about Bittorrent. It's a fascinating internet application with a lot of interesting
+[4.72s -> 9.22s]  algorithms and approaches. There are reasons why it works so well.
+[9.22s -> 14.20s]  Bittorrent allows people to share and exchange large files. A Bittorrent client requests
+[14.20s -> 18.06s]  documents from other clients. So that a single client can request from many others
+[18.06s -> 22.54s]  in parallel, Bittorrent breaks up files into chunks of data called pieces. When
+[22.54s -> 26.50s]  a client downloads a piece from another client, then it tells other clients it has
+[26.50s -> 31.22s]  that piece so they can download it too. These collections of collaborating clients are called
+[31.22s -> 35.74s]  swarms. So we could talk about a client joining or leaving the swarm.
+[35.74s -> 40.34s]  A client joins a swarm by downloading a torrent file that tells it information about the
+[40.34s -> 44.10s]  file such as how big it is, the size of its pieces, and how to start contacting
+[44.10s -> 48.62s]  other clients. It used to be that a torrent would name a tracker, a computer that keeps
+[48.62s -> 52.94s]  track of what clients are part of the swarm. When a client joins the swarm, it requests
+[52.94s -> 56.78s]  a list of other clients from the tracker, then starts contacting these clients over
+[56.78s -> 64.18s]  TCP. A Bittorrent client can have on the order of 100 open TCP connections at once.
+[64.18s -> 68.98s]  After trackers started receiving a lot of unwanted attention in late 2000s, most clients
+[68.98s -> 74.02s]  transitioned to using tracker-less torrents. These torrents contact a host that tells them
+[74.02s -> 79.34s]  how to join something called the Distributed Hash Table, or DHT. DHT is a way to map
+[79.34s -> 83.94s]  a hash value to a node, where a set of nodes supporting that DHT can change a lot and you
+[83.94s -> 89.10s]  can still find the node. Rather than use a centralized table for this lookup, the mapping
+[89.10s -> 94.66s]  is distributed across all of the participating nodes. It's basically a way for some nodes
+[94.66s -> 98.34s]  to collaboratively store some data. In this case, they're storing lists of which
+[98.34s -> 101.50s]  clients are part of a swarm.
+[101.50s -> 108.50s]  Bittorrent breaks a file up into N pieces. Each piece is 256 kilobytes or larger. This
+[109.10s -> 114.54s]  size is intended to ensure a TCP stream transferring the file is long-lived enough that its congestion
+[114.54s -> 119.18s]  window can grow to a reasonable size and so support good throughput. But Bittorrent
+[119.18s -> 123.66s]  also breaks up pieces into sub-pieces, so that it can request parts of pieces from
+[123.66s -> 127.38s]  multiple peers and so reduce latency.
+[127.38s -> 133.22s]  A piece is also the unit that Bittorrent uses to check integrity with. A torrent contains
+[133.26s -> 139.58s]  the SHA-1 hashes of each piece. SHA-1 is something called a cryptographic hash function. It's
+[139.58s -> 145.66s]  the primitive used in message authentication codes. A strong cryptographic hash function
+[145.66s -> 150.26s]  has the properties that, given a hash, it's really hard to create a piece of data that
+[150.26s -> 155.78s]  has that hash value. That means that if the torrent says that the hash of piece
+[155.78s -> 160.94s]  5 is H, it's hard to come up with a piece that isn't piece 5, which also has
+[160.94s -> 165.94s]  hash H. So you can't start replacing the pieces of the torrent and screw it up without a client
+[165.94s -> 169.94s]  noticing that the hash isn't right and retrying.
+[169.94s -> 175.58s]  This actually brings up an interesting story. In 2006, HBO had a new series called Rome.
+[175.58s -> 180.54s]  There were several different torrents for it, each of which had very large swarms.
+[180.54s -> 185.42s]  But many people found that their clients couldn't download the series. Looking into
+[185.42s -> 189.42s]  it, it turns out there were a bunch of very, very fast peers that many clients
+[189.90s -> 195.90s]  were connecting to and downloading from. But these peers provided pieces that didn't have the right hash.
+[195.90s -> 200.90s]  So a client would download the piece, find the hashes wrong, throw away the piece, and retry.
+[200.90s -> 205.90s]  Back then, the clients assumed that this was just an error and so
+[205.90s -> 210.90s]  kept on requesting from the same peer. So many clients would just enter an unending
+[210.90s -> 216.90s]  loop of trying to download the same bad piece. The hypothesis was that this was an effort
+[216.90s -> 221.90s]  by HBO to prevent downloads. Nowadays, clients can blacklist peers
+[221.90s -> 226.90s]  that serve up many bad pieces. BitTorrent clients, when connected,
+[226.90s -> 231.90s]  periodically exchange information on what pieces they have. A client tries to
+[231.90s -> 236.90s]  download the rarest piece among its peers first. If a single piece becomes
+[236.90s -> 241.90s]  unavailable, nobody can download the file. Also, if only a few clients
+[241.90s -> 246.90s]  have a piece, they'll become a bottleneck for downloading. This is called the rarest first policy.
+[246.90s -> 251.90s]  The one exception to the rarest first policy is when a client
+[251.90s -> 256.90s]  reaches the end of the torrent and only needs a few more pieces. At this point,
+[256.90s -> 261.90s]  it requests for pieces from multiple peers. It does this to counter the edge case
+[261.90s -> 266.90s]  of asking for the last piece from a very slow peer and having to wait.
+[266.90s -> 271.90s]  So this final step means that the client might download multiple copies of sub-pieces and waste swarm bandwidth.
+[271.90s -> 276.90s]  But since there are often 1000 or so pieces in a swarm, this cost is small
+[276.90s -> 281.90s]  and so worth it. So BitTorrent clients exchange metadata with each other
+[281.90s -> 286.90s]  to learn what pieces they have. A client starts requesting pieces from its peers.
+[286.90s -> 291.90s]  But if you send data to every peer, you'd have lots of very slow pieces.
+[292.90s -> 297.90s]  Instead of having 100 slow TCP flows, BitTorrent
+[297.90s -> 302.90s]  tries to have a smaller number of fast flows. The idea is you send
+[302.90s -> 307.90s]  data to peers who send you data. That way, peers who contribute can download
+[307.90s -> 312.90s]  faster. This creates an incentive to send pieces to peers.
+[312.90s -> 317.90s]  The way this works is through choking. Most peers
+[317.90s -> 322.90s]  are choked and so you send no data to them. BitTorrent measures the rate at which it
+[322.90s -> 327.90s]  is downloading from each of its peers and picks the p best of them. p is usually
+[327.90s -> 332.90s]  a small number like 4 or the square root of the number of peers. It then chokes these p
+[332.90s -> 337.90s]  peers and sends data to them. This algorithm is called tit-for-tat.
+[337.90s -> 342.90s]  You send data to nodes that send you data.
+[342.90s -> 347.90s]  One problem with this algorithm is that it doesn't explore much. There could be a really good peer out there who could send
+[347.90s -> 352.90s]  you data very fast if only you started sending some data first. So every
+[352.90s -> 357.90s]  30 seconds or so BitTorrent unchokes a random peer. This peer might then find its way
+[357.90s -> 362.90s]  into the p best. The BitTorrent tit-for-tat algorithm
+[362.90s -> 367.90s]  seems pretty robust. You send data preferentially to other peers who send you data.
+[367.90s -> 372.90s]  But it's not perfect. There was a nice paper in 2007 that proposed something called BitTyrant,
+[372.90s -> 377.90s]  which selfishly tried to game the system. And it did! Using BitTyrant,
+[377.90s -> 382.90s]  you could increase your BitTorrent throughput by 70%.
+[382.90s -> 387.90s]  The basic observation of BitTyrant is that in standard BitTorrent, a peer tries
+[387.90s -> 392.90s]  to share its uplink capacity evenly across its unchoked peers.
+[392.90s -> 397.90s]  So if a client has p unchoked peers, then each one receives 1 over p of its uplink capacity.
+[397.90s -> 402.90s]  But once you're in this top p, you get all of this.
+[402.90s -> 407.90s]  So the trick is that you want to give a peer just enough to make your way into its top
+[407.90s -> 412.90s]  p and no more. You should then spend the extra capacity trying to get into another
+[412.90s -> 417.90s]  peer's top p. So this way you give everyone just enough that they
+[418.90s -> 421.90s]  maximize how many peers unchoke you.
+[421.90s -> 426.90s]  It's a nice result. They also found that if everyone used BitTyrant,
+[426.90s -> 430.90s]  performance can improve slightly, but you get the most benefit if you're the only tyrant.
+[430.90s -> 432.90s]  The URL here links to the paper.
+[432.90s -> 437.90s]  So that's a basic overview of BitTorrent. Your client downloads a torrent file, for example,
+[437.90s -> 442.90s]  over HTTP. This describes the file to download and how to find peers to download it from.
+[442.90s -> 446.90s]  BitTorrent breaks the file into pieces and peers exchange these pieces.
+[446.90s -> 452.90s]  They connect over TCP IP and exchange metadata so they know what the distribution of pieces is over their part of the swarm.
+[452.90s -> 457.90s]  A client then tries to download the rarest piece first in order to balance availability.
+[457.90s -> 462.90s]  Clients upload data only to their top p downloaders. So most of the peers are choked
+[462.90s -> 467.90s]  and receive no data, and the client gives data to those who give you data using a tit-for-tat algorithm.
+[467.90s -> 472.90s]  To discover potentially good new peers, the client also randomly unchokes a peer periodically.

@@ -1,0 +1,2470 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 9.52s]  So CS 140 is about operating systems. In this class we used all these things that
+[9.52s -> 13.28s]  you will end up building in operating systems, right? Like you build a file
+[13.28s -> 17.52s]  system. You built like how you actually, well you kind of build a
+[17.52s -> 21.32s]  little bit of that for this class, but you build like a little lower
+[21.32s -> 26.44s]  level file system and more robust and more of the parts for the file
+[26.44s -> 28.84s]  system. You don't have to just read and write files. You build the actual file
+[28.84s -> 34.32s]  system in 140. You build a threading library or a forking library, a
+[34.32s -> 38.60s]  multi-processing library and those are the kinds of things that we know how to
+[38.60s -> 42.84s]  use now and then you'll actually do them in 140 where you actually build
+[42.84s -> 46.48s]  them and understand what it takes to build a threading library. So it's a good
+[46.48s -> 48.64s]  thing you already know how to use these because then it's much easier to
+[48.64s -> 53.96s]  understand how you're going to go and build them. So that's that. And that's
+[53.96s -> 59.88s]  about the implementation part of it, okay? There's also CS 143, which is
+[59.88s -> 65.32s]  compiler construction. Compilers class, when I was in graduate school, it was one
+[65.32s -> 70.32s]  of my favorite classes. I didn't do particularly well, sorry, but it was
+[70.32s -> 75.80s]  a class that I enjoyed a lot because you really get a much more detailed feel
+[75.80s -> 81.24s]  for, hey, how does your code end up as machine code? Now you covered that a
+[81.24s -> 86.28s]  little bit in 107, but not really the part of like actually doing the
+[86.28s -> 89.68s]  translation. Like you see how, you see what the beginning and the end are, but
+[89.68s -> 94.16s]  compilers is all about translating and doing that. And I think it's a
+[94.16s -> 99.08s]  great class. I also happen to think that a lot of employers, when they see that
+[99.08s -> 102.32s]  you took a compilers class, actually perk up a little bit and go, oh, well this
+[102.32s -> 104.68s]  person went a little bit outside than normal because it's not like
+[104.68s -> 107.96s]  everybody takes compilers and they know it's an R class too. So for what
+[107.96s -> 110.76s]  that's worth, I think it's an interesting class and you might want to
+[111.00s -> 114.56s]  take a look at that. If you like the networking things that we did recently,
+[114.56s -> 119.64s]  CS144 covers networking and this is in much more detail than what we did.
+[119.64s -> 122.64s]  We just talked about server client and setting up a network and so forth.
+[123.00s -> 126.40s]  This networking class digs into more of the details, like how do the
+[126.40s -> 129.88s]  bits actually get across the network efficiently? We'll talk a little bit
+[129.88s -> 134.08s]  more about that today, just in general terms. But that's what the
+[134.08s -> 137.80s]  networking class covers. And it's another good class, especially if
+[137.80s -> 141.40s]  you're interested in this sort of stuff. If you do go into security
+[141.40s -> 143.40s]  or things, it's probably not a bad idea to take a computer
+[143.40s -> 147.40s]  networking class as well because it's got a lot of the things that
+[147.68s -> 150.52s]  a lot of the exploits end up exploiting things that might be at
+[150.52s -> 154.00s]  the networking layers that you haven't necessarily seen in this
+[154.00s -> 159.08s]  class. Okay, so that's the three bigger ones that I think you
+[159.08s -> 163.36s]  could that you could go on and take. There's also 144 and 142
+[163.36s -> 167.12s]  and other classes that are sorry, 142 is another one that you
+[167.12s -> 170.12s]  can take that dig into more systems detail. So there are a lot
+[170.12s -> 173.52s]  of systems classes. And again, I do recognize that many of you
+[173.52s -> 176.04s]  are like, I'm glad I'm done with systems forever. That's
+[176.04s -> 178.32s]  it. But for other people who want to do it, lots of other
+[178.32s -> 181.08s]  choices and feel free to chat with me about that if you
+[181.08s -> 184.52s]  want to know some of those other choices. Okay, so here's
+[184.52s -> 187.44s]  the principles we want to talk about today. So we want to
+[187.44s -> 191.52s]  talk about abstraction. Now, abstraction is what you've been
+[191.52s -> 194.16s]  doing, like you've seen abstraction at many, many different
+[194.16s -> 198.24s]  layers. And we'll get to the details of what abstraction is
+[198.24s -> 200.88s]  all about. We need to talk about how that relates to CS
+[200.88s -> 204.24s]  110. modularity and layering is another one that we're gonna
+[204.28s -> 206.60s]  we're gonna look at naming, remember all those things, you
+[206.60s -> 210.04s]  know, the file systems and like name resolution, that's
+[210.32s -> 213.64s]  kind of a big principle that you have to deal with. Many of
+[213.64s -> 216.40s]  these principles are all about doing things either more
+[216.40s -> 219.80s]  efficiently, or doing them in such a way that makes a big
+[219.80s -> 223.44s]  system become less gigantic to wrap your head around. That's
+[223.44s -> 226.52s]  what a lot of these things are. Okay, or it's a matter of
+[226.52s -> 229.28s]  like name resolution is all about, hey, humans are good at
+[229.28s -> 232.40s]  names, computers are good at numbers, how do you mix those
+[232.40s -> 234.40s]  together so that it works most efficiently for the
+[234.40s -> 237.08s]  computer. Virtualization, we'll talk about two different
+[237.08s -> 241.96s]  types of virtualization. And then concurrency, which I
+[241.96s -> 244.12s]  would argue this class is more about concurrency than
+[244.12s -> 246.44s]  probably any other topic. There's more of that kind of
+[246.44s -> 249.80s]  filtered in along the way. And then client server
+[249.80s -> 252.48s]  request and response is another one. It's not just
+[252.48s -> 254.52s]  networks that deal with client server request and
+[254.52s -> 256.72s]  response. Anytime you have two programs trying to
+[256.72s -> 259.48s]  communicate, whether they're on the same computer or across a
+[259.48s -> 262.52s]  network, or in some other sense, that's where you've got
+[262.52s -> 266.88s]  this client server request response and understanding how
+[266.88s -> 272.56s]  that works is, is kind of is important. Okay. Alright, so
+[272.56s -> 276.72s]  those are, let's jump right in. And of course, hang on.
+[276.96s -> 281.80s]  Of course, this isn't working again. There we go. Okay,
+[281.80s -> 293.28s]  that maybe. Okay, we'll go without it. There we go.
+[294.48s -> 297.84s]  Alright, there we go. Now that's back. Okay, so
+[299.44s -> 304.40s]  abstraction. Alright, abstraction is simply separating
+[304.40s -> 308.36s]  what the program is doing from the implementation. Okay, and
+[308.36s -> 310.88s]  this is something we've seen in lots of different, different
+[310.88s -> 314.84s]  scenarios. But one example is just a sorting program, right?
+[314.96s -> 317.44s]  A sorting program has an interface where you pass a
+[317.44s -> 321.00s]  bunch of words in, and they come back to you sorted. And
+[321.00s -> 323.92s]  that's the interface that you may have, you know, you have
+[323.92s -> 325.68s]  to put them in an array, and you have to sell where
+[325.68s -> 327.44s]  the beginning and the end of the array is, and so forth.
+[327.68s -> 331.80s]  That would be the interface, the actual, the actual
+[331.80s -> 335.32s]  behavior is they get sorted, how that implementation
+[335.32s -> 338.96s]  happens, is completely up to the program. Now, of course,
+[338.96s -> 341.16s]  with sort, you want to do it, you know, you don't, there
+[341.16s -> 342.92s]  are so many different types of sorts, and you don't want
+[342.92s -> 344.68s]  to do the one that's going to be O n, you want to do
+[344.68s -> 347.96s]  the one that's gonna be O n log n or whatever. But in
+[347.96s -> 351.36s]  terms of the implementation versus the or the interface
+[351.36s -> 355.08s]  versus the abstracted, this is how it goes. That's the
+[355.08s -> 358.76s]  big, big picture of abstraction. Okay, we've seen
+[358.76s -> 363.08s]  these in many times, many ways. The big challenge a
+[363.08s -> 366.92s]  lot of times is to design a clean interface that makes
+[366.92s -> 369.76s]  some library or designing easy to use. Okay, we've
+[369.76s -> 371.84s]  actually done a lot of the designing of the interface
+[371.84s -> 374.52s]  for you in this class, mainly because it would be
+[374.52s -> 376.84s]  really hard to say, hey, here's the, it'd be hard to
+[376.84s -> 379.88s]  test it, first of all. But second, without a clear
+[379.88s -> 382.32s]  interface, you can spend many, many hours thinking
+[382.32s -> 384.76s]  about how to design an interface for something and
+[384.76s -> 386.80s]  you kind of want to want to do it properly because
+[386.84s -> 392.16s]  it is challenging. I would argue that the C++ language,
+[392.16s -> 394.44s]  the interfaces are not necessarily as clean as you
+[394.44s -> 396.48s]  might hope for other languages, they tend to be
+[396.48s -> 399.00s]  somewhat cleaner. You know, when you when you do a
+[399.00s -> 401.24s]  find in a map, and you come give you back an
+[401.24s -> 403.16s]  iterator, and there's a first and a second and all
+[403.16s -> 405.64s]  that kind of business, that's kind of painful to
+[405.64s -> 407.52s]  deal with. All right, that might not be quite as
+[407.52s -> 409.80s]  clean. It's there for a reason, but it might not be
+[409.80s -> 414.12s]  particularly clean. File systems. So whenever when
+[414.12s -> 417.80s]  you use file star and IO streams, and we've used many
+[417.80s -> 420.72s]  more IO streams and you know, in this class, then we
+[420.72s -> 425.76s]  did file stars. That's an abstraction that is away
+[425.76s -> 429.44s]  from the read the low level read and write, which
+[429.44s -> 431.48s]  is what we've been what we saw right at the
+[431.48s -> 433.76s]  beginning. And why do we abstract those away? Because
+[433.76s -> 435.52s]  again, it's easier with the read and the write, you
+[435.52s -> 437.12s]  have to worry about buffering yourself, you have
+[437.12s -> 439.60s]  to worry about, oh, what happens if I try to read
+[439.60s -> 441.88s]  10 bytes, and I only get six bytes back, right?
+[441.88s -> 446.12s]  These are all abstracted away once you have a good file
+[446.12s -> 449.72s]  library, like IO stream and file stars and so forth.
+[450.72s -> 454.24s]  Okay, processes. Well, processes, why is that an
+[454.24s -> 458.76s]  abstraction? Well, okay, so it's basically, you probably
+[458.76s -> 462.60s]  don't know how fork and exec VP work, right? You'll
+[462.60s -> 464.80s]  learn that if you take CS 140 about how those
+[464.80s -> 467.80s]  actually work under the hood, but there's an interface
+[467.80s -> 470.12s]  there. When you say fork it, you know that it
+[470.16s -> 472.12s]  creates two processes and you don't really care how
+[472.12s -> 473.88s]  it happens. But you know that now you've got two
+[473.88s -> 475.60s]  processes and you've got a child and the parent and
+[475.60s -> 477.52s]  so forth. And there's lots of other things
+[477.52s -> 480.00s]  happening to keep track of the child to be able to
+[480.00s -> 483.16s]  wait PID and so forth. That's all an abstraction.
+[484.12s -> 489.20s]  Signals is another one. If you took CS 107e, you
+[489.20s -> 492.32s]  may have you definitely did interrupts, which are
+[492.32s -> 494.88s]  basically signals. And you know a little bit more
+[494.88s -> 498.20s]  about how those work. But the idea that you've got a
+[498.28s -> 501.76s]  kernel keeping track of a bunch of things that you
+[501.76s -> 505.40s]  don't necessarily, you want them, you want the
+[505.40s -> 506.60s]  kernel to keep track of it, but you don't really
+[506.60s -> 508.84s]  know how it's doing that. You just know that when
+[508.84s -> 512.08s]  something happens, the kernel goes and tells your
+[512.08s -> 515.16s]  program calls a handler function or whatever. That's
+[515.16s -> 518.12s]  basically a signal. So that's abstracted away too.
+[518.12s -> 521.80s]  Your abstraction there is, oh, okay, I've got a
+[522.08s -> 524.60s]  signal handler that's going to get called when
+[524.60s -> 527.60s]  something happens. And how does that actually, the
+[527.60s -> 529.44s]  way we can do that, it's all abstracted away from
+[529.44s -> 532.08s]  you. Okay, if you go take operating systems, you'll
+[532.08s -> 533.92s]  learn more about about how that happens, or maybe
+[533.92s -> 535.76s]  some double D classes too, where you deal with
+[535.76s -> 537.60s]  that. Threads, same sort of thing. Remember,
+[537.60s -> 540.56s]  threads and processes are similar. They're threads
+[540.56s -> 542.00s]  are kind of lightweight processes, but it's the
+[542.00s -> 544.12s]  same idea. You've got these threads, how does it
+[544.12s -> 545.72s]  work? Well, we don't really know, we know how to
+[545.72s -> 547.32s]  use them. And we know how to use them
+[547.32s -> 551.48s]  efficiently. That's that. HTTP. So this is what
+[551.48s -> 554.80s]  your last assignment to proxy was all about. And
+[554.80s -> 558.60s]  you, HTTP defines how things get sent across the
+[558.60s -> 563.68s]  network and the various messages that it gets. And
+[563.68s -> 567.04s]  that's abstracted away again. You can,
+[567.08s -> 569.44s]  you generally, with your web browser, don't need to
+[569.44s -> 571.76s]  worry about get and post and that sort of thing.
+[572.36s -> 577.72s]  Okay. All right. So that's abstraction. Modularity and
+[577.72s -> 582.40s]  layering. So when you talk about modularity, we're
+[582.44s -> 586.04s]  basically saying subdivide a larger system into a
+[586.04s -> 589.20s]  bunch of smaller systems. This is decomposition.
+[589.20s -> 591.28s]  You've been doing this since day one of 106A or
+[591.28s -> 596.08s]  106B, and it's important. One of my favorite
+[596.08s -> 601.00s]  examples of a large system that's complex is,
+[601.00s -> 605.16s]  believe it or not, a Xerox machine. So how many
+[605.16s -> 606.84s]  people have used, like everybody's used a Xerox
+[606.84s -> 609.28s]  machine, a copy machine before, right? Well, we
+[609.28s -> 612.60s]  have some in the CS department that are able to
+[612.60s -> 615.20s]  copy like hundreds of exams for like CS106B and
+[615.20s -> 620.08s]  CS106A and whatever. And these machines are
+[620.08s -> 623.00s]  super duper complicated, right? If you go and you
+[623.00s -> 626.12s]  think about what has to happen to make copies of
+[626.12s -> 629.88s]  pages in a certain form, it's pretty intense. So
+[629.88s -> 633.08s]  for instance, okay, right? Copy machines are
+[633.08s -> 636.32s]  supposed to like copy paper. That's the big
+[636.32s -> 639.72s]  picture, right? Paper, there we go. So it's a copy
+[639.72s -> 642.52s]  paper. And that's what they do. But what else do
+[642.52s -> 646.16s]  they do? Well, they handle double sided, right?
+[646.16s -> 647.72s]  What does that actually mean? Right? It means
+[647.72s -> 650.92s]  you either have to have a way to write on both
+[650.92s -> 652.76s]  sides of the paper, which is not really what
+[652.76s -> 654.36s]  happens generally. That would be kind of weird,
+[654.36s -> 655.96s]  especially because gravity might come into play a
+[655.96s -> 659.08s]  little bit. But you also have to, or you have to
+[659.08s -> 660.88s]  flip the paper over and that's a mechanical
+[660.88s -> 663.00s]  engineering challenge, right? So you've got that
+[663.64s -> 667.16s]  These things sometimes staple, right? Stapling
+[667.16s -> 668.68s]  involves getting the paper in exactly the right
+[668.68s -> 670.64s]  place. I mean, oh, by the way, it also has
+[670.64s -> 673.56s]  collating, right? Which is where you have to,
+[673.76s -> 675.36s]  you have to have like all the different stacks
+[675.36s -> 677.56s]  of writing. How does collating work? Well, if
+[677.56s -> 680.96s]  you have a 20 page exam, like the CS110 exam,
+[680.96s -> 682.40s]  might not be 20 pages, but let's say you have a
+[682.40s -> 684.52s]  20 page exam, right? Well, there better be
+[684.52s -> 686.56s]  enough memory in your system to hold all 20
+[686.56s -> 689.36s]  pages, or some of the older machines had to
+[689.36s -> 691.88s]  refeed the paper and every time it wanted to
+[691.88s -> 693.60s]  do a 20 page thing, because you have enough
+[693.60s -> 694.96s]  memory for that. So that's a big thing. So
+[694.96s -> 698.04s]  there's a, there's memory in there. Let's see.
+[698.28s -> 700.48s]  It's got networking associated with it. If you
+[700.48s -> 702.04s]  can, like I can send a print job to the
+[702.04s -> 703.92s]  Xerox copier. That's it. That's I can do
+[703.92s -> 707.60s]  that. What else does it have? There's, oh,
+[707.60s -> 710.40s]  there's also the whole physical layer. That's
+[710.40s -> 712.44s]  called the actual physics that goes into it.
+[712.44s -> 714.32s]  Like how do you guys know how how copiers
+[714.32s -> 716.92s]  actually work? Like physically how they do it?
+[717.08s -> 718.92s]  Okay, so there's a piece of paper that's
+[718.92s -> 721.02s]  black. And oh, by the way, there's also
+[721.02s -> 723.74s]  lasers, right? There's a laser that's inside
+[723.74s -> 725.70s]  your copy machine, right? And that's kind of
+[725.70s -> 728.74s]  cool. And it actually the laser charges up
+[728.74s -> 730.62s]  your paper, let's say it's a negative
+[730.62s -> 733.02s]  charger, which charges up the various dots on
+[733.02s -> 736.46s]  your paper where there's going to be the
+[736.46s -> 739.74s]  toner. And then the rest of the copy machine
+[739.74s -> 741.82s]  takes the toner, which is that powdery black
+[741.82s -> 744.30s]  horrible stuff. And it charges at the opposite
+[744.30s -> 746.82s]  charge. And then it dumps a bunch of toner on
+[746.82s -> 749.18s]  the paper, believe it or not. And the and
+[749.18s -> 752.02s]  then it where the charges are there, it
+[752.02s -> 754.70s]  sticks to it. And then it sweeps off the
+[754.70s -> 756.94s]  excess. All right, actually, I think first
+[756.94s -> 758.78s]  it fuses it, and then it sweeps off
+[758.78s -> 760.06s]  maybe the other way around. But it
+[760.06s -> 761.70s]  basically does that. And then it sort of
+[761.70s -> 763.26s]  there's a heating business in there. And
+[763.26s -> 765.02s]  that's why it always comes out warm. And
+[765.06s -> 768.30s]  my point is that these things are so
+[768.30s -> 771.50s]  complex that no one person in fact, no 10
+[771.50s -> 774.98s]  people know enough about the entire machine
+[775.18s -> 777.82s]  to be able to like fix it or do it all
+[777.82s -> 779.58s]  by themselves or even understand it, be able
+[779.58s -> 781.62s]  to tell you all about all the details, right?
+[781.62s -> 783.14s]  There's physicists, there's engineers,
+[783.14s -> 784.18s]  there's, oh, by the way, there's all
+[784.18s -> 785.42s]  the software, you know, many different
+[785.42s -> 787.62s]  menus are on that thing, right? There's
+[787.62s -> 789.66s]  so much software on there, right? Like
+[789.66s -> 790.94s]  has to do it all and get everything
+[790.94s -> 792.10s]  right. And then there's mechanical
+[792.10s -> 793.38s]  engineering that goes into it. I mean,
+[793.38s -> 794.70s]  there's so many people that work on
+[794.70s -> 797.78s]  that, that it's, it has to be
+[797.78s -> 799.70s]  subdivided. It's just way too big.
+[799.74s -> 801.62s]  There would, you would never have one
+[801.62s -> 804.74s]  person creating a Xerox machine by herself,
+[804.74s -> 806.14s]  right? It's impossible because one
+[806.14s -> 808.70s]  person can't do that. So that's that.
+[808.78s -> 810.86s]  Another good example is the phone in
+[810.86s -> 813.82s]  your pocket, right? If you took 107E
+[813.82s -> 815.42s]  with me, you remember we talked about
+[815.42s -> 817.46s]  like all the different sensors that
+[817.46s -> 819.38s]  are on your phone, right? There's
+[819.38s -> 821.34s]  probably 15 different sensors on here.
+[821.46s -> 823.18s]  You know, there's four radios in
+[823.18s -> 824.74s]  your phone. There's four different
+[824.74s -> 825.82s]  radios in your phone. There's the
+[825.82s -> 827.54s]  one for the regular like phone calls,
+[827.54s -> 828.62s]  which isn't even a regular thing
+[828.62s -> 829.66s]  you do anymore. Like that's like
+[829.66s -> 830.74s]  the least used thing you use
+[830.74s -> 831.94s]  your phone for anymore. There's
+[831.94s -> 833.62s]  the Wi Fi one, there's a Bluetooth
+[833.62s -> 835.70s]  one. There's, let's see, there's
+[835.70s -> 837.06s]  another one that communicates
+[837.06s -> 840.02s]  with the, when you do Apple Pay
+[840.02s -> 840.98s]  or whatever. So I mean, there's
+[840.98s -> 842.02s]  all sorts of radios in your
+[842.02s -> 843.34s]  phone. There's cameras, there's
+[843.34s -> 844.66s]  at least three different cameras.
+[844.78s -> 845.70s]  There's a camera on the front,
+[845.70s -> 846.50s]  there's a camera on the back,
+[846.50s -> 847.50s]  there's a camera underneath the
+[847.50s -> 848.54s]  fingerprint thing, if you've
+[848.54s -> 849.78s]  got that. That's how that
+[849.78s -> 852.42s]  works, right? Some, some ones
+[852.42s -> 853.66s]  have cameras built into the
+[853.66s -> 855.62s]  screen now. I mean, that's not
+[855.62s -> 856.26s]  even to mention, there's a
+[856.26s -> 857.90s]  temperature sensor, there's a
+[857.90s -> 859.02s]  drop sensor, there's an
+[859.02s -> 860.06s]  accelerometer, there's a
+[860.06s -> 862.86s]  gyroscope, right? Who understands
+[862.86s -> 864.06s]  all those things? Like nobody
+[864.06s -> 865.14s]  understands every little bit
+[865.14s -> 866.66s]  about that, right? There's
+[866.66s -> 868.30s]  specific engineers whose job is
+[868.30s -> 869.82s]  to do the gyroscope part of
+[869.82s -> 871.58s]  the iPhone. And that's how it
+[871.58s -> 872.98s]  works, right? But it's all
+[872.98s -> 875.34s]  about subdivision of this
+[875.34s -> 876.70s]  larger system. So you have to
+[876.70s -> 878.74s]  understand how that works if
+[878.74s -> 879.66s]  you're going to be building
+[879.66s -> 881.90s]  bigger projects, right? Now, at
+[881.90s -> 883.14s]  the same time, you might go to
+[883.14s -> 884.38s]  Apple and work on the iPhone
+[884.38s -> 886.14s]  and be like, Oh, I'm the eye,
+[886.14s -> 887.26s]  I'm like, I'm the person
+[887.26s -> 888.82s]  who's doing the, you know,
+[888.82s -> 889.86s]  the fingerprint sensor and
+[889.86s -> 891.02s]  whatever. And you're not the
+[891.02s -> 892.54s]  only one. But you might feel
+[892.54s -> 893.50s]  like you're doing a very
+[893.50s -> 894.82s]  small part of a much bigger
+[894.82s -> 895.46s]  thing. And you have to keep
+[895.46s -> 896.82s]  that in mind that, Oh, there
+[896.82s -> 898.38s]  is a bigger project here that
+[898.38s -> 901.62s]  ends up being there. But
+[901.62s -> 902.46s]  that's what you have to
+[902.46s -> 903.38s]  understand. And this class
+[903.38s -> 905.34s]  hopefully gave you assignments
+[905.34s -> 907.74s]  that were somewhat robust, and
+[907.74s -> 908.50s]  there were lots of moving
+[908.50s -> 909.30s]  parts, and that's why there
+[909.30s -> 910.62s]  was 20 different header files
+[910.62s -> 911.94s]  and whatever, because you have
+[911.94s -> 913.14s]  to kind of try to understand
+[913.14s -> 914.06s]  that. And we don't make it
+[914.06s -> 915.54s]  too complex that you can't as
+[915.54s -> 917.02s]  one person understand it. But
+[917.02s -> 918.42s]  we need to push that limit
+[918.42s -> 920.74s]  to say, Oh, we better break
+[920.74s -> 922.06s]  these into various subsystems.
+[922.10s -> 923.34s]  Otherwise, it's not going to
+[923.34s -> 925.90s]  happen. Okay, file systems.
+[925.94s -> 927.06s]  Here's a good example of
+[927.06s -> 929.22s]  layering here, where you've
+[929.22s -> 932.02s]  got lots of, not necessarily
+[932.02s -> 932.90s]  modularity, but you've got
+[932.90s -> 934.82s]  layering, which is putting
+[934.82s -> 935.58s]  one layer on top of the
+[935.58s -> 936.62s]  other so that you break it
+[936.62s -> 937.42s]  down into its various
+[937.42s -> 939.30s]  components. Remember, for your
+[939.42s -> 940.34s]  assignment too, there was
+[940.34s -> 941.94s]  this like symbolic link.
+[941.94s -> 942.62s]  Well, you didn't have to do
+[942.62s -> 943.34s]  symbolic links, but you
+[943.34s -> 944.54s]  could have. We had to read
+[944.54s -> 945.34s]  about those and learn about
+[945.34s -> 946.66s]  those. There's an absolute
+[946.66s -> 947.82s]  path name, which is like
+[947.82s -> 950.78s]  slash user slash class,
+[950.78s -> 952.98s]  etc. There's a path name
+[952.98s -> 954.54s]  layer, which actually takes
+[954.54s -> 957.46s]  the, which can take things
+[957.46s -> 960.14s]  like dot dot slash dot dot
+[960.14s -> 961.14s]  slash whatever, and then
+[961.14s -> 962.62s]  layers it onto an actual
+[963.02s -> 964.14s]  thing there. There's the
+[964.14s -> 965.46s]  file name layer, which
+[965.46s -> 967.62s]  actually does the files for
+[967.62s -> 969.22s]  human reading. That's where
+[969.22s -> 970.74s]  you've got that layer. Then
+[970.74s -> 972.06s]  you've got the inode layer.
+[972.06s -> 973.50s]  Remember, each file has an
+[973.50s -> 974.94s]  inode. Why? Because
+[974.94s -> 975.86s]  computers are better at
+[975.86s -> 977.42s]  numbers than trying to figure
+[977.42s -> 978.78s]  out a whole like path. It's
+[978.78s -> 980.46s]  much slower to do that. And
+[980.46s -> 981.70s]  then there's the file layer,
+[981.70s -> 983.10s]  which is where like the bits
+[983.10s -> 985.46s]  themselves, what they consist
+[985.50s -> 987.22s]  of on the drive, like your
+[987.22s -> 988.34s]  actual files. And then
+[988.34s -> 989.30s]  there's the block layer,
+[989.30s -> 990.54s]  which is like where on the
+[990.54s -> 992.58s]  disk they are. All of those
+[992.58s -> 994.42s]  different layers come together
+[995.06s -> 996.62s]  to make a file system. And
+[996.62s -> 997.30s]  you have to at least
+[997.30s -> 998.42s]  understand parts of those
+[998.42s -> 1000.14s]  layers, or at least how your
+[1000.14s -> 1001.06s]  layer, if you're working on
+[1001.06s -> 1002.02s]  one particular layer,
+[1002.18s -> 1003.66s]  interacts with the next layer
+[1003.66s -> 1005.62s]  down. Hopefully not more than
+[1005.62s -> 1007.02s]  a couple layers down, but
+[1007.02s -> 1007.66s]  that's, you have to
+[1007.66s -> 1008.74s]  understand that when you're
+[1008.74s -> 1011.98s]  doing that. Alright, what
+[1011.98s -> 1013.26s]  else do we have on modularity
+[1013.26s -> 1015.34s]  and layering? So this is one
+[1015.34s -> 1016.10s]  that we didn't, we don't,
+[1016.10s -> 1017.22s]  you don't really go into
+[1017.22s -> 1018.26s]  this much detail. Maybe you
+[1018.26s -> 1019.46s]  probably do in a compilers
+[1019.46s -> 1020.26s]  class, but I thought to
+[1020.26s -> 1022.18s]  show you some layering that
+[1022.18s -> 1025.54s]  happens in G++. You know
+[1025.54s -> 1026.98s]  how you have your program
+[1026.98s -> 1027.94s]  and it turns it into a
+[1027.94s -> 1029.50s]  binary? Well, there's lots of
+[1029.54s -> 1031.02s]  steps in there. It's not
+[1031.02s -> 1031.82s]  just like it just goes
+[1031.82s -> 1032.78s]  through once and turns
+[1032.78s -> 1033.70s]  everything straight into
+[1033.70s -> 1036.82s]  binary. Okay, there's lots
+[1036.82s -> 1037.78s]  of different parts, and
+[1037.78s -> 1038.54s]  we're going to see some of
+[1038.54s -> 1040.42s]  those parts in particular
+[1040.42s -> 1041.34s]  so that you can actually
+[1041.34s -> 1042.30s]  see what the compiler
+[1042.30s -> 1044.26s]  actually has to do. First
+[1044.26s -> 1044.78s]  I'm going to look at is
+[1044.78s -> 1047.10s]  the preprocessor. So the
+[1047.10s -> 1049.46s]  preprocessor is one of
+[1049.46s -> 1050.74s]  these ones that all the
+[1050.74s -> 1051.98s]  pound includes or pound
+[1051.98s -> 1053.46s]  defines or as you
+[1053.46s -> 1054.34s]  yardsters call them hash
+[1054.34s -> 1055.66s]  includes or hash defines.
+[1056.78s -> 1058.22s]  The preprocessor is what
+[1058.22s -> 1060.42s]  takes those and manipulates
+[1060.42s -> 1062.02s]  them and changes those
+[1062.02s -> 1063.78s]  into something else that
+[1063.78s -> 1064.66s]  the next layer down can
+[1064.66s -> 1065.98s]  do. Let me show you
+[1065.98s -> 1066.98s]  what I'm talking about.
+[1067.06s -> 1068.10s]  Okay, what we're going
+[1068.14s -> 1069.06s]  to do is we're going to
+[1069.06s -> 1069.94s]  go over and we're going
+[1069.94s -> 1073.34s]  to do a little program
+[1073.34s -> 1075.74s]  called hello.cc. And
+[1075.74s -> 1076.42s]  it's gonna be very
+[1076.42s -> 1077.70s]  simple. It's gonna be
+[1077.70s -> 1079.74s]  like day one of 106b
+[1079.74s -> 1083.50s]  here. IO stream, okay,
+[1083.50s -> 1087.94s]  using namespace std. Okay,
+[1088.10s -> 1089.22s]  and then let's do a
+[1089.22s -> 1090.74s]  pound define because we've
+[1090.74s -> 1092.02s]  got two pound things
+[1092.02s -> 1092.78s]  here, the include and
+[1092.78s -> 1093.58s]  then the pound define.
+[1093.94s -> 1095.94s]  I'll talk this K range
+[1095.94s -> 1099.94s]  start 100. Okay, and
+[1099.94s -> 1103.22s]  then int main int argc
+[1103.22s -> 1109.34s]  int char star argv. Okay,
+[1109.54s -> 1111.02s]  and then let's do this
+[1111.02s -> 1114.06s]  for int i equals K range
+[1114.06s -> 1117.46s]  start i is less than K
+[1117.46s -> 1121.78s]  range start plus 10 i
+[1121.78s -> 1125.14s]  plus plus. Okay, and
+[1125.14s -> 1126.10s]  then in here, we'll do
+[1126.10s -> 1129.86s]  cout hello world. And
+[1129.86s -> 1131.18s]  then we'll actually do
+[1131.18s -> 1133.10s]  the i as well, like
+[1133.10s -> 1136.38s]  that. And that's it. Okay,
+[1136.62s -> 1138.26s]  so pretty straightforward
+[1138.26s -> 1139.74s]  program. Anybody see any
+[1139.74s -> 1141.62s]  bugs? Okay, what I'm
+[1141.62s -> 1142.30s]  going to do, I'm actually
+[1142.30s -> 1143.46s]  not doing this on myth,
+[1143.46s -> 1144.10s]  I'm actually doing this
+[1144.10s -> 1144.90s]  on my computer, because
+[1144.90s -> 1145.42s]  I'm going to use a
+[1145.42s -> 1146.34s]  slightly different
+[1146.34s -> 1147.14s]  compiler, I'm going to
+[1147.14s -> 1148.30s]  use a compiler called
+[1148.30s -> 1149.82s]  Clang, which allows
+[1149.82s -> 1151.22s]  you to break out some of
+[1151.22s -> 1153.58s]  the details here that G
+[1153.58s -> 1154.30s]  plus plus for some
+[1154.30s -> 1155.06s]  reason doesn't let you,
+[1155.06s -> 1155.74s]  you might be able to, I
+[1155.74s -> 1156.46s]  couldn't figure out the
+[1156.66s -> 1157.14s]  weight of it. But in
+[1157.14s -> 1158.30s]  Clang, you'll see it. So
+[1158.50s -> 1159.62s]  if we do the following
+[1159.62s -> 1162.54s]  Clang dash e hello dot
+[1162.54s -> 1164.06s]  cc. Okay, actually,
+[1164.06s -> 1164.86s]  let's do this first.
+[1165.02s -> 1168.26s]  Clang hello dot cc dash
+[1168.30s -> 1170.66s]  o hello. Okay, make sure
+[1170.66s -> 1173.02s]  it works. And if
+[1173.02s -> 1174.50s]  everything works, right.
+[1174.66s -> 1176.14s]  Oh, no, maybe I need to
+[1176.14s -> 1177.30s]  do, maybe I need to do
+[1177.30s -> 1181.58s]  Clang plus plus. There we
+[1181.58s -> 1182.22s]  go. That works. So I
+[1182.22s -> 1183.02s]  guess Clang plus plus
+[1183.06s -> 1184.86s]  works. So if we do
+[1184.86s -> 1185.94s]  hello, in this case,
+[1185.94s -> 1186.94s]  right, it will do that.
+[1186.94s -> 1188.26s]  And that's, that makes
+[1188.26s -> 1189.86s]  sense. Okay, that's
+[1189.86s -> 1191.38s]  our program. If we do,
+[1191.42s -> 1192.30s]  let's try Clang this
+[1192.30s -> 1195.22s]  time, Clang dash e hello
+[1195.22s -> 1196.86s]  dot cpp. This is
+[1196.86s -> 1198.14s]  saying run the
+[1198.14s -> 1199.34s]  preprocessor. That's
+[1199.34s -> 1199.86s]  the one that deals with
+[1199.86s -> 1200.54s]  the pound includes and
+[1200.54s -> 1202.14s]  pound defines. Okay.
+[1202.22s -> 1204.22s]  And why is this not
+[1204.22s -> 1206.38s]  working? Oh, cc. That's
+[1206.38s -> 1207.34s]  why. There we go.
+[1207.34s -> 1208.18s]  There we go. Okay,
+[1208.18s -> 1209.14s]  did you see that? See
+[1209.14s -> 1209.58s]  all that stuff that
+[1209.58s -> 1210.98s]  went by? Here's what
+[1210.98s -> 1212.14s]  it's actually doing.
+[1212.90s -> 1214.38s]  Okay, so what it's
+[1214.38s -> 1215.78s]  doing is it's taking a
+[1215.78s -> 1217.02s]  bunch of the, well,
+[1217.02s -> 1218.02s]  first of all, it's
+[1218.02s -> 1218.98s]  taking the pound
+[1218.98s -> 1221.06s]  include, and including
+[1221.06s -> 1221.82s]  it. And guess what
+[1221.82s -> 1222.82s]  that pound include
+[1222.82s -> 1223.54s]  header file probably
+[1223.54s -> 1225.06s]  also has includes, and
+[1225.06s -> 1225.86s]  it needs to include all
+[1225.86s -> 1227.06s]  those. And it just
+[1227.06s -> 1228.10s]  basically creates one
+[1228.10s -> 1229.42s]  more file that is all
+[1229.42s -> 1230.26s]  the stuff that you're
+[1230.26s -> 1231.38s]  about to process in one
+[1231.38s -> 1233.14s]  file. Okay. And it
+[1233.14s -> 1234.02s]  does that. In fact,
+[1234.02s -> 1235.06s]  let's see how big just
+[1235.06s -> 1236.70s]  the preprocessor creates
+[1236.74s -> 1238.78s]  word count. 41,000
+[1238.78s -> 1240.30s]  lines comes out of our
+[1240.30s -> 1241.10s]  one hello world
+[1241.10s -> 1242.34s]  program just from taking
+[1242.34s -> 1243.74s]  that preprocessor in
+[1243.74s -> 1244.66s]  there. But let's take
+[1244.66s -> 1246.74s]  a look at without
+[1247.10s -> 1248.94s]  hello.cc. Let's take
+[1248.94s -> 1250.78s]  a look at it without
+[1251.06s -> 1253.74s]  the cout in there. And
+[1253.74s -> 1256.34s]  without the, because
+[1256.34s -> 1257.18s]  you don't, let's just
+[1257.18s -> 1258.10s]  just look at what
+[1258.10s -> 1259.42s]  happens to the k range
+[1259.42s -> 1262.06s]  start in here. All
+[1262.06s -> 1262.66s]  right, if we do the
+[1262.66s -> 1264.98s]  same thing again, at
+[1264.98s -> 1266.10s]  only 18 lines, so
+[1266.10s -> 1266.90s]  that's much better.
+[1267.14s -> 1268.10s]  Okay, so here's what
+[1268.10s -> 1269.34s]  it did. This stuff at
+[1269.38s -> 1270.82s]  the top here is just
+[1272.02s -> 1273.10s]  it's other information
+[1273.10s -> 1273.46s]  that's going to be
+[1273.46s -> 1274.58s]  used by other stages
+[1274.58s -> 1276.66s]  of compiler. So file
+[1276.70s -> 1277.74s]  amounts and so forth.
+[1278.02s -> 1279.82s]  And notice what it
+[1279.82s -> 1280.62s]  did with our power
+[1280.62s -> 1282.50s]  define, it took that
+[1282.50s -> 1284.26s]  k range start and
+[1284.26s -> 1285.42s]  replaced it with the
+[1285.42s -> 1287.06s]  100 and replaced the
+[1287.06s -> 1288.22s]  100 here. And that's
+[1288.22s -> 1289.54s]  all it did. Took
+[1289.54s -> 1290.58s]  whatever you define and
+[1290.58s -> 1291.34s]  just went through the
+[1291.34s -> 1292.38s]  entire program, found
+[1292.38s -> 1293.34s]  where it was defined
+[1293.38s -> 1294.42s]  used, and then
+[1294.42s -> 1295.50s]  replaced it. That's
+[1295.50s -> 1296.26s]  all it does. Doesn't
+[1296.26s -> 1297.10s]  do anything else in
+[1297.10s -> 1298.26s]  this case. It might do
+[1298.26s -> 1299.14s]  it might actually do a
+[1299.14s -> 1300.74s]  little bit of replacing
+[1300.74s -> 1301.74s]  of variables if you if
+[1301.74s -> 1302.42s]  you set it up that way,
+[1302.42s -> 1303.50s]  but that's it. So
+[1303.50s -> 1304.06s]  that's the pre
+[1304.06s -> 1304.70s]  processor does. And
+[1304.70s -> 1305.26s]  that's the first
+[1305.26s -> 1307.98s]  stage. Okay. The next
+[1307.98s -> 1310.66s]  stage is called the
+[1310.66s -> 1312.50s]  lexer. And the
+[1312.50s -> 1315.34s]  lexer is what takes
+[1315.34s -> 1319.58s]  the translation of a
+[1319.58s -> 1321.94s]  stream of tokens, right?
+[1321.98s -> 1322.90s]  It takes it or takes
+[1322.90s -> 1325.30s]  all those the program
+[1325.30s -> 1326.22s]  and turns it into
+[1326.46s -> 1328.54s]  individual tokens of
+[1328.54s -> 1329.50s]  what's happening in
+[1329.50s -> 1330.78s]  your program. Okay, let
+[1330.78s -> 1331.38s]  me show you what I
+[1331.38s -> 1334.34s]  mean by that. Okay, if
+[1334.34s -> 1336.22s]  we do the let's do
+[1336.22s -> 1337.30s]  let's go back and make
+[1337.30s -> 1338.58s]  it the original one
+[1338.58s -> 1340.18s]  again. So we'll do
+[1340.18s -> 1342.10s]  that. And we'll put
+[1342.10s -> 1343.14s]  this back just so we
+[1343.14s -> 1344.10s]  can see the original
+[1344.10s -> 1345.94s]  again. Okay. And
+[1345.94s -> 1346.54s]  let's do this. In
+[1346.54s -> 1347.10s]  this case, we have to
+[1347.10s -> 1348.82s]  do dash clang dash
+[1348.86s -> 1351.46s]  x clang dash dump
+[1351.50s -> 1355.18s]  tokens. And hello dot
+[1355.22s -> 1357.02s]  CC. What it actually
+[1357.02s -> 1357.90s]  does is it actually
+[1357.90s -> 1359.34s]  puts the output for
+[1359.34s -> 1359.78s]  some reason, the
+[1359.78s -> 1361.06s]  standard error. So I'm
+[1361.06s -> 1362.10s]  going to actually pipe
+[1362.14s -> 1363.82s]  or redirect standard
+[1363.82s -> 1365.02s]  error to standard out,
+[1365.06s -> 1366.18s]  which you may or may
+[1366.18s -> 1366.74s]  not know that you can
+[1366.74s -> 1367.42s]  do it, but you can
+[1367.42s -> 1368.18s]  and this, you should
+[1368.18s -> 1369.22s]  use the two angle
+[1369.22s -> 1370.34s]  bracket and percent one
+[1370.62s -> 1371.54s]  there does that. And
+[1371.54s -> 1371.82s]  then we're going to
+[1371.82s -> 1373.18s]  look at it. And
+[1373.18s -> 1374.74s]  here's what comes out.
+[1375.06s -> 1376.66s]  Okay, so what has it
+[1376.66s -> 1377.58s]  done here? It has
+[1377.58s -> 1380.10s]  taken a typedef
+[1380.10s -> 1380.94s]  called typedef in
+[1380.94s -> 1382.10s]  this case. And
+[1382.14s -> 1382.94s]  there's a typedef in
+[1382.94s -> 1383.26s]  there that it
+[1383.26s -> 1384.58s]  actually created. And
+[1384.58s -> 1385.14s]  let's see, there was
+[1385.14s -> 1386.94s]  a char 16 t in there
+[1386.94s -> 1388.86s]  that it created. And
+[1389.18s -> 1390.30s]  more typedefs. You know
+[1390.30s -> 1391.18s]  what, this is actually
+[1391.18s -> 1391.86s]  now they look at it.
+[1391.90s -> 1394.10s]  This is just the, this
+[1394.10s -> 1395.22s]  is all the included
+[1395.22s -> 1396.70s]  file in here. So let's
+[1396.70s -> 1398.34s]  get rid of that again.
+[1398.74s -> 1401.74s]  And you'll see what it
+[1401.74s -> 1402.58s]  looks like with just
+[1402.58s -> 1403.30s]  the part of the program
+[1403.30s -> 1403.86s]  that we have. And
+[1403.86s -> 1404.34s]  you'll see how it
+[1404.34s -> 1406.50s]  actually, let's see.
+[1407.74s -> 1409.70s]  There we go. Let's try
+[1409.70s -> 1411.54s]  this again. Here we go.
+[1411.74s -> 1413.54s]  Okay, here we go. So
+[1413.58s -> 1414.14s]  here's what it did.
+[1414.14s -> 1415.06s]  It had to find our
+[1415.06s -> 1415.62s]  int. Remember, we
+[1415.62s -> 1416.46s]  said that for loop in
+[1416.46s -> 1417.38s]  there. What it did was
+[1417.38s -> 1418.50s]  it said it has an int
+[1418.50s -> 1419.98s]  here and it found main
+[1419.98s -> 1421.34s]  and this is for the
+[1421.34s -> 1422.58s]  int return value for
+[1422.58s -> 1423.66s]  main. And then it
+[1423.66s -> 1424.86s]  found main in here and
+[1424.86s -> 1425.42s]  it says that's an
+[1425.42s -> 1427.02s]  identifier main. And
+[1427.02s -> 1427.66s]  the program is going
+[1427.66s -> 1428.18s]  to be look, the
+[1428.18s -> 1428.98s]  compiler can be looking
+[1428.98s -> 1430.10s]  for main. Oh, guess
+[1430.10s -> 1431.02s]  what? It found a left
+[1431.02s -> 1432.02s]  parentheses. This is the
+[1432.02s -> 1433.18s]  main. Remember, it's
+[1433.18s -> 1435.30s]  like int main
+[1435.62s -> 1436.74s]  parentheses, right? Well,
+[1436.74s -> 1437.54s]  that's the parentheses
+[1437.54s -> 1438.30s]  there. And it calls it
+[1438.30s -> 1439.10s]  a left paren. And
+[1439.10s -> 1440.02s]  it's, it's taking it
+[1440.02s -> 1440.90s]  down to that level
+[1440.90s -> 1441.70s]  where it finds each
+[1441.74s -> 1443.98s]  individual token and
+[1443.98s -> 1444.54s]  does that. There's
+[1444.54s -> 1445.34s]  another int in there.
+[1445.34s -> 1446.22s]  There's an argc
+[1446.22s -> 1447.38s]  variable. There's a
+[1447.38s -> 1449.22s]  comma, right? You
+[1449.22s -> 1449.86s]  probably never thought
+[1449.86s -> 1451.22s]  about, oh, we have to
+[1451.22s -> 1452.06s]  deal with all this. If
+[1452.06s -> 1452.50s]  you're writing a
+[1452.50s -> 1453.34s]  programming language,
+[1453.46s -> 1454.54s]  that comma means
+[1454.54s -> 1456.14s]  something, right? That
+[1456.18s -> 1457.70s]  that parentheses means
+[1457.70s -> 1458.78s]  something. Well, it's
+[1458.78s -> 1460.38s]  just another token that
+[1460.38s -> 1462.10s]  gets taken into the
+[1462.14s -> 1463.70s]  thing. We have some
+[1463.70s -> 1465.38s]  left brackets in here
+[1465.38s -> 1466.98s]  for char star argv.
+[1467.10s -> 1467.74s]  Let's see what else we
+[1467.74s -> 1470.50s]  have. Let's see if I
+[1470.50s -> 1471.42s]  can get some more
+[1471.42s -> 1473.90s]  there. Let's see, can
+[1473.90s -> 1474.66s]  we find any of the
+[1474.66s -> 1475.38s]  ones that we had? Here's
+[1475.38s -> 1477.10s]  our identifier I that
+[1477.10s -> 1478.38s]  we put in there, right?
+[1478.38s -> 1479.02s]  It has that in there.
+[1479.02s -> 1479.94s]  There's the plus, plus.
+[1479.94s -> 1480.50s]  It actually calls it
+[1480.50s -> 1482.02s]  plus, plus, right? And
+[1482.02s -> 1483.26s]  it does it. So this is
+[1483.30s -> 1483.98s]  part of this, by the
+[1483.98s -> 1485.06s]  way, is so that it can
+[1485.06s -> 1486.34s]  do much more translation
+[1486.34s -> 1486.78s]  than some other
+[1486.78s -> 1487.58s]  compilers. It like
+[1487.58s -> 1488.34s]  breaks it down to this
+[1488.34s -> 1489.50s]  level, but it does need
+[1489.50s -> 1490.90s]  to tokenize it. And
+[1490.90s -> 1493.90s]  that's a layering sort
+[1493.90s -> 1497.30s]  of idea. Okay. Then
+[1497.46s -> 1498.30s]  after we go through
+[1498.30s -> 1500.98s]  the Lexer, which gets
+[1500.98s -> 1502.30s]  all those tokens, then
+[1502.30s -> 1503.50s]  it goes into the more
+[1503.50s -> 1504.62s]  interesting part. So far,
+[1504.62s -> 1505.50s]  this is like, oh, that's
+[1505.50s -> 1506.46s]  just translation. That's
+[1506.46s -> 1507.46s]  not too bad. Then it
+[1507.46s -> 1508.02s]  goes into this one
+[1508.02s -> 1509.54s]  called a parser. And a
+[1509.54s -> 1511.50s]  parser is now looking
+[1511.50s -> 1512.86s]  at syntax. Okay. And
+[1512.86s -> 1513.90s]  the parser says, oh,
+[1513.90s -> 1515.10s]  let's break these group
+[1515.10s -> 1515.90s]  these tokens into
+[1516.02s -> 1517.62s]  syntactically valid
+[1517.62s -> 1520.26s]  constructs. Okay. So
+[1520.26s -> 1520.90s]  let's see what we do
+[1520.90s -> 1522.22s]  that. This one is also
+[1522.22s -> 1524.26s]  X clang again. This
+[1524.26s -> 1526.18s]  one, it's AST dump
+[1526.22s -> 1529.54s]  like this. AST dump
+[1529.90s -> 1532.06s]  like that. And now it
+[1532.06s -> 1532.90s]  actually is creating a
+[1532.90s -> 1534.06s]  little tree. We call
+[1534.10s -> 1536.62s]  this an abstract syntax
+[1536.62s -> 1538.46s]  tree that actually has
+[1538.46s -> 1539.42s]  all different parts in
+[1539.42s -> 1541.10s]  there. So let's see if
+[1541.10s -> 1542.10s]  we can find something in
+[1542.10s -> 1544.38s]  here that we've done
+[1544.38s -> 1546.30s]  here. Here we go. So
+[1546.34s -> 1547.06s]  then we have a for
+[1547.06s -> 1548.58s]  statement in there. Well,
+[1548.62s -> 1549.38s]  the for statement is
+[1549.38s -> 1551.58s]  made up of a compound
+[1551.58s -> 1553.50s]  statement, right? compound
+[1553.50s -> 1554.30s]  statement up here,
+[1554.30s -> 1555.98s]  let's say, okay. And
+[1555.98s -> 1556.90s]  then you've got a for
+[1556.90s -> 1558.54s]  statement, and then
+[1558.58s -> 1560.06s]  declarative statement in
+[1560.06s -> 1561.30s]  there, which is like
+[1561.30s -> 1562.50s]  the individual parts of
+[1562.50s -> 1563.98s]  the for loop. Let's
+[1563.98s -> 1564.78s]  see, we've got an int.
+[1564.78s -> 1566.30s]  Oh, there's our 100 for
+[1566.30s -> 1568.34s]  our the integer that we
+[1568.34s -> 1569.70s]  had the constant in
+[1569.70s -> 1571.30s]  there. We've got to
+[1571.30s -> 1572.50s]  have a bool because
+[1572.50s -> 1573.70s]  there's a less than
+[1573.70s -> 1575.34s]  calculation in there. So
+[1575.34s -> 1577.06s]  there's a boolean value
+[1577.06s -> 1578.14s]  that's going on. And
+[1578.14s -> 1579.18s]  we're doing that. We've
+[1579.18s -> 1580.58s]  got another int in there
+[1580.58s -> 1581.42s]  for probably the next
+[1581.42s -> 1582.38s]  part of the for loop.
+[1582.98s -> 1583.58s]  Let's see, we've got
+[1583.58s -> 1584.70s]  the 10 in there for
+[1584.70s -> 1585.50s]  the plus, we're going
+[1585.50s -> 1586.62s]  to have a plus in
+[1586.62s -> 1587.22s]  there, which is our
+[1587.22s -> 1589.22s]  binary operator. So all
+[1589.22s -> 1590.38s]  these things, somebody had
+[1590.38s -> 1591.34s]  to think about how does
+[1591.34s -> 1593.30s]  the C++ language turn
+[1593.30s -> 1595.18s]  into this abstract
+[1595.18s -> 1596.50s]  syntax tree. And when
+[1596.50s -> 1597.38s]  you build computer
+[1597.38s -> 1598.46s]  languages, you don't
+[1598.46s -> 1599.10s]  necessarily, well, you
+[1599.10s -> 1599.62s]  have to think about
+[1599.62s -> 1601.70s]  this on some level. But
+[1601.74s -> 1602.66s]  there are tools that do
+[1602.66s -> 1603.50s]  a lot of this for you
+[1603.50s -> 1605.02s]  as well. And then you
+[1605.02s -> 1605.50s]  can see there's the
+[1605.50s -> 1606.46s]  postfix again, and
+[1606.46s -> 1607.58s]  plus plus and so forth.
+[1607.74s -> 1609.46s]  So that's how you end
+[1609.46s -> 1610.90s]  up with the parsing
+[1610.90s -> 1611.98s]  part of it, which is
+[1611.98s -> 1612.74s]  actually a very
+[1612.74s -> 1614.22s]  interesting part of
+[1614.22s -> 1615.42s]  computer programming
+[1615.42s -> 1617.58s]  language design. Okay,
+[1618.18s -> 1619.82s]  let's see, there are a
+[1619.82s -> 1621.22s]  couple more parts here.
+[1621.38s -> 1625.46s]  There is the semantic
+[1625.46s -> 1627.06s]  analyzer, okay, the
+[1627.06s -> 1630.22s]  semantic analyzer part is
+[1630.42s -> 1632.18s]  right here. That's the
+[1632.18s -> 1632.98s]  part that takes all
+[1632.98s -> 1634.30s]  those syntactically valid
+[1634.30s -> 1635.70s]  constructs and says, does
+[1635.70s -> 1636.54s]  this actually work in
+[1636.54s -> 1638.58s]  C++? Like so far, it's
+[1638.58s -> 1639.46s]  taking it and saying,
+[1639.46s -> 1640.86s]  okay, this maps this
+[1640.86s -> 1641.50s]  like little part of the
+[1641.50s -> 1642.86s]  tree. And then it goes,
+[1642.94s -> 1643.82s]  Oh, now I'm going to
+[1643.82s -> 1645.50s]  see if this works with
+[1645.50s -> 1648.10s]  the type system. And if
+[1648.10s -> 1648.70s]  you can, so you're
+[1648.70s -> 1649.14s]  going to have to
+[1649.14s -> 1649.98s]  eventually put out
+[1649.98s -> 1651.14s]  assembly code. So it
+[1651.14s -> 1651.74s]  needs to do that.
+[1651.78s -> 1652.58s]  Unfortunately, Clang
+[1652.58s -> 1653.26s]  doesn't show you the
+[1653.26s -> 1654.42s]  semantic analyzer part.
+[1654.42s -> 1655.98s]  So that's that. But
+[1655.98s -> 1657.10s]  finally, there's a
+[1657.10s -> 1659.54s]  codegen part, which is
+[1660.06s -> 1661.70s]  what you may have, or
+[1661.70s -> 1662.26s]  what you would have
+[1662.26s -> 1664.74s]  thought about in CS107,
+[1665.06s -> 1665.70s]  which hopefully isn't
+[1665.70s -> 1666.34s]  bringing back bad
+[1666.34s -> 1668.34s]  memories. But if we do
+[1668.34s -> 1669.18s]  the same sort of thing
+[1669.18s -> 1671.74s]  now, instead of ast
+[1671.74s -> 1673.54s]  dump, now we just want
+[1673.54s -> 1675.98s]  to do, I think it's
+[1675.98s -> 1678.06s]  dash s, actually. So if
+[1678.06s -> 1679.98s]  we do, let's not do
+[1679.98s -> 1681.26s]  the x clang or clang,
+[1681.26s -> 1682.14s]  I'll do plus plus again,
+[1682.14s -> 1684.18s]  plus plus, hello, we'll
+[1684.18s -> 1687.74s]  do dash s, hello dot
+[1687.74s -> 1691.10s]  cc. Let's see if there
+[1691.10s -> 1692.42s]  we go. And then, yeah,
+[1692.42s -> 1694.18s]  there we go. Hello dot
+[1694.22s -> 1695.58s]  s. Well, here's all
+[1695.58s -> 1696.58s]  your assembly language
+[1696.62s -> 1697.74s]  that came out, right.
+[1697.74s -> 1698.82s]  And that's the final,
+[1698.86s -> 1699.90s]  the final part is
+[1699.90s -> 1700.38s]  generating the
+[1700.38s -> 1701.42s]  seminars. What's cool
+[1701.42s -> 1702.02s]  about Clang is it
+[1702.02s -> 1702.74s]  actually tries to
+[1702.74s -> 1704.54s]  comment its code. It's
+[1704.54s -> 1705.66s]  kind of neat, you
+[1705.66s -> 1706.30s]  know, it's nice for
+[1706.30s -> 1706.94s]  them to do this. It's
+[1706.94s -> 1707.98s]  interlude. It talks about
+[1707.98s -> 1708.66s]  the interludes and so
+[1708.66s -> 1710.30s]  forth. Another
+[1710.30s -> 1710.90s]  interesting thing
+[1710.90s -> 1711.66s]  about this, so let's
+[1711.66s -> 1713.94s]  look up, let's do this.
+[1713.94s -> 1714.42s]  Let me, let me
+[1714.42s -> 1716.06s]  recompile this using
+[1716.06s -> 1716.90s]  the big, by the way,
+[1716.90s -> 1717.54s]  let's see, how long
+[1717.54s -> 1720.78s]  is this? This one is
+[1720.82s -> 1723.18s]  923 bytes. If we put
+[1723.18s -> 1724.82s]  back in, oops, we
+[1724.82s -> 1727.98s]  put back in the two
+[1727.98s -> 1728.70s]  parts here, just
+[1728.70s -> 1729.26s]  actually do the
+[1729.26s -> 1732.86s]  printing. Let's see.
+[1733.86s -> 1737.94s]  There we go. And now
+[1737.94s -> 1740.82s]  it is, how big? It's
+[1740.82s -> 1742.86s]  now 49 kilobytes, right?
+[1742.86s -> 1743.66s]  So it changes a little
+[1743.66s -> 1744.18s]  bit when you have to
+[1744.18s -> 1744.94s]  all of a sudden print
+[1744.94s -> 1745.58s]  something out, right?
+[1745.58s -> 1746.14s]  There's a lot more
+[1746.14s -> 1748.42s]  going on here, but, uh,
+[1748.46s -> 1749.46s]  let's look for the
+[1749.46s -> 1750.74s]  cout function, for
+[1750.74s -> 1751.58s]  instance. There's our
+[1751.58s -> 1753.82s]  cout function. Now notice
+[1753.82s -> 1754.50s]  something interesting
+[1754.50s -> 1755.70s]  about it. It's not a
+[1755.70s -> 1756.62s]  good color. Notice
+[1756.62s -> 1757.14s]  something interesting
+[1757.14s -> 1757.66s]  about the cout
+[1757.66s -> 1758.66s]  function. It's got all
+[1758.66s -> 1759.82s]  this garbage around it,
+[1759.98s -> 1760.74s]  like underscore,
+[1760.74s -> 1762.70s]  underscore ZNST3. You
+[1762.70s -> 1763.46s]  didn't see that when
+[1763.46s -> 1764.38s]  you saw your functions
+[1764.38s -> 1766.46s]  in C code for an
+[1766.46s -> 1767.54s]  assembly or whatever.
+[1767.86s -> 1768.98s]  The reason is because
+[1768.98s -> 1770.86s]  C++ allows you to
+[1770.86s -> 1773.18s]  overload functions, right?
+[1773.22s -> 1774.18s]  So you can't have just
+[1774.18s -> 1775.30s]  one cout. You could
+[1775.30s -> 1776.62s]  have 10 couts that all
+[1776.62s -> 1777.02s]  have different
+[1777.02s -> 1777.90s]  parameters and things.
+[1778.06s -> 1778.82s]  So what it needs to do
+[1778.82s -> 1779.42s]  is it needs to do
+[1779.42s -> 1780.38s]  what's called name
+[1780.38s -> 1781.74s]  mangling, and it
+[1781.74s -> 1782.82s]  actually mangles the
+[1782.82s -> 1784.38s]  name and keeps track of
+[1784.38s -> 1785.10s]  it, of course, but it
+[1785.10s -> 1786.26s]  mangles the name. So
+[1786.26s -> 1786.78s]  if you had two
+[1786.78s -> 1787.74s]  different or 10
+[1787.74s -> 1788.70s]  different couts, it
+[1788.70s -> 1789.42s]  would know which one
+[1789.42s -> 1790.14s]  to call and you can't
+[1790.14s -> 1791.26s]  do that in C. So one
+[1791.26s -> 1791.82s]  of the reasons we do
+[1791.82s -> 1793.30s]  107 in C, instead of
+[1793.30s -> 1794.78s]  C++, because it can't
+[1794.78s -> 1795.30s]  do that. It doesn't
+[1795.30s -> 1796.26s]  do this, and it's
+[1796.26s -> 1797.10s]  much easier to read
+[1797.10s -> 1798.18s]  this sort of code. So
+[1798.58s -> 1799.98s]  that's one thing you
+[1799.98s -> 1801.06s]  can look at in there.
+[1801.10s -> 1802.74s]  So there you go. That's
+[1802.74s -> 1805.82s]  the different parts
+[1806.14s -> 1809.90s]  of the compiler. Okay,
+[1809.90s -> 1810.38s]  so you have all these
+[1810.38s -> 1811.42s]  different parts that
+[1811.42s -> 1812.46s]  happen, and it's all
+[1812.46s -> 1813.78s]  about layering, and it
+[1813.78s -> 1814.50s]  does one thing at a
+[1814.50s -> 1815.70s]  time and does multiple
+[1815.70s -> 1817.30s]  passes around across
+[1817.30s -> 1818.54s]  the code that you can
+[1818.54s -> 1820.74s]  then use, or then
+[1820.74s -> 1821.94s]  uses to actually build
+[1821.94s -> 1822.78s]  your assembly code.
+[1823.02s -> 1823.98s]  It's kind of amazing
+[1823.98s -> 1826.46s]  to me that compilers
+[1826.50s -> 1827.26s]  go as fast as they
+[1827.26s -> 1828.18s]  do. I mean, your
+[1828.22s -> 1828.90s]  computer is already
+[1828.90s -> 1830.02s]  fast, but making them
+[1830.02s -> 1830.90s]  go fast enough to
+[1830.90s -> 1831.78s]  compile your code just
+[1831.78s -> 1832.26s]  like that, when you
+[1832.26s -> 1833.10s]  think about all these
+[1833.10s -> 1833.62s]  different things that
+[1833.62s -> 1834.38s]  have to happen. Oh,
+[1834.38s -> 1835.58s]  and by the way, that
+[1835.58s -> 1836.58s]  didn't even talk about
+[1836.90s -> 1838.02s]  compiling with dash
+[1838.06s -> 1840.94s]  O3 in there or some
+[1840.94s -> 1841.90s]  other one, right? If
+[1841.90s -> 1843.74s]  we had taken out the
+[1843.74s -> 1844.62s]  C out statement again
+[1844.62s -> 1845.58s]  and did O3, you would
+[1845.58s -> 1846.46s]  have had like a 20
+[1846.46s -> 1847.42s]  byte file because it
+[1847.42s -> 1848.98s]  would have optimized
+[1848.98s -> 1849.62s]  everything out because
+[1849.62s -> 1850.26s]  nothing actually got
+[1850.26s -> 1851.70s]  printed. So all that
+[1851.70s -> 1852.98s]  optimization takes more
+[1852.98s -> 1854.98s]  time and so forth. And
+[1854.98s -> 1856.34s]  the, if you take a
+[1856.54s -> 1857.26s]  compiler's class, you'll
+[1857.26s -> 1859.70s]  learn this, that compiling
+[1859.70s -> 1861.42s]  time is not really that
+[1861.42s -> 1862.78s]  important. It's your
+[1862.78s -> 1863.62s]  runtime that becomes
+[1863.62s -> 1864.34s]  more important. So it
+[1864.34s -> 1865.46s]  does take more time to
+[1865.46s -> 1866.86s]  compile something that's
+[1866.86s -> 1867.86s]  actually okay. Now you
+[1867.86s -> 1868.50s]  do have to worry about
+[1868.50s -> 1869.58s]  programmer efficiency and
+[1869.58s -> 1870.42s]  you can't take days to
+[1870.42s -> 1871.62s]  compile things, or
+[1871.62s -> 1872.74s]  hours like it used to.
+[1872.74s -> 1874.42s]  But it doesn't matter
+[1874.42s -> 1874.90s]  if it takes a little
+[1874.90s -> 1875.62s]  longer to compile, as
+[1875.62s -> 1876.58s]  long as it optimizes
+[1876.58s -> 1877.38s]  to make your program
+[1877.38s -> 1878.50s]  actually faster. If you
+[1878.50s -> 1879.02s]  only have to compile
+[1879.02s -> 1880.10s]  once, you run it a
+[1880.10s -> 1881.90s]  million times. So that's
+[1881.90s -> 1884.50s]  how that works. Okay.
+[1885.50s -> 1886.22s]  What else are we
+[1886.22s -> 1886.94s]  going to talk about?
+[1887.86s -> 1890.02s]  Computer networks. So
+[1890.06s -> 1891.82s]  that's layers, right?
+[1891.82s -> 1892.86s]  There's tons of layers
+[1892.90s -> 1893.46s]  in your computer
+[1893.46s -> 1894.98s]  networks here. Okay.
+[1895.02s -> 1898.74s]  There are, there's the
+[1898.74s -> 1901.58s]  TCP IP layer, right,
+[1901.58s -> 1903.50s]  which is the data of
+[1903.50s -> 1904.82s]  how packets get
+[1904.82s -> 1906.22s]  transmitted back and
+[1906.22s -> 1907.90s]  forth. I talked about
+[1907.90s -> 1910.14s]  this the other day where
+[1910.14s -> 1912.34s]  it's the TCP layer that
+[1912.34s -> 1914.18s]  says, oh, here's your
+[1914.18s -> 1916.14s]  packets in a particular or
+[1916.18s -> 1918.10s]  in what order, like zero
+[1918.10s -> 1920.58s]  through 100 packets. And
+[1920.62s -> 1921.86s]  it's that layer that on
+[1921.86s -> 1923.30s]  the other side gets the
+[1923.30s -> 1924.98s]  packet and then says, oh,
+[1924.98s -> 1925.78s]  I've got the packet, I've
+[1925.78s -> 1926.70s]  got packet seven, I'm
+[1926.70s -> 1927.18s]  going to send an
+[1927.18s -> 1927.98s]  acknowledgement for
+[1927.98s -> 1929.86s]  packet seven back to the
+[1929.90s -> 1931.70s]  original calling the
+[1931.70s -> 1932.74s]  computer that sent me the
+[1932.74s -> 1934.94s]  packet and so forth. So
+[1934.98s -> 1936.54s]  that's what the TCP layer
+[1936.54s -> 1938.46s]  does. Okay. But there's
+[1938.46s -> 1939.86s]  all these other layers in
+[1939.86s -> 1940.46s]  here as well. There's
+[1940.46s -> 1941.78s]  the application layer,
+[1941.78s -> 1942.70s]  which is what you were
+[1942.70s -> 1943.38s]  you writing your
+[1943.38s -> 1944.58s]  application when using
+[1944.58s -> 1945.38s]  these sorts of things.
+[1945.62s -> 1946.74s]  There's the transport
+[1946.74s -> 1947.50s]  layer, which is where
+[1947.50s -> 1949.34s]  the TCP happens. There's
+[1949.34s -> 1951.18s]  the network layer. The
+[1951.18s -> 1952.26s]  network layer is the
+[1952.26s -> 1954.06s]  part where it says,
+[1954.38s -> 1956.70s]  okay, I want to send my
+[1957.02s -> 1958.06s]  my packet to a
+[1958.06s -> 1959.30s]  particular computer. But
+[1959.30s -> 1960.10s]  first needs to go
+[1960.10s -> 1960.90s]  through the next
+[1960.90s -> 1962.38s]  closest router, like the
+[1962.38s -> 1962.98s]  one that's in the
+[1962.98s -> 1963.86s]  ceiling or whatever for
+[1963.86s -> 1965.10s]  your Wi Fi packets and
+[1965.10s -> 1967.46s]  so forth. Okay. In
+[1967.46s -> 1968.22s]  fact, let's take a look
+[1968.22s -> 1969.46s]  at how you might figure
+[1969.46s -> 1970.46s]  that out or how you
+[1970.46s -> 1971.82s]  might do a little
+[1971.86s -> 1974.14s]  analysis there. There
+[1974.14s -> 1977.30s]  is a command, which is
+[1977.34s -> 1978.50s]  traceroute. Did I show
+[1978.50s -> 1979.30s]  you traceroute before I
+[1979.30s -> 1979.82s]  did in some other
+[1979.82s -> 1980.82s]  classes? traceroute. If
+[1980.82s -> 1982.14s]  you took 106b with me,
+[1982.14s -> 1982.54s]  you would have seen
+[1982.54s -> 1985.26s]  this. traceroute is a
+[1985.26s -> 1987.06s]  way to find out all the
+[1987.06s -> 1988.82s]  different paths that
+[1988.82s -> 1990.46s]  your, or the different
+[1990.46s -> 1991.82s]  path, the path, one
+[1991.82s -> 1992.66s]  particular path, let's
+[1992.66s -> 1994.30s]  say, that your, that
+[1994.30s -> 1995.14s]  your packets might go
+[1995.14s -> 1996.26s]  through. So I happen
+[1996.26s -> 1997.70s]  to find a
+[1998.66s -> 2001.26s]  engineering.new
+[2001.30s -> 2002.38s]  University of New
+[2002.38s -> 2003.22s]  South Wales in
+[2003.22s -> 2005.98s]  Australia, edu.au. If
+[2005.98s -> 2007.46s]  we try to trace the
+[2007.46s -> 2008.46s]  packets here, oh, no,
+[2008.50s -> 2009.10s]  it's not going to let
+[2009.10s -> 2010.22s]  me. This happened
+[2010.22s -> 2010.98s]  earlier when I tried
+[2010.98s -> 2012.02s]  this at my desk.
+[2012.46s -> 2013.50s]  Sometimes it, sometimes
+[2013.50s -> 2014.50s]  it fails and won't let
+[2014.50s -> 2016.90s]  you. So I think, see,
+[2016.90s -> 2017.90s]  there we go, I did do
+[2017.90s -> 2018.90s]  it earlier just in case
+[2018.90s -> 2020.10s]  this would happen. So
+[2020.10s -> 2020.98s]  let's pretend that
+[2020.98s -> 2023.86s]  didn't fail. You have
+[2023.86s -> 2026.18s]  to be prepared. So what
+[2026.18s -> 2027.02s]  it did was it actually,
+[2027.02s -> 2027.70s]  if it worked, it would
+[2027.70s -> 2028.42s]  have shown you all
+[2028.42s -> 2029.66s]  these different routes
+[2029.66s -> 2031.02s]  here, which basically
+[2031.02s -> 2033.42s]  says my computer, which
+[2033.42s -> 2038.42s]  is 10.34.160.2 needs to
+[2038.42s -> 2040.26s]  go to, or I guess that
+[2040.26s -> 2041.10s]  might be the router,
+[2041.10s -> 2041.78s]  actually, my computer
+[2041.78s -> 2042.50s]  might first go to the
+[2042.50s -> 2044.02s]  router. And then it
+[2044.02s -> 2045.22s]  goes to something at
+[2045.26s -> 2047.06s]  S Sunet, which is
+[2047.06s -> 2048.46s]  still on Stanford. Then
+[2048.46s -> 2049.34s]  it goes to another
+[2049.34s -> 2050.62s]  171, which is still at
+[2050.62s -> 2051.78s]  Stanford. Then it goes
+[2051.78s -> 2052.58s]  to another Sunet,
+[2052.58s -> 2053.10s]  which is still at
+[2053.14s -> 2054.98s]  Stanford. It takes four
+[2054.98s -> 2056.06s]  hops just to get off
+[2056.06s -> 2057.02s]  the Stanford campus if
+[2057.02s -> 2057.62s]  it's trying to go to
+[2057.62s -> 2058.98s]  Australia. Why? Because
+[2058.98s -> 2059.50s]  we have a lot of
+[2059.50s -> 2060.34s]  computers on here and
+[2060.34s -> 2060.94s]  a lot of different
+[2060.94s -> 2063.30s]  ways. You don't need
+[2063.30s -> 2064.42s]  to go through a lot of
+[2064.46s -> 2065.46s]  steps just to get out
+[2065.46s -> 2066.54s]  of your local network.
+[2066.86s -> 2067.90s]  Okay. Part of that
+[2067.90s -> 2068.78s]  is because we have,
+[2068.78s -> 2069.30s]  we don't have enough
+[2069.30s -> 2070.06s]  IP addresses to go
+[2070.06s -> 2071.26s]  around. Then it goes
+[2071.26s -> 2072.02s]  to this thing called
+[2072.02s -> 2076.26s]  scenic, which is a, I
+[2076.26s -> 2077.14s]  believe that's something
+[2077.14s -> 2077.90s]  to do with the
+[2077.90s -> 2078.78s]  universities in the
+[2078.78s -> 2079.70s]  Bay Area and kind of
+[2079.70s -> 2081.38s]  the north, the Pacific
+[2081.38s -> 2082.38s]  Northwest Pacific
+[2082.38s -> 2083.38s]  somewhere. Then it has
+[2083.38s -> 2084.38s]  to get to Australia. So
+[2084.38s -> 2085.02s]  it goes to this place
+[2085.02s -> 2085.90s]  called the Pacific
+[2085.90s -> 2089.26s]  wave, which is a, which
+[2089.26s -> 2093.18s]  is a ISP or a rider
+[2093.30s -> 2094.14s]  that basically sends
+[2094.14s -> 2095.50s]  things across the ocean.
+[2095.74s -> 2096.42s]  And you can actually
+[2096.42s -> 2097.90s]  see if you go, let's
+[2097.90s -> 2098.58s]  see if I still have
+[2098.58s -> 2099.26s]  this up here. There we
+[2099.26s -> 2100.54s]  go. You can actually
+[2100.54s -> 2101.26s]  see all different
+[2101.26s -> 2103.10s]  submarine cables that
+[2103.10s -> 2104.46s]  are around. You might
+[2104.46s -> 2105.46s]  ask yourself, wait, why
+[2105.46s -> 2107.42s]  don't the, I always
+[2107.42s -> 2108.06s]  thought these like
+[2108.06s -> 2108.66s]  signals to go to
+[2108.66s -> 2109.30s]  Australia would go
+[2109.30s -> 2110.78s]  through like satellites
+[2110.78s -> 2111.74s]  and things, right?
+[2111.74s -> 2113.14s]  Sometimes they do, but
+[2113.14s -> 2113.62s]  it turns out it's
+[2113.62s -> 2114.50s]  much faster to go
+[2114.50s -> 2116.54s]  through the underwater,
+[2116.62s -> 2117.66s]  believe it or not.
+[2117.82s -> 2119.06s]  Uh, any ideas?
+[2119.06s -> 2123.82s]  Why actually the radio
+[2123.82s -> 2124.50s]  waves are actually
+[2124.50s -> 2125.78s]  faster in the air
+[2125.78s -> 2126.90s]  than in underwater
+[2126.90s -> 2128.26s]  cables. Maybe as
+[2128.26s -> 2129.86s]  why, how far away
+[2129.90s -> 2131.54s]  are geosynchronous
+[2131.54s -> 2132.42s]  satellites? Anybody
+[2132.42s -> 2135.46s]  have any idea? How
+[2135.46s -> 2138.22s]  many? 22,000 miles
+[2138.22s -> 2139.66s]  away. It takes about
+[2139.66s -> 2140.30s]  an eighth of a
+[2140.30s -> 2141.62s]  second for light to
+[2141.62s -> 2143.38s]  go 22,000 miles up to
+[2143.38s -> 2144.66s]  the satellite and then
+[2144.66s -> 2145.34s]  another eighth of a
+[2145.34s -> 2146.54s]  second to go 22,000
+[2146.54s -> 2147.74s]  miles back. That's a
+[2147.74s -> 2148.54s]  quarter of a second
+[2148.54s -> 2149.26s]  delay. And if you've
+[2149.26s -> 2150.38s]  ever called anybody,
+[2150.62s -> 2151.30s]  so let's say in
+[2151.30s -> 2152.50s]  Australia and you did
+[2152.50s -> 2153.54s]  get on a satellite
+[2153.82s -> 2154.78s]  connection, there's a
+[2154.78s -> 2156.30s]  big delay there because
+[2156.30s -> 2157.30s]  it takes that much time
+[2157.30s -> 2158.38s]  to do it versus the
+[2158.38s -> 2159.74s]  8,000 miles one
+[2159.74s -> 2161.62s]  direction to, uh, to
+[2161.62s -> 2162.94s]  get from like here to
+[2162.94s -> 2163.78s]  Australia or 10,000
+[2163.78s -> 2164.90s]  miles, it's much less
+[2164.90s -> 2166.22s]  time over the
+[2166.22s -> 2167.14s]  network. But anyway,
+[2167.14s -> 2167.78s]  you can see, you can
+[2167.78s -> 2168.54s]  actually play around with
+[2168.54s -> 2170.50s]  this map and zoom in
+[2170.50s -> 2170.98s]  and zoom out and
+[2170.98s -> 2172.46s]  whatever and see all
+[2172.46s -> 2173.06s]  the different various
+[2173.06s -> 2174.42s]  connectors. Underwater
+[2174.42s -> 2175.74s]  cables are kind of cool
+[2175.78s -> 2179.14s]  in that they, uh, they
+[2179.18s -> 2180.02s]  spool them out with
+[2180.02s -> 2180.98s]  these giant spools.
+[2180.98s -> 2181.86s]  They just have a boat
+[2181.86s -> 2182.98s]  driving along, spooling
+[2182.98s -> 2184.10s]  out the cable and every
+[2184.10s -> 2184.74s]  so often, then they
+[2184.74s -> 2185.42s]  have to splice the
+[2185.42s -> 2186.06s]  cables together when
+[2186.06s -> 2186.50s]  they run out of a
+[2186.50s -> 2187.54s]  spool. And they do that
+[2187.54s -> 2188.38s]  for thousands of miles
+[2188.38s -> 2189.06s]  across the ocean. It
+[2189.06s -> 2189.58s]  just sinks to the
+[2189.58s -> 2190.90s]  bottom. Sharks really
+[2190.90s -> 2191.98s]  like these cables too.
+[2191.98s -> 2192.94s]  They can actually sense
+[2192.94s -> 2193.86s]  the electricity kind of
+[2193.86s -> 2194.30s]  going through them. So
+[2194.30s -> 2195.02s]  they bite them a lot.
+[2195.02s -> 2195.54s]  They have to break,
+[2195.54s -> 2196.42s]  they break a lot. So
+[2196.66s -> 2197.38s]  they have to deal
+[2197.38s -> 2197.86s]  with that too. And
+[2197.86s -> 2198.14s]  they make them
+[2198.14s -> 2198.94s]  thicken up, whatever.
+[2199.02s -> 2199.42s]  Chase.
+[2199.82s -> 2202.62s]  How do they retrieve
+[2202.62s -> 2203.14s]  the cables? Yeah, when
+[2203.14s -> 2204.02s]  a shark bites it and
+[2204.02s -> 2205.30s]  like splits it, they
+[2205.30s -> 2206.22s]  have a big hook that
+[2206.22s -> 2206.82s]  they know where it is
+[2206.82s -> 2208.26s]  basically with GPS and
+[2208.26s -> 2208.62s]  so forth. And they
+[2208.62s -> 2209.42s]  have a hook that they
+[2209.42s -> 2210.26s]  go along until they
+[2210.26s -> 2210.74s]  hook it and then they
+[2210.74s -> 2212.34s]  reel it up. So yeah,
+[2212.42s -> 2212.70s]  I don't know what
+[2212.70s -> 2213.22s]  it does to all the
+[2213.22s -> 2213.90s]  like wildlife in the
+[2213.90s -> 2215.14s]  bottom, but it's, uh,
+[2215.14s -> 2217.70s]  yeah. I think the
+[2217.70s -> 2218.26s]  different colors just
+[2218.26s -> 2219.26s]  mean, I don't actually,
+[2219.26s -> 2219.78s]  I don't know what
+[2219.78s -> 2220.50s]  the different colors
+[2220.50s -> 2222.26s]  mean. Uh, good
+[2222.26s -> 2222.98s]  question. Might be
+[2222.98s -> 2223.78s]  different, might be
+[2223.78s -> 2225.22s]  different, uh, companies
+[2225.22s -> 2226.62s]  that run them. Uh,
+[2226.62s -> 2227.74s]  it might be a, it
+[2227.74s -> 2228.30s]  might be a,
+[2230.02s -> 2230.54s]  well, they are
+[2230.54s -> 2231.62s]  specific cables, but
+[2231.62s -> 2232.10s]  like there's a bunch
+[2232.10s -> 2232.82s]  of gray ones here and
+[2232.82s -> 2233.14s]  I don't know what the
+[2233.14s -> 2234.06s]  gray ones, I don't know
+[2234.06s -> 2235.26s]  what they are. Yeah.
+[2235.62s -> 2237.02s]  The military. Yeah,
+[2237.02s -> 2237.82s]  maybe, maybe that's it.
+[2238.34s -> 2239.22s]  But anyway, there are
+[2239.22s -> 2240.22s]  lots of cables around
+[2240.22s -> 2241.30s]  the, around the world
+[2241.30s -> 2242.94s]  that, uh, because there
+[2242.94s -> 2244.50s]  are lots of people
+[2244.50s -> 2245.74s]  communicating and that's
+[2245.74s -> 2246.18s]  the way it goes. But
+[2246.18s -> 2247.22s]  anyway, that's another
+[2247.22s -> 2247.86s]  layer, right? That you
+[2247.86s -> 2248.46s]  need to go through the
+[2248.46s -> 2249.14s]  network layer that
+[2249.14s -> 2249.70s]  sends these things. And
+[2249.70s -> 2250.22s]  this is, that would be
+[2250.22s -> 2251.30s]  the physical layer, by
+[2251.30s -> 2252.06s]  the way, that's
+[2252.06s -> 2253.30s]  another, another layer
+[2253.30s -> 2254.14s]  that, uh, that these
+[2254.14s -> 2255.66s]  things go through. Okay.
+[2255.78s -> 2257.30s]  So, uh, another layers
+[2257.30s -> 2257.82s]  that we talked about,
+[2257.82s -> 2258.34s]  I guess, you know, put
+[2258.34s -> 2259.42s]  the, uh, there's the
+[2259.42s -> 2261.50s]  link layer, uh, which
+[2261.50s -> 2263.74s]  basically is, let's see
+[2263.74s -> 2264.94s]  the link layer, I think
+[2264.94s -> 2267.18s]  is between the, I
+[2267.18s -> 2267.78s]  guess the network
+[2267.78s -> 2268.90s]  layers between the
+[2268.90s -> 2270.50s]  computer and the, and
+[2270.50s -> 2272.22s]  the next router, the
+[2272.22s -> 2272.86s]  link layer might be
+[2272.86s -> 2273.66s]  either internal to the
+[2273.66s -> 2276.42s]  router or, uh, not
+[2276.42s -> 2277.10s]  exactly sure. I'll
+[2277.10s -> 2278.46s]  flip that one up. Uh,
+[2278.46s -> 2279.18s]  but you can look up
+[2279.18s -> 2280.58s]  more different types of,
+[2280.66s -> 2282.18s]  of layers there. We
+[2282.18s -> 2283.06s]  generally use the
+[2283.06s -> 2284.26s]  application layer, right?
+[2284.26s -> 2285.22s]  When you do socket and
+[2285.22s -> 2286.14s]  vine and all those
+[2286.14s -> 2287.34s]  things, that's generally
+[2287.34s -> 2288.78s]  the application layer
+[2288.78s -> 2289.74s]  that we need to deal
+[2289.74s -> 2290.78s]  with. Take a networking
+[2290.78s -> 2291.54s]  class, you go a couple
+[2291.54s -> 2293.14s]  more layers down. Okay.
+[2293.14s -> 2294.90s]  144. You might want to
+[2294.90s -> 2297.02s]  do that. Okay. What
+[2297.02s -> 2300.22s]  else? Um, the naming
+[2300.22s -> 2301.26s]  and name resolution.
+[2301.26s -> 2302.10s]  Here's another one. So
+[2302.10s -> 2302.90s]  we've already seen some
+[2302.90s -> 2303.66s]  of this with our file
+[2303.66s -> 2305.34s]  systems, uh, file system
+[2305.38s -> 2307.10s]  examples. Um, we've
+[2307.10s -> 2307.74s]  said, you know, we've
+[2307.74s -> 2308.78s]  talked about absolute
+[2308.78s -> 2309.86s]  and relative path names
+[2310.02s -> 2310.74s]  and whether or not
+[2310.74s -> 2312.82s]  humans like Google.com
+[2312.82s -> 2314.06s]  and computers like 74,
+[2314.06s -> 2315.90s]  et cetera. Okay. Uh,
+[2315.90s -> 2317.02s]  we've done that. Uh,
+[2317.06s -> 2318.66s]  URLs are also human
+[2318.66s -> 2319.30s]  readable. Remember,
+[2319.30s -> 2321.46s]  URLs can map to IP
+[2321.46s -> 2324.22s]  addresses with a file path
+[2324.22s -> 2326.06s]  name as well. Okay. So
+[2326.06s -> 2327.10s]  there's that in there.
+[2327.34s -> 2328.86s]  Uh, file descriptors, a
+[2328.86s -> 2329.78s]  file descriptor was just
+[2329.78s -> 2331.30s]  a number, right? But
+[2331.30s -> 2333.34s]  that number was, goes to
+[2333.34s -> 2334.42s]  a file descriptor table,
+[2334.42s -> 2335.02s]  which has all the other
+[2335.02s -> 2337.50s]  details and, and that's
+[2337.50s -> 2338.46s]  that. So lots of
+[2338.46s -> 2339.18s]  different places where
+[2339.18s -> 2340.30s]  you can, uh, see
+[2340.30s -> 2341.14s]  naming and name
+[2341.14s -> 2342.18s]  resolution that you
+[2342.18s -> 2343.30s]  will, uh, you'll see
+[2343.30s -> 2344.10s]  as you, as you build
+[2344.10s -> 2345.34s]  more bigger programs.
+[2346.34s -> 2348.50s]  Let's see. Caching. So
+[2348.50s -> 2349.66s]  here's a topic that I
+[2349.66s -> 2350.22s]  was actually a little
+[2350.22s -> 2351.18s]  surprised. This topic
+[2351.18s -> 2352.42s]  wasn't covered in as
+[2352.42s -> 2354.58s]  much detail in one 10.
+[2354.82s -> 2355.74s]  Um, I believe it's
+[2355.74s -> 2356.70s]  covered in more detail
+[2356.70s -> 2357.50s]  and correct me if I'm
+[2357.50s -> 2358.54s]  wrong, but people have
+[2358.54s -> 2360.34s]  taken EE 180. Has
+[2360.34s -> 2361.58s]  anybody taken EE 180?
+[2362.02s -> 2363.14s]  Nobody has. I think EE
+[2363.14s -> 2364.74s]  180 covers caching in
+[2364.74s -> 2365.86s]  more detail, but I
+[2365.86s -> 2368.06s]  wanted to spend 10 or 10
+[2368.06s -> 2368.94s]  or so minutes talking
+[2368.94s -> 2370.10s]  about caching. This is
+[2370.10s -> 2370.70s]  what I would have
+[2370.74s -> 2372.46s]  covered. Uh, if I was
+[2372.46s -> 2373.42s]  designing this course
+[2373.42s -> 2374.02s]  from scratch, I would
+[2374.02s -> 2374.66s]  probably cover this in a
+[2374.66s -> 2375.42s]  little more detail.
+[2375.82s -> 2376.98s]  Here's how memory works
+[2376.98s -> 2378.42s]  on your computer. You
+[2378.42s -> 2380.98s]  have main memory in your
+[2380.98s -> 2382.50s]  computer and it's a lot,
+[2382.54s -> 2383.26s]  right? It's normally
+[2383.26s -> 2384.66s]  like eight gigabytes or
+[2384.66s -> 2385.78s]  sometimes there's 16 or
+[2385.78s -> 2387.22s]  32 gigabytes of main
+[2387.22s -> 2388.86s]  memory. It's memory that
+[2388.86s -> 2390.42s]  is random access and goes
+[2390.42s -> 2391.34s]  away when your computer
+[2391.34s -> 2392.26s]  dies. There's also, by
+[2392.26s -> 2393.98s]  the way, uh, the hard
+[2393.98s -> 2396.50s]  drive or SSD that
+[2396.54s -> 2397.38s]  doesn't go away. It's a
+[2397.38s -> 2398.58s]  super slow. It's also
+[2398.58s -> 2400.02s]  much, much bigger terabyte
+[2400.02s -> 2401.02s]  or many, many hundreds
+[2401.02s -> 2402.14s]  of gigabytes, but
+[2402.14s -> 2402.82s]  there's main memory,
+[2402.82s -> 2404.54s]  which is the RAM. Your
+[2404.54s -> 2406.66s]  computer also has these
+[2406.66s -> 2409.42s]  various caches. So you
+[2409.42s -> 2410.70s]  might have a cache called
+[2410.70s -> 2412.06s]  an L2 cache. You might
+[2412.06s -> 2413.26s]  have an L4 cache, an L3
+[2413.26s -> 2414.58s]  cache, an L2 cache, and
+[2414.58s -> 2416.30s]  then an L1 cache, let's
+[2416.30s -> 2417.66s]  say. And each one of
+[2417.66s -> 2419.18s]  these caches is smaller
+[2419.18s -> 2421.14s]  and smaller in amount of
+[2421.14s -> 2422.90s]  memory, but also faster
+[2422.98s -> 2424.10s]  than the previous level.
+[2424.38s -> 2426.10s]  Okay. What makes an L2
+[2426.10s -> 2427.34s]  cache faster than main
+[2427.34s -> 2428.62s]  memory? Number one, it's
+[2428.62s -> 2429.94s]  generally built right on
+[2429.94s -> 2431.66s]  the chip itself, like on
+[2431.66s -> 2432.70s]  the processor chip
+[2432.70s -> 2434.10s]  itself. Okay. So it's
+[2434.10s -> 2435.22s]  close and the wires are
+[2435.22s -> 2435.90s]  really close to each
+[2435.90s -> 2436.78s]  other and it doesn't need
+[2436.78s -> 2437.46s]  to go to some other
+[2437.46s -> 2440.10s]  bus and so forth. L1 is
+[2440.14s -> 2442.78s]  another one that's maybe
+[2442.78s -> 2444.62s]  built with also basically
+[2444.62s -> 2446.38s]  on the chip and also use
+[2446.38s -> 2447.46s]  the different technology
+[2447.46s -> 2448.22s]  maybe to make it even
+[2448.22s -> 2450.26s]  small or even faster, but
+[2450.26s -> 2451.18s]  it takes up more space
+[2451.18s -> 2452.06s]  maybe or something like
+[2452.06s -> 2453.46s]  that. And then finally you
+[2453.46s -> 2454.78s]  have the register file,
+[2454.78s -> 2456.42s]  which you've done in 107
+[2456.42s -> 2458.14s]  or 107e, which is super,
+[2458.14s -> 2459.10s]  super fast memory, but
+[2459.10s -> 2460.02s]  you have like 32
+[2460.02s -> 2461.26s]  registers or something like
+[2461.26s -> 2462.26s]  that. Right. And in fact,
+[2462.26s -> 2463.14s]  there's more on different
+[2463.14s -> 2464.74s]  processors, but a very
+[2464.74s -> 2465.86s]  small amount. You might
+[2465.86s -> 2467.66s]  have something like, you
+[2467.66s -> 2468.94s]  might have, I don't know,
+[2468.98s -> 2470.46s]  eight kilobytes or maybe
+[2470.46s -> 2472.70s]  128 kilobytes of L1 and
+[2472.70s -> 2475.34s]  then 256 kilobytes of L2,
+[2475.34s -> 2477.42s]  et cetera. What these are
+[2477.42s -> 2479.62s]  there for is when you're
+[2479.62s -> 2482.02s]  requesting data, you
+[2482.02s -> 2483.62s]  generally request data
+[2484.22s -> 2485.42s]  often, the same data
+[2485.42s -> 2487.02s]  sometimes, many times. If
+[2487.02s -> 2488.34s]  you have a variable I
+[2488.34s -> 2489.42s]  that you're looping over,
+[2489.78s -> 2491.06s]  right? If you're looping
+[2491.06s -> 2492.02s]  over it a hundred thousand
+[2492.02s -> 2493.02s]  times, you're going to
+[2493.02s -> 2494.30s]  access that variable
+[2494.30s -> 2495.50s]  100,000 times. So you
+[2495.50s -> 2496.74s]  might want to keep it in
+[2496.74s -> 2498.22s]  a register or keep it in
+[2498.22s -> 2499.62s]  an L1 cache somewhere
+[2499.62s -> 2500.18s]  where it's going to be
+[2500.18s -> 2502.02s]  really fast to access
+[2502.18s -> 2503.02s]  because you don't want to
+[2503.02s -> 2503.74s]  have to go to main
+[2503.74s -> 2505.62s]  memory and go look for
+[2505.62s -> 2508.70s]  it. Here's the difference
+[2508.70s -> 2511.42s]  between like main memory
+[2511.42s -> 2513.26s]  and the registers. There's
+[2513.26s -> 2513.74s]  a, there's a good
+[2513.74s -> 2515.62s]  analogy about this. Main
+[2515.62s -> 2516.54s]  memory, let's do it this
+[2516.54s -> 2517.26s]  way. Let's say that
+[2517.42s -> 2519.06s]  registers is like, if I
+[2519.06s -> 2521.42s]  had this pen and I,
+[2521.46s -> 2522.02s]  let's say this is a
+[2522.02s -> 2523.50s]  register. I have the pen
+[2523.50s -> 2524.02s]  sitting here and I want
+[2524.02s -> 2525.18s]  to write something. Going
+[2525.18s -> 2526.34s]  to a register, I have to
+[2526.34s -> 2527.66s]  pick up the pen and I
+[2527.66s -> 2528.54s]  have to write something
+[2528.54s -> 2529.06s]  and then I have to put
+[2529.06s -> 2531.38s]  the pen down. Okay. Going
+[2531.38s -> 2534.26s]  to the L1 cache, it might
+[2534.26s -> 2535.42s]  be like the pen is way
+[2535.42s -> 2536.54s]  over here on the table.
+[2536.70s -> 2538.06s]  And in order to go to
+[2538.06s -> 2538.78s]  the L1 cache, I have to
+[2538.78s -> 2539.42s]  go over and I have to
+[2539.42s -> 2540.14s]  pick the pen and I have
+[2540.14s -> 2540.94s]  to come back and I have
+[2540.94s -> 2541.90s]  to write it down. That's
+[2541.90s -> 2542.90s]  how much slower the L1
+[2542.90s -> 2545.70s]  is. L2 might be the
+[2545.70s -> 2546.90s]  pen isn't on the table.
+[2546.90s -> 2549.26s]  It's over in, it's over
+[2549.26s -> 2550.22s]  in gates or something. I
+[2550.22s -> 2550.78s]  had to go back to my
+[2550.78s -> 2551.38s]  office and I have to get
+[2551.42s -> 2551.86s]  the pen and I have to
+[2551.86s -> 2552.58s]  come back. That's how
+[2552.58s -> 2553.78s]  much slower it is for L2.
+[2554.14s -> 2557.02s]  Main memory would be like,
+[2557.58s -> 2559.14s]  let's see, the data is in
+[2559.14s -> 2560.02s]  San Francisco and I have
+[2560.02s -> 2561.22s]  to walk there to get the
+[2561.22s -> 2563.02s]  data, right? So that's
+[2563.02s -> 2563.78s]  how much slower it is.
+[2563.78s -> 2564.50s]  It's a million times
+[2564.50s -> 2565.18s]  slower, like in some
+[2565.18s -> 2565.90s]  cases, right? So you
+[2565.90s -> 2566.50s]  have to go, you have to
+[2566.50s -> 2568.18s]  walk to San Francisco,
+[2568.18s -> 2569.02s]  come back to the pen.
+[2569.22s -> 2571.78s]  That's it. Drive is like
+[2571.78s -> 2572.70s]  the data is in New York
+[2572.70s -> 2573.66s]  City and I have to walk
+[2573.66s -> 2574.30s]  to New York City and
+[2574.30s -> 2575.10s]  go get it, right? Like
+[2575.10s -> 2576.10s]  that's how much slower
+[2576.10s -> 2577.14s]  it is to get the main,
+[2577.14s -> 2578.14s]  to get something off your
+[2578.26s -> 2578.90s]  hard drive or your
+[2578.90s -> 2580.22s]  solid state disk than it
+[2580.22s -> 2581.14s]  is from the register.
+[2581.30s -> 2582.22s]  So you think it's pretty
+[2582.22s -> 2583.50s]  important then to keep
+[2583.50s -> 2585.34s]  things as low in memory
+[2585.34s -> 2586.54s]  as possible if you're
+[2586.54s -> 2588.38s]  using that often, okay?
+[2588.78s -> 2589.82s]  What I wanted to do is I
+[2589.82s -> 2590.66s]  wanted to show you a
+[2590.66s -> 2591.98s]  little example of how a
+[2591.98s -> 2593.70s]  cache actually works.
+[2593.70s -> 2595.02s]  Some of the numbers that
+[2595.02s -> 2597.38s]  might go into using a
+[2597.38s -> 2598.54s]  cache. You do not need
+[2598.54s -> 2599.86s]  to know any of this for
+[2599.86s -> 2601.38s]  the minute of the final
+[2601.38s -> 2602.38s]  exam or whatever. I just
+[2602.38s -> 2603.26s]  want to show it to you
+[2603.46s -> 2605.42s]  just to give you a feel
+[2605.42s -> 2607.54s]  for how caches actually,
+[2608.42s -> 2609.78s]  what they have to do to
+[2609.78s -> 2611.10s]  keep the data, okay?
+[2611.26s -> 2611.70s]  What we're going to do
+[2611.70s -> 2612.10s]  is we're going to do a
+[2612.10s -> 2613.02s]  look at a thing called a
+[2613.02s -> 2617.66s]  direct mapped cache,
+[2618.74s -> 2619.70s]  okay? And here's what
+[2619.70s -> 2622.38s]  this is. Let's say that
+[2622.38s -> 2626.10s]  you had 32 kilobytes,
+[2626.18s -> 2629.70s]  32 kilobytes of memory,
+[2630.26s -> 2632.90s]  okay? And in order to do
+[2632.90s -> 2634.86s]  32 kilobytes of memory,
+[2635.06s -> 2636.38s]  we would need to have
+[2636.38s -> 2638.02s]  five bits of information,
+[2638.74s -> 2640.54s]  okay? One bit per byte as
+[2640.54s -> 2641.86s]  it turns out, or well one
+[2641.86s -> 2644.46s]  bit for two to the fifth
+[2644.46s -> 2645.46s]  number of kilobytes or
+[2645.46s -> 2646.02s]  whatever, right? So you
+[2646.02s -> 2647.46s]  need five bits of
+[2647.46s -> 2648.94s]  information there, okay?
+[2648.94s -> 2653.54s]  Like 0000, 00001, all the
+[2653.54s -> 2655.34s]  way down to 11111. Let's
+[2655.34s -> 2657.02s]  say that was your main
+[2657.02s -> 2659.10s]  memory, okay? What we're
+[2659.10s -> 2659.82s]  going to want to do is
+[2659.82s -> 2660.38s]  we're going to want to
+[2660.38s -> 2662.06s]  have a smaller amount of
+[2662.06s -> 2664.78s]  memory, okay? So, sorry,
+[2664.78s -> 2666.42s]  not 32 kilobytes, 32
+[2666.42s -> 2667.38s]  addresses, that would make
+[2667.38s -> 2668.26s]  more sense. So you can
+[2668.34s -> 2669.74s]  you can do in five bits
+[2669.74s -> 2671.54s]  here, okay? 32 addresses,
+[2671.54s -> 2672.46s]  but let's say that we
+[2672.46s -> 2676.34s]  have a cache that only
+[2676.34s -> 2679.50s]  has space for eight of
+[2679.50s -> 2681.34s]  those memory like
+[2681.98s -> 2684.14s]  sections, okay? Let's do
+[2684.14s -> 2685.78s]  it like this. Let's say
+[2685.78s -> 2688.42s]  that you had eight bits
+[2688.42s -> 2695.34s]  in here 1234567, is
+[2695.34s -> 2697.14s]  that 1234567?
+[2698.02s -> 2700.34s]  Eight, okay? How many
+[2700.34s -> 2701.38s]  bits do I need to
+[2701.38s -> 2703.54s]  represent eight different
+[2703.54s -> 2706.94s]  locations? How many?
+[2708.22s -> 2709.10s]  Three, you need three
+[2709.10s -> 2710.10s]  bits, right? So we're
+[2710.10s -> 2711.26s]  going to have this thing
+[2711.26s -> 2714.22s]  called a tag, or an
+[2714.22s -> 2716.42s]  index rather, an index,
+[2716.46s -> 2717.18s]  which is going to be
+[2717.18s -> 2723.46s]  0000001. And, oh,
+[2723.46s -> 2724.22s]  actually, sorry, I'm
+[2724.22s -> 2725.14s]  going to do this. Oh,
+[2725.14s -> 2727.42s]  no, hang on. There we go.
+[2727.66s -> 2730.30s]  Okay, hold on. It didn't
+[2730.30s -> 2732.06s]  hang up. We're going to
+[2732.10s -> 2734.06s]  we're going to have the
+[2734.14s -> 2734.86s]  I put it in the wrong
+[2734.86s -> 2736.10s]  place here. We're going
+[2736.10s -> 2738.74s]  to have a, the index
+[2738.74s -> 2739.66s]  here, or maybe I did put
+[2739.66s -> 2740.22s]  it in the right place.
+[2740.54s -> 2741.90s]  Anyways, the index here.
+[2742.30s -> 2744.82s]  And the index is the
+[2744.82s -> 2746.14s]  part that tells us, yeah,
+[2746.14s -> 2750.82s]  so 000001, 010011,
+[2751.06s -> 2755.70s]  100101, 110111. There's
+[2755.70s -> 2756.94s]  our eight locations that
+[2756.94s -> 2757.54s]  we're going to be able to
+[2757.54s -> 2760.18s]  store some of those 32
+[2760.78s -> 2763.86s]  addresses, okay? Zero is
+[2763.86s -> 2764.74s]  going to map to zero,
+[2764.74s -> 2765.34s]  one's going to map to
+[2765.34s -> 2766.14s]  one, two's going to map
+[2766.14s -> 2768.34s]  to 010, et cetera. Where
+[2768.34s -> 2769.46s]  do you think eight, seven
+[2769.46s -> 2770.42s]  is going to go to 111?
+[2770.42s -> 2771.06s]  Where do you think eight's
+[2771.06s -> 2773.50s]  going to go? Back to
+[2773.50s -> 2774.38s]  zero, right? We're going
+[2774.38s -> 2775.30s]  to use some modulus
+[2775.30s -> 2777.10s]  here to actually do that
+[2777.10s -> 2777.74s]  thing. We're basically
+[2777.74s -> 2779.50s]  going to store them
+[2779.58s -> 2781.54s]  based on the upper three
+[2781.54s -> 2783.38s]  bits of their address.
+[2784.30s -> 2788.46s]  Okay? And so I'm sorry,
+[2788.46s -> 2789.14s]  it's actually, this is
+[2789.14s -> 2789.82s]  where I got confused.
+[2789.82s -> 2790.90s]  It's the lower three
+[2790.90s -> 2791.82s]  bits of their address that
+[2791.82s -> 2792.58s]  we're going to do. So
+[2792.58s -> 2794.06s]  basically, 000 is going
+[2794.06s -> 2795.42s]  to go and 000001 is
+[2795.42s -> 2795.98s]  going to go there, et
+[2795.98s -> 2797.42s]  cetera. Okay? And
+[2797.42s -> 2797.98s]  remember, what we're
+[2797.98s -> 2798.58s]  trying to do is we're
+[2798.58s -> 2800.10s]  trying to say, every time
+[2800.10s -> 2802.14s]  you ask for some memory,
+[2802.34s -> 2803.98s]  it's going to first look
+[2803.98s -> 2805.98s]  in this very fast cache.
+[2806.22s -> 2807.70s]  And if it finds it, it's
+[2807.70s -> 2809.42s]  going to return it faster
+[2809.42s -> 2810.30s]  than if it had to look it
+[2810.30s -> 2812.06s]  up in main memory. Okay?
+[2812.86s -> 2814.38s]  At the beginning, nothing
+[2814.38s -> 2816.02s]  is in your cache. Okay?
+[2816.10s -> 2817.58s]  We're going to try to
+[2817.66s -> 2820.18s]  look up the following 10
+[2820.22s -> 2822.06s]  different values. Okay?
+[2822.22s -> 2823.86s]  We're going to look up
+[2823.98s -> 2826.18s]  10110, then we're going
+[2826.18s -> 2828.70s]  to look up 11010, and
+[2828.70s -> 2831.94s]  then 10110, and then
+[2831.98s -> 2834.74s]  11010. And I've got the
+[2834.74s -> 2836.42s]  rest in here too. We're
+[2836.42s -> 2837.42s]  going to look up
+[2837.62s -> 2845.18s]  10000, 00011, 123456. We
+[2845.18s -> 2846.90s]  need four more. We're
+[2846.90s -> 2851.30s]  going to be 1000101010,
+[2851.58s -> 2853.54s]  10000. What did you do in
+[2853.54s -> 2854.22s]  class today? I listened to
+[2854.22s -> 2855.30s]  Chris list off a bunch of
+[2855.30s -> 2856.50s]  binary numbers. And then
+[2856.50s -> 2858.38s]  11010. Okay, we're going
+[2858.38s -> 2859.30s]  to look up all those
+[2859.30s -> 2860.86s]  numbers, look up all those
+[2860.86s -> 2862.58s]  addresses. And if you look
+[2862.58s -> 2863.58s]  it up, and it's not in
+[2863.58s -> 2864.58s]  the cache, it's called a
+[2864.58s -> 2866.58s]  cache miss. And that's
+[2866.58s -> 2868.46s]  expensive. We want to get
+[2868.46s -> 2870.58s]  cache hits, which means
+[2870.58s -> 2871.74s]  that it's in the thing.
+[2872.02s -> 2873.02s]  Because this is direct
+[2873.02s -> 2873.74s]  addressed, it actually
+[2873.74s -> 2874.78s]  turns out that we can't,
+[2874.86s -> 2876.78s]  we can't keep the values
+[2876.78s -> 2877.70s]  in there very long.
+[2877.86s -> 2878.90s]  There's other kinds of
+[2880.02s -> 2881.02s]  caching, which allows
+[2881.02s -> 2882.50s]  you to keep the data in
+[2882.50s -> 2883.14s]  there longer. But we're
+[2883.14s -> 2883.82s]  just going to see this
+[2883.82s -> 2884.54s]  example and see how it
+[2884.54s -> 2885.54s]  works. Here's what you
+[2885.54s -> 2886.94s]  do. You go to let's say
+[2886.94s -> 2889.02s]  we look up 10110. We
+[2889.02s -> 2891.26s]  look at the 110. And we
+[2891.26s -> 2892.22s]  go over here and we
+[2892.22s -> 2893.74s]  find the index. And this
+[2893.74s -> 2894.82s]  is called the tag, by the
+[2894.82s -> 2896.54s]  way. And we look it up
+[2896.54s -> 2898.18s]  and we say, is 110
+[2898.18s -> 2900.06s]  filled or not? Well, 110
+[2900.06s -> 2901.82s]  is not filled. So what
+[2901.82s -> 2903.14s]  we do is we say, first
+[2903.14s -> 2903.86s]  of all, we say that's
+[2903.86s -> 2906.42s]  a cache miss. And we
+[2906.42s -> 2908.94s]  put the 10, well, we
+[2908.94s -> 2910.46s]  put the, let's do this,
+[2910.50s -> 2913.10s]  we put the memory for
+[2913.10s -> 2917.82s]  10 in here, for 10110,
+[2917.82s -> 2918.86s]  the memory for that in
+[2918.86s -> 2919.86s]  there. And then we're
+[2919.86s -> 2921.06s]  going to tag it with
+[2921.06s -> 2923.58s]  the 10 to differentiate
+[2923.62s -> 2924.58s]  from the other things
+[2924.58s -> 2925.70s]  that might fit in that
+[2925.70s -> 2927.82s]  bucket. Okay. So we
+[2927.82s -> 2930.10s]  looked up 10110. We
+[2930.10s -> 2931.66s]  looked at the 110. I
+[2931.66s -> 2932.34s]  did it in the wrong one,
+[2932.34s -> 2933.38s]  didn't I? You guys got
+[2933.38s -> 2935.02s]  to catch me on this. We
+[2935.02s -> 2936.18s]  did it in the wrong
+[2936.18s -> 2939.42s]  one. 11110. And we
+[2939.42s -> 2941.66s]  looked at 10. And then
+[2941.66s -> 2942.06s]  we're getting the
+[2942.06s -> 2946.02s]  memory from 10110. Okay.
+[2946.06s -> 2946.46s]  That's what we're
+[2946.46s -> 2947.14s]  putting. We're putting
+[2947.14s -> 2948.14s]  that memory there. So
+[2948.14s -> 2948.94s]  when next time we look
+[2948.94s -> 2949.70s]  that up, we will get
+[2949.70s -> 2951.34s]  it quickly. So let's
+[2951.34s -> 2952.02s]  look at the next one.
+[2952.22s -> 2954.18s]  11010. We look at
+[2954.30s -> 2957.14s]  010. And we go to
+[2957.14s -> 2959.46s]  010. Is it there? No.
+[2959.50s -> 2961.14s]  So it's another miss.
+[2961.30s -> 2962.42s]  And we do the same
+[2962.42s -> 2963.46s]  thing here. We put,
+[2963.86s -> 2967.46s]  we've got 11 and then
+[2967.46s -> 2968.22s]  we have the memory
+[2968.22s -> 2969.10s]  from that location.
+[2969.10s -> 2969.78s]  Doesn't matter what
+[2969.78s -> 2971.42s]  that is right now. Okay.
+[2971.46s -> 2972.18s]  And then now it's in
+[2972.18s -> 2973.02s]  the cache. Let's look
+[2973.02s -> 2975.82s]  up 10110 again. We
+[2975.82s -> 2978.70s]  go to 110. It's
+[2978.70s -> 2981.62s]  there. Is 10 the tag?
+[2981.62s -> 2982.98s]  It's there. We quickly
+[2982.98s -> 2985.46s]  return this value. That
+[2985.46s -> 2987.50s]  is a cache hit. And
+[2987.50s -> 2988.18s]  that's a good thing.
+[2988.46s -> 2989.06s]  And that means that
+[2989.06s -> 2990.38s]  it's, that it's, we've
+[2990.38s -> 2991.26s]  got that value in there.
+[2991.42s -> 2992.30s]  And you can think that
+[2992.30s -> 2993.78s]  if we're going to
+[2993.78s -> 2995.10s]  access that number many
+[2995.10s -> 2996.26s]  times, well, we'll
+[2996.26s -> 2997.10s]  always find it in the
+[2997.10s -> 2998.06s]  cache until it gets
+[2998.06s -> 2999.22s]  replaced by something
+[2999.22s -> 3000.10s]  else. Let's look at
+[3000.10s -> 3000.62s]  the next one.
+[3000.82s -> 3003.54s]  11010. We look at the
+[3003.54s -> 3007.26s]  010. 01011. It is also
+[3007.26s -> 3007.86s]  in there already. So
+[3007.86s -> 3008.62s]  that's another hit.
+[3009.18s -> 3009.86s]  Okay. Let's look at
+[3009.86s -> 3013.14s]  10000. Not there. So we
+[3013.14s -> 3014.94s]  put the 10 there and we
+[3014.94s -> 3015.62s]  have the memory from
+[3015.62s -> 3016.54s]  that location. That's a
+[3016.54s -> 3021.38s]  miss. 00011. 00011. It's
+[3021.38s -> 3023.38s]  a miss. And we'll get
+[3023.38s -> 3024.14s]  to one that's
+[3024.14s -> 3025.10s]  interesting in a second.
+[3025.50s -> 3027.50s]  Uh, 11, the memory
+[3027.50s -> 3030.54s]  there. And then 10000.
+[3030.58s -> 3032.22s]  Okay. 100. Oh, we've
+[3032.22s -> 3033.26s]  already seen, we
+[3033.26s -> 3033.78s]  already seen that one
+[3033.78s -> 3035.18s]  too. Yes, we did.
+[3035.18s -> 3037.46s]  That's a hit. Okay. And
+[3037.46s -> 3039.62s]  then 10010. Okay. We
+[3039.62s -> 3042.78s]  go to 010. Aha! 010.
+[3042.82s -> 3044.06s]  It's 11, but we're
+[3044.06s -> 3046.14s]  looking for 10. We now
+[3046.18s -> 3047.86s]  evict what's there in
+[3047.86s -> 3048.70s]  the cache, that's what
+[3048.70s -> 3049.38s]  they call it, cache
+[3049.38s -> 3050.74s]  eviction. We send it out,
+[3050.74s -> 3052.22s]  we put the 101 there,
+[3052.22s -> 3053.14s]  we replace it with the
+[3053.14s -> 3057.26s]  memory from 10010. Okay.
+[3057.34s -> 3058.02s]  And then let's do this
+[3058.02s -> 3059.06s]  one. And that was a
+[3059.06s -> 3060.30s]  miss because it wasn't
+[3060.30s -> 3061.22s]  what we're looking for.
+[3061.34s -> 3065.98s]  1000 is a 10000. It's
+[3065.98s -> 3067.42s]  a hit again. And then
+[3067.42s -> 3069.82s]  the final one 11010.
+[3069.94s -> 3070.66s]  Well, we've looked at
+[3070.66s -> 3071.38s]  this one a whole bunch
+[3071.38s -> 3074.18s]  of times, but now 11010,
+[3074.18s -> 3075.94s]  we go back to 010.
+[3076.10s -> 3077.58s]  Oh, we have to kick
+[3077.58s -> 3079.66s]  this one out again. And
+[3079.70s -> 3080.86s]  that's another miss. And
+[3080.86s -> 3082.14s]  now we put this one
+[3082.14s -> 3084.26s]  back in there. This
+[3084.34s -> 3086.22s]  method is great because
+[3086.22s -> 3087.54s]  it's fast to look up.
+[3087.58s -> 3088.46s]  It's not great if you
+[3088.46s -> 3089.22s]  happen to get two
+[3089.22s -> 3090.82s]  pieces of data that are
+[3090.82s -> 3091.66s]  both mapped to the
+[3091.66s -> 3092.70s]  same bucket at the same
+[3092.70s -> 3094.66s]  time. Anyway, that's
+[3094.66s -> 3095.14s]  how you do this
+[3095.14s -> 3096.78s]  mapping. A lot of times
+[3096.78s -> 3097.90s]  this is supported with
+[3097.90s -> 3099.70s]  hardware. So these
+[3099.70s -> 3100.66s]  things can be done in
+[3100.66s -> 3101.30s]  parallel. A lot of
+[3101.30s -> 3101.78s]  this can be done in
+[3101.78s -> 3104.62s]  parallel. And it's also
+[3104.66s -> 3106.18s]  there are ways to do
+[3106.18s -> 3107.74s]  it so that the values
+[3107.74s -> 3109.42s]  can go in any position
+[3109.42s -> 3110.90s]  in the cache. And you
+[3110.90s -> 3111.50s]  have to determine
+[3111.50s -> 3112.42s]  whether or not to kick
+[3112.42s -> 3113.22s]  something out of the
+[3113.22s -> 3114.90s]  cache based on how
+[3114.90s -> 3115.98s]  long it's been there.
+[3115.98s -> 3116.58s]  If it's been there
+[3116.58s -> 3117.42s]  most recently, then you
+[3117.42s -> 3118.02s]  don't kick it out.
+[3118.02s -> 3118.74s]  It's been a long time
+[3118.74s -> 3119.30s]  you kick it out or
+[3119.30s -> 3121.22s]  whatever. And you have
+[3121.22s -> 3121.90s]  to go through that.
+[3122.14s -> 3122.94s]  So I just wanted to
+[3122.94s -> 3123.58s]  show you that's a
+[3123.58s -> 3124.50s]  little of the math
+[3124.50s -> 3124.98s]  that you might have
+[3124.98s -> 3126.34s]  to go through. If
+[3126.34s -> 3128.46s]  you take EE180 and
+[3128.46s -> 3129.22s]  you work on how
+[3129.22s -> 3130.86s]  do caches actually do
+[3130.86s -> 3132.42s]  their thing. Okay, so
+[3132.42s -> 3133.58s]  that's that one.
+[3134.94s -> 3136.42s]  Okay, questions on
+[3136.42s -> 3137.70s]  caching? Yeah.
+[3143.10s -> 3143.98s]  Very good question.
+[3143.98s -> 3144.50s]  The question was, if
+[3144.50s -> 3145.30s]  you ask if you do
+[3145.30s -> 3146.02s]  malloc, where does
+[3146.02s -> 3147.26s]  it come from? Totally
+[3147.26s -> 3149.18s]  depends. Generally, if
+[3149.18s -> 3150.22s]  you haven't, if the
+[3150.26s -> 3151.38s]  if the computer hasn't
+[3151.38s -> 3152.26s]  used that memory
+[3152.26s -> 3154.02s]  location recently, then
+[3154.02s -> 3154.74s]  it will have to go
+[3154.74s -> 3155.50s]  to main memory to
+[3155.50s -> 3157.22s]  request it. If it has
+[3157.22s -> 3158.22s]  been used for maybe
+[3158.22s -> 3159.14s]  from other programs or
+[3159.14s -> 3159.86s]  whatever, but it's not
+[3159.86s -> 3160.50s]  being used by another
+[3160.50s -> 3161.22s]  program now, it might
+[3161.22s -> 3162.22s]  still be in the cache.
+[3162.58s -> 3164.22s]  But if you do malloc,
+[3164.34s -> 3165.66s]  it might get a bunch
+[3165.70s -> 3167.10s]  out of the, in fact,
+[3167.10s -> 3167.94s]  it won't actually need
+[3167.94s -> 3168.82s]  to read any in for
+[3168.82s -> 3169.54s]  malloc. It just says,
+[3169.54s -> 3169.98s]  Hey, here's your
+[3169.98s -> 3171.18s]  locations. First time
+[3171.18s -> 3171.82s]  you try to read from
+[3171.82s -> 3172.86s]  a location, it will
+[3172.86s -> 3173.50s]  populate it in the
+[3173.50s -> 3174.38s]  cache. The next time
+[3174.38s -> 3174.86s]  it will be there,
+[3174.86s -> 3175.78s]  hopefully, and it will
+[3175.78s -> 3176.82s]  be much faster. And
+[3176.82s -> 3177.46s]  by the way, those
+[3177.46s -> 3178.38s]  four levels of caches
+[3178.38s -> 3179.58s]  or whatever, it keeps
+[3179.58s -> 3180.50s]  bumping it down, down,
+[3180.50s -> 3181.86s]  down, down, down as
+[3181.86s -> 3183.50s]  far the more you do.
+[3183.50s -> 3184.98s]  So your data will be
+[3184.98s -> 3185.82s]  in all the upper
+[3185.82s -> 3187.18s]  level caches, but it
+[3187.18s -> 3187.90s]  looks in the lowest
+[3187.90s -> 3188.86s]  one first, doesn't find
+[3188.86s -> 3189.42s]  it, looks in the next
+[3189.42s -> 3190.10s]  one, doesn't find it,
+[3190.10s -> 3190.74s]  and then eventually
+[3190.74s -> 3191.42s]  gets up to where
+[3191.42s -> 3192.66s]  it finds it. Yeah.
+[3192.74s -> 3193.82s]  Good question. Any
+[3193.82s -> 3194.66s]  other questions on this?
+[3196.22s -> 3199.18s]  Okay. Let's look at
+[3199.18s -> 3201.18s]  some more. Let's see.
+[3201.18s -> 3202.06s]  Workboard. There we go.
+[3203.42s -> 3205.18s]  Okay. So that was
+[3205.18s -> 3208.70s]  caching. Virtualization.
+[3208.74s -> 3209.30s]  Yeah. Question.
+[3209.78s -> 3211.10s]  Yeah. Actually just
+[3211.10s -> 3212.78s]  thought of this. So
+[3212.78s -> 3213.78s]  suffering your stack,
+[3213.78s -> 3214.50s]  does it ever move to
+[3214.50s -> 3215.90s]  your cache or is it just
+[3215.90s -> 3217.14s]  kind of forever enough?
+[3217.14s -> 3218.02s]  Yeah. So the question
+[3218.02s -> 3218.74s]  is, is your stack
+[3218.74s -> 3219.46s]  moved to your cache?
+[3219.70s -> 3221.06s]  Sure it is. Right. I
+[3221.06s -> 3221.90s]  mean, the cache is
+[3221.90s -> 3222.70s]  separate from your
+[3222.70s -> 3223.94s]  program itself, right?
+[3223.94s -> 3225.54s]  The cache is based on
+[3225.54s -> 3227.90s]  how often you use that
+[3227.90s -> 3229.30s]  data. And if you use
+[3229.30s -> 3230.50s]  it, it gets looked for
+[3230.50s -> 3231.26s]  in the cache. If it's
+[3231.26s -> 3231.86s]  not there, it gets
+[3231.86s -> 3232.62s]  put in the cache once
+[3232.62s -> 3234.66s]  it finds it. And so
+[3235.10s -> 3236.02s]  again, there's various
+[3236.02s -> 3237.06s]  strategies for doing
+[3237.06s -> 3237.46s]  this. What you're
+[3237.46s -> 3238.02s]  trying to do is you're
+[3238.02s -> 3239.26s]  trying to get about, if
+[3239.26s -> 3241.10s]  you can, 90% cache
+[3241.10s -> 3242.78s]  hits in your lower level
+[3242.78s -> 3243.74s]  caches, so that it's very
+[3243.74s -> 3245.42s]  fast. And this really
+[3245.42s -> 3246.50s]  does speed things up
+[3246.66s -> 3248.14s]  significantly. Yeah.
+[3260.50s -> 3262.10s]  Yeah. So the question
+[3262.10s -> 3262.78s]  is, are these being
+[3262.78s -> 3264.02s]  virtually mapped in here?
+[3264.22s -> 3265.30s]  And they are, they are
+[3265.30s -> 3265.94s]  all being virtually
+[3265.94s -> 3267.86s]  mapped in. The addresses
+[3267.86s -> 3269.30s]  that are stored or the
+[3269.34s -> 3270.38s]  memory addresses that are
+[3270.38s -> 3271.34s]  stored in the caches are
+[3271.34s -> 3272.06s]  actually physical
+[3272.06s -> 3274.10s]  addresses. So a
+[3274.10s -> 3275.66s]  particular program will
+[3275.66s -> 3276.54s]  have a physical address.
+[3276.54s -> 3277.54s]  Now, another question
+[3277.54s -> 3278.34s]  that might come up is,
+[3278.46s -> 3279.98s]  wait, what happens when
+[3279.98s -> 3280.98s]  you do multi-processing
+[3280.98s -> 3281.86s]  and you shift off the
+[3281.86s -> 3282.54s]  processor, do all the
+[3282.54s -> 3283.74s]  caches remain or do they
+[3283.74s -> 3285.06s]  go away? Generally, they
+[3285.06s -> 3286.02s]  get cleared for a
+[3286.02s -> 3287.58s]  different process. They
+[3287.58s -> 3288.58s]  might get saved and
+[3288.58s -> 3289.58s]  popularly repopulated, but
+[3289.58s -> 3290.46s]  generally, I think they
+[3290.46s -> 3291.58s]  just get cleared. So
+[3291.58s -> 3292.22s]  every time you do a
+[3292.22s -> 3293.14s]  process switch, your
+[3293.14s -> 3294.26s]  caches get cleared, which
+[3294.26s -> 3294.98s]  slows things down
+[3294.98s -> 3296.46s]  significantly too. They
+[3296.46s -> 3297.34s]  talk about, you talk
+[3297.34s -> 3298.54s]  about caches as being
+[3298.62s -> 3300.46s]  hot or cold. A cold
+[3300.46s -> 3301.46s]  cache doesn't have any
+[3301.54s -> 3302.78s]  memory in it yet. A hot
+[3302.78s -> 3303.70s]  cache has all the memory
+[3303.70s -> 3304.74s]  there. It's really fast
+[3304.74s -> 3307.14s]  to access. What are the
+[3307.14s -> 3308.06s]  kinds of caches by the
+[3308.06s -> 3309.62s]  way we have? You did a
+[3309.62s -> 3311.02s]  web browser cache or you
+[3311.02s -> 3313.74s]  did a web cache, a web
+[3313.74s -> 3316.50s]  proxy cache. DNS caches
+[3316.50s -> 3317.70s]  is whenever you're trying
+[3317.70s -> 3319.06s]  to request Google's
+[3319.06s -> 3319.98s]  address, trust me, your
+[3319.98s -> 3320.98s]  local cache has Google's
+[3320.98s -> 3321.66s]  address because people use
+[3321.66s -> 3322.66s]  it all the time. So it
+[3322.66s -> 3323.62s]  doesn't need to go find
+[3323.62s -> 3326.26s]  it. And then there,
+[3326.26s -> 3327.30s]  let's see. Oh, there's
+[3327.30s -> 3327.78s]  another one called
+[3327.78s -> 3330.06s]  memcached, which is, I
+[3330.06s -> 3330.70s]  don't know much about
+[3330.90s -> 3331.58s]  that, but it's for web
+[3331.58s -> 3332.86s]  content that keeps the web
+[3332.86s -> 3334.50s]  content cached in a
+[3334.50s -> 3335.26s]  slightly different way.
+[3335.46s -> 3335.94s]  So there's lots of
+[3335.94s -> 3336.46s]  different places where
+[3336.46s -> 3337.94s]  caching becomes important
+[3338.22s -> 3339.38s]  and it does significantly
+[3339.38s -> 3342.06s]  speed things up. All
+[3342.06s -> 3342.78s]  right. What else can we
+[3342.78s -> 3344.82s]  do? Virtualization. So
+[3344.82s -> 3345.90s]  we, I'd mentioned
+[3345.90s -> 3346.78s]  virtualization a few
+[3346.78s -> 3347.54s]  times. You've seen it in
+[3347.54s -> 3348.50s]  labs and so forth as
+[3348.50s -> 3350.94s]  well. Virtualization,
+[3350.94s -> 3353.22s]  there are two types. One
+[3353.50s -> 3355.22s]  is an abstraction that
+[3355.22s -> 3357.02s]  makes many resources look
+[3357.02s -> 3360.22s]  like one. Okay. Let me
+[3360.26s -> 3360.90s]  give you an example.
+[3361.18s -> 3363.02s]  There's a hard drive
+[3363.02s -> 3365.30s]  system called RAID, R-A-I-D.
+[3365.58s -> 3367.06s]  And it basically says,
+[3367.06s -> 3367.94s]  let's say that you have
+[3367.94s -> 3368.90s]  a computer and it has
+[3368.90s -> 3370.26s]  many hard drives. Why
+[3370.26s -> 3371.26s]  would you have that? A
+[3371.26s -> 3372.46s]  couple of reasons. You
+[3372.46s -> 3373.46s]  might have four hard
+[3373.46s -> 3374.30s]  drives associated with
+[3374.30s -> 3376.66s]  one particular server. One
+[3376.66s -> 3377.86s]  reason is that you can
+[3377.86s -> 3380.18s]  keep file one here,
+[3380.18s -> 3381.34s]  part of file one here
+[3381.34s -> 3382.34s]  and another part of file
+[3382.34s -> 3383.14s]  one here and another
+[3383.14s -> 3384.38s]  part of file one here
+[3384.58s -> 3385.38s]  and another part of file
+[3385.38s -> 3386.38s]  one here. And maybe
+[3386.42s -> 3387.22s]  throughout those four
+[3387.22s -> 3388.66s]  disks, it's duplicated in
+[3388.66s -> 3389.86s]  such a way that if
+[3389.86s -> 3392.02s]  this entire disk dies,
+[3392.34s -> 3393.86s]  then you can recoup
+[3393.86s -> 3394.94s]  file one just for the
+[3394.94s -> 3396.50s]  other three disks. Okay.
+[3396.50s -> 3397.22s]  It's very good for
+[3397.22s -> 3399.06s]  redundancy reasons. Okay.
+[3399.34s -> 3401.26s]  Um, but let's say that
+[3401.26s -> 3402.70s]  you, another reason you
+[3402.70s -> 3403.26s]  could do it is if you
+[3403.26s -> 3404.26s]  kept file one here and
+[3404.26s -> 3406.10s]  file one here, remember
+[3406.10s -> 3407.22s]  reading from a hard drive
+[3407.22s -> 3408.54s]  is slow. What if you
+[3408.54s -> 3409.50s]  can do it in parallel
+[3409.50s -> 3410.46s]  and have one process
+[3410.46s -> 3411.78s]  reading from this drive
+[3411.78s -> 3412.50s]  and the other process
+[3412.50s -> 3413.42s]  reading from this drive
+[3413.42s -> 3414.38s]  to get part of the
+[3414.38s -> 3415.74s]  same file, you can
+[3415.74s -> 3416.54s]  actually do it almost
+[3416.54s -> 3417.86s]  twice as fast because
+[3417.86s -> 3418.82s]  both disks will be
+[3418.82s -> 3419.94s]  running in parallel to
+[3419.94s -> 3420.86s]  give you your data.
+[3421.02s -> 3421.78s]  So it's both for
+[3421.78s -> 3423.70s]  robustness and for
+[3423.82s -> 3425.22s]  safety as far as
+[3425.22s -> 3426.58s]  robustness and for
+[3426.58s -> 3428.22s]  speed rather, so that
+[3428.22s -> 3429.66s]  you can, you can get
+[3429.66s -> 3431.62s]  your data faster. That's
+[3431.70s -> 3433.34s]  uh, but by the way,
+[3433.46s -> 3434.54s]  your file system, when
+[3434.54s -> 3435.78s]  you access a file, it
+[3435.78s -> 3436.90s]  has no idea that there's
+[3436.90s -> 3438.26s]  four disks here. It
+[3438.26s -> 3439.14s]  looks like just you
+[3439.14s -> 3441.10s]  make one request and it
+[3441.10s -> 3441.78s]  gives you the data
+[3441.78s -> 3443.26s]  back internally to the
+[3443.26s -> 3444.86s]  RAID system. It does
+[3444.86s -> 3446.54s]  all these special, Oh,
+[3446.54s -> 3447.50s]  there's four disks and
+[3447.50s -> 3448.22s]  I have to do that.
+[3448.42s -> 3449.62s]  That's a virtualization.
+[3449.78s -> 3451.54s]  Four disks look like one
+[3451.54s -> 3453.22s]  disk, but they are
+[3453.46s -> 3454.54s]  partitioned in such a way
+[3454.54s -> 3455.98s]  that it is either
+[3455.98s -> 3457.14s]  faster or more robust.
+[3457.14s -> 3458.98s]  So that's one type of
+[3458.98s -> 3460.22s]  virtualization. The
+[3460.22s -> 3461.78s]  Andrew file system.
+[3462.02s -> 3462.70s]  This is what we use
+[3462.70s -> 3463.66s]  on the myth machines.
+[3463.94s -> 3464.74s]  If you ever noticed, if
+[3464.74s -> 3465.66s]  you've logged into myth
+[3465.66s -> 3466.18s]  or you log into
+[3466.18s -> 3467.34s]  cardinal, or if you log
+[3467.34s -> 3468.86s]  into myth 52 or 58 or
+[3468.86s -> 3469.86s]  whatever, all the same
+[3469.86s -> 3471.18s]  file system, reason
+[3471.18s -> 3472.30s]  it's all the same file
+[3472.30s -> 3473.02s]  system is that it's a
+[3473.02s -> 3474.86s]  file system that is
+[3474.90s -> 3476.06s]  spread across all those
+[3476.06s -> 3477.42s]  computers. In fact, and
+[3477.42s -> 3478.42s]  your file system is spread
+[3478.42s -> 3479.66s]  across the world. You
+[3479.66s -> 3480.42s]  can go to Carnegie
+[3480.42s -> 3482.42s]  melons. If you can do
+[3482.42s -> 3484.02s]  CD from your myth to a
+[3484.02s -> 3484.90s]  machine in Carnegie
+[3484.90s -> 3485.50s]  melon. Now you don't
+[3485.50s -> 3486.10s]  have the permissions
+[3486.10s -> 3487.02s]  probably to do anything,
+[3487.26s -> 3488.06s]  but you can actually
+[3488.06s -> 3490.70s]  CD into it. We always
+[3490.70s -> 3492.74s]  type slash user slash
+[3492.74s -> 3494.74s]  class. Really, that's
+[3494.74s -> 3496.98s]  actually a link to slash
+[3497.02s -> 3500.58s]  a F S slash I R slash
+[3500.58s -> 3501.42s]  et cetera, et cetera.
+[3501.58s -> 3503.14s]  Um, and those are like
+[3503.18s -> 3504.26s]  AFS is the Andrew file
+[3504.26s -> 3505.30s]  system. I think IR is
+[3505.30s -> 3506.46s]  Stanford's or whatever.
+[3506.78s -> 3508.78s]  And so it's, um, it's
+[3509.02s -> 3510.26s]  mapped to across the
+[3510.26s -> 3511.14s]  world. But that's a
+[3511.14s -> 3511.98s]  virtualization. It looks
+[3511.98s -> 3512.62s]  like there's one file
+[3512.62s -> 3513.26s]  system, but really
+[3513.26s -> 3514.42s]  there's thousands and
+[3514.42s -> 3515.26s]  thousands of computers
+[3515.26s -> 3516.30s]  connected to that one
+[3516.42s -> 3517.58s]  system. They share the
+[3517.66s -> 3520.18s]  file system. Okay. A web
+[3520.18s -> 3521.38s]  server load balancer.
+[3521.38s -> 3522.10s]  This is when you log
+[3522.10s -> 3522.86s]  into myth and we did a
+[3522.86s -> 3524.10s]  load balancer in class.
+[3524.18s -> 3525.42s]  We log into myth and it
+[3525.42s -> 3526.22s]  comes up with those
+[3526.22s -> 3527.46s]  send you to myth 52
+[3527.46s -> 3528.06s]  because it's got the
+[3528.06s -> 3528.74s]  fewest number of
+[3528.74s -> 3530.02s]  people on it that are
+[3530.10s -> 3532.62s]  working. Okay. Um,
+[3532.66s -> 3535.10s]  virtualization is also
+[3535.62s -> 3537.70s]  making one resource look
+[3537.70s -> 3539.98s]  like many. Okay. So
+[3539.98s -> 3540.54s]  what does that mean?
+[3540.58s -> 3542.18s]  Well, uh, this would be
+[3542.18s -> 3543.10s]  like virtual physical
+[3543.10s -> 3544.50s]  memory mappings. So you
+[3544.50s -> 3545.34s]  know how we've said
+[3545.34s -> 3546.14s]  last time that you have
+[3546.14s -> 3547.30s]  two processes and they
+[3547.30s -> 3548.34s]  both think they have
+[3548.34s -> 3549.26s]  all the memory in the
+[3549.26s -> 3550.54s]  entire system. Well,
+[3550.54s -> 3551.54s]  they don't, they only
+[3551.54s -> 3552.34s]  have a little portion of
+[3552.34s -> 3554.02s]  memory, but it's making
+[3554.02s -> 3555.62s]  that one, or it's
+[3555.62s -> 3557.82s]  making, uh, the one
+[3557.82s -> 3558.82s]  resource look like many
+[3558.82s -> 3559.66s]  resources instead of
+[3559.66s -> 3560.54s]  the other way around.
+[3561.06s -> 3563.38s]  Okay. Threads. Well,
+[3563.38s -> 3564.18s]  each thread has its
+[3564.22s -> 3565.18s]  own stack segment.
+[3565.22s -> 3565.86s]  Well, that's just the
+[3565.86s -> 3566.90s]  irregular stack broken
+[3566.90s -> 3567.58s]  into many pieces.
+[3567.58s -> 3568.66s]  That's virtualization
+[3569.02s -> 3571.86s]  virtual machines. So who
+[3571.86s -> 3574.18s]  has used, uh, who has
+[3574.18s -> 3575.46s]  used VMware before,
+[3575.90s -> 3577.02s]  right? I think I have
+[3577.02s -> 3577.98s]  VMware on here. Here
+[3577.98s -> 3579.26s]  we go. Here's VMware.
+[3579.50s -> 3581.50s]  I can load. If I load
+[3581.50s -> 3582.78s]  this up, I can load a
+[3582.78s -> 3585.82s]  Linux machine on my
+[3585.90s -> 3587.34s]  Mac. That's really
+[3587.34s -> 3588.38s]  Linux. And it really
+[3588.38s -> 3589.26s]  thinks it's talking to
+[3589.26s -> 3590.66s]  hardware directly. And
+[3590.66s -> 3591.46s]  in fact, it is because
+[3591.46s -> 3592.62s]  Intel sets up things to
+[3592.62s -> 3594.34s]  make it, uh, virtualization
+[3594.34s -> 3595.54s]  work right. But now I
+[3595.54s -> 3596.30s]  have literally have two
+[3596.30s -> 3597.22s]  operating systems running
+[3597.22s -> 3597.78s]  on the computer at
+[3597.78s -> 3598.90s]  once, my Mac operating
+[3598.90s -> 3600.22s]  system and a Linux
+[3600.22s -> 3601.30s]  operating system. And
+[3601.30s -> 3602.26s]  by the way, VMware
+[3602.26s -> 3604.34s]  was, uh, started, the
+[3604.34s -> 3605.46s]  company was started from
+[3605.46s -> 3606.74s]  professor Mendel, uh,
+[3607.18s -> 3608.34s]  Mendel Rosenblum, who
+[3608.34s -> 3609.62s]  is here and teaches,
+[3609.62s -> 3610.18s]  uh, this class
+[3610.18s -> 3610.82s]  occasionally in some
+[3610.82s -> 3612.22s]  other CS systems
+[3612.22s -> 3613.38s]  classes. He did pretty
+[3613.38s -> 3614.86s]  well creating VMware.
+[3615.18s -> 3615.90s]  Um, but anyway, now
+[3615.90s -> 3616.70s]  I've got, see, now
+[3616.70s -> 3617.62s]  I'm, I'm just inside
+[3617.62s -> 3619.26s]  my Linux machine up
+[3619.26s -> 3620.50s]  here. And I also can
+[3620.50s -> 3620.98s]  do it. You can do
+[3620.98s -> 3621.78s]  with Windows or other
+[3621.78s -> 3624.02s]  machines too. Um, I
+[3624.02s -> 3624.70s]  don't even have a
+[3624.70s -> 3625.98s]  Windows PC, but I use
+[3625.98s -> 3626.74s]  Windows programs
+[3626.74s -> 3627.70s]  occasionally. And all I
+[3627.70s -> 3629.14s]  just, all I do is run
+[3629.14s -> 3630.98s]  it on VMware and makes
+[3630.98s -> 3632.86s]  it easy. So, uh, it's
+[3632.86s -> 3633.94s]  a little slower because
+[3633.94s -> 3634.86s]  there's some translation
+[3634.86s -> 3635.78s]  that has to happen, but
+[3635.78s -> 3636.94s]  it's not too bad and
+[3636.94s -> 3637.86s]  it works pretty well.
+[3638.22s -> 3639.54s]  Works pretty well. That's
+[3639.54s -> 3642.22s]  how VMs work. All
+[3642.22s -> 3644.46s]  right. Concurrency. We
+[3644.46s -> 3645.54s]  have time talked a lot
+[3645.54s -> 3646.34s]  about concurrency in
+[3646.34s -> 3647.46s]  this class. Okay.
+[3647.46s -> 3648.58s]  Multiple processes,
+[3648.58s -> 3650.58s]  multiple threads, um,
+[3651.34s -> 3652.82s]  multiple cores on
+[3652.82s -> 3653.46s]  your, on your
+[3653.46s -> 3654.42s]  multi-processor
+[3654.42s -> 3655.58s]  computer. It wasn't
+[3655.58s -> 3657.94s]  until about 10 years,
+[3657.94s -> 3659.70s]  10, 12 years ago, you
+[3659.70s -> 3661.26s]  really couldn't buy a
+[3661.26s -> 3663.22s]  multi-processor computer
+[3663.30s -> 3664.50s]  for less than tens of
+[3664.50s -> 3665.38s]  thousands of dollars.
+[3665.38s -> 3665.98s]  Right. It was really
+[3665.98s -> 3667.86s]  expensive. Uh, in about
+[3667.86s -> 3669.82s]  2006, Intel started
+[3669.82s -> 3671.06s]  pushing out a dual
+[3671.06s -> 3672.06s]  core machine, which
+[3672.06s -> 3672.74s]  means now you've got
+[3672.74s -> 3674.10s]  a computer that can
+[3674.10s -> 3674.90s]  literally do two
+[3674.90s -> 3675.74s]  programs at the same
+[3675.74s -> 3676.98s]  time. And that's
+[3677.10s -> 3678.46s]  concurrency. Okay.
+[3678.90s -> 3679.86s]  Signal interrupt
+[3679.86s -> 3681.02s]  handlers are all about
+[3681.02s -> 3682.10s]  concurrency, right?
+[3682.10s -> 3682.82s]  The signals, your
+[3682.82s -> 3683.54s]  program is chugging
+[3683.54s -> 3684.30s]  along with an interrupt
+[3684.30s -> 3686.42s]  handler. The kernel is
+[3686.42s -> 3687.26s]  doing its own thing and
+[3687.26s -> 3689.02s]  then, and then signals
+[3689.02s -> 3690.70s]  your handler to stop
+[3690.70s -> 3691.58s]  the rest of your program
+[3691.58s -> 3692.90s]  and handle whatever the
+[3692.90s -> 3694.38s]  child process, a handler
+[3694.38s -> 3695.50s]  or whatever's happening
+[3695.50s -> 3696.42s]  there. There are
+[3696.42s -> 3697.42s]  languages which are
+[3697.42s -> 3699.22s]  built specifically to do
+[3699.26s -> 3700.26s]  concurrency. There's a
+[3700.26s -> 3701.46s]  language called Erlang,
+[3701.70s -> 3702.42s]  which is a great
+[3702.42s -> 3703.42s]  language, but kind of
+[3703.42s -> 3704.50s]  hard to get your head
+[3704.50s -> 3705.50s]  wrapped around, but it
+[3705.50s -> 3707.10s]  basically doesn't allow
+[3707.10s -> 3708.90s]  race conditions. You can't
+[3708.90s -> 3709.74s]  make a race condition in
+[3709.74s -> 3710.70s]  Erlang because of the way
+[3710.70s -> 3711.94s]  the language is built.
+[3712.18s -> 3713.22s]  Not bad if you're trying
+[3713.22s -> 3713.66s]  to do lots of
+[3713.66s -> 3714.78s]  concurrency. Yeah.
+[3720.74s -> 3721.34s]  Good question. If
+[3721.34s -> 3722.02s]  signals and interrupt
+[3722.02s -> 3723.02s]  handlers, just like
+[3723.02s -> 3723.70s]  everything else, if
+[3723.70s -> 3724.42s]  signals and interrupt
+[3724.42s -> 3725.14s]  handlers are concurrent,
+[3725.14s -> 3725.82s]  how did it work before
+[3725.82s -> 3728.54s]  multi-processing? When you
+[3728.54s -> 3729.54s]  have one processor, you
+[3729.54s -> 3731.10s]  can mimic multi-processing
+[3731.10s -> 3731.86s]  by time slicing
+[3731.86s -> 3732.90s]  everything, right? So
+[3732.90s -> 3733.50s]  the kernel gets a
+[3733.50s -> 3734.18s]  little time and you get
+[3734.18s -> 3734.74s]  a little time, the
+[3734.74s -> 3735.38s]  kernel gets some time
+[3735.38s -> 3735.86s]  and you get some time
+[3735.86s -> 3736.54s]  and your signal handler
+[3736.54s -> 3737.10s]  gets some time and
+[3737.10s -> 3738.42s]  whatever. So that's how
+[3738.42s -> 3739.26s]  that works. But
+[3739.26s -> 3740.30s]  anyway, Erlang, look
+[3740.30s -> 3740.62s]  it up. It's an
+[3740.62s -> 3741.70s]  interesting language if
+[3741.70s -> 3743.18s]  you want to do very
+[3743.18s -> 3744.98s]  safe concurrent
+[3744.98s -> 3746.66s]  programs. JavaScript is
+[3746.66s -> 3747.50s]  exactly the opposite.
+[3747.50s -> 3748.30s]  They said concurrency is
+[3748.30s -> 3749.22s]  too hard. We're just
+[3749.22s -> 3749.58s]  going to have one
+[3749.58s -> 3751.06s]  thread, right? And it's
+[3751.06s -> 3752.30s]  not quite as true these
+[3752.30s -> 3753.70s]  days, but it made it
+[3753.70s -> 3754.70s]  very easy to program in
+[3754.70s -> 3755.94s]  JavaScript in some ways,
+[3756.10s -> 3757.26s]  but also not very
+[3757.26s -> 3758.34s]  efficient because it has
+[3758.34s -> 3759.22s]  one thread that does
+[3759.22s -> 3760.54s]  everything. So that's
+[3760.54s -> 3762.78s]  that. All right. And
+[3762.78s -> 3764.94s]  then finally, we have
+[3764.94s -> 3766.50s]  client server response,
+[3766.62s -> 3768.30s]  which is a request and
+[3768.30s -> 3769.50s]  response. This is what
+[3769.50s -> 3770.14s]  we've been doing for
+[3770.14s -> 3770.90s]  networking. This is
+[3770.90s -> 3773.54s]  exactly what your MapReduce
+[3773.54s -> 3774.82s]  is doing where your
+[3775.54s -> 3777.14s]  MapReduce main program
+[3777.14s -> 3778.74s]  is talking to the
+[3778.74s -> 3780.02s]  reducers and the mappers
+[3780.02s -> 3781.18s]  back and forth until it
+[3781.18s -> 3782.14s]  gets all the data back.
+[3782.30s -> 3783.18s]  It's a client server
+[3783.18s -> 3783.98s]  request. You see this
+[3784.02s -> 3785.38s]  all the time, not just
+[3785.38s -> 3786.62s]  in networking. You see
+[3786.62s -> 3787.78s]  it with multi processing.
+[3787.78s -> 3788.30s]  You see it with
+[3788.82s -> 3790.14s]  processors that have to
+[3790.38s -> 3791.50s]  basically talk between
+[3791.50s -> 3791.94s]  each other and
+[3791.94s -> 3793.74s]  coordinate things that
+[3793.98s -> 3796.98s]  happens. Okay. System
+[3796.98s -> 3798.26s]  calls are also another
+[3798.94s -> 3800.30s]  request and response,
+[3800.30s -> 3801.42s]  right? Where you say a
+[3801.42s -> 3801.98s]  system call and the
+[3801.98s -> 3802.94s]  kernel goes and handles
+[3802.94s -> 3804.02s]  it, you are basically
+[3804.02s -> 3805.02s]  talking to the kernel
+[3805.06s -> 3806.10s]  that talks back to you,
+[3806.10s -> 3806.98s]  that gives you back the
+[3806.98s -> 3808.02s]  answer. And there's that
+[3808.02s -> 3808.82s]  handshake that has to
+[3808.82s -> 3810.54s]  happen via a system call
+[3810.54s -> 3811.62s]  in there. All of the
+[3811.62s -> 3812.66s]  networking protocols, of
+[3812.66s -> 3815.14s]  course, are various
+[3816.06s -> 3818.62s]  examples of client request
+[3818.62s -> 3819.70s]  and response. And then
+[3819.70s -> 3820.70s]  the file systems that we
+[3820.70s -> 3821.34s]  just talked about are
+[3821.34s -> 3823.38s]  also client requests,
+[3823.38s -> 3823.98s]  server requests and
+[3823.98s -> 3825.02s]  response, because you
+[3825.02s -> 3825.90s]  look for a file, it
+[3825.90s -> 3827.18s]  might not be on the
+[3827.22s -> 3828.38s]  hard drive that the myths
+[3828.38s -> 3829.30s]  are using. It's on the
+[3829.30s -> 3830.74s]  file system that the hard
+[3830.74s -> 3831.70s]  drives up some other
+[3831.70s -> 3832.70s]  building, which might be
+[3832.70s -> 3833.34s]  in it. It might be if
+[3833.34s -> 3833.78s]  you're looking at
+[3833.78s -> 3834.62s]  Carnegie Mellon's, it's
+[3834.62s -> 3835.98s]  on the hard drive over
+[3835.98s -> 3836.66s]  at Carnegie Mellon, you
+[3836.66s -> 3837.34s]  have to do some
+[3837.98s -> 3839.06s]  requesting and it's kind
+[3839.06s -> 3840.38s]  of slow in that sense.
+[3841.18s -> 3843.70s]  Okay. So those are the
+[3843.70s -> 3845.22s]  seven pieces that we
+[3845.22s -> 3847.54s]  covered this quarter. And
+[3847.58s -> 3848.66s]  there's a lot there,
+[3848.66s -> 3849.78s]  but you know, some of
+[3849.78s -> 3850.70s]  the details about that.
+[3850.70s -> 3851.38s]  You still don't know
+[3851.38s -> 3852.54s]  some of the abstraction
+[3852.78s -> 3853.50s]  underneath the hood
+[3853.50s -> 3854.70s]  sort of details. You
+[3854.70s -> 3855.38s]  will get those in other
+[3855.38s -> 3857.62s]  classes. But in here,
+[3857.66s -> 3858.54s]  hopefully you can see
+[3858.54s -> 3859.42s]  how many of the things
+[3859.42s -> 3860.86s]  that we've done relate
+[3860.86s -> 3863.86s]  to these ones. What
+[3863.86s -> 3865.58s]  questions do you have at
+[3865.58s -> 3868.98s]  this point? All right.
+[3869.46s -> 3871.94s]  So, I will then see
+[3871.94s -> 3873.50s]  you for last class on
+[3873.50s -> 3875.54s]  Wednesday. It is on
+[3875.78s -> 3877.82s]  non-blocking file IO
+[3877.82s -> 3879.62s]  and then we have the
+[3879.62s -> 3880.78s]  final exam. No labs this
+[3880.78s -> 3881.22s]  week, they're done
+[3881.22s -> 3883.02s]  with labs. We'll see
+[3883.02s -> 3883.26s]  you then.

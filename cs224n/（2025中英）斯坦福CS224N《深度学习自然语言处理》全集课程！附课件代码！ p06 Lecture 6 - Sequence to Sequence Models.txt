@@ -1,0 +1,769 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 8.72s]  Okay, hi everyone.
+[8.72s -> 11.20s]  Back for more CS224N.
+[11.20s -> 20.64s]  Okay, so for today, the plan is essentially a continuation of what we started on Tuesday.
+[20.64s -> 28.48s]  So, I'm gonna say more about language models and more about RNNs.
+[28.48s -> 33.36s]  In particular, introducing a more advanced form of recurrent neural network,
+[33.36s -> 38.32s]  which was for a while very dominant, LSTMs, we'll talk about those.
+[38.32s -> 44.32s]  And then in the latter part, as something to be done with recurrent neural networks,
+[44.32s -> 47.36s]  we'll start looking at neural machine translation.
+[47.76s -> 54.48s]  Okay, so on Tuesday, what we did was we introduced language models,
+[54.48s -> 59.84s]  a system that predicts the next word, and then I introduced recurrent neural networks.
+[59.84s -> 66.24s]  So that was this new neural architecture that can take sequential input of any length,
+[66.24s -> 72.40s]  and it applied the same weights at each step, and can optionally produce output on each step.
+[73.12s -> 78.16s]  So these are two distinct notions, though they tend to go together.
+[78.16s -> 85.36s]  So recurrent neural network can be used for other purposes on any kinds of sequence,
+[85.36s -> 87.44s]  and I'll mention a few of those later today.
+[88.64s -> 93.52s]  And language modeling is a traditional component of many NLP tasks,
+[93.52s -> 99.20s]  anything to do with generating text or estimating likelihoods of pieces of text.
+[99.20s -> 103.20s]  And indeed, in the modern instantiation of large language models,
+[103.20s -> 108.56s]  essentially everything we do in NLP is being done by language models.
+[108.56s -> 112.56s]  So a language model, one way to do it is with the recurrent neural network.
+[112.56s -> 115.04s]  It's certainly not the only way.
+[115.04s -> 120.08s]  We also talked last time about N-gram language models, which are language models.
+[120.08s -> 124.24s]  And then starting next week, we'll start to talk about transformers,
+[124.24s -> 128.24s]  which are now the most widespread way that's used for building language models.
+[130.16s -> 135.68s]  So just finish off a teeny bit that I didn't get to last time on evaluating language models.
+[135.68s -> 140.48s]  Well, one way to evaluate language models is what I did in class last time,
+[140.48s -> 143.68s]  generate some text and say, hey, doesn't this text look good?
+[144.64s -> 148.32s]  But, you know, often we want something more rigorous than that.
+[148.32s -> 154.32s]  And the standard way to evaluate language models is to say, well, you know,
+[154.32s -> 158.40s]  a language model scores a piece of text and says how likely it is,
+[158.96s -> 167.12s]  and our standard for text in the language is stuff produced by human beings.
+[167.12s -> 173.04s]  So if we find a new piece of text, which wasn't text that the model was trained on, right?
+[173.04s -> 180.32s]  We want some fresh evaluation data, and we show it to a language model.
+[180.32s -> 186.24s]  We can then ask the language model to predict the success of words of this text.
+[186.24s -> 190.40s]  And the better it is at doing that, the better a language model it is,
+[190.40s -> 196.24s]  because it's more accurately able to predict a human written piece of text.
+[196.24s -> 201.60s]  And so the standard way that that is measured is with this measure that's called perplexity.
+[202.16s -> 209.36s]  And so for perplexity, we're taking the probability of a prediction from the language model,
+[209.36s -> 210.64s]  we're inverting it.
+[210.64s -> 214.56s]  So instead of it being, you know, 0.002 or something,
+[214.56s -> 218.64s]  we're turning into 500 or something like that.
+[220.56s -> 223.04s]  And then we're taking those numbers,
+[223.60s -> 227.28s]  we're taking the product of them at each position in the text,
+[227.28s -> 230.16s]  and then we're finding the geometric average of them.
+[231.44s -> 234.40s]  So that's the measure that's normally used.
+[234.40s -> 242.80s]  But in this class, we've been tending to look at negative log likelihoods
+[242.80s -> 245.76s]  and the idea of cross entropy.
+[247.04s -> 253.60s]  And so what perplexity is, is it's just the exponential of the cross entropy.
+[254.64s -> 260.16s]  So if you're already familiar with negative log per word, negative log likelihoods,
+[260.16s -> 265.28s]  if you just exponentiate that, you then get the perplexity.
+[265.28s -> 271.12s]  Now there's one other little trick as to what base you use for your logarithms and exponentials.
+[271.12s -> 275.60s]  I mean, traditionally thinking of sort of binary and stuff,
+[275.60s -> 280.24s]  a lot of the time people use base two for measuring perplexity.
+[281.20s -> 282.80s]  That's kind of gone out now.
+[282.80s -> 285.44s]  A lot of the time now people are using natural logs,
+[285.44s -> 288.08s]  but if you're comparing perplexity numbers,
+[288.08s -> 292.88s]  they're gonna be different depending on what base you're using for things.
+[292.88s -> 294.40s]  So you need to be aware of this.
+[295.52s -> 299.68s]  So from a sort of a modern perspective,
+[299.68s -> 306.40s]  it kind of makes no sense why perplexity is used.
+[306.96s -> 310.72s]  The story of why perplexity was used was, you know,
+[310.72s -> 316.80s]  in the bad old days of symbolic artificial intelligence when all of those famous people
+[316.80s -> 322.80s]  like John McCarthy and Ed Feigenbaum were around doing logical based systems.
+[323.92s -> 329.44s]  Some people then essentially at IBM, including Fred Jelinek,
+[329.44s -> 335.12s]  started exploring probabilistic methods for speech recognition and other similar methods.
+[336.32s -> 341.20s]  And the story Fred Jelinek used to tell was,
+[341.20s -> 346.08s]  well, at that time, this was in the late 70s or early 80s,
+[346.08s -> 353.12s]  that none of the AI people that he was trying to talk to understood how to do any real math
+[353.12s -> 362.32s]  and didn't understand any information theory notions of doing things like cross entropy or
+[362.32s -> 363.76s]  cross entropy rate.
+[363.76s -> 366.72s]  So he had to come up with something simple they could understand.
+[367.36s -> 371.44s]  And so what he came up with is by sort of doing this exponentiated
+[372.00s -> 379.04s]  perplexity, you can think of a perplexity number as being equivalent to how many
+[379.04s -> 381.52s]  uniform choices you're choosing between.
+[381.52s -> 386.24s]  So if the perplexity of something is 64,
+[386.24s -> 390.64s]  that's like having a 64-sided dice that you're rolling at each time.
+[390.64s -> 396.08s]  And that's your chance of getting a one on that is your chance of guessing the right word.
+[397.04s -> 400.00s]  So that was why perplexity got introduced.
+[400.00s -> 401.52s]  But it's kind of stuck.
+[401.52s -> 406.96s]  And so when you see scores for language models, you generally still see perplexities.
+[406.96s -> 409.60s]  So a lower perplexity is better.
+[411.44s -> 417.76s]  So here are the kind of numbers and where progress was made with neural language models.
+[417.76s -> 425.04s]  So before that, people used n-gram language models and people used clever ways to smooth them
+[425.12s -> 431.04s]  using methods I vaguely alluded to last time of this ad case smoothing and doing backoff.
+[431.04s -> 433.68s]  Actually, people use cleverer methods.
+[434.40s -> 441.36s]  Around the 2000s decade, the cleverest method known of smoothing n-gram language models
+[441.36s -> 445.04s]  was this thing called interpolated Knesset-Nye smoothing.
+[445.84s -> 452.16s]  And so for a big language model using that, the perplexity was about 67,
+[452.96s -> 456.40s]  which in some sense means that you weren't very good at predicting the next word.
+[457.04s -> 459.68s]  But that had actually been enormous progress.
+[459.68s -> 466.08s]  When I was a young person doing NLP, perplexities were three-figure numbers.
+[466.08s -> 470.96s]  You were commonly seeing perplexities of 150 or something like that.
+[470.96s -> 473.20s]  So progress was made.
+[474.08s -> 477.76s]  So when RNNs were first introduced,
+[477.84s -> 484.40s]  people weren't really actually able to do better with a sort of a pure RNN.
+[484.40s -> 489.36s]  But they could do better by combining an RNN with something else,
+[489.36s -> 492.56s]  such as a symbolic maximum entropy model,
+[492.56s -> 495.92s]  which I'm not going to explain, but those numbers like that 51.
+[495.92s -> 499.76s]  But where progress really started to be made
+[499.76s -> 503.52s]  was when LSTM started to be used as an improved RNN,
+[503.52s -> 505.52s]  which is what I'm going to come to next.
+[505.52s -> 508.32s]  So here are some LSTM models.
+[508.32s -> 512.56s]  And now you're getting numbers like 43 and 30.
+[512.56s -> 516.56s]  And so for 30, you've sort of halved the perplexity,
+[516.56s -> 523.84s]  which in cross-entropy terms means you've reduced the cross-entropy by about one bit.
+[524.88s -> 529.04s]  And so you've made real progress in your language modeling.
+[529.04s -> 534.32s]  Now by modern standards, these numbers are still really high, right?
+[534.32s -> 536.96s]  For the best language models that we have now,
+[536.96s -> 539.28s]  you're getting perplexities in the single digits.
+[539.28s -> 544.56s]  You're getting models that are very often able to guess exactly the right word,
+[544.56s -> 547.20s]  though of course not always because no one can predict
+[547.20s -> 551.12s]  what word's going to be said by someone next in a lot of circumstances.
+[552.72s -> 557.52s]  Okay, so to motivate LSTMs,
+[557.52s -> 562.80s]  then wanted to sort of say a bit about how there are problems with RNNs
+[562.80s -> 565.12s]  and why that motivated fixing things.
+[565.12s -> 568.88s]  And these are the problems of vanishing and exploding gradients.
+[568.88s -> 571.44s]  So what we wanted to do was say,
+[571.44s -> 576.32s]  okay, we've tried to predict a word at position four,
+[576.96s -> 582.96s]  and often we're not going to predict it with 100% probability.
+[582.96s -> 587.44s]  So we have a loss that's a negative log likelihood we give to that word.
+[587.44s -> 589.92s]  And we're going to want to back propagate that loss
+[590.40s -> 597.20s]  through the sequence and work out our gradients as we always do.
+[597.20s -> 601.92s]  Now just one note about something someone asked me after class last time.
+[601.92s -> 605.12s]  You know, I sort of showed a back propagating the whole sequence,
+[605.12s -> 607.60s]  but we're doing this at every time step, right?
+[607.60s -> 610.56s]  So we're going to back propagate a loss from time step two,
+[610.56s -> 614.48s]  back propagate a loss from time step three, four, five, six, seven.
+[614.48s -> 615.84s]  We're doing it for each one.
+[615.84s -> 617.52s]  And then one of the slides last time,
+[617.52s -> 621.36s]  we then discussed how we're going to sum all of those losses
+[621.36s -> 622.96s]  or work out the average loss.
+[624.00s -> 629.36s]  But for doing this one, when we back propagate this loss, what happens?
+[629.92s -> 634.00s]  Well, what happens is we're going to do the same kind of chain rule
+[634.00s -> 639.20s]  where we're multiplying these partial derivatives at every time step.
+[639.20s -> 641.52s]  And well, here we've only got a few of them,
+[641.52s -> 645.36s]  but maybe we're going to have a sequence 30 long.
+[645.36s -> 648.88s]  And so we're going to be multiplying each time
+[648.88s -> 655.60s]  the partial of HK with respect to the partial of HK minus one.
+[655.60s -> 659.20s]  And so what kind of effect is that going to have?
+[660.08s -> 664.80s]  In particular, you know, we might ask what happens if these are small
+[665.36s -> 667.92s]  or what happens if these are large?
+[667.92s -> 674.72s]  Well, if they're small, the gradient will gradually get smaller and smaller
+[674.72s -> 679.44s]  and disappear as we back propagate it along the sequence.
+[679.44s -> 679.68s]  Yeah?
+[680.96s -> 684.64s]  So why we're taking partial J over partial H?
+[684.64s -> 685.92s]  Should we take partial J?
+[692.64s -> 693.60s]  Sure.
+[693.60s -> 695.84s]  I mean, we're doing that as well.
+[696.88s -> 702.48s]  But you know, in general, we have to walk the partials along.
+[702.56s -> 706.08s]  And then, you know, we then have a W at the next step.
+[708.24s -> 712.00s]  I mean, if we're thinking of the sort of computation graph
+[712.00s -> 715.68s]  that we're sort of doing the chain rule backwards along,
+[715.68s -> 720.72s]  we're going to be going through a W at each step and then arriving at another H, right?
+[728.72s -> 728.96s]  Yeah.
+[729.92s -> 737.60s]  So I mean, at this point, you can do some math and thinking about things.
+[738.48s -> 742.32s]  And there's a couple of papers that are mentioned at the bottom here,
+[742.32s -> 747.36s]  which I'm actually rushing ahead, not going to do very carefully.
+[748.40s -> 756.48s]  But the point is that if you're taking the partial of HT with respect to HT minus one,
+[757.04s -> 762.32s]  and if you make a simplifying assumption and say, suppose there isn't a non-linearity,
+[762.32s -> 769.44s]  suppose sigma is just the identity, then what the partial will be is the matrix WH.
+[770.08s -> 776.80s]  And so if you keep on back propagating along the recurrent neural network,
+[776.80s -> 783.28s]  what you're going to be doing is ending up with powers of the matrix WH.
+[784.24s -> 786.72s]  And then there's the question of what happens
+[786.72s -> 790.80s]  when you raise that matrix to higher and higher powers?
+[790.80s -> 798.16s]  Well, at that point, you can represent the matrix in terms of its eigenvectors and eigenvalues.
+[798.16s -> 800.56s]  And then there are two possibilities.
+[800.56s -> 803.84s]  Either all the eigenvalues are less than one,
+[803.84s -> 810.72s]  and that means that that number will be getting smaller and smaller as you raise it to higher
+[810.72s -> 816.72s]  power, or it can have eigenvalues that are larger than one,
+[816.72s -> 819.92s]  and then things will get bigger and bigger as you go further back.
+[819.92s -> 823.28s]  So essentially, as you back propagate the gradients backwards,
+[823.28s -> 831.60s]  unless things are sort of just precisely corresponding to a largest eigenvector of
+[833.04s -> 839.28s]  large eigenvalue of approximately one, you're either going to get a vanishing or an explosion.
+[839.28s -> 842.08s]  And both of those will be kind of bad.
+[843.52s -> 847.36s]  So why is vanishing gradient a problem?
+[847.36s -> 852.64s]  I mean, in a sense, you could think it's not a problem.
+[852.64s -> 857.04s]  It's what should be happening, because all else being equal,
+[857.04s -> 860.00s]  you know, the closest words are the most relevant ones.
+[860.00s -> 864.64s]  And so that's where you should be updating your parameters the most.
+[864.64s -> 867.12s]  And to some extent, that that's true.
+[867.12s -> 873.60s]  But nevertheless, this vanishing gradient in this model happens much too severely.
+[873.60s -> 877.76s]  So that if you're looking at the loss from a later position
+[877.76s -> 882.24s]  and comparing it to the loss from an earlier position,
+[882.24s -> 885.68s]  and then you're seeing how things are updating,
+[885.68s -> 889.68s]  it's sort of primarily the update is being determined
+[889.68s -> 893.84s]  by the very nearby loss and not by the faraway loss.
+[894.16s -> 899.28s]  That the gradient signal from far away is much, much smaller.
+[899.28s -> 905.04s]  And well, that's bad, because, you know, overall for language modeling,
+[905.04s -> 910.00s]  there are lots of cases where we want to be able to transmit signals along distance.
+[910.00s -> 912.48s]  So here's my piece of text.
+[913.12s -> 917.52s]  When she tried to print her ticket, she found that the printer was out of toner.
+[917.52s -> 920.32s]  She went to the stationary store to buy more toner.
+[920.32s -> 922.08s]  It was very overpriced.
+[922.72s -> 926.56s]  After installing the toner into the printer, she finally printed her...
+[928.00s -> 930.08s]  Yeah, so, you know, to a human being, you know,
+[930.08s -> 934.16s]  it's obvious we can predict this with pretty much probability one, you know.
+[934.16s -> 938.24s]  So really low perplexity for making this decision.
+[939.36s -> 944.80s]  But, you know, that depends on getting back to the tickets,
+[944.80s -> 947.52s]  which are sort of about 20-odd words back, right?
+[947.52s -> 950.88s]  If you're just seeing installing the toner into the printer,
+[950.88s -> 953.52s]  she finally printed her, could be anything.
+[953.52s -> 957.44s]  It could be her paper, her invitation, her novel.
+[958.24s -> 959.76s]  Lots of things it could be.
+[959.76s -> 962.32s]  You're certainly not going to guess tickets.
+[962.32s -> 968.80s]  So we sort of want to have these really long distance dependencies.
+[968.80s -> 973.04s]  But we're only going to be able to learn these long distance dependencies
+[973.04s -> 978.40s]  if we're actually getting sufficient signal between that position
+[978.40s -> 981.28s]  and when the word tickets appears near the beginning,
+[981.28s -> 985.84s]  that we can learn the fact that having that tickets 20 words back
+[985.84s -> 989.36s]  is the good predictive thing for predicting tickets here.
+[991.20s -> 998.16s]  And what we find is that, you know, when the gradient becomes very small,
+[998.16s -> 1002.88s]  the RNN doesn't learn these kind of long distance dependencies.
+[1002.88s -> 1007.84s]  And so it's unable to sort of make these predictions well at test time.
+[1007.92s -> 1016.80s]  I mean, this is a very sort of just rough back of the envelope estimate.
+[1016.80s -> 1021.12s]  But, you know, what people actually found is that, you know,
+[1021.12s -> 1025.44s]  with the kind of simple RNN that we've introduced up until now,
+[1025.44s -> 1031.60s]  that the amount of effective conditioning you could get was about seven tokens back.
+[1032.48s -> 1036.96s]  That if things were further back than that, it just never learned to condition on them.
+[1037.04s -> 1041.44s]  And so, you know, compared to when we were talking about n-grams,
+[1041.44s -> 1045.44s]  and I said, ah, usually the maximum people did was five grams,
+[1045.44s -> 1050.00s]  occasionally a bit bigger because of the fact that there was this exponential blowout.
+[1050.00s -> 1053.52s]  Although in theory, we've now got a much better solution.
+[1053.52s -> 1056.24s]  In practice, because of vanishing gradients,
+[1056.24s -> 1059.60s]  well, we're only kind of getting the equivalent of eight grams.
+[1059.60s -> 1063.36s]  So we haven't made that much progress, it feels like.
+[1063.36s -> 1070.72s]  So there's a reverse problem which can also happen of exploding gradients.
+[1070.72s -> 1078.16s]  So if the gradient becomes very large, because the eigenvalues of that matrix are large,
+[1078.16s -> 1083.68s]  well, what we're doing for the parameter update is, you know, we've got a learning rate,
+[1083.68s -> 1088.40s]  but essentially if the gradient is very large, we're going to make a very,
+[1088.40s -> 1090.96s]  very large parameter update.
+[1090.96s -> 1095.20s]  And that can cause very bad updates because, you know,
+[1095.20s -> 1100.00s]  we're sort of assuming that we're taking a step in the direction of the gradient,
+[1100.00s -> 1104.88s]  and well, we might overshoot a little, but we'll be in a roughly in the right zone.
+[1104.88s -> 1109.36s]  But, you know, if we had an enormously exploded gradient,
+[1109.36s -> 1112.80s]  well, we could kind of be sort of walking off anywhere.
+[1112.80s -> 1115.04s]  And, you know, we think we're heading to the Sierras,
+[1115.04s -> 1117.92s]  and we end up in Iowa or something like that, right?
+[1118.48s -> 1121.76s]  That we could just go arbitrarily far,
+[1121.76s -> 1126.24s]  and where we're ending up, it might not be making any progress whatsoever.
+[1126.88s -> 1128.96s]  So exploding gradients are a problem.
+[1130.96s -> 1133.92s]  They can also cause infinities and NaNs,
+[1133.92s -> 1136.96s]  and they're always a problem when you're training models.
+[1138.08s -> 1145.20s]  Now, for dealing with exploding gradients, this is the accepted wisdom.
+[1146.00s -> 1151.28s]  This unfortunately doesn't, this isn't highfaluting math, really.
+[1151.28s -> 1155.28s]  What people use for exploding gradients is a crude hack.
+[1155.28s -> 1156.64s]  They clip gradients.
+[1157.60s -> 1161.44s]  But, you know, it works really well, and you really want to know about this
+[1162.08s -> 1168.40s]  because clipping gradients is often essential to having neural networks, not having problems.
+[1168.40s -> 1174.48s]  So what we do for gradient clipping is we work out the norm of the gradient,
+[1174.48s -> 1181.20s]  and if it seems too large, and that varies, but, you know, that's normally 5, 10, 20,
+[1181.20s -> 1185.68s]  something like that for a norm of a gradient is seen as the limit of what's okay.
+[1185.68s -> 1188.32s]  If the norm of your gradient is too large,
+[1188.32s -> 1193.44s]  you just scale it down in every direction, and you apply a smaller gradient update.
+[1195.36s -> 1195.92s]  It works.
+[1196.00s -> 1200.24s]  Yes, so that problem is solvable,
+[1201.28s -> 1207.36s]  but fixing the vanishing gradient seemed a more difficult problem, right?
+[1207.36s -> 1212.40s]  That this was the problem that our RNNs effectively couldn't preserve
+[1212.40s -> 1214.64s]  information over many time steps.
+[1216.08s -> 1218.88s]  And, well, what seemed to be the problem there?
+[1218.88s -> 1222.80s]  The problem seems to be really that we've got sort of
+[1222.80s -> 1227.44s]  an architecture that makes it very hard to preserve information.
+[1227.44s -> 1234.24s]  So if we look at sort of the hidden state from one time step to the next time step,
+[1235.28s -> 1237.68s]  it's completely being rewritten, right?
+[1237.68s -> 1243.36s]  So we're taking the previous time step's hidden vector,
+[1243.36s -> 1248.40s]  we're multiplying it by a matrix which completely changes it in general,
+[1248.40s -> 1250.72s]  adding in other stuff from the input.
+[1250.72s -> 1256.08s]  So if we'd like to say we'd like you to carry forward information,
+[1256.08s -> 1261.44s]  there's useful stuff in HT minus one, can you just kind of keep it around for a while?
+[1261.44s -> 1266.40s]  It's not actually very easy to do in this formulation because trying to learn
+[1268.72s -> 1275.12s]  W vectors that'll mostly preserve what was there before isn't a tall and obvious thing to do.
+[1276.00s -> 1282.56s]  So the question was, could we design an RNN which had a sort of a memory
+[1282.56s -> 1284.80s]  where it was easy to preserve information?
+[1284.80s -> 1285.12s]  Yes?
+[1285.12s -> 1288.16s]  So in one of the earlier slides, you mentioned the
+[1289.28s -> 1293.76s]  exponentiation happened during our analysis, they removed linearity.
+[1294.80s -> 1302.32s]  So what happened on linearity and sort of potentially prevent vanishing or exploding?
+[1302.88s -> 1304.24s]  No, it actually doesn't.
+[1304.24s -> 1308.80s]  I mean, you can make an argument that it should help because you've got,
+[1308.80s -> 1312.24s]  effectively, if you've got something like tanh, you've got a flattening function.
+[1313.12s -> 1317.12s]  So it should help somewhat, but it doesn't solve it,
+[1317.12s -> 1319.84s]  even if you're using a tanh non-linearity.
+[1319.84s -> 1324.56s]  Well, so I guess it should, sorry, it should help with exploding.
+[1325.92s -> 1330.00s]  Actually, even that still happens, but it definitely doesn't help with the vanishing.
+[1335.20s -> 1338.32s]  So you're always pushing the value between 0 and 1.
+[1338.32s -> 1341.20s]  So it's not going up or going down, it's staying between 0 and 1.
+[1342.64s -> 1343.52s]  But so, yeah.
+[1354.00s -> 1356.24s]  Well, I guess, why don't it go up and down three layers,
+[1356.24s -> 1360.08s]  then say if you have a really small value, that becomes 1 minus a really small value.
+[1360.08s -> 1363.36s]  It's sigma times 1 minus sigma.
+[1363.52s -> 1366.48s]  All the sigma times all the sigma, okay, that still vanishes, okay.
+[1369.52s -> 1376.64s]  Yes, so can we have a different architecture, so we have a memory that you can add to?
+[1378.00s -> 1385.52s]  And so that led into this new kind of neural network, the LSTM.
+[1385.52s -> 1387.36s]  So this is going back a few years.
+[1387.36s -> 1391.84s]  But at any rate, this was trying to improve Siri's suggestions,
+[1391.84s -> 1395.92s]  and the big breakthrough that they were described, was being described,
+[1395.92s -> 1401.04s]  was oh, we're now using an LSTM in the keyboard prediction,
+[1401.04s -> 1407.04s]  and the whole advantage of that was it was going to be able to predict context further back.
+[1407.04s -> 1410.48s]  So you could differentiate between the children are playing in the
+[1410.48s -> 1413.76s]  park versus the Orioles are playing in the playoff.
+[1414.32s -> 1423.68s]  Okay, so the sort of big thing that was seen as very successful was these LSTMs,
+[1423.68s -> 1430.16s]  long short-term memory, just to say a little bit of the history here, right.
+[1430.80s -> 1437.84s]  Just on how to parse this name, right, that I think people often don't even understand it, right.
+[1437.84s -> 1442.64s]  So what you're wanting to do was model short-term memory, right,
+[1443.28s -> 1448.16s]  because so for humans, people normally distinguish between the short-term memory
+[1448.16s -> 1453.12s]  of stuff that you heard recently versus things that you permanently stored away.
+[1454.16s -> 1461.20s]  And the suggestion was, well, in short-term memory, humans can remember stuff for quite
+[1461.20s -> 1462.40s]  a while, right.
+[1462.40s -> 1467.04s]  If you're having a conversation, you can still remember the thing that the person
+[1467.04s -> 1469.68s]  said a few turns ago in the conversation.
+[1469.76s -> 1475.92s]  So bring back up of, oh, didn't you say they took last weekend off or something, right.
+[1475.92s -> 1481.92s]  And well, the problem was that the simple RNNs, their short-term memory was only about
+[1481.92s -> 1485.52s]  seven tokens, and so we'd like to make it better than that.
+[1485.52s -> 1491.84s]  And so we wanted long short-term memory, and that's where this name came about.
+[1491.84s -> 1495.92s]  And so this was a type of recurrent neural network that was
+[1496.24s -> 1504.72s]  proposed by Hochreit and Schmidhuber in 1997 as a solution to the problem.
+[1504.72s -> 1509.36s]  I mean, there's actually a second relevant piece of work that came a few years later
+[1509.36s -> 1513.28s]  that, you know, that first paper's the one that everybody cites,
+[1513.28s -> 1518.48s]  but there's then a second paper by Ghez and Schmidhuber in 2000,
+[1518.48s -> 1522.32s]  which actually introduces a crucial part of the LSTM,
+[1522.32s -> 1527.28s]  as we've used in the 21st century that wasn't in the original paper.
+[1529.20s -> 1535.68s]  And, you know, so there's sort of an interesting story of all of this.
+[1535.68s -> 1543.76s]  So, you know, that Jurgen Schmidhuber and his students did a lot of really crucial
+[1543.76s -> 1551.76s]  foundational work in neural networks in the sort of these years, in the later years of the 90s,
+[1552.56s -> 1557.04s]  when just about everybody else had given up on neural networks.
+[1558.24s -> 1564.00s]  So unlike these days where, you know, doing pioneering work in neural networks
+[1564.00s -> 1570.88s]  is a really good way to get yourself hugely compensated jobs at Google, Meta, or OpenAI,
+[1570.88s -> 1573.52s]  it really wasn't actually in these days.
+[1573.52s -> 1578.88s]  So, you know, if you ask, gee, what happened to these students
+[1579.36s -> 1586.72s]  of Hochreiter and Ghez, that both of them are still in academia,
+[1586.72s -> 1592.48s]  but Ghez seemed to give up on AI and neural networks altogether
+[1592.48s -> 1595.36s]  and does stuff in the area of multimedia.
+[1596.64s -> 1601.28s]  And Sepp Hochreiter is still in machine learning,
+[1601.28s -> 1606.40s]  but, you know, for quite a long time he sort of basically gave up on doing more general
+[1606.40s -> 1609.36s]  neural network stuff and went into bioinformatics.
+[1609.36s -> 1613.28s]  So if you look at his publications from about 2000, 2015,
+[1614.16s -> 1618.72s]  they were all in bioinformatics and most of them weren't using neural networks at all.
+[1620.16s -> 1624.96s]  Kind of nicely, I mean, he's actually gone back into neural networks more recently
+[1624.96s -> 1627.20s]  and is publishing in neural networks again.
+[1628.40s -> 1633.12s]  Yeah, so really not much attention was paid to this work at the time
+[1633.12s -> 1637.92s]  and so it only sort of really kind of gradually seeped out further.
+[1638.72s -> 1645.76s]  So Schmidt Huber had a later student in the mid-2000s decade, Alex Graves.
+[1646.64s -> 1655.28s]  And Alex Graves did more stuff with LSTMs and for people who've seen speech recognition,
+[1655.28s -> 1660.56s]  where people commonly do CTC loss and decoding, Alex Graves invented that.
+[1660.56s -> 1669.76s]  But most crucially, Alex Graves then went to Toronto to be a postdoc for Jeff Hinton
+[1669.76s -> 1674.56s]  and that sort of brought more attention to the fact that LSTMs were a good model.
+[1675.52s -> 1684.00s]  And then Jeff Hinton went to Google in 2013 and that was then sort of the use of LSTMs at
+[1684.00s -> 1691.92s]  Google in the 2014 to 2016 period was when they really sort of hit the world
+[1691.92s -> 1696.80s]  and became for a while the completely dominant framework people use for neural networks.
+[1699.04s -> 1705.76s]  In the world of, I guess, startups, this is what you call being too early for the first people.
+[1707.12s -> 1711.52s]  Yeah, okay, long short-term memories, back to the science.
+[1712.40s -> 1720.56s]  So let's see, there's a slide here that talks about long short-term memories,
+[1720.56s -> 1725.76s]  but maybe I'll just sort of skip straight ahead and start to show the pictures.
+[1725.76s -> 1733.76s]  So we've still got a sequence of inputs xt and the difference now is inside our neural network,
+[1733.76s -> 1738.72s]  we're going to have two hidden things, one that's still called the hidden state
+[1738.72s -> 1742.24s]  and the other one that's referred to as the cell state.
+[1742.80s -> 1750.48s]  And so what we're going to do is we're going to modulate how these things get updated
+[1750.48s -> 1758.64s]  by introducing the idea of gates. And so gates are calculated things, vectors,
+[1758.64s -> 1764.72s]  whose values are probabilities between zero and one and they're things that we're going to use
+[1764.72s -> 1770.40s]  to sort of turn things on or shut them off in a probabilistic way. So we're going to control
+[1770.40s -> 1777.92s]  the movement of information by having gating. And so we're going to calculate three gating
+[1777.92s -> 1785.76s]  vectors, so these vectors are the same length as our hidden states. And so the way we
+[1785.76s -> 1793.28s]  calculate these gating vectors is with an equation that looks basically exactly the same
+[1793.28s -> 1799.12s]  as what we were using for a current neural networks. Apart from the sigma there is definitely
+[1799.12s -> 1804.08s]  going to be the logistic that goes between zero and one so we get probabilities. And the three
+[1804.08s -> 1810.88s]  gates we're going to calculate is the forget gate which is going to say how much do we remember
+[1810.88s -> 1816.80s]  of the previous times hidden state. I think the forget gate was actually wrongly named,
+[1816.80s -> 1821.68s]  I think it makes more sense to think of it as a remember gate because it's actually calculating
+[1821.68s -> 1829.68s]  how much you're remembering. Okay, then we've got an input gate and the input gate is going to say
+[1829.68s -> 1836.40s]  how much are you going to pay attention to the next input, the next xi and put it into your
+[1836.40s -> 1842.56s]  hidden state. And then you have an output gate and the output gate is going to control
+[1842.56s -> 1849.60s]  how much of what's in the cell which is your primary memory are you going to transfer over
+[1849.68s -> 1857.52s]  to the hidden state of the network. Okay so once we have those gates,
+[1859.36s -> 1865.92s]  what we're then going to do is have these equations which are how we're going to sort of
+[1865.92s -> 1876.96s]  update things. So the first thing we're going to do is work out a potential new cell content.
+[1876.96s -> 1885.20s]  So the new cell content is going to be calculated exactly using the exactly the same kind of
+[1885.20s -> 1891.76s]  equation we saw last time for a current neural networks. We're going to have these two matrices,
+[1892.80s -> 1899.12s]  the cell w and the cell u and we're going to multiply one by the last times hidden state
+[1899.12s -> 1906.48s]  and the other by the new input add on a bias. And that's a potential update to the cell
+[1906.56s -> 1914.00s]  but then how we're actually going to update the cell is by making use of our gates. So we're
+[1914.00s -> 1922.80s]  going to say the new cells content is going to be the old cells content Hadamard producted
+[1922.80s -> 1929.36s]  with the forget gate. So that's how much to remember of the previous cells content plus
+[1930.08s -> 1937.36s]  this calculated update Hadamard producted with the input gate. How much to pay attention
+[1937.36s -> 1946.48s]  to this new potential update that we've invented. And then for calculating the new hidden state,
+[1946.48s -> 1952.56s]  that's going to be the Hadamard product between the output gate and
+[1953.12s -> 1965.04s]  our CT having been put through a tanh. And you know one idea here is you know we're thinking
+[1965.04s -> 1971.92s]  about how much to keep on remembering what we've had in the past. But you know for thinking
+[1971.92s -> 1977.92s]  about sort of only sending some information to the hidden state, a sort of a way to start
+[1977.92s -> 1983.04s]  thinking about that is you know the hidden state of a recurrent neural network
+[1983.04s -> 1990.00s]  is sort of doing multiple duty, right? Like on one part of it is we are going to feed it into
+[1990.00s -> 1996.88s]  the output to predict the next token. But in another thing it's going to do is we just
+[1996.88s -> 2002.48s]  want it to store information about the past that might come in useful later and that we'd like
+[2002.48s -> 2008.88s]  to kind of have carried through the sequence. And so really only some of what's in the hidden
+[2008.88s -> 2013.60s]  state we want to be using to predict the current word. Some of it isn't relevant to predicting
+[2013.60s -> 2018.88s]  the current word but would be good stuff to know for the future, right? So you know if the
+[2018.88s -> 2026.32s]  previous words were sat in for predicting the next word we basically just need to know we're
+[2026.32s -> 2033.20s]  in a set in context where the or ah will come next. But you know if earlier on the sentence
+[2033.20s -> 2038.16s]  had been saying the king of Prussia we somewhere in the hidden state we want to be keeping the
+[2038.16s -> 2042.72s]  information that there's a king of Prussia because that might be relevant for predicting
+[2042.72s -> 2048.40s]  future words. And so it makes sense that we only want to have some of what's in our memory
+[2048.40s -> 2054.32s]  being used to predict the next word in the current context. So the cell is our long short
+[2054.32s -> 2059.28s]  term memory and then we're moving over to the hidden state things are going to be relevant
+[2059.28s -> 2069.84s]  for generation. Yeah I've sort of said that. Okay. All these are vectors of the same length
+[2069.84s -> 2077.04s]  n. Yeah so all of all of these things both the gates and the new values for the cell and
+[2077.04s -> 2085.92s]  hidden state they're all vectors of length n and part of how things actually get convenient
+[2085.92s -> 2091.92s]  when you're actually running of these is up until here all of these things have exactly
+[2091.92s -> 2097.84s]  the same shape so you can actually put them all together into a big matrix and do the
+[2097.84s -> 2104.32s]  computations of all four of these in terms of one big matrix if you want. Question.
+[2118.64s -> 2122.16s]  If this if this bit wasn't here then
+[2122.40s -> 2129.20s]  then you would not need an output gate because ft and it would have been able to express it
+[2130.24s -> 2134.96s]  account for it in some sense. My question is how much does having
+[2134.96s -> 2141.52s]  no wait well no to the extent that you want to mask out part of what's in the cell
+[2142.72s -> 2147.76s]  so it's not visible when you're generating the next token isn't it still useful to have
+[2147.76s -> 2160.32s]  an output gate? But you don't want ht equal to ct you want h you want some of the contents
+[2160.32s -> 2164.48s]  of ct to be masked out so you you're not seeing it when generating the output.
+[2168.88s -> 2174.08s]  No because you want to keep it in ct you want this information you want to keep in ct for the
+[2174.08s -> 2181.84s]  future but you don't want visible when generating the current next word. Yeah.
+[2184.56s -> 2190.80s]  In some sense a bit I have the hardest part explaining is why is it necessarily better to
+[2190.80s -> 2198.00s]  have a tanh here? I mean you can sort of argue that it's a way of this can just stay
+[2198.00s -> 2204.80s]  unbounded real numbers and then this is getting it back in the shape of stays between zero and
+[2204.80s -> 2211.68s]  one which is good for the hidden state but it's a little bit I guess they did it that way and
+[2211.68s -> 2217.76s]  it seemed to work well. Okay here's another way of looking at it which may or may not be
+[2217.76s -> 2225.76s]  more helpful as a picture. So you know at each time step we've got you know as before
+[2227.04s -> 2233.44s]  an input a hidden state and then we're going to calculate an output from that hidden state
+[2233.44s -> 2239.52s]  but we've sort of got this more complex computational unit and these pictures of this
+[2239.52s -> 2246.08s]  more complex computational unit were diagrams that were made by Chris Ola who's someone who now
+[2248.24s -> 2255.44s]  right now works at anthropic. And so if you blow up in that this is sort of showing the
+[2255.44s -> 2265.92s]  computation so you're sort of feeding along recurrently the c cell as the primary recurrent
+[2265.92s -> 2272.64s]  unit but you've also got carried along h because h is being used to calculate stuff in the next
+[2272.64s -> 2279.76s]  time step and then a new h is being generated and so you're computing the forget gate you're
+[2279.76s -> 2285.36s]  forgetting some of the cell content you're computing an input gate you're using that to
+[2285.36s -> 2294.64s]  compute a potential new cell content you write some of that into the cell depending on the input
+[2294.64s -> 2305.12s]  gate then you compute an output gate and then some of the cell will go into the computation
+[2305.12s -> 2312.72s]  of h depending on the output gate and then just like for the previous recurrent neural network
+[2312.72s -> 2321.12s]  for working out what the predicted next word is you're working out an output layer by taking
+[2321.12s -> 2328.64s]  the h and doing another matrix uh plus b2 and then using a softmax on that to actually predict
+[2328.64s -> 2340.40s]  the next word okay so you know this all seems very complex and you know back in do you have a
+[2340.40s -> 2348.80s]  question yeah so how are we exciting the threshold like i imagine it just some sort of threshold
+[2349.12s -> 2355.76s]  probability of like what we're remembering and what we're forgetting um so you know so
+[2356.56s -> 2362.16s]  when we're getting more than a threshold right because we're actually when we're calculating a
+[2362.16s -> 2368.96s]  whole vector of forgetting and remembering so therefore it can choose to say okay dimensions
+[2368.96s -> 2375.12s]  1 to 17 keep all of that and throw away dimensions 18 to 22 or really probabilistically
+[2375.12s -> 2383.12s]  to different extents um and so it's sort of unspecified it's up to it what it learns but we
+[2383.12s -> 2389.20s]  we are hoping that it will learn that certain kinds of information is useful to keep carrying
+[2389.20s -> 2395.84s]  forward for at least a while um but then we can use both the contents of the hidden state in
+[2395.84s -> 2402.80s]  the cell sorry of the next input to decide to throw away certain information so we might think
+[2402.80s -> 2408.80s]  that there are certain cues for example you know if it sees the word next it might think okay
+[2408.80s -> 2413.52s]  change of topic now would be a good time to forget more stuff and reset but it's sort of
+[2413.52s -> 2419.84s]  learning which dimensions of this vector to hold around in an unconstrained way whatever's
+[2419.84s -> 2427.92s]  useful to do a better job at language modeling okay um yeah so this all looks like a very
+[2428.00s -> 2436.40s]  complex and cantankerous design and you know quite honestly um you know when teaching this around
+[2436.40s -> 2442.72s]  2000 and you know 16 17 and this was the best kind of neural network we had for language
+[2442.72s -> 2449.12s]  modeling you know we literally you know spent hours of class time um going through
+[2449.12s -> 2454.24s]  lstms and variants of lstms with different properties because you know there are different
+[2454.24s -> 2458.96s]  ways you can do the gating you can have less gates or more gates and do different things
+[2458.96s -> 2466.88s]  um and it seemed the most important thing to know um in 2024 you know it's probably not the
+[2466.88s -> 2475.52s]  most important thing to know um but um on lstms are a thing to be aware of we are going to use
+[2475.52s -> 2482.00s]  them um for um the assignment three but you know you can just ask pi torch for an lstm and
+[2482.08s -> 2487.28s]  i'll give you one that does all of this stuff but you know there is one thing that i really
+[2487.28s -> 2495.28s]  want to sort of focus on as to you know why what is the good thing that an lstm achieves
+[2495.28s -> 2500.48s]  and you know really the secret for why you get this fundamentally different behavior
+[2500.48s -> 2508.24s]  in an lstm is you have that plus sign right there right that for the simple recurrent neural
+[2508.24s -> 2516.56s]  network at each time the next hidden state was a result of multiplicative stuff and therefore
+[2516.56s -> 2525.44s]  was very hard just to preserve information um whereas the essence of the lstm is to say well
+[2525.44s -> 2532.08s]  look you've got this past memory of stuff you've already seen and what we want to do is
+[2532.08s -> 2538.64s]  add some new information to it which fundamentally seems like kind of right for human memories
+[2538.64s -> 2544.64s]  um that they're sort of basically additive um and when i said actually it was the second
+[2544.64s -> 2550.96s]  gers paper that introduced a crucial part of the lstm the first version of the lstm didn't
+[2550.96s -> 2557.60s]  have the forget gate so it was a purely additive mechanism that you were deciding what to add to
+[2557.60s -> 2564.08s]  your memory as you went along um but you know that proved to be not quite perfect because
+[2564.08s -> 2569.20s]  if you keep on adding more and more stuff over a long sequence that tends to be dysfunctional
+[2569.20s -> 2574.16s]  after a certain point and so the big improvement was then to add this forget gate so
+[2574.16s -> 2581.04s]  some of it went away but nevertheless having things basically additive fixes the problem of
+[2581.04s -> 2588.24s]  gradient flow you no longer have um vanishing gradients and it makes it something that seems
+[2588.24s -> 2596.48s]  much more memory like you're adding to the things that you know okay um so the lstm architecture
+[2596.48s -> 2603.12s]  allows you to preserve information over many time sets in the cell right so if you set the
+[2603.12s -> 2609.92s]  forget gate to one um and the input gate to zero you're just linearly passing along in the
+[2609.92s -> 2612.72s]  cell indefinitely the same information
+[2615.04s -> 2621.52s]  okay um it's not the only way that you can do long distance information flow and we're going
+[2621.52s -> 2629.20s]  to look increasingly in other in future lectures at other ways you can do um long distance
+[2629.20s -> 2635.12s]  information flow um and just to sort of give a bit of a peek about those now and to think
+[2635.12s -> 2642.88s]  about other architectures but there's a question no no question yes um so so since you're mentioning
+[2642.88s -> 2650.72s]  that the plus uh does it help with exploding gradient at all or does it make it worse is
+[2650.72s -> 2656.40s]  there like no difference no it also helps with exploding gradients because the fact that
+[2656.40s -> 2661.76s]  you're not doing this sequence and multiplies all the time that you sort of have this addition
+[2661.76s -> 2674.48s]  operator um so one thing you could wonder is that is vanishing and exploding gradients just
+[2674.48s -> 2682.08s]  uh recurrent neural network problem and it's not i mean it it occurs earlier and worse
+[2682.08s -> 2687.84s]  when you've got long sequences but if you start building a very deep neural network
+[2687.84s -> 2693.68s]  surely the same thing is happening you know the parameters aren't the same so it's not quite just
+[2693.68s -> 2699.68s]  raising one matrix to a power but surely depending on your matrices you tend to have
+[2699.68s -> 2705.92s]  the same problem that either your gradients are disappearing or else they're exploding um
+[2705.92s -> 2710.72s]  and that's what people found and that was part of the reason why in the early days people
+[2710.72s -> 2717.44s]  weren't very successful building deep neural networks was because they suffered from problems of this
+[2717.52s -> 2723.92s]  sort that if you had basically vanishing gradients um in a deep neural network you got very little
+[2723.92s -> 2729.60s]  gradient signal in the lower layers therefore their parameters didn't really update therefore
+[2729.60s -> 2734.56s]  your model didn't learn anything in the lower layers therefore the network didn't work well and
+[2734.56s -> 2740.24s]  you know that was part of why things were stuck in the days around the early 2000s of deep
+[2740.24s -> 2746.56s]  networks didn't work um and so there are other ways you can think about fixing that
+[2746.56s -> 2753.52s]  so one common way of fixing that is to add more direct connections so you know the problem
+[2753.52s -> 2761.76s]  when we went through our um recurrent step was we were sort of had this in between stuff of
+[2761.76s -> 2769.12s]  doing a matrix multiply and blah blah blah um and that kind of caused indirectness and the
+[2769.12s -> 2775.84s]  possibility for things to either explode or vanish um so this network is written sort of
+[2775.84s -> 2781.76s]  upside down when i stole the picture from the paper so we'll just have to deal with that like
+[2781.76s -> 2788.16s]  um right so the in we're going downwards from here to the next layer so you know rather
+[2788.16s -> 2792.96s]  than going through sort of weight layers and weight layers which will start to produce the
+[2792.96s -> 2800.72s]  same kind of problems what you can do is sort of apply the same trick in a vertical network and
+[2800.72s -> 2807.12s]  say well look i can also just carry the input around with an identity function and add it on
+[2807.12s -> 2813.92s]  here and so then i've got this sort of direct carrying of information and so that um led to the
+[2813.92s -> 2821.44s]  residual network which was what completely transformed computer vision models and made them
+[2821.44s -> 2827.12s]  much more learnable than pure networks that lack these residual connections
+[2829.52s -> 2835.92s]  if you sort of start heading down that path you can think well why only provide these residual
+[2835.92s -> 2842.64s]  loops that take you one step maybe i could could directly connect each layer to all the
+[2842.64s -> 2849.52s]  successive layers and so people played with that idea and that led to the so-called dense net
+[2849.60s -> 2856.48s]  where you have these kind of skip connections linking to every other layer um a variant
+[2856.48s -> 2864.40s]  of the residual network the resnet um which was actually again introduced by schmidt hoover
+[2864.40s -> 2870.16s]  and students was to say well rather than just directly adding in the input
+[2872.48s -> 2877.60s]  summed with the output of the neural network layer maybe again we'd be better off having
+[2877.60s -> 2884.72s]  gating so that you are deciding by gates how much of the input to have skip around and so
+[2884.72s -> 2892.16s]  that led to a variant um the the highway net um where you've got sort of gated residual networks
+[2892.16s -> 2898.88s]  so various ideas of doing that um not going to say more about that right now i want to skip
+[2898.88s -> 2905.28s]  ahead and sort of do the rest of neural nets and get on to um machine translation
+[2907.92s -> 2917.36s]  okay um so once you have rnns where rnns is including lstms normally in practice lstms you
+[2917.36s -> 2922.16s]  can use them for anything else where you're doing sequences and so there are lots of places they
+[2922.16s -> 2929.76s]  used in nlp so if you want to assign words parts of speech like nouns and verbs that would
+[2929.76s -> 2938.56s]  be commonly done with a part of speech tagging lstm if you want to be assigning named entity labels
+[2938.56s -> 2943.92s]  like location right i i did this toy version where we were signing a label to the middle of
+[2943.92s -> 2949.04s]  a window but you want to assign the label at each position you can use an lstm for named
+[2949.04s -> 2957.52s]  entity recognition you can use them rnn as a encoder model for a whole sentence so if we
+[2957.52s -> 2962.80s]  want to do sentiment classifications to see whether a piece of text is positive or negative
+[2962.80s -> 2971.44s]  um we can say run an lstm over it and then use this as a representation of the sentence
+[2971.44s -> 2977.60s]  to ins work out whether it's positive or negative piece of text and well the simplest
+[2977.60s -> 2983.76s]  way of doing that is to use the final hidden state because after all that final hidden state
+[2983.76s -> 2990.56s]  is the hidden state you've gotten from having seen the entire sentence and use that and then
+[2990.56s -> 2997.36s]  have a sort of a classification layer a logistic regression on top of that to give you positive
+[2997.36s -> 3004.72s]  or negative in practice though people have found it's often better to use every hidden state and
+[3004.72s -> 3011.68s]  take some kind of mean or element wise max and feed that in as the sentence encoding
+[3012.56s -> 3018.88s]  you can also use rnn's for lots of other purposes where you're using it to generate
+[3018.88s -> 3025.84s]  text based on other information so if you want to do speech recognition or summarization
+[3025.84s -> 3033.76s]  or machine translation um that we'll come to later you can have an an input source
+[3033.76s -> 3041.04s]  which you'll use to condition your network and then you'll generate the speech recognition
+[3042.08s -> 3049.44s]  or the machine translation as we'll see later and so we refer to those as conditional language
+[3049.44s -> 3055.76s]  models because rather than just generating text starting from nothing from a start token
+[3055.76s -> 3063.68s]  we're generating it conditioned on some source of information um one other idea
+[3063.68s -> 3072.32s]  on what normally happens when people use these um you know i suggested um
+[3074.16s -> 3079.68s]  that you know we could sort of do this averaging at each position if you think at these
+[3079.68s -> 3086.96s]  about these hidden state representations these hidden state representations that representation
+[3086.96s -> 3092.80s]  isn't only about the word terribly it has some information about what came before it
+[3092.80s -> 3101.20s]  the movie was terribly but it has no information about what comes after it and well you might
+[3101.20s -> 3108.24s]  think you'd like to have a representation of terribly that knows what came before it
+[3108.24s -> 3115.84s]  but also what came after it and so people sort of came up with the next obvious idea to deal
+[3115.84s -> 3124.08s]  with that which was to build a bi-directional LSTM so you ran a forward LSTM and then you start
+[3124.08s -> 3130.72s]  another LSTM that's shown in that sort of greenish teal and you ran it backwards and so
+[3130.72s -> 3137.12s]  then you had a forwards and backwards vector at each position and you just concatenated them both
+[3137.12s -> 3142.00s]  and then you had a two-sided context for a representation of word meaning
+[3142.00s -> 3152.08s]  and so these networks um were pretty widely used so um we were sort of running a forward
+[3152.08s -> 3159.36s]  RNN a backward RNN and concatenating the states together and those were then sort of commonly
+[3159.36s -> 3166.40s]  sort of written like this to suggest that in a compact way you're running a bi-directional RNN
+[3166.80s -> 3176.16s]  um that and you know these were very popular for language analysis they're not they weren't
+[3176.16s -> 3182.88s]  workable if you were wanting to generate text um but you were using them in a lot of places
+[3182.88s -> 3188.72s]  as a representation but more recently transformer models have normally taken over from that
+[3189.60s -> 3195.84s]  um one more idea which we'll see from machine translation is um
+[3197.44s -> 3202.88s]  you know RNNs are sort of deep in the sense that they unroll over many time steps
+[3202.88s -> 3208.56s]  but up until now they've only been shallow RNNs in the sense that we just had one hidden state
+[3208.56s -> 3213.76s]  but you can also make them deep by having multiple layers of hidden states
+[3213.76s -> 3220.40s]  was also commonly called stacked RNNs so you'd have several layers of RNNs
+[3221.12s -> 3228.00s]  built above each other and you might wonder does this really do anything are they just
+[3228.00s -> 3234.16s]  big vectors above the words but precisely because you have sort of this extra neural
+[3234.16s -> 3240.24s]  network layer between here and here you get exactly the same power advantage you get otherwise
+[3240.24s -> 3246.80s]  with neural networks that you can do successive layers of feature extraction and so you get more
+[3246.80s -> 3257.68s]  power out of your neural network um to some extent um what people nice yeah nice okay so
+[3257.68s -> 3268.48s]  some extent what people um found with new RNNs in those days um is that having multiple layers
+[3268.48s -> 3274.00s]  definitely helps but unlike what was happening in those days with other kinds of neural networks
+[3274.00s -> 3281.60s]  for vision etc people still use relatively shallow shallow RNN so you know you always got
+[3281.60s -> 3286.40s]  a lot of gains by having two layers rather than one but you know commonly it started to
+[3286.40s -> 3291.84s]  be more iffy whether you got extra value from three or four layers so commonly people were
+[3291.84s -> 3298.00s]  running two or three layer lsdms and that's what people were using but that's completely
+[3298.08s -> 3304.24s]  changed around in the world of transformers where nowadays people are building very deep
+[3305.20s -> 3308.16s]  transformer networks for doing language understanding
+[3310.64s -> 3316.96s]  okay but i should skip ahead and say a few words before time runs out about machine
+[3316.96s -> 3324.08s]  translation um so machine translation is one of the key natural language processing tasks
+[3324.08s -> 3330.88s]  where we're translating um words from sentences in one language to sentences in another language
+[3330.88s -> 3337.12s]  so we're starting off um with a sentence in some language here french and what we want
+[3337.12s -> 3348.32s]  to do is output it in a different language here english um so that machine translation was
+[3348.32s -> 3356.96s]  actually where nlp started right so in the early 50s there wasn't artificial intelligence yet
+[3356.96s -> 3364.32s]  there wasn't a field of nlp yet um but people started to work on machine translation
+[3365.76s -> 3371.36s]  and the story of why people started to work on machine translation was essentially you know
+[3371.36s -> 3377.44s]  computers were first developed during the second world war and during the second world war
+[3377.44s -> 3383.84s]  computers were used for two things one of them was calculating artillery table targets
+[3383.84s -> 3388.72s]  artillery tables to sort of work out what angle to put your gun on to get it to land in the
+[3388.72s -> 3394.08s]  right place i'm not very relevant to what we're doing but the other thing the other thing
+[3394.08s -> 3402.00s]  that computers were used for was code breaking um so um after the second world war it moved
+[3402.00s -> 3409.44s]  very quickly into the cold war and there were you know concerns on both sides um you know of
+[3409.44s -> 3415.20s]  keeping up with the science that was being developed on both sides and people had the idea
+[3415.20s -> 3423.92s]  of gee maybe we could think of translation between languages as like code breaking and that
+[3423.92s -> 3432.16s]  thought um occurred to um important relevant people and science funding agencies and actually
+[3432.16s -> 3438.40s]  lots and lots of funding was poured into this idea of can we use computers to do machine
+[3438.40s -> 3446.56s]  translation between languages and you know at the time in the 50s you know after some initial
+[3446.56s -> 3453.28s]  very impressive looking cooked demos it was sort of basically a complete flop and the reason you
+[3453.28s -> 3459.04s]  know there are lots of reasons why it's a complete flop you know one was people knew almost nothing
+[3459.04s -> 3464.64s]  about the structure of human languages i mean in particular when i was mentioning the other day
+[3464.64s -> 3470.40s]  the Chomsky hierarchy right and knowing about sort of context-free languages right the Chomsky
+[3470.40s -> 3476.00s]  hierarchy even hadn't been invented yet right sort of formal properties of languages hadn't
+[3476.00s -> 3483.60s]  really been explored but also you know the computers um that people had in the 1950s right
+[3483.60s -> 3490.72s]  the amount of computing power or memory or anything like this that those computers had
+[3490.72s -> 3497.60s]  in those days was laughable right these days you know the little power brick for your laptop
+[3497.60s -> 3503.44s]  has more computing power inside it than the big mainframe computers that they used to be using
+[3503.44s -> 3513.04s]  in those days so basically people were only able to build very simple lexicons and rule-based
+[3513.60s -> 3519.04s]  substitution rules and nothing like the complexity of human languages which only
+[3519.04s -> 3526.88s]  gradually people began to understand but machine translation started to become more alive in the
+[3526.88s -> 3535.60s]  1990s and 2000s decades once people started to build empirical models over lots of data
+[3535.60s -> 3541.92s]  and the approach then was called statistical machine translation and so when google translate
+[3541.92s -> 3549.84s]  was first introduced to the world it was sort of the big unveiling to the world of statistical
+[3549.84s -> 3555.44s]  phrase-based machine translation systems where what you were doing was you're collecting a large
+[3555.44s -> 3563.84s]  amount of parallel data words have been translated from one word to another and you know not for all
+[3563.84s -> 3569.28s]  languages but for quite a few languages there are quite a few sources of parallel data so the
+[3569.28s -> 3575.20s]  european union generates a huge amount of parallel data among european languages there are
+[3575.20s -> 3581.44s]  places like hong kong where you get english chinese if a certain dialect of chinese um
+[3581.44s -> 3588.32s]  parallel data um the un generates a lot of parallel data so getting sources of parallel
+[3588.32s -> 3593.92s]  data and trying to build models and so the way it was done was based on that model
+[3593.92s -> 3602.24s]  we're going to try and learn a probability model for translation so this is the probability
+[3602.24s -> 3608.32s]  of a translation given a source sentence and the way it was done at that time was breaking it
+[3608.32s -> 3617.28s]  down using bayes rule into two sub-problems so the probability of the translation given the source
+[3617.28s -> 3623.44s]  is going to be the inverted probability of the source given the translation times the
+[3623.44s -> 3630.00s]  probability of the translation and you know you could think that this makes it no simpler
+[3630.00s -> 3637.04s]  because you've just you know reversed the order of x and y but the reason why it made it
+[3637.04s -> 3643.68s]  simpler and people were able to make progress was the translation model was treated as a very
+[3643.68s -> 3650.32s]  simple model as to how words tended to get translated to words in the other language and
+[3650.32s -> 3656.64s]  it didn't need to know anything about you know word order grammar structure of the other language
+[3656.64s -> 3663.12s]  and then all of that was being handled by just this probability of y which was a pure language
+[3663.12s -> 3668.80s]  model as we've talked about before so you could have a simple translation model which just sort of
+[3668.80s -> 3676.32s]  said you know if you see the word om in french you might want to translate it as man or person
+[3676.32s -> 3682.72s]  or have put some probabilities on that and then most of the cleverness was in the language model
+[3682.72s -> 3687.92s]  which was telling you what would be a good sentence in the target language
+[3687.92s -> 3697.76s]  okay um and so that was important because you know translations get pretty complicated right
+[3697.76s -> 3704.88s]  so um you not only have to know how to translate words and those translations of words
+[3704.88s -> 3711.84s]  vary in context um but you get a lot of reordering of words in sentences um
+[3712.72s -> 3718.24s]  i'm not going to be able to spend a lot of time on this but you know here heal for a while
+[3718.24s -> 3728.08s]  um was my favorite example machine translation sentence um so um this is actually a translated
+[3728.08s -> 3734.16s]  sentence so it comes the original comes from the book guns germs and steel if you're familiar
+[3734.96s -> 3742.56s]  with that um but it was that book by jared diamond um but this book was um translated into
+[3742.56s -> 3751.28s]  chinese so here's a sentence um from um the book in chinese and you know uh i guess in the
+[3751.28s -> 3756.40s]  2000s decade i was involved in building statistical machine translation systems
+[3756.40s -> 3764.24s]  and i guess there was a mt evaluation um that um we did where our system did terribly on this
+[3764.24s -> 3769.60s]  sentence and i tried it out on google translate and it also did terribly in this sentence
+[3769.60s -> 3777.44s]  so what the sentence should say is in 1519 600 Spaniards landed in mexico to conquer the aztec
+[3777.44s -> 3783.04s]  empire with a population of a few million they lost two-thirds of their soldiers in the initial
+[3783.04s -> 3794.80s]  clash um so here's what google translate said in 2009 2009 1519 600 Spaniards landed in mexico
+[3794.80s -> 3800.24s]  millions of people to conquer the aztec empire the first two-thirds of soldiers against their
+[3800.24s -> 3807.52s]  loss um now it's partly bad because the word choices and the translations aren't very good um
+[3807.52s -> 3814.16s]  but you know it's especially bad because it's just um not actually able to
+[3814.16s -> 3820.96s]  capture and use the modification relationships um of the sentence so you know here's the part
+[3820.96s -> 3828.08s]  of the chinese that's saying the aztec empire and over there in orange is the
+[3828.08s -> 3834.80s]  few million people and in chinese there's this explicit little character here dearth
+[3834.80s -> 3840.40s]  which is saying that stuff in orange modifies this stuff in green which is what it's meant to
+[3840.40s -> 3846.96s]  be in the correct translation of aztec empire with a population of a few million um but google
+[3846.96s -> 3852.08s]  translate completely fails on that and it's suddenly it's the millions of people who are
+[3852.08s -> 3858.96s]  going to be conquering um the aztec empire um and you know that's sort of in this way um
+[3858.96s -> 3864.56s]  the worst thing that's happening here though you know the 1519 600 isn't exactly a very good
+[3864.56s -> 3870.72s]  translation um and the first two-thirds of soldiers against their loss isn't very good either
+[3870.72s -> 3878.16s]  um but you know so for a while i used to sort of update this and see what happened you know
+[3878.16s -> 3888.96s]  um in 2013 it almost seemed like progress had been made but by 2015 it had gone downhill
+[3888.96s -> 3896.48s]  back to how it was before so it just seemed like they got lucky in 2013 rather than the systems
+[3896.48s -> 3901.52s]  were working any better um and indeed this sort of seemed to be the problem
+[3901.52s -> 3908.80s]  although some kind of progress had been made in machine translation um these systems um just
+[3909.92s -> 3918.00s]  you know sort of never really worked all that great um and so that led to this amazing
+[3918.00s -> 3926.24s]  breakthrough in 2014 where we then moved to neural machine translation and neural machine
+[3926.24s -> 3934.16s]  translation was much better so what did we do in neural machine translation so we built a neural
+[3934.16s -> 3941.36s]  machine translation system as a single end-to-end neural network and that's been a powerful idea
+[3941.36s -> 3948.96s]  in neural network systems in general including in nlp if we can just have a single big system
+[3948.96s -> 3954.48s]  and put a loss function at the end of it and then we can back propagate errors right back
+[3954.48s -> 3960.00s]  down through the system it means we're sort of aligning all of our learning for the final
+[3960.00s -> 3965.20s]  tasks we want to do and that's been very effective whereas earlier models couldn't do that
+[3965.68s -> 3974.08s]  um so we built it with a sequence to sequence model so that sounds like our lstms but it's
+[3974.08s -> 3978.16s]  meaning that we're going to have two of them one of them to encode the sentence
+[3978.72s -> 3985.20s]  um the source sentence and one to produce the target sentence so that's what we're building so
+[3985.20s -> 3991.20s]  for the source sentence we're taking here it says rnn but let's just think lstm because that's
+[3991.20s -> 3996.48s]  what we're going to use in practice it's much better and so we're going to chunk through it
+[3996.48s -> 4004.40s]  encoding what we've read using an rnn so this rnn isn't going to output anything right we're
+[4004.40s -> 4010.24s]  just building up a hidden state that knows what's in the source sentence so again encoding
+[4010.24s -> 4017.84s]  of the source sentence and we're going to use that final hidden state to condition the decoder
+[4017.84s -> 4025.04s]  rnn which is going to then generate the translation so for the decoder rnn it's also
+[4025.04s -> 4029.76s]  an lstm but it's going to be an lstm with different parameters so we're going to be learning
+[4029.76s -> 4035.12s]  one set one lstm with source encoding parameters and then for the different language
+[4035.12s -> 4042.08s]  we're learning a different lstm that'll know about the target language and so we give it start
+[4042.08s -> 4050.88s]  and say well feed in for feed in your path what you've encoded from the encoder rnn
+[4050.88s -> 4057.52s]  as your starting point um and then we're going to be i.e that'll be count as the previous
+[4057.52s -> 4063.44s]  hidden state you're feeding into your lstm and then we're going to generate the first
+[4063.44s -> 4070.64s]  word of the translation and we'll then copy that translated word down using this as a general
+[4070.64s -> 4077.04s]  model as i did last time and we um start translating through he hit me with a pie
+[4078.24s -> 4087.60s]  okay um so that sort of makes sense the model yeah okay um so
+[4090.40s -> 4097.28s]  okay there's some notes sorry um yeah sorry what i was going to say yeah so the the little pink
+[4097.28s -> 4104.96s]  note here so what i was showing you is the picture of using it at sort of run time
+[4104.96s -> 4111.04s]  at run time we're going to encode the source and then generate the words for the translation
+[4111.04s -> 4116.00s]  at training time we're going to have parallel text we're going to have sentences
+[4116.00s -> 4123.04s]  in their translations we're going to run with the same architecture but as before then for the
+[4123.60s -> 4130.80s]  decoder network we're going to try and predict each word and then say what probability did you
+[4130.80s -> 4136.40s]  assign to the actual next word and that will give us a loss and we'll be calculating the losses
+[4136.40s -> 4141.68s]  at each position working out the average loss working out the gradients back propagating
+[4141.68s -> 4148.96s]  them through the entire network both the decoder rnn and the encoder rnn networks and updating
+[4148.96s -> 4154.16s]  all the parameters of our model and that's the sense in which it's being trained end to end
+[4155.84s -> 4163.52s]  okay um so sequence so this is sort of a general notion of an encoder decoder model
+[4163.52s -> 4170.16s]  which is a very general thing that we use in all kinds of places right that we have
+[4170.16s -> 4176.08s]  one network that encodes something which produces a representation which will then feed
+[4176.08s -> 4182.08s]  into another network that we'll use to decode something and even when we go on
+[4182.08s -> 4188.00s]  to do other things like use transformers rather than lstms we're still commonly going to use
+[4188.00s -> 4193.68s]  these kind of encoder decoder models because if we want to do not only machine translation
+[4193.68s -> 4204.96s]  but other tasks like summarization or text to speech or other things like that we're going
+[4204.96s -> 4209.36s]  to be in this space of using encoder decoder networks yeah
+[4212.40s -> 4215.28s]  using a deeper neural network with more layers
+[4217.68s -> 4227.12s]  um well a lot it's sequenced um right so it has never been very six you're meaning like
+[4227.12s -> 4233.68s]  why don't you just build on top of the source right um people have tried that occasionally
+[4233.68s -> 4239.60s]  it's never been very successful and i think part of the reason is all of what i was trying
+[4239.60s -> 4245.28s]  to show before about all of the word order changes around a lot between languages and if
+[4245.28s -> 4252.00s]  you're sort of um just trying to build stuff on top of the source sentence it's very hard
+[4252.00s -> 4257.44s]  to cope with that in particular it's not even the case that the length stays the same right
+[4257.44s -> 4264.80s]  one of the big ways um in which languages vary is what little words that they have right so that
+[4264.80s -> 4270.08s]  in english you're putting in a lot of these auxiliary verbs and articles whereas it's in
+[4270.08s -> 4275.52s]  chinese you don't have any of those and so you're neither needing to depending on direction
+[4275.52s -> 4280.08s]  add a lot of words or subtract a lot of words which is very hard to do if you're sort of
+[4280.08s -> 4287.76s]  building on top of the source but uh is it quick uh yeah so left side is that something's
+[4287.76s -> 4296.72s]  bi-directional or just like a like the encoder um yeah so you you'd totally think and it could
+[4296.72s -> 4303.60s]  be that the encoder is bi-directional and that might be better um for the for the famous
+[4303.60s -> 4308.48s]  original instantiation of this that was done at google they actually didn't make it bi-directional
+[4308.48s -> 4313.60s]  so it was simply taking the final hidden state but that's absolutely an alternative that you
+[4313.60s -> 4326.48s]  could do okay um yeah so i sort of said it was um okay usable for lots of things okay um
+[4326.48s -> 4334.24s]  yeah so this is our conditional language model um this so we're now kind of directly calculating
+[4334.24s -> 4342.24s]  the probability of y given x right that the decoder model is generating um uh language
+[4342.24s -> 4350.40s]  expression as a language model directly conditioned on x um and so we train it with a big parallel
+[4350.40s -> 4355.76s]  corpus um and that's the only case i'm going to talk about today recently there's been sort
+[4355.76s -> 4362.16s]  of some interesting work on unsupervised machine translation meaning that you're got only a little
+[4362.16s -> 4366.88s]  bit of information about how the languages relate you don't really have a lot of parallel
+[4366.88s -> 4373.84s]  text but i'm not going to cover that today um yeah so for training it we have um paired
+[4373.84s -> 4381.76s]  sentences um we work out our losses in the predictions at each position and then we're
+[4381.76s -> 4388.16s]  working out our average loss and back propagating it through in a single system end to end as
+[4388.16s -> 4397.68s]  described um yeah so in practice um when people built big machine translation systems this was
+[4397.68s -> 4406.16s]  one of the places where absolutely it gave value to have multi-layer stacked um lstms and
+[4406.16s -> 4412.32s]  so typically people are building a model those and you'll be building a model something like this
+[4412.32s -> 4419.44s]  that's a multi-layer lstm that's being used to encode and decode um
+[4421.12s -> 4429.36s]  in my two minutes um remaining um i just want to sort of um quickly say so um building these
+[4429.36s -> 4437.12s]  neural machine translation systems was really the first big success of natural language
+[4437.12s -> 4443.84s]  processing deep learning now in this in this sense you know it depends on how you define
+[4443.84s -> 4450.96s]  what parts of language if you look at the sort of the history of the renaissance of deep learning
+[4450.96s -> 4456.96s]  the first place where deep learning was highly successful was in speech recognition systems
+[4457.52s -> 4463.60s]  um the second place in which it was highly successful was in object recognition and vision
+[4464.16s -> 4470.80s]  and then the third place that was highly successful was then building machine translation systems
+[4471.84s -> 4478.24s]  so you know google had a big statistical machine translation system and it was
+[4479.52s -> 4485.84s]  it was only in 2014 that people first built this sort of lstm
+[4486.80s -> 4492.24s]  deep learning machine translation system but it was just sort of obviously super good
+[4492.24s -> 4498.40s]  and it was so super good that in only two years it was then deployed as the live system
+[4499.12s -> 4505.68s]  that was being used at google but it wasn't only used in google um that neural machine
+[4505.68s -> 4511.76s]  translation was just so much better than what had come before that by a couple of years after
+[4511.76s -> 4519.84s]  that you know absolutely everybody um both us companies and chinese companies microsoft facebook
+[4519.84s -> 4526.08s]  tencent bydo um everybody was using your machine translation systems because there are
+[4526.08s -> 4532.48s]  just much better systems and so this was an amazing success right because um statistical
+[4532.48s -> 4537.76s]  machine translation systems like the google system that this is something that had been
+[4537.76s -> 4544.24s]  worked on for about a decade hundreds of people had worked on it there are millions of lines of
+[4544.24s -> 4551.92s]  code lots of hacks built in for particular languages and language pairs but really a simple
+[4552.48s -> 4560.48s]  small neural machine translation system was able to work much better there was an article
+[4560.48s -> 4564.48s]  published about it when it so went live in the new york times that you can find in that
+[4565.28s -> 4572.16s]  link it's a little bit of a praising piece where you could be a little bit critical
+[4572.80s -> 4579.76s]  but you know basically it's sort of talking about how just the difference in quality was so obvious
+[4579.76s -> 4585.36s]  that everyone immediately noticed even before google had announced it of wow suddenly machine
+[4585.36s -> 4593.68s]  translation's gone so much better okay um so that's basically today so um for today you know
+[4593.68s -> 4598.72s]  we've learned that lstms are powerful if you're doing something with a current neural network
+[4598.72s -> 4604.00s]  you probably want to use an lstm you should know about the idea of clipping your gradients
+[4605.04s -> 4611.60s]  bi-directional lstms are good when you've got an encoder but you can't use them to generate
+[4611.60s -> 4619.28s]  new text and encoded decoded neural machine translation systems were a great new technology
+[4619.84s -> 4621.52s]  that advanced the field thank you

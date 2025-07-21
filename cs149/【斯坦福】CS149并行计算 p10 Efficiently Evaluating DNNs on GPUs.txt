@@ -1,0 +1,783 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 11.56s]  Alright folks, so there's a lot going on. I wanted to check in. So the course is kind
+[11.56s -> 15.68s]  of speeding up a little bit in terms of the work. I think the course is actually maybe
+[15.68s -> 19.42s]  slowing down a little bit in terms of the number of new concepts that you're being
+[19.42s -> 23.94s]  exposed to in every lecture. So that's my thought. So this is the phase where
+[23.94s -> 28.46s]  it's like kind of about banging out assignment three, all these practice assignments as
+[28.50s -> 33.78s]  well as just starting to shore up understanding of actual material. For those of you that haven't
+[33.78s -> 39.44s]  looked at assignment three, there are two parts, or three parts technically, but the first two
+[39.44s -> 45.02s]  parts of the assignment are what I would consider to be warm up. Like we give you an algorithm,
+[45.02s -> 50.82s]  you're supposed to write it in CUDA just to kind of start learning some mechanics. How do
+[50.82s -> 55.74s]  I get this code to compile? How do I create some threads? The real part of the assignment is
+[55.78s -> 62.70s]  the last part, which is the render. Unlike most other systems classes, this is about coming up
+[62.70s -> 67.98s]  with a performant implementation, sure, but it's also actually about coming up with some
+[67.98s -> 74.22s]  algorithms that will actually allow you to paralyze this thing. I figured I'd spend five
+[74.22s -> 77.98s]  minutes actually just kind of taking everybody through the problem that you're having to solve.
+[77.98s -> 82.30s]  So the problem that you have to solve is actually to render a picture. Here are some pictures,
+[82.86s -> 88.14s]  these are low resolution, but you render a thousand by thousand image that looks like this. To keep
+[88.14s -> 92.38s]  things simple, since this isn't a computer graphics class, the only thing you can draw
+[92.38s -> 99.86s]  in your pictures are a bunch of circles. So I basically give you the center XY position,
+[99.86s -> 107.94s]  the radius, and the color of large numbers of circles. So all of these images, if you look
+[108.10s -> 114.10s]  at, are just images of circles, and the main loop of how to do this is actually pretty simple.
+[114.10s -> 125.62s]  Let's ignore the front part where every frame the circles can move, so ignore that. But here
+[125.62s -> 132.14s]  it's quite simple. For every circle that I give you, compute the bounding box of the circle,
+[132.14s -> 137.66s]  so if I gave you the position and the radius, you can compute the bounding box. And then given
+[137.66s -> 143.54s]  the bounding box, iterate through every pixel in that bounding box, and if the center of the
+[143.54s -> 150.02s]  pixel is inside the circle, you update the color of the pixel accordingly, according to the color
+[150.02s -> 156.70s]  of the circle. That's like the world's simplest drawing algorithm. Now the challenge is that it's
+[156.74s -> 167.62s]  not these circles, if you look carefully in my picture, are actually somewhat transparent. So
+[167.62s -> 174.54s]  it's kind of like a piece of stained glass or something like that. So a 50% transparent red
+[174.54s -> 182.02s]  circle on top of a blue circle looks different than that blue circle on top of the red circle
+[182.02s -> 189.58s]  because of transparency. So the rule, the thing that makes this problem goes from incredibly trivial
+[189.58s -> 195.66s]  to incredibly interesting is that I'm going to give you the circles in an order. I'm just going
+[195.66s -> 201.06s]  to give them to you in an array. And I want you to assume that they're ordered in like sort
+[201.06s -> 207.94s]  of back to front order. So in other words, you have to add in the first circle before you
+[207.94s -> 213.18s]  add in the next circle, and so on and so on. So that's the ordering constraint that actually
+[213.18s -> 219.70s]  makes this a tough little problem. And just to give you a sense of that is here's an example
+[219.70s -> 226.62s]  of blue over green over red. So if you kind of look carefully, you know, like the blue is
+[226.62s -> 234.06s]  the first piece of a filter. Here's if I combine them together in some other order.
+[234.86s -> 239.42s]  And you just get a different result. So we're going to call that wrong. Okay. So the name
+[239.42s -> 245.70s]  of the game is if you just look at this nested sequence of loops, sequentially this is a valid
+[245.70s -> 252.06s]  algorithm for each circle in the order that they are in the array. The thing that you would
+[252.06s -> 260.86s]  probably do and the code that we give you to start paralyzes this loop. For every circle in
+[260.86s -> 265.10s]  parallel on a different thread, just carry this out. And that will compute the wrong
+[265.10s -> 270.98s]  answer. Okay. So step one is to confirm to yourself that that computes the wrong answer
+[270.98s -> 276.50s]  and then make a change, right? And when we talked in the data parallel thinking class,
+[276.50s -> 280.52s]  we talked through some various possibilities. This is very similar to for every particle
+[280.52s -> 286.54s]  what bin is it in? And the key thing to keep in mind is that even though you're
+[286.54s -> 291.94s]  supposed to process all these circles in the order that they appear, the only way
+[291.94s -> 298.54s]  that you can get the wrong answer is if you process them in the wrong order and they overlap.
+[298.54s -> 304.34s]  Because if they don't overlap, it doesn't matter what order you process it. So that's
+[304.34s -> 308.86s]  all I'm going to do to set up the problem right now. But step one should almost certainly
+[308.86s -> 316.34s]  be change the code to get a correct answer. And that correct answer will be parallel
+[316.34s -> 321.86s]  but very slow. And then you're going to chip away at correct, parallel and fast.
+[321.86s -> 328.66s]  So that's sort of the sequence of the assignment. Or in other words, if you knew for every
+[328.66s -> 337.38s]  pixel what circles possibly overlapped it, you'd basically be done. Like if you had
+[337.42s -> 342.30s]  this magical data structure for every pixel on screen, here's a list of circles that
+[342.30s -> 347.14s]  might overlap it, you would basically be done. Because you know you can process every pixel
+[347.14s -> 352.62s]  in parallel and do that safely. That's all I'll say on the assignment. It's
+[352.62s -> 359.62s]  a fun one. I think most people really, really like this. That was either a sarcastic
+[359.66s -> 366.66s]  laugh or a laugh in agreement. Okay, so since Kunle is away on some business
+[367.90s -> 373.22s]  travel today, the reason why we're efficiently evaluating DNNs is at this point in the lecture
+[373.22s -> 377.74s]  schedule, we're not continuing on with some other stuff, is largely just for scheduling.
+[377.74s -> 381.62s]  So this is a lecture that will be very useful to you in Assignment 4. So it's coming
+[381.62s -> 388.30s]  a little bit earlier than it needs to be. But in general I thought that it might be
+[388.34s -> 392.22s]  fairly interesting to folks given that everybody is messing with various forms of deep neural
+[392.22s -> 399.22s]  networks today. I'm going to talk a little bit about how we efficiently optimize these
+[399.46s -> 406.46s]  things in the context of running deep neural networks on modern GPUs and CPUs. I will
+[407.70s -> 413.70s]  hint at the very end of the day about all of the interesting specialized hardware
+[414.14s -> 419.36s]  for DNN acceleration that is starting to emerge, but I'm going to save that to the lecture
+[419.36s -> 423.36s]  on specialized hardware, which I think is right before Thanksgiving if I remember.
+[423.36s -> 430.36s]  So today is going to be about mapping DNNs to GPUs and CPUs.
+[431.54s -> 435.92s]  Click this survey of what folks know. How many people have taken a class where you
+[435.92s -> 442.92s]  have had to execute or implement or use modern deep networks? That number keeps going
+[443.28s -> 449.04s]  up every year. So we're getting closer and closer to almost everybody in the class.
+[449.04s -> 453.64s]  How many people, there's actually another class this quarter by a new faculty member
+[453.64s -> 458.32s]  here. She's teaching this great class called 229S. Do we have any people in that
+[458.32s -> 462.72s]  class? Because there might be some overlap here. So either this is going to be review
+[462.72s -> 468.20s]  or this is going to be very helpful. We'll see actually.
+[468.20s -> 471.56s]  And so, you know, she and I probably need to coordinate a little bit more next year
+[471.56s -> 474.88s]  but I didn't know she was teaching that class. So anyways.
+[474.88s -> 479.44s]  So I want to just start with, for those, the small fraction of you that have not
+[479.44s -> 483.24s]  seen any deep neural networks, I'm going to get into the workload a little bit because
+[483.24s -> 487.26s]  I need to make sure everybody is familiar with the workload and I want to do that for
+[487.26s -> 493.48s]  two reasons. One is I think I'd like to give everybody a basis of how to think
+[493.48s -> 497.56s]  about things and really we can think about things in a systems class without much math
+[497.56s -> 500.32s]  at all. And that's going to be very helpful.
+[500.32s -> 505.56s]  So here's a question. You've seen dependency graphs before in this class. Like we saw this
+[505.56s -> 510.20s]  when we talked about super scalar execution or, to be honest, if I gave you this task
+[510.20s -> 517.28s]  graph you would know how to execute it right now. So what does this code do? I mean it's
+[517.28s -> 520.76s]  just an expression but let's look at it a little bit more carefully. Like it maps
+[520.76s -> 529.60s]  to basically what I've done here, right? Like I'm basically computing the product
+[529.60s -> 535.00s]  of some values and I'm summing them. Now if you look carefully that's actually just a dot product
+[535.00s -> 545.20s]  followed by a max on the value of that dot product. And if you took like an early deep
+[545.20s -> 549.52s]  neural networks class you would see a diagram that looks a little bit like this. They would
+[549.52s -> 554.00s]  call this like a neuron in a modern deep neural network. And at the end of the day it's just
+[554.00s -> 559.40s]  a circuit that performs an operation like what I put on the previous slide
+[559.88s -> 565.52s]  where inside this neuron there's a set of weights which is just a vector. We don't need to think
+[565.52s -> 570.44s]  about the meaning of those weights at all at the moment. And there's some input, you know,
+[570.44s -> 574.96s]  input vector here which is, you know, in this case a four vector. And the output of this
+[574.96s -> 578.60s]  neuron, this neuron you should just think of as a function which performs a dot product between
+[578.60s -> 583.76s]  two vectors, you know, optionally actually has a bias or an addition of another vector.
+[583.76s -> 588.20s]  And then takes that through some nonlinear function and that doesn't really matter at
+[588.20s -> 592.72s]  all either. And the function that I'm going to use in this class is called a max. You know,
+[592.72s -> 595.76s]  if you took a deep learning class and wanted to feel better about yourself you'd call it
+[595.76s -> 601.88s]  something like a rectified linear unit. But it's a max in this case. So for the sake of
+[601.88s -> 606.96s]  this conversation we can think about what we're interested today is taking, you know,
+[606.96s -> 614.36s]  sort of this overall computation which is this nonlinear function f on essentially a big
+[614.40s -> 619.60s]  matrix algebra operation, in this case a dot product, and repeating that over and over
+[619.60s -> 623.88s]  and over. So, you know, you can think actually about this neuron as actually being,
+[623.88s -> 627.68s]  you can think about every one of these little neurons as being a little binary classifier if you
+[627.68s -> 631.88s]  want to take a machine learning interpretation of that. Like if it's above zero it's saying
+[631.88s -> 636.72s]  yep, if it's below zero it's saying no. And now let's just start wiring them up because
+[636.72s -> 640.96s]  we're computer scientists. I have a little function and I can wire a simple function up
+[641.00s -> 650.16s]  into larger functions. And, you know, often these networks are arranged in a fairly regular way and
+[650.16s -> 655.48s]  they'll have some number of these at every layer and the layers are defined by saying
+[655.48s -> 660.52s]  like the output of all of this layer turns into the inputs of the next layer. And if you
+[660.52s -> 665.68s]  look carefully in my diagrams on the left you see an example of a fully connected layer meaning
+[665.72s -> 673.32s]  that every single output from layer i is an input to layer i plus one. On the diagram on the right
+[673.32s -> 679.24s]  you'll see something that's not a fully connected layer it's actually a convolutional layer in 1D
+[679.24s -> 685.16s]  where every, you know, there's like the sliding window of every three inputs in this case go to
+[685.16s -> 691.88s]  the next neuron. All right, so let's write this a little bit differently. Let's write this
+[691.92s -> 698.44s]  instead of these visual diagrams let's write this as some more in a linear algebra notation.
+[698.44s -> 706.96s]  And just keep in mind that see here I have four neurons so I have four sets of or I guess
+[706.96s -> 713.68s]  in this case I have three yeah I have four neurons and so I have these different sets of
+[713.68s -> 717.36s]  three weights so in this case my neuron has actually got three weights in it excuse me my
+[717.36s -> 721.64s]  original diagram had four but this is a neuron with three weights in it so for every one of
+[721.64s -> 726.80s]  these four gray boxes there are three weights the input notice that there are three input values
+[726.80s -> 732.68s]  that's the right hand side vector x and then the execution of computing the output is just
+[732.68s -> 741.00s]  a matrix vector product here and of course that goes through that nonlinearity f. So all
+[741.00s -> 747.88s]  of these like you know some fancy diagrams start boiling down to dense matrix algebra pretty
+[747.88s -> 751.68s]  quickly if you want to think about it like that another way you can think about the exact
+[751.68s -> 760.68s]  same thing is more like this so this is a convolution so if you look carefully at this
+[760.68s -> 765.96s]  C code there's an input image which is width by height it's actually width by height with plus
+[765.96s -> 771.24s]  two just for some boundary conditions the output is a width by height image I have these
+[771.24s -> 777.00s]  weights and for every pixel of the output I do something that involves surrounding pixels of
+[777.00s -> 782.92s]  the input and if you take a look at this code and I asked you what does it do you know some
+[782.92s -> 787.96s]  of you might say oh it performs 2d convolution and then I turn right back around at you go
+[787.96s -> 793.84s]  what the heck does that mean right and so if this was let's say an input image what does
+[793.84s -> 801.88s]  the output image look like it's blurry right because every output pixel is essentially the
+[801.88s -> 807.80s]  average of the surrounding pixels so imagine a situation where I had a white input pixel and
+[807.80s -> 812.52s]  really dark colored surrounding pixels the convolution is going to bring that white
+[812.52s -> 817.28s]  pixel down to the average and around that pixel it's going to bring those black pixels
+[817.28s -> 822.52s]  up to the average right so if I run this code you know on an image that looks like this
+[822.52s -> 829.52s]  you'll get an image that looks like that that's a one example of a convolution okay right
+[830.08s -> 835.76s]  so that was our 3d image convolution and I just want you to in your mind kind of think through
+[835.76s -> 843.44s]  this image if we think about every one of these outputs pixels as a neuron its output
+[843.44s -> 849.72s]  is a weighted combination of nine inputs here right and those nine inputs in this case are
+[849.72s -> 854.96s]  weighted by these fixed weights one ninth one ninth one ninth and that's why I drew this
+[855.00s -> 861.32s]  diagram that looks like this now just keep in mind that when I drew it like this I'm showing
+[861.32s -> 867.80s]  you three inputs into every one in 2d it would be nine inputs into every one right so if this
+[867.80s -> 871.44s]  is actually an image that would be nine inputs and so I didn't you know I didn't draw
+[871.44s -> 877.80s]  2d version of a convolution in my little dags I drill one to okay and if you took like
+[877.80s -> 882.80s]  a computer graphics or computer vision class you would learn that there are very you know
+[882.80s -> 888.32s]  if I change these weights I actually get very different outputs and so you know averaging
+[888.32s -> 891.64s]  made a lot of sense but imagine I change some of these weights and make some of them
+[891.64s -> 897.40s]  negative now I'm a sudden what is this computation doing instead of averaging every
+[897.40s -> 904.40s]  pixel it's saying I want some positive scaling times these pixels over here minus the value
+[905.48s -> 910.36s]  of these pixels over here and now of a sudden that's a finite difference computation
+[910.40s -> 916.88s]  that's a gradient computation so with these different weights all of a sudden my convolution
+[916.88s -> 922.76s]  is not blurring the image it's in fact doing things like huh it's detecting horizontal gradients
+[922.76s -> 929.12s]  or huh it's detecting vertical gradients okay and so all of these at least at least an image
+[929.12s -> 933.40s]  processing in the front half of the talk I'm gonna focus on these conv layers which are common
+[933.40s -> 937.80s]  in image processing in the back half of the talk I'm gonna bring up retention and transformers
+[937.80s -> 943.24s]  but you know like like all these these com nets are are there are a bunch of these convolutions
+[943.24s -> 951.36s]  largely except the weights are not given by me they're learned so here's an example of like
+[951.36s -> 957.76s]  the classic imagenet weights from a long time ago is here are the the weights of a whole
+[957.76s -> 965.20s]  bunch of different filters visualized so this is like like this is an 11 by 11 convolution now
+[965.20s -> 971.24s]  okay and so this is a convolution that takes 121 elements of the input for every output and
+[971.24s -> 977.88s]  there's 96 different versions of these convolutions and so if I take these filters by this input
+[977.88s -> 982.54s]  image you get these different outputs you can just say that these different filters are
+[982.54s -> 986.56s]  sort of lighting up on different parts of the image they're sort of like detecting different
+[986.56s -> 992.24s]  features and so I want you to think about this copulation as taking you know this code
+[992.32s -> 997.32s]  here and then repeating it for a whole bunch of different filters with different weights
+[997.32s -> 1004.56s]  that's the the essence of what we're gonna do here on something like this and a common
+[1004.56s -> 1009.26s]  way to visualize this stuff is think about these n-dimensional tensors so imagine you had
+[1009.26s -> 1016.00s]  an input image that's width by height so it's width by height by one and then imagine I have
+[1016.00s -> 1020.68s]  all of these different filters that are just like you know like I just showed you three by
+[1020.68s -> 1025.60s]  three matrix of values and stuff like that so that I have these three by three filters and if
+[1025.60s -> 1029.84s]  I'm gonna do num filters of them I'm just just for convenience I'm gonna stack them together
+[1029.84s -> 1036.06s]  in a tensor so it's three by three by number of these filters and so if I do num filters
+[1036.06s -> 1045.96s]  convolutions of this I should get width by height by num filters amount of output and then
+[1045.96s -> 1051.24s]  we're just gonna repeat this process over and over and over producing a bunch of filters
+[1051.24s -> 1057.80s]  taking that through that function F which is you know setting everything to clamping at zero
+[1057.80s -> 1062.64s]  and then maybe actually doing some you know a few other calculations like in this case a max
+[1062.64s -> 1071.44s]  pool is largely just a down sample and so on and so on and when you see all these fancy
+[1071.44s -> 1077.52s]  diagrams like this this is you know all this is is just each one of these blocks is largely
+[1077.52s -> 1082.96s]  this sequence of a bunch of convolutions at least that's the computational meat of it
+[1082.96s -> 1089.36s]  wired up in very different different ways right so here I have ResNet here I have a common
+[1089.36s -> 1095.24s]  unit architecture where everything decimates and then it comes back that's inception from
+[1095.24s -> 1104.00s]  Google okay so at this point all I really want you to know is that it's important to
+[1104.00s -> 1111.16s]  be able to perform a bunch of convolutions on a bunch of on an input image and that
+[1111.16s -> 1117.20s]  produces a bunch of output images and then we're gonna perform convolutions on those and
+[1117.20s -> 1121.96s]  that's the workload that I want you to know about okay this is a point where I'd be happy to
+[1122.08s -> 1125.56s]  take a question or two because a lot of you probably know a lot of machine learning and
+[1125.56s -> 1131.04s]  you may you know maybe have something you may take issue with any of my simplifications or
+[1131.04s -> 1139.48s]  or something like that okay so okay to keep going all right so first of all now let's think
+[1139.48s -> 1145.00s]  about how we are gonna make this stuff faster and this is a good point in this course where
+[1145.00s -> 1151.64s]  I'd like to sort of talk through what are our avenues and there's three avenues of making
+[1151.64s -> 1158.60s]  this faster one way is we take machine learning classes and we think about these architectures
+[1158.60s -> 1165.48s]  and we design better ones for example there's a lot fewer flops in ResNet and Inception than
+[1165.48s -> 1170.20s]  in some of the original conv layers that sort of made it big in the combo the com nets that
+[1170.20s -> 1177.36s]  made it big early in this modern deep learning wave so significant algorithmic topology design
+[1177.36s -> 1184.00s]  improvements reduce the amount of memory needed amount of flops needed and so on and so on okay
+[1184.00s -> 1189.80s]  so so that's that's sort of in a that's one way we can go and that has nothing to do with the
+[1189.80s -> 1193.00s]  skills that I teach you in this class that would be you know you go take a machine learning
+[1193.00s -> 1198.80s]  class and you say you know what the way you know the way SGD performs I feel like there's
+[1198.80s -> 1203.96s]  some value in transferring information around a couple of layers with skip connections which
+[1203.96s -> 1210.52s]  is one of the big innovations of ResNet or I actually want I don't really want a lot of
+[1210.52s -> 1216.72s]  convolutions I only need a couple but I have to wire them up in this particular way so I'm
+[1216.72s -> 1224.52s]  showing you a an example of from yeah that's from the Inception ResNet block they're kind
+[1224.52s -> 1229.72s]  of like if you think about it you say well what do I need here I kind of feel like I want
+[1229.72s -> 1234.24s]  a couple of paths of three by three convolutions to do this amount you know features of this
+[1234.24s -> 1239.68s]  spatial extent I need a few cascades of them maybe I might have one path that has
+[1239.68s -> 1244.44s]  features of a wider extent if you're a designer of these networks you think about those sorts
+[1244.44s -> 1248.24s]  of things right and if you're a designer of those networks at Google and they say make
+[1248.24s -> 1253.36s]  these things fit on a mobile phone you hang around for two years trying various combinations
+[1253.36s -> 1259.36s]  of this stuff and come up with an architecture that looks a little this is a mobile net and this
+[1259.36s -> 1263.68s]  is you know getting we're getting you know we're back in 2017 and stuff so this is starting to
+[1263.68s -> 1268.96s]  get kind of old now but the point was that there was a small team a person at Google that
+[1268.96s -> 1273.92s]  tried different combinations of I need this many filters and I need this many layers and so
+[1273.92s -> 1278.40s]  on and so on and they came up with this design if you look at it here's the size of the
+[1278.40s -> 1284.56s]  filters three by three versus one by one here's the number of those filters and if every
+[1284.56s -> 1290.08s]  single time you do a sort of a down sample this is the output tensor sizes of all of
+[1290.08s -> 1294.92s]  those layers and first of all actually if you take a look at this is there anything alarming
+[1294.92s -> 1309.16s]  given what you know in this class yeah I thought you meant like figuring this out with a lot of
+[1309.16s -> 1312.64s]  work and I'm like yeah it was and they tried to automate this guy later but that's a different
+[1312.64s -> 1317.04s]  story well I mean the couple things that I see is first of all if you look at every one of these
+[1317.04s -> 1322.12s]  layers and you look at the output size and at first you might look at well it's just a 28
+[1322.12s -> 1326.72s]  by 28 image that's pretty tiny should be nothing and then if you think about instead
+[1326.72s -> 1330.80s]  of red green and blue at every point you think about they're actually being 256 channels
+[1330.80s -> 1335.76s]  or 512 channels you're like there's quite a bit of output between each of these layers
+[1335.76s -> 1340.68s]  like that's not fitting on cash in cash anymore the other thing that should be like a little
+[1340.68s -> 1346.44s]  surprising to you it's just like crap seven by seven how the heck are you gonna send the eyes
+[1346.44s -> 1353.48s]  this is a weird numbers here to actually make fit in a modern SIMD processor so it very well
+[1353.48s -> 1356.36s]  could have been the case that like you know might as well made that eight by eight because
+[1356.36s -> 1361.52s]  you would have gotten a bunch of stuff for free but anyways okay so the point of this
+[1361.52s -> 1368.56s]  is first of all a lot of systems classes take the architecture that is the best architecture
+[1368.56s -> 1374.08s]  of the day as a given and say let's try and optimize that and I just want you to keep in
+[1374.08s -> 1381.68s]  mind that on the algorithm side of the fence there's constantly massive innovation and iteration
+[1381.68s -> 1386.08s]  so here are some examples this is this is again from like image classification kind of
+[1386.08s -> 1391.16s]  a task that kind of got a lot of this started at least and these are different networks that
+[1391.16s -> 1396.52s]  people designed in the research and you know like you can think about and so basically they're
+[1396.52s -> 1402.36s]  getting more accurate over time right so the y-axis here is accuracy how how well they classify
+[1402.36s -> 1409.44s]  objects in an image or what's in an image the this graph down here is accuracy like ninety
+[1409.44s -> 1417.36s]  percent ninety one percent per flop per like expense and and this is where we were in the
+[1417.36s -> 1423.64s]  early days and these networks over here may not perform all that much better some of them perform
+[1423.64s -> 1429.96s]  better but like this VGG 19 is already all the way over here these better topologies are actually
+[1429.96s -> 1436.80s]  efficiency right and that plot over there is actually just like a 2d diagram of accuracy per
+[1436.80s -> 1444.80s]  unit cost so you want to be on the top left of that diagram okay and so if I look at just
+[1444.80s -> 1449.32s]  a couple of these things I pull them out and I pull them out from like a basically a change
+[1449.36s -> 1458.16s]  every year the accuracy was largely at this time was kind of about all the same but if you look in
+[1458.16s -> 1464.52s]  both like the number of weights so the number of filters more or less or the size of those
+[1464.52s -> 1471.72s]  filters there's a dramatic drop in the amount of memory that's needed to store this model and
+[1471.72s -> 1478.48s]  there's almost a commensurate drop in the amount of computation math needed to perform it so
+[1478.48s -> 1484.84s]  that's about 25x from algorithms in a span of about four years hardware is not going to get
+[1484.84s -> 1492.36s]  25 times faster in those four years okay so if you had designed an algorithm for this network
+[1492.36s -> 1497.36s]  you know you have been told you know you might have been pretty far off what is the right
+[1497.36s -> 1503.04s]  algorithm for this network so I just want to start by making sure everybody understands that
+[1503.04s -> 1508.96s]  that's out there and so if you were a good machine learning systems engineer you have to
+[1508.96s -> 1513.92s]  be tracking you know the state-of-the-art and these things and with these big large language
+[1513.92s -> 1519.36s]  models and transformers there's this huge push to build bigger and bigger because of the
+[1519.36s -> 1525.16s]  scaling laws right and there's definitely a reason for that but at some level of quality now
+[1525.16s -> 1528.56s]  there's all these chip companies out there that we're building these big chips because they're
+[1528.56s -> 1534.00s]  like well today's LLM is huge and what's been going on in the last six months or the last
+[1534.00s -> 1538.20s]  12 months is with llama and all these other things it's about once you get something that
+[1538.20s -> 1543.20s]  works to your satisfaction the engineers can come in or the ML engineers can come in and
+[1543.20s -> 1548.40s]  they can shrink the hell out of these things right so it makes a complicated design problem
+[1548.40s -> 1557.16s]  of what should you be designing your systems for okay now approach 2 is highly relevant to
+[1557.16s -> 1562.52s]  us in this class is at some point you say this is the architecture this is the topology that
+[1562.52s -> 1568.68s]  we're going with and and we need to make it execute well on the machine that I have and
+[1568.68s -> 1575.52s]  in this class the machine that you have would be a multi-core CPU or a GPU and I don't mean
+[1575.52s -> 1583.36s]  in this class me 149 in today's lecture I mean a multi-core CPU so here's a me taking my
+[1583.80s -> 1588.52s]  3x3 convolution slide and just changing the C code a little bit to talk a little bit more
+[1588.52s -> 1593.56s]  about what's going on so first of all you know it used to be four loops now now it's it's
+[1593.56s -> 1602.96s]  it's seven so it's four let's look at the I and J first for every output pixel for
+[1602.96s -> 1611.40s]  every filter for every filter we need to iterate over the input pixels I and J and also
+[1611.88s -> 1616.52s]  one thing I haven't said that it's input filter we're iterating over all input pixels I and J
+[1616.52s -> 1623.72s]  but that input image the input has multiple channels of depth right so you're actually
+[1623.72s -> 1631.56s]  iterating over all pixels and all RGB or all 512 channels and so on and so on so this
+[1631.56s -> 1638.72s]  is the convolution it's a 3d convolution largely or it's a 2d convolution on a 3d input for every
+[1638.72s -> 1644.04s]  filter for every output pixel and then the outermost loop is is the loop over batches
+[1644.04s -> 1648.52s]  of images so often will actually do multiple things through the network at once that's your
+[1648.52s -> 1654.76s]  batch size okay so seven loops here one two three four five six seven and this wouldn't be
+[1654.76s -> 1659.92s]  hard to implement at all like you could just go code this thing up code it up and see it
+[1659.92s -> 1666.72s]  probably wouldn't perform that well but it would be a correct implementation okay so now
+[1666.72s -> 1678.52s]  comes into the the association between convolutions and vector algebra so let me show you a quick hack
+[1678.52s -> 1687.08s]  so you can go to numpy you can go to your favorite library and you can call matrix matrix
+[1687.08s -> 1694.08s]  multiplication and you assume that whether it be in MATLAB or torch or numpy if you call
+[1694.20s -> 1700.20s]  matrix matrix multiplication someone has taken the time to implement it well right so it's
+[1700.20s -> 1705.68s]  kind of this reduction if you can boil something down to matrix operations maybe you're in reasonable
+[1705.68s -> 1711.84s]  shape so it turns out that it's really easy to think about a convolution as a matrix
+[1711.84s -> 1715.32s]  multiply and let me tell you how to do that and this is actually how some of the
+[1715.32s -> 1721.76s]  earliest conv layer implementations were implemented back in the days of system of pre-kootie
+[1721.76s -> 1728.76s]  and n systems and stuff like that so imagine I have my my input image here this is my input
+[1728.76s -> 1734.88s]  image x and y at every every x and y and imagine I have my convolution and let's say
+[1734.88s -> 1741.84s]  it's a three by three convolution so there should be nine weights make sense and then what
+[1741.84s -> 1746.88s]  I'm gonna do is I'm gonna say well every output pixel is just the dot product of these
+[1746.88s -> 1753.88s]  weights and some subset of the input pixels so I'm gonna copy the appropriate input pixels
+[1754.48s -> 1761.48s]  into a matrix here that is width by height rows and nine elements across okay so this
+[1763.88s -> 1769.16s]  is nine times bigger than the original image can you see that so I'm just gonna
+[1769.16s -> 1775.96s]  copy data in so that the output pixel the output row or the dot product of this row
+[1776.44s -> 1783.08s]  is the first pixel of the convolution and so what I'm showing you here on the slide is is what values
+[1783.08s -> 1788.24s]  how I would copy values in and then let's go ahead and think about the next row and copy
+[1788.24s -> 1793.08s]  these values and it might be the most clear if I get way down here where there's no boundary
+[1793.08s -> 1800.12s]  conditions and so if I'm gonna produce pixel at one one coordinate of output you know alpha
+[1800.12s -> 1805.08s]  pixel I'm gonna need those nine pixels from the input so I just copied them in right here
+[1805.08s -> 1813.56s]  and the output of the convolution is just gonna be the dot product there so I hope you can see
+[1813.56s -> 1820.88s]  at this point that with the appropriate padding and data duplication I can implement convolution
+[1820.88s -> 1828.60s]  as a matrix vector product right okay so check your understanding now imagine I want to do a
+[1828.60s -> 1835.60s]  convolution with not just one filter but I want to do a convolution with many filters how does my
+[1835.60s -> 1844.24s]  setup change so this vector these different this column vector which is the weights of one
+[1844.24s -> 1849.76s]  convolution I would just stack more and more columns there and it becomes a matrix so if I
+[1849.76s -> 1856.68s]  wanted to do multiple convolutions against the input image at once I just copy the image into this
+[1856.68s -> 1862.28s]  left-hand side matrix my weights are just sitting there as a number of filters columns
+[1862.28s -> 1870.12s]  and now I have matrix matrix products so if you give me a matrix matrix multiplication library
+[1870.12s -> 1877.60s]  I know how to populate this matrix in order to to produce the output okay one more check your
+[1877.60s -> 1885.68s]  understanding imagine that the input tensor is not just a single channel image so here at every
+[1885.68s -> 1892.04s]  XY there's only one value imagine that it has multiple values it's a 10 it's a multi-dimensional
+[1892.04s -> 1901.44s]  tensor let's say it has 512 values here how do I change my computation because now remember
+[1901.44s -> 1913.52s]  every every convolution is gonna be 3 by 3 by 512 how does this setup change okay so this
+[1913.52s -> 1920.56s]  is gonna be multiplied by 512 and I need weights for 3 by 3 by 512 to go down here so
+[1920.56s -> 1926.92s]  I'm gonna get much much bigger matrices right it'll look a little bit like this if
+[1926.92s -> 1931.68s]  there were three channels instead of 512 this is RGB let's say it look like this okay
+[1931.68s -> 1939.08s]  so now we have you know like if you give me the fastest matrix multiplication on the
+[1939.08s -> 1950.16s]  planet you give me I can produce inputs for you or I use that fastest matrix multiplication
+[1950.16s -> 1956.72s]  on the planet to execute one of these conv layers and so here's a slide or a figure that I stole
+[1956.72s -> 1963.84s]  from from Nvidia where they talk about this transformation so on the left-hand side are the
+[1963.84s -> 1970.04s]  values in your tensors like what you'd think of if you were using torch right so I have an
+[1970.04s -> 1977.04s]  input types or X which is width by height with C channels and batch size n well that means I need
+[1977.04s -> 1985.10s]  a weight matrix of C channels R and S is the 3 by 3 the size of the thing and then I have
+[1985.10s -> 1993.78s]  K filters right exactly so this is like common parameters for your conv layer and just notice
+[1993.78s -> 1999.90s]  that this converts using what I told you on the last slide to matrices A B and C that have
+[1999.90s -> 2006.14s]  dimensions that are the products of some of those those parameters so this is what you do
+[2006.14s -> 2012.98s]  you know like if you if I gave you a fast matrix multiplication library and so that matrix
+[2012.98s -> 2021.38s]  products you know a times B equals C C contains the result of convolving with n sorry with K
+[2021.38s -> 2036.66s]  filters an input that is width by height by C to produce an output that is P by Q by n pausing
+[2036.66s -> 2043.70s]  for questions okay and as you can imagine you know pick your favorite computer Intel Nvidia
+[2043.70s -> 2049.96s]  GPUs increasingly AMD GPUs and you can go download a library that does fast matrix multiplication
+[2049.96s -> 2054.18s]  right and you're not gonna write it any faster than them because they have you know
+[2054.18s -> 2060.54s]  they're crazy hackers working on this at all times okay so so that's one way to do this but
+[2060.54s -> 2065.22s]  maybe we should talk very briefly about how the heck do would you even begin to implement this
+[2065.26s -> 2069.42s]  matrix multiplication if you wanted to be one of those crazy hackers that worked all the time
+[2069.42s -> 2074.90s]  on these libraries right so here's matrix multiplication it's actually much simpler right
+[2074.90s -> 2079.62s]  I showed you a seven loop loop nest matrix multiplication it's just a simple three loop nest
+[2079.62s -> 2087.54s]  and some things to think about are like in this case I have an M by K matrix by a K by N
+[2087.54s -> 2091.78s]  matrix let's just for simplicity let's just say all the dimensions are n for now so we can
+[2091.78s -> 2096.18s]  think through this so if all the dimensions are n how much data do we end up touching
+[2096.18s -> 2108.74s]  three times n squared and how much work do we do and cube three loops over n so the
+[2108.74s -> 2113.02s]  problem with this implementation let's think about it for large n because you know we set
+[2113.02s -> 2118.02s]  this thing up and can be quite large because n might be 512 times 7 by 7 or something like
+[2118.02s -> 2124.90s]  that these might be gigabyte sized matrices knowing what you know about how computers work
+[2124.90s -> 2130.02s]  what do you see is the problem if I think about this innermost loop of matrix multiply
+[2130.02s -> 2136.86s]  it's reading that row of A and that column of B to output one element of C
+[2136.86s -> 2149.70s]  okay so well and the story is a little bit different so the question of the statement
+[2149.70s -> 2154.26s]  which I agree with is we're gonna get very bad cache locality well let's think about that
+[2154.26s -> 2161.18s]  in more detail so we are reading across a across that row are we particularly upset about that
+[2161.18s -> 2166.30s]  not really because it's kind of like the most coherent memory access you can make
+[2166.74s -> 2174.42s]  B we're jumping all around memory because B is if this is row major data every element you touch
+[2174.42s -> 2180.98s]  is going to be far away in the address space and on a unique cache line and C is actually as
+[2180.98s -> 2184.54s]  best as it possibly could be because I'm just reading and writing the same value that's gonna
+[2184.54s -> 2189.98s]  sit in cache but if you take a step back and think about your bandwidth bound problem
+[2189.98s -> 2195.58s]  on your homework this is actually not much better than that bandwidth bound problem on the homework
+[2195.86s -> 2200.90s]  because we're gonna read an A we're gonna read a B the access to B is pretty terrible and then
+[2200.90s -> 2206.46s]  we're just adding in to C so you're really only doing one math off you know a multiply or
+[2206.46s -> 2212.94s]  two math off so multiply add yet you're reading two values so this is your classic bandwidth
+[2212.94s -> 2219.82s]  bound setup which is a little bit weird right because matrix multiplication you just told me
+[2219.82s -> 2230.06s]  is N cubed work for N squared data access so fundamentally it should be O of N arithmetic
+[2230.06s -> 2234.42s]  intensity and you just gave me something that's like O of one so you gave me a bandwidth or
+[2234.42s -> 2239.18s]  I wrote you didn't give it to me I wrote a bandwidth bound problem yet if I think about
+[2239.18s -> 2246.14s]  how to do this properly you would tell me oh just put matrix A B and C in cache and then
+[2246.14s -> 2252.74s]  the arithmetic intensity should be O of N and N cubed work for every but the reason why I can't
+[2252.74s -> 2258.98s]  put A and B in cache is what they're big you know this could be gigabyte sized matrices right
+[2258.98s -> 2266.86s]  so this low arithmetic intensity is doesn't seem fundamental but at least the way I wrote the
+[2266.86s -> 2271.50s]  code right now is I'm screwed you know like I'm running problem five essentially from assignment
+[2271.50s -> 2289.78s]  one how can I do better okay so so the idea which the which was just given is is the first
+[2289.78s -> 2296.38s]  thing is to observe that I can express matrix multiplication not as operations on
+[2296.42s -> 2302.06s]  individual elements of the matrix but I can express matrix multiplication hierarchically
+[2302.06s -> 2308.90s]  in terms of a bunch of submatrix multiplications on blocks that's the that's like the real key
+[2308.90s -> 2315.18s]  insight so I'm gonna rewrite the code and here's how I'm gonna rewrite the code think about
+[2315.18s -> 2323.54s]  everything from this for loop down as just a matrix multiplication of two sub blocks and so
+[2323.54s -> 2329.86s]  the outermost loop is matrix multiplication over blocks so let's think about it is let's
+[2329.86s -> 2338.46s]  take one block of a one block of B let's load them into cash and let's multiply those
+[2338.46s -> 2347.46s]  matrices together and I'm gonna get an output matrix which is a piece of C and then I'm gonna
+[2347.46s -> 2354.74s]  move one block over in a and one block over in B and I'm gonna multiply those matrices and in the
+[2354.74s -> 2360.62s]  same way that I added in an element to see here I'm gonna add in the resulting sub block
+[2360.62s -> 2375.06s]  result into the block of C that I'm computing so what's my arithmetic intensity now for every
+[2375.10s -> 2380.34s]  one of these steps if I kind of think about like I should have highlighted this if I
+[2380.34s -> 2385.18s]  think about now the computation being a sequence of these steps what is the
+[2385.18s -> 2392.78s]  arithmetic intensity of this it's just matrix multiplication on block sizes of B or block size
+[2392.78s -> 2398.94s]  here so the amount of data that I have to load is what B squared on the order of B squared
+[2398.94s -> 2404.78s]  and the amount of work that I do is B cubed so my arithmetic intensity is this it's
+[2405.02s -> 2412.82s]  not n but it's B so the greater I make my block sizes as they go to n you know as the block sizes
+[2412.82s -> 2419.30s]  go to n I get arithmetic intensity of n as the block sizes go down to one I get arithmetic
+[2419.30s -> 2427.50s]  intensity of one so my thinking of how to choose the block size should be I want as big
+[2427.50s -> 2433.66s]  of a block size as possible and what do I actually mean by possible here on this statement
+[2433.66s -> 2441.58s]  yeah I cannot make my block sizes so large that I start getting capacity misses on my
+[2441.58s -> 2446.50s]  cache right so you would know your cache size you would pick your block size so that
+[2446.50s -> 2453.54s]  you could fit a block of A B and C in cache and then you would structure your code this way
+[2453.54s -> 2461.06s]  and I think we focused on this example in the in the CUDA tutorial last night but if you
+[2461.06s -> 2464.18s]  don't like I mean the code on the previous slide and this slide will take you all of like
+[2464.18s -> 2470.74s]  15 minutes to write like in C pop open a C compiler and do it make your matrices on the order
+[2470.74s -> 2479.26s]  of many megabytes or a gigabyte you'll be on the order of a thousand X different speed it'll
+[2479.26s -> 2484.76s]  be insane how much faster the difference is so if you ever implement major matrix multiply
+[2484.76s -> 2490.74s]  like this on big matrices you are running at your bandwidth limit and if you block you'll
+[2490.74s -> 2502.34s]  be going much much faster yeah it's a great question let's answer the question first on
+[2502.34s -> 2508.18s]  let's think about how that would work on a normal CPU on a normal CPU a cache just all
+[2508.18s -> 2514.82s]  it does is store lines from the address space so even though let me go back to my figure here
+[2514.82s -> 2519.74s]  think about all of the cat let's just say that like I choose a block size that's like
+[2519.74s -> 2527.62s]  cache line size by cache line size okay just to make this description easier the the cache
+[2527.62s -> 2533.48s]  lines that I need for that block of a are not contiguous in the address space right because
+[2533.48s -> 2539.02s]  because of the way they're stored so I'm gonna just load those cache lines and the
+[2539.02s -> 2544.02s]  cache is gonna figure out a place to put them right and when the processor issues a load
+[2544.02s -> 2551.06s]  instruction to whatever address that this is the cache will map that to the location and the cache
+[2551.06s -> 2556.70s]  for that cache line is stored so on a CPU the whole point of the cache is you don't manage
+[2556.70s -> 2562.98s]  it as a software programmer and you could get in trouble if for example Intel's algorithm
+[2562.98s -> 2569.14s]  for mapping addresses to cache lines doesn't allow like like if there are collisions you
+[2569.14s -> 2573.30s]  know two very different cache lines end up in the same spot of the cache that could cause some
+[2573.30s -> 2576.98s]  problems you might not get the performance you expect you go oh shoot how did this happen
+[2576.98s -> 2581.50s]  and then you might have to sort of change your data layout or something like that but you could
+[2581.50s -> 2586.22s]  also consider like that shared memory on a GPU we would do things a little bit differently
+[2586.22s -> 2591.18s]  we would literally have our CUDA thread say please load that block from the address space
+[2591.18s -> 2596.70s]  and put it in a contiguous allocation in CUDA shared memory and that's the difference
+[2596.70s -> 2601.42s]  between a cache and what what what a CUDA shared memory is more about what's called a scratch
+[2601.42s -> 2608.22s]  pad a scratch pad is a different address space a cache is just an implementation detail on the
+[2608.22s -> 2614.94s]  same address space but either way let's assume that we can fit those those blocks in cache
+[2614.94s -> 2624.74s]  yeah you mentioned the number of accesses here is b squared b squared for every sub step
+[2624.74s -> 2637.58s]  that's right we're gonna load b squared elements here we're gonna load b squared elements here
+[2637.58s -> 2642.62s]  and let's just assume that let's ignore the reuse and we're gonna load d squared elements
+[2642.62s -> 2647.74s]  here then we're gonna do a matrix multiply with those matrices and we'll do b cubed work
+[2647.74s -> 2659.62s]  so we're doing b cubed work for every every b squared IO make sense I thought I saw one more
+[2659.62s -> 2665.86s]  question and by the way remember any modern system or at least the CPU is gonna have an
+[2665.86s -> 2669.86s]  l1 cache it's gonna have an l2 cache it's gonna have an l3 cache you might even block
+[2669.86s -> 2676.90s]  into your registers so you know my code can start adding loops pretty quick all I'm doing
+[2676.90s -> 2681.10s]  is now choosing different block sizes so that blocks out you know I can say give me some blocks
+[2681.10s -> 2686.18s]  that fit in the l3 cache and then let me partition that into a submatrix multiplication
+[2686.18s -> 2690.42s]  of blocks that fit in the l2 cache and so on and so on you almost certainly probably want
+[2690.42s -> 2695.50s]  to block for the l1 and but like one level of blocking will get you most of the work
+[2695.50s -> 2698.94s]  but you know maybe an extra factor or two or something like that could come from more blocking
+[2698.94s -> 2707.34s]  now of course this is a you know an algorithm that's just plus equals blah blah blah blah like
+[2707.34s -> 2711.98s]  I haven't even talked about SIMD yet right so the multi-threading seems pretty simple I'd
+[2711.98s -> 2717.18s]  probably just paralyzed over the outermost loop or something like that but the SIMD could be a
+[2717.18s -> 2721.58s]  little bit gnarly if I you know again like you know the professional grade hackers hacking
+[2721.58s -> 2726.22s]  on this all the time and stuff like that so let's just think a little bit about the SIMD so
+[2726.22s -> 2731.78s]  I decided to write this in Intrinsics let's say that we are and now by the way my figures are
+[2731.78s -> 2736.62s]  not the entire matrices I'm thinking about how do I multiply these blocks so notice the dimensions
+[2736.62s -> 2744.14s]  are block size now so I could think about it as well I should take a vector from B an
+[2744.14s -> 2754.38s]  element from a copy the element of a that's the splat copy that element of a four times
+[2754.70s -> 2763.58s]  and now my dot product is actually producing multiple outputs of C at the same time so
+[2763.58s -> 2766.82s]  that's kind of interesting now I have a SIMD version of the thing but I kind of have to
+[2766.82s -> 2773.54s]  waste this splat instruction I don't like the fact that I'm still walking through B not in
+[2773.54s -> 2778.14s]  real major order I don't like the fact that every instruction here is dependent on the
+[2778.14s -> 2783.26s]  previous one because I'm doing a dot product which actually might hurt ILP and some other things
+[2783.30s -> 2790.78s]  so the design space here gets gets interesting and complex fast like for example I could do
+[2790.78s -> 2799.90s]  something where I pre transpose the block of B and if I pre transpose the block of B you know
+[2799.90s -> 2807.54s]  now I'm actually just doing a straight SIMD dot product the whole time or there's other versions
+[2807.54s -> 2813.46s]  of it where I actually pre transpose A and not B and produce transpose C and then re transpose
+[2813.46s -> 2817.58s]  the thing at the end so I'm not gonna get into any of the details like it kind of depends on your
+[2817.58s -> 2822.50s]  SIMD instruction set and your machine and stuff like that my point being is like this
+[2822.50s -> 2828.90s]  could easily be a two-week programming assignment if I wanted it to be for you and you can try
+[2828.90s -> 2834.86s]  all these various things and keep in mind that the strategy let me go back here you know the
+[2834.86s -> 2840.58s]  strategy might be a function of my dimensions of the block size or the matrix different block sizes
+[2840.58s -> 2846.14s]  might lend themselves to different strategies and if we go back and look at this particular
+[2846.14s -> 2852.70s]  network you know here are your input matrix sizes and they're all different on every layer
+[2852.70s -> 2858.42s]  so if you really want a good implementation you might use a different matrix multiplication
+[2858.42s -> 2864.30s]  implementation for the various layers and if you implement only one you're probably going to
+[2864.30s -> 2868.42s]  be suboptimal like in this even this like sort of like really weird long matrices as
+[2868.42s -> 2874.06s]  composed up there so this stuff gets it gets gnarly and people have put a lot of work
+[2874.06s -> 2881.54s]  into kubloss and a lot of work into these matrix multiplication routines now there's also
+[2881.54s -> 2889.30s]  another big if I go back a little bit there's a big problem with this also and I'm surprised
+[2889.30s -> 2895.02s]  nobody's raised their hand yet because I had an input image right or a couple of input images
+[2895.02s -> 2903.66s]  and what did I do I basically took every element and duplicated it a ton of times in order to make
+[2903.66s -> 2908.26s]  this matrix so I took a data set that might have been a few hundreds of megs and actually
+[2908.26s -> 2914.34s]  made it a matrix and did all this data copying to generate you know maybe multiple gigabytes of
+[2914.34s -> 2919.78s]  matrices and especially with a certain batch size and actually if we think about for those of you
+[2919.78s -> 2923.62s]  that have taken a machine learning class having to keep extra information around during back
+[2923.62s -> 2928.10s]  propagation and stuff like that you're out of memory very very quickly like with these little
+[2928.10s -> 2932.78s]  little matrices all of a sudden your footprint is like 16 gig or these little you know
+[2932.78s -> 2937.86s]  intrinsically small matrices that just blow out to 16 gig so one thing to keep in mind
+[2938.14s -> 2948.78s]  is that where are we yeah one very modern way to do this is to say we're gonna think about it
+[2948.78s -> 2956.50s]  like matrix multiplication but we're gonna go get the data from the original sources on demand
+[2956.50s -> 2965.38s]  when I'm constructing these blocks right so the actual data will be so if you look at this this
+[2965.38s -> 2972.10s]  is a matrix multiplication for simplicity I didn't block it here for simplicity it's not blocked it's
+[2972.10s -> 2979.18s]  just normal matrix multiplication but instead of the element a coming from X you know I times
+[2979.18s -> 2985.82s]  with plus J it comes from this accessor which does all of the math to figure out what is the
+[2985.82s -> 2991.86s]  location in the original input tensor not the matrix that would have stored the value that I
+[2991.94s -> 3001.14s]  need at this matrix so so it's matrix multiplication but not accessing matrix the matrices that I would
+[3001.14s -> 3008.50s]  have created it's accessing the original tensors okay so in other words they're burning math in
+[3008.50s -> 3014.82s]  this inner loop to compute that address as a function of the tensor dimensions in exchange
+[3014.82s -> 3023.70s]  for not decompressing the data into these big matrices okay so this is this is something called
+[3023.70s -> 3030.18s]  implicit matrix multiply in that it's not actually operating on matrices that are the size even
+[3030.18s -> 3038.22s]  though the loop structure as is if it's operating on matrices of that size yes cache
+[3039.10s -> 3047.14s]  because you're correct so like you know this dot product that feels like it's iterating over a
+[3047.14s -> 3055.78s]  line of the mail row of the matrix is actually iterating all over that original image but don't
+[3055.78s -> 3060.30s]  be too worried about that because remember I'm gonna like that would have sucked anyways
+[3060.30s -> 3066.10s]  this is gonna be blocked so you should think about these accessors are you bounce all over
+[3066.42s -> 3072.22s]  memory when you're bringing that data into shared memory or to cache once it's in shared memory or
+[3072.22s -> 3079.50s]  cache you flatten it out and make it make it a dense and then you run your sub block matrix
+[3079.50s -> 3086.42s]  multiplication on the dense stuff okay in other words you have to copy data from DRAM into cache
+[3086.42s -> 3092.22s]  that's the point at which you do your copy you don't copy it into a new location in DRAM
+[3092.22s -> 3101.06s]  and then bring it in it's a big difference so so that that's what you'll see if you just see
+[3101.06s -> 3108.94s]  this implicit implicit gem and and by the way just one more thing is the other thing that good
+[3108.94s -> 3114.66s]  implementations do is all of this math that goes from like with height number of tensors and
+[3114.66s -> 3120.74s]  batch size to an address if you want the fastest implementation is you pre compute that
+[3120.74s -> 3126.82s]  math and then you actually make this a lookup table so you actually burn a little bit of memory
+[3126.82s -> 3133.90s]  to get back the the addressing calculations which actually can be non-trivial for larger
+[3133.90s -> 3140.26s]  tensors so Nvidia has this library called Cutlass which if you want to be a pretty
+[3140.26s -> 3145.94s]  lead hacker and not go all the way to implementing you know matrix multiplication by
+[3145.94s -> 3153.58s]  yourself on in PTX on GPUs you might lose Cutlass these days so Cutlass gives you access to very
+[3153.58s -> 3159.90s]  fast matrix multiplication libraries that fit in shared memory that have the ability to go pull
+[3159.90s -> 3166.18s]  the data from various locations and things like that so this is like you know short of writing
+[3166.18s -> 3175.38s]  your own good CUDA assembly and on the low end and using tensorflow on the high end Cutlass is
+[3175.38s -> 3178.98s]  something in between you're like I want to implement my own deep network because I want a
+[3178.98s -> 3184.62s]  really small network running as fast as possible on an Nvidia GPU you'd use something like this
+[3184.62s -> 3193.50s]  this is not a very user-friendly library okay now just keep in mind that all of this at least
+[3193.50s -> 3197.34s]  thought you know on a big CPU or on a big GPU is running on this thing that's that's quite
+[3197.34s -> 3203.22s]  large right so you know each of these little SM cores might be kind of cranking on a sub block
+[3203.22s -> 3210.38s]  matrix multiplication you still need pretty large matrices to fill up this GPU right and
+[3210.38s -> 3214.78s]  that's why when batch size is one in machine learning your performance can go down there's
+[3214.78s -> 3222.62s]  just not enough enough work and so here are some plots where I'm varying N and I remember
+[3222.62s -> 3230.14s]  P and Q or the output size R and S was the filter size so one by one three by three five
+[3230.58s -> 3239.58s]  and just notice that like you've got to make for different batch sizes you've got to make
+[3239.58s -> 3246.46s]  those output image sizes somewhat large before the performance of the GPU the GPU has enough
+[3246.46s -> 3254.26s]  work to actually keep itself busy right so when when when people are saying gosh with these big
+[3254.26s -> 3259.06s]  neural networks I can only run batch size two or three or something like that because I'm
+[3259.06s -> 3263.62s]  gonna run out of memory otherwise they pay for that in performance because as these things get
+[3263.62s -> 3268.42s]  a little bit smaller you're not gonna be able to run this big big processor at peak rate
+[3268.42s -> 3276.94s]  this throughput yeah floating-point terra operations per second so higher is better these three
+[3276.94s -> 3283.02s]  different lines are three different model sizes different output tensor sizes P and Q is the
+[3283.02s -> 3287.98s]  the X and Y dimension of the output tensor and then here this is not relevant these days
+[3288.06s -> 3291.74s]  because these wide convolutions don't really exist but this is just saying if you're using
+[3291.74s -> 3297.98s]  wider convolutions you do more work and that work fills up the GPU more quickly so the graph
+[3297.98s -> 3304.14s]  on the right I think is on the left is probably more applicable today okay now of
+[3304.14s -> 3310.34s]  course I can also just go back to my original block conv layer which here's my C code of my
+[3310.34s -> 3318.42s]  six loops seven loops and I just did 15 minutes on how hard it is to optimize a three loop version
+[3318.42s -> 3326.10s]  of matrix multiply you can also just say go at it start blocking these loops and so you know
+[3326.10s -> 3330.66s]  if you want to just do a direct implementation and do it well you can you can definitely do
+[3330.66s -> 3335.98s]  that on your own as well and and these days and I'll get into this in a second there's a lot
+[3335.98s -> 3341.66s]  of interest in just giving this information at a good compiler and saying hey good compiler
+[3341.66s -> 3347.94s]  you come up with the blocking strategy tree for me right and that's things like XOA at Google
+[3347.94s -> 3354.98s]  or this new Triton thing from open AI they're trying they're trying to do that but but in
+[3354.98s -> 3363.14s]  general I still think these core inner loops are still kind of best done by by by hand by
+[3363.66s -> 3368.46s]  humans by hand let me just show you a few other tricks which are actually pretty interesting and
+[3368.46s -> 3376.02s]  so keep in mind that like okay so remember I said that a convolution here ignore all this we
+[3376.02s -> 3380.12s]  can think about it as a set of weights as a right-hand side in a matrix vector product
+[3380.12s -> 3385.22s]  against a matrix that comes from the elements of the input tensor and if you look carefully
+[3385.22s -> 3391.54s]  you're like you know what so let's let's think about this as m1 plus m2 plus m3 so m1 is
+[3391.54s -> 3397.90s]  just this product and choose this product and three is that product if we look carefully there's
+[3397.90s -> 3406.18s]  some common sub expressions in here and we can exploit those common sub expressions to do some
+[3406.18s -> 3411.38s]  partial you know to do some some early math and then actually compute the outputs as a function
+[3411.38s -> 3416.48s]  of those common sub expressions so in this example this is actually the essence of what's
+[3416.48s -> 3422.84s]  called a Winograd filter so you might have heard of a Winograd convolution is I've taken
+[3422.84s -> 3428.92s]  direct convolution I used to do six multiplies and four adds now I'm actually doing far fewer
+[3428.92s -> 3434.24s]  multiplies and a lot more at now whether or not this is a good trade-off it's gonna depend
+[3434.24s -> 3438.56s]  on your machine and stuff like that but there are ways that I can algorithmically start moving
+[3438.56s -> 3444.32s]  symbols around and do different amounts of math probably the most common one would be for
+[3444.32s -> 3448.84s]  those of you that are from EE or know anything about signal processing you know that a convolution
+[3448.84s -> 3454.16s]  can be expressed as a Fourier transform a basic point-wise multiplication and the
+[3454.16s -> 3458.80s]  Fourier transform back and that fast Fourier transform is basically employing techniques
+[3458.80s -> 3462.80s]  like this where we're exploiting common sub expressions to remove work so you can think
+[3462.80s -> 3470.28s]  about this as applying Fourier transform kind of ideas okay so all of the big vendors have
+[3470.32s -> 3477.56s]  their own deep learning libraries like cuDNN or Intel's one API these days and if you move
+[3477.56s -> 3481.60s]  up the stack and use put torch or tensorflow all of you or many of you are probably familiar
+[3481.60s -> 3486.40s]  with the library of different layer types that you have available to you so we've talked about
+[3486.40s -> 3493.60s]  conv2d that's the one we've talked about here today but other ones are a little bit simpler
+[3493.60s -> 3499.44s]  and so you get this library of optimizations and if you use this in torch or tensorflow these
+[3499.44s -> 3506.48s]  operations under the hood get compiled down to cuDNN and these lower level vendor specific
+[3506.48s -> 3516.04s]  libraries okay and if we pop open the API of cuDNN which is Nvidia's core library you just
+[3516.04s -> 3522.08s]  kind of look at the parameters to this is cuDNN convolution forward this is the forward pass of
+[3522.08s -> 3528.12s]  a convolution layer like we just talked about and you see a bunch of interesting algorithms or
+[3528.36s -> 3536.36s]  parameters to that thing it's not just tensor X weights well weights W and output Y you get
+[3536.36s -> 3542.04s]  like this descriptor to the input tensor you get choices for what algorithms you want to use
+[3542.04s -> 3547.36s]  and if we look at the algorithms this should actually make a little bit more more sense now
+[3547.36s -> 3556.88s]  so let's go look for here's implicit G gem so gem is general matrix multiply matrix
+[3556.88s -> 3565.16s]  multiplication the default algorithm is implicit gem which says take my tensors treat the conv layer
+[3565.16s -> 3570.48s]  as a big matrix multiply but don't ever actually make these big matrices just do the loop indexing
+[3570.48s -> 3578.60s]  as you're doing a matrix multiply to look up the values here's a forward algorithm direct
+[3578.60s -> 3583.04s]  this is my this would be like oh just use the your block version of my seven loop nest to
+[3583.04s -> 3590.32s]  actually directly do the convolution here are various other ones like oh here's gem but not
+[3590.32s -> 3595.64s]  implicit so this actually says copy the data into these big matrices and please do it as a
+[3595.64s -> 3600.32s]  normal matrix multiplication so you have a lot of these options these Winograd options of these
+[3600.32s -> 3604.80s]  FFT options are saying oh we want you to transform with an FFT and so on and so on
+[3604.80s -> 3610.24s]  so you basically just tell the API given what I know about this here's how I want you to do
+[3610.24s -> 3621.24s]  it okay so what we've talked about so far is how to implement matrix matrix multiplication which
+[3621.24s -> 3628.12s]  is basically how to implement a conv layer by the way like a blocked MLP or a fully connected
+[3628.12s -> 3633.92s]  layer is also a matrix matrix multiplication so it applies to that as well what we have not
+[3634.08s -> 3641.28s]  talked about at all is the fact that there are multiple layers back to back to back and there
+[3641.28s -> 3646.64s]  can be hundreds of these layers back to back to back now keep in mind that I just told you
+[3646.64s -> 3651.48s]  that the output of one of these layers is a big freaking matrix a big freaking tensor that
+[3651.48s -> 3656.76s]  could be tens of megabytes or hundreds of megabytes and let's just think about the basic
+[3656.76s -> 3662.84s]  sequence of a of a conv layer we might do this big matrix multiplication and output a width by
+[3662.84s -> 3674.04s]  height by N by K output tensor we're gonna store that in memory and then and then we're
+[3674.04s -> 3679.48s]  gonna bring it right back in and do something like add in the bias and then we're gonna store
+[3679.48s -> 3687.44s]  that in memory and we're gonna bring it right back in and do a max pull so this tensor is going
+[3687.44s -> 3694.40s]  in and out of memory over and over and over again and for these you know conv layer might
+[3694.40s -> 3700.20s]  be blockable but scale and bias is not the only thing you're doing is multiplying every element
+[3700.20s -> 3704.60s]  by a number and max pool there's not a lot of math in there I'm just taking every two by
+[3704.60s -> 3710.28s]  two region of the of the tensor computing the max and outputting that so these things here
+[3710.28s -> 3718.24s]  are severely bandwidth bound severely bandwidth up so we would love to be able to just kind of
+[3718.24s -> 3726.36s]  do all this in one shot and then send the tensor out to the to the rest of the memory so here's
+[3726.36s -> 3732.40s]  an example of you know like it's very easy for me if I knew the scale and bias that's
+[3732.40s -> 3738.60s]  happening is once I get done with the the matrix multiply I should go ahead and scale it
+[3738.60s -> 3744.08s]  and bias it and that just saved me hundreds of gig you know hundreds of megabytes out to memory
+[3744.08s -> 3749.68s]  and back here's an interesting thing is how would you rewrite this code if you wanted to do
+[3749.68s -> 3757.00s]  the max pool all in line here it's not that hard it would make some some gnarly code but
+[3757.00s -> 3763.40s]  conceptually it's not that hard how would you do the max pool right on the spot yeah
+[3763.40s -> 3772.76s]  yeah so imagine this was blocked if it was blocked I would have produced a block of
+[3772.76s -> 3778.76s]  output sitting there in cash I should do my max pool right then before I send it out and then
+[3778.76s -> 3787.08s]  I not only save the store and the load I actually what I store is four times smaller
+[3787.08s -> 3793.20s]  than what I produced anyways so there's a huge win there so it turns out that this stuff
+[3793.84s -> 3802.04s]  really matters and that's when your layer types get kind of gnarly and without any compiles
+[3802.04s -> 3808.24s]  compiler support that's when tensorflow start having API entry points that were called like
+[3808.24s -> 3813.96s]  com2d fuse batch normed you know power of 10 or something like that like you just start seeing
+[3813.96s -> 3819.56s]  this API that just gets huge because like they're like well this one's like a really slow sequence
+[3819.60s -> 3824.48s]  and we need to make a special case for that nowadays people are hoping with things like
+[3824.48s -> 3831.44s]  Jax and Triton that if you the compilers given knowledge of these operations can do some of this
+[3831.44s -> 3837.64s]  fusion for you but it's still not great it's still not that great and let me tell you why
+[3837.64s -> 3843.80s]  it's not super great I want to tell you about a cool little trick that was invented here at
+[3843.80s -> 3850.04s]  Stanford about a year and a half ago now that significantly improved the performance of these
+[3850.04s -> 3856.24s]  transformer layers and large language models and if you take a step back this trick is basically
+[3856.24s -> 3861.84s]  something that any of you in 149 had I given you a transformer layer you would have looked at
+[3861.84s -> 3866.32s]  it and you would have gone yeah you should definitely do this right and you had you have
+[3866.32s -> 3869.28s]  done this a year and a half ago you would have been in the talk of the town and you know in
+[3869.28s -> 3873.68s]  the machine learning Twitter sphere right so I want to talk very quickly I'm going to move
+[3873.68s -> 3878.12s]  away from these convolutional models I'm going to talk about these transformers and I want
+[3878.12s -> 3882.84s]  to think of talk about sequence to sequence transformers so one like for example the input
+[3882.84s -> 3887.16s]  might be a sequence of tokens maybe a sequence of words and the output of the model is to
+[3887.16s -> 3892.80s]  produce the next word just auto auto aggressively okay the application doesn't matter at all
+[3892.80s -> 3899.12s]  what does matter is the workload when we look into the key part of this neural network which
+[3899.12s -> 3904.96s]  is this box which is called attention okay and I'm not going to get in the algorithms
+[3904.96s -> 3908.84s]  of attention of attention at all right now but I'm just going to tell you what the workload
+[3908.84s -> 3917.24s]  looks like the input are a bunch of tensors three tensors Q K and V there are some I could
+[3917.24s -> 3921.68s]  give you an interpretation of this as a query this is the key that the queries match and this
+[3921.68s -> 3927.04s]  is the value so you can say hey for every element in my input sequence I'm going to think
+[3927.04s -> 3933.92s]  about that as looking up in a database of what other tokens match and based on what matches
+[3933.92s -> 3940.00s]  that's going to influence the output but just think about it for now as I have three embeddings
+[3940.00s -> 3947.32s]  I have three vectors Q K and V they're n-dimensional arrays and at every point in that array think
+[3947.32s -> 3953.28s]  about there being a d-dimensional embedding okay so I didn't give you the dimensions
+[3953.36s -> 3961.36s]  here somehow but this is n by d this is n by d this is n by d and this attention layer
+[3961.36s -> 3967.16s]  basically is just going to compute interactions between queries and keys so in other words we're
+[3967.16s -> 3975.40s]  going to take an outer product of the query vector Q against the key vector K and if these
+[3975.40s -> 3982.04s]  are n by d my output is going to be an n by n matrix so I'm going to do a matrix I'm going
+[3982.04s -> 3988.36s]  to do an outer product to produce a matrix then for every row of that matrix I'm going
+[3988.36s -> 3993.40s]  to perform an operation called a softmax if you don't know what a softmax is it does
+[3993.40s -> 3999.40s]  not matter let me tell you what matters about the softmax the softmax of X which I want
+[3999.40s -> 4005.40s]  you to think of X as the row of the vector is just a scaling of all the elements but that
+[4005.40s -> 4014.04s]  scaling depends on the maximum element in the vector okay why does that matter that matters
+[4014.04s -> 4022.00s]  because I don't know what the maximum element of a vector is until I've computed the entire
+[4022.00s -> 4027.32s]  vector so this would be like saying compute the sum of all the elements in the array and
+[4027.32s -> 4034.04s]  normalize everything by the sum computationally it would be equivalent okay so the problem
+[4034.08s -> 4040.88s]  here is I do a matrix multiply I produce an n by n matrix then for every row in the
+[4040.88s -> 4048.80s]  matrix I got to compute the max element and then I use that max element in a new
+[4048.80s -> 4055.40s]  computation to do another matrix multiply or sorry a matrix vector product so let me
+[4055.40s -> 4064.60s]  diagram this out for you I have Q and my K vectors that are n by d I multiply them together to get
+[4064.60s -> 4070.08s]  a matrix here that's n by n and by the way n is large because if we think about sequences
+[4070.08s -> 4076.24s]  of tens of thousands of tokens we're talking about n squared on n equals 10,000 this is a
+[4076.24s -> 4082.80s]  huge multi gigabyte matrix then I don't for every row of that matrix I'm gonna compute the
+[4082.80s -> 4086.80s]  softmax which again if you don't care about softmaxes just think about I'm gonna compute
+[4086.80s -> 4092.20s]  the sum of all the elements in the vector or the max of all the elements in the vector okay
+[4092.20s -> 4099.40s]  so I normalize all the rows by that sum and then I do a matrix vector product in order to
+[4099.40s -> 4106.32s]  compute the final result okay the problem is that this matrix is huge and so you could do
+[4106.32s -> 4112.48s]  block matrix multiply so you can compute that matrix very efficiently but you still have to
+[4113.16s -> 4117.64s]  store it out to memory you have to bring it back in row by row to compute the softmax
+[4117.64s -> 4122.64s]  you have to bring it back in again to compute this matrix vector product and I'm not showing you
+[4122.64s -> 4126.48s]  a few other steps there's some things that people do with like masking this thing and
+[4126.48s -> 4131.26s]  stuff like that you got to bring it in like a bunch of times that's where the compute
+[4131.26s -> 4135.76s]  is in these transformers or at least that the cost is in the transformers there's no
+[4135.76s -> 4143.48s]  compute actually which is the problem so here's the trick the trick was is there any way we can
+[4143.48s -> 4148.00s]  do this whole sequence block by block you just told me how to do a max pool in the middle of a
+[4148.00s -> 4153.64s]  conv layer the question is the same here is there any way that I can fuse through this
+[4153.64s -> 4159.20s]  softmax which looks like something that needs every element of the matrix before I can go
+[4159.20s -> 4165.28s]  any further and some folks just kind of looked at it and said okay so here's again the
+[4165.28s -> 4170.36s]  math of the softmax which is for every element of the vector X we're just going to scale we're
+[4170.36s -> 4177.48s]  going to raise e to the power of X scaled by the maximum element in the vector so I have to
+[4177.48s -> 4182.16s]  compute that max and I have to compute the sum in order to know how to scale that's basically
+[4182.16s -> 4189.64s]  okay and it turns out that you can factor this and compute it block by block okay and like
+[4189.64s -> 4193.96s]  the details of this I think we should we should take offline but the general gist of it is
+[4193.96s -> 4198.48s]  let's think about X as a first half and a second half so here's the first half here's the second
+[4198.48s -> 4207.92s]  half and if I think about what is the max of vector X in terms of maxes of X 1 and X 2 well
+[4207.92s -> 4214.40s]  the max of X is clearly the max of X 1 and the max of X 2 so you know this can definitely
+[4214.40s -> 4221.20s]  break down and it also turns out that computing this this F of X well all I need to know if
+[4221.20s -> 4227.92s]  I knew the max value I can compute F on the first mate on the first half and I just scale
+[4227.92s -> 4234.16s]  it back up by something we already know okay now I don't expect this to be followed in real time
+[4234.16s -> 4239.56s]  but in 10 minutes of math and you just sort of notice that inside of this term there's an
+[4239.56s -> 4246.04s]  e to the X 1 so these are gonna cancel you're gonna end up with it'll all work out the point
+[4246.04s -> 4255.00s]  being is that softmax can be computed in chunks if you just keep a running sum of max and as a
+[4255.00s -> 4260.92s]  result of that I can fuse through this whole thing so I can compute the matrix multiplication
+[4260.92s -> 4266.56s]  I can compute the softmax and I can compute the final matrix product by loading a block of Q
+[4266.56s -> 4273.20s]  loading a block of K loading a block of V computing the submatrix multiplication computing
+[4273.76s -> 4280.36s]  the softmax on a chunk of the whole row which is a sub a row of the submatrix then doing the
+[4280.36s -> 4287.28s]  matrix multiply and then accumulating into O so all of a sudden my memory requirements shrunk from n
+[4287.28s -> 4295.28s]  squared to block size squared which means I can fit much more data on chip in a GPU which
+[4295.28s -> 4299.88s]  means I can run on much longer sequences and because I'm not bandwidth bound in some
+[4299.88s -> 4306.24s]  situations I can run faster so the speed improvement was modest I think like a few small constant
+[4306.24s -> 4312.80s]  factors the memory footprint was enormous and that moved us from sequences of like 8,000 to
+[4312.80s -> 4318.08s]  sequences of 32,000 and stuff like that I believe GPT-4 is enabled by an optimization like this
+[4318.08s -> 4323.88s]  so this is your basic producer consumer locality optimization you can imagine it would have been
+[4323.88s -> 4328.28s]  hard for a compiler to do the mathematical analysis to figure out that this is possible
+[4328.60s -> 4337.12s]  but some folks in group did that and once you know how to chunk that softmax then you can chunk
+[4337.12s -> 4342.16s]  through the whole thing and all of a sudden all you know it's the equivalent of just reordering
+[4342.16s -> 4349.20s]  some loops here there and it's a very big change okay so these are the types of stuff
+[4349.20s -> 4353.76s]  that matter the most you know once you've once you have a good matrix multiplication
+[4353.76s -> 4358.20s]  implementation these are the types of things that are pretty funny I actually alluded to this
+[4358.20s -> 4362.08s]  before like you know about eight or nine years ago people like well you've got a fuse but we
+[4362.08s -> 4365.80s]  don't really know how to do it so we're just gonna have those people that implemented a good
+[4365.80s -> 4370.12s]  matrix multiplication are gonna go ahead and implement you a good fuse batch norm into the
+[4370.12s -> 4375.68s]  matrix multiplication or fuse resize and pad com 2d and get a coffee at the end of it
+[4375.68s -> 4380.96s]  you know like that's basically what was sort of popping up you know CUDA has had this sort
+[4380.96s -> 4388.56s]  of very template would templated sort of fusion capability like any convolution operator followed
+[4388.56s -> 4392.48s]  by what's called a point-wise operator a point-wise operator is something that just is
+[4392.48s -> 4397.72s]  like a map followed by another point-wise operator anything that fit that pattern they said okay
+[4397.72s -> 4402.40s]  we'll try and fuse the point-wise end of the matrix multiplication you know given the fact
+[4402.40s -> 4406.40s]  that a great solution for max pool and other stuff was proposed in five seconds you know this
+[4406.40s -> 4412.80s]  is not intellectually that hard what is hard is to do it on arbitrary tensor programs and
+[4412.80s -> 4417.84s]  so when you see these these frameworks out there like JAX is actually a pretty pretty
+[4417.84s -> 4423.20s]  nice sophisticated one right now they're now starting to analyze your tensor loop nests
+[4423.20s -> 4427.88s]  and stuff like that and go yeah we see how we can fuse this right in and we can generate
+[4427.88s -> 4433.16s]  that code for you so stuff's getting better it turns out that you need both you need an
+[4433.16s -> 4438.92s]  excellent implementation of convoy or matrix multiply and then you need excellent smarts so
+[4438.92s -> 4443.40s]  that everything else on the deep network it being bandwidth bound doesn't slow everything
+[4443.40s -> 4450.68s]  down you need both optimizations to have a good network implementation just as I finish up I want
+[4450.68s -> 4453.96s]  to talk about like there's just a whole bunch of other stuff out there you know like like the
+[4453.96s -> 4458.12s]  next thing you do to speed things up is you stop using regular precision math you go to
+[4458.12s -> 4464.36s]  lower precision math people are pushing this to the extreme I think in video GPUs are now
+[4464.36s -> 4470.16s]  starting to muck around with about four four bit precision math these days so the space of
+[4470.16s -> 4476.16s]  techniques is first of all you want to start with good algorithms like if you're a systems
+[4476.16s -> 4481.24s]  person and you ignore algorithm innovation you will get left behind there's a huge number of
+[4481.24s -> 4485.60s]  startups that are being left behind because they saw this curve of everything bigger everything
+[4485.60s -> 4492.96s]  bigger and I think that was done then you need to take 149 like principles and good
+[4492.96s -> 4500.60s]  compilers principles and optimize these things so that they run well on modern hardware we
+[4500.60s -> 4505.24s]  didn't talk too much today about approximations like low precision and sparsity but that's out
+[4505.24s -> 4510.04s]  there as well and then the last piece of the puzzle is what hardware you run this thing on
+[4510.08s -> 4516.72s]  so let's close up in the last minute and a half on this given what you know why would we say that
+[4516.72s -> 4522.32s]  a GPU is a good platform to run these deep neural network computations on what are some
+[4522.32s -> 4534.20s]  properties tons of parallelism these are huge matrix multiplication operations what else has a
+[4534.20s -> 4539.52s]  lot of arithmetic intensity if you do it correctly yep and so there's a lot of good algorithmic
+[4539.56s -> 4545.68s]  good ordering optimizations to get the arithmetic intensity so we can use all that compute all of
+[4545.68s -> 4551.00s]  the all of the weights are applied to each input so it's very SIMD so you got a lot of
+[4551.00s -> 4555.88s]  SIMD capability and we already have these processors that had a crap ton of ALUs on them
+[4555.88s -> 4559.60s]  for graphics so they happen to be right in the right place for the right time to do
+[4559.60s -> 4567.42s]  machine learning about a decade ago right so that's why everybody loves GPUs okay now the
+[4567.42s -> 4574.86s]  flip side is why might GPUs be a suboptimal platform for DNN evaluation given that a GPU
+[4574.86s -> 4580.70s]  is an arbitrary general-purpose processor and most of this work are these very simple
+[4580.70s -> 4587.42s]  matrix multiplication maybe matrix vector multiplication operations right so we're gonna
+[4587.42s -> 4590.94s]  have a whole class on this but I want to hint at it right now so that those of you taking
+[4590.94s -> 4597.94s]  229 or or you know maybe when you get around your assignment is what was the motivation of
+[4597.94s -> 4608.18s]  a SIMD instruction why do architects put SIMD instructions in a processor that's correct
+[4608.18s -> 4615.70s]  but so what why why not just build a whole bunch of little processors the idea is to
+[4615.70s -> 4625.70s]  amortize non math work instruction stream control data access whatever across that same operation
+[4625.70s -> 4633.10s]  okay and it we don't have to stop there with the SIMD instruction we could add an instruction
+[4633.10s -> 4637.94s]  like a dot product be super helpful for a matrix multiplication computation like a four by
+[4637.94s -> 4643.46s]  four dot product do four math ops and add them together or we could actually say what how
+[4643.46s -> 4647.86s]  about an instruction that does a four by four matrix multiply the little little matrix
+[4647.86s -> 4652.02s]  multiply I know how to use that because I know how to break down big matrix multiplications
+[4652.02s -> 4657.94s]  into that okay so the key principle here if you're an architect is you want to amortize
+[4657.94s -> 4664.02s]  all of the overhead of running a program over the biggest math operations that you
+[4664.02s -> 4669.78s]  can think of and here are some examples of the magnitude of that overhead in energy
+[4669.86s -> 4677.66s]  efficiency so compared to and these are invidious estimates so you know what they have a vested
+[4677.66s -> 4682.98s]  interest in making deep learning accelerators like TPUs seem very inefficient or not so
+[4682.98s -> 4688.74s]  efficient but they said if you just run adds and multiplies on an NVIDIA processor and you
+[4688.74s -> 4693.98s]  do your matrix multiplication with that you're two thousand times less efficient than if you
+[4693.98s -> 4700.66s]  built custom silicon to do that matrix multiply if you make a couple of bigger operations like just
+[4700.66s -> 4709.46s]  four component dot product you're only down to like five hundred only 500 X more efficient
+[4709.46s -> 4714.14s]  if you give yourself an instruction that's a four by four matrix multiply because that does
+[4714.14s -> 4720.06s]  a lot of work right that's that's 64 ops in one instruction you're all the way down to
+[4720.06s -> 4726.66s]  maybe only 30% more inefficient than these things so these in video their reaction was in addition
+[4726.66s -> 4732.42s]  to math units for ads and loads and all your standard math they have this thing called a tensor
+[4732.42s -> 4737.78s]  core off to the side what that tensor core is that's a fancy marketing name for all it
+[4737.78s -> 4743.06s]  is is support for a special instruction that does a four by I guess nowadays it's like a four
+[4743.06s -> 4749.78s]  by eight by eight by four matrix multiplication it's like 128 ops so if you write your code in
+[4749.78s -> 4754.86s]  terms of your some matrix multiply just going oh do your eight by four matrix multiplication
+[4754.86s -> 4763.62s]  you have access to your CUDA cores give you 19.5 teraflops of floating point math at 32
+[4763.62s -> 4769.46s]  bit precision if that's math that can be phrased in terms of matrix multiplies and you can do
+[4769.46s -> 4777.04s]  it in 16-bit floating point you get 300 teraflops of compute capability it's an order of
+[4777.04s -> 4784.52s]  magnitude more than an order of magnitude more peak compute on that GPU just in basically ALUs
+[4784.52s -> 4789.64s]  that can only do a matrix vector do a matrix matrix multiply that's what a tensor core is it's
+[4789.64s -> 4794.60s]  just a fancy instruction and that's in videos reaction to what we'll talk about later like
+[4794.60s -> 4800.08s]  TPS and other accelerators like things like this so that's your like little crash course on
+[4800.08s -> 4805.64s]  modern optimization of these networks and hopefully allows you to kind of situate yourself in the
+[4805.76s -> 4810.32s]  space of all these different solutions that are out there spanning different fields you know the
+[4810.32s -> 4815.26s]  algorithms people are contributing the software compiler and 149 people are contributing and the
+[4815.26s -> 4819.64s]  hardware people are now contributing as well so it's a very very interesting cross-cutting
+[4819.64s -> 4821.16s]  space cool all right

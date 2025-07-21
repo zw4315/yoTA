@@ -1,0 +1,1817 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 12.88s]  Today, we're going to be going into details on writing high performance code for GPUs.
+[12.88s -> 17.92s]  So part of assignment two is going to be you're going to have to do a bunch of profiling.
+[17.92s -> 23.28s]  You will have to write your own Triton kernel for Flash Attention 2.
+[23.28s -> 26.08s]  You will need to sort of make all of this stuff very high performance.
+[26.08s -> 29.36s]  And so in this lecture, we're going to kind of drill down a little bit, and we're going
+[29.36s -> 36.94s]  to try to write some high performance code for standard components in a language model.
+[36.94s -> 41.68s]  So the plan for this lecture is we're going to just do a brief amount of review about
+[41.68s -> 47.12s]  GPU stuff, just to make sure you have, once again, the basic components of the GPUs
+[47.12s -> 51.80s]  that we need to understand in order to follow the rest of the lecture.
+[51.80s -> 56.20s]  And then I'm going to show you a bunch of sort of really basic things about benchmarking
+[56.20s -> 60.32s]  and profiling, which will be helpful for both the assignment and in general, if you want
+[60.32s -> 64.24s]  to write high performance PyTorch or deep learning code.
+[64.24s -> 67.32s]  And then we're going to basically write some kernels.
+[67.32s -> 70.64s]  We're going to write CUDA kernels in sort of C++.
+[70.64s -> 73.24s]  We will then do the same thing in Triton.
+[73.24s -> 77.98s]  And then lastly, we're going to do the easy but very good thing of using PyTorch's
+[77.98s -> 82.12s]  existing JIT compiler to have it optimized for us.
+[82.12s -> 85.00s]  And then we'll compare all of those and profile and benchmark things.
+[85.00s -> 87.56s]  And throughout, we're going to really dig in deep.
+[87.56s -> 92.48s]  We're going to go down all the way to the PTX, so pretty close to the machine code
+[92.48s -> 96.24s]  to understand what, you know, the GPU is actually doing under the hood when we write
+[96.24s -> 98.12s]  all of this code.
+[98.12s -> 102.40s]  And then hopefully we'll have time, and I think we will, we'll finish by writing
+[102.40s -> 107.52s]  sort of a fast Triton implementation of softmax at the very end, okay?
+[107.52s -> 111.34s]  So assignment one has come to a close.
+[111.34s -> 112.48s]  There's still a leaderboard.
+[112.48s -> 114.98s]  You can still submit and update things there.
+[114.98s -> 119.44s]  Some of you may be using late days, so please finish up assignment one.
+[119.44s -> 121.30s]  And then assignment two is now out.
+[121.30s -> 125.54s]  And as I said before, there's going to be, you know, a bunch of systems stuff that you're
+[125.54s -> 126.74s]  going to need to do.
+[126.74s -> 131.26s]  There's fun parts that you can do now involving GPU kernels.
+[131.26s -> 134.22s]  And then next week, we're going to talk about parallelism, and that's going to be
+[134.22s -> 139.86s]  the other half of the assignment, writing fast parallel code like data parallelism
+[139.86s -> 141.22s]  and so on.
+[141.22s -> 144.06s]  So we will get to that next week.
+[144.06s -> 145.10s]  All right.
+[145.10s -> 148.88s]  So now, remember how GPUs work, right?
+[148.88s -> 152.94s]  So when we have something like an A100 or an H100, we're going to have a whole bunch
+[152.94s -> 155.52s]  of SMs streaming multiprocessors.
+[155.52s -> 160.70s]  Within each SM is a large number of units that can do computation.
+[160.70s -> 163.78s]  We have N32 ones or FP32 ones.
+[163.78s -> 167.34s]  And then each SM is going to launch a large number of threads, right?
+[167.34s -> 171.70s]  And we have the memory hierarchy, which is that we have DRAM or global memory, which
+[171.70s -> 172.82s]  is big and slow.
+[172.82s -> 175.62s]  And then we've got caches that are much faster.
+[175.62s -> 178.88s]  And in fact, you see here, there's this thing called the register file.
+[178.88s -> 182.66s]  This is very, very fast memory that each thread can access, and we're going to be making
+[182.66s -> 189.78s]  heavy use of these registers as we write high performance code for GPUs today.
+[189.78s -> 194.46s]  The basic structure for the execution model is going to be, we're going to have a collection
+[194.46s -> 199.06s]  of thread blocks, and a block is going to be scheduled on a single SM, right?
+[199.06s -> 202.02s]  So this is kind of the atomic unit that we're going to be thinking about, especially
+[202.02s -> 204.74s]  when we write code in things like Triton.
+[204.74s -> 208.14s]  And then within each block, there's going to be a whole bunch of threads, and the threads
+[208.14s -> 210.50s]  are actually going to be the ones doing the computation.
+[210.50s -> 213.94s]  And so if you have a vector, and you're going to be operating over elements of that
+[213.94s -> 216.82s]  vector, right, you're going to write code where each thread is going to go in
+[216.82s -> 220.36s]  and maybe operate over a few elements of that vector at once, right?
+[220.36s -> 225.02s]  And all the threads together will sort of process the vector completely.
+[225.02s -> 228.26s]  So why do we have these things called thread blocks, right?
+[228.26s -> 231.54s]  Why not just have threads and your big global context?
+[231.54s -> 234.62s]  Well, thread blocks can communicate with each other.
+[234.62s -> 238.14s]  They're shared memory kind of within the SM that's pretty fast, right?
+[238.14s -> 241.02s]  So when you need to do something like matrix multiplication, you're going to need
+[241.02s -> 245.74s]  to pass information from thread to thread, and within a thread block that's very fast,
+[245.74s -> 249.52s]  across thread blocks or across these groups, it's going to be very expensive.
+[249.52s -> 253.62s]  So any data that you need, you're going to want to keep within the same thread
+[253.62s -> 257.78s]  block or within the same sort of pile, and that's going to keep things very, very fast.
+[257.78s -> 261.86s]  And that's going to be as fast as sort of an L1 cache, and that's a great place to be.
+[261.86s -> 266.54s]  And so you can use this to synchronize across threads, but you can't, for example,
+[266.54s -> 267.70s]  synchronize across blocks.
+[267.70s -> 271.22s]  You can't really control what's going to happen, right?
+[271.22s -> 276.46s]  And remember the thing that I mentioned last week, there's this thing called waves, right?
+[276.46s -> 279.86s]  Waves aren't sort of an inherent thing that you normally think about,
+[279.86s -> 282.06s]  but for performance, it is an important component.
+[282.06s -> 288.18s]  So when we actually run these things, the threads are grouped into consecutive blocks
+[288.18s -> 294.26s]  of 32 threads, and that's a wave, and that gets executed kind of all at once in an SM.
+[294.26s -> 298.30s]  And so one thing that we would like to do is to make sure all the waves have an equal amount
+[298.30s -> 299.50s]  of computation.
+[299.50s -> 303.58s]  We can't always do that, but, you know, if we can, we would like to do that, right?
+[303.58s -> 307.66s]  So we want to make the number of thread blocks ideally divide the number of SMs and to make sure
+[307.66s -> 311.46s]  that each wave has an equal amount of work.
+[311.46s -> 314.98s]  So we're going to ideally have a lot more thread blocks than SMs, and we're going to
+[314.98s -> 319.18s]  try to make that happen as we write high performance code.
+[319.18s -> 324.06s]  Okay, and then the last concept, and maybe amongst the most important concepts here,
+[324.06s -> 325.98s]  is arithmetic intensity.
+[325.98s -> 328.30s]  We would like to keep arithmetic intensity high.
+[328.30s -> 333.30s]  We would like to have more flops than we have bytes of memory movement, and this is
+[333.30s -> 338.38s]  because, you know, if you remember the scaling plot from last lecture, our compute
+[338.38s -> 340.90s]  scaling is much, much faster than memory scaling.
+[340.90s -> 345.38s]  So a lot of the time, computations are going to end up being memory-bound, and we're not
+[345.38s -> 347.58s]  actually getting all of the work done, right?
+[347.58s -> 351.66s]  So as a general rule, you know, matrix multiplication is compute-bound if we kind
+[351.66s -> 352.66s]  of do it cleverly.
+[352.66s -> 356.02s]  Everything else is going to be memory-bound, and we're going to try to cleverly reduce
+[356.02s -> 361.30s]  the amount of things that are memory-bound or how badly things are memory-bound, okay?
+[361.30s -> 364.90s]  So that's our very, very brief sort of review of GPUs.
+[364.90s -> 366.38s]  Hopefully everyone remembers this.
+[366.38s -> 370.14s]  You still have a fresh sort of memory of the execution model.
+[370.18s -> 375.18s]  Feel free to stop me and ask questions if any of you, you know, have sort of lingering
+[375.18s -> 378.30s]  doubts or questions about how this is all going to work.
+[378.30s -> 379.30s]  Yes?
+[379.30s -> 380.30s]  What was the function of?
+[380.30s -> 382.30s]  What was the function of, sorry.
+[382.30s -> 383.30s]  A warp.
+[383.30s -> 387.98s]  A warp is essentially a group of threads that get executed together, and the reason
+[387.98s -> 393.40s]  why warps exist is that they reduce the amount of control machinery that's needed.
+[393.40s -> 397.30s]  Because you're executing all these threads at the same time, you don't need a control
+[397.30s -> 398.62s]  thing for each thread.
+[398.62s -> 400.98s]  You need them for blocks of 32, right?
+[400.98s -> 405.50s]  And so you see, for example, there's a lot more compute units than there are sort of
+[405.50s -> 409.98s]  warp schedulers, and so you're able to do a lot more parallel work without worrying
+[409.98s -> 410.98s]  about control.
+[410.98s -> 412.74s]  And this is one of the trade-offs with CPUs, right?
+[412.74s -> 418.30s]  CPUs, a lot more sort of silicon-area dedicated control and branch prediction and things
+[418.30s -> 424.18s]  like this, whereas for GPUs, much more emphasis on computation with simpler controls.
+[424.18s -> 426.06s]  Okay.
+[426.06s -> 431.46s]  So now we're gonna get into sort of newer content now, and I think if there's one high-level
+[431.46s -> 435.84s]  thing to remember, it's if you want to write high-performance code, you should remember
+[435.84s -> 438.06s]  to benchmark and profile your code.
+[438.06s -> 442.70s]  And that seems very obvious, but I've seen a lot of things where students or people
+[442.70s -> 445.78s]  go in and they're like, well, I think this is the bottleneck, so I'm gonna spend
+[445.78s -> 448.86s]  three hours optimizing it, and it turns out it wasn't the bottleneck at all.
+[448.86s -> 453.22s]  I'm sure it was fun, but it was kind of time that was misallocated.
+[453.22s -> 457.46s]  And so if you actually use a high-performance or a very detailed profiler, you can kind
+[457.46s -> 462.22s]  of see exactly where your bottlenecks are and exactly what the machine is doing.
+[462.22s -> 465.98s]  And once you have that, you can go and spend your efforts in sort of the most important
+[465.98s -> 468.20s]  parts of your code execution.
+[468.20s -> 471.30s]  And so that's the high-level thing I want to get across, because some of the details
+[471.30s -> 476.86s]  about GPU execution and how you write a softmax kernel, that's gonna kind of change, and
+[476.86s -> 481.58s]  maybe you even want to just rely on the torch compile autogit thing.
+[481.58s -> 484.50s]  But the fact that you should profile isn't really gonna change no matter what the tools
+[484.50s -> 485.50s]  are.
+[485.50s -> 489.70s]  So I want you to sort of internalize that idea that you should be always profiling
+[489.70s -> 494.22s]  if you want to be writing high-performance code.
+[494.22s -> 496.06s]  And really, there's a limit to the theory.
+[496.06s -> 500.22s]  I think systems is part of this course that you can reason about pretty well.
+[500.22s -> 503.66s]  Architecture is somewhat hard to reason about, and you can really think about sort of
+[503.66s -> 505.70s]  the roofline model and so on.
+[505.70s -> 507.54s]  But how fast does your matrix multiply?
+[508.14s -> 512.10s]  Well, maybe that depends on the library version or your hardware, like which things are bottlenecking
+[512.10s -> 513.10s]  for what reason.
+[513.10s -> 517.26s]  There's all sorts of microcode things that you don't really fully know.
+[517.26s -> 520.90s]  And so you have to, in the end, have to do end-to-end benchmarking whenever you're
+[520.90s -> 522.50s]  developing these things.
+[522.50s -> 523.50s]  Okay.
+[523.50s -> 526.06s]  So I'm gonna have an example computation.
+[526.06s -> 529.30s]  This is the simplest thing that we can run compared to all the things that you all
+[529.30s -> 531.70s]  are doing in your assignment one.
+[531.70s -> 533.46s]  But I'm gonna run a very simple MLP.
+[533.46s -> 535.44s]  It's gonna have 128 dimensions.
+[535.44s -> 537.18s]  It's gonna have 16 layers.
+[537.18s -> 539.82s]  It's gonna have some batch size, and it's gonna have five steps.
+[539.82s -> 543.50s]  I'm gonna just do forwards and backwards for five different steps here.
+[543.50s -> 546.46s]  And just to make the code clear, it's something like this.
+[546.46s -> 551.14s]  I'm gonna define an MLP model, and I'll show you that in a moment here.
+[551.14s -> 555.86s]  And then I'll define a random Gaussian input, and then I'll run it for five steps in
+[555.86s -> 559.86s]  that last case, where I compute some forward, and then I compute a backwards, and then
+[559.86s -> 565.06s]  I return sort of the result, which is just the mean of the output of my MLP.
+[565.06s -> 566.06s]  There's not even losses.
+[566.06s -> 567.06s]  It's so simple.
+[567.06s -> 571.06s]  You run the MLP forward, and I just average pool at the end.
+[571.06s -> 574.98s]  And then the MLP is just kind of the simplest thing you can also imagine here.
+[574.98s -> 579.78s]  It's just a bunch of linear layers stacked on top of each other, which is this bit,
+[579.78s -> 582.72s]  and then I've got a galu in between.
+[582.72s -> 586.18s]  So this is just galu, linear, galu, so on and so forth.
+[586.18s -> 587.50s]  Everything is nice and square.
+[587.50s -> 593.42s]  So hopefully this is a very simple MLP that you all feel pretty comfortable with.
+[593.42s -> 595.66s]  And then let's go back.
+[595.66s -> 596.66s]  Yes.
+[597.26s -> 598.26s]  Oh, sorry.
+[598.26s -> 600.26s]  I want to go back up to here.
+[600.26s -> 601.26s]  Okay, good.
+[601.26s -> 605.66s]  And so now I have this MLP code that I want to run, and now I'm going to do two things.
+[605.66s -> 607.70s]  I'm going to benchmark, so I'm going to do some timings.
+[607.70s -> 612.74s]  I want to know how long does this function take to run, and then I'll do profiling,
+[612.74s -> 616.50s]  which is to go inside the function and ask, you know, where am I spending all of my
+[616.50s -> 617.86s]  time?
+[617.86s -> 619.74s]  So let's start with benchmarking, right?
+[619.74s -> 625.96s]  So benchmarking is just the measurement of wall clock time of performing these operations,
+[625.96s -> 631.40s]  and I'm only looking for the end-to-end execution time of, in this case, my MLP function.
+[631.40s -> 634.40s]  And there are some subtleties to this, like you're sitting there and you're like, why
+[634.40s -> 638.96s]  am I being told how to invoke, I don't know, the time it function?
+[638.96s -> 642.84s]  But you do have to be a little bit careful about how you measure times, and I think
+[642.84s -> 646.64s]  if you're not paying attention, you will run into these pitfalls when you do assignment
+[646.64s -> 647.64s]  too.
+[647.64s -> 649.64s]  And so what are we doing this for?
+[649.64s -> 651.52s]  We're going to compare implementations later.
+[651.52s -> 656.96s]  We're going to compare our Triton to our handwritten C++ to PyTorch's implementation
+[656.96s -> 661.20s]  and Torch compile, and we want to know, was it worth it to write that CUDA kernel?
+[661.20s -> 664.70s]  And we'd also like to understand when I make my matrix multiplies bigger, how much
+[664.70s -> 665.92s]  slower does it get, right?
+[665.92s -> 668.92s]  So we'd like to do some empirical benchmarking of those.
+[668.92s -> 673.52s]  So throughout this lecture, I'm going to be using this benchmark function, and that's
+[673.52s -> 675.12s]  going to be sort of a wrapper function.
+[675.12s -> 677.24s]  I'll step through it.
+[677.24s -> 679.20s]  Benchmark is going to do the following things, right?
+[679.20s -> 682.12s]  It's going to have a function that I want to benchmark, which is run, and then I'm
+[682.12s -> 687.52s]  going to do some number of warmup iterations, and then I'll do some number of trials, right?
+[687.52s -> 691.96s]  And you might wonder, okay, so what's this warmup thing that we're doing here?
+[691.96s -> 697.68s]  Well, one thing that's really important is when you first run your PyTorch code, and
+[697.68s -> 702.68s]  let's say it dispatches something to the GPU, it might look very fast and transparent
+[702.68s -> 707.08s]  to you, but that very first time something's executed, in the background, machine code
+[707.12s -> 711.28s]  is being compiled, that code instruction might be being sent to the GPU.
+[711.28s -> 715.36s]  There's all sorts of things that happen to sort of initialize your code, and so you
+[715.36s -> 719.72s]  always want to do some warmup iteration to make sure that you're not measuring sort
+[719.72s -> 721.20s]  of the startup speed.
+[721.20s -> 724.00s]  Instead, you want to measure kind of the steady state speed, right?
+[724.00s -> 727.80s]  If you're running thousands and thousands of iterations, what you're interested in is
+[727.80s -> 734.84s]  that part, not necessarily how fast can you do on-the-fly compilation of your CUDA code, right?
+[734.84s -> 739.56s]  So, that's why we have warmup, and you should always have a bit of warmup.
+[739.56s -> 743.20s]  And then, another thing that's really important, and I'll get to this once we get
+[743.20s -> 747.88s]  to the profiler, is you want to call this thing called Torch CUDA Synchronize.
+[747.88s -> 748.80s]  Like, what is that?
+[748.80s -> 753.96s]  Well, the GPU and the CPU are basically two independent compute units in your
+[753.96s -> 755.08s]  computer, right?
+[755.08s -> 757.20s]  And they can basically run kind of independently.
+[757.20s -> 761.20s]  And so, the execution model is going to be this Python code that I have here,
+[761.20s -> 763.04s]  this lives on the CPU, right?
+[763.04s -> 767.04s]  And when I run something, it's going to dispatch a bunch of CUDA kernels, right,
+[767.04s -> 767.76s]  to the GPU.
+[767.76s -> 769.92s]  It says, please run these things for me, right?
+[769.92s -> 773.36s]  And the GPU will go off and execute those things, and the CPU will actually go on
+[773.36s -> 774.36s]  and keep running, right?
+[774.36s -> 777.36s]  It doesn't wait for those CUDA executions to stop.
+[777.36s -> 781.36s]  And so, that's great for writing high-performance code, but you should
+[781.36s -> 784.64s]  hopefully see the immediate problem if you want to do benchmarking, right?
+[784.64s -> 787.92s]  If you're benchmarking and you've got this model where the GPU runs off in the
+[787.92s -> 791.20s]  side and your CPU is doing something different, you're actually not measuring
+[791.24s -> 793.40s]  the GPU execution time, right?
+[793.40s -> 797.24s]  So, Torch CUDA Synchronize basically says, all right, let's make sure that the
+[797.24s -> 801.48s]  GPU and CPU are in the same state, and there's sort of no queued things running
+[801.48s -> 804.52s]  and that we're kind of at the same point in terms of the code that's being
+[804.52s -> 805.64s]  executed.
+[805.64s -> 809.00s]  And now, so the GPU and CPU are kind of in the same state, and I'm going to
+[809.00s -> 810.12s]  time it for real, right?
+[810.12s -> 813.48s]  And I'm going to time something for some number of times, and I'm going to run the
+[813.48s -> 816.76s]  computation, which in this case is the sleep command.
+[816.76s -> 818.28s]  I'm going to do it three times.
+[818.28s -> 823.84s]  And since I'm trying to sleep for 50 milliseconds, that's the time that I'm
+[823.84s -> 824.88s]  going to kind of get at the end, right?
+[824.88s -> 827.56s]  So, I do time.time three times.
+[827.56s -> 832.12s]  And, of course, here, right, I'm also calling Torch.CUDA.Synchronize at the
+[832.12s -> 835.64s]  end of run to make sure that the GPU and CPU states are the same, right?
+[835.64s -> 838.96s]  So, if the CPU is running ahead, it's going to wait for the GPU execution to
+[838.96s -> 841.28s]  actually finish here, and vice versa.
+[841.28s -> 844.96s]  And so, now, I sort of finished, and then I'm going to average because,
+[845.40s -> 848.84s]  you know, each single measurement might be, you know, fluctuating because of things
+[848.84s -> 852.52s]  like thermal properties of the GPU, and so you want to take multiple replicates,
+[852.52s -> 853.92s]  take the mean, and return that.
+[853.92s -> 856.48s]  That's our benchmarking code, right?
+[856.48s -> 860.12s]  Very simple, but remember kind of the two important pieces here, right?
+[860.12s -> 863.80s]  Always do a warm-up, make sure to call CUDA.Synchronize.
+[863.80s -> 865.44s]  If you do those, very simple.
+[865.44s -> 868.64s]  If you forget to do those, you'll get pretty crazy numbers.
+[868.64s -> 871.40s]  Like, you'll get that your big matrix multiply finished instantly,
+[871.40s -> 873.44s]  which is definitely not true, right?
+[873.48s -> 877.00s]  Okay, so now we can do some benchmarking of matrix multiplies.
+[877.00s -> 879.36s]  I'm going to walk through some of these.
+[879.36s -> 881.76s]  They're just putting numbers to things that we already know,
+[881.76s -> 885.72s]  but I want to, you know, just walk through it and make sure we're on the same page here, right?
+[885.72s -> 889.68s]  So, I ran this on the class H100s.
+[889.68s -> 894.32s]  I have GPUs, so I'm going to do matrix multiplies over these sizes,
+[894.32s -> 900.56s]  and then I'm going to go and collect a whole bunch of matrix multiply timings
+[900.56s -> 905.20s]  for each of these dimensions stepping through kind of this benchmark result.
+[905.20s -> 907.80s]  And so, we kind of see, you know, as we expect, right,
+[907.80s -> 911.92s]  super linear scaling of our runtimes as we increase the matrix size.
+[911.92s -> 915.36s]  Of course, at the smallest sizes, like 1024 and 2048,
+[915.36s -> 917.76s]  we actually see that the times don't grow at all
+[917.76s -> 922.12s]  because there's constant factor overhead in just doing these matrix multiplies.
+[922.12s -> 926.08s]  Like, these numbers have to get shipped from the CPU to the GPU.
+[926.08s -> 929.56s]  You know, there's overhead in, like, launching the kernel,
+[929.56s -> 933.76s]  and so it's not the case that, you know, it's super linear all the way to zero.
+[933.76s -> 936.64s]  But once the matrices get big enough, we see exactly the kind of scaling
+[936.64s -> 940.08s]  that we expect to see with our matrix multiplies, right?
+[940.08s -> 941.48s]  Okay.
+[941.48s -> 943.28s]  So, hopefully straightforward.
+[943.28s -> 946.16s]  Now, let's try to benchmark our MLP.
+[946.16s -> 947.64s]  So, what are we going to do?
+[947.64s -> 949.16s]  We're going to make our MLP bigger.
+[949.16s -> 950.84s]  We're going to have 256 dimensions.
+[950.84s -> 952.12s]  We're going to have four layers.
+[952.12s -> 955.48s]  Back size of 256 takes two steps.
+[955.48s -> 957.24s]  And so, what's the time that it takes to do that?
+[957.28s -> 961.00s]  Well, it's going to take 6.2 seconds to do that.
+[961.00s -> 963.48s]  And now, I could do some basic things.
+[963.48s -> 968.44s]  I can scale the number of steps from two to five, and I can benchmark all of those,
+[968.44s -> 973.80s]  and I'll get two, three, four, and then five steps.
+[973.80s -> 978.00s]  And unlike in the matrix multiply case, right, if I'm scaling the number of steps,
+[978.00s -> 981.12s]  so the number of forward and backward passes on my MLP, right,
+[981.12s -> 983.56s]  what do I expect the runtime to behave like?
+[983.56s -> 985.44s]  Well, I expect sort of linear scaling, right?
+[985.44s -> 987.20s]  And that's kind of what we see.
+[987.20s -> 993.96s]  There's about five seconds per MLP execution, and we see it's about N times 5
+[993.96s -> 998.76s]  for the runtime of kind of the end-to-end object here, right?
+[998.76s -> 1003.04s]  Let me see if I can reset the thing that's being monitored here.
+[1003.04s -> 1003.84s]  Oh, nope, I can't.
+[1003.84s -> 1005.12s]  Okay, I'm going to zoom out a little bit.
+[1005.12s -> 1006.12s]  Sorry about that.
+[1006.12s -> 1011.96s]  Okay, now we can also scale the number of layers from two, three, four, to five.
+[1011.96s -> 1013.32s]  And what does that give us?
+[1013.32s -> 1016.68s]  Well, it gives us, you know, increasing runtimes.
+[1016.68s -> 1019.80s]  Once again, linear in the number of layers, right?
+[1019.80s -> 1023.00s]  This time, once again, one layer takes about five seconds,
+[1023.00s -> 1027.12s]  a little bit less than that, and so we get about four times, actually,
+[1027.12s -> 1031.44s]  four times the number of layers, and linear scaling sort of shows up again.
+[1031.44s -> 1032.24s]  Unsurprising, right?
+[1032.24s -> 1037.04s]  So both steps and layers obviously have linear relationships with the runtime,
+[1037.04s -> 1040.64s]  and that is exactly kind of what we end up seeing at the end here.
+[1041.12s -> 1043.48s]  I'm going to skip the batch size thing because this is getting a little bit
+[1043.48s -> 1047.08s]  unwieldy in terms of the amount of things that are being tracked here.
+[1047.08s -> 1048.20s]  Okay.
+[1048.20s -> 1048.80s]  All right.
+[1048.80s -> 1051.80s]  So that's the end of this benchmarking bit.
+[1051.80s -> 1055.52s]  We can kind of make this nice function that does a little bit of warmup,
+[1055.52s -> 1058.48s]  does CUDA synchronize, and we can measure the runtime of anything
+[1058.48s -> 1059.20s]  that we want.
+[1059.20s -> 1061.76s]  And this is good, and you should do this all the time in your code, right?
+[1061.76s -> 1066.08s]  You can measure how long it takes for your new fancy architecture to run.
+[1066.08s -> 1070.04s]  But then I think if you want to fix some problems, benchmarking is a very
+[1070.04s -> 1070.92s]  coarse-grained tool.
+[1070.92s -> 1075.16s]  It tells you that your code is slow, but it doesn't tell you where the time is
+[1075.16s -> 1076.24s]  being spent.
+[1076.24s -> 1080.92s]  And so what we would like to do is instead do profiling.
+[1080.92s -> 1084.44s]  And so this is going to be a much more fine-grained object that we're going
+[1084.44s -> 1085.76s]  to want to do.
+[1085.76s -> 1091.36s]  And so profiling is really nice because it not only helps you see where the time
+[1091.36s -> 1095.20s]  is being spent, which functions, but when you look at what you're calling,
+[1095.20s -> 1097.68s]  usually you interact with the PyTorch interface, right,
+[1097.68s -> 1099.40s]  like the parts of PyTorch that you call.
+[1099.44s -> 1103.64s]  But beneath PyTorch, there's this whole universe of CUDA stuff that's being
+[1103.64s -> 1104.36s]  called.
+[1104.36s -> 1107.80s]  And when you run a profiler, you can actually see all the way to the low
+[1107.80s -> 1110.40s]  level calls what is actually being called.
+[1110.40s -> 1115.00s]  And so you can get a much nicer intuition for how the program is actually
+[1115.00s -> 1116.40s]  being executed on the hardware.
+[1116.40s -> 1122.00s]  And so we'll step through profiling a few simple functions and then get a little
+[1122.00s -> 1124.88s]  bit of intuition about what is happening.
+[1124.92s -> 1130.08s]  And so one of the things that is nice is that if you want basic profiling,
+[1130.08s -> 1133.60s]  PyTorch has a very nice kind of built-in profiler that you can use.
+[1133.60s -> 1138.00s]  And this will allow you to not leave the Python PyTorch world and get some
+[1138.00s -> 1141.16s]  fairly reasonable-looking outputs.
+[1141.16s -> 1144.60s]  And so I've profiled some functions here, and you can kind of see the output
+[1144.60s -> 1145.80s]  of this as well.
+[1145.80s -> 1150.96s]  And so, you know, I've taken the sleep example from before,
+[1150.96s -> 1153.48s]  and here is, you know, the sleep function.
+[1153.48s -> 1156.52s]  And when we profile the sleep function, the profile function looks
+[1156.52s -> 1157.24s]  something like this.
+[1157.24s -> 1160.92s]  You know, I have a warm-up again, I have Torch-CUDA synchronize,
+[1160.92s -> 1166.88s]  and then I call the profiler, and I'm tracking both CPU and the GPU times.
+[1166.88s -> 1170.96s]  And then, you know, I run something, and then I synchronize again,
+[1170.96s -> 1174.68s]  and I print out the average table across all the time.
+[1174.68s -> 1177.52s]  Okay, so I go back now.
+[1177.52s -> 1180.20s]  So now I'm going to profile the sleep function.
+[1180.60s -> 1183.72s]  And if we look at, you know, what's happening, what happens here?
+[1183.72s -> 1187.16s]  Well, 100% of the time is being spent on something called CUDA device
+[1187.16s -> 1190.20s]  synchronize because there's no GPU work being done.
+[1190.20s -> 1191.56s]  This is just kind of a no-op.
+[1191.56s -> 1193.64s]  You know, it's kind of a silly thing to be profiling.
+[1193.64s -> 1196.24s]  And so now let's look at something kind of non-trivial, right?
+[1196.24s -> 1202.64s]  So let's look at this basic operation here of adding two matrices, right?
+[1202.64s -> 1207.52s]  So I defined an add function that takes an A and a B and adds them together.
+[1207.52s -> 1212.36s]  And this is a helper function that instantiates two random Gaussian matrices
+[1212.36s -> 1215.52s]  and then invokes, you know, whatever is in the operation argument.
+[1215.52s -> 1219.88s]  So this is adding two 2048 size matrices together, okay?
+[1219.88s -> 1223.68s]  So now I'm going to profile this, and I'm going to call the profiler.
+[1223.68s -> 1227.32s]  And I'll get back something that looks like this block over here, right?
+[1227.32s -> 1231.16s]  So this is what I get back, and I'm going to have to zoom back out
+[1231.16s -> 1233.36s]  because this is not going to be...
+[1233.36s -> 1234.12s]  Alrighty.
+[1234.12s -> 1236.64s]  Okay, is this visible from the back?
+[1236.64s -> 1238.72s]  Can someone give me a thumbs up if it's visible from the back?
+[1238.72s -> 1241.04s]  And okay, good, good, good, or thumbs down if it's not.
+[1241.04s -> 1241.72s]  Alright.
+[1241.72s -> 1247.68s]  So when we call the add function in Python, right, this is kind of all that
+[1247.68s -> 1250.32s]  we interact with, this add function A plus B, right?
+[1250.32s -> 1251.52s]  That's all we think about.
+[1251.52s -> 1255.04s]  But actually underneath here, underneath the iceberg, so to speak,
+[1255.04s -> 1256.60s]  there's a lot more that happens.
+[1256.60s -> 1258.24s]  So this gets dispatched to the GPU.
+[1258.24s -> 1263.28s]  And first, there's this thing called A10, which is the C sort of interface
+[1263.28s -> 1264.36s]  for PyTorch.
+[1264.36s -> 1267.80s]  And so this wrapper gets called, and it says, okay, I'm going to add some numbers,
+[1267.80s -> 1268.00s]  right?
+[1268.00s -> 1268.96s]  This is what's being called.
+[1268.96s -> 1270.88s]  That's the outer wrapper.
+[1270.88s -> 1275.28s]  And then that dispatches to a particular kernel called vectorize
+[1275.28s -> 1279.20s]  element-wise kernel for comma native CUDA functor add dot, dot, dot, dot, dot,
+[1279.20s -> 1279.68s]  right?
+[1279.68s -> 1282.36s]  And this is the thing that's actually doing the adding.
+[1282.36s -> 1286.20s]  And then there's this also other thing called CUDA launch kernel that's taking
+[1286.20s -> 1287.00s]  some time.
+[1287.00s -> 1291.16s]  And this is actually, you know, the CPU is taking the command and sending it
+[1291.16s -> 1291.92s]  over to the GPU.
+[1291.92s -> 1294.44s]  That's the kernel launch, and that takes some time.
+[1294.44s -> 1296.72s]  And then finally, you know, the CUDA device synchronizes.
+[1296.72s -> 1299.64s]  We're waiting for the GPU to finish and send things back to us.
+[1299.64s -> 1300.96s]  And that also takes some time, right?
+[1300.96s -> 1305.76s]  The mere act of having a synchronization barrier is going to cost us some time.
+[1305.76s -> 1309.28s]  And so we basically have, you know, the time total in the end here,
+[1309.28s -> 1315.84s]  1.4 milliseconds on the CPU and 17 microseconds on the CUDA, right?
+[1315.84s -> 1319.36s]  So it's really fast on the GPU, slower on the CPU.
+[1319.36s -> 1324.40s]  And if we're looking at the CPU time that's being spent, which is the self-CPU
+[1324.40s -> 1328.72s]  time, we see that kind of the C++ interface or the C interface is actually
+[1328.72s -> 1331.40s]  the thing that's costing us a whole bunch of CPU time, and they're sort of
+[1331.40s -> 1335.12s]  overhead to doing anything where we're sending stuff over to the GPU.
+[1335.12s -> 1339.32s]  So that's the add function, and we see, you know, what's happening under the
+[1339.32s -> 1340.92s]  hood.
+[1340.92s -> 1343.00s]  Same story here if I want to do a matrix multiply.
+[1343.00s -> 1345.40s]  So I'm doing, you know, A multiplied by B.
+[1345.40s -> 1347.44s]  So this is a matrix multiply of A and B.
+[1347.44s -> 1352.48s]  You know, I'm doing 2048 matrices once again, and then I do profiling.
+[1352.48s -> 1355.36s]  Now, this time, I see, you know, A10 matmul.
+[1355.36s -> 1358.60s]  So this is saying, like, this is the lower-level interface to do matrix
+[1358.60s -> 1363.20s]  multiplies, and this is going to dispatch the cutlass, which is NVIDIA's
+[1363.20s -> 1367.92s]  sort of high-performance matrix multiply CUDA library, and then it's dispatching
+[1367.92s -> 1372.68s]  to a very particular cutlass kernel, which is going to have some tile size.
+[1372.68s -> 1374.04s]  The names are truncated here.
+[1374.04s -> 1376.76s]  I'll show you a more detailed version in a minute.
+[1376.76s -> 1379.48s]  You know, this is basically pointing towards a very particular set of, like,
+[1379.48s -> 1385.36s]  tile sizes and the number of blocks and so on, and so this thing is parameterized,
+[1385.36s -> 1387.92s]  and that's actually doing the matrix multiply.
+[1387.92s -> 1390.80s]  And once again, we see the same two things at the bottom here, you know,
+[1390.80s -> 1395.08s]  the kernel launch and the synchronization of CUDA devices.
+[1395.08s -> 1399.44s]  And you can sort of see, once again, the CPU time CUDA time split,
+[1399.44s -> 1402.36s]  and we're spending way more time in CUDA because, you know,
+[1402.36s -> 1405.72s]  matrix multiplies do take more time than just adding two vectors.
+[1405.72s -> 1409.40s]  Okay, any questions so far?
+[1409.40s -> 1410.64s]  I can pause for a moment here.
+[1410.64s -> 1414.80s]  I think I've just been going sort of very quickly and on my own
+[1414.80s -> 1417.80s]  through the profiler, so if anyone has questions, I can stop for a moment.
+[1417.80s -> 1420.16s]  If not, I can keep going.
+[1420.16s -> 1421.44s]  Okay.
+[1421.44s -> 1422.52s]  Oh, yes?
+[1422.52s -> 1425.64s]  In this case, our CUDA time is greater than our CPU time,
+[1425.64s -> 1431.56s]  but we did have a barrier that, like, sent to, for the CPU tool, for it to synchronize,
+[1431.56s -> 1436.80s]  and so, by that, shouldn't the CPU time only be at the same time as CUDA time?
+[1436.80s -> 1439.52s]  You know, it's pretty odd counting the time that the CPU is just waiting for.
+[1439.52s -> 1443.84s]  Yeah, I don't think this counts, but I don't think it's going to be vital.
+[1443.84s -> 1444.84s]  Cool. Oh, yes, sorry.
+[1444.84s -> 1446.20s]  There's two questions, there's all of them.
+[1446.20s -> 1450.16s]  Is there any particular reason why, like, when we switched off adding
+[1450.16s -> 1452.72s]  to the matmul, the CPU time went down?
+[1452.72s -> 1457.04s]  Is there a reason why, when we go from adding to matmul, the CPU time goes down?
+[1457.04s -> 1460.40s]  That, I am not sure, to be entirely honest.
+[1460.40s -> 1461.60s]  Yes?
+[1461.60s -> 1465.32s]  Is there overhead in the profiler that can distort the time
+[1465.32s -> 1468.08s]  compared to, like, anybody in the world?
+[1468.08s -> 1471.20s]  Is there overhead in the profiler that can distort things
+[1471.20s -> 1473.44s]  compared to running it in the real world?
+[1473.44s -> 1476.68s]  Yes, there is overhead in the profiler.
+[1476.68s -> 1477.92s]  Like, the barriers will do that.
+[1477.96s -> 1480.28s]  I'll show you a more advanced profiler from NVIDIA,
+[1480.28s -> 1481.68s]  and you can add things like annotations
+[1481.68s -> 1485.60s]  that will also slightly distort the timings, but not by much.
+[1485.60s -> 1487.52s]  The really large scale things that you see
+[1487.52s -> 1490.16s]  aren't going to be really distorted by the profiler.
+[1491.28s -> 1493.88s]  So, if you're looking at, like, micro timings, yes, probably,
+[1493.88s -> 1496.88s]  but a lot of the things that we care about in the class, no.
+[1498.28s -> 1499.12s]  Yes?
+[1499.12s -> 1500.84s]  Just to make sure I'm interpreting this correctly,
+[1500.84s -> 1504.40s]  so, is that, like, for the add case,
+[1504.40s -> 1508.64s]  what is the ideate percent of the CPU being utilized
+[1508.64s -> 1511.12s]  over the time period that it's, like,
+[1511.12s -> 1512.88s]  the millisecond time period?
+[1512.88s -> 1513.72s]  That's right, yeah.
+[1513.72s -> 1514.84s]  So, this is the percentage of time,
+[1514.84s -> 1517.36s]  if you can see that the actual millisecond time
+[1517.36s -> 1519.68s]  that A10 add was actually executing
+[1519.68s -> 1522.04s]  in some capacity, on the CPU.
+[1524.04s -> 1526.48s]  I don't think the CPU can get the percentage,
+[1526.48s -> 1530.08s]  like, percent of what the CPU is doing.
+[1530.08s -> 1530.92s]  Yeah, that's right.
+[1530.92s -> 1532.36s]  This is the kind of CPU that's active,
+[1532.36s -> 1534.36s]  not percentage utilization, if that's, yeah.
+[1534.36s -> 1536.08s]  So, this is not, like, the total amount
+[1536.08s -> 1537.96s]  of CPU flops or something.
+[1537.96s -> 1539.60s]  This is the total percentage of time
+[1539.60s -> 1541.32s]  that the CPU is doing something.
+[1543.20s -> 1545.48s]  Yes, okay, cool.
+[1545.48s -> 1548.64s]  All right, here's another example of a matmul.
+[1548.64s -> 1550.44s]  So, this is a different dimensionality, right?
+[1550.44s -> 1555.44s]  So, this is, I'm multiplying a 128 dimensional matrix here.
+[1556.04s -> 1559.32s]  So, 128 by 128, much smaller,
+[1559.32s -> 1562.08s]  and you'll actually see that now
+[1562.08s -> 1564.88s]  it's actually directly executing, sort of,
+[1564.88s -> 1568.88s]  this different command, it's executing XMMAGMM.
+[1568.88s -> 1572.84s]  GMM is a matrix multiply type,
+[1572.84s -> 1574.40s]  and this is float32 float32.
+[1574.40s -> 1578.08s]  You can kind of see from the naming of this kernel
+[1578.08s -> 1579.12s]  what's actually happening here,
+[1579.12s -> 1581.40s]  which is that this is a tiled matrix multiply
+[1581.40s -> 1583.68s]  of some kind, and it's not, sort of,
+[1583.68s -> 1584.52s]  going through CODLESS,
+[1584.52s -> 1586.88s]  it's executing this particular command directly.
+[1586.88s -> 1588.82s]  And so, for a small matrix multiply,
+[1588.82s -> 1590.32s]  you know, you see that it's dispatching
+[1590.32s -> 1591.72s]  to a different kernel now.
+[1592.68s -> 1593.96s]  So, you can kind of see, kind of,
+[1593.96s -> 1596.32s]  the complexity of matrix multiply.
+[1596.32s -> 1598.72s]  When we're operating at this high-level abstraction,
+[1598.72s -> 1601.00s]  we just think of matrix multiply as a single thing, right?
+[1601.00s -> 1603.08s]  We call, like, A at B, and we're done.
+[1603.08s -> 1604.00s]  But underneath the hood,
+[1604.00s -> 1606.28s]  depending on the dimensionality that you have,
+[1606.28s -> 1608.12s]  depending on the hardware that you have,
+[1608.12s -> 1611.56s]  it will actually dispatch to very different
+[1611.56s -> 1614.32s]  matrix multiply, sort of, primitives under the hood,
+[1614.32s -> 1617.64s]  and that will actually manifest in very, very different,
+[1617.64s -> 1619.32s]  sort of, performance characteristics.
+[1619.32s -> 1622.16s]  And so, one fun tip is Torch Compile,
+[1622.16s -> 1623.76s]  which I will talk about later,
+[1623.76s -> 1626.06s]  actually has an option to, sort of, microbenchmark
+[1626.06s -> 1628.48s]  the matrix multiply performance on your hardware,
+[1628.48s -> 1629.84s]  and then it will actually then pick
+[1629.84s -> 1633.44s]  the highest performing matrix multiply subroutines
+[1633.44s -> 1635.56s]  for your model, which, you know,
+[1635.56s -> 1636.64s]  in the past, I found, you know,
+[1636.64s -> 1638.72s]  gives you, like, 10% speed-ups for free.
+[1638.72s -> 1640.28s]  It's very cool that, like,
+[1640.28s -> 1641.44s]  optimizing for these things
+[1641.44s -> 1645.28s]  actually gives you free gains out in the real world.
+[1645.28s -> 1648.80s]  Okay, so that's another MatMul example.
+[1650.24s -> 1652.04s]  And so, the cool thing about the profiler,
+[1652.04s -> 1654.16s]  compared to just the raw benchmarking,
+[1654.16s -> 1655.56s]  is we can now, kind of, see
+[1655.56s -> 1657.72s]  which CUDA kernels are being called.
+[1657.72s -> 1659.52s]  We can see that, you know,
+[1659.52s -> 1661.20s]  different sizes of matrices
+[1661.20s -> 1663.48s]  lead to different CUDA kernels,
+[1663.48s -> 1664.92s]  and we see, you know,
+[1664.92s -> 1667.44s]  Cutlist, AD, Simpiece, SGM, right,
+[1667.44s -> 1671.20s]  is this Cutlist linear algebra library,
+[1671.20s -> 1674.84s]  and it tells us things like the tile size.
+[1674.84s -> 1678.92s]  So, so far, these operations are very boring, in a way.
+[1678.92s -> 1681.12s]  Like, matrix multiplies and adds,
+[1681.12s -> 1682.24s]  they're basically one-to-one.
+[1682.24s -> 1685.68s]  You have a, you know, operation on the CPU side,
+[1685.68s -> 1688.04s]  it translates to a GPU operation,
+[1688.04s -> 1689.64s]  and it just gets shipped over, right?
+[1689.64s -> 1692.00s]  So, there's just a single operation in all of these
+[1692.00s -> 1693.80s]  that does anything on the GPU.
+[1693.80s -> 1697.12s]  So, I want to look at some more complicated operations,
+[1697.12s -> 1698.88s]  two more of these,
+[1698.88s -> 1701.48s]  that have, sort of, more compound behavior.
+[1701.48s -> 1704.24s]  So, what I want to do now is I want to do,
+[1704.24s -> 1707.36s]  I want to look at this operation called torch.cdist,
+[1707.36s -> 1710.24s]  and this is computing, you know, for two sets of matrices,
+[1710.24s -> 1712.32s]  the pairwise Euclidean distance
+[1712.32s -> 1713.72s]  between two sets of vectors, right?
+[1713.72s -> 1716.08s]  So, this is going to be a big distance matrix
+[1716.08s -> 1718.96s]  computation between A's and B's that I want.
+[1718.96s -> 1720.16s]  So, that's CDist,
+[1720.16s -> 1722.08s]  and so this is, obviously,
+[1722.08s -> 1723.64s]  a much more complicated operation.
+[1723.64s -> 1726.40s]  If you want to compute Euclidean distances,
+[1726.40s -> 1728.40s]  you're going to need to compute dot products,
+[1728.40s -> 1730.40s]  you're going to need to compute square roots,
+[1730.40s -> 1734.40s]  and we're going to see that once we compute CDist.
+[1734.44s -> 1738.12s]  So, now here is the profiled output of CDist.
+[1739.72s -> 1743.12s]  So, we see that this torch, you know, Python command
+[1743.12s -> 1745.88s]  does map in the C interface
+[1745.88s -> 1747.96s]  to some sort of lower level CDist.
+[1747.96s -> 1749.68s]  So, this is A10 CDist,
+[1749.68s -> 1752.52s]  which then maps to A10 Euclidean dist,
+[1752.52s -> 1754.60s]  and then this will decompose into a whole bunch of things
+[1754.60s -> 1758.24s]  like A10 MatMul, A10 POW, and then some,
+[1758.24s -> 1760.40s]  because these are all primitives that you're going to need
+[1760.40s -> 1761.52s]  in order to actually,
+[1761.56s -> 1764.64s]  to compute the Euclidean distances
+[1764.64s -> 1767.16s]  between all of your vectors.
+[1767.16s -> 1770.56s]  And when you, for each one of these matrix multiplies
+[1770.56s -> 1773.96s]  and concatenation and taking the powers,
+[1773.96s -> 1777.56s]  you have a corresponding CUDA command
+[1777.56s -> 1778.84s]  that is being called here.
+[1778.84s -> 1781.72s]  You know, we have GMM, which we've become familiar with,
+[1781.72s -> 1783.44s]  so this is a matrix multiply.
+[1783.44s -> 1788.44s]  It's taking 78% of our compute time on the GPU.
+[1789.00s -> 1793.28s]  We've got copies and sort of concatenation of arrays.
+[1793.28s -> 1797.16s]  This takes 6% of the execution time,
+[1797.16s -> 1800.36s]  and then this sort of vectorized element-wise kernel,
+[1800.36s -> 1805.20s]  which is taking the power, takes 5% of the GPU time,
+[1805.20s -> 1806.76s]  and 3% goes to the sum.
+[1806.76s -> 1809.80s]  So, now we get this very nice low-level breakdown
+[1809.80s -> 1813.00s]  of where my GPU is spending all of its time,
+[1813.00s -> 1816.12s]  and from this, I can get some sense of
+[1816.12s -> 1818.68s]  where maybe I should spend my time optimizing.
+[1818.68s -> 1821.32s]  You know, maybe I think I can optimize my matrix multiply.
+[1821.32s -> 1823.52s]  That would be great because that's 70 plus percent
+[1823.52s -> 1825.92s]  of the time spent in the GPU.
+[1827.28s -> 1830.36s]  The final example, the final two examples, sorry,
+[1830.36s -> 1832.84s]  that I want to talk about is Gell-U and Softmax.
+[1832.84s -> 1833.76s]  So, these will be our running,
+[1833.76s -> 1834.88s]  oh, sorry, there's a question.
+[1834.88s -> 1836.44s]  Yeah, what's the sequence up to
+[1836.44s -> 1839.48s]  while the oscillation's going?
+[1839.48s -> 1842.20s]  Okay, so I will maybe answer that question
+[1842.20s -> 1843.12s]  in a few minutes,
+[1843.12s -> 1844.52s]  because there's a cooler profiler
+[1844.52s -> 1846.20s]  that shows you a much nicer picture,
+[1846.20s -> 1847.52s]  and so I can gesticulate here,
+[1847.52s -> 1850.08s]  but I think it'll be better to show that with pictures.
+[1851.24s -> 1855.32s]  Okay, so I'm gonna talk about now the Gell-U and Softmax.
+[1856.56s -> 1860.04s]  So, the Gell-U is gonna be our running example
+[1860.04s -> 1861.24s]  throughout the class.
+[1861.24s -> 1862.92s]  So, this is a non-linearity.
+[1862.92s -> 1864.96s]  If you remember, it's the Gaussian error unit,
+[1864.96s -> 1866.88s]  Gaussian error linear unit,
+[1867.80s -> 1871.48s]  and that's gonna be a product of a tanh
+[1871.48s -> 1874.36s]  and a exponential, if I remember right.
+[1875.24s -> 1879.16s]  And so, we're gonna have all sorts of operations.
+[1879.16s -> 1880.36s]  So, we're gonna add A and B,
+[1880.36s -> 1881.64s]  and then we're gonna call Gell-U,
+[1881.64s -> 1885.36s]  sort of simulating the linear plus non-linear structure
+[1885.36s -> 1888.72s]  that we might have in our MLP.
+[1888.72s -> 1890.56s]  And so, we see, once again,
+[1890.56s -> 1892.08s]  basically the same sort of mapping.
+[1892.08s -> 1894.68s]  We see A can add, corresponding to A plus B,
+[1894.68s -> 1896.76s]  and then we have the CUDA equivalent,
+[1896.76s -> 1899.00s]  and then we have actually a Gell-U function
+[1899.00s -> 1901.80s]  implemented in CUDA, which is all the way down here,
+[1901.80s -> 1905.12s]  and that takes about 33% of the compute.
+[1905.12s -> 1906.68s]  Okay, fairly reasonable.
+[1906.68s -> 1908.36s]  And then we have, once again, the Softmax.
+[1908.36s -> 1911.64s]  I won't go through all of these in sort of gory detail,
+[1911.64s -> 1914.68s]  since they all start to look the same after a while,
+[1914.68s -> 1917.12s]  but the thing to really point out that I think is cool
+[1917.12s -> 1918.88s]  is that a lot of these really core primitives
+[1918.88s -> 1921.12s]  like Softmax and Gell-U,
+[1921.12s -> 1923.08s]  there's just kernels written for them, right?
+[1923.08s -> 1925.16s]  So, it's not like the GPU is executing
+[1925.16s -> 1926.48s]  the basic primitives.
+[1926.48s -> 1928.04s]  There's sort of a fused operator
+[1928.08s -> 1929.20s]  that computes all of this,
+[1929.20s -> 1932.20s]  so there's no back and forth between CPU and GPU
+[1932.20s -> 1933.76s]  for all of these.
+[1933.76s -> 1934.88s]  So, okay.
+[1934.88s -> 1936.32s]  I mentioned before that I was gonna sort of
+[1936.32s -> 1939.00s]  answer this question of what the CPU was doing.
+[1939.00s -> 1940.24s]  And so, let's think about something
+[1940.24s -> 1941.64s]  a little more sophisticated, right?
+[1941.64s -> 1944.00s]  I had the MLP example that I started with
+[1944.00s -> 1946.16s]  for benchmarking, and I would, let's say,
+[1946.16s -> 1949.40s]  like to optimize the MLP, make it run really fast.
+[1949.40s -> 1951.56s]  So, how can we do that?
+[1951.56s -> 1955.08s]  Well, ideally, we would sort of profile this
+[1955.08s -> 1956.92s]  in a nice sort of fine-grained way.
+[1956.92s -> 1959.36s]  So, if we use the torch profiler,
+[1959.36s -> 1960.96s]  this is kind of what we would get.
+[1960.96s -> 1963.40s]  If you remember the MLP, there's stack linear layers,
+[1963.40s -> 1965.44s]  there's a forward and a backward.
+[1965.44s -> 1968.56s]  And you see, roughly, there's this backward thing
+[1968.56s -> 1970.84s]  that's happening, there is a matrix multiply,
+[1970.84s -> 1974.96s]  there's linear, and then there's accumulate grad operation
+[1974.96s -> 1978.60s]  for the backward, and here's the matrix multiply kernel,
+[1978.60s -> 1980.32s]  and then there's only 10 things that can fit here,
+[1980.32s -> 1982.64s]  so I think this gets cut off at a certain point.
+[1982.64s -> 1984.00s]  But this is nice.
+[1984.00s -> 1985.56s]  It does tell you that most of the time
+[1985.60s -> 1987.52s]  is being spent in the map moles,
+[1988.36s -> 1989.88s]  but you do kind of wonder, like,
+[1989.88s -> 1991.80s]  where does all the rest of the time go,
+[1991.80s -> 1996.04s]  and why does only 31% of my time stay here,
+[1996.04s -> 1998.00s]  and where's the 60% here?
+[1998.00s -> 2000.44s]  It's at 810 mm, but there's no corresponding kernel,
+[2000.44s -> 2002.36s]  right, this is a little bit mysterious.
+[2002.36s -> 2005.92s]  And for something that's very complex module,
+[2005.92s -> 2008.68s]  this is not a very good visualization.
+[2008.68s -> 2011.58s]  And so, for that, I think we have to actually
+[2011.58s -> 2014.60s]  get out a real sort of grown-up profiler,
+[2015.08s -> 2018.88s]  and you will have to, or we will ask you to,
+[2018.88s -> 2022.88s]  look at this thing, which is NVIDIA's end-site systems.
+[2022.88s -> 2026.64s]  And this is the kind of NVIDIA's sort of detailed way
+[2026.64s -> 2030.32s]  of looking at GPU behavior and performance,
+[2030.32s -> 2031.68s]  and so we will actually kind of see
+[2031.68s -> 2035.60s]  exactly what is happening as we run this MLP.
+[2035.60s -> 2038.12s]  So, actually, in the back, can you see,
+[2038.12s -> 2040.60s]  I don't know, this tiny text over here?
+[2040.60s -> 2041.80s]  Thumbs up, okay, all right.
+[2041.80s -> 2043.44s]  If you can see it, then I'm not gonna zoom in,
+[2043.44s -> 2045.80s]  but it does seem small, even from here.
+[2046.72s -> 2050.68s]  All right, so, basically, if we look here,
+[2050.68s -> 2052.12s]  we see several different things.
+[2052.12s -> 2056.12s]  We see CUDA HW over here, and then we see threads.
+[2056.12s -> 2058.20s]  And so this top half, this CUDA part,
+[2058.20s -> 2061.12s]  this is what the GPU is kind of doing.
+[2061.12s -> 2063.36s]  And then, in this threads part,
+[2063.36s -> 2066.08s]  we see kind of what the CPU is doing.
+[2066.08s -> 2070.28s]  And I can also pull up the code, I think, yes.
+[2070.28s -> 2072.28s]  The code here, when I profiled it,
+[2072.28s -> 2074.24s]  I've added a few annotations.
+[2074.24s -> 2076.36s]  Okay, this one I need to zoom in, for sure.
+[2076.36s -> 2080.04s]  Okay, let's, excellent.
+[2080.04s -> 2083.40s]  All right, so, I've annotated the code
+[2083.40s -> 2087.02s]  with this set of things that says, oh, let's see.
+[2088.12s -> 2093.12s]  NVTX, which basically annotates my code with markers.
+[2095.98s -> 2098.16s]  So, when the profiler comes in here,
+[2098.16s -> 2100.36s]  it will know that this piece of code
+[2100.36s -> 2102.68s]  belongs to a block called define model.
+[2102.68s -> 2106.40s]  And, for example, this part that says step range push
+[2106.40s -> 2111.40s]  and range pop, this range here from line 77 to line 55
+[2111.88s -> 2113.04s]  should be annotated with something
+[2113.04s -> 2115.28s]  that says step underscore step, okay?
+[2115.28s -> 2117.28s]  So, I've added all these annotations in my code
+[2117.28s -> 2121.84s]  before calling my profiler, and so let's go back here.
+[2121.84s -> 2124.82s]  So now, if we go to this line that says NVTX,
+[2124.82s -> 2126.86s]  we can kind of see define model,
+[2126.86s -> 2128.26s]  which is the thing that I wrapped
+[2128.26s -> 2131.66s]  my model construction call, and then I see step zero,
+[2131.66s -> 2134.28s]  step one, step two, step three, step four, step five.
+[2134.28s -> 2137.52s]  So, each step is now nicely annotated in this profiler,
+[2137.52s -> 2139.66s]  and we can kind of see all of the things
+[2139.66s -> 2142.98s]  that the model is doing as it goes along,
+[2142.98s -> 2145.20s]  and I'll start on this side.
+[2145.20s -> 2148.02s]  One thing we see is that this piece of code,
+[2148.02s -> 2149.10s]  it doesn't do very much work.
+[2149.10s -> 2151.46s]  It takes only 14 seconds, so actually,
+[2151.46s -> 2154.74s]  most of the time for the profiler is spent on overhead.
+[2154.74s -> 2157.74s]  So, the part up until roughly here
+[2157.74s -> 2160.74s]  is things like just loading the libraries,
+[2160.74s -> 2161.82s]  and that takes a long time.
+[2161.82s -> 2164.42s]  It takes apparently 7.5 seconds to just initialize
+[2164.42s -> 2167.80s]  everything, and then, at least on the GPU,
+[2167.80s -> 2171.22s]  at 7.5 seconds or so into the program,
+[2171.22s -> 2173.10s]  it starts actually building the model,
+[2173.10s -> 2175.50s]  and you see here on the memory footprint,
+[2175.50s -> 2177.24s]  this is the place where now memory
+[2177.24s -> 2180.26s]  is being sort of allocated, and on the GPU memory,
+[2180.26s -> 2182.90s]  the memory usage starts to grow, right?
+[2182.94s -> 2185.50s]  Now, the model is now constructed at this point,
+[2185.50s -> 2187.76s]  and then step zero is where sort of
+[2187.76s -> 2189.42s]  the action starts to happen,
+[2189.42s -> 2191.40s]  and so you were asking earlier
+[2191.40s -> 2195.86s]  what's happening between the CPU and sort of GPU,
+[2195.86s -> 2198.82s]  and so how the execution model of this works
+[2198.82s -> 2202.22s]  is here is sort of step zero on the CPU,
+[2202.22s -> 2203.78s]  and I'm starting right here,
+[2203.78s -> 2205.86s]  and here's the forward pass, and this is layer zero,
+[2205.86s -> 2209.26s]  so let's just kind of think through what's happening.
+[2209.26s -> 2211.54s]  As I said before, when you first encounter
+[2211.54s -> 2214.70s]  or when you first call a piece of code in PyTorch,
+[2214.70s -> 2216.14s]  it doesn't just directly execute.
+[2216.14s -> 2220.06s]  It will actually do things like on the fly compile things
+[2220.06s -> 2224.42s]  and so this thing like runtime triggered module loading
+[2224.42s -> 2227.30s]  is sort of overhead work that's being done
+[2227.30s -> 2230.42s]  in order to just initialize the layer and the computation
+[2230.42s -> 2234.06s]  and move sort of various bits of code into the GPU.
+[2234.06s -> 2236.22s]  So this takes a long time,
+[2236.22s -> 2238.80s]  and then after this layer zero is done,
+[2238.80s -> 2240.66s]  now if I look at sort of any slice here,
+[2240.66s -> 2243.66s]  let's sort of zoom in to selection,
+[2243.66s -> 2245.14s]  we'll see that each of these layers
+[2245.14s -> 2247.62s]  is really, really, really quick,
+[2247.62s -> 2251.02s]  and what happens here is when I highlight this layer one
+[2251.02s -> 2252.62s]  over here on the CPU side,
+[2252.62s -> 2254.46s]  notice that that's not where layer one
+[2254.46s -> 2256.42s]  is on the GPU side, right?
+[2256.42s -> 2259.18s]  So as I said before, the CPU and GPU
+[2259.18s -> 2261.56s]  are kind of two different execution devices,
+[2261.56s -> 2263.46s]  so I start at layer zero.
+[2263.46s -> 2264.50s]  I'm done with layer zero.
+[2264.50s -> 2265.70s]  I start layer one.
+[2265.70s -> 2267.98s]  Now the CPU is actually just sending
+[2267.98s -> 2272.66s]  all of the sort of CUDA commands, the CUDA kernels.
+[2272.66s -> 2274.26s]  It's launching all the CUDA kernels
+[2274.26s -> 2275.98s]  already to the GPU at this point, right?
+[2275.98s -> 2278.48s]  So when the CPU is saying I'm doing layer one,
+[2278.48s -> 2280.70s]  what it's actually doing is it's queuing commands
+[2280.70s -> 2281.54s]  into the GPU.
+[2281.54s -> 2282.82s]  It says now run this thing next,
+[2282.82s -> 2285.38s]  run this thing next, run this thing next, right?
+[2285.38s -> 2288.06s]  And so the CPU is running way ahead of the GPU,
+[2288.06s -> 2291.98s]  and by the time layer one starts executing on the GPU,
+[2291.98s -> 2294.66s]  actually we're already at layer nine on the CPU.
+[2294.66s -> 2296.02s]  The CPU's running way ahead,
+[2296.02s -> 2299.84s]  and there's basically a queue that the CPU maintains
+[2299.84s -> 2304.84s]  where it's sending a fixed number of CUDA kernels
+[2305.14s -> 2305.98s]  to the GPU.
+[2305.98s -> 2307.42s]  And so once you hit that queue depth,
+[2307.42s -> 2309.18s]  it's gonna sort of stop running ahead,
+[2309.18s -> 2310.64s]  but until that point, it's just gonna keep
+[2310.64s -> 2313.30s]  going and going and going as far as it can, right?
+[2314.26s -> 2316.54s]  And in this case, this does become,
+[2316.54s -> 2317.98s]  I'm gonna zoom out again.
+[2319.22s -> 2320.88s]  Okay, undo the zoom.
+[2322.00s -> 2323.50s]  There we go.
+[2323.54s -> 2326.26s]  In this case, this kind of gets a little extreme,
+[2326.26s -> 2328.44s]  because if I zoom out once more,
+[2328.44s -> 2332.98s]  notice how in these steps, I'm running way ahead.
+[2332.98s -> 2335.66s]  Like the step zero is here, step two is here.
+[2335.66s -> 2338.36s]  This was step one, which basically took no time at all.
+[2338.36s -> 2341.06s]  Step two is here, so the CPU is basically running
+[2341.06s -> 2344.94s]  one entire step forward and backward ahead of the GPU.
+[2346.20s -> 2348.70s]  One interesting thing that you might do
+[2348.70s -> 2351.06s]  is if you're writing various code
+[2351.06s -> 2352.78s]  for training a language model,
+[2352.78s -> 2354.50s]  one normal thing that you might do is,
+[2354.50s -> 2356.02s]  let's go back to the code.
+[2356.02s -> 2359.02s]  I might do something like print my losses
+[2359.02s -> 2361.08s]  in between iterations.
+[2361.08s -> 2363.10s]  This seems like it should have no effect
+[2363.10s -> 2364.74s]  on what the GPU is doing, right?
+[2364.74s -> 2365.90s]  You're like, whoa, it's a print statement.
+[2365.90s -> 2368.02s]  How much could it do?
+[2368.02s -> 2369.30s]  If you think about it for a moment,
+[2369.30s -> 2372.38s]  this will have big impacts on the execution layout
+[2372.38s -> 2375.42s]  on the GPU, because in order to print this statement,
+[2375.42s -> 2377.54s]  this print statement happens on the CPU,
+[2377.54s -> 2379.50s]  and the CPU needs to get the loss.
+[2379.50s -> 2381.50s]  That means it needs to wait for the GPU
+[2381.50s -> 2383.98s]  to compute that loss, and so let's look at what happens.
+[2383.98s -> 2387.66s]  So here, as I said, step four on the CPU
+[2387.66s -> 2389.86s]  happens way before the GPU equivalent.
+[2389.86s -> 2390.78s]  Now let's switch back.
+[2390.78s -> 2392.98s]  Now this is the version that I profiled
+[2392.98s -> 2394.92s]  where it has the print statement, right?
+[2394.92s -> 2399.60s]  And then now I sort of zoom into selection here.
+[2399.60s -> 2403.16s]  Now see how step one and step two
+[2403.16s -> 2405.70s]  are basically kind of synchronized now, right?
+[2405.70s -> 2409.02s]  Because I have to wait for the loss to get computed.
+[2409.02s -> 2410.38s]  And you look at this and you say,
+[2410.42s -> 2412.30s]  oh, but it's still a little offset, right?
+[2412.30s -> 2415.30s]  Step one isn't exactly aligned with each other,
+[2415.30s -> 2417.78s]  so now let's kind of zoom back in and see,
+[2417.78s -> 2420.14s]  okay, what happened to step one on the CPU?
+[2420.14s -> 2424.64s]  Well, basically, the endpoint of step one on the CPU
+[2424.64s -> 2427.98s]  is also kind of where the optimizer step starts, right?
+[2427.98s -> 2431.58s]  So by the time that forward is done,
+[2431.58s -> 2433.30s]  sorry, this CUDA stream synchronizes the thing.
+[2433.30s -> 2436.22s]  So this CUDA stream synchronize command on the CPU,
+[2436.22s -> 2438.78s]  this is basically saying I'm just waiting for the GPU
+[2438.80s -> 2440.86s]  because I can't run ahead, I'm waiting for this loss
+[2440.86s -> 2443.38s]  to be computed and to be sent back to me, right?
+[2443.38s -> 2445.50s]  So this is kind of a dummy operation where it's saying,
+[2445.50s -> 2448.58s]  CPU waits, waits, waits, waits, waits, waits, waits.
+[2448.58s -> 2450.54s]  Well, the backward step is done,
+[2450.54s -> 2452.14s]  so now I can print the loss.
+[2452.14s -> 2453.22s]  I've printed the loss.
+[2453.22s -> 2455.54s]  Okay, now the CPU can start running ahead
+[2455.54s -> 2458.48s]  and it does run ahead and start sending step two stuff now
+[2458.48s -> 2460.98s]  and then, well, once this hits here,
+[2460.98s -> 2462.18s]  it's sort of run out of commands,
+[2462.18s -> 2463.62s]  it's waiting for the loss again.
+[2463.62s -> 2465.74s]  CUDA synchronize, wait, wait, wait, wait, wait.
+[2465.74s -> 2468.10s]  Backward step is done, now I can print the loss,
+[2468.10s -> 2469.58s]  now I run ahead again, right?
+[2469.58s -> 2472.98s]  So in this case, you know, the GPU is still
+[2472.98s -> 2475.28s]  essentially full utilization in both cases,
+[2475.28s -> 2476.58s]  but in extreme cases where let's say
+[2476.58s -> 2478.54s]  you're printing tons of stuff all the time,
+[2478.54s -> 2480.58s]  actually you're gonna introduce a CPU bottleneck, right?
+[2480.58s -> 2483.90s]  Because the CPU has to keep waiting for the GPU
+[2483.90s -> 2487.26s]  and it can't launch the kernels sort of ahead of time.
+[2487.26s -> 2490.04s]  So that's kind of a really cool thing
+[2490.04s -> 2492.74s]  that you can see with the profiler,
+[2492.74s -> 2494.62s]  sort of this CPU versus GPU
+[2494.62s -> 2495.96s]  and they're actually different devices
+[2495.96s -> 2497.30s]  that communicate to each other.
+[2497.34s -> 2499.22s]  It's not at the single unified object
+[2499.22s -> 2501.18s]  and you wouldn't see that unless you started
+[2501.18s -> 2503.62s]  to look at some of these more advanced profilers.
+[2504.54s -> 2507.78s]  Any question about that sort of set of things?
+[2510.20s -> 2512.34s]  Cool, okay.
+[2512.34s -> 2514.86s]  And the other thing that I wanna kind of show you
+[2514.86s -> 2519.50s]  is the profiler thing that I was playing with before,
+[2519.50s -> 2524.06s]  you can also generate very similar views in Nsys as well
+[2524.06s -> 2526.66s]  where you sort of select some range of things
+[2527.34s -> 2529.54s]  that you wanna, let's do a warmup, I said we should.
+[2529.54s -> 2531.28s]  So we should exclude the first couple steps.
+[2531.28s -> 2532.56s]  So we'll start at step three
+[2532.56s -> 2535.04s]  and we'll measure some steps.
+[2535.04s -> 2537.66s]  Sort of in this range, we could take the kernels,
+[2537.66s -> 2539.46s]  this is what's doing the computation,
+[2539.46s -> 2541.78s]  and you can see that there's actually many different
+[2541.78s -> 2542.98s]  kinds of matrix multiply.
+[2542.98s -> 2544.60s]  This is one matrix multiply kernel,
+[2544.60s -> 2546.62s]  this is a different matrix multiply kernel,
+[2546.62s -> 2550.02s]  there's a different sort of vectorized element kernel
+[2550.02s -> 2551.74s]  and all of these are taking different amounts
+[2551.74s -> 2554.98s]  of computation and we can take this
+[2554.98s -> 2558.58s]  and then we can say oh, show me in the events view
+[2558.58s -> 2560.34s]  all of the things that are happening
+[2560.34s -> 2563.70s]  and I can also see sort of the stats view
+[2563.70s -> 2566.82s]  all of the time that it takes.
+[2566.82s -> 2571.10s]  Wait, let's see, we want the average time?
+[2571.10s -> 2576.10s]  No, we want, sorry, the CUDA kernel execution summary?
+[2578.50s -> 2583.10s]  Yeah, we want the total duration of the kernels.
+[2583.14s -> 2587.02s]  So we can see which kernels are taking the most time
+[2587.02s -> 2588.70s]  and aggregate across these views.
+[2588.70s -> 2590.90s]  So this is actually a very, very powerful tool
+[2590.90s -> 2593.22s]  that can give you both the aggregate view
+[2593.22s -> 2594.68s]  of what's slow and what's fast
+[2594.68s -> 2597.10s]  as well as individual kernels that are being launched
+[2597.10s -> 2597.92s]  and when they're launched
+[2597.92s -> 2600.78s]  and where the CPU commands for that came from.
+[2602.28s -> 2604.56s]  And I guess one final side note here
+[2604.56s -> 2607.98s]  is this is one of the reasons why it doesn't matter
+[2607.98s -> 2609.22s]  that we're programming in Python
+[2609.22s -> 2611.78s]  and Python's not a very high performance language
+[2611.78s -> 2613.70s]  because the CPU is never the bottleneck
+[2613.70s -> 2615.26s]  because the CPU can run ahead
+[2615.26s -> 2617.42s]  and sort of queue commands into the GPU
+[2618.50s -> 2620.98s]  and so this sort of detaching
+[2620.98s -> 2623.60s]  or like this disconnecting aspect
+[2623.60s -> 2625.50s]  between the GPU and the CPU
+[2625.50s -> 2627.10s]  is one of the key reasons why we can use
+[2627.10s -> 2629.14s]  this nice high-level programming language
+[2629.14s -> 2632.26s]  and yet still get sort of full utilization
+[2632.26s -> 2633.58s]  out of sort of our GPUs.
+[2634.70s -> 2636.98s]  Cool, okay, any questions
+[2636.98s -> 2639.10s]  before I sort of switch back to this
+[2639.10s -> 2641.74s]  because I'm gonna leave NCIS sort of forever
+[2641.74s -> 2643.34s]  for this lecture at this point.
+[2644.86s -> 2646.42s]  Cool, yeah, but you'll get to play with it
+[2646.42s -> 2648.42s]  in assignment two and I think you'll appreciate it
+[2648.42s -> 2651.82s]  because it gives you like a really interesting view
+[2651.82s -> 2654.14s]  into what your hardware is actually doing
+[2654.14s -> 2657.10s]  to make these language models train.
+[2657.10s -> 2659.22s]  Okay, that was benchmarking and profiling.
+[2659.22s -> 2660.62s]  Now you have all the tools you need
+[2660.62s -> 2662.78s]  to be able to do sort of performance things
+[2663.70s -> 2665.86s]  and now we're gonna write some kernels
+[2665.86s -> 2667.10s]  in the remaining time.
+[2667.10s -> 2669.74s]  So remember kernel fusion, right?
+[2669.74s -> 2672.98s]  So this was the image that I showed you in lecture, right?
+[2672.98s -> 2674.18s]  There's a little factory.
+[2674.18s -> 2675.78s]  Every time I need to do an operation,
+[2675.78s -> 2677.10s]  I need to ship it from the warehouse
+[2677.10s -> 2678.66s]  to the factory and back
+[2678.66s -> 2682.74s]  and so if I naively do a bunch of operations
+[2682.74s -> 2684.46s]  in sequence without thinking about it,
+[2684.46s -> 2686.70s]  I'm paying for a lot of sort of shipping costs
+[2686.70s -> 2688.84s]  back and forth from the warehouse.
+[2688.84s -> 2690.86s]  What I should do is have one factory
+[2690.86s -> 2692.74s]  that does all the operations at once
+[2692.74s -> 2695.02s]  so I do not pay for this cost multiple times, right?
+[2695.02s -> 2696.66s]  That's very important.
+[2697.22s -> 2698.64s]  Now we're gonna do Gell-U
+[2698.64s -> 2700.34s]  and we're gonna write a kernel for Gell-U
+[2700.34s -> 2701.70s]  and I'm gonna write that kernel
+[2701.70s -> 2703.34s]  in several different ways
+[2703.34s -> 2705.18s]  and we're gonna look at the performance impact
+[2705.18s -> 2706.10s]  of doing that.
+[2707.70s -> 2711.22s]  And so we have the PyTorch implementation of Gell-U
+[2711.22s -> 2713.28s]  and that looks just like this.
+[2713.28s -> 2715.62s]  Torch NN functional Gell-U
+[2715.62s -> 2717.88s]  and I invoke approximate equals tanh
+[2717.88s -> 2721.18s]  because I want this to exactly match
+[2721.18s -> 2723.30s]  the naive thing that I'm gonna do next.
+[2723.30s -> 2725.50s]  So this is not gonna be actually multiplying
+[2725.50s -> 2728.58s]  by the CDF of the Gaussian,
+[2728.58s -> 2730.10s]  it's gonna be some approximation to that
+[2730.10s -> 2731.30s]  that's easier to compute, okay?
+[2731.30s -> 2733.26s]  So that's the PyTorch Gell-U.
+[2733.26s -> 2735.54s]  Now I'm gonna do the dumb thing, right?
+[2735.54s -> 2736.46s]  You're gonna look at this code
+[2736.46s -> 2739.18s]  and say this is gonna be low performance.
+[2739.18s -> 2741.18s]  I'm gonna go in and in PyTorch,
+[2741.18s -> 2743.90s]  I'm gonna write Gell-U as 0.5 times x
+[2743.90s -> 2747.02s]  times one plus tanh square root pi over two
+[2747.02s -> 2752.02s]  times x plus 0.044715 times x cubed, right?
+[2753.02s -> 2755.78s]  Magic formula, but this is a good approximation
+[2755.78s -> 2757.42s]  to the Gell-U, you can look it up
+[2757.42s -> 2760.06s]  or convince yourself this is true.
+[2760.06s -> 2763.06s]  But if you do this, you see that there's a lot
+[2763.06s -> 2764.42s]  of operations that happen, right?
+[2764.42s -> 2766.78s]  There's like a tanh, there's a x cubed,
+[2766.78s -> 2769.54s]  there's multiplication by a constant in addition
+[2769.54s -> 2772.46s]  and multiplication by 0.5 and x.
+[2772.46s -> 2776.34s]  If this involves multiple different CUDA kernels,
+[2776.34s -> 2778.14s]  this is probably going to be slow, right?
+[2778.14s -> 2780.98s]  That should be our intuition at this point from fusion.
+[2780.98s -> 2782.26s]  So let's see if that's true, okay.
+[2782.26s -> 2784.18s]  So these two are the same, you can see at the top left
+[2784.18s -> 2786.78s]  they compute the exact same numbers.
+[2786.78s -> 2790.46s]  And we can systematically check this on random Gaussians.
+[2791.54s -> 2793.26s]  And now let's sort of benchmark the two.
+[2793.26s -> 2797.30s]  Okay, so the manual time is 8.1 seconds
+[2797.30s -> 2799.62s]  for a really, really big Gell-U.
+[2799.62s -> 2802.18s]  And PyTorch time is 1.1, right?
+[2802.18s -> 2803.70s]  Milliseconds, sorry.
+[2803.70s -> 2806.66s]  And the fused version is gonna be significantly faster.
+[2806.66s -> 2809.14s]  In fact, eight times faster, wow.
+[2809.14s -> 2811.66s]  Big difference from writing a simple kernel.
+[2811.66s -> 2813.90s]  Of course, your matmoles are probably still
+[2813.90s -> 2816.74s]  going to be the bottleneck, but it would be really cool
+[2816.74s -> 2818.74s]  if we could go from that eight milliseconds
+[2818.74s -> 2819.74s]  to that one millisecond, right?
+[2819.74s -> 2820.94s]  That would feel very satisfying.
+[2820.94s -> 2824.38s]  So we're gonna try to get close to that 1.1 millisecond
+[2824.38s -> 2826.58s]  in the next few parts of the lecture.
+[2826.58s -> 2830.34s]  So now let's look at what's happening under the hood.
+[2830.34s -> 2831.46s]  I don't need to look at NCIS
+[2831.46s -> 2832.66s]  because all I really want to know
+[2832.66s -> 2834.34s]  is some very high level stuff.
+[2834.34s -> 2837.30s]  For the manual Gell-U, kind of just like I said,
+[2837.30s -> 2838.98s]  it's gonna do a whole bunch of operations.
+[2839.86s -> 2841.22s]  It's gonna do a bunch of multiplications.
+[2841.22s -> 2843.66s]  It's vectorized, but it's a bunch of CUDA kernels
+[2843.66s -> 2844.66s]  being launched here.
+[2845.54s -> 2847.18s]  And notice on the right, this CUDA kernel
+[2847.18s -> 2848.82s]  gets called three times because we have
+[2848.82s -> 2851.78s]  a whole bunch of multiplications floating around here.
+[2851.78s -> 2853.46s]  We've also got addition.
+[2853.46s -> 2855.82s]  We've got a tanh, and each one of these
+[2855.82s -> 2858.30s]  is probably kind of slow, and in the end,
+[2858.30s -> 2861.06s]  we're incurring fairly large overhead doing this.
+[2862.34s -> 2867.26s]  Now, let's do the same thing with the PyTorch Gell-U,
+[2867.26s -> 2868.82s]  and this is really great.
+[2869.50s -> 2870.82s]  There's a single CUDA kernel launch.
+[2870.82s -> 2873.50s]  It happens once, and it just processes the whole thing.
+[2873.50s -> 2875.66s]  This is what we'd like to see.
+[2875.66s -> 2877.42s]  And of course, this is very, very fast
+[2877.42s -> 2879.70s]  because it's just a single CUDA kernel.
+[2880.86s -> 2884.30s]  So this is really nice, and we would like
+[2884.30s -> 2886.94s]  to somehow get to the CUDA kernel.
+[2886.94s -> 2888.94s]  And so the first thing you might think of,
+[2888.94s -> 2890.18s]  depending on how much you know
+[2890.18s -> 2892.74s]  about writing GPU efficient code,
+[2892.74s -> 2895.94s]  is all right, the PyTorch people must have written this
+[2895.94s -> 2897.82s]  in the lowest level language possible,
+[2897.82s -> 2898.98s]  so we're gonna do the same thing.
+[2898.98s -> 2901.54s]  We're gonna go to, not the lowest level possible,
+[2901.54s -> 2904.10s]  but we're gonna go to the C++ API,
+[2904.10s -> 2907.66s]  and we're gonna write the CUDA kernel in C++.
+[2907.66s -> 2911.78s]  So let's open it up and write our own CUDA kernel.
+[2911.78s -> 2912.98s]  So how is that gonna work?
+[2912.98s -> 2916.94s]  Okay, so we have gone in and sort of created
+[2916.94s -> 2918.74s]  a C++ version of the whole thing.
+[2918.74s -> 2922.78s]  So CUDA, when we say CUDA, is actually the C++ API
+[2922.78s -> 2925.70s]  for interfacing with and programming GPUs,
+[2925.74s -> 2928.90s]  and just like sort of the logical model
+[2928.90s -> 2930.70s]  of a GPU that we described,
+[2930.70s -> 2933.14s]  we're gonna write some sort of function, F,
+[2933.14s -> 2936.10s]  and then when we sort of invoke this CUDA kernel,
+[2936.10s -> 2938.94s]  it's gonna automatically call F on all of the elements
+[2938.94s -> 2940.74s]  of a vector or a matrix,
+[2940.74s -> 2943.18s]  and then we will get to parallel compute
+[2943.18s -> 2944.50s]  everything that we want.
+[2945.62s -> 2947.90s]  As nomenclature, we're gonna have a grid,
+[2947.90s -> 2949.62s]  which is a collection of thread blocks.
+[2949.62s -> 2951.34s]  So think of this as, I have a task,
+[2951.34s -> 2953.62s]  I'm gonna cut it up into pieces,
+[2953.62s -> 2955.18s]  and there's gonna be a number of blocks.
+[2956.18s -> 2958.30s]  In a 2D grid, for example,
+[2958.30s -> 2960.62s]  there's gonna be sort of a row coordinate,
+[2960.62s -> 2962.06s]  and then there's gonna be a column coordinate,
+[2962.06s -> 2963.38s]  and this will be very useful
+[2963.38s -> 2965.46s]  if you're working with matrices.
+[2965.46s -> 2968.18s]  And then there'll be the size of each of these blocks,
+[2968.18s -> 2970.34s]  like how big are these in terms
+[2970.34s -> 2972.26s]  of the number of thread blocks?
+[2972.26s -> 2974.42s]  So this is the dimension of the blocks.
+[2974.42s -> 2976.46s]  And then there's a collection of threads
+[2976.46s -> 2977.86s]  within these blocks,
+[2977.86s -> 2979.66s]  and this is the coordinate that, for example,
+[2979.66s -> 2980.94s]  one thread block lives in,
+[2980.94s -> 2983.78s]  and then each thread is within each block.
+[2983.82s -> 2985.54s]  So there's sort of hierarchical structure here.
+[2985.54s -> 2988.30s]  There's a grid, and then there's a thread inside a grid.
+[2989.26s -> 2991.14s]  And then we're gonna basically,
+[2991.14s -> 2993.62s]  each function is gonna take in three things.
+[2993.62s -> 2995.06s]  It's gonna take the block index,
+[2995.06s -> 2997.82s]  like which thread block do I belong to,
+[2997.82s -> 3001.20s]  which, what's kind of the block dimensions,
+[3001.20s -> 3003.70s]  and then what is the index that I am,
+[3003.70s -> 3005.46s]  like my thread index.
+[3005.46s -> 3008.22s]  And with these, I can kind of know which coordinate
+[3008.22s -> 3010.38s]  that I am in in the matrix or the vector,
+[3010.38s -> 3013.14s]  and then I can sort of decide what logic that I want.
+[3014.34s -> 3016.82s]  One sort of last thing before we go through
+[3016.82s -> 3019.46s]  the actual C++ code is,
+[3019.46s -> 3022.46s]  whenever you're trying to debug CUDA,
+[3022.46s -> 3025.26s]  you wanna launch with CUDA launch blocking equals one.
+[3025.26s -> 3028.14s]  This will allow you to actually debug your CUDA kernel.
+[3028.14s -> 3030.32s]  It will give you sort of error messages back
+[3030.32s -> 3033.08s]  at a cost in terms of the runtime.
+[3033.08s -> 3034.38s]  If you don't do that,
+[3034.38s -> 3036.12s]  you are going to have a bad time
+[3036.12s -> 3039.24s]  if you're writing CUDA code and needing to debug.
+[3039.24s -> 3042.74s]  So okay, here is my Gelu code,
+[3042.74s -> 3045.14s]  and let's go through it kind of piece by piece,
+[3045.14s -> 3048.34s]  and then I'll talk about what all the pieces are doing.
+[3048.34s -> 3050.70s]  This will probably take the longest out of the things
+[3050.70s -> 3051.96s]  that we're gonna walk through,
+[3051.96s -> 3054.18s]  other than the machine code.
+[3054.18s -> 3055.58s]  And once you understand this,
+[3055.58s -> 3057.70s]  you should be able to understand all the other pieces.
+[3057.70s -> 3060.32s]  So we'll go through this a little slowly.
+[3060.32s -> 3061.86s]  So there's two parts of this code.
+[3061.86s -> 3065.42s]  So the first part, this Gelu kernel piece up here,
+[3065.42s -> 3067.30s]  this is the actual kernel.
+[3067.30s -> 3068.86s]  This does the computation, right?
+[3068.86s -> 3070.76s]  This is gonna get sent to the GPU,
+[3070.76s -> 3072.28s]  it's gonna do the computation,
+[3072.76s -> 3074.32s]  and then it will return the results.
+[3074.32s -> 3076.98s]  This piece, the Gelu function here,
+[3076.98s -> 3078.24s]  this is a wrapper, right?
+[3078.24s -> 3079.72s]  This lives on the CPU.
+[3079.72s -> 3082.32s]  It's gonna orchestrate the launch of the kernel,
+[3082.32s -> 3085.60s]  which is actually going to go out and live in the GPU.
+[3085.60s -> 3088.24s]  So maybe we can start with kind of this
+[3088.24s -> 3091.20s]  sort of wrapper piece, this Gelu function first.
+[3091.20s -> 3093.88s]  So we're always gonna check two things.
+[3093.88s -> 3097.32s]  Basically in the Triton or the CUDA code,
+[3097.32s -> 3098.70s]  we're always gonna check,
+[3098.70s -> 3100.12s]  oh sorry, there's a question back there.
+[3101.08s -> 3102.78s]  Okay, sorry, that's my bad, okay.
+[3104.00s -> 3105.80s]  That is an easy fix,
+[3105.80s -> 3107.62s]  but I needed to know that you can't see.
+[3107.62s -> 3108.46s]  Okay, good.
+[3109.52s -> 3110.60s]  Right, is this good?
+[3110.60s -> 3111.44s]  Okay, excellent.
+[3112.68s -> 3116.08s]  Okay, so we're gonna start with the Gelu function,
+[3116.08s -> 3118.12s]  and there's two things that we're always gonna need to do.
+[3118.12s -> 3120.88s]  The first one is to make sure
+[3120.88s -> 3124.32s]  that X lives in the GPU device,
+[3124.32s -> 3126.36s]  like the CUDA tensor of some kind, right?
+[3126.40s -> 3130.64s]  If it's not, well, that's gonna be a problem.
+[3130.64s -> 3132.46s]  We're not gonna be able to do anything on the GPU.
+[3132.46s -> 3135.32s]  The second thing, which is maybe less obvious,
+[3135.32s -> 3137.92s]  is that we wanna check to make sure X is contiguous.
+[3137.92s -> 3139.20s]  What that means is it lives
+[3139.20s -> 3141.32s]  in a contiguous block of memory,
+[3141.32s -> 3143.16s]  because when we index into X,
+[3143.16s -> 3145.32s]  we're gonna do a whole bunch of indexing arithmetic,
+[3145.32s -> 3146.56s]  and we're gonna assume
+[3146.56s -> 3148.68s]  that X lives in a block of memory, right?
+[3148.68s -> 3151.04s]  And if it doesn't, it's just gonna be
+[3151.04s -> 3152.44s]  basically impossible to do this
+[3152.44s -> 3153.94s]  with any level of generality.
+[3154.94s -> 3157.58s]  And so when we compute the Gelu, right,
+[3157.58s -> 3160.98s]  we take an input X, and we're gonna output a Y, right?
+[3160.98s -> 3163.62s]  And so we need to allocate a output.
+[3163.62s -> 3167.10s]  So torch tensor Y equals torch empty like X.
+[3167.10s -> 3168.66s]  This is just saying, well,
+[3168.66s -> 3171.42s]  give me sort of a output tensor space
+[3171.42s -> 3173.98s]  or a pointer to a output tensor
+[3173.98s -> 3176.58s]  that is just like the dimension of X.
+[3176.58s -> 3179.00s]  And notice that I'm not calling zeros.
+[3179.00s -> 3181.12s]  This will save on extra operations.
+[3181.12s -> 3182.86s]  I don't need to zero out these Ys
+[3182.86s -> 3184.66s]  because I'm gonna write into them anyway, right?
+[3184.66s -> 3186.74s]  So this is a minor,
+[3186.74s -> 3189.10s]  but you might as well do it, optimization.
+[3189.10s -> 3192.50s]  And then basically in all the code that we write,
+[3192.50s -> 3194.78s]  we're gonna need to figure out the grid, right?
+[3194.78s -> 3197.46s]  So what's the total number of elements that I have?
+[3197.46s -> 3199.42s]  What's the size of each block,
+[3199.42s -> 3201.94s]  the number of threads that I have in each block?
+[3201.94s -> 3204.50s]  And then how many blocks total do I have?
+[3204.50s -> 3207.22s]  And when I need to figure out the number of blocks,
+[3207.22s -> 3209.34s]  I'm going to call cdiv,
+[3209.34s -> 3211.78s]  which is gonna be essentially take the ratio
+[3211.78s -> 3213.46s]  of num elements to block size
+[3213.46s -> 3215.74s]  and then take the ceiling, right?
+[3215.74s -> 3217.50s]  Because I need to round up to make sure
+[3217.50s -> 3219.46s]  that very last set of elements
+[3219.46s -> 3221.34s]  that sort of isn't divisible by block size
+[3221.34s -> 3222.42s]  still gets computed, right?
+[3222.42s -> 3225.62s]  So I take the ceiling rather than the floor.
+[3225.62s -> 3228.46s]  And then this is all very simple bookkeeping stuff.
+[3228.46s -> 3230.26s]  And then I say, all right, launch the kernel,
+[3230.26s -> 3232.82s]  you know, the Gelu kernel gets launched.
+[3232.82s -> 3234.46s]  And this sort of angle brackets is saying,
+[3234.46s -> 3235.90s]  this is kind of the,
+[3235.90s -> 3239.56s]  with the given number of blocks and the size of each block.
+[3239.56s -> 3242.04s]  And this is gonna be passed into sort of
+[3242.04s -> 3243.68s]  the kernel command.
+[3243.68s -> 3246.36s]  And then I'm gonna pass in the pointers to Xs and Ys, right?
+[3246.36s -> 3250.16s]  I'm not actually gonna pass the values of Xs and Ys
+[3250.16s -> 3251.48s]  and the total number of elements.
+[3251.48s -> 3253.88s]  And I need this to compute sort of
+[3253.88s -> 3257.36s]  essentially the boundary conditions of my kernel.
+[3257.36s -> 3260.80s]  So now let's go to the actual kernel itself, right?
+[3260.80s -> 3263.48s]  So I have global void Gelu kernel,
+[3263.48s -> 3265.10s]  and I get in pointers for in and out,
+[3265.10s -> 3267.64s]  and I have number of elements items.
+[3267.64s -> 3271.12s]  And this keyword global, the website, sorry,
+[3271.12s -> 3273.68s]  the rendering here has mangled it a little bit,
+[3273.68s -> 3276.16s]  but you should think of this as underscore underscore global
+[3276.16s -> 3278.08s]  and this is a keyword that distinguishes it
+[3278.08s -> 3281.36s]  as a CUDA kernel function.
+[3281.36s -> 3282.66s]  And so what am I doing?
+[3282.66s -> 3286.64s]  Well, you know, this thread is actually supposed to operate
+[3286.64s -> 3289.30s]  on a single element I, right?
+[3289.30s -> 3291.48s]  But I don't get I as input.
+[3291.48s -> 3293.12s]  Like the code doesn't actually tell me
+[3293.12s -> 3295.08s]  you're in a vector in coordinate I.
+[3295.08s -> 3297.16s]  So I need to compute where I am
+[3297.72s -> 3299.16s]  and how am I going to do that?
+[3299.16s -> 3301.36s]  It's gonna be I take my block index, right?
+[3301.36s -> 3304.08s]  I only have one dimension, so it's block index dot X,
+[3304.08s -> 3306.22s]  so just the first coordinate.
+[3306.22s -> 3308.40s]  And then multiply it by the size of each block,
+[3308.40s -> 3310.38s]  the block dim dot X.
+[3310.38s -> 3311.66s]  And this tells me, you know,
+[3311.66s -> 3315.12s]  basically the starting point within my current block.
+[3315.12s -> 3316.92s]  And then now I add in thread IDX.
+[3316.92s -> 3318.54s]  So, you know, I know where the start
+[3318.54s -> 3320.96s]  of my current block is and I add in the offset
+[3320.96s -> 3322.78s]  to where I am within the block
+[3322.78s -> 3325.66s]  and that gives me my global coordinate I, right?
+[3325.66s -> 3327.58s]  So some bookkeeping computation
+[3327.58s -> 3329.78s]  just to get the coordinates here.
+[3329.78s -> 3331.54s]  And then this is important too.
+[3331.54s -> 3333.26s]  You see this pattern basically
+[3333.26s -> 3335.82s]  in all the CUDA code that people write.
+[3335.82s -> 3338.58s]  There's no kind of out of bounds checking naturally.
+[3338.58s -> 3340.78s]  And so what you do is I have my coordinate
+[3340.78s -> 3343.38s]  and I'm gonna check to make sure that, you know,
+[3343.38s -> 3345.98s]  I am supposed to be processing something that's in bounds.
+[3345.98s -> 3348.62s]  And some of the threads at the very end of your block,
+[3348.62s -> 3349.90s]  they're gonna be processing stuff
+[3349.90s -> 3351.50s]  that's out of bounds in memory
+[3351.50s -> 3353.22s]  and you do not want it to touch those.
+[3353.22s -> 3354.74s]  And so you basically condition it
+[3354.78s -> 3356.18s]  on I less than num elements
+[3356.18s -> 3358.02s]  and you do nothing if you're outside of that.
+[3358.02s -> 3358.86s]  Sorry, yes.
+[3358.86s -> 3363.36s]  Where's CU if dot C is I less than C?
+[3363.36s -> 3364.66s]  Sorry, dot? Yeah.
+[3364.66s -> 3366.26s]  This is just the extension
+[3366.26s -> 3368.18s]  that you sort of write the CUDA code in.
+[3368.18s -> 3369.72s]  It's to distinguish it from, you know,
+[3369.72s -> 3371.02s]  just your standard C code.
+[3373.30s -> 3376.02s]  Okay, so this is just a file name thing,
+[3376.02s -> 3376.86s]  is this dot CU.
+[3376.86s -> 3379.42s]  There's nothing particularly special about it.
+[3379.42s -> 3381.78s]  Okay, and then so now, you know, within here
+[3381.78s -> 3383.66s]  we're gonna just do our computation, right?
+[3383.66s -> 3385.86s]  It's just gonna be, I'm gonna write out,
+[3385.86s -> 3387.78s]  I have my input, IN,
+[3387.78s -> 3389.34s]  I'm gonna index into the ith element
+[3389.34s -> 3392.34s]  and I compute my gelu just like I did before
+[3392.34s -> 3394.42s]  and I assign it to out of I
+[3394.42s -> 3395.70s]  and then I'm done, right?
+[3395.70s -> 3397.20s]  That's all that I need to do.
+[3397.20s -> 3399.10s]  And since this is all pointer stuff,
+[3399.10s -> 3400.90s]  I don't really need to worry too much
+[3400.90s -> 3403.18s]  about what is kind of actually happening here.
+[3404.02s -> 3406.58s]  So that's basically it.
+[3406.58s -> 3410.78s]  I can then take my sort of CUDA gelu code that I have
+[3411.10s -> 3414.10s]  and then I can load this sort of C++ code in line
+[3414.10s -> 3416.74s]  and then I can just have it compile into a module
+[3416.74s -> 3417.82s]  all within Python.
+[3417.82s -> 3419.18s]  It's all very nice and convenient.
+[3419.18s -> 3421.90s]  You don't really have to go out onto the command line
+[3421.90s -> 3422.74s]  and do things.
+[3422.74s -> 3426.26s]  And so now, we have CUDA gelu defined.
+[3426.26s -> 3429.82s]  So this is nice and basically it's a compilation of this
+[3430.98s -> 3433.06s]  and I can call it from within Python
+[3433.06s -> 3436.90s]  and we'll use the C bindings to call this guy.
+[3436.90s -> 3440.26s]  Okay, we're done calling CUDA gelu.
+[3440.26s -> 3444.26s]  I have my, I can check that the manual gelu
+[3444.26s -> 3445.62s]  and the CUDA gelu are the same
+[3445.62s -> 3447.78s]  and now let's benchmark the two.
+[3447.78s -> 3450.22s]  So I have the time that it takes to run PyTorch
+[3450.22s -> 3453.06s]  and just like last time, it's about 1.1 milliseconds
+[3453.92s -> 3456.98s]  and manual time, remember, is 8.1 milliseconds
+[3456.98s -> 3459.66s]  and so drum roll, what is our CUDA time?
+[3459.66s -> 3461.40s]  Well, we've gotten it down to 1.8, right?
+[3461.40s -> 3464.26s]  Not quite as good as PyTorch's implementation
+[3464.26s -> 3467.90s]  but we're getting pretty close to PyTorch time, right?
+[3468.26s -> 3471.18s]  We've gone from eight milliseconds to 1.8 milliseconds
+[3471.18s -> 3473.02s]  which is not bad
+[3473.02s -> 3474.86s]  because that C code wasn't that hard to write
+[3474.86s -> 3476.74s]  and so now we also do some profiling
+[3478.14s -> 3481.38s]  and we can kind of see what is happening here now
+[3481.38s -> 3483.34s]  and it's called the gelu kernel, right?
+[3483.34s -> 3486.14s]  This is the code that got shipped off to the GPU
+[3487.34s -> 3489.32s]  and then it's calling empty like,
+[3489.32s -> 3494.10s]  this is the initialization and then empty strided, right?
+[3494.10s -> 3497.78s]  And then CUDA launch kernel and CUDA device synchronize
+[3498.62s -> 3499.54s]  and that's basically all that's happening
+[3499.54s -> 3502.46s]  and notice how, once again, this is a single CUDA kernel,
+[3502.46s -> 3504.58s]  eats up 100% of the GPU time,
+[3504.58s -> 3506.18s]  kind of like what we wanted, right?
+[3506.18s -> 3508.70s]  So there's some further optimization we can do
+[3508.70s -> 3510.98s]  but this has really already solved the problem
+[3510.98s -> 3512.58s]  of kernel fusion.
+[3512.58s -> 3514.74s]  We fused all the operators together, okay?
+[3516.10s -> 3518.10s]  So pretty good.
+[3518.10s -> 3519.70s]  These kinds of element-wise operations
+[3519.70s -> 3520.98s]  are easy to write in CUDA.
+[3520.98s -> 3523.18s]  If you have a new kind of, I don't know,
+[3524.50s -> 3526.22s]  non-linearity, you could easily write
+[3526.22s -> 3527.66s]  a CUDA kernel for it yourself
+[3528.50s -> 3529.46s]  if you really wanted to.
+[3529.46s -> 3531.50s]  But more interesting operations are going to require
+[3531.50s -> 3534.10s]  reading multiple values, like doing reductions.
+[3534.10s -> 3535.96s]  Those are going to get a little more complicated.
+[3535.96s -> 3538.34s]  Flash retention will be a little bit more complicated
+[3538.34s -> 3541.60s]  but not too much so when you have to do it
+[3541.60s -> 3542.84s]  in the assignment.
+[3542.84s -> 3547.84s]  Okay, any questions on the simple C++ CUDA kernel?
+[3548.86s -> 3550.02s]  Yes?
+[3550.02s -> 3550.86s]  Yeah?
+[3552.86s -> 3553.70s]  Yeah.
+[3557.26s -> 3558.62s]  Yeah, so the question was what happens
+[3558.62s -> 3559.70s]  if it's not contiguous?
+[3559.70s -> 3561.30s]  At least in the code that we wrote,
+[3561.30s -> 3562.14s]  it will just throw an error
+[3562.14s -> 3564.06s]  because it's not a cert.
+[3564.06s -> 3566.46s]  You could potentially write code to handle it
+[3566.46s -> 3568.82s]  but there's almost no reason for memory
+[3568.82s -> 3571.74s]  to be fragmented because it will allocate contiguously
+[3572.78s -> 3575.02s]  and you won't deallocate the middle of a memory
+[3575.02s -> 3577.34s]  unless you're doing something really tricky.
+[3577.34s -> 3578.96s]  And so you should really,
+[3578.96s -> 3581.52s]  unless you're doing something pretty advanced,
+[3581.52s -> 3583.22s]  expect to have continuous memory.
+[3585.52s -> 3587.76s]  Do like a transpose and some other stuff
+[3587.76s -> 3589.40s]  makes the memory not continuous?
+[3589.40s -> 3590.24s]  Right.
+[3590.24s -> 3592.80s]  So like when you're putting a higher level
+[3592.80s -> 3594.72s]  you should be careful that you're conversing
+[3594.72s -> 3596.72s]  and you're forced to be continuous
+[3596.72s -> 3598.60s]  before calling out versions of that.
+[3598.60s -> 3600.36s]  Yeah, so the question was like
+[3600.36s -> 3603.28s]  if you're transposing then you're no longer
+[3603.28s -> 3604.12s]  going to be continuous.
+[3604.12s -> 3605.68s]  You're going to have like a jump between
+[3605.68s -> 3606.80s]  all of the elements in the index
+[3606.80s -> 3608.20s]  if you're sort of row traversing something
+[3608.24s -> 3609.64s]  that's sort of column stored.
+[3610.64s -> 3612.70s]  Yeah, so I think transpose or like views
+[3612.70s -> 3614.64s]  or like essentially shuffling dimensions
+[3614.64s -> 3616.16s]  is like the one exception to this
+[3616.16s -> 3618.48s]  but that's handleable in like the outer,
+[3618.48s -> 3620.24s]  like sort of the wrapper part, right?
+[3620.24s -> 3621.84s]  You can basically pass it something
+[3621.84s -> 3623.68s]  that is contiguously indexed
+[3623.68s -> 3626.92s]  and for a lot of the matrices you won't really care.
+[3626.92s -> 3629.08s]  So, yes.
+[3629.08s -> 3632.36s]  What would happen if you chose a different block size?
+[3632.36s -> 3633.52s]  Right, so what would happen
+[3633.52s -> 3635.92s]  if you chose a different block size?
+[3635.96s -> 3640.36s]  The sort of GPU-related sort of concerns would kick in.
+[3640.36s -> 3642.72s]  Sort of like do you have enough blocks
+[3642.72s -> 3644.72s]  to saturate your SMs
+[3644.72s -> 3648.12s]  and do you have enough work within each block?
+[3648.12s -> 3649.26s]  And those are kind of the two things
+[3649.26s -> 3651.24s]  that could matter here.
+[3651.24s -> 3654.56s]  But I think my guess is that for block sizes
+[3654.56s -> 3657.20s]  that are relatively large, like 1024,
+[3657.20s -> 3659.04s]  it probably won't matter past a certain point
+[3659.04s -> 3660.16s]  because we're not doing anything advanced.
+[3660.16s -> 3661.80s]  It's all entry-wise operations
+[3661.80s -> 3663.80s]  for this like very, very simple example.
+[3663.80s -> 3664.76s]  Yeah.
+[3664.84s -> 3668.68s]  Is the reason that our non-GPU version was so slow
+[3668.68s -> 3671.64s]  because this queue asks for a small operation
+[3671.64s -> 3673.24s]  and prints in GPU and sends it back
+[3673.24s -> 3675.28s]  and you can ask it kind of a small operation?
+[3675.28s -> 3676.52s]  Do you feel like that?
+[3676.52s -> 3679.68s]  So the question was like why was our non-cuda kernel,
+[3679.68s -> 3682.00s]  sort of like manual thing, so slow?
+[3682.00s -> 3683.64s]  It's not that it's sending things back
+[3683.64s -> 3685.52s]  from GPU to CPU, per se.
+[3685.52s -> 3687.44s]  Like X is gonna live in the GPU.
+[3687.44s -> 3689.28s]  We allocate it in GPU.
+[3689.28s -> 3692.36s]  Like we'll do like as-device like CUDA.
+[3692.36s -> 3696.48s]  But it's gonna basically not be in the SM the whole time.
+[3696.48s -> 3700.76s]  So once we do like X squared, that's a CUDA kernel.
+[3700.76s -> 3702.24s]  And so that multiplication operation
+[3702.24s -> 3705.88s]  will read the sort of vector from the global memory
+[3705.88s -> 3708.72s]  into the SMs, do the computation, it'll write it back.
+[3708.72s -> 3711.20s]  And so this is all in the sort of DRAM
+[3711.20s -> 3713.72s]  to SM communication cost
+[3713.72s -> 3716.92s]  rather than the CPU to GPU communication cost.
+[3716.92s -> 3718.96s]  Of course, if you write like as-device CPU,
+[3718.96s -> 3721.72s]  then you'll get the CPU transfer cost
+[3721.76s -> 3724.32s]  in addition to the DRAM transfer cost.
+[3726.12s -> 3729.32s]  Okay, so now you've seen that in like, okay.
+[3729.32s -> 3731.20s]  So that was not too painful.
+[3731.20s -> 3732.64s]  But it would be really nice
+[3732.64s -> 3735.76s]  if we had nicer sort of Python abstractions
+[3735.76s -> 3737.40s]  for writing CUDA kernels.
+[3737.40s -> 3739.10s]  And this is what Triton is.
+[3739.10s -> 3740.54s]  And Triton is quite nice.
+[3740.54s -> 3743.00s]  It like has this very nice middle ground
+[3743.00s -> 3744.04s]  where you don't have to manage
+[3744.04s -> 3746.28s]  literally everything about the GPU.
+[3746.28s -> 3750.66s]  So Triton is sort of a domain-specific language.
+[3751.58s -> 3754.10s]  Developed by OpenAI in 2021.
+[3754.10s -> 3757.52s]  And it makes GPU programming much more accessible.
+[3757.52s -> 3761.22s]  So like you write everything kind of in Python.
+[3761.22s -> 3763.90s]  And you don't really think about the threads anymore.
+[3763.90s -> 3766.38s]  You think about thread blocks.
+[3766.38s -> 3770.06s]  And Triton manages a lot of stuff that is annoying
+[3770.06s -> 3772.14s]  but can be automatically optimized.
+[3772.14s -> 3776.32s]  So it can manage coalescing of memory.
+[3776.32s -> 3778.70s]  So remember that from DRAM,
+[3778.70s -> 3782.26s]  you get four sort of adjacent values at once
+[3782.26s -> 3783.82s]  with something called burst mode.
+[3783.82s -> 3785.02s]  So you really want to make sure
+[3785.02s -> 3788.14s]  that your memory retrievals are sort of grouped
+[3788.14s -> 3790.72s]  into adjacent sort of four element
+[3790.72s -> 3793.72s]  or more sort of calls at once.
+[3793.72s -> 3795.14s]  So it will handle those automatically.
+[3795.14s -> 3796.18s]  It will group those.
+[3797.10s -> 3799.26s]  It will do shared memory management
+[3799.26s -> 3801.66s]  when you need to sort of manage
+[3801.66s -> 3804.54s]  which sort of memory that you're writing to
+[3804.54s -> 3806.74s]  within the SM with multiple threads.
+[3807.58s -> 3810.38s]  From within each SM, you might need to stop
+[3810.38s -> 3813.22s]  or start threads, all managed automatically.
+[3813.22s -> 3816.78s]  But scheduling across SMs or what different SMs do,
+[3816.78s -> 3817.62s]  that's manual.
+[3817.62s -> 3819.16s]  So like the kind of the programming model
+[3819.16s -> 3820.42s]  is that you're gonna think kind of
+[3820.42s -> 3821.98s]  at the SM-centric level,
+[3821.98s -> 3824.12s]  and the compiler will handle a lot more
+[3824.12s -> 3825.68s]  of the lower level details.
+[3826.62s -> 3830.22s]  And Triton's quite nice because it can outperform
+[3830.22s -> 3832.46s]  by quite a bit a lot of PyTorch implementations.
+[3832.46s -> 3834.38s]  So it's kind of like going all the way
+[3834.38s -> 3836.10s]  to writing CUDA, but you're still
+[3836.38s -> 3838.26s]  in the very familiar Python land.
+[3838.26s -> 3841.22s]  And I think a very underappreciated advantage
+[3841.22s -> 3843.04s]  is sort of as it's written here,
+[3843.04s -> 3844.22s]  it's all in Python.
+[3844.22s -> 3845.48s]  You can step through it.
+[3845.48s -> 3847.92s]  You can kind of debug it fairly nicely.
+[3847.92s -> 3850.48s]  And so let's step through a Triton kernel.
+[3850.48s -> 3853.08s]  Like once again, we're gonna write Gell-U,
+[3853.08s -> 3855.54s]  and we're gonna do it in Triton.
+[3855.54s -> 3858.60s]  So this, I've put the code to be
+[3858.60s -> 3861.50s]  as similar structure as possible to our other code.
+[3861.50s -> 3864.54s]  So this is sort of the CPU side code, so to speak.
+[3864.54s -> 3866.94s]  This is the wrapper Triton Gell-U code.
+[3866.94s -> 3869.02s]  It takes in X, which is a torch tensor,
+[3869.02s -> 3871.58s]  and I've got my two asserts at the top.
+[3871.58s -> 3875.14s]  And I'm gonna allocate an output tensor Y
+[3875.14s -> 3876.76s]  using empty like, once again.
+[3876.76s -> 3878.50s]  And it has the same exact sort of
+[3878.50s -> 3882.26s]  coordinate computation sort of components.
+[3882.26s -> 3884.62s]  And even the kernel launch looks very similar.
+[3884.62s -> 3887.18s]  I've got this num blocks annotation,
+[3887.18s -> 3889.78s]  and then my block size is at the end here,
+[3889.78s -> 3891.58s]  not in part of this brackets,
+[3891.58s -> 3893.86s]  but basically I'm passing the same information
+[3893.86s -> 3894.98s]  to my kernel.
+[3894.98s -> 3898.76s]  And now Triton Gell-U kernel is this code over here.
+[3900.06s -> 3902.02s]  And this is gonna do the same thing
+[3902.02s -> 3903.54s]  as what we were doing before,
+[3903.54s -> 3905.70s]  but now it's nicely written in Python.
+[3906.78s -> 3908.94s]  And the mental model here is
+[3908.94s -> 3911.80s]  the inputs are going to be at X pointer,
+[3911.80s -> 3914.14s]  Y pointer is the output vector,
+[3914.14s -> 3915.62s]  sort of the starting coordinate,
+[3915.62s -> 3918.98s]  and the block size is how big each of my blocks are.
+[3918.98s -> 3919.98s]  And num elements is gonna be
+[3919.98s -> 3922.46s]  sort of the very end of my array.
+[3922.50s -> 3926.74s]  So now I need to get this set of lines,
+[3926.74s -> 3928.50s]  557 to 561.
+[3928.50s -> 3931.92s]  This is doing the computation of my index, right?
+[3931.92s -> 3934.82s]  I did I equals some formula before.
+[3934.82s -> 3936.54s]  This is doing the same calculation over here.
+[3936.54s -> 3938.70s]  I'm calculating where is the start of my current block.
+[3938.70s -> 3942.02s]  Well, that's my block ID times the size of the block.
+[3942.02s -> 3943.90s]  That gets me, let's say I live in block one.
+[3943.90s -> 3947.26s]  It'll get me this point right here at the middle.
+[3947.26s -> 3949.88s]  And then afterwards I need to know
+[3949.88s -> 3951.78s]  where do I live within my block.
+[3952.30s -> 3954.42s]  Well, that's gonna be kind of the offset.
+[3954.42s -> 3956.66s]  But now notice one difference.
+[3956.66s -> 3957.98s]  I don't get in an offset
+[3957.98s -> 3959.86s]  because I'm not programming threads.
+[3959.86s -> 3961.74s]  I'm programming blocks.
+[3961.74s -> 3963.14s]  And so what does that mean?
+[3963.14s -> 3967.50s]  Well, my offsets are actually a vector, not a single value
+[3967.50s -> 3968.96s]  because this is basically going to be,
+[3968.96s -> 3971.08s]  I'm gonna do vectorized operation
+[3971.08s -> 3972.86s]  where the vectorized operation
+[3972.86s -> 3975.80s]  is gonna be handled by different threads.
+[3975.80s -> 3978.50s]  So here my offsets are the start of the block
+[3978.54s -> 3983.22s]  plus a vector, this range of block size sort of offset.
+[3983.22s -> 3986.38s]  So my offsets are all of these coordinates
+[3986.38s -> 3988.42s]  within block one at once.
+[3988.42s -> 3989.78s]  Of course, if I'm at the very end,
+[3989.78s -> 3991.22s]  I might go off the edge.
+[3991.22s -> 3993.42s]  And so I need a mask to handle anything
+[3993.42s -> 3997.54s]  that lives off the boundary of my vector.
+[3997.54s -> 3999.70s]  Now I'm gonna load in a sort of
+[3999.70s -> 4004.62s]  single vectorized operation everything at once.
+[4004.62s -> 4006.30s]  So X pointer plus offsets.
+[4006.30s -> 4009.14s]  These are sort of the values that I'm responsible for
+[4009.14s -> 4011.40s]  masked up, and it's loaded into X,
+[4011.40s -> 4015.66s]  which is my sort of internal values,
+[4015.66s -> 4018.90s]  my internal sort of temporary vector that I need.
+[4018.90s -> 4020.18s]  And with this temporary vector,
+[4020.18s -> 4023.94s]  I'm gonna do exactly the old Gell-U computation.
+[4023.94s -> 4026.04s]  There's no tanh, so I compute that manually,
+[4026.04s -> 4028.02s]  but this formula you can convince yourself
+[4028.02s -> 4029.96s]  is the same as what we have here.
+[4031.14s -> 4034.98s]  And then Y is going to be the formula computed up here.
+[4034.98s -> 4037.30s]  Now once I'm done, I need to write it back
+[4037.30s -> 4041.22s]  into my output sort of buffer, or my output vector,
+[4041.22s -> 4043.22s]  and so I compute sort of my targets.
+[4043.22s -> 4044.98s]  So this is Y pointer plus offsets.
+[4044.98s -> 4048.30s]  I take my values, my temporary values Y,
+[4048.30s -> 4049.78s]  and then I store it, right?
+[4049.78s -> 4053.14s]  So this is very, very, very similar to what came before,
+[4053.14s -> 4054.82s]  but this one is the vectorized version.
+[4054.82s -> 4057.22s]  I get to operate on an entire block at once,
+[4057.22s -> 4059.34s]  and so instead of kind of thinking at the perspective
+[4059.34s -> 4062.94s]  of a thread, I'm thinking from the perspective of a block,
+[4062.94s -> 4064.66s]  but not too different, right?
+[4065.18s -> 4067.54s]  This is all fairly similar stuff.
+[4067.54s -> 4069.66s]  So now, I've written my Triton Gell-U,
+[4069.66s -> 4073.54s]  and all right, I will do this fairly quickly.
+[4073.54s -> 4075.70s]  So one last thing, I will only point out
+[4075.70s -> 4077.82s]  a few things here, because I don't want to get
+[4077.82s -> 4081.10s]  so in the weeds that you all get up and leave.
+[4081.10s -> 4084.10s]  But the one last cool thing that we can do
+[4084.10s -> 4087.22s]  is Triton, of course, compiles into low-level,
+[4087.22s -> 4090.30s]  sort of almost machine code for the GPU.
+[4090.30s -> 4092.54s]  And we can look at this very low-level
+[4092.54s -> 4096.38s]  called PTX code after the Triton compiler
+[4096.38s -> 4098.18s]  sort of goes over it.
+[4098.18s -> 4099.74s]  And it's actually kind of cool.
+[4099.74s -> 4102.42s]  You can kind of see how the GPU actually works
+[4102.42s -> 4104.30s]  at the thread level.
+[4104.30s -> 4106.26s]  So this is the Triton Gell-U kernel.
+[4106.26s -> 4108.66s]  It was generated by the compiler.
+[4108.66s -> 4111.06s]  And at first, it's going to do some
+[4111.06s -> 4112.22s]  of the really basic stuff.
+[4112.22s -> 4113.62s]  So what's it doing here?
+[4113.62s -> 4115.46s]  It's saying, well, I'm going to need
+[4115.46s -> 4117.06s]  to store some values, right?
+[4117.06s -> 4119.22s]  I'm gonna need to store intermediate computations.
+[4119.22s -> 4121.74s]  B means actually sort of unpiped,
+[4121.74s -> 4123.22s]  sort of basically like bytes.
+[4123.22s -> 4126.98s]  So I need bytes that are sort of 32-bit size.
+[4126.98s -> 4130.26s]  I need floats for doing computations called F.
+[4130.26s -> 4132.66s]  And I need another set of registers
+[4132.66s -> 4137.26s]  that are 64 bits, and that's another set of registers.
+[4137.26s -> 4139.30s]  And so I have all of these sort of registers
+[4139.30s -> 4141.38s]  that I need for temporary computations.
+[4141.38s -> 4143.34s]  And then starting here, I'm gonna start
+[4143.34s -> 4145.94s]  computing basically my coordinates.
+[4145.94s -> 4148.18s]  So, sorry, this part is loading
+[4149.14s -> 4151.30s]  the various arguments of the function.
+[4151.82s -> 4154.18s]  So things like the X pointer and the Y pointer
+[4154.18s -> 4155.54s]  get loaded here.
+[4155.54s -> 4158.38s]  Starting here, I start computing
+[4158.38s -> 4162.34s]  the coordinate offsets of my Triton sort of kernel.
+[4162.34s -> 4166.06s]  And then once I get down here, this LD global,
+[4166.06s -> 4168.34s]  this is the code that's used to load
+[4169.54s -> 4172.10s]  the values from X pointer back into
+[4172.10s -> 4173.90s]  my temporary registers.
+[4173.90s -> 4178.26s]  So it's basically saying load R2, R3, R4, R5
+[4178.30s -> 4183.30s]  using the memory position in RD1.
+[4183.58s -> 4185.58s]  And notice how it's loading four things at once
+[4185.58s -> 4187.58s]  because it's cleverly handling coalescing.
+[4187.58s -> 4189.50s]  We know we can get four values for free.
+[4189.50s -> 4192.26s]  We should operate on all four of these values at once
+[4192.26s -> 4193.26s]  because we get them.
+[4193.26s -> 4197.70s]  And then you do the same thing again for,
+[4199.02s -> 4200.58s]  you do the same thing again here.
+[4200.58s -> 4202.42s]  And then you start to get basically
+[4202.42s -> 4205.26s]  the floating point operations, mul F.32,
+[4205.26s -> 4206.30s]  which basically goes through
+[4206.34s -> 4208.38s]  and even does the tanh computations.
+[4208.38s -> 4210.58s]  I'm not gonna explain all the different pieces,
+[4210.58s -> 4213.74s]  but here it's doing, it's multiplying by a constant.
+[4213.74s -> 4216.54s]  It does a X to the cubed by multiplying
+[4216.54s -> 4219.42s]  the same numbers multiple times.
+[4219.42s -> 4222.30s]  And then it's gonna compute here,
+[4222.30s -> 4225.06s]  two to the X, but we want E to the X.
+[4225.06s -> 4227.02s]  And so it multiplies by log two
+[4227.02s -> 4229.10s]  to get the exponentiated base.
+[4229.10s -> 4232.18s]  You can really see all of the different
+[4232.18s -> 4235.10s]  literal step-by-step operations that the GPU does
+[4235.10s -> 4237.22s]  in order to get you the final result.
+[4237.22s -> 4239.02s]  And so I'll skip all over to the end.
+[4239.02s -> 4241.98s]  This is all floating point computations that it needs to do
+[4241.98s -> 4243.70s]  and then at the very end it stores
+[4243.70s -> 4248.42s]  the values that it has, R38 through R41 into RD4,
+[4248.42s -> 4250.58s]  which is the memory position of our output.
+[4250.58s -> 4253.26s]  So this is kind of like what's actually happening
+[4253.26s -> 4255.90s]  at the low level and we see that each thread
+[4255.90s -> 4258.54s]  is operating on four values at a time
+[4258.54s -> 4260.62s]  and its temporary storage is the registers,
+[4260.62s -> 4263.14s]  which is the really, really high speed storage
+[4263.14s -> 4264.14s]  that it has very locally.
+[4264.18s -> 4267.14s]  So we can see this is gonna, just looking at it,
+[4267.14s -> 4269.94s]  be probably pretty fast code, right?
+[4269.94s -> 4272.82s]  Okay, so that was the PTX and we can go through
+[4272.82s -> 4276.58s]  and see what it's doing for all sorts of things,
+[4276.58s -> 4279.74s]  but now let's go back and actually benchmark things.
+[4279.74s -> 4281.66s]  So we got manual Gell-U, 8.1 seconds.
+[4281.66s -> 4283.30s]  PyTorch time, 1.1 seconds.
+[4283.30s -> 4285.58s]  CUDA time, 1.84 seconds.
+[4285.58s -> 4288.02s]  Triton time, 1.848 seconds.
+[4288.02s -> 4290.18s]  So we didn't get any faster,
+[4290.18s -> 4292.58s]  but it was much easier to write Triton code.
+[4292.58s -> 4294.90s]  We wrote it in Python, we thought about blocks,
+[4294.90s -> 4297.02s]  we could do vectorized additions.
+[4297.02s -> 4299.30s]  If you're doing more sophisticated stuff,
+[4299.30s -> 4302.46s]  basically Triton will handle a lot of the memory stuff
+[4302.46s -> 4305.82s]  for you and so it's actually pretty good.
+[4305.82s -> 4309.30s]  And then profiling, once again we see single kernel launch
+[4309.30s -> 4312.74s]  that consumes all of the GPU time, right?
+[4312.74s -> 4317.32s]  So that's great and that gets Triton kernels.
+[4317.32s -> 4322.32s]  The last thing, at least in this sort of, whoops.
+[4323.34s -> 4325.38s]  One second, yeah, okay.
+[4325.38s -> 4327.58s]  That I wanna talk about is torch compile.
+[4328.46s -> 4330.40s]  Of course, writing CUDA kernels is cool
+[4330.40s -> 4332.50s]  and it makes you feel really good,
+[4332.50s -> 4335.22s]  but maybe we don't need to do that, right?
+[4335.22s -> 4337.50s]  The things that we were doing here were very simple.
+[4337.50s -> 4340.14s]  We were just taking these X cubed
+[4340.14s -> 4342.10s]  and exponentiation operations
+[4342.10s -> 4343.30s]  and we were just shoving them all
+[4343.30s -> 4345.70s]  into a single CUDA kernel.
+[4345.70s -> 4349.62s]  And so maybe we can just do that without doing much.
+[4349.62s -> 4352.36s]  And so we've had the several different ways
+[4353.00s -> 4353.84s]  that we've showed you.
+[4353.84s -> 4355.40s]  The last one I wanna talk about
+[4355.40s -> 4357.12s]  is this thing called torch compile,
+[4357.12s -> 4362.12s]  which will take our non-optimized PyTorch code
+[4362.20s -> 4365.64s]  and it will write some more optimized code.
+[4365.64s -> 4367.24s]  And so here, it's gonna attempt
+[4367.24s -> 4371.62s]  to automatically do optimizations like kernel fusion.
+[4371.62s -> 4374.84s]  And this compiled value is gonna be equivalent
+[4374.84s -> 4377.76s]  in the actual outputs that it generates,
+[4377.76s -> 4380.92s]  but now let's look at the runtimes, right?
+[4380.92s -> 4383.36s]  So we've got some runtime variation,
+[4383.36s -> 4385.48s]  but basically the same kind of numbers, right?
+[4385.48s -> 4388.72s]  8.1 seconds manual, 1.1 seconds PyTorch,
+[4388.72s -> 4393.72s]  1.8 seconds CUDA, and then 1.47 seconds on torch compile.
+[4395.12s -> 4398.96s]  So the punchline here is modern JIT compilers
+[4398.96s -> 4399.92s]  are pretty good.
+[4399.92s -> 4403.06s]  It can do optimizations like operation fusion
+[4403.06s -> 4406.12s]  without you having to do very much at all.
+[4406.12s -> 4408.78s]  And if you look under the hood,
+[4408.78s -> 4412.78s]  you can kind of see that there's basically, once again,
+[4412.78s -> 4414.38s]  one thing that happens.
+[4414.38s -> 4419.28s]  This is a sort of fused add multiplied tanh Triton code.
+[4419.28s -> 4421.72s]  So it's generating Triton under the hood
+[4421.72s -> 4424.14s]  that basically is doing similar kinds of things
+[4424.14s -> 4425.06s]  as a Triton code,
+[4425.06s -> 4427.58s]  but it's actually slightly more optimized
+[4427.58s -> 4428.42s]  than what we did.
+[4428.42s -> 4430.40s]  And so it's getting slightly better performance
+[4430.40s -> 4432.46s]  than even our code.
+[4432.46s -> 4435.02s]  So torch compile is quite nice.
+[4435.02s -> 4435.86s]  Yes?
+[4436.06s -> 4440.06s]  How do you feel like torch compile will do better?
+[4440.06s -> 4442.18s]  Like, do you just need to like try to implement
+[4442.18s -> 4443.84s]  your prize version C?
+[4443.84s -> 4446.58s]  Like, it just moves like it can't do slash and slash,
+[4446.58s -> 4447.66s]  right?
+[4447.66s -> 4450.22s]  Yeah, so the question was like,
+[4450.22s -> 4451.50s]  when do you know that,
+[4451.50s -> 4453.46s]  I guess maybe the better way to phrase that question is,
+[4453.46s -> 4454.78s]  when do you know you can do better
+[4454.78s -> 4456.02s]  than torch compile, right?
+[4456.02s -> 4457.72s]  Is sort of the relevant question.
+[4458.92s -> 4460.54s]  And I think for simple stuff,
+[4460.54s -> 4462.68s]  like simple operator fusion,
+[4462.68s -> 4464.76s]  or the other thing that it's very good at
+[4464.76s -> 4468.40s]  is optimizing matrix multiplies.
+[4468.40s -> 4470.24s]  So torch compile, as I said before,
+[4470.24s -> 4471.08s]  can do things like,
+[4471.08s -> 4472.64s]  if it knows the shape of the matrices,
+[4472.64s -> 4474.68s]  can figure out which kernels to dispatch,
+[4474.68s -> 4476.42s]  it is very good at those things.
+[4476.42s -> 4479.16s]  I doubt that you can get much better than that.
+[4479.16s -> 4481.10s]  But there are things like,
+[4481.10s -> 4484.04s]  if you see flash attention one, two, and three,
+[4484.04s -> 4485.92s]  those are pretty non-trivial optimizations.
+[4485.92s -> 4486.76s]  Like these days,
+[4486.76s -> 4491.48s]  torch compile and like JAX's XLA compiler can do those.
+[4491.48s -> 4493.08s]  But that's because we know in hindsight
+[4493.12s -> 4495.80s]  that those are the right optimizations to do.
+[4495.80s -> 4496.64s]  I think some of those things
+[4496.64s -> 4498.64s]  are a little bit non-trivial to figure out.
+[4498.64s -> 4500.36s]  Like flash attention three has additional
+[4500.36s -> 4502.16s]  sort of hardware level optimizations
+[4502.16s -> 4505.04s]  that leverage the H100 hardware.
+[4505.04s -> 4507.78s]  That's not obvious to do with a JIT compiler.
+[4508.92s -> 4509.76s]  And so there are some things
+[4509.76s -> 4512.88s]  that I think are quite hard with torch compile
+[4512.88s -> 4513.96s]  that I think you could do better.
+[4513.96s -> 4515.20s]  But in general,
+[4515.20s -> 4516.60s]  I think the point here is,
+[4516.60s -> 4518.48s]  you shouldn't go home and say,
+[4518.48s -> 4521.54s]  I'm gonna write CUDA kernels
+[4521.54s -> 4523.90s]  for every single part of my language model.
+[4523.90s -> 4526.10s]  That's probably not a good use of your time.
+[4526.10s -> 4527.46s]  But if you're writing a new architecture
+[4527.46s -> 4529.24s]  with some complicated piece,
+[4529.24s -> 4531.06s]  and you're not getting utilization,
+[4531.06s -> 4532.14s]  but you think you can,
+[4532.14s -> 4535.38s]  that's maybe the time to really bust out the Triton.
+[4535.38s -> 4539.58s]  Okay, so we're basically at time.
+[4539.58s -> 4544.00s]  But we can quickly go through one last example of Triton.
+[4544.00s -> 4547.46s]  Maybe this will be useful for you in assignment two
+[4547.46s -> 4548.50s]  of doing softmax.
+[4548.50s -> 4550.08s]  So one difference is,
+[4550.08s -> 4552.92s]  until now we were doing just basic element wise operations.
+[4552.92s -> 4554.16s]  And that's really easy
+[4554.16s -> 4556.12s]  because you just operate on each element
+[4556.12s -> 4558.76s]  and there's sort of no sort of complexity
+[4558.76s -> 4559.98s]  to those kinds of things.
+[4559.98s -> 4561.92s]  So now let's do softmax,
+[4561.92s -> 4563.76s]  which is it has a reduction operation
+[4563.76s -> 4566.40s]  where you have to add across all the elements.
+[4566.40s -> 4567.74s]  So how do we do that?
+[4567.74s -> 4571.00s]  Well, what we wanna do is we wanna normalize
+[4571.00s -> 4573.16s]  across each row of the matrix.
+[4573.16s -> 4575.16s]  And what we would like to do
+[4575.16s -> 4576.72s]  is we'd like to make this fast.
+[4576.72s -> 4578.76s]  So a naive version of this
+[4578.76s -> 4581.08s]  is gonna be pretty slow.
+[4581.08s -> 4584.04s]  And now we're gonna write the Triton kernel.
+[4584.04s -> 4586.12s]  So if I want it to be lazy,
+[4586.12s -> 4588.64s]  the easiest way to do this is,
+[4588.64s -> 4589.92s]  okay, actually you can think for a moment
+[4589.92s -> 4591.20s]  about what the easiest way to do this.
+[4591.20s -> 4593.00s]  Now, let's say you wanna write a softmax.
+[4593.00s -> 4595.76s]  So you're gonna normalize each row of a matrix.
+[4595.76s -> 4598.08s]  And imagine these matrices are pretty small.
+[4598.08s -> 4601.12s]  So you're just writing a kernel for small matrices, right?
+[4601.12s -> 4602.56s]  So if you're doing this,
+[4602.56s -> 4604.92s]  what's the right kind of block design?
+[4604.92s -> 4607.20s]  Well, maybe what we should do
+[4607.20s -> 4610.08s]  is our grid should actually just be rows.
+[4610.08s -> 4612.88s]  So each SM is gonna handle a single row.
+[4612.88s -> 4614.36s]  That's kind of the optimal thing to do
+[4614.36s -> 4616.68s]  because if we can fit a whole row into an SM,
+[4616.68s -> 4619.60s]  then we just sum across that row in the SM,
+[4619.60s -> 4621.16s]  and then we divide, right?
+[4621.16s -> 4622.00s]  That's great.
+[4622.00s -> 4623.56s]  And so that's gonna be the simple design
+[4623.56s -> 4627.08s]  for our very naive softmax kernel here.
+[4627.08s -> 4628.40s]  So all we're gonna do
+[4628.40s -> 4632.80s]  is that we're gonna make the block size basically,
+[4632.80s -> 4635.08s]  sorry, we're gonna make each block a row.
+[4635.08s -> 4637.56s]  And so the block size should be number of columns
+[4637.56s -> 4639.32s]  plus a little bit of buffer
+[4639.32s -> 4641.04s]  to sort of be able to fit all the columns.
+[4641.04s -> 4643.44s]  So this is Triton next power of two of N,
+[4643.44s -> 4647.20s]  and that's a nice way of padding out your columns.
+[4647.20s -> 4649.92s]  And then I'm gonna make each block a row.
+[4649.92s -> 4653.16s]  So the number of blocks is exactly the number of rows.
+[4653.16s -> 4656.60s]  And then I have my Triton softmax kernel,
+[4656.60s -> 4658.60s]  which is written in kind of the way that you expect.
+[4658.60s -> 4662.48s]  So now we have a matrix rather than a vector.
+[4662.48s -> 4664.68s]  So we have X pointers, we have Y pointers.
+[4665.20s -> 4667.60s]  We need the strides of the matrices.
+[4667.60s -> 4670.68s]  And then we can basically figure out what row index I'm in.
+[4670.68s -> 4672.24s]  I can get the column offsets.
+[4672.24s -> 4675.16s]  This is gonna be the same kind of code as before.
+[4675.16s -> 4676.88s]  In fact, getting the row offsets simpler
+[4676.88s -> 4679.92s]  because each row is a block.
+[4679.92s -> 4682.68s]  And then now I'm gonna do basically the same kind of stuff.
+[4682.68s -> 4684.36s]  I'm gonna load in each row
+[4684.36s -> 4687.36s]  into my sort of SM's sort of local memory.
+[4687.36s -> 4689.08s]  And then I'm gonna do computation
+[4689.08s -> 4690.88s]  exactly in a way that looks like a softmax.
+[4690.88s -> 4692.88s]  I have my row, I subtract my max,
+[4692.88s -> 4695.76s]  it takes the exponent, I sum it, and then I divide,
+[4695.76s -> 4698.80s]  which is going to give me my softmax normalized row.
+[4698.80s -> 4701.24s]  And I write it back to global memory.
+[4701.24s -> 4703.16s]  No complexity at all.
+[4703.16s -> 4706.20s]  Whenever your computations fit nicely in an SM,
+[4706.20s -> 4708.36s]  writing Triton code looks very similar
+[4708.36s -> 4710.32s]  to writing just normal Python code,
+[4710.32s -> 4712.80s]  just with a little bit of load and store
+[4712.80s -> 4715.28s]  and keeping track of where the blocks are.
+[4715.28s -> 4716.84s]  So life is pretty simple.
+[4716.84s -> 4719.68s]  Let's go back, oh wait, where were we?
+[4719.68s -> 4721.76s]  To the Triton, here we go.
+[4721.76s -> 4723.44s]  And then we can kind of see how fast
+[4723.44s -> 4725.76s]  all of our different pieces of code are.
+[4725.76s -> 4727.72s]  So I'll zoom out again, just to make sure.
+[4727.72s -> 4730.96s]  Okay, so manual time takes 3.7 seconds.
+[4730.96s -> 4735.44s]  Our compile time is 1.3 seconds for Torch compile.
+[4735.44s -> 4738.52s]  The PyTorch time is 1.5 seconds.
+[4738.52s -> 4741.36s]  And the Triton time is 1.9 seconds.
+[4741.36s -> 4743.08s]  It's still a little bit slow.
+[4744.40s -> 4746.44s]  Torch compile can actually do better
+[4746.44s -> 4748.92s]  than sort of the native PyTorch implementation,
+[4749.08s -> 4750.88s]  especially when it knows about the shapes
+[4750.88s -> 4754.04s]  and sizes of certain operations.
+[4754.04s -> 4756.48s]  So finally, we can look in the profiler.
+[4756.48s -> 4759.24s]  The manual softmax is kind of a disaster here.
+[4759.24s -> 4761.12s]  You see all sorts of crazy operations
+[4761.12s -> 4762.88s]  happening all over the place.
+[4762.88s -> 4764.84s]  Let me clear this.
+[4764.84s -> 4766.96s]  If we go back up here, okay, yep.
+[4766.96s -> 4768.88s]  We see all sorts of operations happening.
+[4768.88s -> 4770.84s]  We have exp, we have max, we have sum,
+[4770.84s -> 4772.56s]  because we've implemented things naively,
+[4772.56s -> 4775.04s]  and we've got memory reads and writes everywhere.
+[4775.04s -> 4777.28s]  The compiled softmax is just gonna be
+[4777.32s -> 4781.84s]  sort of one fused softmax operation that goes quite fast.
+[4781.84s -> 4783.52s]  And then we've got PyTorch softmax,
+[4783.52s -> 4787.76s]  which is also one CUDA kernel call.
+[4787.76s -> 4790.88s]  And same thing with our Triton softmax.
+[4790.88s -> 4793.24s]  We have our nice Triton softmax kernel
+[4793.24s -> 4796.56s]  that is a single fused kernel for everything.
+[4796.56s -> 4799.20s]  Okay, I won't go through the PTX code for this.
+[4799.20s -> 4801.76s]  I think we're kind of at time,
+[4801.76s -> 4804.32s]  and I don't wanna drag you through that low level again.
+[4804.32s -> 4806.16s]  But hopefully this has given you a flavor
+[4806.20s -> 4809.08s]  of lower level GPU programming
+[4809.08s -> 4812.52s]  for the purpose of making language models go fast.
+[4812.52s -> 4815.84s]  And hopefully you'll have fun doing assignment two.
+[4815.84s -> 4816.68s]  Thanks.

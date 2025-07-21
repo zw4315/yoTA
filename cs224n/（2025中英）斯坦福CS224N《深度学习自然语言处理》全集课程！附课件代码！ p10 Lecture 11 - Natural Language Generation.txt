@@ -1,0 +1,1457 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 11.12s]  Hello everyone. My name is Lisa. I'm a third year PhD student in the NLG group. I'm advised
+[11.12s -> 16.76s]  by Percy and Tatsu. Today I will give a lecture on natural language generation. And
+[16.76s -> 20.68s]  this is also the research area that I work on. So I'm super excited about it. I'm happy
+[20.68s -> 25.48s]  to answer any questions both during the lecture and after class about natural language
+[25.48s -> 32.64s]  generation. So NLG is a super exciting area and it's also moving really, really fast. So today
+[32.64s -> 38.56s]  we will discuss all the excitement of NLG. But before we get into the really exciting part,
+[38.56s -> 43.88s]  I have to make some announcements. So first, it is very, very important for you to remember
+[43.88s -> 50.80s]  to sign up for AWS by midnight today. So this is related to your homework five,
+[51.04s -> 55.44s]  whether you have GPU access, and then also related to our final project. So please,
+[55.44s -> 63.76s]  please remember to sign up for AWS by tonight. And second, the project proposal is due on Tuesday,
+[63.76s -> 70.28s]  next Tuesday. And I think assignment four should just due. Hopefully you had fun with
+[70.28s -> 76.36s]  machine translation and stuff. And also assignment five is out today, I think just now.
+[77.24s -> 85.60s]  And it is due on Friday, like basically Friday at midnight. And last, we will hold a transformer,
+[85.60s -> 91.24s]  we'll hold a Hugging Face Transformer Library tutorial this Friday. So if your final
+[91.24s -> 95.94s]  project is related to implementing transformers or playing with large language models, you should
+[95.94s -> 100.68s]  definitely go to this tutorial because it's going to be very, very helpful. Also, yeah,
+[100.68s -> 105.60s]  just one more time. Please remember to sign up for AWS because this is the final hard deadline.
+[106.36s -> 113.08s]  Okay, cool. Now moving on to the main topic for today, the very exciting natural language
+[113.08s -> 119.20s]  generation stuff. So today we will discuss what is NLG, review some models, discuss about
+[119.20s -> 124.56s]  how to decode from language models and how to train language models. And we will also
+[124.56s -> 129.40s]  talk about evaluations. And finally, we'll discuss ethical and risk considerations with
+[129.40s -> 134.60s]  the current NLG systems. So this natural language generation techniques are going to be
+[134.60s -> 139.92s]  really exciting because this is kind of getting us closer to explain the magic of chat GPT,
+[139.92s -> 145.20s]  which is a super popular model recently. And practically speaking, they could also help you
+[145.20s -> 150.40s]  with our final project if you decide to work on something related to text generation. So let's
+[150.40s -> 155.48s]  get started. To begin with, let's ask the question of what is natural language generation?
+[155.48s -> 162.08s]  So natural language generation is actually a really broad category. People have divided NLP
+[162.36s -> 167.48s]  into natural language understanding and natural language generation. So the understanding part
+[167.48s -> 173.24s]  mostly means that the task input is in natural language, such as semantic parsing, natural
+[173.24s -> 179.32s]  language inference, and so on. Whereas natural language generation means that the task output
+[179.32s -> 186.68s]  is in natural language. So NLG focuses on systems that produce fluent, coherent, and useful
+[186.72s -> 193.36s]  language outputs for humans to use. Historically, there are many NLG systems that use rule-based
+[193.36s -> 199.88s]  systems, such as templates or insulin. But nowadays, deep learning is powering almost
+[199.88s -> 205.36s]  every text generation systems. So this lecture today will be mostly focused on deep learning
+[205.36s -> 212.36s]  stuff. So first, what are some examples of natural language generation? It's actually
+[212.44s -> 218.00s]  everywhere, including your homework. Machine translation is a form of NLG, where the input
+[218.00s -> 223.36s]  is some utterance in the source language, and the output is generated text in the target
+[223.36s -> 229.64s]  language. Digital assistants, such as Ceres or Alexa, they are also NLG systems. So
+[229.64s -> 235.64s]  it takes in dialogue history and generates continuations of the conversation. There is
+[235.64s -> 241.44s]  also summarization systems that take in a long document, such as a research article,
+[241.44s -> 247.56s]  and then the idea is trying to summarize it into a few sentences that are easy to read.
+[247.56s -> 252.36s]  So beyond these classic tasks, there are some more interesting uses, like creative
+[252.36s -> 257.28s]  story writing, where you can prompt a language model with a story plot, and then it will
+[257.28s -> 262.32s]  give you some creative stories that are aligned with the plot. There is data to text,
+[262.32s -> 266.68s]  where you give the language model some database or some tables, and then the idea is
+[266.76s -> 271.64s]  that it will output some textual description of the table content. And finally, there is
+[271.64s -> 278.64s]  also visual description-based NLG systems, like image captioning or image-based storytelling.
+[280.44s -> 287.44s]  So the really cool example is the popular ChatGPT models. So ChatGPT is also an NLG system.
+[289.24s -> 295.12s]  It is very general purpose, so therefore you can use it to do many different tasks with
+[295.16s -> 301.56s]  different prompts. For example, we can use ChatGPT to simulate a chatbot. It can answer
+[301.56s -> 308.24s]  questions about creative gifts for 10 years old. It can be used to do poetry generation.
+[308.24s -> 313.64s]  Like, for example, we can ask it to generate a poem about sorting algorithms. And it's
+[313.64s -> 318.28s]  actually, well, I wouldn't say it's very poetic, but at least it has the same format as a poem,
+[318.44s -> 327.60s]  and the content is actually correct. So ChatGPT can also be used in some really useful settings,
+[327.60s -> 333.40s]  like web search. So here Bing is augmented with ChatGPT, and there are some Twitter threads
+[333.40s -> 337.84s]  saying that the magic of ChatGPT is that it actually makes people be happy to use Bing.
+[337.84s -> 346.88s]  So there are so many tasks that actually belong to the NLG category. So how do we
+[346.88s -> 352.60s]  categorize these tasks? One common way is to think about the open-endedness of the task. So
+[352.60s -> 358.40s]  here we draw a line for the spectrum of open-endedness. On the one end, we have tasks
+[358.40s -> 363.16s]  like machine translation and summarization, so we consider them not very open-ended,
+[363.16s -> 370.04s]  because for each source sentence, the output is almost determined by the input, because basically
+[370.04s -> 374.68s]  we are trying to do machine translation, the semantic should be exactly similar to the input
+[374.68s -> 379.40s]  sentence. So there are only a few ways that you can rephrase the output, like authorities
+[379.40s -> 384.36s]  have announced that today is a national holiday. You can rephrase it a little bit to say today is
+[384.36s -> 389.48s]  a national holiday announced by the authorities, but the actual space is really small because
+[389.48s -> 394.16s]  you have to make sure the semantics doesn't change. So we can say that the output space
+[394.16s -> 400.44s]  here is not very diverse. And moving to the middle of this spectrum, there is dialogue
+[400.48s -> 406.08s]  tasks, such as task-driven dialogue or chit-chat dialogue. So we can see that for each dialogue
+[406.08s -> 412.08s]  input, there are multiple responses and the degree of freedom has increased. Here we can
+[412.08s -> 417.00s]  say like, we can respond by saying good and you, or we can say about thanks for asking,
+[417.00s -> 422.36s]  barely surviving all my homeworks. So here we are observing that there are actually multiple
+[422.36s -> 426.96s]  ways to continue this conversation. And then this is where we say the output space is getting
+[426.96s -> 433.60s]  more and more diverse. And on the other end of the spectrum, there is the very open-ended
+[433.60s -> 438.56s]  generation tasks, like story generation. So given the input, like write me a story
+[438.56s -> 442.84s]  about three little pigs, there are so many ways to continue the prompt. We can write
+[442.84s -> 448.28s]  about them going to schools, building houses, like they always do. So the valid output
+[448.28s -> 454.88s]  here is extremely large and we call this open-ended generation. So it's hard to really
+[454.96s -> 461.60s]  draw a boundary between open-ended and non-open-ended tasks, but we still try to give a rough categorization.
+[461.60s -> 466.52s]  So open-ended generation refers to tasks whose output distribution has a high degree
+[466.52s -> 472.84s]  of freedom, or a non-open-ended generation task refers to tasks where the input will
+[472.84s -> 479.28s]  almost certainly determine the output generation. Examples of non-open-ended generations are
+[479.28s -> 483.48s]  machine translation, summarization, and examples of open-ended generations are story
+[483.52s -> 488.12s]  generation, chit chat dialogue, task-oriented dialogue, et cetera.
+[488.12s -> 493.60s]  So how do we formalize this categorization? One way of formalizing is by computing the
+[493.60s -> 500.28s]  entropy of the NLG system. So high entropy means that we are to the right of the spectrum,
+[500.28s -> 505.48s]  so it is more open-ended, and low entropy means that we are to the left of the spectrum
+[505.48s -> 512.04s]  and less open-ended. So these two classes of NLG tasks actually require different decoding
+[512.04s -> 515.56s]  and training approaches, as we will talk about later.
+[515.56s -> 522.12s]  Okay, cool. Now let's recall some previous lectures and review the NLG models and trainings
+[522.12s -> 527.48s]  that we have studied before. So I think we discussed the basics of natural language
+[527.48s -> 532.88s]  generation. So here is how autoregressive language model works. At each time step,
+[532.88s -> 538.92s]  our model would take in a sequence of tokens as input, and here it is y less than t,
+[538.92s -> 546.04s]  and the output is basically the new token yt. So to decide on yt, we first use the model
+[546.04s -> 552.48s]  to assign a score for each token in the vocabulary, denoted as s, and then we apply softmax to
+[552.48s -> 557.00s]  get the next token distribution p, and we choose a token according to this next
+[557.00s -> 562.48s]  token distribution. And similarly, once we have predicted yt hat, we then pass it back
+[562.48s -> 568.60s]  into the language model as the input, predict y hat t plus one, and then we do so recursively
+[568.60s -> 577.92s]  until we reach the end of the sequence. So any questions so far? Okay, good.
+[577.92s -> 583.76s]  So for the two types of NLG tasks that we talked about, like the open-ended and non-open-ended tasks,
+[583.76s -> 589.76s]  they tend to prefer different model architectures. So for non-open-ended tasks like machine translation,
+[589.76s -> 594.84s]  we typically use an encoder-decoder system, where like the autoregressive decoder that
+[594.84s -> 599.32s]  we just talked about function as the decoder, and then we have another bidirectional encoder
+[599.32s -> 603.72s]  for encoding the inputs. So this is kind of what you implemented for assignment four,
+[603.72s -> 610.34s]  because the encoder is like the bidirectional LSTM, and the decoder is another LSTM that is
+[610.34s -> 617.80s]  autoregressive. So for more open-ended tasks, typically autoregressive generation model is the
+[617.80s -> 623.76s]  only component. Of course, like these architectures are not really hard constraints,
+[623.76s -> 628.72s]  because an autoregressive decoder alone can also be used to do machine translation,
+[628.72s -> 634.52s]  and an encoder-decoder model can also be used for storage iteration. So this is kind of the
+[634.52s -> 639.60s]  convention for now, but it's a reasonable convention, because using decoder-only model
+[639.60s -> 645.84s]  for MT tends to hurt performance compared to an encoder-decoder model for MT. And using
+[645.84s -> 650.40s]  an encoder-decoder model for open-ended generation seems to achieve similar performance
+[650.44s -> 655.72s]  to a decoder-only model. And therefore, if you have the compute budget to train an encoder-decoder
+[655.72s -> 660.76s]  model, you might just be better off by only training a larger decoder model. So it's kind of
+[660.76s -> 665.52s]  more of an allocation of resources problem than whether this architecture will type check
+[665.52s -> 674.08s]  with your task. So how do we train such a language model? In previous lectures,
+[674.08s -> 679.64s]  we talked about that the language models are trained by maximum likelihood. So basically,
+[679.88s -> 685.72s]  we were trying to maximize the probability of the next token Yt, given the preceding words,
+[685.72s -> 691.72s]  and this is our optimization objective. So at each time step, this can be regarded as a
+[691.72s -> 697.80s]  classification task, because we are trying to distinguish the actual word Yt star from all
+[697.80s -> 703.56s]  the remaining words in the vocabulary. And this is also called teacher forcing, because at each
+[703.60s -> 712.48s]  time step, we are using the gold standard Y star less than t as input to the model. Whereas,
+[712.48s -> 717.56s]  presumably at generation time, you wouldn't have any access to Y star. So you would have to use
+[717.56s -> 722.24s]  the model's own prediction to feed it back into the model to generate the next token. And that
+[722.24s -> 728.92s]  is called student forcing, which we'll talk in detail later. Oh, sorry.
+[728.92s -> 735.24s]  I began reading two slides ago about autoregressive. We never used that word before. What does it mean?
+[735.24s -> 742.44s]  Autoregressive? Oh, it just means like, so let's look at these animations again. Oops,
+[742.44s -> 747.52s]  sorry. It just looks like you are generating word from left to right one by one. So here,
+[747.52s -> 752.96s]  suppose that you are given Y less than t, and then autoregressively, you first generate Yt.
+[752.96s -> 758.32s]  And then once you have Yt, you feed it back in, generate Yt plus one, and then feed it back in,
+[758.36s -> 762.44s]  generate another thing. So this left to right nature, because you are using chain rule to
+[762.44s -> 767.56s]  like condition on the tokens that you just generated, this chain rule thing is called
+[767.56s -> 771.72s]  autoregressive. And typically, like, I think conventionally, we are doing left to right
+[771.72s -> 775.60s]  autoregressive by generating from left to right. But there are also like other more
+[775.60s -> 780.20s]  interesting models that can do backward or infill and other things. This idea of generating
+[780.20s -> 786.48s]  one token at once is autoregressive. Cool. Any other questions?
+[789.00s -> 799.20s]  Yep. So at inference time, our decoding algorithm would define a function to select a token from
+[799.20s -> 804.32s]  this distribution. So we've discussed that we can use the language model to compute this P,
+[804.32s -> 809.60s]  which is the next token distribution. And then G here, based on our notation, is the decoding
+[809.60s -> 814.80s]  algorithm, which helps us select what token we're actually going to use for Yt. So the
+[814.88s -> 821.04s]  obvious decoding algorithm is to greedily choose the highest probability token as Yt hat for each
+[821.04s -> 825.96s]  time step. So while this basic algorithm sort of works, because they work for your homework four,
+[825.96s -> 830.92s]  to do better, there are two main avenues that we can take. We can decide to improve
+[830.92s -> 836.16s]  decoding, and we can also decide to improve the training. Of course, there are other things
+[836.16s -> 839.76s]  that we can do. We can improve training data, and we can improve model architectures.
+[839.80s -> 847.80s]  But for this lecture, we will focus on decoding and training. So now let's talk about how decoding
+[847.80s -> 852.00s]  algorithms work for natural language generation models. Before that, I'm happy to take any
+[852.00s -> 857.88s]  questions about the previous slides. Okay, yeah.
+[857.88s -> 863.08s]  Sorry, could you just explain one more time the difference between teacher forcing and student forcing?
+[863.08s -> 868.76s]  I think I'll go into this in detail later, but sure. So basically, for teacher forcing,
+[868.76s -> 872.48s]  the idea is that you do teacher forcing when you train the language model, because you already
+[872.48s -> 878.48s]  observe the gold text. So you kind of use the gold text up until time step t, put it into
+[878.48s -> 883.84s]  the model, and then the model would try to predict Yt plus one. Whereas student forcing
+[883.84s -> 888.64s]  means that you don't have access to this gold reference data. Instead, you are still trying
+[888.64s -> 892.84s]  to generate a sequence of data, so you have to use the text that you generated yourself using
+[892.84s -> 897.64s]  the model, and then feed it back into the model as input to predict t plus one. That's
+[897.72s -> 907.48s]  the primary difference. Cool. So what is decoding all about? At each time step, our model computes
+[907.48s -> 913.24s]  a vector of score for each token. So it takes in preceding context Y less than t and
+[913.24s -> 918.16s]  produce a score s. And then we try to compute a probability distribution p all of
+[918.16s -> 925.16s]  the scores by just applying softmax to normalize them. And our decoding algorithm is defined
+[925.20s -> 931.24s]  as this function g, which takes in the probability distribution and try to map it to some word,
+[931.24s -> 936.12s]  basically try to select a token from this probability distribution. So in the machine
+[936.12s -> 941.40s]  translation lecture, we talked about greedy decoding, which selects the highest probability
+[941.40s -> 948.00s]  token of this p distribution. And we also talked about beam search, which has the same
+[948.00s -> 952.56s]  objective as greedy decoding, which is that we're both trying to find the most likely
+[952.60s -> 957.72s]  string defined based on the model. But instead of doing so greedily for beam search, we actually
+[957.72s -> 962.84s]  explore a wider range of candidates. So we have a wider exploration of candidates by
+[962.84s -> 969.84s]  keeping always k candidates in the beam. So overall, this maximum probability decoding
+[971.12s -> 976.04s]  is good for low entropy tasks like machine translation and summarization, but it actually
+[976.04s -> 981.56s]  encounters more problems for open-ended generation. So the most likely string is actually
+[981.56s -> 988.36s]  very repetitive when we try to do open-ended text generation. As we can see in this example,
+[988.36s -> 993.68s]  the context is perfect in normal. It's about a unicorn trying to speak English. But the
+[993.68s -> 998.60s]  continuation, the first part of it looks great. It's like valid English. It talks
+[998.60s -> 1004.88s]  about science, but suddenly it starts to repeat. And it starts to repeat, I think,
+[1004.88s -> 1012.44s]  in its name. So why does this happen? If we look at, for example, this plot, which
+[1012.44s -> 1018.36s]  shows the language model's probability assigned to the sequence, I don't know, we can see
+[1018.36s -> 1023.36s]  it clears the pattern. It has regular probability. But if we keep repeating this
+[1023.36s -> 1027.80s]  phrase, I don't know, I don't know, I don't know, for 10 times, then we can see that
+[1027.80s -> 1032.56s]  there is a decreasing trend in their negative log likelihood. So the y-axis is the negative
+[1032.56s -> 1037.44s]  log probability. We can see this decreasing trend, which means that the model actually
+[1037.44s -> 1043.64s]  has higher probability as the repeat goes on, which is quite strange because it's suggesting
+[1043.64s -> 1048.74s]  that there is a self-amplification effect. So the more repeat we have, the more confidence
+[1048.74s -> 1054.36s]  the model becomes about this repeat. And this keeps going on. We can see that for
+[1054.36s -> 1059.08s]  I am tired, I'm tired, repeat 100 times, we can see a continuously decreasing trend
+[1059.60s -> 1065.92s]  until the model is almost 100% sure that it's going to keep repeating the same thing.
+[1065.92s -> 1073.08s]  And sadly, this problem is not really solved by architecture. Here, the red plot is a LSTM
+[1073.08s -> 1077.32s]  model and the blue curve is a transformer model. We can see that both models kind
+[1077.32s -> 1082.00s]  of suffers from the same problem. And scale also doesn't solve this problem. So we kind
+[1082.00s -> 1088.36s]  of believe that scale is the magical thing in NLP. But even models with 175 billion
+[1088.36s -> 1093.48s]  parameters will still suffer from repetition if we try to find the most likely string.
+[1093.48s -> 1102.24s]  So how do we reduce repetition? One canonical approach is to do n-gram blocking. So the
+[1102.24s -> 1106.60s]  principle is very simple. Basically, you just don't want to see the same n-gram twice.
+[1106.60s -> 1111.60s]  If we set n to be three, then for any text that contains the phrase I am happy,
+[1111.60s -> 1116.66s]  the next time you see the prefix I am, n-gram blocking would automatically set the
+[1116.66s -> 1121.86s]  probability of happy to be zero so that you will never see this trigram again.
+[1121.86s -> 1128.06s]  But clearly this n-gram blocking heuristic has some problems because sometimes it is
+[1128.06s -> 1132.74s]  quite common for you to want to see a person's name appear twice or three times or even more in
+[1132.74s -> 1138.66s]  a text. But this n-gram blocking will eliminate that possibility. So what are better options
+[1138.66s -> 1143.86s]  that possibly are more complicated? For example, we can use a different training objective.
+[1143.86s -> 1150.82s]  Instead of training by NLE, we can train by a likelihood objective. So in this approach,
+[1150.82s -> 1156.82s]  the model is actually penalized for generating already seen tokens. So it's kind of like putting
+[1156.82s -> 1162.58s]  this n-gram blocking idea into training time. Rather than decoding time for this constraint,
+[1162.58s -> 1167.98s]  at training time we just decrease the probability of repetition. Another training objective is
+[1167.98s -> 1173.46s]  coverage wells, which uses kind of the attention mechanism to prevent repetition.
+[1173.66s -> 1178.18s]  So basically if you try to regularize and enforce your attention so that it's always attending to
+[1178.18s -> 1183.54s]  different words for each token, then it is highly likely that you are not going to repeat because
+[1183.54s -> 1190.10s]  repetition tends to happen when you have similar attention patterns. Another different
+[1190.10s -> 1194.86s]  angle is that instead of searching for the most likely string, we can use a different decoding
+[1194.86s -> 1199.90s]  objective. So maybe we can search for strings that maximizes the difference between log
+[1199.94s -> 1205.26s]  probabilities of two models. Say that we want to maximize log probability of large model minus
+[1205.26s -> 1209.30s]  log probability of small model. In this way, because both models are repetitive, so they kind
+[1209.30s -> 1214.58s]  of cancels out. So they would both assign high probabilities of repetition, and after applying
+[1214.58s -> 1218.94s]  this new objective, the repetition stuff will actually be penalized because it cancels out.
+[1218.94s -> 1226.26s]  So here comes the broader question. Is finding the most likely string even a reasonable
+[1226.26s -> 1232.62s]  thing to do for open-ended text generation? The answer is probably no, because this doesn't
+[1232.62s -> 1237.46s]  really match human pattern. So we can see in this plot, the orange curve is the human pattern,
+[1237.46s -> 1242.10s]  and the blue curve is the machine-generated text using beam search. So you can see that
+[1242.10s -> 1247.94s]  with human talks, there are actually lots of uncertainty, as we can see by the fluctuation
+[1247.94s -> 1252.02s]  of the probabilities. For some words, we can be very certain. For some words,
+[1252.06s -> 1256.30s]  we are a little bit unsure. Whereas here, for the model distribution, it's always very sure,
+[1256.30s -> 1262.38s]  it's always assigning probability one to the sequence. So because we now are seeing a search,
+[1262.38s -> 1267.62s]  basically there's a mismatch between the two distributions. So it's kind of suggesting that
+[1267.62s -> 1272.18s]  maybe searching for the most likely string is not the right decoding objective at all.
+[1272.18s -> 1275.30s]  Any questions so far before we move on? Yeah.
+[1275.82s -> 1283.94s]  Is this the underlying mechanism for some detector of whether some text is generated by checking the key?
+[1283.94s -> 1289.46s]  Not really, because this can only detect the really simple things that humans are also able to
+[1289.46s -> 1295.02s]  detect, like repetition. So in order to avoid the previous problems that we've talked about,
+[1295.02s -> 1300.58s]  I'll talk about some other decoding families that generate more robust text that actually
+[1300.58s -> 1306.10s]  look like this, whose probability distribution looks like the orange curve. So I wouldn't say
+[1306.10s -> 1310.38s]  this is the to-go answer for watermarking or detection.
+[1310.38s -> 1312.38s]  Can you repeat the question?
+[1312.38s -> 1320.06s]  Oh, yeah. Okay, cool. So she asked about whether this mechanism of plotting the probabilities
+[1320.06s -> 1326.46s]  of human text and machine-generated text is one way of detecting whether some text is generated
+[1326.46s -> 1332.10s]  by model or human. And my answer is, I don't think so, but this could be an interesting
+[1332.10s -> 1338.22s]  research direction, because I feel like there are more robust decoding approaches that generate
+[1338.22s -> 1347.10s]  text that actually fluctuates a lot. So yeah, let's talk about the decoding algorithm that is
+[1347.10s -> 1351.94s]  able to generate text that fluctuates. So given that searching for the most likely string
+[1351.94s -> 1356.90s]  is a bad idea, what else should we do? And how do we simulate that human pattern? And
+[1356.90s -> 1363.38s]  the answer to this is to introduce randomness and stochasticity to decoding. So suppose
+[1363.38s -> 1368.50s]  that we are sampling a token from this distribution of p, basically we are trying
+[1368.50s -> 1373.10s]  to sample yt hat from this distribution. It is random so that you can essentially
+[1373.10s -> 1377.24s]  sample any token in the distribution. Previously, you are kind of restricted to selecting
+[1377.24s -> 1385.12s]  reds for more grocery, but now you can select bathroom instead. So however, sampling introduces
+[1385.12s -> 1389.80s]  a new set of problems. Since we never really zero out any token probabilities,
+[1389.80s -> 1396.28s]  vanilla sampling would make every token in the vocabulary a viable option. And in
+[1396.28s -> 1402.40s]  some unlucky cases, we might end up with a bad word. So assuming that we already have
+[1402.40s -> 1407.60s]  a very well-trained model, like even if most of the probability mass of the distribution is
+[1407.60s -> 1412.20s]  over the limited set of good options, the tail of the distribution will still be very
+[1412.20s -> 1417.56s]  long because we have so many words in our vocabulary. And therefore, if we add all those
+[1417.56s -> 1422.20s]  long tails, it aggregates, they still have a considerable mass. So statistically speaking,
+[1422.20s -> 1427.00s]  this is called heavy tail distribution, and language is exactly a heavy tail distribution.
+[1427.00s -> 1434.60s]  So for example, many tokens are probably really wrong in this context. And then given that we
+[1434.60s -> 1439.40s]  have a good language model, we assign them each very little probability. But this doesn't
+[1439.40s -> 1443.92s]  really solve the problem because there are so many of them. So you aggregate them as a group,
+[1443.92s -> 1449.64s]  we'll still have a high chance of being selected. And the solution here that we have
+[1449.64s -> 1454.44s]  for this problem of long tail is that we should just cut out the tail. We should just zero out
+[1454.48s -> 1461.56s]  the probabilities that we don't want. And one idea is called top k sampling, where the idea
+[1461.56s -> 1466.40s]  is that we would only sample from the top k tokens in the probability distribution.
+[1466.40s -> 1470.12s]  Any questions for now?
+[1470.12s -> 1480.68s]  Well, the model we were looking at a second ago had some very low probability samples as well on
+[1480.68s -> 1484.00s]  the graph, right? I would top k sampling deal with that.
+[1484.00s -> 1486.16s]  You mean this one?
+[1486.16s -> 1490.72s]  The orange blue graph of the human versus...
+[1490.72s -> 1498.40s]  Oh, yeah. Yeah, so top k will basically eliminate, it will make it impossible to
+[1498.40s -> 1503.76s]  generate the super low probability tokens. So technically, it's not exactly simulating
+[1503.76s -> 1507.44s]  this pattern because now you don't have the super low probability tokens, whereas human
+[1507.44s -> 1513.56s]  can generate super low probability tokens in a fluent way. But yeah, that could be another
+[1513.56s -> 1518.76s]  hint that people can use for detecting machine-generated text. Yeah?
+[1518.76s -> 1522.80s]  It also depends on the type of text you want to generate, for example,
+[1522.80s -> 1528.64s]  poem or novels or more creative writing. Is it then you decide to have the correct...
+[1528.64s -> 1532.52s]  Yeah, yeah, for sure. K is a hyperparameter that depending on the type of task,
+[1532.72s -> 1538.76s]  you will choose k differently. Mostly for a closed-ended task, k should be small and for open-ended,
+[1538.76s -> 1540.52s]  k should be large. Yeah, question in the back.
+[1540.52s -> 1546.40s]  How come, I guess, intuitively, this builds off of one of the earlier questions,
+[1546.40s -> 1551.76s]  why don't we consider the case where we sample and then we just weight the probability
+[1551.76s -> 1555.84s]  of each word by its score or something, rather than just looking at top k,
+[1555.84s -> 1560.84s]  how come we don't do a wounded sampling type of situation, so we still have that small
+[1560.88s -> 1566.32s]  but non-zero probability of selecting? I think top k is also weighted,
+[1566.32s -> 1570.96s]  so top k just kind of zeros out all the tails of the distribution,
+[1570.96s -> 1575.76s]  but for the things that it didn't zero out, it's not like a uniform choice among the k.
+[1575.76s -> 1580.24s]  It's still trying to choose proportional to the scores that you computed.
+[1580.24s -> 1584.32s]  Is that just like your computational needs more efficient because you don't have to do
+[1584.32s -> 1587.92s]  for like 17,000 words, it could be like 10 or something?
+[1587.92s -> 1592.48s]  Yeah, sure, that could be one gain of top k decoding,
+[1592.48s -> 1597.24s]  is that your softmax will take in fewer candidates.
+[1597.24s -> 1600.68s]  But it's not the main reason, I think you should show it.
+[1600.68s -> 1602.80s]  Yeah, I'll keep talking about the main reason.
+[1602.80s -> 1610.76s]  So we've discussed this part and then here,
+[1611.20s -> 1616.48s]  this is kind of formally what is happening for top k sampling.
+[1616.48s -> 1621.24s]  Now that we are only sampling from the top k tokens of the probability distribution,
+[1621.24s -> 1626.68s]  and as we've said, k is a hyperparameter, so we can set k to be large or small.
+[1626.68s -> 1631.40s]  If we increase k, this means that we are making our output more diverse,
+[1631.40s -> 1634.44s]  but at the risk of including some tokens that are bad.
+[1634.44s -> 1638.20s]  If we decrease k, then we are making more conservative and safe options,
+[1638.20s -> 1644.36s]  but possibly the generation will be quite generic and boring.
+[1644.36s -> 1647.12s]  So is top k decoding good enough?
+[1647.12s -> 1652.28s]  The answer is not really, because we can still find some problems with top k decoding.
+[1652.28s -> 1656.08s]  For example, in the context, she said, I never blank.
+[1656.08s -> 1661.24s]  There are many words that are still valid options, such as won't, ate,
+[1661.24s -> 1665.68s]  but those words got zeroed out because they are not within the top k candidates.
+[1665.68s -> 1669.68s]  So this actually leads to bad recall for your generation system.
+[1669.68s -> 1675.36s]  And similarly, another failure of top k is that it can also cut off too quickly.
+[1675.36s -> 1679.24s]  So in this example, code is not really a valid answer,
+[1679.24s -> 1683.36s]  according to common sense, because you probably don't want to eat a piece of code,
+[1683.36s -> 1685.92s]  but the probability remains non-zero,
+[1685.92s -> 1689.76s]  meaning that the model might still sample code as an output,
+[1689.76s -> 1692.68s]  despite with low probability, but it might still happen.
+[1692.68s -> 1697.84s]  And this means bad precision for the generation model.
+[1697.84s -> 1703.24s]  So given these problems with top k decoding, how can we address them?
+[1703.24s -> 1709.76s]  How can we address this issue of there is no single k that fits all circumstances?
+[1709.76s -> 1713.88s]  This is basically because the probability distribution that we sample from are dynamic.
+[1713.88s -> 1717.52s]  So when the probability distribution is relatively flat,
+[1717.52s -> 1720.80s]  having a small k will remove many viable options.
+[1720.84s -> 1724.12s]  So having a limited k will remove many viable options,
+[1724.12s -> 1726.84s]  and we want k to be larger for this case.
+[1726.84s -> 1730.52s]  Similarly, when a distribution p is too picky,
+[1730.52s -> 1736.96s]  then we want a high k would allow for too many options to be viable.
+[1736.96s -> 1741.68s]  And instead, we might want a smaller k so that we are being safer.
+[1741.68s -> 1745.00s]  So the solution here is that maybe k is just a bad heifer parameter.
+[1745.00s -> 1749.16s]  And instead of doing k, we should think about probability.
+[1749.16s -> 1755.04s]  We should think about how to sample from tokens in a top p probability percentiles
+[1755.04s -> 1761.00s]  of the cumulative probability mass of the CDF, for example.
+[1761.00s -> 1765.12s]  So now the advantage of doing top p sampling,
+[1765.12s -> 1769.32s]  where we sample from the top p percentile of the cumulative probability mass,
+[1769.32s -> 1771.56s]  is that this is actually equivalent to,
+[1771.56s -> 1775.72s]  we have now adaptive k for each different distribution.
+[1775.72s -> 1779.76s]  Let me explain what I mean by having adaptive k.
+[1779.76s -> 1785.80s]  So in the first distribution, this is like a regular power law of language that's kind of typical.
+[1785.80s -> 1790.28s]  And then doing top k sampling means we are selecting the top k.
+[1790.28s -> 1797.16s]  But doing top p sampling means that we are zooming into maybe something that's similar to top k in effect.
+[1797.16s -> 1801.16s]  But if I have a relatively flat distribution like the blue one,
+[1801.16s -> 1805.16s]  we can see that doing top p means that we are including more candidates.
+[1805.16s -> 1809.00s]  And then if we have a more skewed distribution like the green one,
+[1809.00s -> 1812.20s]  doing top p means that we actually include fewer candidates.
+[1812.20s -> 1818.40s]  So by actually selecting the top p percentile in the probability distribution,
+[1818.40s -> 1821.76s]  we are actually having a more flexible k
+[1821.76s -> 1827.04s]  and therefore have a better sense of what are the good options in the model.
+[1827.04s -> 1832.80s]  Any questions about top p, top k decoding?
+[1832.80s -> 1836.80s]  So everything's clear. Yeah, sounds good.
+[1836.80s -> 1841.80s]  So to go back to that question, doing top k is not necessarily saving compute,
+[1841.80s -> 1845.80s]  or this whole idea is not really compute saving intended,
+[1845.80s -> 1850.64s]  because in the case of top p, in order to select the top p percentile,
+[1850.64s -> 1854.76s]  we still need to compute the softmax over the entire vocabulary set
+[1854.76s -> 1859.12s]  in order for us to do top k properly, to compute the p properly.
+[1859.12s -> 1864.72s]  So therefore, it's not really saving compute, but it's improving performance.
+[1864.72s -> 1867.00s]  Cool, moving on.
+[1867.00s -> 1870.56s]  So there are much more to go with decoding algorithms.
+[1870.56s -> 1873.64s]  Besides the top k and top p that we've discussed,
+[1873.64s -> 1877.40s]  there are some more recent approaches like typical sampling,
+[1877.40s -> 1880.16s]  where the idea is that we want to relate the score
+[1880.16s -> 1882.40s]  based on the entropy of the distribution
+[1882.40s -> 1885.60s]  and try to generate tags that are closer to the negative,
+[1885.60s -> 1890.60s]  whose probability is closer to the negative entropy of the data distribution.
+[1890.60s -> 1895.40s]  This kind of means that if you have a closed-ended task or non-open-ended task,
+[1895.40s -> 1897.28s]  you want, it has smaller entropy,
+[1897.28s -> 1900.24s]  so you want a negative log probability to be smaller,
+[1900.24s -> 1901.80s]  so you want probabilities to be larger.
+[1901.80s -> 1904.68s]  So it kind of tab checks very well.
+[1904.68s -> 1910.68s]  And additionally, there is also epsilon sampling coming from John.
+[1910.68s -> 1915.40s]  So this is an idea where we set the threshold to lower bound probabilities.
+[1915.40s -> 1920.40s]  So basically, if you have a word whose probability is less than 0.03, for example,
+[1920.40s -> 1924.28s]  then that word will never appear in the output distribution.
+[1924.28s -> 1929.88s]  Now, that word will never be part of your output because it has so low probability.
+[1929.88s -> 1930.40s]  Yes?
+[1930.40s -> 1933.68s]  How do you know that you calculate the entropy of the distribution?
+[1933.68s -> 1935.04s]  Oh, cool, great question.
+[1935.04s -> 1939.48s]  So the entropy distribution is defined as,
+[1939.48s -> 1942.16s]  like you can suppose that we have a discrete distribution,
+[1942.16s -> 1944.96s]  we can go over it, like we'll just enumerate x
+[1945.00s -> 1949.76s]  and then it's negative log probability of x.
+[1949.76s -> 1952.96s]  So if we write it from an expectation perspective,
+[1952.96s -> 1956.52s]  it's basically expected log probability of x.
+[1956.52s -> 1958.84s]  Okay, I have to do another one here.
+[1958.84s -> 1965.00s]  So this is the entropy of a distribution.
+[1965.00s -> 1970.00s]  And then, so basically if your distribution is very concentrated to a few words,
+[1970.00s -> 1972.80s]  then the entropy will be relatively small.
+[1972.80s -> 1976.80s]  If your distribution is very flat, then your entropy will be very large.
+[1979.00s -> 1979.84s]  Yeah?
+[1979.84s -> 1985.68s]  What if the epsilon sampling is set such that we have no valid options?
+[1985.68s -> 1989.60s]  Oh, yeah, I mean, there will be some back-off cases, I think.
+[1989.60s -> 1993.76s]  So in the case that there is no valid options,
+[1993.76s -> 1996.00s]  you probably still want to select one or two things,
+[1996.00s -> 2000.60s]  just as an edge case, I think.
+[2000.60s -> 2002.64s]  Okay, cool.
+[2002.68s -> 2003.68s]  Moving on.
+[2003.68s -> 2008.36s]  So another hyperparameter that we can tune to affect decoding
+[2008.36s -> 2010.20s]  is the temperature parameter.
+[2010.20s -> 2013.04s]  So recall that previously at each time step,
+[2013.04s -> 2015.72s]  we ask the model to compute a score,
+[2015.72s -> 2018.28s]  and then we renormalize that score using solvemax
+[2018.28s -> 2020.12s]  to get a probability distribution.
+[2020.12s -> 2022.08s]  So one thing that we can adjust here
+[2022.08s -> 2025.32s]  is that we can insert this temperature parameter tau
+[2025.32s -> 2026.28s]  to relate the score.
+[2026.28s -> 2030.08s]  So basically we just divide all the sw by tau.
+[2030.52s -> 2033.20s]  And after dividing this, we apply solvemax,
+[2033.20s -> 2035.32s]  and we get a new distribution.
+[2035.32s -> 2037.68s]  And this temperature adjustment
+[2037.68s -> 2040.60s]  is not really going to affect the monotonosity
+[2040.60s -> 2041.56s]  of the distribution.
+[2041.56s -> 2044.36s]  For example, if word A has higher probability
+[2044.36s -> 2047.56s]  than word B previously, then after the adjustment,
+[2047.56s -> 2049.80s]  word A is still going to have a higher probability
+[2049.80s -> 2053.60s]  than word B, but their relative difference will change.
+[2055.20s -> 2058.76s]  So for example, if we raise the temperature tau
+[2058.76s -> 2060.04s]  to be greater than one,
+[2060.04s -> 2063.36s]  then the distribution PT will become more uniform.
+[2063.36s -> 2064.68s]  It will be flatter.
+[2064.68s -> 2067.20s]  And this kind of implies that there will be
+[2067.20s -> 2071.00s]  more diverse output because our distribution is flatter.
+[2071.00s -> 2072.48s]  And it's more spread out
+[2072.48s -> 2075.36s]  across different words in the vocabulary.
+[2075.36s -> 2076.20s]  On the other hand,
+[2076.20s -> 2079.76s]  if we lower the temperature tau less than one,
+[2079.76s -> 2082.16s]  then PT becomes very spiky.
+[2082.16s -> 2085.28s]  And then this means that if we sample from the PT,
+[2085.28s -> 2087.52s]  we'll get less diverse output.
+[2087.84s -> 2090.04s]  Because here the probability is concentrated
+[2090.04s -> 2091.68s]  only on the top words.
+[2091.68s -> 2093.00s]  So in the very extreme case,
+[2093.00s -> 2095.60s]  if we set tau to be very, very close to zero,
+[2095.60s -> 2099.16s]  then the probability will kind of be a one-hot vector
+[2099.16s -> 2100.68s]  where all the probability mass
+[2100.68s -> 2102.92s]  will be centered on one word.
+[2102.92s -> 2105.48s]  And then this kind of reduces back to argmax sampling
+[2105.48s -> 2106.52s]  or Grady decoding.
+[2107.86s -> 2109.88s]  So temperature is a hyperparameter as well,
+[2109.88s -> 2113.52s]  as for k and p in top k and top p.
+[2113.52s -> 2115.46s]  It is a hyperparameter for decoding.
+[2115.46s -> 2118.90s]  It can be tuned for beam search and sampling algorithms.
+[2118.90s -> 2120.90s]  So it's kind of orthogonal to the approaches
+[2120.90s -> 2122.18s]  that we discussed before.
+[2124.06s -> 2125.74s]  Any questions so far?
+[2128.30s -> 2129.54s]  Okay, cool.
+[2129.54s -> 2130.74s]  Temperature is so easy.
+[2133.30s -> 2137.42s]  So well, because sampling still involves randomness,
+[2137.42s -> 2140.58s]  even though we try very hard in terms of truncation,
+[2140.58s -> 2141.78s]  truncating the tail,
+[2141.78s -> 2143.46s]  sampling still has randomness.
+[2143.50s -> 2145.14s]  So what if we're just unlucky
+[2145.14s -> 2148.06s]  and decode a bad sequence from the model?
+[2148.06s -> 2150.28s]  One common solution is to do re-ranking.
+[2150.28s -> 2152.78s]  So basically we would decode a bunch of sequences.
+[2152.78s -> 2155.58s]  Like for example, we can decode 10 candidates,
+[2155.58s -> 2157.82s]  but like 10 or 30 is up to you.
+[2157.82s -> 2159.70s]  The only choice is that you want to balance
+[2159.70s -> 2162.72s]  between your compute efficiency and performance.
+[2162.72s -> 2164.94s]  So if you decode too many sequences,
+[2164.94s -> 2167.64s]  then of course your performance is going to increase,
+[2167.64s -> 2169.70s]  but it's also very costly
+[2169.70s -> 2172.52s]  to just generate a lot of things for one example.
+[2173.82s -> 2177.94s]  And then, so once you have a bunch of sample sequences,
+[2177.94s -> 2179.86s]  then we're trying to define a score
+[2179.86s -> 2182.26s]  to approximate the quality of the sequence
+[2182.26s -> 2183.50s]  and re-rank everything
+[2183.50s -> 2186.26s]  and re-rank all the candidates by this score.
+[2186.26s -> 2187.46s]  So the simple thing to do
+[2187.46s -> 2190.30s]  is we can use a perplexity as a metric,
+[2190.30s -> 2192.84s]  as a scoring function.
+[2192.84s -> 2194.46s]  But we need to be careful that,
+[2194.46s -> 2195.74s]  because we have talked about this,
+[2195.74s -> 2197.78s]  like the extreme of perplexity,
+[2197.78s -> 2200.54s]  like if we try to arc max log probability,
+[2200.54s -> 2203.02s]  when we try to aim for a super low perplexity,
+[2203.50s -> 2205.06s]  the tags are actually very repetitive.
+[2205.06s -> 2208.12s]  So we shouldn't really aim for extremely low perplexity
+[2208.12s -> 2210.14s]  and perplexity to some extent
+[2210.14s -> 2213.04s]  is not a perfect re-scoring function.
+[2213.04s -> 2214.74s]  It's not a perfect scoring function
+[2214.74s -> 2217.38s]  because it's not really robust to maximize.
+[2218.66s -> 2221.70s]  So alternatively, the re-rankers can actually use
+[2221.70s -> 2223.98s]  a wide variety of other scoring functions.
+[2223.98s -> 2226.54s]  Like we can score tags based on their style,
+[2226.54s -> 2228.52s]  their discourse coherence,
+[2228.52s -> 2230.78s]  their entailment, factuality properties,
+[2230.78s -> 2232.42s]  consistency, and so on.
+[2233.02s -> 2238.02s]  And additionally, we can compose multiple re-rankers together.
+[2239.74s -> 2241.08s]  Yeah, question.
+[2241.08s -> 2243.42s]  My question, you mentioned 10 candidates
+[2243.42s -> 2245.42s]  or any number of candidates.
+[2245.42s -> 2248.14s]  What's the strategy you usually use
+[2248.14s -> 2249.90s]  to generate these other candidates?
+[2249.90s -> 2251.82s]  Like what you're just going to use?
+[2251.82s -> 2253.90s]  Oh yeah, so basically the idea is
+[2253.90s -> 2255.66s]  to sample from the model, right?
+[2255.66s -> 2257.18s]  So when you sample from the model,
+[2257.18s -> 2258.02s]  each time you sample,
+[2258.02s -> 2260.28s]  you're going to get a different output.
+[2260.28s -> 2261.98s]  And then that's what I mean by different candidates.
+[2261.98s -> 2263.66s]  So if you sample 10 times,
+[2263.66s -> 2264.50s]  you will get 10,
+[2264.50s -> 2267.26s]  you will very likely get 10 different outputs.
+[2267.26s -> 2270.14s]  And then you are just given this 10 different outputs
+[2270.14s -> 2271.50s]  that come from sampling,
+[2271.50s -> 2273.46s]  you can just decide, re-rank them
+[2273.46s -> 2276.54s]  and select the candidate that has the highest score.
+[2276.54s -> 2279.38s]  Where does the randomness come from?
+[2279.38s -> 2281.10s]  Oh, because we are sampling here.
+[2281.10s -> 2282.14s]  That sample, okay.
+[2282.14s -> 2282.96s]  Yeah, yeah.
+[2282.96s -> 2285.34s]  For example, if you are doing like top P sampling,
+[2285.34s -> 2288.76s]  then well, suppose that A and B are equally probable,
+[2288.76s -> 2290.90s]  then you might sample A or you might sample B
+[2290.94s -> 2292.46s]  with the same probability.
+[2294.30s -> 2295.14s]  Okay, cool.
+[2295.14s -> 2297.62s]  And another cool thing that we can do is re-ranking
+[2297.62s -> 2300.50s]  is that we can compose multiple re-rankers together.
+[2300.50s -> 2301.34s]  So basically,
+[2301.34s -> 2303.74s]  suppose you have a scoring function for style
+[2303.74s -> 2306.46s]  and you have a scoring function for factual consistency.
+[2306.46s -> 2308.74s]  You can just add those two scoring functions together
+[2308.74s -> 2310.26s]  to get a new scoring function
+[2310.26s -> 2311.98s]  and then re-rank everything
+[2311.98s -> 2314.08s]  based on your new scoring function
+[2314.08s -> 2316.24s]  to get tasks that are both good at style
+[2316.24s -> 2318.02s]  and good at factual consistency.
+[2319.54s -> 2320.38s]  Yeah.
+[2320.70s -> 2323.18s]  So when you say that we re-rank by the score,
+[2323.18s -> 2326.30s]  do we just pick the decoding that has the highest score
+[2326.30s -> 2329.94s]  or do we do some more sampling again based on the score?
+[2329.94s -> 2331.42s]  The idea is you just take the decoding
+[2331.42s -> 2332.24s]  that has the highest score
+[2332.24s -> 2334.94s]  because you already have like say 10 candidates.
+[2334.94s -> 2336.74s]  So out of this 10, you only need one
+[2336.74s -> 2339.92s]  and then you just choose one that has the highest score.
+[2339.92s -> 2341.56s]  Yeah.
+[2341.56s -> 2342.40s]  Cool.
+[2342.40s -> 2343.32s]  Any other questions?
+[2344.90s -> 2345.74s]  Yeah.
+[2345.74s -> 2349.02s]  Sorry, what is perplexity again?
+[2349.02s -> 2350.98s]  Oh yeah, perplexity is like,
+[2350.98s -> 2353.50s]  you can kind of regard it as log probabilities.
+[2354.74s -> 2358.42s]  It's like E to the negative log probabilities.
+[2358.42s -> 2362.14s]  It's kind of like if a token has high perplexity,
+[2362.14s -> 2364.54s]  then it means it has low probability
+[2364.54s -> 2366.18s]  because you are more perplexed.
+[2369.70s -> 2371.64s]  Okay, so I'm taking a step back
+[2371.64s -> 2373.52s]  to summarize this decoding section.
+[2373.52s -> 2376.18s]  We have discussed many decoding approaches
+[2376.18s -> 2378.50s]  from selecting the most probable string
+[2378.94s -> 2380.70s]  to selecting, to sampling
+[2380.70s -> 2382.46s]  and then to various truncation approaches
+[2382.46s -> 2384.18s]  that we can do to improve sampling
+[2384.18s -> 2387.70s]  like top P, top K, epsilon, typical decoding.
+[2387.70s -> 2390.22s]  And finally, we discuss how we can do
+[2390.22s -> 2392.82s]  in terms of re-ranking the results.
+[2392.82s -> 2397.18s]  So decoding is still a really essential problem in NLG
+[2397.18s -> 2399.90s]  and there are lots of works to be done here still,
+[2399.90s -> 2402.42s]  especially as like chat GPD is so powerful,
+[2402.42s -> 2404.70s]  we should all go study decoding.
+[2404.70s -> 2406.10s]  So it would be interesting
+[2406.10s -> 2408.26s]  if you want to do such final projects.
+[2408.90s -> 2410.54s]  Also different decoding algorithms
+[2410.54s -> 2413.62s]  can allow us to inject different inductive biases
+[2413.62s -> 2416.66s]  to the text that we are trying to generate.
+[2417.70s -> 2420.78s]  And some of the most impactful advances in NLG
+[2420.78s -> 2423.18s]  in the last couple of years actually come from simple
+[2423.18s -> 2424.94s]  but effective decoding algorithms.
+[2424.94s -> 2428.14s]  For example, the nuclear sampling paper
+[2428.14s -> 2430.08s]  is actually very, very highly cited.
+[2431.50s -> 2435.10s]  So moving on to talk about training NLG models.
+[2436.10s -> 2438.66s]  Well, we have seen this example before
+[2438.66s -> 2439.82s]  in the decoding slides
+[2439.82s -> 2441.88s]  and I'm just trying to show them again
+[2441.88s -> 2444.90s]  because even though we can solve this repetition problem
+[2444.90s -> 2447.82s]  by instead of doing search, doing sampling,
+[2448.78s -> 2450.00s]  but it's still concerning
+[2450.00s -> 2451.78s]  from a language modeling perspective
+[2451.78s -> 2454.70s]  that your model would put so much probability
+[2454.70s -> 2457.20s]  on such repetitive and degenerate text.
+[2457.20s -> 2458.82s]  So we asked this question,
+[2458.82s -> 2461.88s]  well, is repetition due to how language models are trained?
+[2461.88s -> 2466.40s]  You have also seen this cloud before,
+[2466.40s -> 2468.48s]  which shows this decaying pattern
+[2468.48s -> 2471.26s]  or this self amplification effect.
+[2471.26s -> 2473.44s]  So we can conclude from this observation
+[2473.44s -> 2476.44s]  that model trained via a MLE objective
+[2476.44s -> 2479.84s]  wears really bad mode of the distribution.
+[2479.84s -> 2480.92s]  By mode of the distribution,
+[2480.92s -> 2482.94s]  I mean the argmax of the distribution.
+[2482.94s -> 2484.92s]  So basically they would assign high probability
+[2484.92s -> 2486.96s]  to terrible strings.
+[2486.96s -> 2490.50s]  And this is definitely problematic for a model perspective.
+[2490.50s -> 2491.84s]  So why is this the case?
+[2492.68s -> 2493.88s]  Shouldn't MLE be like a gold standard
+[2493.88s -> 2496.64s]  in machine translation, in machine learning in general,
+[2496.64s -> 2498.08s]  not just machine translation.
+[2498.08s -> 2499.48s]  Shouldn't MLE be like a gold standard
+[2499.48s -> 2500.88s]  for machine learning?
+[2500.88s -> 2503.00s]  The answer here is not really,
+[2503.00s -> 2504.28s]  especially for text
+[2504.28s -> 2507.76s]  because MLE has some problem for sequential data
+[2507.76s -> 2509.90s]  and we call this problem exposure bias.
+[2511.08s -> 2513.48s]  So training with teacher forcing
+[2513.48s -> 2516.00s]  leads to exposure bias at generation time
+[2516.00s -> 2517.16s]  because during training,
+[2517.16s -> 2519.64s]  our model's inputs are gold context tokens
+[2519.64s -> 2521.52s]  from real human generated text
+[2522.08s -> 2524.84s]  as denoted as Y hat less than T here.
+[2524.84s -> 2526.80s]  But during generation time,
+[2526.80s -> 2530.28s]  our model's input become previously decoded tokens
+[2530.28s -> 2532.56s]  from the model Y hat T.
+[2532.56s -> 2535.28s]  And suppose that our model has minor errors,
+[2535.28s -> 2539.20s]  then Y hat less than T will be much worse
+[2539.20s -> 2541.72s]  in terms of quality than Y star less than T.
+[2541.72s -> 2543.66s]  And this discrepancy is terrible
+[2543.66s -> 2547.32s]  because it actually causes a discrepancy
+[2547.32s -> 2549.04s]  between training and test time,
+[2549.04s -> 2551.32s]  which actually hurts model performance
+[2551.96s -> 2553.80s]  and we call this problem exposure bias.
+[2555.92s -> 2557.88s]  So people have proposed many solutions
+[2557.88s -> 2560.68s]  to address this exposure bias problem.
+[2560.68s -> 2564.04s]  One thing to do is to do scheduled sampling,
+[2564.04s -> 2566.92s]  which means that with probability P,
+[2566.92s -> 2568.80s]  we try to decode a token
+[2569.68s -> 2572.52s]  and feed it back in as context to train the model.
+[2572.52s -> 2574.44s]  And this probability one minus P,
+[2574.44s -> 2575.60s]  we use the gold tag,
+[2575.60s -> 2578.06s]  or we use the gold token as context.
+[2578.06s -> 2579.28s]  So throughout training,
+[2579.28s -> 2582.60s]  we try to increase P to gradually warm it up
+[2582.60s -> 2585.76s]  and then prepare it for test time generation.
+[2585.76s -> 2588.08s]  So this leads to improvement in practice
+[2588.08s -> 2592.04s]  because using this P probabilities,
+[2592.04s -> 2596.00s]  we're actually gradually trying to narrow the discrepancy
+[2596.00s -> 2598.00s]  between training and test time.
+[2598.00s -> 2600.20s]  But the objective is actually quite strange
+[2600.20s -> 2602.10s]  and training can be very unstable.
+[2603.32s -> 2606.12s]  Another idea is to do data set aggregation.
+[2606.12s -> 2608.16s]  And the method is called Dagger.
+[2609.00s -> 2611.88s]  Essentially at various interval during training,
+[2611.88s -> 2613.46s]  we try to generate a sequence of tags
+[2613.46s -> 2615.48s]  from the current model and then use this
+[2615.48s -> 2618.24s]  and then put this sequence of tags into the training data.
+[2618.24s -> 2621.04s]  So we're kind of continuously doing
+[2621.04s -> 2623.46s]  this training data augmentation scheme
+[2623.46s -> 2626.16s]  to make sure that the training distribution
+[2626.16s -> 2629.40s]  and the generation distribution are closer together.
+[2629.40s -> 2631.68s]  So both approaches, both scheduled sampling
+[2631.68s -> 2634.44s]  and data set aggregation are ways to narrow
+[2634.44s -> 2636.32s]  the discrepancy between training and test.
+[2636.32s -> 2637.16s]  Yes, question.
+[2638.76s -> 2640.70s]  What is the gold token?
+[2640.70s -> 2643.36s]  Oh, gold token just means human text.
+[2643.36s -> 2646.52s]  It means like, when you train a language model,
+[2646.52s -> 2648.68s]  you will see lots of corpus that are human written.
+[2648.68s -> 2650.56s]  Gold is just human.
+[2650.56s -> 2651.38s]  Yeah.
+[2653.68s -> 2654.60s]  Okay, cool.
+[2655.52s -> 2658.96s]  So another approach is to do retrieval augmented generation.
+[2658.96s -> 2661.40s]  So we first learn to retrieve a sequence
+[2661.40s -> 2663.88s]  from some existing corpus of prototypes.
+[2663.88s -> 2666.24s]  And then we train a model to actually edit
+[2666.24s -> 2670.36s]  the retrieved text by doing insertion, deletion or swapping.
+[2671.52s -> 2674.36s]  We can add or remove tokens from this prototype
+[2674.36s -> 2679.36s]  and then try to modify it into another sentence.
+[2679.44s -> 2681.72s]  So this doesn't really suffer from exposure bias
+[2681.72s -> 2684.88s]  because we start from a high quality prototype.
+[2684.88s -> 2687.60s]  So that at training time and at test time,
+[2687.60s -> 2689.36s]  you don't really have the discrepancy anymore
+[2689.36s -> 2691.76s]  because you are not generating from left to right.
+[2692.76s -> 2696.72s]  Another approach is to do reinforcement learning.
+[2696.72s -> 2700.24s]  So here, the idea is to cast your generation problem
+[2700.24s -> 2702.88s]  as a Markov decision process.
+[2702.88s -> 2705.04s]  So there is the state S,
+[2705.04s -> 2706.90s]  which is the model's representation
+[2706.90s -> 2708.86s]  for all the preceding context.
+[2708.86s -> 2710.44s]  There is action A,
+[2710.44s -> 2712.72s]  which is basically like the next token
+[2712.72s -> 2713.98s]  that we are trying to pick.
+[2713.98s -> 2716.20s]  And there's policy, which is the language model,
+[2716.20s -> 2718.04s]  or also called the decoder.
+[2718.04s -> 2719.80s]  And there is the reward R,
+[2719.80s -> 2722.42s]  which is provided by some external score.
+[2722.42s -> 2723.84s]  And the idea here,
+[2723.84s -> 2726.04s]  well, we won't go into details
+[2726.04s -> 2728.18s]  about reinforcement learning and how it works,
+[2728.18s -> 2732.00s]  but we will recommend the class CS234.
+[2734.32s -> 2736.76s]  So in the reinforcement learning context,
+[2736.76s -> 2739.72s]  because reinforcement learning involves a reward function,
+[2739.72s -> 2740.84s]  that's very important.
+[2740.84s -> 2744.36s]  So how do we do reward estimation for text generation?
+[2744.36s -> 2746.08s]  Well, really natural idea
+[2746.08s -> 2748.28s]  is to just use the evaluation metrics.
+[2748.28s -> 2750.44s]  So whatever, because you are trying to do well
+[2750.44s -> 2751.80s]  in terms of evaluation,
+[2751.80s -> 2754.24s]  so why not just improve for evaluation metrics
+[2754.24s -> 2755.78s]  directly at training time?
+[2755.78s -> 2758.60s]  For example, in the case of machine translation,
+[2758.60s -> 2761.60s]  we can use blue score as the reward function.
+[2761.60s -> 2762.84s]  In the case of summarization,
+[2762.84s -> 2765.32s]  we can use root score as the reward function.
+[2766.56s -> 2767.88s]  But we really need to be careful
+[2767.88s -> 2769.84s]  about optimizing for tasks
+[2769.84s -> 2771.96s]  as opposed to gaining the reward.
+[2771.96s -> 2774.78s]  Because evaluation metrics are merely proxies
+[2774.78s -> 2776.04s]  for the generation quality.
+[2776.04s -> 2778.36s]  So sometimes suppose that you run RL
+[2778.36s -> 2780.88s]  and improve the blue score by a lot,
+[2780.88s -> 2783.48s]  but when you run human evaluations,
+[2783.48s -> 2785.08s]  humans might still think that,
+[2785.08s -> 2787.52s]  well, this generated text is no better
+[2787.52s -> 2789.20s]  than the previous one, or even worse,
+[2789.20s -> 2792.16s]  even though it gives you a much better blue score.
+[2792.16s -> 2794.40s]  So we want to be careful about this case
+[2794.40s -> 2796.14s]  of not gaining the reward.
+[2797.46s -> 2800.16s]  So what behaviors can we tie to a reward function?
+[2800.16s -> 2802.76s]  This is about reward design and reward estimation.
+[2802.76s -> 2804.80s]  There are so many things that we can do.
+[2804.80s -> 2808.12s]  We can do cross-modality consistency for image captioning.
+[2808.12s -> 2812.60s]  We can do sentence similarity to make sure
+[2812.60s -> 2814.44s]  that we are generating simple English
+[2814.44s -> 2815.80s]  that are understandable.
+[2815.80s -> 2817.68s]  We can do formality and politeness
+[2817.68s -> 2819.36s]  to make sure that, I don't know,
+[2819.36s -> 2821.70s]  your chatbot doesn't suddenly yell at you.
+[2822.68s -> 2824.96s]  And the most important thing that's really,
+[2824.96s -> 2828.80s]  really popular recently is human preference.
+[2828.80s -> 2831.80s]  So we should just build a reward model
+[2831.80s -> 2833.52s]  that captures human preference.
+[2833.56s -> 2834.90s]  And this is actually the technique
+[2834.90s -> 2837.24s]  behind the chat GPT model.
+[2837.24s -> 2839.88s]  So the idea here is that we would ask human
+[2839.88s -> 2841.76s]  to rank a bunch of generated text
+[2841.76s -> 2843.32s]  based on their preference.
+[2843.32s -> 2845.56s]  And then we will use this preference data
+[2845.56s -> 2847.48s]  to learn a reward function,
+[2847.48s -> 2851.24s]  which will basically always assign high score
+[2851.24s -> 2853.12s]  to something that humans might prefer
+[2853.12s -> 2854.16s]  and assign low score
+[2854.16s -> 2856.28s]  to something that humans wouldn't prefer.
+[2857.56s -> 2858.76s]  Yeah, question.
+[2858.92s -> 2860.68s]  Is it more expensive?
+[2863.32s -> 2864.16s]  Oh yeah, sure.
+[2864.16s -> 2866.00s]  I mean, it is going to be very expensive,
+[2866.00s -> 2868.22s]  but I feel like compared to all the costs
+[2868.22s -> 2869.24s]  of training models,
+[2869.24s -> 2872.40s]  training like 170 billion parameter models,
+[2872.40s -> 2874.60s]  I feel like OpenAI and Google are,
+[2874.60s -> 2877.20s]  well, they can't afford hiring lots of humans
+[2877.20s -> 2879.96s]  to do human annotations and ask their preference.
+[2879.96s -> 2880.80s]  Yeah.
+[2880.80s -> 2882.72s]  How much data would be needed
+[2882.72s -> 2884.70s]  to do something like this?
+[2884.70s -> 2886.24s]  Yeah, this is a great question.
+[2886.24s -> 2889.08s]  So I think it's kind of a mystery
+[2889.08s -> 2890.84s]  about how much data you exactly need
+[2890.84s -> 2893.92s]  to achieve the level of performance of chat GPT.
+[2893.92s -> 2895.84s]  But roughly speaking, I feel like,
+[2895.84s -> 2898.32s]  I mean, like whenever you try to fine tune a model
+[2898.32s -> 2899.64s]  on some downstream task,
+[2899.64s -> 2901.44s]  somewhere here you are trying to fine tune your model
+[2901.44s -> 2903.78s]  on human preference,
+[2903.78s -> 2905.40s]  it do need quite a lot of data,
+[2905.40s -> 2908.24s]  like maybe on the scale of 50K to 100K.
+[2908.24s -> 2909.68s]  That's roughly the scale that,
+[2909.68s -> 2912.34s]  like Anthropic actually released some data set
+[2912.34s -> 2913.32s]  about human preference.
+[2913.32s -> 2915.92s]  That's roughly the scale that they released, I think.
+[2916.84s -> 2918.04s]  If I remember correctly.
+[2918.04s -> 2919.52s]  Yeah, question.
+[2919.52s -> 2920.72s]  So we talked about earlier
+[2920.72s -> 2923.04s]  about how many of the state-of-the-art language models
+[2923.04s -> 2925.72s]  use transformers as their architecture.
+[2925.72s -> 2929.64s]  How do you apply reinforcement learning to this model?
+[2931.48s -> 2933.36s]  What do you mean, to transformer model?
+[2933.36s -> 2934.20s]  Yeah.
+[2935.04s -> 2937.60s]  Yeah, I feel like reinforcement learning
+[2937.60s -> 2939.76s]  is kind of a modeling tool.
+[2939.76s -> 2941.12s]  I mean, it's kind of an objective
+[2941.12s -> 2942.24s]  that you are trying to optimize.
+[2942.24s -> 2943.62s]  Instead of a MLE objective,
+[2943.62s -> 2946.26s]  now you are optimizing for an RL objective.
+[2946.26s -> 2950.94s]  So it's kind of orthogonal to the architecture choice.
+[2950.94s -> 2953.14s]  So transformer is an architecture.
+[2953.14s -> 2955.64s]  You just use transformer to give you probability
+[2955.64s -> 2956.98s]  of the next token distribution
+[2956.98s -> 2960.58s]  or to try to estimate probability of a sequence.
+[2960.58s -> 2962.80s]  And then once you have the probability of a sequence,
+[2962.80s -> 2964.82s]  you use that probability of a sequence,
+[2964.82s -> 2968.86s]  pass it into the RL objective that you have.
+[2968.86s -> 2970.46s]  And then suppose that you are trying
+[2970.46s -> 2972.14s]  to do policy gradient or something,
+[2972.14s -> 2975.62s]  then you need to estimate the probability of that sequence.
+[2975.62s -> 2978.18s]  And then you just need to be able to back prop
+[2978.18s -> 2980.84s]  through transformer, which is doable.
+[2980.84s -> 2982.98s]  Yeah, so I think the question about architecture
+[2982.98s -> 2984.66s]  and objectives are orthogonal.
+[2984.66s -> 2986.82s]  So even if you have an LSTM, you can do it.
+[2986.82s -> 2988.94s]  You have a transformer, you can also do it.
+[2988.94s -> 2989.78s]  Yep.
+[2991.30s -> 2993.30s]  Cool, hope I answered that question.
+[2994.34s -> 2995.18s]  Yeah.
+[2995.18s -> 2998.82s]  Can we just build a model for this kind of reward?
+[2998.82s -> 3000.74s]  Well, for example, we can build another transformer
+[3000.74s -> 3002.30s]  that you like to carve into.
+[3002.30s -> 3003.74s]  Yeah, I think that's exactly what they did.
+[3003.74s -> 3007.74s]  So for example, you would have GPT-3, right?
+[3007.74s -> 3011.70s]  You use GPT-3 as the generator that generates text
+[3011.70s -> 3013.74s]  and you kind of have another pre-trained model
+[3013.74s -> 3017.38s]  that could probably also be GPT-3, but I'm guessing here
+[3017.38s -> 3020.14s]  that you fine tune it to learn human preference.
+[3020.14s -> 3022.80s]  And then once you have a human preference model,
+[3022.80s -> 3024.36s]  you use the human preference model
+[3024.36s -> 3027.50s]  to put it into RL as the reward model
+[3027.50s -> 3030.50s]  and then use the original GPT-3 as the policy model.
+[3030.50s -> 3034.70s]  And then you apply RL objectives and then update them
+[3034.70s -> 3036.70s]  so that you will get a new model
+[3036.70s -> 3038.38s]  that's better at everything.
+[3040.46s -> 3041.54s]  Okay, cool.
+[3042.42s -> 3044.50s]  Yeah, actually, if you are very curious about RL-HF,
+[3044.50s -> 3046.50s]  I would encourage you to come to the next lecture,
+[3046.50s -> 3049.86s]  which is where Jesse will talk about RL-HF,
+[3049.86s -> 3054.86s]  which RL-HF is shorthand for RL using human feedback.
+[3055.58s -> 3060.58s]  So takeaways, teacher forcing is still the main algorithm
+[3063.58s -> 3066.02s]  for training text generation models.
+[3066.02s -> 3068.86s]  And exposure bias causes problems
+[3068.86s -> 3070.42s]  in text generation models.
+[3070.42s -> 3073.16s]  For example, it causes models to lose coherence,
+[3073.16s -> 3075.02s]  causes model to be repetitive.
+[3075.02s -> 3077.06s]  And models must learn to recover
+[3077.06s -> 3080.18s]  from their own bad samples by using techniques
+[3080.18s -> 3082.50s]  like scheduled sampling or a dagger.
+[3082.82s -> 3087.62s]  And another approach to reduce exposure bias
+[3087.62s -> 3091.14s]  is to start with good text, like retrieval plus generation.
+[3091.14s -> 3093.68s]  And we also discussed how to do training with RL.
+[3093.68s -> 3097.46s]  And this can actually make model learn behaviors
+[3097.46s -> 3102.46s]  that are preferred by human or preferred by some metrics.
+[3103.18s -> 3106.34s]  So to be very up to date,
+[3106.34s -> 3108.82s]  in the best language model nowadays, chatGPT,
+[3108.82s -> 3110.62s]  the training is actually pipelined.
+[3110.62s -> 3112.38s]  For example, we would first pre-train
+[3112.38s -> 3114.66s]  a large language models using internet corpus
+[3114.66s -> 3116.18s]  by self supervision.
+[3116.18s -> 3119.02s]  And this kind of gets you chatGPT, sorry,
+[3119.02s -> 3121.24s]  GPT-3, which is the original version.
+[3121.24s -> 3123.98s]  And then you would do some sorts of instruction tuning
+[3123.98s -> 3125.62s]  to fine tune the language model,
+[3125.62s -> 3127.00s]  to fine tune the pre-trained language model
+[3127.00s -> 3129.30s]  so that it learns roughly how to follow
+[3129.30s -> 3130.84s]  human instructions.
+[3130.84s -> 3133.46s]  And finally, we will do RL-HF to make sure
+[3133.46s -> 3136.74s]  that these models are well aligned with human preference.
+[3136.74s -> 3140.32s]  So if we start RL-HF from scratch,
+[3140.88s -> 3142.68s]  it's probably going to be very hard for the model to converge
+[3142.68s -> 3146.52s]  because RL is hard to train for text data, et cetera.
+[3146.52s -> 3149.08s]  So RL doesn't really work from scratch,
+[3149.08s -> 3152.54s]  but with all this smart tricks about pre-training
+[3152.54s -> 3157.00s]  and instruction tuning, suddenly now they're off
+[3157.00s -> 3157.88s]  to a good start.
+[3159.64s -> 3161.84s]  Cool, any questions so far?
+[3163.56s -> 3165.56s]  Okay, oh, yeah.
+[3165.68s -> 3170.68s]  Is the difference between Dagger and schedule sampling
+[3171.02s -> 3175.64s]  just how long the replacement will have to be?
+[3175.64s -> 3177.52s]  You mean the difference between Dagger
+[3177.52s -> 3181.68s]  and schedule sampling is how long the sequence are?
+[3181.68s -> 3183.92s]  Yeah, I think roughly that is it.
+[3183.92s -> 3187.72s]  Because for Dagger, you are trying to put in
+[3189.12s -> 3190.32s]  full generated sequence.
+[3190.32s -> 3192.56s]  But I feel like there can be variations of Dagger.
+[3192.56s -> 3195.10s]  Dagger is just like a high level framework, an idea.
+[3195.54s -> 3197.54s]  There can be variations of Dagger
+[3197.54s -> 3200.18s]  that are very similar to schedule sampling, I think.
+[3200.18s -> 3201.74s]  I feel like for schedule sampling,
+[3201.74s -> 3204.76s]  it's kind of a more smoothed version of Dagger
+[3204.76s -> 3207.24s]  because Dagger, for Dagger, you have to like,
+[3207.24s -> 3210.04s]  for, well, basically for this epoch,
+[3210.04s -> 3211.24s]  I am generating something.
+[3211.24s -> 3213.38s]  And then after this epoch finishes,
+[3213.38s -> 3215.06s]  I put this into the data together
+[3215.06s -> 3216.46s]  and then train for another epoch.
+[3216.46s -> 3219.00s]  Whereas Dagger seems to be more flexible
+[3219.00s -> 3221.50s]  in terms of when you add data in.
+[3221.50s -> 3222.34s]  Yes?
+[3222.34s -> 3224.60s]  How does it help the model?
+[3228.86s -> 3231.74s]  I think that's a good question.
+[3231.74s -> 3233.50s]  I feel like if you regress the model,
+[3233.50s -> 3237.46s]  for example, if you regress the model on its own output,
+[3238.46s -> 3241.14s]  I think there should be smarter ways
+[3241.14s -> 3243.66s]  than to exactly regress on your own output.
+[3243.66s -> 3246.10s]  For example, you might still consult
+[3246.10s -> 3248.26s]  some gold reference data, for example,
+[3248.26s -> 3250.78s]  given that you asked the model to generate for something
+[3250.82s -> 3253.94s]  and then you can, instead of using,
+[3253.94s -> 3256.26s]  say you ask the model to generate for five tokens
+[3256.26s -> 3259.70s]  and then instead of using the model's generation
+[3259.70s -> 3261.22s]  to be the sixth token,
+[3261.22s -> 3263.06s]  you'll probably try to find some examples
+[3263.06s -> 3266.26s]  in the training data that would be good continuations.
+[3266.26s -> 3267.98s]  And then you try to plug that in
+[3267.98s -> 3272.94s]  by connecting the model generation and some gold text.
+[3272.94s -> 3275.94s]  And then therefore you are able to kind of correct
+[3275.94s -> 3279.34s]  the model even though it probably went off path
+[3279.34s -> 3281.10s]  a little bit by generating its own stuff.
+[3281.10s -> 3282.58s]  So it's kind of like letting the model learn
+[3282.58s -> 3283.98s]  how to correct for itself.
+[3284.94s -> 3286.10s]  But yes, I think you are right.
+[3286.10s -> 3291.10s]  If you just put model generation in the data,
+[3291.26s -> 3292.56s]  it shouldn't really work.
+[3294.02s -> 3295.80s]  Yeah, any other questions?
+[3297.86s -> 3298.68s]  Cool.
+[3305.58s -> 3307.94s]  Yes, so now we'll talk about
+[3307.98s -> 3310.62s]  how we are gonna evaluate NLG systems.
+[3310.62s -> 3313.50s]  So there are three types of methods for evaluation.
+[3313.50s -> 3316.02s]  There is content overlap metrics,
+[3316.02s -> 3317.38s]  there is model based metrics
+[3317.38s -> 3319.46s]  and there is human evaluations.
+[3320.30s -> 3323.14s]  So first, content overlap metrics compute a score
+[3323.14s -> 3326.46s]  based on lexical similarities between the generated text
+[3326.46s -> 3328.06s]  and the gold reference text.
+[3328.06s -> 3329.50s]  So the advantage of this approach
+[3329.50s -> 3332.86s]  is that it's very fast and efficient and widely used.
+[3332.86s -> 3336.10s]  For example, blue score is very popular in MT
+[3336.14s -> 3338.76s]  and blue score is very popular in summarization.
+[3341.62s -> 3345.06s]  So these methods are very popular
+[3345.06s -> 3347.62s]  because they are cheap and easy to run.
+[3347.62s -> 3349.82s]  But they are not really the ideal metrics.
+[3349.82s -> 3352.78s]  For example, simply rely on lexical overlap
+[3352.78s -> 3354.74s]  might miss some rephrasing
+[3354.74s -> 3356.74s]  that have the same semantic meaning
+[3356.74s -> 3358.38s]  or it might reward text
+[3358.38s -> 3360.82s]  with a large portion of lexical overlap
+[3360.82s -> 3362.76s]  but actually have the opposite meaning.
+[3362.76s -> 3365.00s]  So you have lots of both false positive
+[3365.00s -> 3366.66s]  and false negative problems.
+[3367.52s -> 3369.96s]  So despite all these disadvantages,
+[3369.96s -> 3372.24s]  the metrics are still the two goal evaluation standard
+[3372.24s -> 3373.72s]  in machine translation.
+[3373.72s -> 3375.82s]  Part of the reason is that MT
+[3375.82s -> 3377.80s]  is actually super close ended,
+[3377.80s -> 3379.92s]  it's very non open ended.
+[3379.92s -> 3383.08s]  And then therefore, this is probably still fine
+[3383.08s -> 3387.40s]  to use like blue score to measure machine translation.
+[3387.40s -> 3389.40s]  And they get progressively worse for tasks
+[3389.40s -> 3391.22s]  that are more open ended.
+[3391.22s -> 3393.58s]  For example, they got worse for summarization
+[3394.06s -> 3398.66s]  because the output text becomes much harder to measure.
+[3398.66s -> 3400.30s]  They are much worse for dialogue,
+[3400.30s -> 3401.66s]  which is more open ended.
+[3401.66s -> 3404.02s]  And then they are much, much worse for story generation,
+[3404.02s -> 3405.70s]  which is also open ended.
+[3405.70s -> 3407.50s]  And then the drawback here is that
+[3407.50s -> 3409.22s]  because like the n-gram metrics,
+[3410.94s -> 3412.26s]  this is because like,
+[3412.26s -> 3413.98s]  suppose that you are generating a story
+[3413.98s -> 3415.42s]  that's relatively long.
+[3415.42s -> 3417.42s]  Then if you're still looking at word overlap,
+[3417.42s -> 3420.46s]  then you might actually get very high n-gram scores
+[3420.46s -> 3422.30s]  because of your text is very long,
+[3422.30s -> 3424.34s]  and not because it's actually of high quality.
+[3424.34s -> 3426.34s]  Just because you are talking so much
+[3426.34s -> 3428.94s]  that you might have covered lots of points already.
+[3429.82s -> 3430.66s]  Yes.
+[3430.66s -> 3432.14s]  Maybe that's exactly like what that case
+[3432.14s -> 3435.22s]  in computer like a consent similarity being in that case.
+[3435.22s -> 3436.06s]  Yes, exactly.
+[3436.06s -> 3439.38s]  That's kind of the next thing that I will talk about
+[3439.38s -> 3442.58s]  as a better metric for evaluation.
+[3442.58s -> 3444.68s]  But for now, let's do like a case study
+[3444.68s -> 3448.42s]  of a failure mode for a blue score, for example.
+[3448.42s -> 3450.40s]  So suppose that Chris asked a question,
+[3450.40s -> 3453.20s]  are you enjoying the CS224N lectures?
+[3453.20s -> 3455.40s]  The correct answer, of course, is heck yes.
+[3456.56s -> 3459.08s]  So if we have this,
+[3459.08s -> 3461.60s]  if one of the answer is yes,
+[3461.60s -> 3463.74s]  it will get a score of 0.61
+[3463.74s -> 3465.40s]  because it has some lexical overlap
+[3465.40s -> 3467.32s]  with the correct answer.
+[3467.32s -> 3469.00s]  If you answer you know it,
+[3469.00s -> 3471.40s]  then it get a relatively lower score
+[3471.40s -> 3473.92s]  because it doesn't really have any lexical overlap
+[3473.92s -> 3475.76s]  except from the exclamation mark.
+[3476.92s -> 3478.48s]  And if you answer yes,
+[3478.48s -> 3480.44s]  this is semantically correct,
+[3480.44s -> 3482.96s]  but it actually gets zero score
+[3482.96s -> 3484.76s]  because there is no lexical overlap
+[3484.76s -> 3487.60s]  between the gold answer and the generation.
+[3487.60s -> 3490.60s]  If you answer heck no, this should be wrong,
+[3490.60s -> 3495.00s]  but because it has lots of lexical overlap
+[3495.00s -> 3497.08s]  with the correct answer,
+[3497.08s -> 3499.72s]  it's actually getting some high scores.
+[3499.72s -> 3502.28s]  So these two cases are the major failure modes
+[3502.28s -> 3506.00s]  of lexical based n-gram overlap metrics.
+[3506.00s -> 3508.46s]  You get false negatives and false positives.
+[3510.30s -> 3513.72s]  So moving beyond this failure modes
+[3513.72s -> 3515.96s]  of lexical based metrics,
+[3515.96s -> 3519.20s]  the next step is to check for semantic similarities
+[3519.20s -> 3520.84s]  and model based metrics are better
+[3520.84s -> 3523.58s]  at capturing the semantic similarities.
+[3523.58s -> 3526.28s]  So this is kind of similar to what you kind of raised up
+[3526.28s -> 3528.28s]  like a couple minutes ago.
+[3528.28s -> 3530.44s]  We can actually use learned representation
+[3530.44s -> 3535.16s]  of words and sentences to compute semantic similarities
+[3535.16s -> 3537.40s]  between generated and reference text.
+[3538.38s -> 3541.52s]  So now we are no longer bottlenecked by n-gram
+[3541.52s -> 3543.64s]  and instead we're using embeddings.
+[3543.64s -> 3545.52s]  And these embeddings are going to be pre-trained,
+[3545.52s -> 3547.04s]  but the methods can still move on
+[3547.04s -> 3549.72s]  because we can just swap in different pre-trained method
+[3549.72s -> 3551.18s]  and use the fixed metrics.
+[3552.44s -> 3554.02s]  So here are some good examples
+[3554.02s -> 3556.40s]  of the metrics that could be used.
+[3556.40s -> 3558.28s]  One thing is to do vector similarity.
+[3558.28s -> 3560.68s]  This is very similar to homework one,
+[3560.68s -> 3563.40s]  where you are trying to compute similarity between words,
+[3563.40s -> 3565.52s]  except now we're trying to compute similarity
+[3565.52s -> 3566.66s]  between sentences.
+[3567.56s -> 3570.84s]  There are some ideas of how to go from word similarity
+[3570.84s -> 3571.70s]  to sentence similarities.
+[3571.70s -> 3573.62s]  For example, you can just average the embedding,
+[3573.62s -> 3575.94s]  which is like a relatively naive idea,
+[3575.94s -> 3578.70s]  but it works sometimes.
+[3579.98s -> 3582.56s]  Another high level idea is that we can measure
+[3582.56s -> 3584.24s]  word movers distance.
+[3585.30s -> 3589.26s]  The idea here is that we can use optimal transfers
+[3589.26s -> 3591.92s]  to align the source and target word embeddings.
+[3591.92s -> 3593.88s]  Suppose that your source word embedding is
+[3593.88s -> 3597.60s]  Obama speaks to the media in Illinois
+[3597.60s -> 3601.36s]  and the target is the president graced the press
+[3601.36s -> 3602.52s]  in Chicago.
+[3602.52s -> 3604.10s]  From a human evaluation perspective,
+[3604.10s -> 3606.08s]  these two are actually very similar,
+[3606.08s -> 3608.80s]  but they are not exactly aligned word by word.
+[3608.80s -> 3611.52s]  So we need to figure out how to optimally align
+[3611.52s -> 3614.04s]  word to word, like align Obama to president,
+[3614.04s -> 3615.88s]  align Chicago to Illinois,
+[3615.88s -> 3618.20s]  and then therefore we can compute a score,
+[3618.20s -> 3621.76s]  we can compute the pairwise word embedding difference
+[3622.60s -> 3623.92s]  between this and then get a good score
+[3623.92s -> 3626.28s]  for the sentence similarities.
+[3627.44s -> 3629.16s]  And finally, there is BERT score,
+[3629.16s -> 3630.88s]  which is also a very popular metric
+[3630.88s -> 3632.52s]  for semantic similarity.
+[3632.52s -> 3635.32s]  So it first computes pairwise cosine distance
+[3635.32s -> 3636.96s]  using BERT embeddings,
+[3636.96s -> 3639.92s]  and then it finds an optimal alignment
+[3639.92s -> 3641.96s]  between the source and target sentence,
+[3641.96s -> 3644.00s]  and then they finally compute some score.
+[3644.00s -> 3646.88s]  So I feel like these details are not really
+[3646.88s -> 3650.20s]  that important, but the high level idea is super important
+[3650.20s -> 3654.76s]  is that we can now use word embeddings
+[3654.76s -> 3656.38s]  to compute sentence similarities
+[3656.38s -> 3658.56s]  by doing some sort of smart alignment
+[3658.56s -> 3660.28s]  and then transform from word similarity
+[3660.28s -> 3661.60s]  to sentence similarities.
+[3663.16s -> 3664.44s]  To move beyond word embeddings,
+[3664.44s -> 3666.40s]  we can also use sentence embeddings
+[3666.40s -> 3668.16s]  to compute sentence similarities.
+[3668.16s -> 3669.72s]  So typically this doesn't have
+[3669.72s -> 3673.12s]  the very comprehensive alignment by word problem,
+[3673.12s -> 3674.28s]  but it has similar problems
+[3674.28s -> 3676.12s]  about you need to now align sentences
+[3676.12s -> 3677.58s]  or phrases in a sentence.
+[3678.54s -> 3681.62s]  And similarly, there is BERT, which is slightly different.
+[3681.62s -> 3685.06s]  It is a regression model based on BERT to,
+[3685.06s -> 3688.02s]  so the model is trained as a regression problem
+[3688.02s -> 3691.18s]  to return a score that indicate how good the text is
+[3691.18s -> 3692.50s]  in terms of grammaticality
+[3692.50s -> 3693.98s]  and the meaning of the reference text,
+[3693.98s -> 3696.18s]  and similarity with the reference text.
+[3696.18s -> 3697.98s]  So this is kind of like trading evaluation
+[3697.98s -> 3699.24s]  as a regression problem.
+[3700.62s -> 3702.22s]  Any questions so far?
+[3708.34s -> 3709.74s]  Okay, cool, we can move on.
+[3711.10s -> 3713.08s]  So all the previous mentioned approaches
+[3713.08s -> 3715.26s]  are evaluating semantic similarities.
+[3715.26s -> 3718.90s]  So they can be applied to non-open-ended generation tasks.
+[3718.90s -> 3720.90s]  But what about open-ended settings?
+[3720.90s -> 3724.06s]  So here enforcing semantic similarity seems wrong
+[3724.06s -> 3726.34s]  because a story can be perfectly fluent
+[3726.34s -> 3727.90s]  and perfectly high quality
+[3727.90s -> 3731.30s]  without having to resemble any of the reference stories.
+[3731.30s -> 3734.94s]  So one idea here is that maybe we want to evaluate
+[3734.94s -> 3738.86s]  open-ended text generation using this MOF score.
+[3738.86s -> 3741.58s]  MOF score computes the information divergence
+[3741.58s -> 3743.34s]  in a quantized embedding space
+[3743.34s -> 3746.38s]  between the generated text and the gold reference text.
+[3746.38s -> 3749.24s]  So here is roughly the detail of what's going on.
+[3749.24s -> 3751.74s]  Suppose that you have a batch of text
+[3751.74s -> 3753.98s]  from the gold reference that are human written,
+[3753.98s -> 3755.06s]  and you have a batch of text
+[3755.06s -> 3756.94s]  that's generated by your model.
+[3756.94s -> 3759.78s]  Step number one is that you want to embed this text.
+[3759.78s -> 3760.74s]  You want to put this text
+[3760.74s -> 3763.70s]  into some continuous representation space,
+[3763.70s -> 3766.10s]  which is kind of the figure to the left.
+[3766.10s -> 3768.64s]  But it's really hard to compute any distance metrics
+[3768.64s -> 3770.20s]  in this continuous embedding space
+[3770.20s -> 3772.66s]  because, well, different sentences
+[3772.66s -> 3775.28s]  might actually lie very far away from each other.
+[3775.28s -> 3777.50s]  So the idea here is that we're trying
+[3777.50s -> 3780.22s]  to do a k-means cluster to discretize
+[3780.22s -> 3782.82s]  the continuous space into some discrete space.
+[3782.82s -> 3784.50s]  Now, after the discretization,
+[3784.50s -> 3786.86s]  we can actually have a histogram
+[3786.86s -> 3789.80s]  for the gold human written text
+[3789.80s -> 3792.86s]  and a histogram for the machine generated text.
+[3792.86s -> 3795.46s]  And then we can now compute precision recall
+[3795.46s -> 3798.34s]  of using these two discretized distributions.
+[3798.34s -> 3801.46s]  And then we can compute precision by like forward KL
+[3801.46s -> 3803.02s]  and recall by backward KL.
+[3803.02s -> 3803.98s]  Yes, question.
+[3803.98s -> 3807.42s]  So why do we want to discretize it?
+[3807.42s -> 3808.74s]  Why do we want to discretize it?
+[3808.74s -> 3811.02s]  So imagine that you suppose,
+[3811.02s -> 3812.90s]  maybe it's equivalent to answer
+[3812.90s -> 3816.06s]  why is it hard to work with the continuous space.
+[3816.06s -> 3818.50s]  The idea is like, if you embed a word,
+[3818.50s -> 3820.56s]  if you embed a sentence into the continuous space,
+[3820.56s -> 3821.86s]  say that it lies here,
+[3821.86s -> 3823.14s]  and you embed another sentence
+[3823.14s -> 3824.50s]  in a continuous space that lies here,
+[3824.50s -> 3827.80s]  suppose that you only have a finite number of sentences,
+[3827.80s -> 3830.54s]  then they would basically be direct delta distributions
+[3830.54s -> 3832.28s]  in your manifold, right?
+[3832.28s -> 3833.34s]  So it's hard to,
+[3833.34s -> 3835.98s]  like you probably want a smoother distribution,
+[3835.98s -> 3837.54s]  but it's hard to define
+[3837.54s -> 3839.66s]  what is a good smooth distribution
+[3839.66s -> 3841.18s]  in the case of text embedding,
+[3841.18s -> 3842.98s]  because they're not super-intelligible.
+[3842.98s -> 3845.74s]  So therefore, eventually you will have like a,
+[3845.74s -> 3847.58s]  if you embed everything in a continuous space,
+[3847.58s -> 3850.38s]  you will have like lots of direct deltas
+[3850.42s -> 3851.74s]  that are just very high
+[3851.74s -> 3855.28s]  and then not really connected to its neighbors.
+[3855.28s -> 3859.46s]  So it's hard to quantify KL divergence
+[3859.46s -> 3862.02s]  or distance metrics in that space.
+[3862.02s -> 3864.18s]  Well, for example, you have to make some assumptions.
+[3864.18s -> 3866.22s]  For example, you would want to make Gaussian assumptions
+[3866.22s -> 3868.30s]  that I want to smooth all the embeddings
+[3868.30s -> 3870.92s]  by convolving it with a Gaussian.
+[3870.92s -> 3872.10s]  And then you can start getting
+[3872.10s -> 3874.78s]  some meaningful distance metrics.
+[3874.78s -> 3877.54s]  But with just the embeddings alone,
+[3877.54s -> 3879.30s]  you're not going to get meaningful distance metrics.
+[3879.30s -> 3880.66s]  And then it doesn't really make sense
+[3880.66s -> 3881.90s]  to smooth things using Gaussian
+[3881.90s -> 3886.14s]  because who said word representations are Gaussian related?
+[3886.14s -> 3887.18s]  Yeah.
+[3887.18s -> 3888.02s]  Question.
+[3888.02s -> 3891.44s]  How is the continuous smoothing and smoothing?
+[3891.44s -> 3894.26s]  I think this requires some Gaussian smoothing.
+[3894.26s -> 3896.90s]  Yeah, I think that the plot is made with some smoothing.
+[3896.90s -> 3898.42s]  Yeah, I mean, I didn't make the plot,
+[3898.42s -> 3899.90s]  so I couldn't be perfectly sure,
+[3899.90s -> 3901.80s]  but I think the fact that it looks like this
+[3901.80s -> 3903.66s]  means that you smooth it a little bit.
+[3903.66s -> 3906.02s]  So you mean like word embeddings?
+[3906.02s -> 3907.42s]  These are kind of sentence embeddings
+[3907.42s -> 3909.10s]  or concatenated word embeddings.
+[3909.74s -> 3911.66s]  Because you are comparing sentences to sentences,
+[3911.66s -> 3912.72s]  not words to words.
+[3914.32s -> 3916.68s]  Yeah, so the advantage of MOLF score
+[3916.68s -> 3919.18s]  is that it is applicable to open-ended settings
+[3919.18s -> 3923.18s]  because you are now measuring precision and recall
+[3923.18s -> 3925.18s]  with regard to the target distribution.
+[3927.50s -> 3930.66s]  Cool, so it has a better probabilistic interpretation
+[3930.66s -> 3933.08s]  than all the previous similarity metrics.
+[3935.74s -> 3936.92s]  Cool.
+[3936.92s -> 3937.90s]  Any other questions?
+[3937.90s -> 3938.74s]  Yes.
+[3939.50s -> 3942.66s]  So for time to maximize precision and recall for it.
+[3942.66s -> 3943.50s]  Yeah.
+[3943.50s -> 3945.98s]  How is that different from just trying to maximize
+[3945.98s -> 3949.54s]  the dissimilarity between the target and that distribution?
+[3949.54s -> 3951.42s]  Oh, yeah, that's a good question.
+[3952.30s -> 3954.90s]  Well, this is because in a case where
+[3954.90s -> 3958.02s]  it's really hard to get exactly the same thing.
+[3958.02s -> 3960.74s]  Well, for example, I would say that maybe,
+[3960.74s -> 3962.22s]  because I've never tried this myself,
+[3962.22s -> 3965.66s]  but if you try to run MOLF on a machine translation task,
+[3965.66s -> 3967.26s]  you might get very high score.
+[3968.14s -> 3970.38s]  But if you try to run blue score
+[3970.38s -> 3971.62s]  on the open-ended text generation,
+[3971.62s -> 3973.30s]  you will get super low score.
+[3973.30s -> 3974.74s]  So it's just not really measurable
+[3974.74s -> 3977.40s]  because everything's so different from each other.
+[3977.40s -> 3979.68s]  So I feel like MOLF is kind of a middle ground
+[3979.68s -> 3981.98s]  where you are trying to evaluate something
+[3981.98s -> 3984.14s]  that are actually very far away from each other,
+[3984.14s -> 3986.54s]  but you still want a meaningful representation.
+[3988.14s -> 3989.14s]  Yeah, of course, I mean,
+[3989.14s -> 3991.60s]  if your source and target are exactly the same
+[3991.60s -> 3994.06s]  or are just different up to some rephrasing,
+[3994.06s -> 3995.86s]  you will get the best MOLF score.
+[3995.86s -> 3998.10s]  But maybe that's not really what you're looking for
+[3998.10s -> 4000.58s]  because given the current situation,
+[4000.58s -> 4003.04s]  you only have generations that are very far away
+[4003.04s -> 4003.92s]  from the gold text.
+[4003.92s -> 4005.92s]  How do we evaluate this type of things?
+[4007.30s -> 4009.14s]  Yes, question in the back.
+[4009.14s -> 4011.26s]  I'm still trying to understand the MOLF score.
+[4011.26s -> 4014.14s]  Is it possible to write out the map
+[4014.14s -> 4017.94s]  even in just kind of pseudo simple form?
+[4017.94s -> 4019.56s]  Yeah, I think it's possible.
+[4019.56s -> 4022.38s]  I mean, maybe we can put this discussion after class
+[4022.38s -> 4024.74s]  and because I kind of want to finish my slides.
+[4025.74s -> 4027.76s]  Yeah, but happy to chat after class.
+[4027.76s -> 4031.04s]  There is a paper about if you search for MOLF score.
+[4031.04s -> 4033.50s]  I think it's probably the best paper in some ICML
+[4033.50s -> 4035.32s]  or Europe's conference as well.
+[4036.58s -> 4038.94s]  Okay, so moving on.
+[4038.94s -> 4041.10s]  I've pointed out that there are so many evaluation
+[4041.10s -> 4043.06s]  methods, so let's take a step back
+[4043.06s -> 4044.62s]  and think about what's a good metric
+[4044.62s -> 4045.70s]  for evaluation methods.
+[4045.70s -> 4048.54s]  So how do we evaluate evaluations?
+[4048.54s -> 4050.78s]  Nowadays, the gold standard is still to check
+[4050.78s -> 4054.78s]  how well this metric is aligned with human judgment.
+[4054.78s -> 4057.42s]  So if a model match human preference,
+[4057.42s -> 4060.78s]  in other words, if the metric is very correlated with,
+[4060.78s -> 4062.58s]  if the metric correlates very strongly
+[4062.58s -> 4063.78s]  with human judgment,
+[4063.78s -> 4066.14s]  then we say that the metric is a good metric.
+[4066.14s -> 4069.82s]  So in this plot, people have plot blue score
+[4069.82s -> 4073.26s]  and human score, Y and X axis respectively.
+[4073.26s -> 4075.54s]  And then we, because we didn't see a correlation,
+[4075.54s -> 4077.32s]  a strong correlation, this kind of suggests
+[4077.32s -> 4079.58s]  that blue score is not a very good metric.
+[4081.62s -> 4086.46s]  So actually the gold standard for human evaluation,
+[4086.46s -> 4088.36s]  the gold standard for evaluating language models
+[4088.36s -> 4090.24s]  is always to do human evaluation.
+[4091.58s -> 4094.16s]  So automatic metrics fall short
+[4094.16s -> 4096.88s]  of matching human decisions and human evaluation
+[4096.88s -> 4099.54s]  is kind of the most important criteria
+[4099.54s -> 4103.18s]  for evaluating texts that are generated from a model.
+[4103.18s -> 4104.48s]  And it's also the gold standard
+[4104.48s -> 4106.58s]  in developing automatic metrics
+[4106.58s -> 4109.28s]  because we want everything to match human evaluation.
+[4111.66s -> 4113.42s]  So what do we mean by human evaluation?
+[4113.42s -> 4115.38s]  How is it conducted?
+[4115.38s -> 4118.26s]  Typically, we will provide human annotators
+[4118.26s -> 4120.82s]  with some axis that we care about,
+[4120.82s -> 4124.58s]  like fluency, coherence for open-ended text generation.
+[4124.58s -> 4126.46s]  Suppose that we also care about factuality
+[4126.46s -> 4127.70s]  for summarization.
+[4127.70s -> 4131.14s]  We care about the style of the writing and common sense.
+[4131.14s -> 4133.82s]  For example, if we're trying to write a children's story.
+[4136.18s -> 4138.50s]  Essentially, another thing to notice
+[4138.50s -> 4140.56s]  that please don't compare human evaluations
+[4141.32s -> 4142.52s]  across different papers or different studies
+[4142.52s -> 4145.74s]  because human evaluations tends to not be well-collaborated
+[4145.74s -> 4147.44s]  and are not really reproducible.
+[4148.72s -> 4150.80s]  Even though we believe that human evaluations
+[4150.80s -> 4153.76s]  are the gold standard, there are still many drawbacks.
+[4153.76s -> 4155.24s]  For example, human evaluations
+[4155.24s -> 4157.10s]  are really slow and expensive.
+[4158.68s -> 4161.42s]  But even beyond the slow and expensiveness,
+[4161.42s -> 4163.36s]  they are still not perfect
+[4163.36s -> 4165.44s]  because first, human evaluations,
+[4165.44s -> 4167.44s]  the results may be inconsistent
+[4167.44s -> 4169.20s]  and they may not be very reproducible.
+[4169.36s -> 4171.64s]  If you ask the same human whether you like A or B,
+[4171.64s -> 4174.96s]  they might say A the first time and B the second time.
+[4174.96s -> 4176.28s]  And then human evaluations
+[4176.28s -> 4178.40s]  are typically not really logical.
+[4180.08s -> 4181.88s]  Sometimes, the human annotators
+[4181.88s -> 4183.88s]  might misinterpret your question.
+[4183.88s -> 4185.20s]  Suppose that you want them
+[4185.20s -> 4187.22s]  to measure coherence of the text.
+[4187.22s -> 4189.68s]  Different people have different criteria for coherence.
+[4189.68s -> 4191.18s]  Some people might think coherence
+[4191.18s -> 4192.42s]  is equivalent to fluency
+[4192.42s -> 4195.08s]  and then they look for grammaticality errors.
+[4195.08s -> 4196.98s]  Some people might think coherence means
+[4197.02s -> 4199.54s]  how well your continuation is aligned
+[4199.54s -> 4201.14s]  with the prompt or the topic.
+[4202.20s -> 4204.38s]  So there are all sorts of misunderstandings
+[4204.38s -> 4207.36s]  that might make human evaluation very hard.
+[4208.34s -> 4210.22s]  And finally, human evaluation
+[4210.22s -> 4212.68s]  only measures precision, not recall.
+[4212.68s -> 4214.98s]  This means that you can give a sentence to human
+[4214.98s -> 4217.78s]  and ask the human, how do you like this sentence?
+[4217.78s -> 4219.34s]  But you couldn't ask the human
+[4219.34s -> 4221.64s]  whether this model is able to generate
+[4221.64s -> 4224.38s]  all possible sentences that are good.
+[4224.38s -> 4226.34s]  So it's only a precision-based metrics,
+[4226.54s -> 4228.22s]  not a recall-based metrics.
+[4228.22s -> 4230.22s]  So here are two approaches
+[4230.22s -> 4235.10s]  that tries to combine human evaluations with modeling.
+[4235.10s -> 4237.68s]  For example, the first idea
+[4237.68s -> 4239.62s]  is basically trying to learn a metric
+[4239.62s -> 4241.26s]  from human judgment,
+[4241.26s -> 4245.50s]  basically by trying to use human judgment data
+[4245.50s -> 4246.66s]  as training data
+[4246.66s -> 4249.26s]  and then train a model to simulate human judgment.
+[4249.26s -> 4250.98s]  And the second approach is trying to ask
+[4250.98s -> 4254.34s]  the human and model to collaborate
+[4254.34s -> 4256.02s]  so that the human would be in charge
+[4256.02s -> 4257.60s]  of evaluating precision,
+[4257.60s -> 4260.50s]  whereas the model would be in charge of evaluating recall.
+[4262.20s -> 4263.98s]  Also, we have tried approaches
+[4263.98s -> 4266.90s]  in terms of evaluating models interactively.
+[4266.90s -> 4270.04s]  So in this case, we not only care
+[4270.04s -> 4271.58s]  about the output quality,
+[4271.58s -> 4274.30s]  we also care about how the person feels
+[4274.30s -> 4275.92s]  when they interact with the model,
+[4275.92s -> 4278.54s]  when they try to be a co-author with the model
+[4278.54s -> 4282.26s]  and how the person feels about the writing process,
+[4282.26s -> 4283.10s]  et cetera.
+[4283.30s -> 4284.98s]  This is called trying to evaluate
+[4284.98s -> 4286.70s]  the models more interactively.
+[4289.30s -> 4292.00s]  So the takeaway here is that content overlap
+[4292.00s -> 4293.16s]  is a bad metric.
+[4294.70s -> 4296.34s]  Model-based metrics become better
+[4296.34s -> 4298.78s]  because it's more focused on semantics,
+[4298.78s -> 4300.18s]  but it's still not good enough.
+[4300.18s -> 4302.18s]  Human judgment is the gold standard,
+[4302.18s -> 4306.38s]  but it's hard to do human study well.
+[4306.38s -> 4310.06s]  And in many cases, this is a hint for final project.
+[4310.06s -> 4312.96s]  The best judge of the output quality is actually you.
+[4313.68s -> 4315.04s]  So if you want to do a final project
+[4315.04s -> 4316.96s]  in natural language generation,
+[4316.96s -> 4318.88s]  you should look at the model output yourself
+[4318.88s -> 4320.72s]  and don't just rely on the numbers
+[4320.72s -> 4323.60s]  that are reported by BLEU score or something.
+[4325.34s -> 4326.72s]  Cool.
+[4326.72s -> 4329.60s]  So finally, we will discuss ethical considerations
+[4329.60s -> 4331.70s]  of natural language generation problems.
+[4332.86s -> 4335.56s]  So as language models gets better and better,
+[4335.56s -> 4338.32s]  ethical considerations becomes much more pressing.
+[4338.32s -> 4340.08s]  So we want to ensure that the model
+[4340.08s -> 4341.92s]  are well aligned with human values.
+[4341.92s -> 4343.56s]  For example, we want to make sure
+[4343.56s -> 4346.72s]  the models are not harmful, they are not toxic.
+[4346.72s -> 4348.28s]  And we want to make sure that the models
+[4348.28s -> 4351.40s]  are unbiased and fair to all demographics groups.
+[4351.40s -> 4354.32s]  So for example, here, we also don't want
+[4354.32s -> 4357.24s]  the model to generate any harmful content.
+[4357.24s -> 4359.30s]  Basically, I try to prompt ChatGPT to say,
+[4359.30s -> 4361.36s]  can you write me some toxic content?
+[4361.36s -> 4363.30s]  ChatGPT politely refused me,
+[4364.32s -> 4366.16s]  which I'm quite happy about.
+[4366.16s -> 4369.54s]  But there are other people who kind of like
+[4369.54s -> 4371.84s]  try to jailbreak ChatGPT.
+[4372.68s -> 4374.24s]  The idea here is that ChatGPT,
+[4374.24s -> 4375.28s]  actually, I think internally,
+[4375.28s -> 4377.60s]  they probably implement some detection tools
+[4377.60s -> 4380.16s]  so that when you try to prompt it adversarially,
+[4380.16s -> 4383.22s]  it's gonna avoid doing adversarial things.
+[4383.22s -> 4386.40s]  But here, there are many very complicated ways
+[4386.40s -> 4390.36s]  to prompt ChatGPT so that you can get over the firewall
+[4390.36s -> 4394.64s]  and then, therefore, still ask ChatGPT to generate some,
+[4394.64s -> 4396.24s]  I don't know, like bad English.
+[4396.24s -> 4401.24s]  But, so another problem with these large language models
+[4405.44s -> 4407.88s]  is that they are not necessarily truthful.
+[4407.88s -> 4410.52s]  So for example, this very famous on news
+[4410.52s -> 4414.20s]  that Google's model actually generates factual errors,
+[4415.28s -> 4416.92s]  which is quite disappointing.
+[4416.92s -> 4420.32s]  But I mean, but the way the model talks about it
+[4420.32s -> 4421.60s]  is very convincing.
+[4421.60s -> 4424.48s]  So you wouldn't really know that it's a factual error
+[4424.48s -> 4427.76s]  unless you go check that this is not the picture of the,
+[4427.76s -> 4430.00s]  this is not the first picture or something.
+[4431.00s -> 4433.64s]  So it wants to avoid this type of problems.
+[4433.64s -> 4436.40s]  Actually, the models have already been trying very hard
+[4436.40s -> 4440.64s]  to refrain from generating harmful content.
+[4440.64s -> 4443.60s]  But for models that are more open sourced
+[4443.60s -> 4447.12s]  and are smaller, the same problem still appears.
+[4447.12s -> 4449.56s]  And then typically, when we do our final project
+[4449.56s -> 4450.84s]  or when we work with models,
+[4450.84s -> 4453.40s]  we are probably gonna deal with much smaller models.
+[4453.40s -> 4455.04s]  And then therefore, we need to think about ways
+[4455.04s -> 4457.48s]  to deal with these problems better.
+[4457.48s -> 4459.96s]  So text generation models are often constructed
+[4459.96s -> 4461.80s]  from pre-trained language models.
+[4461.80s -> 4462.96s]  And then pre-trained language models
+[4462.96s -> 4464.52s]  are trained on internet data,
+[4464.52s -> 4467.32s]  which contains lots of harmful stuff and bias.
+[4468.68s -> 4472.48s]  So when the models are prompted for this information,
+[4472.48s -> 4474.52s]  they will just repeat the negative stereotypes
+[4474.52s -> 4477.00s]  that they learn from the internet training data.
+[4477.00s -> 4480.92s]  So one way to avoid this is to do extensive data cleaning
+[4480.92s -> 4482.12s]  so that the pre-trained data
+[4482.16s -> 4485.64s]  does not contain any bias or stereotypical content.
+[4485.64s -> 4487.64s]  However, this is going to be very labor intensive
+[4487.64s -> 4489.24s]  and almost impossible to do
+[4489.24s -> 4491.60s]  because filtering a large amount of internet data
+[4491.60s -> 4494.48s]  is just so costly that it's not really possible.
+[4496.88s -> 4501.84s]  Again, with existing language models like GPT-2 medium,
+[4501.84s -> 4504.00s]  there are some adversarial inputs
+[4504.00s -> 4506.84s]  that almost always trigger toxic content.
+[4506.84s -> 4510.92s]  And these models might be exploited in the real world
+[4510.92s -> 4512.96s]  by ill-intended people.
+[4512.96s -> 4515.08s]  So for example, there's a paper
+[4515.08s -> 4517.60s]  about universal adversarial triggers
+[4517.60s -> 4521.00s]  where the authors just find some universal set of words
+[4521.00s -> 4525.24s]  that would trigger toxic content from the model.
+[4528.24s -> 4530.92s]  And sometimes even if you don't try to trigger the model,
+[4530.92s -> 4532.20s]  the model might still start
+[4532.20s -> 4534.60s]  to generate toxic content by itself.
+[4534.60s -> 4538.08s]  So in this case, the pre-trained language models
+[4538.08s -> 4540.70s]  are prompted with very innocuous prompts,
+[4540.70s -> 4543.50s]  but they still degenerate into toxic content.
+[4543.50s -> 4546.34s]  So the takeaway here is that models
+[4546.34s -> 4549.10s]  really shouldn't be deployed without proper safeguards
+[4549.10s -> 4550.58s]  to control for toxic content
+[4550.58s -> 4552.86s]  or any harmful content in general.
+[4552.86s -> 4554.18s]  And models should not be deployed
+[4554.18s -> 4556.78s]  without careful considerations
+[4556.78s -> 4559.22s]  of how users will interact with these models.
+[4562.30s -> 4564.12s]  So in the ethics section,
+[4564.12s -> 4567.30s]  one major takeaway is that we are trying to allocate
+[4567.30s -> 4569.58s]  that you need to think more about your model,
+[4569.58s -> 4571.18s]  about the model that you are building.
+[4571.18s -> 4574.90s]  So before deploying or publishing any NLG models,
+[4574.90s -> 4578.66s]  please check if the model's output is not harmful.
+[4578.66s -> 4580.58s]  And please check if the model is more robust,
+[4580.58s -> 4582.68s]  is robust to all the trigger words
+[4582.68s -> 4585.30s]  and other adversarial prompts.
+[4585.30s -> 4587.08s]  And of course, there are more.
+[4587.08s -> 4589.82s]  So well, basically one can never do enough
+[4589.82s -> 4592.74s]  to improve the ethics of text generation systems.
+[4592.74s -> 4595.22s]  And okay, cool, I still have three minutes left,
+[4595.22s -> 4597.02s]  so I can still do concluding thoughts.
+[4598.02s -> 4600.38s]  The idea here, well, today we talk about
+[4600.38s -> 4601.54s]  the exciting applications
+[4601.54s -> 4603.50s]  of natural language generation systems.
+[4604.50s -> 4607.34s]  But one might think that,
+[4607.34s -> 4609.66s]  well, given that chatGPT is already so good,
+[4609.66s -> 4612.50s]  are there any other things that we can do research-wise?
+[4612.50s -> 4615.16s]  If you try interacting with these models,
+[4615.16s -> 4616.74s]  if you try to interact with these models,
+[4616.74s -> 4618.46s]  actually you can see that
+[4618.46s -> 4620.18s]  there are still lots of limitations
+[4620.18s -> 4621.86s]  in their skills and performance.
+[4621.86s -> 4624.46s]  For example, chatGPT is able to
+[4624.46s -> 4627.18s]  do a lot of things with manipulating text,
+[4627.18s -> 4630.60s]  but it couldn't really create interesting contents,
+[4630.60s -> 4633.02s]  or it couldn't really think deeply about stuff.
+[4633.02s -> 4635.78s]  So there are lots of hat rooms,
+[4635.78s -> 4638.38s]  and there are still many improvements ahead.
+[4638.38s -> 4641.46s]  And evaluation remains a really huge challenge
+[4641.46s -> 4643.62s]  in natural language generation.
+[4643.62s -> 4645.02s]  Basically, we need better ways
+[4645.02s -> 4648.10s]  to automatically evaluate performance of NLG models,
+[4648.10s -> 4650.50s]  because human evaluations are expensive
+[4650.50s -> 4652.84s]  and not reproducible,
+[4652.84s -> 4654.64s]  so it's better to figure out ways
+[4654.64s -> 4657.84s]  to compile all those human judgment
+[4657.84s -> 4660.36s]  into a very reliable and trustworthy model.
+[4661.54s -> 4663.16s]  And also with the advance
+[4663.16s -> 4665.72s]  of all these large-scale language models,
+[4665.72s -> 4670.48s]  doing neural natural language generation has been reset,
+[4670.48s -> 4674.24s]  and it's never been easier to jump into this space,
+[4674.24s -> 4675.58s]  because now there are all the tools
+[4675.58s -> 4678.58s]  that are already there for you to build upon.
+[4678.58s -> 4680.92s]  And finally, it is one of the most exciting
+[4680.92s -> 4682.60s]  and fun areas of NLP to work on,
+[4683.40s -> 4685.04s]  so I'm happy to chat more about NLG
+[4685.04s -> 4686.76s]  if you have any questions,
+[4686.76s -> 4689.96s]  both after class and in class, I guess, in one minute.
+[4691.52s -> 4693.36s]  Okay, cool, that's everything.
+[4693.36s -> 4695.40s]  So do you have any questions?
+[4695.40s -> 4697.84s]  If you don't, we can end the class.

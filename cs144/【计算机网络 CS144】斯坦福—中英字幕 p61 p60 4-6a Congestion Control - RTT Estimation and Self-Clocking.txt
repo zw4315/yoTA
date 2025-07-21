@@ -1,0 +1,184 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.00s]  So in this video I'm going to talk about two additional mechanisms the TCP Tahoe
+[4.00s -> 8.00s]  introduced to control congestion. Better RTT around trip time estimation
+[8.00s -> 14.00s]  and self-clocking. To recall, the TCP Tahoe introduced three
+[14.00s -> 19.00s]  basic mechanisms that allowed it to tame congestion and essentially allow
+[19.00s -> 23.00s]  the internet to work again. The prior video talked about a
+[23.00s -> 27.00s]  congestion window and this idea of the slow start and congestion of wooden
+[27.00s -> 30.00s]  states. Now let's talk about the second mechanism,
+[30.00s -> 34.00s]  timeout estimation. So it turns out that estimating a round
+[34.00s -> 38.00s]  trip time is really critical for retransmissions and for timeouts.
+[38.00s -> 42.00s]  If your round trip time is estimated to be too short, that is, you estimate to
+[42.00s -> 46.00s]  be shorter than what it is, then this means that you're going to waste
+[46.00s -> 49.00s]  capacity. You are going to think that the packet
+[49.00s -> 53.00s]  wasn't successfully received when it has been and retransmit unnecessarily.
+[53.00s -> 55.00s]  This is then going to trigger slow start.
+[55.00s -> 59.00s]  So this is really bad in the sense of I have a nice window size, I'm sending
+[59.00s -> 63.00s]  data, but my RTT estimates are too short, I'm not entering slow start
+[63.00s -> 66.00s]  unnecessarily. Now, if the RTT estimation is too
+[66.00s -> 70.00s]  long, that's also a problem, because it could be that really I could have
+[70.00s -> 73.00s]  retransmitted a long time ago, the packet didn't get there, but say,
+[73.00s -> 76.00s]  let's say I estimated an RTT of five minutes when it's only a couple
+[76.00s -> 79.00s]  hundred milliseconds. Your protocol is going to sit there
+[79.00s -> 83.00s]  dead for five minutes before it issues a timeout and tries to do a
+[83.00s -> 86.00s]  retransmission. So this is fine, but the real
+[86.00s -> 90.00s]  challenge is that, especially on the internet, as we've seen with packet
+[90.00s -> 94.00s]  switching, RTT can be highly dynamic. Furthermore, it can vary significantly
+[94.00s -> 96.00s]  with load. Even as you are starting to send
+[96.00s -> 99.00s]  things faster, you can change your own RTT, even if the rest of the world
+[99.00s -> 102.00s]  remain the same. And so how do you estimate RTT very
+[102.00s -> 105.00s]  inexpensively, very quickly, given these constraints?
+[105.00s -> 110.00s]  So before TCP Tahoe, there was a very simple mechanism, which is that R is
+[110.00s -> 114.00s]  your RTT estimate, and you just initialize it to something reasonable,
+[114.00s -> 117.00s]  like, okay, we'll guess 500 milliseconds or something.
+[117.00s -> 121.00s]  Then you are generating a measurement from the most recently act data
+[121.00s -> 124.00s]  packet. So you say, okay, I sent packet five
+[124.00s -> 127.00s]  at this time. I now got the act at, you know, time
+[127.00s -> 131.00s]  plus 57 milliseconds, or say 200 milliseconds, and then I'm going to
+[131.00s -> 134.00s]  estimate M will be, you know, 57 or 200 milliseconds.
+[134.00s -> 138.00s]  I then maintain an exponentially weighted moving average.
+[138.00s -> 143.00s]  So alpha R plus one minus alpha M. So this is basically saying, take my
+[143.00s -> 148.00s]  existing estimate and incorporate some fraction of my new estimate.
+[148.00s -> 153.00s]  So if say, let's just say R is equal to 100 milliseconds, and my measurement
+[153.00s -> 159.00s]  is equal to 80 milliseconds, and alpha, which are the weighting of history to
+[159.00s -> 163.00s]  the present sample, let's just say alpha is equal to 0.9.
+[163.00s -> 167.00s]  So I'm going to weight history a lot. This is a way to sort of smooth out
+[167.00s -> 174.00s]  the noise, then the new R is going to be 0.9 times 100 milliseconds plus 0.1 times
+[174.00s -> 177.00s]  80 milliseconds, is equal to 98 milliseconds.
+[177.00s -> 182.00s]  And so this one sample at 80 milliseconds is going to sort of go one
+[182.00s -> 188.00s]  tenth of the way between R and M. So you can imagine a lower alpha value
+[188.00s -> 193.00s]  means that you're going to weight the current measurements more versus a higher
+[193.00s -> 198.00s]  value, weight history more. Then your timeout is based on this factor
+[198.00s -> 203.00s]  beta R, and beta was two. And so if you see that the, you don't
+[203.00s -> 208.00s]  get an acknowledgement for twice your average, then you assume there's a timeout.
+[208.00s -> 212.00s]  And then you trigger a timeout. So this seems like a totally reasonable
+[212.00s -> 215.00s]  algorithm, you know, at first blush. So what's the problem?
+[215.00s -> 220.00s]  It turns out that the problem is that the fact that R is a certain value
+[220.00s -> 225.00s]  should not say anything about what the distribution of RTT values is like.
+[225.00s -> 229.00s]  So one way to imagine is, let's say, you know, here's a graph and I'm looking
+[229.00s -> 232.00s]  at a distribution of the round trip times of packets.
+[232.00s -> 235.00s]  They're not constant, they're varying over time.
+[235.00s -> 239.00s]  Well, in some cases, I might have, here's my, my average, let's call it A.
+[239.00s -> 242.00s]  I might have a distribution like this. Right?
+[242.00s -> 248.00s]  Where in fact, if I were to look at 2A, that less than 0.00001% of packets
+[249.00s -> 253.00s]  take that long. At which point, beta, a beta of two is a
+[253.00s -> 258.00s]  tremendously conservative estimate. But, it could also be of a slightly
+[258.00s -> 263.00s]  different case, where here, let's just say I have a, another link or another
+[263.00s -> 268.00s]  path, which is B, where my distribution looks more like this.
+[269.00s -> 276.00s]  Where if I look at 2B, some say 20% of packets tend to have an RTT of that long.
+[276.00s -> 281.00s]  Depending on the dynamics of the network, you can have very different
+[281.00s -> 286.00s]  distributions of RTTs, and this approach didn't keep that in mind.
+[286.00s -> 291.00s]  And so, for TCP connections that had very, very tight distributions, beta is
+[291.00s -> 296.00s]  way too conservative, and you end up being idle when you don't need to be.
+[296.00s -> 302.00s]  It estimates too large an RTT. But when the, when the RTT has a very
+[302.00s -> 308.00s]  broad distribution, beta equals two, equals two, is far too aggressive, and
+[308.00s -> 314.00s]  you end up retransmitting unnecessarily. So TCP Tahoe solved this problem by
+[314.00s -> 320.00s]  essentially including the notion of the variance of the RTT in its estimates.
+[320.00s -> 324.00s]  And so, this is the algorithm that was proposed and which is used.
+[324.00s -> 328.00s]  And essentially, what you're gonna do is, just like before, you're doing an
+[328.00s -> 333.00s]  exponentially weighted moving average. You have this R, this R RTT estimate.
+[333.00s -> 338.00s]  And what you're doing is also measuring your error in the estimate.
+[338.00s -> 343.00s]  And so, given I have this estimate R, and I have a measurement M, I measure the
+[343.00s -> 347.00s]  error to be M minus R. And I multiply it by this gain factor,
+[347.00s -> 351.00s]  and because of these terms, I'm essentially multiplying by minus R.
+[351.00s -> 355.00s]  So there's the alpha factor that we saw in the prior approach.
+[355.00s -> 359.00s]  And then, we measure the variance. And so, the variance is, again, this
+[359.00s -> 363.00s]  weighted average is the gain factor of the error minus the variance.
+[365.00s -> 369.00s]  But the base, so the basic idea here is we're measuring not only an
+[369.00s -> 374.00s]  exponentially weighted moving average of R, but we're also measuring an
+[374.00s -> 378.00s]  exponentially moving average of the variance over time.
+[378.00s -> 383.00s]  And then, our timeout is equal to the average plus four times the variance,
+[383.00s -> 387.00s]  where beta is four. So this way, if we have, as before, if
+[387.00s -> 392.00s]  we have a very tight distribution, then with a variance like this, then we're
+[392.00s -> 397.00s]  gonna time out when the packet, when the variance is just, when you have a
+[397.00s -> 400.00s]  packet that's just four times the variance out.
+[400.00s -> 405.00s]  Similarly, if you have a very broad distribution, and your variance is gonna
+[405.00s -> 410.00s]  be right out here, then you'll end up timing out when the very, when the, when
+[410.00s -> 414.00s]  it's four times that value. And so, it's very, it's very likely
+[414.00s -> 418.00s]  that the packet was actually lost. In a case of tremendous congestion,
+[418.00s -> 422.00s]  you're not getting estimates, you know, nothing is happening.
+[422.00s -> 424.00s]  You exponentially increase this timeout.
+[424.00s -> 428.00s]  So here are two graphs from Van Jacoben's paper which show the
+[428.00s -> 433.00s]  performance of this RTT estimation. And so what the faint line on the
+[433.00s -> 439.00s]  bottom shows is the actual measured RTTs of packets from acknowledgements.
+[439.00s -> 446.00s]  And the solid line above shows the timeout estimate for the TCP algorithm.
+[446.00s -> 451.00s]  And so the idea is that in a perfect world, that the timeout would, would
+[451.00s -> 456.00s]  perfectly mirror this, such that, gosh, we didn't get it, and if we just wait a
+[456.00s -> 459.00s]  little longer, then we know how to retransmit.
+[459.00s -> 463.00s]  So there are two points. This figure on the left, you can see there's this huge
+[463.00s -> 465.00s]  gap. So TCP is sitting idle for a long time
+[465.00s -> 468.00s]  when really it could have retransmitted much sooner.
+[468.00s -> 473.00s]  There's also cases where it crosses. So this is kind of bad where this means
+[473.00s -> 477.00s]  that the packet took longer, you know, the estimate was in fact too, was too
+[477.00s -> 480.00s]  short. And so if you look, this is the pre-Tahoe
+[480.00s -> 483.00s]  algorithm, on the right is the post-Tahoe algorithm.
+[483.00s -> 486.00s]  You see that it's tracking the RTTs much, much better.
+[486.00s -> 489.00s]  Right? That the gap here between the observed
+[489.00s -> 495.00s]  RTTs and the timeouts is much closer. So the third improvement that TCP Tahoe
+[495.00s -> 498.00s]  brought was something called self-clocking.
+[498.00s -> 504.00s]  And this in some ways the greatest conceptual contribution of TCP Tahoe.
+[504.00s -> 510.00s]  This idea that you want to essentially clock out the packets that you send based
+[510.00s -> 515.00s]  on the acknowledgements you receive. And so this is the, and this is the,
+[515.00s -> 518.00s]  the conceptual model that Van Jacobsen laid out.
+[518.00s -> 521.00s]  So let's say I have a sender that has a really big pipe.
+[521.00s -> 524.00s]  We show by sort of being fat here where the, the, the volume of these
+[524.00s -> 527.00s]  packets is constant. And the receiver also has a fat pipe.
+[527.00s -> 529.00s]  But there is this bottleneck link in the middle.
+[529.00s -> 532.00s]  Well since there is this bottleneck link, what's going to happen is these
+[532.00s -> 535.00s]  packets that are sent very fast from the sender are going to be stretched
+[535.00s -> 537.00s]  out in time. They're going to take longer.
+[537.00s -> 541.00s]  And they're then going to be spaced out in time at the receiver.
+[541.00s -> 545.00s]  The receiver, if it generates acknowledgements directly in response to
+[545.00s -> 550.00s]  these packets, then it's going to be sending acknowledgements back with the
+[550.00s -> 554.00s]  same timing that it's receiving them, which is determined by this
+[554.00s -> 557.00s]  congest-, by this the bottleneck congestion link.
+[557.00s -> 562.00s]  Then those acts are going to arrive. They traverse the bottleneck link.
+[562.00s -> 565.00s]  You can see they're much shorter, so they're not filling it, right?
+[565.00s -> 568.00s]  They only take a part of it. And then these acknowledgements arrive at
+[568.00s -> 572.00s]  the sender corresponding to the frequency of packets arriving at the receiver.
+[572.00s -> 577.00s]  And then if the sender sends new packets timed by these acknowledgements,
+[577.00s -> 582.00s]  which essentially is going to inherently rate limit itself or space out packets
+[582.00s -> 587.00s]  in time so that they're entering this bottleneck link at the right rate.
+[587.00s -> 592.00s]  That is, just as a packet's leaving, like here, which then falls through to
+[592.00s -> 594.00s]  the NAC, a new packet starts arriving.
+[594.00s -> 598.00s]  And this idea of self-clocking, that you don't put a new packet in the network
+[598.00s -> 603.00s]  until one comes out, and you clock yourself based on this, is what allows
+[603.00s -> 607.00s]  TCP to, in a very simple mechanism, to not stuff lots of packets into the
+[607.00s -> 611.00s]  network and to not suddenly send huge bursts of packets that saturate this link.
+[611.00s -> 613.00s]  Because you can imagine, there is some queue here.
+[613.00s -> 617.00s]  And so even if TCP knows, oh, I can only send five packets per round trip
+[617.00s -> 621.00s]  time, if it sends a burst of five packets, then those packets might fall off
+[621.00s -> 626.00s]  the end of this queue. But if they're spaced out properly due to this timing,
+[626.00s -> 631.00s]  then it's going to be feeding them out at a nice steady rate, which will fill
+[631.00s -> 635.00s]  this pipe without overfilling the queue. And so the principle here is you only
+[635.00s -> 638.00s]  want to put data into the network when data is left, otherwise you're
+[638.00s -> 641.00s]  increasing the amount of data in the network and you're causing congestion.
+[641.00s -> 645.00s]  And so you send new data directly in response to acknowledgements.
+[645.00s -> 649.00s]  But also it's important that you send acknowledgements aggressively, such as we
+[649.00s -> 653.00s]  saw with duplicate acknowledgements. They're really important signals to the
+[653.00s -> 657.00s]  sender. And so if you are receiving additional segments and you, the segments
+[657.00s -> 661.00s]  that you have missing segment, you should send acknowledgements for those segments
+[661.00s -> 664.00s]  aggressively so it sees that there are duplicate acknowledgements, that it gets a
+[664.00s -> 667.00s]  signal that something has been missed. It also knows on receiving those
+[667.00s -> 670.00s]  acknowledgements, those duplicate acknowledgements, that packets have left
+[670.00s -> 673.00s]  the network. And it can make decisions accordingly.
+[673.00s -> 677.00s]  So, this is the, those three mechanisms of a congestion window, better RTT
+[677.00s -> 682.00s]  estimation that considers variants, self-clocking, are really the foundation of
+[682.00s -> 685.00s]  TCP Tahoe. And so in 1970, 1987, 1988, Van
+[685.00s -> 689.00s]  Jacobsen fixed TCP with these MACAs, as well as a few other tricks, and
+[689.00s -> 692.00s]  published this seminal TCP paper on TCP Tahoe.
+[692.00s -> 696.00s]  And this is basically solved TCP's congestion control problem.
+[696.00s -> 701.00s]  The internet started working again. And this actually spawned a huge area of
+[701.00s -> 706.00s]  research in TCP and this whole idea of how do you manage your sending rate to
+[706.00s -> 710.00s]  not, congest the network. And so in this next, I've just talked
+[710.00s -> 713.00s]  about the first version, TCP Tahoe, but there's a long history.
+[713.00s -> 717.00s]  So the next video's gonna talk about TCP Reno, New Reno, which are closer to
+[717.00s -> 720.00s]  what's done today. They add a couple new mechanisms.
+[720.00s -> 725.00s]  And so, if this is interesting, I totally recommend reading Van Jacobsen's original
+[725.00s -> 727.00s]  paper, Congestion Avoidance and Control.
+[727.00s -> 731.00s]  Sort of lays out a little bit of the story of what they saw and then these
+[731.00s -> 733.00s]  mechanisms and how they solved, and how they solved it.
+[736.00s -> 745.00s]  .
+[745.00s -> 755.00s]  .
+[755.00s -> 765.00s]  .

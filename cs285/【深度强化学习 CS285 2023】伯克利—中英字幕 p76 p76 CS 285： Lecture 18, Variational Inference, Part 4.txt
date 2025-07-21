@@ -1,0 +1,485 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.84s]  Alright, in the last portion of today's lecture we're going to talk about how we can actually
+[5.84s -> 9.80s]  instantiate practical deep learning models based on the principles that we discussed
+[9.80s -> 13.84s]  in the other parts, and we'll actually briefly discuss some examples of how these
+[13.84s -> 16.68s]  types of models could be applied in deep RL.
+[16.68s -> 20.48s]  Now we'll discuss the role of variational inference in deep RL more broadly in later
+[20.48s -> 24.68s]  lectures, but for today we'll just focus on direct applications of generative models
+[24.68s -> 27.96s]  trained with amortized variational inference.
+[27.96s -> 34.24s]  So let's first start with arguably the most basic of amortized variational inference models,
+[34.24s -> 36.68s]  which is the variational autoencoder.
+[36.68s -> 41.24s]  So in a variational autoencoder, we're going to be modeling some kind of input x, which
+[41.24s -> 45.80s]  is typically going to be an image, using a latent variable or a latent vector z.
+[45.80s -> 48.88s]  We're going to have an encoder and a decoder like before, so this is going to be more
+[48.88s -> 53.40s]  or less the most direct instantiation of the principles that we've outlined.
+[53.44s -> 59.92s]  Our encoder is a deep neural network that takes in x and produces the mean and variance
+[59.92s -> 67.88s]  over z, so the encoder defines a Gaussian distribution, q of z given x, where the mean
+[67.88s -> 70.54s]  and the variance are given by the output of a neural network.
+[70.54s -> 73.96s]  The decoder is a neural network that's going to take in z and it's going to produce
+[73.96s -> 78.24s]  a mean and variance over the observed variable x.
+[78.24s -> 83.36s]  So the idea is that if we want a sample, we would generate a z from the prior distribution,
+[83.36s -> 87.28s]  which is typically fixed to be a zero mean unit variance Gaussian, and then we would
+[87.28s -> 91.44s]  decode that using the decoder p theta x given z, which basically means running it
+[91.44s -> 94.94s]  through the decoder neural network and then sampling from the resulting Gaussian
+[94.94s -> 97.02s]  distribution over the inputs.
+[97.02s -> 100.18s]  For example, this could be used to build a generative model over images.
+[100.18s -> 104.30s]  Here you can see some examples of samples drawn from a variational autoencoder trained
+[104.30s -> 105.42s]  on pictures of faces.
+[105.42s -> 110.04s]  So here the x's are pixel images, so they're arrays of pixels, and the z's are going
+[110.04s -> 115.40s]  to be latent vectors with some dimensionality like 64 or 128.
+[115.40s -> 119.00s]  The architecture of the variational autoencoder essentially follows what we discussed in
+[119.00s -> 120.76s]  previous sections.
+[120.76s -> 125.32s]  So if we want to set this up as a computational graph for training, we would have the encoder
+[125.32s -> 131.06s]  q with parameters phi take in the image xi, and that neural network would output the
+[131.06s -> 136.92s]  mean mu phi of xi, and the variance sigma phi of xi.
+[136.92s -> 141.28s]  Then we would sample some noise from a zero mean unit variance distribution, and then
+[141.28s -> 146.08s]  we would form the resulting z by taking the mean and adding the noise epsilon times
+[146.08s -> 150.66s]  the standard deviation sigma, and that gives us z.
+[150.66s -> 155.10s]  And then we can pass z through the decoder p theta of x given z, and that would produce
+[155.10s -> 156.64s]  the image.
+[156.64s -> 160.48s]  The training procedure trains this whole thing with the reparameterization trick, so it's
+[160.50s -> 165.98s]  trained to maximize the variational lower bound with respect to both the parameters
+[165.98s -> 170.06s]  of the decoder theta and the parameters of the encoder phi.
+[170.06s -> 175.44s]  So the objective just ends up being the average over the entire dataset of the log probability
+[175.44s -> 182.34s]  of the image from the decoder, where the mean and standard deviation for the z comes
+[182.34s -> 183.62s]  from the encoder.
+[183.62s -> 187.46s]  So we use the reparameterization trick to backpropagate the error of this first log
+[187.52s -> 191.92s]  probability term all the way from the decoder back into the encoder, and thus train both
+[191.92s -> 193.00s]  theta and phi.
+[193.00s -> 198.16s]  And of course, we also have to subtract off the KL divergence regularizer, which basically
+[198.16s -> 203.60s]  accounts for the prior, and the KL divergence here is between the encoder distribution
+[203.60s -> 209.96s]  q phi of z given xi and the prior p of z, and since q phi of z given xi is Gaussian,
+[209.96s -> 214.32s]  and the prior p of z by convention is a zero mean unit variance Gaussian, this KL divergence
+[214.32s -> 219.02s]  can actually be computed in closed form using the analytic formula for the KL divergence
+[219.02s -> 220.76s]  between two Gaussians.
+[220.76s -> 223.50s]  So that's pretty straightforward to do.
+[223.50s -> 228.60s]  All right, so that's the variational autoencoder, and what the variational autoencoder allows
+[228.60s -> 234.44s]  us to do is it allows us to train a latent variable model representing some inputs, which
+[234.44s -> 236.44s]  are typically taken to be images.
+[236.44s -> 239.20s]  So how could we use the variational autoencoder?
+[239.20s -> 243.70s]  Well, we can use the variational autoencoder by training on a bunch of images and getting
+[243.70s -> 252.04s]  a latent variable representation, and we can sample from it by, for example, generating
+[252.04s -> 258.30s]  a sample from the prior p of z and then decoding that sample using the decoder p of
+[258.30s -> 259.30s]  x given z.
+[259.30s -> 262.60s]  Now, why does this actually work intuitively?
+[262.60s -> 265.80s]  So the math is all the stuff from the previous sections.
+[265.80s -> 270.54s]  The intuition behind why this works is that the evidence lower bound, the variational
+[270.54s -> 277.30s]  lower bound, is going to try to make the images in the data set as likely as possible given
+[277.30s -> 281.06s]  the z's that we obtained for those images from the encoder.
+[281.06s -> 286.18s]  But the encoder is also trained to stay close to the prior, which means that if
+[286.18s -> 291.10s]  the encoder produces z's that are too different from the kinds of z's that you would get
+[291.10s -> 296.50s]  by sampling from the zero mean unit variance prior distribution over z's, then the encoder
+[296.50s -> 298.18s]  would pay a very heavy price for it.
+[298.18s -> 302.30s]  So the encoder has a very strong incentive to produce z's that look like samples from
+[302.30s -> 307.02s]  the prior, because if it doesn't do that, then that KL divergence term will be very
+[307.02s -> 309.62s]  large and that will incur a large penalty.
+[309.62s -> 318.04s]  Now, this explains why samples from the encoder will be within that unit variance prior.
+[318.04s -> 322.34s]  It doesn't by itself explain why any sample from the unit variance prior will be close
+[322.34s -> 323.54s]  to something that is being encoded.
+[323.54s -> 325.14s]  The argument for that has to do with efficiency.
+[325.14s -> 330.18s]  The thing is, the encoder also wants to have a pretty high variance, wants to have a variance
+[330.18s -> 333.38s]  close to one, because that's what the prior has.
+[333.38s -> 336.18s]  So the encoder wants to be pretty frugal in its use of the latent space, which means
+[336.18s -> 338.42s]  that it really wants to use every piece of the latent space.
+[338.42s -> 342.10s]  If there's some piece of the latent space that's unused, it'll be better for the encoder
+[342.10s -> 345.74s]  to expand into those spaces and increase its variance so that its variance can be closer
+[345.74s -> 346.74s]  to one.
+[346.74s -> 353.66s]  So as a result, you end up with a mapping between these z's and x's where pretty much
+[353.66s -> 360.30s]  every z that you sample from the unit variance prior will map to some valid x.
+[360.30s -> 363.90s]  So that means that you can both take images and encode them and get their representation
+[363.90s -> 368.10s]  z and you can actually sample from the prior decode and get reasonable sampled images,
+[368.10s -> 371.46s]  which is actually what's shown in this animation here on the slide.
+[371.46s -> 376.38s]  All right, let's talk about some applications of this in Deep RL.
+[376.38s -> 380.78s]  Variational autoencoders of this sort typically have been used in Deep RL for the purpose
+[380.78s -> 382.58s]  of representation learning.
+[383.02s -> 386.70s]  Now, this is not to be confused with handling partial observability.
+[386.70s -> 390.10s]  We'll actually talk about partial observability a little bit more later.
+[390.10s -> 394.14s]  For now, we're just talking about z's as representations of individual states.
+[394.14s -> 397.30s]  So we're still assuming that everything is fully observed in the sense that the
+[397.30s -> 401.14s]  state contains all of the information needed to infer the action, is all Markovian and
+[401.14s -> 406.26s]  all that good stuff, but the state observations are somehow complicated.
+[406.26s -> 409.30s]  For example, they might correspond to images in Atari games.
+[409.30s -> 414.30s]  In this case, it might actually be beneficial to use a variational autoencoder not to sample
+[414.30s -> 418.70s]  additional images, but just to get a better representation of those images.
+[418.70s -> 423.46s]  So here, our decoder will now be trained to generate states given z's, but if the
+[423.46s -> 427.86s]  states are images, it's basically the same exact type of model that we saw before.
+[427.86s -> 431.62s]  So for example, what we could do is we could train a VAE on all of the states
+[431.62s -> 434.74s]  in our replay buffer for, let's say, our Atari game.
+[434.74s -> 440.58s]  And then when we run RL, we would use z in place of the original state's s as the state
+[440.58s -> 444.54s]  representation for RL, and then we would just repeat this process.
+[444.54s -> 445.98s]  Now, why is this a good idea?
+[445.98s -> 449.90s]  Why might we expect these z's to be better state representations than the
+[449.90s -> 452.66s]  states themselves?
+[452.66s -> 458.18s]  Well, the idea is that a variational autoencoder, because it learns these z
+[458.18s -> 464.46s]  representations that satisfy an independent Gaussian prior, meaning that every
+[464.50s -> 467.34s]  dimension of z is independent of every other dimension, should lead to better
+[467.34s -> 472.54s]  disentanglement of the underlying factors of variation than the images themselves.
+[472.54s -> 475.82s]  Imagine this image from Montezuma's Revenge in the top right.
+[475.82s -> 482.22s]  The individual pixels that correspond to that character, the player character,
+[482.22s -> 485.78s]  are very correlated with each other in the sense that while the player character
+[485.78s -> 488.98s]  consists of many pixels, those pixels move as one.
+[488.98s -> 493.54s]  So for downstream RL, it's not really that important what the color of every
+[493.58s -> 498.26s]  pixel on the player is, what's important is the overall position and the velocity
+[498.26s -> 499.78s]  that that blob of pixels is moving out.
+[499.78s -> 502.66s]  So there's some underlying factors of variation that constitute the image,
+[502.66s -> 506.18s]  in this case, the position, direction, and velocity of the player character,
+[506.18s -> 510.10s]  and the skull, and the key, and so on, which represent a much more
+[510.10s -> 514.30s]  parsimonious and useful representation of the image than the image pixels
+[514.30s -> 515.18s]  themselves.
+[515.18s -> 517.50s]  These are underlying factors of variation.
+[517.50s -> 522.02s]  And what we would like to do intuitively is to take this image and disentangle
+[522.02s -> 526.26s]  the underlying factors of variation such that each reasonably independent
+[526.26s -> 530.14s]  factor of variation, like the position of the player character and the skull,
+[530.14s -> 534.66s]  constitute different dimensions of the new learned state representation.
+[534.66s -> 537.02s]  And this is more or less what variational autoencoders are trying
+[537.02s -> 537.82s]  to do.
+[537.82s -> 540.86s]  These pictures that I have shown in the lower left, these are from a work
+[540.86s -> 545.06s]  by Higgins et al from 2017, show what happens when different types
+[545.06s -> 548.30s]  of variational autoencoders are trained on data that has known
+[548.30s -> 550.30s]  underlying factors of variation.
+[550.30s -> 554.10s]  So on the left, you can see examples of furniture items, which differ in their
+[554.10s -> 556.74s]  shape, size, and orientation.
+[556.74s -> 559.86s]  In the middle, you can see faces that differ in the lighting direction,
+[559.86s -> 562.74s]  the facial expression, and the orientation of the face.
+[562.74s -> 567.30s]  And on the right side are natural face images from the celeb A data set that
+[567.30s -> 571.50s]  differ in terms of age, race, hairstyle, and so on.
+[571.50s -> 575.30s]  And what the authors are doing in these pictures is, in every row,
+[575.30s -> 578.50s]  they're interpolating between the image on the left side and on the right side.
+[578.50s -> 582.10s]  Now, if you interpolate images in pixel space, they don't actually interpolate
+[582.10s -> 583.54s]  along the natural factors of variation.
+[583.54s -> 588.54s]  So for example, the chair in the left top row interpolates its orientation
+[588.54s -> 590.50s]  from a chair facing right to a chair facing left.
+[590.50s -> 592.26s]  That's not what you would get if you actually interpolate the pixel
+[592.26s -> 593.54s]  colors themselves.
+[593.54s -> 598.06s]  So that means that the underlying representation, Z, is actually capturing
+[598.06s -> 600.14s]  the factors of variation in the environment.
+[600.14s -> 602.58s]  And that's what we would expect good VAEs to do.
+[602.58s -> 605.86s]  Now, I will say that it's, of course, debatable in practice the degree to
+[605.86s -> 610.22s]  which VAEs actually capture the true factors of variation in these images.
+[610.22s -> 611.86s]  But that is what they're trying to do.
+[611.86s -> 615.30s]  So a practical instantiation of this idea, for example, in the context of a
+[615.30s -> 619.90s]  Q-learning algorithm like the one in Homework 3 might look like this.
+[619.90s -> 622.58s]  Just like in regular Q-learning, you collect a transition from your
+[622.58s -> 626.58s]  environment using your exploration policy and add it to your replay buffer.
+[626.58s -> 632.06s]  Then you update your decoder and encoder using the variational lower bound
+[632.06s -> 634.22s]  using a batch sample from the replay buffer.
+[634.22s -> 636.62s]  And that improves the representation, Z.
+[636.62s -> 639.78s]  Then you update your Q function with a batch from the replay buffer.
+[639.78s -> 643.82s]  But the Q function now takes as input the latent representation, Z,
+[643.82s -> 646.90s]  produced by the encoder, not the original images.
+[646.90s -> 649.90s]  And we would expect this to be an easier process because now the
+[649.90s -> 653.38s]  representation fed into the Q function is a better representation
+[653.38s -> 655.90s]  than the original image.
+[655.90s -> 658.74s]  And then we repeat this process.
+[658.74s -> 662.98s]  And it's also worth noting this provides us with a great way to use prior data.
+[662.98s -> 669.38s]  So if we have reasonable prior images of Atari trials, we could use
+[669.38s -> 672.38s]  this to pre-train the variational autoencoder, which would give us a good
+[672.38s -> 675.22s]  representation right off the bat that we could use for RL.
+[675.22s -> 678.82s]  Or, of course, we could learn it on the fly as we go.
+[678.82s -> 679.74s]  All right.
+[679.74s -> 683.26s]  The next class of models I'll talk about are conditional models.
+[683.26s -> 687.30s]  Now, conditional models are just like the VAE from before, except that now our
+[687.30s -> 692.26s]  goal is not to model a distribution over images, p of x, but to model some
+[692.26s -> 695.22s]  conditional distribution p of y given x.
+[695.22s -> 698.46s]  And the idea is that it's the p of y given x that might be complex
+[698.46s -> 700.18s]  and multimodal.
+[700.18s -> 702.06s]  So we don't actually care about how x is distributed.
+[702.06s -> 705.78s]  We just care about how y is distributed, given x.
+[705.78s -> 710.30s]  But we want that distribution p of y given x to be very expressive.
+[710.30s -> 714.82s]  To handle this, we need to simply put the conditioning information x on the
+[714.82s -> 718.22s]  right of the conditioning bar for the encoder and the decoder.
+[718.22s -> 720.90s]  We could also optionally put it to the right of the conditioning bar for the
+[720.90s -> 723.22s]  prior itself as well, although we don't have to.
+[723.22s -> 728.82s]  And it's very common for conditional models to simply use an unconditional prior.
+[728.82s -> 732.14s]  So the practical change is simply that we still have an encoder network,
+[732.14s -> 735.74s]  we still have a decoder network, but now both of those take this x,
+[735.74s -> 739.06s]  the conditioning information, as input.
+[739.06s -> 741.86s]  Of course, a very classical way to use this is for policy.
+[741.86s -> 744.62s]  So y might be the actions and x might be the observations.
+[744.62s -> 748.06s]  And now you can think of this as a policy, y given x, that additionally takes
+[748.06s -> 750.66s]  a noise sample as input.
+[750.66s -> 753.82s]  So making it p of y given x, z.
+[753.82s -> 756.38s]  So now a quick pop quiz for everybody.
+[756.38s -> 761.38s]  This p of y given x, z, is that the encoder or is it the decoder?
+[761.38s -> 764.18s]  Take a moment to think about this.
+[764.18s -> 766.10s]  So the answer, of course, is that it's the decoder, right?
+[766.10s -> 771.74s]  Because the decoder is the thing that takes in z and produces the variable.
+[771.74s -> 773.70s]  So the variable here that we're modeling is y.
+[773.70s -> 777.82s]  So p of y given x, z is the decoder.
+[777.82s -> 781.42s]  Basically everything is the same as before, except for now we're generating y
+[781.42s -> 787.34s]  and both the encoder and decoder get x as input.
+[787.34s -> 791.38s]  The prior can optionally depend on x, but there's really no need to do this.
+[791.38s -> 795.50s]  So the architecture now is you have your encoder with parameters phi,
+[795.50s -> 800.54s]  it takes an x and y, and it produces the mean and standard deviation of z,
+[800.54s -> 802.06s]  mu and sigma.
+[802.06s -> 807.66s]  We still have the noise, we still add mu plus epsilon times sigma to get our z.
+[807.66s -> 813.78s]  But now our decoder takes in both z and x as input and produces p theta of y
+[813.78s -> 815.30s]  given x, z.
+[815.30s -> 818.46s]  And just like before, the whole thing is trained with the variational lower
+[818.46s -> 820.66s]  bound shown at the top of the slide.
+[820.66s -> 825.30s]  So even though the model is conditional, very little actually changed.
+[825.30s -> 829.58s]  And then at test time, we could simply sample z from the prior and then decode
+[829.58s -> 833.62s]  it using p of y given x, z.
+[833.62s -> 837.94s]  These types of conditional variational autoencoders are most commonly used to
+[837.94s -> 840.14s]  represent multimodal policies.
+[840.14s -> 842.98s]  These multimodal policies could be used with reinforcement learning,
+[842.98s -> 846.42s]  although they're much more commonly used with imitation learning.
+[846.42s -> 847.02s]  Why is that?
+[847.02s -> 850.90s]  We actually discussed the reason for this in some of our previous lectures.
+[850.90s -> 855.02s]  In RL, our aim is typically to learn a near optimal policy and we know that
+[855.02s -> 859.90s]  fully observed MDPs generally will have optimal policies that are deterministic.
+[859.90s -> 863.34s]  But in imitation learning, we want you to imitate multimodal and
+[863.34s -> 867.78s]  non-Markovian human behavior, in which case having a multimodal policy might be
+[867.78s -> 868.82s]  very important.
+[868.82s -> 871.50s]  Like in the example of the tree from the beginning of the class,
+[871.50s -> 874.26s]  where you can go around the tree on the left side or on the right side,
+[874.26s -> 875.98s]  but you really don't want to split the difference.
+[875.98s -> 878.94s]  Meaning that if the humans sometimes went left and sometimes went right,
+[878.94s -> 881.94s]  you really would like to have a multimodal policy to represent this
+[881.94s -> 887.42s]  distribution so that you don't end up inadvertently going down the middle.
+[887.42s -> 890.62s]  Here are a few examples of papers that have used these kinds of
+[890.66s -> 895.46s]  conditional variational autoencoders to represent multimodal policies.
+[895.46s -> 899.70s]  In learning latent plans from play, which we discussed before,
+[899.70s -> 904.10s]  the method consisted of a fairly complex variational autoencoder that would
+[904.10s -> 908.18s]  model freeform human behavior data, where humans essentially played with this
+[908.18s -> 913.22s]  robotic environment, where the conditional VAE would actually not even represent
+[913.22s -> 917.26s]  individual actions, but sequences of actions, which the paper refers to as
+[918.14s -> 922.66s]  And the idea is that humans might execute many different combinations of
+[922.66s -> 926.94s]  actions to go between any two points, and the latent variables here explain
+[926.94s -> 933.26s]  the difference between those choices, even for the same start and end point.
+[933.26s -> 938.90s]  Here is another video of a different paper that uses a conditional variational
+[938.90s -> 939.74s]  autoencoder.
+[939.74s -> 941.86s]  This is a real-world robotic system.
+[941.86s -> 944.74s]  It's a bimanual manipulator that is learning fairly complex tasks,
+[944.74s -> 947.78s]  like, for example, putting a shoe on a foot.
+[947.78s -> 952.18s]  The variational autoencoder here is conditional, and both the encoder and
+[952.18s -> 955.62s]  the decoder in this case are actually represented by transformers.
+[955.62s -> 958.30s]  So the architecture is a little bit complex, and the word encoder and
+[958.30s -> 959.94s]  decoder here is a little bit overloaded.
+[959.94s -> 964.46s]  The orange thing on the left side is the VAE encoder, which takes in actions.
+[964.46s -> 968.46s]  It actually takes sequences of actions to improve the modeling accuracy,
+[968.46s -> 971.94s]  but it might as well do individual actions and encodes them into a latent
+[971.94s -> 975.02s]  variable Z using a transformer.
+[975.02s -> 978.30s]  And then the decoder actually consists of a transformer encoder,
+[978.30s -> 981.86s]  which takes in inputs from multiple cameras on the robot and the latent
+[981.86s -> 986.74s]  variable Z, and then decodes them into sequences of future actions.
+[986.74s -> 990.54s]  So it's a more elaborate model that combines conditional VAEs
+[990.54s -> 992.22s]  with transformers.
+[992.22s -> 996.10s]  So long story short, conditional variational autoencoders have found a lot
+[996.10s -> 1000.46s]  of applications in imitation learning for representing much more complex policies
+[1000.46s -> 1004.26s]  than would be possible with just regular Gaussians.
+[1004.26s -> 1008.50s]  All right, the last class of models that we'll talk about are actually models
+[1008.50s -> 1011.58s]  that we discussed before in the model-based RL lecture, although back
+[1011.58s -> 1014.62s]  then, we didn't yet know about variational autoencoders,
+[1014.62s -> 1016.50s]  so we had to describe these at a very high level.
+[1016.50s -> 1018.82s]  And I'll go into this a little bit more detail now.
+[1018.82s -> 1023.02s]  So the aim here is going to be to deal with partially observed systems.
+[1023.02s -> 1025.50s]  In partially observed systems, we do not know the states.
+[1025.50s -> 1028.26s]  We instead have sequences of observations.
+[1028.26s -> 1031.78s]  And we're going to learn state space models where the states Z
+[1031.78s -> 1035.66s]  are actually going to be the latent states in the variational autoencoder.
+[1035.66s -> 1039.62s]  So let's say that we have these image observations.
+[1039.62s -> 1044.18s]  How do we formulate the sequence level problem
+[1044.18s -> 1046.94s]  as a variational autoencoder?
+[1046.94s -> 1048.74s]  So we're in the partially observed setting.
+[1048.74s -> 1051.54s]  That's why I'm using O instead of S. And I would somehow
+[1051.54s -> 1055.98s]  like to coerce the sequence modeling problem where I have Zs and Os
+[1055.98s -> 1059.98s]  into a model where I have a single latent vector Z
+[1059.98s -> 1063.70s]  and a single observed vector X. And the choice I have to make
+[1063.70s -> 1067.74s]  are what is Z, what is X, what is the form of the prior,
+[1067.74s -> 1069.58s]  what is the form of the decoder, and what
+[1069.58s -> 1071.54s]  is the form of the encoder?
+[1071.54s -> 1075.26s]  So I have to essentially wire up these pieces together.
+[1075.26s -> 1076.86s]  And this is actually highly non-trivial.
+[1076.86s -> 1079.32s]  This model is going to be much more complex than the models
+[1079.32s -> 1081.30s]  we described before.
+[1081.30s -> 1085.82s]  Because now, the latent variable is actually itself a sequence.
+[1085.86s -> 1089.22s]  It's not that every single time step, Z1, Z2, Z3,
+[1089.22s -> 1092.62s]  is going to be a different latent variable in a VAE.
+[1092.62s -> 1096.10s]  The entire sequence of Zs is going to be the latent variable.
+[1096.10s -> 1099.26s]  So the X, the observation, is a sequence of Os,
+[1099.26s -> 1100.90s]  an entire trajectory.
+[1100.90s -> 1104.18s]  The Zs are a sequence of the Zs at the individual time
+[1104.18s -> 1106.62s]  steps, Z1, Z2, through ZT.
+[1106.62s -> 1109.30s]  So the variational autoencoder is now a sequence level
+[1109.30s -> 1110.46s]  variational autoencoder.
+[1110.46s -> 1113.94s]  It's sometimes called a sequence VAE.
+[1113.94s -> 1117.14s]  In fact, this sequence VAE is actually conditional.
+[1117.14s -> 1119.30s]  So it's a sequence level conditional VAE.
+[1119.30s -> 1121.54s]  What is it conditioned on?
+[1121.54s -> 1123.86s]  Well, take a moment to think about this.
+[1123.86s -> 1125.58s]  The answer, of course, is it's conditioned
+[1125.58s -> 1127.38s]  on the only part of this that we are not
+[1127.38s -> 1128.70s]  modeling, which is the action.
+[1128.70s -> 1130.22s]  So it's actually a conditioned VAE
+[1130.22s -> 1132.06s]  where the conditioning information, the stuff
+[1132.06s -> 1133.56s]  on the right of the condition bar,
+[1133.56s -> 1135.26s]  is the sequence of actions.
+[1135.26s -> 1137.94s]  The observations X are the sequence
+[1137.94s -> 1139.98s]  of the observation time steps.
+[1139.98s -> 1143.22s]  And the latent variable Z is a sequence of the Zs
+[1143.22s -> 1145.14s]  at the individual time steps.
+[1145.14s -> 1146.18s]  What is our prior?
+[1146.18s -> 1148.30s]  Well, our prior now is going to be more structured
+[1148.30s -> 1150.30s]  because we have these dynamics on Zs.
+[1150.30s -> 1152.10s]  So we don't want the individual dimensions
+[1152.10s -> 1155.14s]  of Z to be independent like they were in the regular VAE.
+[1155.14s -> 1157.42s]  We want the different dimensions of Z
+[1157.42s -> 1159.50s]  to correlate with each other.
+[1159.50s -> 1161.62s]  We want to take into account the dynamics,
+[1161.62s -> 1162.82s]  and those are going to be part of the prior.
+[1162.82s -> 1165.34s]  So notice that our prior now is actually conditioned.
+[1165.34s -> 1168.86s]  The prior P of Z is given by the product of P of Z1,
+[1168.86s -> 1170.58s]  which could be a zero mean unit variance,
+[1170.58s -> 1175.22s]  Gaussian, times the product of P of Zt plus 1 given Zt At.
+[1175.22s -> 1176.94s]  And the dynamics part is typically also
+[1176.94s -> 1178.42s]  learned for a sequence VAE.
+[1178.42s -> 1181.70s]  So it's part of the prior, but it is learned.
+[1181.70s -> 1185.02s]  So the first step is Gaussian, but the other steps are not.
+[1185.02s -> 1188.22s]  So you could imagine that the Zs form a trajectory
+[1188.22s -> 1189.70s]  in the latent space, but remember,
+[1189.70s -> 1193.22s]  except for Z1, Z2, Z3, Z4, and so on are not,
+[1193.22s -> 1197.02s]  in general, distributed according to a unit Gaussian.
+[1197.02s -> 1201.90s]  Their distribution depends on the previous Z.
+[1201.90s -> 1205.50s]  Our decoder is going to decode the Zs into the Os,
+[1205.50s -> 1208.38s]  and the decoder is typically independent per time step.
+[1208.38s -> 1210.54s]  And the reason for this is that we want the Zs
+[1210.54s -> 1212.38s]  to summarize all the information necessary
+[1212.38s -> 1213.26s]  for that time step.
+[1213.26s -> 1215.82s]  We want the Zs to constitute a Markovian state space.
+[1215.82s -> 1220.02s]  So our decoder is going to be decoding each individual time
+[1220.02s -> 1220.94s]  step independently.
+[1220.94s -> 1223.18s]  So it's just given by a product over all the time
+[1223.18s -> 1224.86s]  steps of P of Ot given Zt.
+[1227.38s -> 1229.10s]  Now, what about our encoder?
+[1229.10s -> 1232.82s]  Can our encoder also be independent?
+[1232.82s -> 1234.50s]  Well, in general, the answer, of course, is no,
+[1234.50s -> 1236.42s]  because if we're in a partially observed setting,
+[1236.42s -> 1239.54s]  the whole point is that O2 doesn't have enough information
+[1239.54s -> 1241.74s]  about the underlying state Z2.
+[1241.74s -> 1244.38s]  So our encoder in a sequence VAE
+[1244.38s -> 1246.62s]  is typically actually the most complex part.
+[1246.62s -> 1249.78s]  The encoder is going to give us the distribution over Zt
+[1249.78s -> 1253.22s]  given all of the previous Os.
+[1253.22s -> 1255.66s]  Now, there are many different ways to represent the encoder.
+[1255.66s -> 1259.10s]  The encoder could also take previous Zs into account.
+[1259.10s -> 1261.74s]  It could be structured actually in many different ways.
+[1261.74s -> 1264.06s]  We talked about some of the ways to structure the encoder
+[1264.06s -> 1265.82s]  in the model-based RL lectures.
+[1265.82s -> 1267.56s]  And the papers that I'm gonna mention next
+[1267.56s -> 1270.18s]  all actually have different encoder architectures.
+[1270.18s -> 1271.78s]  I won't go into the details
+[1271.78s -> 1273.62s]  about how all these encoders could be structured.
+[1273.62s -> 1275.36s]  And the simplest one to imagine
+[1275.36s -> 1276.86s]  is the independent encoder I have here.
+[1276.86s -> 1279.06s]  But notice that this independent encoder
+[1279.06s -> 1281.56s]  treats all the Zs independent of each other,
+[1281.56s -> 1283.22s]  but treats them as dependent
+[1283.22s -> 1285.06s]  on the entire sequence of actions.
+[1285.30s -> 1287.66s]  So you can imagine that the process of producing a single Z
+[1287.66s -> 1289.66s]  corresponds to looking at the history of Os
+[1289.66s -> 1291.94s]  and inferring what the Z should be right now.
+[1291.94s -> 1293.26s]  And that's actually very natural.
+[1293.26s -> 1296.50s]  If we want to have a state estimator
+[1296.50s -> 1298.06s]  in a partially observed environment,
+[1298.06s -> 1300.42s]  we might infer the distribution over states now
+[1300.42s -> 1303.22s]  given the history of observations so far.
+[1303.22s -> 1305.26s]  Of course, we could have a much better encoder
+[1305.26s -> 1308.50s]  if we also take into account Zt minus one.
+[1308.50s -> 1312.26s]  So we could have an encoder Q phi Zt given Zt minus one
+[1312.26s -> 1315.82s]  and O one through T, and that would be a better encoder.
+[1315.82s -> 1316.78s]  Different works have explored
+[1316.78s -> 1317.90s]  a variety of different encoders,
+[1317.90s -> 1318.82s]  and the whole point
+[1318.82s -> 1320.66s]  of using the variational inference framework
+[1320.66s -> 1322.14s]  is that we actually have a lot of flexibility
+[1322.14s -> 1323.74s]  in what kind of encoder to use.
+[1323.74s -> 1325.34s]  Some encoders will be better than others
+[1325.34s -> 1328.14s]  in the sense that they lead to more accurate posteriors,
+[1328.14s -> 1331.50s]  but all of them constitute valid variational lower bounds.
+[1332.94s -> 1335.66s]  So in this example, the decoders would be independent,
+[1335.66s -> 1337.42s]  meaning that each Z would be decoded
+[1337.42s -> 1339.40s]  into the image at that time step.
+[1339.40s -> 1342.02s]  And the images are independent of each other
+[1342.62s -> 1343.46s]  given the Zs.
+[1343.46s -> 1345.46s]  But of course, the Zs are all closely coupled
+[1345.46s -> 1346.46s]  because of the prior.
+[1347.62s -> 1350.62s]  The encoder would take in a history of images
+[1350.62s -> 1352.98s]  and produce a distribution over the current Zs,
+[1352.98s -> 1354.52s]  and that we might represent
+[1354.52s -> 1355.96s]  with some kind of sequence model
+[1355.96s -> 1358.26s]  like an LSTM or transformer.
+[1358.26s -> 1360.22s]  And you can see that once we represent the encoder
+[1360.22s -> 1361.26s]  as a sequence model,
+[1361.26s -> 1364.74s]  it's easy enough to also feed in previous Zs.
+[1367.38s -> 1369.28s]  All right, so here's some applications
+[1369.28s -> 1371.78s]  of these kinds of sequence models in deep RL.
+[1372.62s -> 1375.34s]  One application area is to learn state space models
+[1375.34s -> 1377.26s]  and then plan in the state space.
+[1377.26s -> 1379.50s]  There have been a number of papers that have done this.
+[1379.50s -> 1382.46s]  One of the earliest is this paper called embed to control
+[1382.46s -> 1386.18s]  where the idea was to learn these latent space embeddings
+[1386.18s -> 1388.94s]  of a variety of simple systems like cart-pole
+[1388.94s -> 1390.74s]  and point mass and things like that.
+[1390.74s -> 1392.58s]  So here they're visualizing the state space.
+[1392.58s -> 1394.70s]  This is a state-based space for a cart-pole.
+[1394.70s -> 1395.86s]  And you can see on the right side,
+[1395.86s -> 1397.64s]  they're kind of visualizing its geometry
+[1397.64s -> 1399.22s]  over the course of training.
+[1399.22s -> 1400.34s]  And the point that they're making
+[1400.34s -> 1402.06s]  is that the real state space,
+[1402.06s -> 1403.70s]  which is not known to the algorithms,
+[1403.70s -> 1406.50s]  the real degrees of freedom of the pendulum
+[1406.50s -> 1407.78s]  are actually inferred by the algorithm
+[1407.78s -> 1409.14s]  as it trains from pixels.
+[1410.00s -> 1411.58s]  Here's a more complex task.
+[1411.58s -> 1413.12s]  Here, the latent space is three-dimensional
+[1413.12s -> 1415.42s]  and you can see that it kind of unfolds
+[1417.30s -> 1418.92s]  the images into this latent space,
+[1418.92s -> 1420.90s]  which resembles the geometry
+[1420.90s -> 1423.18s]  of the true state space of the system.
+[1423.18s -> 1425.34s]  And here are some visualizations.
+[1425.34s -> 1426.98s]  This is a simple pendulum environment.
+[1426.98s -> 1429.14s]  On the right side, they're visualizing the generations.
+[1429.14s -> 1431.10s]  On the left side are the real images.
+[1432.82s -> 1435.14s]  And here is a more complex cart-pole balancing task
+[1435.14s -> 1435.98s]  that they did.
+[1438.50s -> 1440.62s]  Now, of course, this is a much earlier work.
+[1440.62s -> 1442.14s]  It used very primitive images.
+[1442.14s -> 1444.34s]  Since then, things have come a long way.
+[1444.34s -> 1447.38s]  This is work that is about seven years ago
+[1447.38s -> 1448.58s]  where these kinds of models
+[1448.58s -> 1450.26s]  were used to control real robots.
+[1450.26s -> 1453.50s]  So here, the sequence V is actually predicting
+[1453.50s -> 1455.00s]  images from the robot
+[1455.00s -> 1456.74s]  and the policies that controlling it
+[1456.74s -> 1458.38s]  to stack these Lego blocks.
+[1460.14s -> 1462.42s]  Later on, these things were also applied
+[1462.42s -> 1464.78s]  to lots of pixel-based benchmark tasks
+[1464.78s -> 1466.10s]  and worked pretty well with a variety
+[1466.10s -> 1467.70s]  of different types of encoders
+[1467.70s -> 1469.46s]  and also a variety of planning algorithms,
+[1469.46s -> 1472.36s]  everything ranging from LQR to random sampling
+[1472.36s -> 1474.46s]  and other kinds of trajectory optimizers.
+[1475.34s -> 1477.62s]  The other class of approaches of sequence models
+[1477.62s -> 1481.24s]  use the state space model to infer a state space
+[1481.24s -> 1484.06s]  and then actually run RL in that state space.
+[1484.06s -> 1487.18s]  Here's an example called Stochastic Latent Actor-Critic.
+[1487.22s -> 1489.86s]  This used a Q-function actor-critic algorithm,
+[1491.66s -> 1493.06s]  soft actor-critic,
+[1493.06s -> 1496.28s]  to make it work with image observations.
+[1496.28s -> 1497.86s]  So here, the sequence V was used
+[1497.86s -> 1501.70s]  to extract representation for the actor-critic algorithm.
+[1501.70s -> 1502.94s]  And you can see here,
+[1502.94s -> 1504.38s]  some true rollouts from the system
+[1504.38s -> 1505.86s]  and then some samples from the VAE
+[1505.86s -> 1507.66s]  showing that the VAE is actually learning
+[1507.66s -> 1509.78s]  to generate videos that look very much
+[1509.78s -> 1511.20s]  like the real system.
+[1512.14s -> 1515.34s]  Here's another paper that did something very similar
+[1515.34s -> 1518.70s]  using an actor-critic algorithm
+[1518.70s -> 1520.90s]  and actually short horizon rollouts,
+[1520.90s -> 1523.02s]  this extra combination of both planning and RL
+[1523.02s -> 1526.30s]  with sequence VAEs to represent latent states.
+[1527.58s -> 1528.98s]  Okay, thank you very much.

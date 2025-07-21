@@ -1,0 +1,220 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.40s]  Today, I'm going to be talking to Dr. Nandita Dukkapati.
+[4.40s -> 9.32s]  Nandita did her PhD here at Stanford, graduating a number of years ago, and she worked on
+[9.32s -> 14.32s]  TCP, congestion control algorithms, and alternatives to TCP.
+[14.32s -> 19.80s]  She popularized, in particular, the term flow completion time as a metric for TCP,
+[19.80s -> 24.72s]  in addition to some of the other metrics we normally use, like fair share, high throughput.
+[24.72s -> 30.16s]  And she proposed specific alternatives to TCP that bring mechanisms into the network
+[30.16s -> 32.40s]  to try and reduce the flow completion time.
+[32.40s -> 36.80s]  Anyway, today she works at Google, where she continues to work on a number of different
+[36.80s -> 41.44s]  congestion control mechanisms, and I invited her here today to talk with us about some
+[41.44s -> 44.72s]  of the things she's learned along the way.
+[44.72s -> 49.96s]  Nandita, what are the shortcomings of TCP and the congestion control algorithms that
+[49.96s -> 54.76s]  we learn about in class, such as TCP Reno, New Reno, etc.?
+[54.76s -> 62.84s]  Yeah, so over time, essentially, as the network bandwidths increased and as various
+[62.84s -> 70.36s]  different kinds of applications came over the internet, these networks and applications
+[70.36s -> 73.12s]  challenged TCPs in many new ways.
+[73.12s -> 75.76s]  Let me give you a few examples.
+[75.76s -> 81.52s]  The first one being, TCP Reno, New Reno, and even the newer congestion control algorithms
+[81.52s -> 89.44s]  such as Qubic are fundamentally loss-based algorithms, wherein they pump bits into the
+[89.44s -> 97.48s]  network until the queues in the network overflow and a loss is triggered, in response
+[97.48s -> 100.48s]  to which they modulate their rate.
+[100.48s -> 106.12s]  The problem is that these TCPs require the loss rate to be extremely small, such as
+[106.12s -> 112.92s]  one in 80,000 segments, to sustain a link rate of 10 gigabits per second over a 200
+[112.92s -> 115.76s]  milliseconds link.
+[115.76s -> 121.64s]  So that turned out to be one of the big problems a decade back, when physicists were
+[121.64s -> 126.80s]  transferring large amounts of data over transoceanic links.
+[126.80s -> 134.76s]  But besides that, we have a slew of newer problems, for example, consider the web traffic,
+[134.76s -> 142.68s]  which have extremely short transactions, request-response transactions, such as one would find in HTTP
+[142.68s -> 148.00s]  or even RPCs, that is remote procedure calls, within a data center.
+[148.00s -> 150.68s]  These are all request-response transactions.
+[150.68s -> 158.68s]  The problem is, consider every TCP connection starts with a one-RTT overhead.
+[158.68s -> 163.04s]  This can be significant if the request is just a single packet, or the response
+[163.04s -> 166.64s]  is just a 50% overhead.
+[166.64s -> 174.32s]  Or consider the slow start, where the algorithm ramps up its congestion window over time.
+[174.32s -> 178.84s]  It starts with a small congestion window and ramps up in every round-trip time.
+[178.84s -> 184.92s]  That is to slow for short transfers, such as what you find in web transactions.
+[184.92s -> 192.48s]  Not just that, even the loss mechanisms in TCP are not very optimal for short flow
+[192.48s -> 193.48s]  performance.
+[193.48s -> 201.12s]  In fact, measurements on Google servers show that lossy HTTP responses take about 10 times
+[201.12s -> 207.52s]  longer than those which have experienced no losses over very similar networks.
+[208.52s -> 214.32s]  And then there are several other problems, such as over the Internet these days, switches
+[214.32s -> 219.76s]  and routers have large amounts of buffering.
+[219.76s -> 227.20s]  Now, two decades back, where throughput was a concern, these congestion control algorithms
+[227.20s -> 232.16s]  were designed to fill up these buffers until the buffers actually overflow.
+[232.32s -> 237.84s]  But the problem is, buffers have gotten larger, introduced, and as a result, these
+[237.84s -> 242.76s]  introduce large amounts of delays, especially for short transactions that just whiz by
+[242.76s -> 247.04s]  and lost an RTT or a couple of RTTs.
+[247.04s -> 250.56s]  And there are also problems at the other extreme end.
+[250.56s -> 256.00s]  We also have switches and some routers with extremely small amounts of buffering.
+[256.00s -> 260.52s]  And that is also a problem for TCP, because extremely small amounts of buffering
+[260.56s -> 272.08s]  causes losses in bursts, for bursts of packet trains arriving lose a packet or two almost accidentally.
+[272.08s -> 278.56s]  TCP treats these burst-related losses as congestion losses and drastically reduces
+[278.56s -> 280.32s]  its congestion window.
+[280.32s -> 286.52s]  And as a result, the links are not being able to be filled completely.
+[286.84s -> 292.88s]  So in both extremes, TCP's congestion control actually does not work very well.
+[292.88s -> 298.16s]  The more interesting problem that has come up in recent times is the interaction between
+[298.16s -> 301.04s]  browsers and TCP.
+[301.04s -> 308.12s]  So the way browsers work today is they open several dozens of connections in order
+[308.12s -> 313.24s]  to be able to download the resources from the web pages.
+[313.24s -> 321.04s]  So for example, if you go to images.google.com and search for, say, cats and kittens,
+[321.04s -> 327.56s]  then it makes several connections to images1.google.com, images2.google.com, and so on.
+[327.56s -> 336.60s]  And so you have a sudden influx of these HTTP responses coming to your cable or DSL link.
+[336.60s -> 339.36s]  It's almost like a flash crowd scenario.
+[339.40s -> 343.68s]  There isn't much of congestion control you can exert on each of these responses,
+[343.68s -> 350.84s]  because each of these is a very tiny entity, but taken together, they actually create some
+[350.84s -> 357.60s]  bad problems, such as overflowing the buffers, increased queuing latency, and so on.
+[357.60s -> 365.24s]  In addition to these, the newer mobile networks are also posing some performance challenges
+[365.24s -> 367.32s]  for congestion control in TCP.
+[367.32s -> 374.08s]  For example, the link fading and the link up and down, which is very common in layer 2
+[374.08s -> 381.48s]  in cellular networks, tricks TCP to thinking that there is extreme congestion in the network,
+[381.48s -> 388.12s]  and therefore, it should back off and do an exponential retransmission timeout.
+[388.12s -> 395.80s]  So these are the kind of problems that we actually routinely see when TCP interacts
+[395.84s -> 399.20s]  with modern applications and networks.
+[399.20s -> 402.92s]  What are some of the mechanisms and improvements that have been put in place over the years
+[402.92s -> 407.56s]  to try and overcome these limitations and shortcomings of TCP?
+[407.56s -> 413.52s]  So one can think of these mechanisms as falling into three broad classes.
+[413.52s -> 422.00s]  So there are end-host-only mechanisms, such as, so these changes require only server-side
+[422.00s -> 429.64s]  or only receive-client-side changes, and then the second category of mechanisms are those
+[429.64s -> 432.24s]  which require only changes to the switches and routers.
+[432.24s -> 440.08s]  For example, the active queue management algorithms, such as the most recent ones,
+[440.08s -> 449.60s]  have been CODEL, Control Delay, and Pi, which selectively drop packets in order to send a signal
+[449.60s -> 455.36s]  to the TCP senders that there are queues being built up at the routers or switches,
+[455.36s -> 457.00s]  and it's time to slow down.
+[457.00s -> 465.00s]  And then there are these mechanisms, such as RCP, Read Control Protocol, or XCP, MaxNet,
+[465.00s -> 471.36s]  or DC-TCP, that actually require changes for both the intermediary network devices,
+[471.36s -> 476.00s]  as well as the end systems, wherein the end systems get an explicit,
+[476.00s -> 483.80s]  either a one-bit notification in the case of ECN, or a multi-bit notification in the case of RCP-XAP
+[483.80s -> 487.68s]  that tells them explicitly how to modulate their RAID.
+[487.68s -> 494.00s]  However, the most successful amongst these categories have been the first one,
+[494.00s -> 498.68s]  which is really the end system changes, primarily because they're easier to deploy,
+[498.68s -> 501.64s]  get through middle boxes, and so on and so forth.
+[501.64s -> 509.04s]  And in this category, we've seen a slew of new congestion control algorithms, such as cubic TCP,
+[509.04s -> 516.16s]  high-speed TCP, fast TCP, which aim to solve the problem of maintaining high throughput
+[516.16s -> 519.52s]  in large bandwidth delay product networks.
+[519.52s -> 528.48s]  So the way they improve over Reno-New Reno is that they do not react as drastically to losses,
+[528.48s -> 535.92s]  and they ramp up much faster when there is free available bandwidth.
+[535.92s -> 540.36s]  Cubic TCP and high-speed TCPs are still fundamentally loss-based TCPs,
+[540.36s -> 544.68s]  in the sense they cut down the congestion window in response to losses,
+[544.68s -> 549.56s]  whereas fast TCP is a delay-based algorithm that is more agnostic to losses,
+[549.56s -> 556.88s]  but modulates its congestion window based on the measured changes in the round-trip time.
+[556.92s -> 561.80s]  And in addition to these offlays, there have been a slew of mechanisms
+[561.80s -> 567.00s]  to make short transactions over the internet faster,
+[567.00s -> 572.56s]  naturally to make the web pages download faster.
+[572.56s -> 577.56s]  Among a few of these examples are TCP FastOpen.
+[577.56s -> 586.36s]  FastOpen essentially allows you to send, allows one to send data along with the send packet.
+[586.36s -> 591.52s]  So one can imagine that if a client is issuing a web request,
+[591.52s -> 597.80s]  and the request typically fits within one packet, you don't have to wait in a round-trip time
+[597.80s -> 600.48s]  before actually being able to send the request to the server.
+[600.48s -> 605.40s]  You can now send the request in the send packet itself.
+[605.40s -> 611.68s]  So that's a significant reduction in the page load times, especially when you do this over
+[611.68s -> 617.92s]  and over again, you actually begin to notice significant differences in the latencies,
+[617.92s -> 620.04s]  in user experience latencies.
+[620.04s -> 625.32s]  Then there are a few other changes, such as TCP's initial congestion window has been,
+[625.32s -> 629.88s]  has stood at three segments for a long time.
+[629.88s -> 636.76s]  Recently, it was, it's been increased to 10 segments in many
+[636.76s -> 640.64s]  of the notable open-source operating systems.
+[640.64s -> 645.16s]  There are other changes, for example, proportional rate reduction,
+[645.16s -> 649.16s]  which actually makes the fast retransmit algorithm more efficient.
+[649.16s -> 653.52s]  What the fast retransmit algorithm in TCP has been found,
+[653.52s -> 656.64s]  it's either extremely bursty or too timid.
+[656.64s -> 663.84s]  What proportional rate reduction does is it actually smooths out the fast retransmit
+[663.84s -> 669.60s]  and the fast recovery to pump in just the amount of data that has been delivered
+[669.60s -> 676.12s]  to the receiver, and therefore makes the recovery of losses in short flows much smoother.
+[676.12s -> 682.28s]  The final area where there has been improvement is in the retransmission timeout.
+[682.28s -> 689.20s]  RTOs are painful for short flows, and RTO-based recovery is 10 to 100 times longer
+[689.20s -> 692.56s]  than the fast retransmit or fast recovery.
+[692.56s -> 697.12s]  And so recently, there's a proposal called the tail loss probe,
+[697.16s -> 705.48s]  which actually converts an RTO into a fast retransmit even for short flows.
+[705.48s -> 711.60s]  This is significant in reducing the tail latency of short flows because most of the losses
+[711.60s -> 714.16s]  in short transfers happen to be tail losses.
+[714.16s -> 718.96s]  About 70% of them are tail losses, and as a result, the only way
+[718.96s -> 724.88s]  that they can recover is an RTO, which often is too long.
+[724.88s -> 729.04s]  In big data centers owned by companies like Google, where you work, or Facebook,
+[729.04s -> 734.12s]  Amazon, Microsoft, and so on, there's an opportunity to change TCP at both ends
+[734.12s -> 738.40s]  of the connection, both at the server and at the client.
+[738.40s -> 741.76s]  This might be worthwhile if you're trying to overcome a limitation
+[741.76s -> 744.12s]  that is particular to data centers.
+[744.12s -> 747.36s]  What are the sorts of things that companies are doing in data centers to try
+[747.36s -> 750.00s]  and improve TCP and congestion control?
+[750.00s -> 758.16s]  So a lot of the problems in data centers are in many ways similar to the internet,
+[758.16s -> 761.20s]  and yet there are some significant differences.
+[761.20s -> 764.72s]  The similarities are the problems that I've spoken to you about.
+[764.72s -> 766.92s]  The key performance metrics are the same.
+[766.92s -> 771.40s]  We still care immensely about latencies, especially about tail latencies.
+[771.40s -> 776.92s]  Either massive over-buffering, also known as a buffer bloat,
+[776.96s -> 783.24s]  or massive under-buffering is still a problem, but the major differences are
+[783.24s -> 791.20s]  that we can change now both the ends, the server and the receiver.
+[791.20s -> 797.72s]  So some of the simple changes, for example, over the internet, you have to keep the RTO,
+[797.72s -> 804.20s]  the retransmission timeouts, extremely conservative because you're trying
+[804.20s -> 808.92s]  to encompass a large category of networks, such as mobile networks
+[808.92s -> 812.00s]  and even the regular wired networks.
+[812.00s -> 816.48s]  So the initial RTOs are in their order of seconds.
+[816.48s -> 817.80s]  It's one second right now.
+[817.80s -> 822.76s]  Whereas in data center networks, you know and there is no way
+[822.76s -> 826.68s]  that you don't need a retransmission timeout in the order of seconds
+[826.68s -> 832.32s]  because you know the RTD within the cluster or within a data center is
+[832.32s -> 836.12s]  in the order of a few microseconds.
+[836.12s -> 843.16s]  So we've been able to, so making these timers much more precise
+[843.16s -> 847.36s]  and much more tight has been very crucial
+[847.36s -> 854.32s]  to actually reduce the tail latencies of the remote procedure calls.
+[854.32s -> 861.48s]  In addition to it, I think the recent work done in Microsoft Research and actually
+[861.52s -> 868.44s]  in collaboration with Stanford on DCTCP has been significant
+[868.44s -> 874.20s]  because with just a single bit of information from the switches,
+[874.20s -> 883.84s]  the end hosts are able to make much better decisions on how to modulate the rates.
+[883.84s -> 891.68s]  So I would say a better integration of timers, making the timers much tighter,
+[891.68s -> 897.88s]  as well as being able to deploy mechanisms that require some participation
+[897.88s -> 908.08s]  from the switches are ways in which data centers are different from that of the internet.
+[908.08s -> 909.08s]  Thanks Nandita.
+[909.08s -> 915.20s]  So for my last question, all of the improvements you've described so far are modifications
+[915.20s -> 919.04s]  and variations on the basic AIMD-based congestion control
+[919.04s -> 921.44s]  that was first proposed many years ago.
+[921.44s -> 924.60s]  They all use the same basic congestion control mechanism
+[924.60s -> 928.44s]  and modify the sliding window in different ways.
+[928.44s -> 931.84s]  So if you look forward 15, 20 years to the future,
+[931.84s -> 937.00s]  do you think we'll still be using the same slow start plus AIMD-based congestion control
+[937.00s -> 939.84s]  that we do today, or do you think we'll have replaced it
+[939.84s -> 944.20s]  with one or more new schemes that work in very different ways?
+[944.20s -> 947.16s]  That's a great question actually, and I was kind of secretly hoping
+[947.16s -> 953.00s]  that you would ask me that question, that I sincerely hope
+[953.00s -> 958.56s]  that we don't actually continue to be using just AIMD-based protocols
+[958.56s -> 962.76s]  or just slow start AIMD and continue in that route.
+[962.80s -> 970.84s]  The reason being, we are already finding not such limitations,
+[970.84s -> 973.28s]  but ways and means in which we can do better.
+[973.28s -> 978.76s]  So far we've been doing very point-based solutions to each of these problems.
+[978.76s -> 988.40s]  We have different mechanisms for web transactions, short web flows for example.
+[988.40s -> 991.24s]  They don't even rarely go through the AIMD phase.
+[991.24s -> 992.80s]  They all finish in the slow start phase.
+[992.80s -> 997.00s]  So we try to optimize the web transactions differently.
+[997.00s -> 999.72s]  We try to do something different for mobile networks.
+[999.72s -> 1002.88s]  We try to do something different for video flows just
+[1002.88s -> 1005.80s]  because the video application patterns are very different
+[1005.80s -> 1009.60s]  from just long FTP flows or the short web transactions.
+[1009.60s -> 1013.32s]  We treat the data center networks slightly differently just
+[1013.32s -> 1016.16s]  because of the extremely short latencies.
+[1016.16s -> 1018.92s]  Similarly, we treat the mobile networks differently.
+[1018.92s -> 1024.32s]  We try to do different TCPs for extremely over-buffered networks
+[1024.32s -> 1026.00s]  or extremely under-buffered networks.
+[1026.00s -> 1033.00s]  So really, my hope is that we stop doing these point solutions
+[1033.00s -> 1038.52s]  to these point problems and instead look at, step back and look at,
+[1038.52s -> 1043.96s]  can we actually design congestion control that just works for all networks
+[1043.96s -> 1048.36s]  and for all application patterns instead of going about
+[1048.36s -> 1053.00s]  and treating every problem as if this is a special case problem
+[1053.00s -> 1056.56s]  because that's exactly what we're doing today.
+[1056.56s -> 1061.76s]  And in that direction, I think the recent work from MIT,
+[1061.76s -> 1068.12s]  the REMI program that generates congestion control algorithms adaptively
+[1068.12s -> 1072.32s]  based on machine learning algorithms, I think that's an interesting direction.
+[1072.32s -> 1075.28s]  And I would really like to see some
+[1075.28s -> 1083.04s]  of these automatically generated congestion control algorithms how to play out in practice.
+[1083.04s -> 1086.48s]  It remains to be seen whether they can actually solve the problems
+[1086.48s -> 1090.56s]  of these very different variety of networks that I've spoken about.
+[1090.56s -> 1098.56s]  And in general, I think in the other direction, I think the router-based,
+[1098.56s -> 1102.92s]  the router-assisted congestion control haven't seen significant deployment just
+[1102.92s -> 1110.56s]  because they're harder to actually deploy it and do experiments on a large scale.
+[1110.56s -> 1116.92s]  But with the recent advances such as in OpenFlow as well as in SDN,
+[1116.92s -> 1122.68s]  I think we will see more of the network participation even in congestion control.
+[1122.68s -> 1127.40s]  So I'm very hopeful about these two directions going forward.
+[1127.40s -> 1130.04s]  Thank you very much for talking to us today, Nandita.
+[1130.04s -> 1130.88s]  Thank you very much.
+[1130.88s -> 1131.92s]  It was my pleasure.

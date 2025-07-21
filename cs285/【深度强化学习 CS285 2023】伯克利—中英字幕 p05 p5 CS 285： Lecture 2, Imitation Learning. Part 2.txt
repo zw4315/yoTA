@@ -1,0 +1,351 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.60s]  Part two of this lecture will be perhaps the most mathematically involved, because we're
+[4.60s -> 11.36s]  going to discuss some of the formal explanations behind why behavioral cloning doesn't in
+[11.36s -> 15.92s]  general produce good results, and this formal explanation will actually help us to develop
+[15.92s -> 18.64s]  some of the solutions in the future.
+[18.64s -> 23.68s]  Okay, so let's go back to this intuitive picture, which I used to argue that the
+[23.68s -> 27.52s]  reason that behavioral cloning doesn't do so well is because even if you learn a very
+[27.52s -> 32.32s]  good policy, if that policy makes a small mistake, it'll put you into a situation that's
+[32.32s -> 35.64s]  a little bit different from the ones that it was trained on, where it's more likely
+[35.64s -> 39.80s]  to make a bigger mistake, which in turn will put you in an even more unfamiliar situation,
+[39.80s -> 44.68s]  and from there, the mistakes might build up and up.
+[44.68s -> 49.68s]  So to try to make this more precise, let's start introducing a little bit of notation.
+[49.68s -> 57.76s]  We have a policy, pi-theta-a-t given o-t, and that policy is trained using a training
+[57.76s -> 64.06s]  set that comes from a particular distribution, and that distribution is produced by a person
+[64.06s -> 67.88s]  providing demonstrations, like a person driving a car, for example.
+[67.88s -> 73.08s]  So I'm going to use p-data-o-t to denote the distribution that produced the training
+[73.08s -> 74.08s]  set.
+[74.08s -> 78.70s]  Now, p-data-o-t might be a very complex distribution, we don't really care about that,
+[78.74s -> 84.18s]  but all we care about at this stage is that it is whatever distribution of our observations
+[84.18s -> 86.90s]  comes from the human's driving.
+[86.90s -> 90.30s]  And then I'll use a different symbol to denote the distribution of our observations
+[90.30s -> 95.50s]  that the policy itself sees when it's driving a car, and that's going to be denoted with
+[95.50s -> 101.50s]  p pi-theta-o-t, and of course, because the policy doesn't drive exactly the same
+[101.50s -> 107.18s]  way that a person drives, p pi-theta-o-t is not going to be the same as p-data-o-t.
+[109.62s -> 115.98s]  So if we want to understand just how different these things are going to be, let's first
+[115.98s -> 118.14s]  discuss how pi-theta is trained.
+[118.14s -> 125.14s]  Well, pi-theta is trained under p-data-o-t, which means that we can, if we're using
+[125.14s -> 130.70s]  some standard training objective, like supervised maximum likelihood, or empirical risk minimization
+[130.70s -> 133.98s]  basically, we can write the objective as the following.
+[133.98s -> 140.46s]  It's maximizing the log probability of the actions from the human, given the observations,
+[140.46s -> 145.78s]  and the observations are sampled from p-data-o-t, so the expectations on the p-data-o-t.
+[145.78s -> 149.90s]  Now, we know from supervised learning theory that if we train our policy in this
+[149.90s -> 156.62s]  way, and we don't overfit, and we don't underfit, then we would expect the log probability
+[156.62s -> 161.02s]  of the actions under the distribution p-data-o-t to be high.
+[161.02s -> 162.70s]  We would expect good actions of high probability.
+[164.22s -> 171.02s]  Of course, the problem is that the performance of the policy is not determined by the log
+[171.02s -> 175.98s]  probability that assigns to good actions under the expert's observation distribution,
+[175.98s -> 178.74s]  but under the testing distribution, which is p-pi-theta.
+[178.74s -> 182.58s]  So the log probability of good actions under p-pi-theta might be very different, because
+[182.58s -> 186.06s]  p-data and p-pi-theta are not the same.
+[186.06s -> 191.22s]  This is often referred to as distributional shift, which means that the distribution
+[191.26s -> 196.70s]  under which the policy is tested is shifted from the distribution under which it's trained.
+[196.70s -> 201.94s]  Now it just so happens that that shift is due to the policy's own mistakes, but this
+[201.94s -> 208.34s]  is the formal statement for why we can't in general expect it to be correct.
+[208.34s -> 213.06s]  And it's pretty easy to construct counterexamples where this will be very bad.
+[213.06s -> 219.94s]  So before I construct that counterexample, let me set things up a little bit more precisely,
+[219.94s -> 222.10s]  which will make the analysis more concise.
+[222.10s -> 226.74s]  So first we have to define what precisely we want, like what determines whether a policy
+[226.74s -> 228.06s]  is good or bad.
+[228.06s -> 232.78s]  So it's trained to maximize the likelihood of the training actions, but presumably that's
+[232.78s -> 233.78s]  not all we want.
+[233.78s -> 238.46s]  We want some other notion of goodness, like it has to actually drive the car well.
+[238.46s -> 240.26s]  So what makes a learned policy good or bad?
+[240.26s -> 243.98s]  Well, it's a choice that we make, it's a design choice.
+[243.98s -> 248.14s]  It probably shouldn't be the likelihood of the training actions because a policy could
+[248.14s -> 252.58s]  assign very high probability to the actions that the human driver took in the kinds of
+[252.58s -> 256.46s]  states that they actually saw, but then take completely incorrect actions in the states
+[256.46s -> 258.04s]  that are even a little different.
+[258.04s -> 262.04s]  So we probably need a better measure of goodness that we can use to analyze our
+[262.04s -> 263.46s]  policies.
+[263.46s -> 269.70s]  And one measure that we can use is we can define a cost, and the cost is a function
+[269.70s -> 275.22s]  of states and actions, and we'll say that the cost is zero if the action is the same
+[275.26s -> 279.26s]  as the human driver's action, so let's assume the human driver has a deterministic policy.
+[279.26s -> 282.90s]  It's not hard to extend this to stochastic policies, but it makes a lot of the notation
+[282.90s -> 283.90s]  very complex.
+[283.90s -> 289.14s]  So we'll just say that the human driver has a deterministic policy, pi star.
+[289.14s -> 292.50s]  The cost is zero if the action matches what they would have done, and it's one
+[292.50s -> 294.06s]  otherwise.
+[294.06s -> 297.22s]  And that's a very convenient cost to define because you can basically say that whenever
+[297.22s -> 301.46s]  the policy that you learn makes a mistake, you pay a cost of one.
+[301.46s -> 307.22s]  So the total cost is basically the number of mistakes you're going to make.
+[307.22s -> 310.50s]  Notice here that I started mixing up S and O.
+[310.50s -> 311.50s]  Don't worry about that.
+[311.50s -> 315.18s]  So all of the analysis here will be in terms of S. It's a little bit involved to
+[315.18s -> 318.24s]  extend this to O, to extend it to partially observed settings.
+[318.24s -> 320.82s]  So this is one of those cases where the Markov property is very useful.
+[320.82s -> 321.82s]  It is possible to do.
+[321.82s -> 324.30s]  It'll just make everything more complicated to write.
+[324.30s -> 329.66s]  So we'll kind of transparently switch from O to S for this section and not worry about
+[329.66s -> 330.66s]  it.
+[330.66s -> 333.66s]  I warned you that I would do that.
+[333.66s -> 334.66s]  Okay.
+[334.66s -> 339.78s]  So our goal now is going to be to minimize the expected cost, meaning the expected number
+[339.78s -> 344.50s]  of mistakes that our policy is going to make, but expect that under what distribution?
+[344.50s -> 348.54s]  Well, what we care about is the number of mistakes that the policy makes when it
+[348.54s -> 349.66s]  actually drives the car.
+[349.66s -> 352.86s]  We don't really care how many mistakes it would make when it's looking at the human's
+[352.86s -> 355.62s]  images because that's not how it's going to be used.
+[355.62s -> 361.62s]  So what we care about is the cost in expectation under P pi theta, under the distribution of
+[361.62s -> 364.66s]  states the policy will actually see.
+[364.66s -> 368.58s]  And that's a very, very important distinction because we're training the policy to assign
+[368.58s -> 373.06s]  high probability to the actions under P theta, but what we really care about is to minimize
+[373.06s -> 378.14s]  the number of mistakes under P pi theta.
+[378.14s -> 380.10s]  So that's an important distinction.
+[380.10s -> 384.46s]  So in analyzing how good behavioral cloning is, what we're really trying to do is we're
+[384.50s -> 390.60s]  trying to say, well, if we succeeded in doing our supervised learning well, what can we say
+[390.60s -> 396.58s]  about this expected value of this cost under P pi theta?
+[396.58s -> 400.66s]  So basically, will we successfully minimize the number of mistakes when we run the policy?
+[400.66s -> 402.66s]  Yes or no?
+[402.66s -> 403.66s]  Okay.
+[403.66s -> 407.02s]  So let's work on that problem a little bit.
+[407.02s -> 409.82s]  So here's our picture.
+[409.82s -> 413.38s]  Our total horizon length is capital T, so that's how long each of these trajectories
+[413.38s -> 414.38s]  are.
+[414.38s -> 419.06s]  This is our cost, and we're going to make some assumption, which basically amounts to
+[419.06s -> 422.62s]  saying let's assume that supervised learning worked.
+[422.62s -> 427.70s]  So our assumption, the simple one that we'll start with is we'll just say that
+[427.70s -> 433.42s]  the probability assigned to any action that is not the expert's action is less than
+[433.42s -> 439.66s]  or equal to epsilon if the state S is one of the training states.
+[439.66s -> 443.02s]  So this basically says that on the training states, your probability of making a mistake
+[443.06s -> 444.06s]  is small.
+[444.06s -> 445.70s]  It's going to be some small number epsilon.
+[445.70s -> 449.66s]  In general, we can extend this to say the probability is small for any state that's
+[449.66s -> 452.74s]  sampled from the training distribution, so it doesn't have to literally be one of the
+[452.74s -> 455.44s]  states that you saw, but for now, just to keep it simple, let's say that it's
+[455.44s -> 458.94s]  literally one of the states that you saw.
+[458.94s -> 464.30s]  And now let's construct a very simple problem where under this assumption, if you assume
+[464.30s -> 467.94s]  that your probability of making a mistake is epsilon for any state that you saw and
+[467.94s -> 473.54s]  unbounded for any state that you didn't see, things are going to be very bad.
+[473.54s -> 476.10s]  And I'm going to call this the tightrope walker example.
+[476.10s -> 480.34s]  So imagine that you have a problem where at every state, there's a very specific
+[480.34s -> 483.10s]  good action, which is to stay on the tightrope.
+[483.10s -> 486.86s]  And if you make an incorrect action, if you make a mistake, then you fall off the
+[486.86s -> 488.46s]  tightrope.
+[488.46s -> 491.58s]  Now falling off the tightrope is not actually bad in the sense that you hurt yourself.
+[491.58s -> 493.86s]  Let's say that there's a safety net or something.
+[493.86s -> 496.98s]  It's bad because you'll find yourself in a state that the expert never saw.
+[497.02s -> 500.26s]  The expert that was providing you with demonstrations never fell off the tightrope.
+[500.26s -> 504.86s]  The bad thing about falling off is that you are in an unfamiliar place.
+[504.86s -> 509.72s]  So think of it as a discrete environment on a grid.
+[509.72s -> 513.50s]  So the gray squares represent the squares that are on the tightrope.
+[513.50s -> 514.98s]  The red ones are where you fall off.
+[514.98s -> 517.18s]  The demonstrations always go steadily to the right.
+[517.18s -> 518.98s]  So the action is always to go to the right.
+[518.98s -> 524.78s]  If you make a single mistake, if you go up or down, then you fall off the tightrope.
+[524.78s -> 527.86s]  And you're very concerned about that, not because you'll hurt yourself, but because
+[527.86s -> 530.86s]  you won't know what to do in that situation afterwards.
+[530.86s -> 534.72s]  So how many mistakes will you make over the course of a trajectory on average if
+[534.72s -> 539.54s]  your probability of making a mistake is less than or equal to epsilon at every state
+[539.54s -> 541.70s]  on the tightrope?
+[541.70s -> 546.88s]  So what we want to do is we want to write down a bound on the total cost.
+[546.88s -> 552.38s]  So on the first time step, your probability of making a mistake is epsilon.
+[552.38s -> 557.74s]  If you make a mistake, you fall off the tightrope, all of the remaining time steps are also
+[557.74s -> 562.52s]  in general going to be mistakes because you have no idea what to do.
+[562.52s -> 568.42s]  So for the first time step, you incur at least epsilon times capital T mistakes
+[568.42s -> 570.34s]  on average.
+[570.34s -> 573.22s]  Now with probability 1 minus epsilon, you didn't make a mistake.
+[573.22s -> 576.26s]  So then you move on to the next time step, the second square.
+[576.26s -> 580.02s]  And in the second square, you again have an epsilon probability of making a mistake,
+[580.02s -> 583.58s]  in which case you fall off the tightrope and the remaining T minus 1 time steps are
+[583.58s -> 588.18s]  spent flailing around off the tightrope and making capital T minus 1 mistakes because
+[588.18s -> 590.30s]  that's how many time steps are left.
+[590.30s -> 593.74s]  And then with probability 1 minus epsilon, you go on to the third step and so on and so on.
+[593.74s -> 599.58s]  So you have this series where you add up all these terms.
+[599.58s -> 604.30s]  There are capital T terms and each of those capital T terms is on the order of epsilon
+[604.30s -> 609.66s]  T because if you assume that epsilon is a small number, 1 minus epsilon is negligibly
+[609.70s -> 615.58s]  small, so the order of all these terms, sorry, 1 minus epsilon is negligibly close to 1,
+[615.58s -> 620.66s]  so the order of all these terms is going to be about epsilon times capital T.
+[620.66s -> 623.36s]  And there is capital T of those terms.
+[623.36s -> 629.82s]  So that means that the number of mistakes on the order of epsilon capital T squared,
+[629.82s -> 634.10s]  it's like epsilon capital T squared over 2 with some correction term for 1 minus epsilon.
+[634.10s -> 639.58s]  But this is basically the order of that for small values of epsilon.
+[639.58s -> 642.54s]  Now what does this tell us about behavioral cloning?
+[642.54s -> 646.04s]  Well it tells us that it's actually very bad because if you make a very long tight
+[646.04s -> 652.34s]  rope, this quadratic increase in the number of mistakes will really get you in trouble.
+[652.34s -> 654.86s]  What we would really like is a linear increase in the number of mistakes.
+[654.86s -> 658.90s]  So it's reasonable that the longer you go, the more mistakes you're going to accumulate.
+[658.90s -> 664.94s]  But if the rate is more than linear, then long horizons are getting us into a lot of trouble.
+[664.94s -> 668.68s]  So we're getting epsilon T squared.
+[668.68s -> 673.04s]  Now this is a counterexample that shows that in the worst case you would get epsilon T squared.
+[673.04s -> 679.74s]  It turns out that in general epsilon capital T squared is actually the bound, so you won't
+[679.74s -> 682.28s]  do worse than epsilon T squared.
+[682.28s -> 687.44s]  That's not actually necessary to understand that behavioral cloning is bad, but we can
+[687.44s -> 691.40s]  actually bound how bad it is, it's just not a very good bound.
+[691.40s -> 694.38s]  And we're actually going to derive that because the kind of analysis that we'll use
+[694.38s -> 699.02s]  for that can be pretty useful in all sorts of other topics in reinforcement learning.
+[699.02s -> 703.74s]  So I like to go through it just to give a sense for how these dynamical systems can
+[703.74s -> 704.74s]  be analyzed.
+[704.74s -> 709.14s]  Okay, so we showed that in the worst case you get epsilon T squared, next we'll show
+[709.14s -> 712.70s]  that you won't do worse than epsilon T squared, meaning that there's a bound of epsilon
+[712.70s -> 715.58s]  T squared in general.
+[715.58s -> 721.66s]  Okay, so here we will actually have a more general analysis, so instead of saying that
+[721.66s -> 725.70s]  all of your states literally come from your training set, we'll say our states are sampled
+[725.70s -> 726.70s]  from p-train.
+[726.70s -> 732.02s]  So for any state sampled from p-train, your error is less than or equal to epsilon.
+[732.02s -> 735.50s]  It's actually enough to just assume that the expected value of the error is less than
+[735.50s -> 740.58s]  or equal to epsilon, which is more realistic of course because typically you train for
+[740.58s -> 747.34s]  the expected value of the loss.
+[747.34s -> 750.94s]  And with DAG which we'll talk about later, it's an algorithm that we'll introduce at
+[751.22s -> 754.50s]  the end of the lecture, it'll make this problem go away because it'll make p-train
+[754.50s -> 759.90s]  and p by theta the same, but for now they're not the same, so that's going to be a problem.
+[759.90s -> 767.98s]  We're going to show that the expected number of mistakes is going to be epsilon T squared
+[767.98s -> 772.74s]  in the worst case, and then of course with DAG when they become equal it will be epsilon T.
+[772.74s -> 776.62s]  So the DAG stuff, don't worry about it yet, that'll come at the end of the lecture.
+[776.62s -> 783.58s]  But if p-train is not equal to p-theta, then here's what happens.
+[783.58s -> 790.66s]  What we can do if we want to figure out the expected value of the cost is we can describe
+[790.66s -> 796.06s]  the distribution over states at time step T as a sum of two terms, and one of those
+[796.06s -> 799.50s]  terms is going to be easy to analyze and the other term will be really complicated
+[799.50s -> 801.90s]  and we'll just use a bound for that.
+[801.90s -> 807.10s]  So we can say that at time step T there's some probability that you didn't make any
+[807.10s -> 810.90s]  mistakes at all, meaning some probability that you stayed on the tightrope, that you did
+[810.90s -> 812.98s]  everything right.
+[812.98s -> 817.70s]  And if the probability of making a mistake at each step is epsilon and you start off
+[817.70s -> 821.70s]  at an in-distribution state, meaning you start off at a state sampled from p-train,
+[821.70s -> 825.94s]  then the probability that you made no mistakes for T time steps is just one minus epsilon
+[825.94s -> 829.00s]  to the power T, little t.
+[829.00s -> 834.56s]  So we can say that p-theta S T is equal to one minus epsilon to the power T times p-train
+[834.56s -> 836.96s]  S T, because that's the probability that you didn't make a mistake and if you didn't
+[836.96s -> 842.92s]  make a mistake that you're still in the distribution p-train, plus one minus that,
+[842.92s -> 847.48s]  one minus one minus epsilon to the T times some other distribution.
+[847.48s -> 851.78s]  So it's just saying that there's some part of your distribution for all the possibilities
+[851.78s -> 855.76s]  where you didn't do anything wrong and then there's everything else.
+[855.80s -> 859.32s]  And the weight on the part where you did nothing wrong is one minus epsilon to the T and the
+[859.32s -> 861.88s]  distribution there is p-train.
+[861.88s -> 863.12s]  So this is a decomposition that you can make.
+[863.12s -> 865.40s]  Now p-mistake is something really complicated, right?
+[865.40s -> 869.00s]  So we don't really understand what p-mistake is, it's like the part of p-theta that
+[869.00s -> 872.92s]  is separate from p-train, so we're not going to make any assumptions on p-mistake
+[872.92s -> 877.44s]  other than that it only constitutes a one minus one minus epsilon to the T portion
+[877.44s -> 878.88s]  of your distribution.
+[878.88s -> 883.02s]  And of course if epsilon is very very small, then the sum is dominated by the first term.
+[883.02s -> 886.94s]  So if epsilon is very small, then one minus epsilon is almost one, so most of it is
+[886.94s -> 887.94s]  in p-train.
+[887.94s -> 895.62s]  But of course the larger T is, the more that exponent is going to hurt.
+[895.62s -> 897.50s]  So that's what we've got.
+[897.50s -> 903.30s]  And now what I'm going to do is I'm going to relate the distribution p-theta ST to the
+[903.30s -> 906.02s]  distribution p-train ST.
+[906.02s -> 912.10s]  Now when you see me using this absolute value sign, what I'm in general going to
+[912.18s -> 915.94s]  be referring to is a total variation divergence.
+[915.94s -> 921.98s]  A total variation divergence is just a sum over all of the states of the absolute value
+[921.98s -> 923.82s]  of the difference in their probabilities.
+[923.82s -> 928.54s]  It can be viewed as a very simple notion of divergence between distributions.
+[928.54s -> 930.22s]  But for now we're just going to do this at one state.
+[930.22s -> 935.90s]  So at any given state, the absolute value of p-theta ST minus p-train ST, well that's
+[935.90s -> 937.40s]  pretty easy to work out.
+[937.40s -> 941.54s]  If you just substitute in the equation above for p-theta ST, you'll see that there's
+[941.98s -> 946.06s]  a p-train term that cancels out, so you get a one minus epsilon to the T p-train minus
+[946.06s -> 948.02s]  p-train.
+[948.02s -> 953.86s]  So that you can take out as a one minus one minus epsilon to the T. And now you
+[953.86s -> 954.86s]  end up with this equation.
+[954.86s -> 959.46s]  You end up with one minus one minus epsilon to the T times the absolute value of p-mistake
+[959.46s -> 961.46s]  minus p-train.
+[961.46s -> 966.72s]  Okay, now that's still a kind of a cryptic equation.
+[966.72s -> 968.66s]  We don't know what the absolute value is.
+[968.66s -> 974.02s]  We know that all probabilities have to be between zero and one.
+[974.02s -> 982.50s]  So the biggest difference between two probabilities can be at most one, right?
+[982.50s -> 989.54s]  Because the worst case is p-mistake is one and p-train is zero, or vice versa.
+[989.54s -> 993.54s]  And the largest total variation divergence, meaning if you sum over all of the states
+[993.54s -> 999.42s]  and you try to evaluate the absolute value of their difference, it's going to be two.
+[999.42s -> 1002.02s]  Because the worst case is that in one state, one of the probabilities is one, the other
+[1002.02s -> 1004.02s]  is zero, and in some other state, it's the other way around.
+[1004.02s -> 1005.54s]  One of them is zero, the other one is one.
+[1005.54s -> 1011.04s]  So the worst possible difference between two distributions when you sum over all the states
+[1011.04s -> 1012.78s]  is two.
+[1012.78s -> 1016.38s]  So that means that this whole thing is bounded by two times one minus one minus epsilon
+[1016.38s -> 1017.38s]  to the T.
+[1017.38s -> 1020.82s]  So what we've shown is that the total variation divergence between p-theta ST and p-train
+[1020.82s -> 1026.14s]  ST is two times one minus one minus epsilon to the T.
+[1026.14s -> 1031.24s]  And these exponents are a little hard to deal with, but for values of epsilon between
+[1031.24s -> 1035.50s]  zero and one, there's a very convenient identity that one minus epsilon to the T
+[1035.50s -> 1040.28s]  is greater than or equal to one minus epsilon times T.
+[1040.28s -> 1043.90s]  So that's true for any epsilon between zero and one, it's just an algebraic identity.
+[1043.90s -> 1048.54s]  So if we substitute that into the inequality above, we can further bound this by two times
+[1048.54s -> 1049.70s]  epsilon T.
+[1049.94s -> 1055.22s]  And that's just an algebraic convenience so that we can get rid of these exponents.
+[1055.22s -> 1058.50s]  It gives us a slightly looser bound, but it's a little easier to think about.
+[1058.50s -> 1062.50s]  So what we've shown now is that the total variation divergence between p-theta ST and
+[1062.50s -> 1066.54s]  p-train ST is bounded by two times epsilon T.
+[1066.54s -> 1070.70s]  And remember, total variation divergence is just the sum over all of the S's of the
+[1070.70s -> 1074.58s]  absolute value of the difference of their probabilities.
+[1074.58s -> 1079.14s]  Okay, so now let's talk about the quantity that we actually care about.
+[1079.14s -> 1083.06s]  What kind of bound can we derive based on this for the sum over all of the time steps
+[1083.06s -> 1085.70s]  of the expected value of our cost?
+[1085.70s -> 1090.82s]  Well, to figure that out, we'll substitute in the equation for an expected value.
+[1090.82s -> 1094.26s]  So an expected value is just a sum over all the states of the probability of that
+[1094.26s -> 1098.14s]  state times its cost.
+[1098.14s -> 1106.42s]  And what I'm going to do is I'm going to replace p-theta with p-theta minus p-train
+[1106.42s -> 1107.46s]  plus p-train.
+[1107.46s -> 1112.70s]  So I can subtract p-train, I can add p-train in both cases, that's totally fine to do.
+[1112.70s -> 1116.94s]  And then I'll put an absolute value symbol around the p-theta minus p-train part because
+[1116.94s -> 1119.50s]  if you have some quantity, you take its absolute value, you can only make it bigger
+[1119.50s -> 1122.10s]  because if it was positive, it stays where it is, and if it was negative, it becomes
+[1122.10s -> 1125.98s]  a larger value, okay?
+[1125.98s -> 1127.82s]  And that gets us this bound.
+[1127.82s -> 1135.34s]  So in this bound, what I've done is I've replaced the sum over ST of the absolute
+[1135.34s -> 1140.94s]  value of p-theta ST minus p-train ST times CT with the total variation divergence times
+[1140.94s -> 1145.42s]  Cmax, the largest value of the cost in any state.
+[1145.42s -> 1149.78s]  So I have one portion which is p-train times the cost, and then I have another
+[1149.78s -> 1154.18s]  portion which is the total variation divergence times the maximum cost in any state.
+[1154.18s -> 1160.26s]  So just to repeat how this step was produced, first you replace p-theta ST with p-theta
+[1160.26s -> 1163.18s]  ST plus p-train minus p-train.
+[1163.18s -> 1167.18s]  The plus p-train term becomes that first term in the bound, and then I'm left with
+[1167.18s -> 1169.22s]  p-theta minus p-train.
+[1169.22s -> 1173.38s]  I can take the absolute value of that, I can sum it over all the states, and that
+[1173.38s -> 1178.26s]  gives me the total variation divergence, and to account for the fact that in every state
+[1178.26s -> 1181.86s]  I have a different cost, I'll just replace that cost with the maximum cost, which
+[1181.86s -> 1188.14s]  I can take outside of the summation, and that gives me a valid upper bound.
+[1188.14s -> 1191.54s]  Now at this point, I'm going to use my bound for that total variation divergence
+[1191.54s -> 1196.46s]  for the difference between p-theta and p-train, and that's 2 epsilon t.
+[1196.46s -> 1200.22s]  And of course I know that my cost in p-train, my expected cost, is epsilon because that's
+[1200.22s -> 1202.22s]  my initial assumption.
+[1202.22s -> 1206.86s]  So the first term becomes, the first term, sum over ST of p-train times C is epsilon.
+[1206.86s -> 1214.54s]  The second term is 2 epsilon t times Cmax, and Cmax of course is 1, so the largest
+[1214.54s -> 1217.46s]  cost I can get in any state is 1, because I can make at least one mistake in any
+[1217.46s -> 1218.54s]  state.
+[1218.54s -> 1220.16s]  So that's my bound.
+[1220.16s -> 1224.52s]  Now notice that this is summed over t, so I have t terms that are each on the order
+[1224.52s -> 1227.28s]  of epsilon t.
+[1227.28s -> 1230.76s]  So that means that this is going to have a linear term and a quadratic term, which
+[1230.76s -> 1234.12s]  means that the overall order is epsilon t squared.
+[1234.12s -> 1235.32s]  So what have I actually shown?
+[1235.32s -> 1239.36s]  I've shown on the previous slide that in the worst case, you're going to get epsilon
+[1239.36s -> 1241.60s]  t squared, and that's the type of walker example.
+[1241.60s -> 1245.28s]  I've also shown that epsilon t squared is in fact a bound, meaning that you will
+[1245.28s -> 1247.88s]  not be worse than epsilon t squared.
+[1247.88s -> 1249.12s]  So that's the behavioral cloning result.
+[1249.12s -> 1253.84s]  The behavioral cloning is epsilon t squared in the worst case, and epsilon t
+[1253.84s -> 1260.56s]  squared is in fact the bound for behavioral cloning.
+[1260.56s -> 1265.08s]  Okay, so that's the analysis, and it's good to understand this analysis.
+[1265.08s -> 1270.24s]  We'll talk about it more in class, but the next point I want to make about
+[1270.24s -> 1274.84s]  this is that this is rather pessimistic, and of course we saw in the driving
+[1274.84s -> 1278.36s]  videos before that in practice, behavioral cloning can work.
+[1278.36s -> 1281.16s]  So why is this rather pessimistic?
+[1281.16s -> 1285.12s]  Well, the pessimism can be seen in the type of walker example.
+[1285.12s -> 1288.84s]  The type of walker example is a little bit pathological in the sense that,
+[1288.84s -> 1291.92s]  although it is a valid decision-making problem, the fact that even a single
+[1291.92s -> 1296.84s]  mistake immediately puts you into an unrecoverable situation is actually quite bad.
+[1296.84s -> 1303.88s]  So in reality, we can often recover from mistakes, but the trouble is that
+[1303.88s -> 1307.40s]  that doesn't necessarily mean that imitation learning will always allow us to do that.
+[1307.44s -> 1310.88s]  So a lot of the methods that make naive behavioral cloning work basically try to
+[1310.88s -> 1315.76s]  leverage the fact that you can recover from mistakes and somehow modify the
+[1315.76s -> 1320.08s]  problem to make it easier for imitation learning to learn how to do that.
+[1320.08s -> 1324.00s]  So why, for example, does that left-right camera trick work?
+[1324.00s -> 1327.52s]  Well, maybe the left-right camera trick is really teaching the policy how to
+[1327.52s -> 1330.72s]  recover from mistakes by showing it what happens when it sees an image to the
+[1330.72s -> 1333.76s]  left and what it should do there, and by telling it what it should do when it
+[1333.76s -> 1337.48s]  sees an image to the right, it tells it that not only can you recover from
+[1337.48s -> 1340.56s]  mistakes, but here is the action that is suitable for doing that.
+[1340.56s -> 1343.88s]  And in general, you could imagine that with these accumulating errors,
+[1343.88s -> 1347.56s]  if instead of training on fairly narrow, very optimal trajectories,
+[1347.56s -> 1350.36s]  if you instead have many trajectories that all make some mistakes and then
+[1350.36s -> 1354.48s]  recover from those mistakes, such that the training distribution is a little bit
+[1354.48s -> 1358.52s]  broader so that whenever you make a small mistake, you're still in distribution,
+[1358.52s -> 1362.52s]  then your policy might actually learn to correct those mistakes and still do fairly well.
+[1362.52s -> 1367.12s]  And that is actually one of the ideas that people tend to use somewhat heuristically
+[1367.12s -> 1371.96s]  to make behavioral learning, behavioral cloning work in practice.
+[1371.96s -> 1376.16s]  So the paradox here is that imitation learning actually works better if the
+[1376.16s -> 1378.28s]  data has more mistakes and therefore more recovery.
+[1378.28s -> 1384.32s]  So higher quality, more perfect data can actually make imitation learning work worse.
+[1384.32s -> 1386.08s]  So that's what we'll talk about next.

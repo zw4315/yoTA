@@ -1,0 +1,86 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.74s]  Let's consider one base recursion.
+[5.74s -> 10.46s]  We start with a mixture posterior, we get a predicted mixture with the same number
+[10.46s -> 16.70s]  of hypotheses, and then we have an updated mixture posterior, where for each predicted
+[16.70s -> 23.06s]  hypothesis we get several new hypotheses due to the data association.
+[23.06s -> 28.66s]  The number of hypotheses in the posterior density increases very rapidly, and we need
+[28.70s -> 34.66s]  some form of approximation to achieve computationally tractable tracking algorithms.
+[34.66s -> 42.22s]  One idea is that we try to find a subset of data associations, call it capital theta tilde,
+[42.22s -> 48.94s]  such that this subset contains a lot fewer data associations, and such that each association
+[48.94s -> 52.80s]  in this subset has a large weight.
+[52.80s -> 58.78s]  One way to figure out which subset of data associations have large weights is to compute
+[58.78s -> 62.56s]  the weight for every possible data association.
+[62.56s -> 68.54s]  Now doing so, we would like to avoid computing all possible data associations, because doing
+[68.54s -> 72.28s]  that would have a much too high computational cost.
+[72.28s -> 79.20s]  A solution to this is to pose this as an optimization problem, specifically an assignment
+[79.20s -> 85.00s]  problem, and we can explain what an assignment problem is by using an example.
+[85.00s -> 89.28s]  Let's say that we have three workers and three tasks, and we need the workers
+[89.28s -> 91.02s]  to solve these tasks.
+[91.02s -> 95.66s]  The cost for each worker and each task is given by this table, so the cost for the
+[95.66s -> 100.64s]  first worker and the first task is five, the first worker and the second task is
+[100.64s -> 102.60s]  eight, and so on.
+[102.60s -> 108.60s]  Some properties of this problem is that each worker can only solve one task at a time,
+[108.60s -> 112.60s]  and each task can only be solved by one worker.
+[112.60s -> 118.26s]  The assignment problem is to assign workers to tasks, such that each worker has something
+[118.26s -> 124.80s]  to do, and each task is performed, and the total cost is as low as possible.
+[124.80s -> 130.68s]  Equivalently, we could assign tasks to workers instead, and this assignment problem
+[130.68s -> 133.44s]  would have the same optimal assignment.
+[133.44s -> 137.74s]  In other words, the same assignment would have the lowest cost.
+[137.74s -> 140.78s]  So we can have a look at some example assignments.
+[140.78s -> 146.24s]  If we assign worker one to task one, worker two to task two, and worker three to task
+[146.24s -> 151.40s]  three, then the cost of the assignment is five plus twelve plus five, which is
+[151.40s -> 153.52s]  equal to twenty-two.
+[153.52s -> 159.10s]  Another possible assignment is that worker one solves task three, worker two solves task
+[159.10s -> 165.42s]  one, and worker three solves task two, and this assignment has cost twenty-three.
+[165.42s -> 171.98s]  And a third assignment is that worker one solves task two, worker two solves task three,
+[171.98s -> 176.42s]  and worker three, task one, and this assignment has cost nineteen.
+[176.42s -> 182.14s]  Now, for this very small problem, there are so few alternative assignments that we
+[182.14s -> 187.12s]  can go through all of them and figure out what the corresponding cost is.
+[187.12s -> 192.46s]  And if we do so, it turns out that for this example, the optimal assignment is the
+[192.50s -> 196.46s]  one we just had a look at, when the cost is nineteen.
+[196.46s -> 201.46s]  So this means that we could not assign the workers and the tasks in a different way
+[201.46s -> 203.78s]  and have a lower cost.
+[203.78s -> 210.54s]  A way to mathematically describe this assignment problem is to use a cost matrix and an assignment
+[210.54s -> 211.94s]  matrix.
+[211.94s -> 218.10s]  The cost matrix L has elements where row i and column j is the cost of assigning worker
+[218.10s -> 220.06s]  i to task j.
+[220.06s -> 225.46s]  So in the example with three workers and three tasks, the cost matrix was given in
+[225.46s -> 227.14s]  the table before.
+[227.14s -> 234.06s]  The assignment matrix A has elements on row i and column j equal to one if worker i
+[234.06s -> 239.50s]  is assigned to task j and is equal to zero otherwise.
+[239.50s -> 245.18s]  For example, if we assign worker one to task two, worker two to task three, and
+[245.22s -> 249.98s]  worker three to task one, we get the following assignment matrix.
+[249.98s -> 256.18s]  And it's easy to verify that the elements equal to one indicate these assignments.
+[256.18s -> 261.18s]  Using this cost matrix and this assignment matrix, the cost of the assignment can be
+[261.18s -> 266.70s]  expressed as shown here by the trace of the assignment matrix transposed multiplied
+[266.70s -> 268.14s]  by the cost matrix.
+[268.14s -> 273.54s]  And this is equivalent to taking the sum over all workers, the sum over all tasks.
+[273.62s -> 278.46s]  And if the worker is assigned to the task, then we add the corresponding cost to the
+[278.46s -> 279.98s]  total cost.
+[279.98s -> 283.18s]  So let's consider the same example assignments again.
+[283.18s -> 288.66s]  For the first assignment that we considered, we get the assignment matrix shown here.
+[288.66s -> 292.14s]  And the cost becomes 22 just like before.
+[292.14s -> 297.82s]  For the second assignment, we get this assignment matrix and the cost is 23.
+[297.82s -> 301.54s]  And for the third assignment, we get this assignment matrix.
+[301.54s -> 308.02s]  And it's straightforward to verify that the cost for this assignment matrix is 19.
+[308.02s -> 312.70s]  Having introduced the cost matrix and the assignment matrix, we can give a mathematical
+[312.70s -> 316.66s]  definition to the optimal assignment problem.
+[316.66s -> 323.34s]  Given a cost matrix L, we seek the solution A star to the following constrained minimization
+[323.34s -> 324.34s]  problem.
+[324.34s -> 329.74s]  We wish to minimize with respect to A the cost, which is trace of A transposed L. The
+[329.74s -> 334.30s]  first constraint is that a worker and task are either assigned or not.
+[334.30s -> 339.94s]  And this means that each element in the assignment matrix is either zero or one.
+[339.94s -> 345.06s]  The second constraint is that each worker is assigned to exactly one task.
+[345.06s -> 349.38s]  For the assignment matrix, this means that if we take a sum over the columns, for
+[349.38s -> 353.02s]  each row, this sum must be equal to one.
+[353.02s -> 358.64s]  And the third constraint is that each task must be assigned to exactly one worker.
+[358.64s -> 363.80s]  And for the assignment matrix, this means that if we take a sum over the rows, then
+[363.80s -> 367.36s]  for each column, this sum must be equal to one.
+[367.36s -> 371.42s]  We can see data association as an assignment problem.
+[371.42s -> 373.48s]  We have objects instead of workers.
+[373.48s -> 375.84s]  We have detections instead of tasks.
+[375.84s -> 382.12s]  And we wish to assign objects to detections or equivalently detections to objects.
+[382.12s -> 387.92s]  So what we will learn next is what the object tracking assignment matrix A is with
+[388.00s -> 393.40s]  constraints, what the object tracking cost matrix L is, and we will also learn a little
+[393.40s -> 395.56s]  bit about some standard solvers.

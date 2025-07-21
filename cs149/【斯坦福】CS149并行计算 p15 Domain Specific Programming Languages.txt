@@ -1,0 +1,1356 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 10.36s]  Okay, so here's the layout for the rest of the class.
+[10.36s -> 16.52s]  There's two lectures right after Thanksgiving on transactional memory, and those are real
+[16.52s -> 19.36s]  kind of heavyweight lectures.
+[19.36s -> 23.62s]  There will be exam problems on them, or almost certainly be exam problems on them.
+[23.62s -> 26.48s]  The other three lectures that we have before now at the end of the quarter is
+[26.48s -> 31.72s]  today's lecture on domain-specific programming systems, and then the last week Kuma is talking
+[31.72s -> 37.34s]  more about specialized hardware, you know, not as programmable processors and the energy
+[37.34s -> 39.18s]  efficiency of them.
+[39.18s -> 43.24s]  These other three lectures are a little bit more like we want you to know about
+[43.24s -> 47.46s]  them and be aware of them as you proceed further, but, you know, exam questions would
+[47.46s -> 52.20s]  be more conceptual and not like, you know, work this out or something like that.
+[52.20s -> 61.24s]  So I'll just get started.
+[61.24s -> 65.62s]  And the systems we'll describe today are actually pretty cool.
+[65.62s -> 68.68s]  So the goal of what I'm trying to do today is two things.
+[68.68s -> 75.42s]  One is, so far in this class you have implemented code in what I consider to be
+[75.42s -> 81.72s]  fairly low-level programming systems, essentially C, C++, you know, CUDA is basically that,
+[81.72s -> 86.84s]  ISPC is basically that, and more or less you've done everything, you know, like the
+[86.84s -> 91.76s]  one thing that you got that was really convenient was both ISPC and CUDA basically
+[91.76s -> 97.32s]  took over the responsibility for generating SIMD instructions for you, at the very least
+[97.32s -> 100.50s]  you didn't have to worry about that, but most of the rest of the major decisions
+[100.50s -> 105.28s]  were made by you, and that was intentional, you know, you now know how to thread pool
+[105.28s -> 110.04s]  might be implemented, so when you call ISPC tasks you know exactly what they're doing,
+[110.04s -> 111.68s]  and so on and so on.
+[111.68s -> 117.48s]  So now we're going to say, okay, you kind of know how you would implement, you know,
+[117.48s -> 119.36s]  things from scratch.
+[119.36s -> 124.86s]  What are the higher-level abstractions that would be good to present people that might
+[124.86s -> 131.36s]  be experts in a domain but not the folks that have taken 149 or really are interested
+[131.36s -> 133.02s]  in implementing things?
+[133.02s -> 136.44s]  So I'm going to talk about that today, and largely I'm going to talk about it through
+[136.44s -> 139.20s]  the context of two case studies, two examples.
+[139.20s -> 143.00s]  Both of these actually have some Stanford relation.
+[143.00s -> 146.96s]  We're going to talk about the programming language that's used to author all of the
+[146.96s -> 153.08s]  image processing, the photo app in Google Android phones, and every image that's,
+[153.08s -> 156.42s]  or at least to my knowledge at least a couple years ago, every image that went through
+[156.42s -> 161.68s]  Instagram was going through filters and processing from a language called Halide.
+[161.68s -> 165.68s]  And then there's this research language developed at Stanford called List, which is, you know,
+[165.68s -> 169.60s]  like it was a research language, you know, to be honest, you probably never encounter
+[169.60s -> 173.60s]  it, but it's actually got some great examples of the value of high-level abstractions in
+[173.60s -> 176.20s]  it, okay?
+[176.20s -> 177.96s]  So that's what we're going to talk about.
+[177.96s -> 182.86s]  So the premise here is that, you know, we haven't used all of these programming
+[182.86s -> 183.86s]  systems.
+[183.86s -> 189.72s]  Some of them might be familiar to you, but if I am, you know, if I'm trying to develop
+[189.72s -> 194.04s]  a high-performance application, I need some pretty smart people to be able to optimize
+[194.04s -> 195.04s]  it.
+[195.40s -> 200.16s]  So we need CS149 students, and in the grand scheme of programmers, CS149 students are
+[200.16s -> 202.86s]  pretty few and far between, right?
+[202.86s -> 208.84s]  And if you look at the range of performance that even CS149 students produce on their
+[208.84s -> 216.42s]  assignments, really, really, really code optimizers are even fewer and far between.
+[216.42s -> 220.46s]  So proof by assignments one, two, and three, and probably even proof by assignment four
+[220.46s -> 222.62s]  for sure.
+[222.70s -> 226.42s]  And throughout computer science, whether you're a systems person, whether you're a programming
+[226.42s -> 233.06s]  languages person or compilers person, there's kind of always been this sort of holy grail
+[233.06s -> 238.18s]  or this unicorn of characteristics of a programming language, right?
+[238.18s -> 246.10s]  Like first of all, you'd like to be able to just productively express the program
+[246.10s -> 249.62s]  you want to write, and in fact, these days with LLMs, you know, there's a lot of
+[249.62s -> 253.66s]  interest in that, saying I want a program that adds a bunch of numbers and it spits
+[253.66s -> 255.26s]  out the Python code.
+[255.26s -> 259.70s]  So you'd like to be able to go from an idea to a working correct program very quickly.
+[259.70s -> 264.14s]  You want to be productive, and many of you use Python as probably your most frequent
+[264.14s -> 268.02s]  language, because it's a pretty productive programming language.
+[268.02s -> 273.50s]  And then, in many cases, you probably like a high-performance programming language,
+[273.50s -> 280.18s]  because these days, machine learning, data science, big graph algorithms on terabyte-sized
+[280.18s -> 285.42s]  graphs, et cetera, et cetera, or image processing on 10-megapixel images, you're going to want
+[285.42s -> 290.30s]  performance because it's got to run on an iPhone, it's got to run on a data center.
+[290.30s -> 296.94s]  And then last, historically people have said, well, programming language should be general.
+[296.94s -> 300.58s]  You should be able to write whatever program you want.
+[300.58s -> 305.94s]  And there were these kind of three axes of rating a programming language, and like, you
+[305.94s -> 309.98s]  know, what is the programming language that nails all of these, that scores really high
+[309.98s -> 311.86s]  of these fronts?
+[311.86s -> 318.70s]  And if you look at many widely used programming languages, and really this has been changing
+[318.70s -> 324.02s]  over the last five to 10 years, but if you look at a lot of the long-term ones,
+[324.02s -> 328.18s]  they kind of go on some axis, right?
+[328.18s -> 331.70s]  Like, if you're a web developer, you might write a lot of code in JavaScript, you know,
+[331.70s -> 335.94s]  you can write whatever you want in JavaScript, but, you know, you can hack some stuff up
+[335.94s -> 339.70s]  pretty quick, but it does, and you can tack basically whatever you want, but it's
+[339.70s -> 342.14s]  not going to be that fast.
+[342.14s -> 346.38s]  Or if you're writing here in C++, or Rust, and I'll even put Java and CUDA in this
+[346.38s -> 349.82s]  category, you know, these are all different levels of performance, to be honest, but
+[349.82s -> 354.42s]  you know, you can write whatever you want again, and you'd choose to use C or C++,
+[354.42s -> 359.06s]  you know, this needs to be fast, I'm going to write it in C, or it needs to be GPU-accelerated,
+[359.06s -> 361.46s]  I'm going to write it in CUDA.
+[361.46s -> 369.62s]  And so a lot of the more successful languages were kind of on these axes.
+[369.62s -> 373.98s]  And so what I want to talk about today is this empty line here between productivity
+[373.98s -> 374.98s]  and performance.
+[374.98s -> 381.34s]  So we're interested in, yeah, I put Ruby down there as well, in domain-specific languages
+[381.34s -> 387.70s]  where we say, you know what, we care a lot about being productive, like for example PyTorch.
+[387.70s -> 391.10s]  I want to be able to hack up a new neural network very quickly.
+[391.10s -> 395.98s]  I want it to be extremely efficient, not just like parallel efficient, but if we're
+[395.98s -> 400.18s]  talking about PyTorch, we're like, we want to use GPUs, or we want to use accelerated
+[400.18s -> 406.34s]  TPUs, or something like that, but I'm willing to give up the fact that I can kind of
+[406.34s -> 408.78s]  express anything I ever want, right?
+[408.78s -> 413.70s]  And so some of the examples here, you know, you probably have encountered a bunch of them,
+[413.70s -> 414.70s]  right?
+[414.70s -> 418.74s]  Like, you know, PyTorch is not the language that you would use to build anything you
+[418.74s -> 419.74s]  want.
+[419.74s -> 423.74s]  It's a language that you use to express your tensor operations, right?
+[423.74s -> 428.10s]  SQL, you know, very constrained language, but it's a great language for querying
+[428.10s -> 429.10s]  the database.
+[429.10s -> 433.62s]  And you don't think at all about how those queries are executed in parallel on a big
+[433.62s -> 434.62s]  database.
+[434.62s -> 437.30s]  You just hope Oracle or Postgres does the right thing.
+[437.30s -> 442.58s]  You just say, I'm looking for, you know, all records in my database where the first
+[442.58s -> 446.82s]  name is FUBAR, or something like that.
+[446.82s -> 453.36s]  Even something like MATLAB I would put in this example.
+[453.36s -> 459.66s]  Anything else come to mind as things that you commonly use that you might sort of categorize
+[459.66s -> 464.10s]  as being similar in spirit to some of these things on the left, this left edge?
+[464.10s -> 465.10s]  Yeah?
+[465.10s -> 467.10s]  G what?
+[467.10s -> 471.50s]  It's used for like geospatial.
+[471.50s -> 474.34s]  Oh, for geospatial databases, yeah, okay.
+[474.34s -> 479.82s]  So that's another database query language, except it's centered around the notion of
+[479.82s -> 480.82s]  2D space.
+[480.82s -> 484.26s]  Okay, yeah, so any kind of database query language kind of fits in the thing.
+[484.26s -> 490.18s]  If you're in graphics, something like OpenGL, and we're used to writing in fairly domain-specific
+[490.18s -> 492.38s]  languages in graphics.
+[492.38s -> 496.06s]  These days machine learning, all of it is done in fairly, and there's different levels,
+[496.06s -> 498.62s]  you know, there's like PyTorch, and then there's a whole bunch of things built on
+[498.62s -> 503.54s]  top of the PyTorch to make your life even easier if you want less and less flexibility.
+[503.54s -> 509.02s]  So that's kind of the idea of today, is the thesis is, and these days I think
+[509.02s -> 514.14s]  you're seeing the results of about five years of, or five to 10 years of emphasis on
+[514.14s -> 518.94s]  domain-specific languages, and if we go back about 10 years, it was probably a little
+[518.94s -> 524.50s]  controversial to say, hey, like, we're going to give up on the flexibility of C, C++,
+[524.50s -> 528.90s]  Java, and we're going to force you all down a narrow path, right?
+[528.90s -> 533.02s]  So this was, this is the big promise, and usually in this class we actually give
+[533.02s -> 535.94s]  you this lecture after we've talked about specialized hardware.
+[535.94s -> 540.22s]  We haven't talked about specialized hardware yet, but just keep in mind, like, that high
+[540.22s -> 544.54s]  performance is not just parallel, but it could be like using a TPU, it could be
+[544.66s -> 549.30s]  using an accelerator, it could be using any of the five different processors that are in my
+[549.30s -> 551.10s]  Apple Watch, things like that.
+[551.10s -> 555.74s]  All right, so, you know, here are some examples.
+[555.74s -> 558.86s]  You've pointed out a few of, a few to me already.
+[558.86s -> 560.62s]  I added a few more here.
+[560.62s -> 569.46s]  So the idea is to write a program quickly and write it once, and I'm going to write
+[569.50s -> 577.22s]  it using primitives that the compiler, the system knows about, and it knows enough
+[577.22s -> 582.50s]  about what I mean by various primitives, like, for example, PyTorch knows what an
+[582.50s -> 584.66s]  ND tensor is.
+[584.66s -> 592.10s]  For example, SQL knows when you say select this row, like, it knows a lot about what selection means.
+[592.10s -> 598.42s]  And it's going to leverage that knowledge to give you the best possible implementation
+[598.42s -> 601.26s]  on whatever system you're running on.
+[601.26s -> 607.86s]  So if I say select everything from this database, you know, like, how is the data laid out?
+[607.86s -> 613.66s]  What is the algorithm, the index structure used to, is it a binary tree, is it a B-tree?
+[613.66s -> 617.14s]  Think of all these decisions that go into implementing that database.
+[617.14s -> 623.30s]  As the programmer, I just say, please give me a relation, give me a table that has all
+[623.30s -> 625.54s]  of the results of this filter.
+[625.54s -> 629.74s]  And on different systems, that implementation can be very, very different.
+[629.74s -> 634.30s]  You know, in PyTorch, you're going to say something like, please, you know, take this tensor
+[634.30s -> 636.66s]  and pass it through this com layer.
+[636.66s -> 640.34s]  And if you're running on a GPU, that's going to be some cuDNN implementation.
+[640.34s -> 643.42s]  If you're running on Intel, it might be a completely different implementation.
+[643.42s -> 649.30s]  If you're running on a Google TPU, it could be a completely different implementation.
+[649.30s -> 655.14s]  So let's just kind of go through some examples to think about some
+[655.14s -> 661.94s]  of the decisions that folks make when designing these domain-specific sets of abstractions.
+[661.94s -> 665.42s]  And the first example that I'm going to give is a little bit from, like, sort of
+[665.42s -> 670.42s]  my neck of the woods in graphics and image processing, and it's a language called Halide,
+[670.42s -> 675.66s]  which is the language that's used in practice to implement the camera application on
+[675.66s -> 676.98s]  Google's Android phone.
+[676.98s -> 681.82s]  So if you have an Android phone and you take pictures, you are running Halide code.
+[681.82s -> 686.22s]  I'm not up to date, but as of, like, four or five years ago, if you uploaded a picture
+[686.22s -> 690.62s]  to Instagram and it went through an image processing filter, many of those were running
+[690.62s -> 692.90s]  in Halide code at Meta.
+[692.90s -> 699.34s]  So this is actually, it's not a widely used language, but it's a language that's used
+[699.34s -> 702.62s]  by a bunch of people that care a lot about performance.
+[702.62s -> 707.18s]  And it had origins at Stanford, even though it was mainly developed at MIT and then
+[707.18s -> 709.00s]  later at Google.
+[709.00s -> 714.24s]  So before we start talking about what are the primitives Halide gives you, we actually
+[714.24s -> 720.40s]  have to talk about what is the workload that people in this domain are trying to write.
+[720.40s -> 727.16s]  So here's an example, and I'm curious, in 30 seconds or less, can you tell me what
+[727.16s -> 729.68s]  this code does?
+[729.68s -> 733.96s]  Any sense?
+[733.96s -> 744.56s]  It blurs an image, which you can tell from the function name, yes.
+[744.56s -> 747.58s]  But how does it blur the image?
+[747.58s -> 751.64s]  Like what's the filter size?
+[751.64s -> 754.64s]  How is it paralyzed?
+[754.64s -> 755.64s]  How is it vectorized?
+[755.64s -> 757.64s]  It's pretty gnarly.
+[757.64s -> 758.64s]  Pretty gnarly.
+[758.64s -> 763.60s]  So this is like if we were in the assignment one timeframe and we replace mmload128, which
+[763.60s -> 771.00s]  is your MMX intrinsic, so we changed that with CS149 intran, you would have done this
+[771.00s -> 772.56s]  yourself.
+[772.56s -> 773.56s]  You would have done this yourself.
+[773.56s -> 777.32s]  Now let me ask you a different question.
+[777.32s -> 778.32s]  What does this code do?
+[778.32s -> 785.36s]  This is C. This is regular C. I'm gonna give you the function name this time so you
+[785.36s -> 786.36s]  can't cheat.
+[786.36s -> 790.84s]  This is a convolution.
+[790.84s -> 792.88s]  This is a 2D convolution.
+[792.88s -> 797.08s]  I give you an image, a 2D array, a matrix of pixels.
+[797.08s -> 800.76s]  In this case, it's a monochrome image, because there's not red, green, and blue.
+[800.76s -> 803.80s]  It's just a single intensity per pixel.
+[803.80s -> 808.92s]  And every output pixel at the same location is the average of all the surrounding neighboring
+[808.92s -> 810.64s]  pixels.
+[810.64s -> 815.28s]  So this is for every output pixel loops.
+[815.28s -> 821.20s]  And then for every output pixel, please loop over the 3x3 block of neighboring pixels
+[821.20s -> 822.80s]  and average them together.
+[822.80s -> 825.92s]  Add them all up, and then divide by...
+[825.92s -> 830.04s]  Or multiply by weights, and weights is one ninth everywhere.
+[830.04s -> 833.56s]  And back to the DNN lecture, I told you if you ran the C++ code, you would blur
+[833.56s -> 837.20s]  an image and it would look a little bit like this.
+[837.20s -> 838.44s]  All right.
+[838.44s -> 840.48s]  So here's that code.
+[840.48s -> 842.06s]  And so here's my question to you.
+[842.06s -> 844.56s]  Let's analyze it a little bit.
+[844.56s -> 850.96s]  What is the amount of work done per pixel?
+[850.96s -> 852.96s]  How many arithmetic ops?
+[852.96s -> 860.20s]  Let's do this again.
+[860.20s -> 865.44s]  How many arithmetic ops per pixel?
+[865.44s -> 871.28s]  In other words, look here.
+[871.28s -> 876.08s]  Shout out?
+[876.08s -> 881.76s]  Floating point arithmetic ops.
+[881.76s -> 888.36s]  There's basically one multiply here, and an at.
+[888.36s -> 890.72s]  So I'm doing nine multiply at.
+[890.72s -> 892.54s]  And then a store, right?
+[892.54s -> 898.40s]  So the cost to do this is nine times width by height, or if we decided to think about
+[898.40s -> 903.48s]  the filter being an n by n filter and not a 3 by 3 filter, it would be n squared width
+[903.48s -> 904.48s]  by height.
+[904.48s -> 905.48s]  That's the amount of work we do.
+[905.48s -> 909.02s]  So that's the total number of ops.
+[909.02s -> 914.22s]  Now I need to give you just a small piece of information if you knew this about graphics.
+[914.22s -> 919.66s]  If you look at this filter, you can actually separate this filter, which is a 2D convolution.
+[919.66s -> 922.54s]  You can separate it into two 1D convolutions in this case.
+[922.54s -> 927.34s]  So I'm gonna write it a little bit differently, just to be optimal before we start paralyzing
+[927.34s -> 928.34s]  it.
+[929.28s -> 936.52s]  I can get the same result by actually just blurring 1D convolution across all the rows.
+[936.52s -> 943.56s]  So every pixel is the average of the three left and right neighbor in itself.
+[943.56s -> 946.62s]  And then I take that result, and I blur vertically.
+[946.62s -> 951.18s]  And if you think about it, after the horizontal blur, I've added up three numbers, and then
+[951.18s -> 956.98s]  after the vertical blur, I've taken those partial sums and added three of them together.
+[957.02s -> 960.20s]  So I'm doing the exact same math.
+[960.20s -> 962.20s]  So that code might look a little bit like this.
+[962.20s -> 963.20s]  So let's be...
+[963.20s -> 969.76s]  I wrote it in C here, and then on the right side, I'm showing you the allocations.
+[969.76s -> 972.56s]  So the input is size, width by height.
+[972.56s -> 974.36s]  The plus two is not that significant.
+[974.36s -> 978.68s]  I just didn't wanna deal with boundary conditions in my output.
+[978.68s -> 985.16s]  Then I basically shrink it by two elements when I'm blurring horizontally, and then
+[985.16s -> 989.08s]  I shrink it by two elements when I'm blurring vertically.
+[989.08s -> 991.40s]  So what is the amount of work I do now?
+[991.40s -> 994.48s]  So it used to be n squared with times height.
+[994.48s -> 995.48s]  Now what is it?
+[995.48s -> 1003.52s]  Now it's 2n with times height, which dropping from nine operations per pixel to six might
+[1003.52s -> 1007.88s]  not seem all that significant, but what if it was a seven by seven filter?
+[1007.88s -> 1010.98s]  Now that's 49 operations per pixel versus 14.
+[1010.98s -> 1015.20s]  We're starting to get like a factor of three or a little more in terms of math.
+[1015.20s -> 1018.58s]  And if you blur an image in Photoshop, you often might do something that's like a hundred
+[1018.58s -> 1024.22s]  by a hundred blur radius filter, and so things can get gnarly pretty fast.
+[1024.22s -> 1028.66s]  Okay, so that's good.
+[1028.66s -> 1033.86s]  We reduced the number of math operations we need to get this thing done.
+[1033.86s -> 1038.82s]  You see anything that may be not so good if we think about some of the other things
+[1038.82s -> 1040.82s]  we think about in this class?
+[1040.82s -> 1041.82s]  Yeah.
+[1041.82s -> 1050.22s]  Okay, so one thing that is unfortunate is that I basically increased my memory footprint
+[1050.22s -> 1053.30s]  by 33 percent, right?
+[1053.30s -> 1056.46s]  So I used to need an input and output, now I need an input and output and a temp
+[1056.46s -> 1058.20s]  buffer of the same size.
+[1058.20s -> 1064.42s]  And that actually could be a significant thing if I'm dealing with like a 12 megapixel image
+[1064.42s -> 1065.42s]  on my phone, right?
+[1065.42s -> 1071.10s]  Like I'm allocating another 12 megapixel buffer, 12 megapixels times red, green, blue,
+[1071.10s -> 1080.82s]  often red, green, blue, alpha is arguably 48 megafloats or 48 megabytes if it's, so
+[1080.82s -> 1084.42s]  you know, I just allocated 50 megabytes of memory on my phone, that can matter.
+[1084.42s -> 1086.58s]  It can definitely matter.
+[1086.58s -> 1087.66s]  Anything else that you notice?
+[1087.66s -> 1088.98s]  So what are the things we often think about?
+[1088.98s -> 1092.78s]  We think about, so parallelism, there's no parallelism here, we haven't talked about
+[1092.78s -> 1093.78s]  that yet.
+[1093.78s -> 1099.70s]  But we talk about work done, we talk about memory footprint, we talk about memory bandwidth
+[1099.70s -> 1104.10s]  and arithmetic intensity, we talk about SIMD coherence, but again, we're not, there's
+[1104.10s -> 1106.10s]  no parallelism here yet.
+[1106.10s -> 1107.10s]  Yeah.
+[1107.10s -> 1115.58s]  Yeah, so we, before, you know, keep in mind that let's like look at this program.
+[1115.58s -> 1121.00s]  How many times does every input get read?
+[1121.00s -> 1126.56s]  Probably every input gets read nine times, but effectively how many times will it get
+[1126.56s -> 1129.08s]  read from memory?
+[1129.08s -> 1133.40s]  Probably once, and you gotta be a little bit careful about that, to be honest, because
+[1133.40s -> 1135.52s]  we talked about this blocking thing.
+[1135.52s -> 1143.20s]  So it means that if you can hold two rows in cache, then you'll be able to hold the
+[1143.20s -> 1147.30s]  data around long enough so that you're only gonna read it from memory once, right?
+[1147.30s -> 1152.10s]  So as long as a couple rows can fit in cache, this thing is gonna read every input element
+[1152.10s -> 1156.86s]  once and certainly write every output element exactly once, okay?
+[1156.86s -> 1160.22s]  And now think about this one.
+[1160.22s -> 1166.14s]  This one reads every input element once, writes every temp buffer once, then reads
+[1166.14s -> 1170.54s]  every temp buffer element again and then writes the output once.
+[1170.54s -> 1176.02s]  So my arithmetic intensity, not only has my memory footprint increased, my arithmetic
+[1176.06s -> 1179.78s]  intensity has sort of decreased by a factor of about two.
+[1179.78s -> 1183.94s]  So if we were bandwidth-bound before, we are now even slower.
+[1183.94s -> 1190.02s]  If we were compute-bound before, okay, maybe we made an improvement, okay?
+[1190.02s -> 1203.14s]  Okay, so what, yeah, so we actually kinda already talked about this a little bit.
+[1203.18s -> 1208.10s]  I sort of pointed out all the places where data gets reused, exactly, okay.
+[1208.10s -> 1212.30s]  Okay, so question for the audience.
+[1212.30s -> 1215.38s]  Is there a way to do better?
+[1215.38s -> 1221.58s]  And let me see the thinking just a little bit with an algorithm that looks a little bit like this.
+[1221.58s -> 1225.42s]  And I'd like you to try and make sure, just take a look at this.
+[1225.42s -> 1230.78s]  This might be nice to talk over with someone, and I'm giving you some hints to help you understand this.
+[1230.78s -> 1236.22s]  What is this implementation doing?
+[1236.22s -> 1247.50s]  It does not allocate more than three rows of temp buffer.
+[1247.50s -> 1252.50s]  Yeah, it takes a little bit of time to digest, so if you wanna talk it with somebody
+[1252.50s -> 1257.30s]  or if you just wanna puzzle through it yourself, I'll give everybody about 30 to 45 seconds
+[1257.30s -> 1260.18s]  to kinda push through here.
+[1260.22s -> 1262.06s]  The key things are the things I've highlighted.
+[1262.06s -> 1269.66s]  Notice that the outermost loop is over rows, and then this loop is over zero to three.
+[1269.66s -> 1290.50s]  Okay.
+[1290.50s -> 1292.10s]  So what's going on here?
+[1292.10s -> 1294.26s]  How could we explain this?
+[1294.26s -> 1297.98s]  Tell me, if you were trying to explain this to me in office hours and high-level language,
+[1297.98s -> 1299.54s]  what's going on here.
+[1299.54s -> 1300.54s]  Yeah.
+[1300.54s -> 1301.54s]  Oh, sorry.
+[1301.54s -> 1303.54s]  No, I thought you were volunteering.
+[1303.54s -> 1304.54s]  Never mind.
+[1304.54s -> 1305.54s]  Yeah.
+[1305.54s -> 1309.54s]  I guess one way I would think about it is like you're doing the same algorithm
+[1309.54s -> 1310.54s]  as the last slide.
+[1310.54s -> 1311.54s]  Yes.
+[1311.54s -> 1314.54s]  But you're doing it a bunch of times on different chunks of the outside.
+[1314.54s -> 1315.54s]  Yeah.
+[1315.54s -> 1317.78s]  So what I'm doing is that...
+[1317.78s -> 1318.78s]  Look at this.
+[1318.78s -> 1324.06s]  So what I'm doing is I'm saying we don't need the whole temp buffer, like the whole
+[1324.06s -> 1325.06s]  intermediate.
+[1325.14s -> 1330.62s]  What I'm doing is I'm doing the first pass, but I'm only producing three rows of output.
+[1330.62s -> 1335.22s]  So I'm taking three rows and blurring them horizontally.
+[1335.22s -> 1340.86s]  And that's all the information I need to then blur those vertically and get one row
+[1340.86s -> 1343.34s]  of final output.
+[1343.34s -> 1348.58s]  So in other words, you can think about it as like a...
+[1348.58s -> 1350.90s]  You can read the code in the following way.
+[1350.90s -> 1356.10s]  The outermost J loop is for every row of output.
+[1356.10s -> 1364.30s]  Then generate three temporary rows that are needed to produce that row of output.
+[1364.30s -> 1369.18s]  And then take those rows and compress them and blur them vertically in order to produce
+[1369.18s -> 1372.20s]  that row of output.
+[1372.20s -> 1375.38s]  So the way I like to think about this piece of code is like I just think about
+[1375.38s -> 1381.62s]  the for loops and I say, oh, look, for every row of actual output, first produce the inputs
+[1381.62s -> 1387.26s]  that are needed, and then consume those inputs to produce the row of output, and
+[1387.26s -> 1389.90s]  then start over again.
+[1389.90s -> 1395.10s]  So the nice thing about what I did was my temp buffer allocation moved from the entire
+[1395.10s -> 1399.94s]  size of the image down to approximately about three rows.
+[1399.94s -> 1404.34s]  Which are good, because those three rows probably can fit in cache now.
+[1404.34s -> 1408.02s]  And I got my arithmetic intensity back.
+[1408.02s -> 1414.58s]  So I'm doing this two phase algorithm, which I thought was good, without the extra allocation,
+[1414.58s -> 1418.48s]  and I made the temp buffer small enough that writes to that temp buffer and later
+[1418.48s -> 1424.50s]  reads will hit the cache.
+[1424.50s -> 1425.50s]  But is there...
+[1425.50s -> 1426.50s]  How did I get...
+[1426.50s -> 1428.06s]  What was the cost that I paid?
+[1428.06s -> 1429.06s]  Yeah.
+[1429.06s -> 1440.98s]  Yeah, so notice what's happening is like every row of temp buffer really can be reused
+[1440.98s -> 1443.22s]  three times.
+[1443.22s -> 1450.06s]  But I'm producing a whole row of temp, three rows of temp, using it, then throwing out
+[1450.06s -> 1454.50s]  all that information, and then computing another three rows of temp over and over
+[1454.50s -> 1455.50s]  again.
+[1455.94s -> 1463.58s]  So maybe computing a bunch of things, which is diminishing the benefits of sort of this
+[1463.58s -> 1464.58s]  two phase approach.
+[1464.58s -> 1469.34s]  In fact, if I said how many operations per pixel do I compute, can you compute what
+[1469.34s -> 1470.34s]  it is?
+[1470.34s -> 1474.14s]  Or maybe how many operations per row?
+[1474.14s -> 1478.56s]  That might be an easy way to think about it.
+[1478.56s -> 1484.34s]  So for every row of output, what do I first do?
+[1484.34s -> 1492.02s]  I do three operations per pixel for three rows, and then I do another three operations
+[1492.02s -> 1493.02s]  here.
+[1493.02s -> 1496.68s]  So I do three times three plus three.
+[1496.68s -> 1505.02s]  So I end up doing 12 math operations per pixel, which is actually worse than I started.
+[1505.02s -> 1508.74s]  So I've gone backwards.
+[1508.74s -> 1512.38s]  But it feels like I'm getting closer.
+[1512.38s -> 1514.08s]  So what are some ideas?
+[1514.82s -> 1517.32s]  So I want to minimize the math that I do.
+[1517.32s -> 1520.92s]  I'd like to get it down close to this 2n.
+[1520.92s -> 1526.92s]  But I want high arithmetic intensity and low footprint.
+[1526.92s -> 1527.92s]  What can I do?
+[1527.92s -> 1528.92s]  Yeah.
+[1528.92s -> 1540.20s]  So if we're thinking sequentially, one thing we could do is we could just think about
+[1540.20s -> 1542.32s]  that red buffer as a rolling buffer.
+[1542.92s -> 1547.76s]  Slide two rows down and populate a new one, and then we're off to the races.
+[1547.76s -> 1554.24s]  Now we are going to pay the cost of sliding the two rows down, just a memcpy.
+[1554.24s -> 1556.28s]  So that can get a little bit annoying.
+[1556.28s -> 1563.38s]  Or we could actually just have this code use indirection to refer to the data.
+[1563.38s -> 1565.96s]  But now this code's going to get a little ugly.
+[1565.96s -> 1570.00s]  And in fact, by the way, if you do this, you will find that the extra math indexing
+[1570.04s -> 1577.68s]  you put into this code will slow you down more than other stuff on almost any modern computer.
+[1577.68s -> 1578.68s]  Any other thoughts?
+[1578.68s -> 1583.64s]  By the way, if you do this sequential, if you do this sort of like sliding window rolling
+[1583.64s -> 1587.76s]  buffer thing, you all of a sudden are now, and you just created dependencies between
+[1587.76s -> 1588.76s]  every row.
+[1588.76s -> 1591.38s]  And we didn't have dependencies between every row.
+[1591.38s -> 1598.28s]  So that could come back to bite us when we want to paralyze this thing, could.
+[1598.28s -> 1599.28s]  Any other ideas?
+[1599.28s -> 1600.28s]  Yeah.
+[1600.28s -> 1601.28s]  Okay.
+[1601.28s -> 1609.56s]  So by splitting up the buffer into three, are you suggesting that let me cut the input
+[1609.56s -> 1619.20s]  into horizontal, like three columns?
+[1619.20s -> 1624.48s]  Okay.
+[1624.48s -> 1625.48s]  So let me make sure I understand.
+[1625.48s -> 1628.16s]  So the temp buffer is currently three rows.
+[1628.16s -> 1632.24s]  And you're proposing to cut it horizontally into three columns as well?
+[1632.24s -> 1633.24s]  Three chunks?
+[1633.24s -> 1637.24s]  I'm proposing like temp of the rectangle width times three, so you just make a temp buffer
+[1637.24s -> 1643.92s]  of three of width, like it's a 2D array with three and then width.
+[1643.92s -> 1646.04s]  Well, that's the same thing exactly in memory.
+[1646.04s -> 1647.04s]  All right.
+[1647.04s -> 1648.04s]  Yeah.
+[1648.04s -> 1649.04s]  That's exactly the same.
+[1649.04s -> 1652.40s]  You just started using the convenience of 2D indexing in C, and I'm just flattening
+[1652.40s -> 1653.40s]  it myself.
+[1653.40s -> 1655.28s]  But under the hood, the compiler would flatten it exactly.
+[1655.28s -> 1657.28s]  So I think we're saying the exact same thing.
+[1657.28s -> 1667.20s]  No, they would be contiguous allocations, but maybe not contiguous in the heap, each
+[1667.20s -> 1668.20s]  of those.
+[1668.20s -> 1670.48s]  But I don't think that solves my problem.
+[1670.48s -> 1678.28s]  My problem is that either I have to copy contents from those buffers to each other,
+[1678.28s -> 1682.56s]  or I have to index into the appropriate buffers here.
+[1682.56s -> 1683.72s]  So we're still in the same place.
+[1683.72s -> 1689.68s]  You actually just spread out the data even more, a little bit, yeah.
+[1689.68s -> 1690.68s]  Any other ideas?
+[1690.68s -> 1699.32s]  Kind of just like walking into maybe like squares or something, and you will have some
+[1699.32s -> 1705.60s]  overlap on the edges where you could compute, but you could then have smaller buffers.
+[1705.60s -> 1706.60s]  Okay.
+[1706.60s -> 1709.64s]  And that's actually, there's a couple of ways we can go, and I like that idea.
+[1709.64s -> 1715.40s]  So first of all, think about how I've set up the problem here in kind of a row-wise
+[1715.40s -> 1716.40s]  thinking.
+[1716.40s -> 1721.28s]  The way I would say is for every row of output, independently, compute the three rows
+[1721.28s -> 1726.82s]  of temp that you need, and then process that row of output.
+[1726.82s -> 1730.04s]  And then do that for all rows of output.
+[1730.04s -> 1734.00s]  What you're saying is, the problem with my solution is that for every row of output,
+[1734.00s -> 1737.48s]  we kind of compute an extra row above and below.
+[1737.48s -> 1740.32s]  And so for everything I do, I have two rows of overhead.
+[1740.32s -> 1745.24s]  Well, what if instead of just thinking about every row of output, we said for every 10
+[1745.24s -> 1753.20s]  rows of output, compute 12 rows of intermediate, and then bang through it.
+[1753.20s -> 1756.20s]  We're still computing some extra stuff.
+[1756.20s -> 1759.48s]  But now it's only two extra things for every 10 instead of two extra things for
+[1759.48s -> 1760.48s]  every one.
+[1760.48s -> 1761.48s]  Right?
+[1761.48s -> 1763.04s]  And that's where I'm going to go next in the next slide.
+[1763.04s -> 1767.96s]  So all I did here is now look at the temp buffer.
+[1767.96s -> 1772.08s]  The temp buffer is chunk size plus two times width.
+[1772.08s -> 1778.24s]  So mentally, in my head, I'm saying for every chunk size rows of output, first produce
+[1778.24s -> 1784.90s]  chunk size plus two rows of temp, and then produce your output.
+[1784.90s -> 1791.28s]  And what's the overhead now?
+[1791.28s -> 1800.52s]  As chunk size gets bigger and bigger, this is going to trend towards my original 2N algorithm.
+[1800.52s -> 1804.76s]  I'm encouraged to make chunk size as big as possible.
+[1804.76s -> 1809.26s]  But what happens if I make chunk size too big?
+[1809.26s -> 1812.64s]  Chunk won't fit in the cache, and I get no benefits of the chunking at all.
+[1812.64s -> 1816.52s]  This is the exact same, similar to this blocking idea.
+[1816.52s -> 1819.28s]  So this is a way for me to change the program.
+[1819.28s -> 1826.70s]  And let's say if the chunk size is 16, we're roughly, if you actually work through the
+[1826.70s -> 1830.64s]  non-even math, it's about 6.4 operations per pixel.
+[1830.64s -> 1833.44s]  So a little bit more than 2N.
+[1833.44s -> 1835.12s]  But certainly not 9.
+[1835.12s -> 1841.32s]  And certainly not N squared for larger chunk sizes.
+[1841.32s -> 1848.80s]  So this is that same producer-consumer fusion trick that you saw first in Spark.
+[1848.80s -> 1851.88s]  Then we saw it in the matrix multiplication lecture.
+[1851.88s -> 1859.62s]  And now you're seeing it again, reordering the computation to maximize arithmetic intensity.
+[1859.62s -> 1866.76s]  But here we're actually saying we're willing to recompute a little bit in order to maximize
+[1866.76s -> 1868.40s]  arithmetic intensity.
+[1868.40s -> 1872.88s]  So that's not something that's appeared in the other things.
+[1872.88s -> 1874.76s]  Now we're still not done, right?
+[1874.76s -> 1878.20s]  Because we haven't talked at all about SIMD.
+[1878.20s -> 1884.40s]  We haven't talked at all about parallelization and a bunch of other small-scale things.
+[1884.40s -> 1888.60s]  How would you parallelize this computation, by the way?
+[1888.60s -> 1892.18s]  First of all, what can be parallelized in how I've set it up?
+[1892.18s -> 1894.24s]  Can every output chunk be parallel?
+[1894.24s -> 1895.24s]  Yes.
+[1895.24s -> 1903.12s]  And if you needed more parallelization, you could actually break the output chunks horizontally
+[1903.12s -> 1905.22s]  as well into chunks.
+[1905.22s -> 1907.80s]  And then I just need, you know, I don't need three rows.
+[1907.80s -> 1913.84s]  I just need chunk-sized rows, but not the whole width of the row, just like the width
+[1913.84s -> 1916.24s]  of a chunk plus two.
+[1916.24s -> 1920.32s]  Now there's another way to go about this that suggests the sequential thing.
+[1920.32s -> 1922.98s]  I could have not done this at all.
+[1922.98s -> 1931.56s]  I could have gone back to this algorithm, where there's only a single temp buffer of
+[1931.56s -> 1932.84s]  a few rows.
+[1932.84s -> 1939.16s]  And I could have taken your idea of, we're just gonna slidey-window the thing, and then
+[1939.16s -> 1942.76s]  I'll get my parallelism by chunking the output into columns.
+[1942.76s -> 1949.00s]  So I'm just gonna slide down every column, and hope that I have enough parallelism
+[1949.00s -> 1952.62s]  across my chunks, and that's another way to do it.
+[1952.62s -> 1956.40s]  So there's a couple of different ways you could do it.
+[1956.40s -> 1958.44s]  Okay.
+[1958.44s -> 1960.48s]  Yeah.
+[1960.48s -> 1968.16s]  So essentially, if you look carefully at this code, what it's doing is exactly what we came
+[1968.16s -> 1969.16s]  up with.
+[1969.16s -> 1974.80s]  It's saying for every chunk of the output, and every chunk of the output is actually
+[1974.80s -> 1985.04s]  256 by 32, for every chunk of the output, first compute a chunk of temp that is two
+[1985.04s -> 1987.96s]  elements wider and two elements higher.
+[1987.96s -> 1990.56s]  That's what these two for loops are doing.
+[1990.56s -> 1992.88s]  So it's kind of saying, produce the output in tiles.
+[1992.88s -> 1997.88s]  And if you look at the outermost loops, it's for every tile in Y and X.
+[1997.88s -> 2008.24s]  First compute something that's 256 plus two by 32 plus two, 32 plus one and minus one.
+[2008.24s -> 2011.44s]  Produce that using SIMD instructions.
+[2011.44s -> 2018.48s]  If chunk size fits in cache, and then take that chunk and produce the output.
+[2018.48s -> 2021.44s]  Would have been hard to see.
+[2021.44s -> 2027.06s]  But pretty easy to actually explain in English.
+[2027.06s -> 2029.44s]  So that's where we get into the domain-specific language.
+[2029.44s -> 2033.84s]  And by the way, every single time you wanted to try something a little bit different.
+[2033.84s -> 2037.28s]  Maybe you said, oh, I want to go with this option, and then you say, oh, I want
+[2037.28s -> 2039.76s]  to try that sliding window thing.
+[2039.76s -> 2044.88s]  Imagine how long it would take you to get to a sliding window implementation from this.
+[2044.88s -> 2048.56s]  If you're really proficient, it might take you a full day or something just to try this
+[2048.56s -> 2051.36s]  thing out.
+[2051.36s -> 2057.12s]  So Halide is a language that's not really designed like PyTorch, that's meant to allow
+[2057.12s -> 2061.52s]  people that don't know much about parallel programming to get good performance.
+[2061.52s -> 2068.72s]  It's a language designed to allow 149 students to finish their assignments much more quickly.
+[2068.72s -> 2073.44s]  So it's a language for people that basically are like, oh, I know I want to try and block
+[2073.44s -> 2077.32s]  it in this way, and go vector across this loop.
+[2077.32s -> 2079.96s]  But I don't want to write code.
+[2079.96s -> 2085.92s]  So if ISPC says, I don't want to write this code, that's what it helps you with.
+[2085.92s -> 2090.72s]  Halide for image processing says, I don't even want to deal with all these loops
+[2090.72s -> 2092.60s]  and things like that.
+[2092.60s -> 2096.86s]  So I'll give you some examples of some Halide code.
+[2096.86s -> 2100.14s]  And Halide is completely functional.
+[2100.14s -> 2103.90s]  So notice that there's no loops in this code at all.
+[2103.90s -> 2109.98s]  And Halide has a concept of what they call a function, because this is functional.
+[2109.98s -> 2114.00s]  But you could think about these things as tensors if you wanted to.
+[2114.00s -> 2116.70s]  So let me look at the code for you.
+[2116.70s -> 2122.22s]  So blur x is a function that's parameterized on x and y.
+[2122.34s -> 2127.90s]  So in other words, saying blur x is a function that if you give me a x and a y value, the
+[2127.90s -> 2130.50s]  function will give you the value of the pixel at that x and y.
+[2130.50s -> 2134.44s]  That's what a function does.
+[2134.44s -> 2140.46s]  And the function is defined in terms of inputs and outputs of other functions.
+[2140.46s -> 2148.10s]  So this says that the output of the blur x function at xy is 1 third times the value
+[2148.10s -> 2157.34s]  of the in function at x minus 1y plus, or 1 third times quantity, these three values.
+[2157.34s -> 2160.42s]  Or in other words, the average of those three values.
+[2160.42s -> 2166.14s]  And there's another function, blur y, and its value at xy is the average of these
+[2166.14s -> 2168.88s]  blur x values.
+[2168.88s -> 2174.54s]  So I'm building up the expression tree to say, if you want to know the value of blur
+[2174.54s -> 2182.62s]  xy, this is the expression defined in terms of predecessor functions on how you get it.
+[2182.62s -> 2189.22s]  And notice that n here is technically a buffer, which basically is a special function that
+[2189.22s -> 2191.42s]  was loaded from the actual input data itself.
+[2191.42s -> 2192.42s]  Yes?
+[2192.42s -> 2198.22s]  I'm curious how you handle HDC0, because if you put x and y as zeros, you're going
+[2198.22s -> 2200.80s]  to get n minus 1 over 0.
+[2200.80s -> 2201.80s]  That's correct.
+[2201.80s -> 2203.18s]  So that's a great question.
+[2203.30s -> 2205.82s]  I'd like to not really deal with it.
+[2205.82s -> 2211.60s]  You should just say you should look up at n negative 1, exactly as you wrote the program.
+[2211.60s -> 2214.50s]  So the real question you're asking is, what is n negative 1?
+[2214.50s -> 2215.50s]  Is that an error?
+[2215.50s -> 2217.10s]  Like, if it was an array, it's an error.
+[2217.10s -> 2226.46s]  You can, but since this is a domain-specific language, and domain-specific languages are
+[2226.46s -> 2230.90s]  meant to be productive, something I'm not showing on the slide is I can easily set
+[2230.90s -> 2237.22s]  blur y dot boundary condition equals 0, or something like that, and Halide compiler will
+[2237.22s -> 2241.86s]  admit the math that detects the boundary conditions and outputs the right value.
+[2241.86s -> 2245.18s]  So that's why I don't want to deal with it for the rest of the lecture, but that
+[2245.18s -> 2249.14s]  is a productivity benefit of the language of handling boundary conditions efficiently
+[2249.14s -> 2250.14s]  for you.
+[2250.14s -> 2254.62s]  And really what Halide will do is it potentially will generate code, not where there's an
+[2254.62s -> 2259.30s]  if statement in the inner loop, but it will actually generate a loop for i equals 1 to
+[2259.30s -> 2264.22s]  n minus 1 that has no if statements, and then generate other loops for the boundary
+[2264.22s -> 2265.90s]  conditions and stuff like that.
+[2265.90s -> 2270.98s]  Which would be absolutely messy if I showed it to you in this, right?
+[2270.98s -> 2273.66s]  So that's the productivity part of this.
+[2273.66s -> 2276.22s]  And I just want to give you some more examples.
+[2276.22s -> 2281.22s]  So this says that if I have a function blur y, which is defined on x and y, and has
+[2281.22s -> 2286.96s]  some value at x and y, then here's a function called bright of x, y, which is defined
+[2286.96s -> 2296.40s]  as the value of blur y times 1.25 value clamped to 255.
+[2296.40s -> 2302.96s]  So bright x, y is just blur y times all pixels times 1.25, but make sure you clamp
+[2302.96s -> 2305.40s]  them to 255.
+[2305.40s -> 2307.72s]  And then there's even a gather.
+[2307.72s -> 2310.28s]  We talked about data parallel gather.
+[2310.28s -> 2317.84s]  What at x, y could be use the value of bright x, y as an index to look up the pixel location
+[2317.84s -> 2318.96s]  in this function.
+[2318.96s -> 2320.48s]  So this is a gather.
+[2320.48s -> 2324.72s]  All of these other ones are maps over all x's and y's.
+[2324.72s -> 2327.36s]  So it's just a functional programming language.
+[2327.36s -> 2331.20s]  And so we're defining the expression for how to compute x, y.
+[2331.20s -> 2336.44s]  And then this last line of code just says, give me an actual C-style buffer where the
+[2336.44s -> 2338.00s]  values are.
+[2338.00s -> 2347.80s]  I have evaluated the function out at all values between 0 and 124 in x and 0 and 124 in y.
+[2347.80s -> 2351.32s]  This is delayed evaluation, basically.
+[2351.32s -> 2355.60s]  And so the nice thing about this is we have these functions.
+[2355.60s -> 2359.68s]  And if you think about image processing, if I explain to you what is a blur, I don't
+[2359.68s -> 2361.44s]  give you a convolution.
+[2361.44s -> 2365.78s]  I typically say, the way you compute a blur is you take every pixel and you average
+[2366.12s -> 2367.58s]  everything around it.
+[2367.58s -> 2370.66s]  And that's exactly what this code looks like.
+[2370.66s -> 2375.70s]  So the expression is productive in that it handles boundary conditions, but the code
+[2375.70s -> 2381.26s]  looks like the math and the way we talk about the algorithms.
+[2381.26s -> 2384.50s]  So in some sense, the code looks a lot like NumPy or something like that.
+[2384.50s -> 2387.00s]  But just keep in mind that these are functions.
+[2387.00s -> 2389.26s]  These are not arrays or tensors.
+[2389.26s -> 2395.18s]  You can think about them as such, but don't.
+[2395.18s -> 2402.10s]  So if I wanted to think about this program as a DAG, a list of tasks, I would think
+[2402.10s -> 2408.72s]  about it as every one of these functions is a node, and they depend on prior functions.
+[2408.72s -> 2412.46s]  So I would say that in this case, look, so we have an input function.
+[2412.46s -> 2414.80s]  Blur x is derived from in.
+[2414.80s -> 2417.40s]  Blur y is derived from blur x.
+[2417.40s -> 2420.42s]  Bright is derived from blur y.
+[2420.54s -> 2425.86s]  And out is derived from lookup and bright.
+[2425.86s -> 2427.46s]  So let's check that.
+[2427.46s -> 2428.46s]  Yep.
+[2428.46s -> 2433.06s]  So I have a chain of just dependencies, and output came from values in bright and values
+[2433.06s -> 2434.06s]  in lookup.
+[2434.06s -> 2435.06s]  Question?
+[2435.06s -> 2436.06s]  Nope.
+[2436.06s -> 2440.54s]  Oh, it might have been an iPhone.
+[2440.54s -> 2441.54s]  Okay.
+[2441.54s -> 2446.68s]  So first of all, does everybody kind of at least cursory understand what this program
+[2446.68s -> 2448.02s]  should compute?
+[2449.02s -> 2451.70s]  I'm being specific about what it should compute.
+[2451.70s -> 2454.86s]  Not how it should compute it, but what it should compute.
+[2454.86s -> 2461.68s]  If I populated in with a bunch of pixels, and I populated lookup with a bunch of pixels,
+[2461.68s -> 2466.54s]  like loaded an image into it, you would say, yeah, I have an idea of what out xy should
+[2466.54s -> 2467.54s]  be.
+[2467.54s -> 2472.18s]  And this graph kind of gives it to you.
+[2472.18s -> 2473.68s]  Okay.
+[2473.68s -> 2479.66s]  So here is the halide representation of the two pass blur that we've been talking about.
+[2479.66s -> 2483.24s]  We have an input, which came from an image.
+[2483.24s -> 2489.58s]  We have our first function, blur x, which says blur x at xy, well, every pixel should
+[2489.58s -> 2493.36s]  just come from the average of these three pixels in in.
+[2493.36s -> 2498.80s]  And then I have out xy, which comes from the average of these three vertically oriented
+[2498.80s -> 2500.96s]  pixels in blur x.
+[2500.96s -> 2509.96s]  So my entire C code, which, if we go back, this algorithm in C looked like this.
+[2509.96s -> 2512.80s]  And halide, it looks like that.
+[2512.80s -> 2519.02s]  So it kind of just follows the mathematical formulation of it.
+[2519.02s -> 2520.02s]  So that's pretty cool.
+[2520.02s -> 2522.98s]  First of all, it's a little bit more elegant, like you can kind of read the code.
+[2522.98s -> 2526.60s]  If you were an algorithm developer, you probably know what this meant.
+[2526.76s -> 2532.84s]  Now, this code in it has one, two functions, it has two stages.
+[2532.84s -> 2535.92s]  That's like the dependency graph on the right.
+[2535.92s -> 2542.44s]  If you take a look at more realistic image processing programs, they have a lot of stages.
+[2542.44s -> 2548.76s]  And your, at least about six or seven years ago, your Google HDR Plus, your camera application,
+[2548.76s -> 2555.84s]  that application was about 2,000 halide stages.
+[2555.84s -> 2562.76s]  So when you think about what this halide program means, if you were the halide compiler, you
+[2562.76s -> 2567.76s]  might in your head right now be thinking, okay, if I'm the halide compiler, and this
+[2567.76s -> 2573.40s]  was my program at the top, what I showed you on the last slide, I'm mentally translating
+[2573.40s -> 2578.96s]  that program to this implementation in a C-like language.
+[2578.96s -> 2586.72s]  For every function, allocate an array, just turn a function into a tensor, a 2D array
+[2586.72s -> 2588.52s]  or a matrix.
+[2588.52s -> 2594.48s]  And then for every equality statement, for every expression, that is an operation that
+[2594.48s -> 2599.64s]  runs for every pixel in the output array and computes values.
+[2599.64s -> 2605.08s]  So in some sense, can you confirm that this makes sense?
+[2605.08s -> 2608.66s]  This is a valid implementation of that code up above.
+[2608.66s -> 2624.14s]  So the halide compiler basically just writes these loops for you.
+[2624.14s -> 2625.14s]  It's coming.
+[2625.14s -> 2628.16s]  So first of all, this is now precise.
+[2628.16s -> 2635.54s]  This compilation has generated a sequential C program, like assume these are for loops,
+[2635.54s -> 2638.30s]  that allocates these three buffers.
+[2638.30s -> 2639.30s]  Exactly what we said.
+[2639.30s -> 2641.98s]  I wrote this in C earlier in the lecture.
+[2641.98s -> 2647.94s]  So I first am establishing that this is a valid compilation of that program, and there
+[2647.94s -> 2652.86s]  might be additional valid compilations.
+[2652.86s -> 2660.38s]  So a key aspect of any of these DSL systems is thinking about who your users are and
+[2660.38s -> 2665.56s]  thinking about what is hard for them, what do you want to make easier.
+[2665.56s -> 2671.30s]  So I would say that even though what I just showed you on this slide, it's kind of nice
+[2671.30s -> 2674.82s]  that I can write things in two lines of code.
+[2674.82s -> 2678.46s]  You could have written the C code in ten minutes.
+[2678.46s -> 2682.86s]  So if I write two lines of code versus I write the C code in five to eight minutes,
+[2682.86s -> 2685.42s]  that's not that big of a benefit.
+[2685.42s -> 2689.78s]  There's some nice syntactic sugar and stuff like that, but it's not that big of a benefit.
+[2689.78s -> 2693.00s]  Maybe if we get boundary conditions in there, it might help you a little bit and stuff,
+[2693.00s -> 2694.78s]  but that's not the real thing.
+[2694.78s -> 2701.54s]  The hard thing is if I go back, how long it would take you to come up with this.
+[2701.54s -> 2705.00s]  Even if you knew what you were doing in 149, you don't know what the right answer
+[2705.00s -> 2706.82s]  is for a particular machine.
+[2706.82s -> 2710.54s]  Think about all the iteration you do on your programming assignment.
+[2710.54s -> 2716.86s]  So what Halide is, the Halide programmers had written a bunch of these things in assembly.
+[2716.86s -> 2722.06s]  And they say, what we want is we don't, like it'd be nice to have a nice compact syntax,
+[2722.06s -> 2726.66s]  but what we really want is to explore the optimization choices that we know are likely
+[2726.66s -> 2731.08s]  optimization choices, and we want to do it very quickly.
+[2731.08s -> 2736.34s]  So the job is not expressing the image processing calculation.
+[2736.34s -> 2740.86s]  The task at hand, the challenge at hand, is to do your 149 assignment, which is
+[2740.86s -> 2742.90s]  to make it fast.
+[2742.90s -> 2750.06s]  And Halide introduces a set of ideas that allow you to describe how you want to make
+[2750.06s -> 2754.80s]  it fast at the level that we kind of talk about it in lecture.
+[2754.80s -> 2759.90s]  So what Halide has is if the stuff that's in the white background is the Halide program
+[2759.90s -> 2765.78s]  that expresses what to compute, expresses the algorithm, that is complemented by another
+[2765.78s -> 2769.70s]  set of programming primitives, which I'm not going to explain just yet, which is called
+[2769.70s -> 2770.70s]  the schedule.
+[2770.70s -> 2778.54s]  And the schedule is the explicit direction on how to generate code for this.
+[2778.54s -> 2783.66s]  And I'm going to read this off to you quickly in English, and then I'll break it down over
+[2783.66s -> 2785.38s]  the next couple slides.
+[2785.38s -> 2791.10s]  Here the programmer has said, has specified exactly the solution that we came up with,
+[2791.10s -> 2796.78s]  which is, I want you to compute output in tiles of 256 by 32.
+[2796.78s -> 2803.14s]  Please go ahead and call the loops of those tiles x and y, and then x-inner and y-inner.
+[2803.14s -> 2810.92s]  So x and y are which tile we are, and xi and yi are the inner loops within those tiles.
+[2810.92s -> 2815.38s]  And then I want you to vectorize the loop that's called xi with 8-wide Cindy, and
+[2815.38s -> 2819.62s]  I want you to go thread parallel across the y loop.
+[2819.62s -> 2824.10s]  The result of that will be the code that I gave you on the previous slide.
+[2824.10s -> 2827.14s]  And if you're like, eh, I don't know if this is working, maybe I should change my tile
+[2827.14s -> 2831.74s]  size, you just change the parameters here, and you get a new tile size and it re-vectorizes
+[2831.74s -> 2832.74s]  it for you.
+[2832.74s -> 2836.78s]  Or if you say, oh, I don't want to vectorize the xi loop, let's actually go ahead and
+[2836.78s -> 2840.22s]  do our Cindy over the outermost loop or something like that.
+[2840.22s -> 2841.86s]  You just change those parameters.
+[2841.86s -> 2844.78s]  So that's where we're going with this.
+[2844.78s -> 2849.92s]  So these scheduling directives give you a couple of different types of primitives.
+[2849.92s -> 2857.12s]  So some of the primitives are related to how do you iterate over the elements of a function.
+[2857.12s -> 2861.28s]  Row major, column major, blocked, and so on and so on.
+[2861.28s -> 2865.80s]  So these are just some different examples of iteration.
+[2865.80s -> 2869.32s]  I want you to go serial over the y dimension.
+[2869.32s -> 2874.00s]  I want it to be x major and serial, so just what you'd think.
+[2874.00s -> 2876.60s]  Or I want it to be column major.
+[2876.60s -> 2881.28s]  Or I want it to be serial along all the y's, but along the x direction, you're going
+[2881.28s -> 2883.08s]  to be vectorized.
+[2883.08s -> 2887.44s]  Or I want it to be thread parallel along all the rows.
+[2887.44s -> 2891.16s]  All the different y's are different threads, but vectorized in this direction.
+[2891.16s -> 2894.92s]  So you have the ability to express all the different permutations that you think
+[2894.92s -> 2895.92s]  you might want.
+[2895.92s -> 2900.28s]  All right, so let's get into actually some detail.
+[2900.28s -> 2903.32s]  So let's look at this one line of the schedule.
+[2903.32s -> 2908.08s]  And again, I don't care if you walk away knowing this, but these concrete examples
+[2908.08s -> 2910.76s]  give you a sense of what's possible.
+[2910.76s -> 2916.80s]  We said that, oh, this out.tile basically says, I want you to compute the output not
+[2916.80s -> 2924.52s]  in row major order by default, but in tiles, and tiles of size 256 by 32.
+[2924.52s -> 2925.72s]  That's what that says.
+[2925.72s -> 2928.04s]  And we decided we were going to do that.
+[2928.04s -> 2931.20s]  And we might need to name the loops of the variables.
+[2931.20s -> 2937.88s]  So we're going to call it, the code says, if you need a handle in the future, we're
+[2937.88s -> 2941.80s]  going to create intact in the code, and remember, there's four loops.
+[2941.80s -> 2947.84s]  And we're going to refer to those loops as xy, and then xinner, and yinner.
+[2947.84s -> 2955.04s]  And then, so you can think about every one of these halide schedule statements as
+[2955.04s -> 2959.00s]  actually manipulating a loop nest that exists in the program.
+[2959.00s -> 2967.56s]  So by default, we had a loop nest which looked like this.
+[2967.56s -> 2975.08s]  By default, if that was the program, halide had this loop nest, which was for all xy,
+[2975.08s -> 2980.16s]  create blur x, and then for all xy, create out.
+[2980.16s -> 2986.20s]  And so what that statement did said, oh hey, you know the loop nest that creates out?
+[2986.20s -> 2987.20s]  That's what our code did.
+[2987.28s -> 2992.08s]  It said, I want you to modify it so that it was a tiled loop nest, and I want you to
+[2992.08s -> 3000.12s]  call the four loops that would result from that tiling xy, and xi, and yi.
+[3000.12s -> 3004.96s]  So halide is actually, there's a language for specifying your algorithm.
+[3004.96s -> 3008.68s]  And then there's a language that's imperative that describes a sequence of
+[3008.68s -> 3012.72s]  transformations on the loop nest that you want to create.
+[3012.80s -> 3018.00s]  So imagine that we did a transformation that created four loops here with an output that
+[3018.00s -> 3022.76s]  iterated over tiles of 256 by 32.
+[3022.76s -> 3031.12s]  Now once you have that loop nest, so that out.tile kind of returns the new loop nest,
+[3031.12s -> 3036.80s]  and then I say, oh, please vectorize, you know, when you generate code for the xi loop,
+[3036.80s -> 3039.28s]  I want that to be vectorized.
+[3039.28s -> 3043.16s]  And when you generate code iterating over y's, I don't want it sequential.
+[3043.16s -> 3046.40s]  I want that paralyzed over a thread pool.
+[3046.40s -> 3048.44s]  That's what that whole line says.
+[3048.44s -> 3053.10s]  And so the result of that would be some code for the blur x loop that used to be
+[3053.10s -> 3055.68s]  for all x and then all y.
+[3055.68s -> 3062.72s]  Now notice it has four loop variables, and the xi loop is vectorized.
+[3062.72s -> 3067.36s]  And this loop, just imagine it was paralyzed with threads.
+[3067.40s -> 3072.76s]  So you're telling the compiler at a high level how you want to do this.
+[3072.76s -> 3075.92s]  So loop ordering is one class of things you do.
+[3075.92s -> 3080.32s]  And then the other class, well, the other big thing we did is we did fusion.
+[3080.32s -> 3084.56s]  And fusion is like putting some loops inside of others.
+[3084.56s -> 3088.36s]  So here I said out.tile.
+[3088.36s -> 3091.68s]  That created this output loop nest.
+[3091.68s -> 3094.32s]  And then remember, for every tile in my solution,
+[3094.36s -> 3100.44s]  I first had to compute the temp buffer that was needed to produce the output.
+[3100.44s -> 3102.46s]  That's this loop nest.
+[3102.46s -> 3106.60s]  So by default, if I say the blur x loop nest,
+[3106.60s -> 3109.40s]  there's this command called compute root, which basically means
+[3109.40s -> 3112.24s]  compute it at the root of the hierarchy, which means don't compute it
+[3112.24s -> 3114.84s]  within anybody else's loop nest.
+[3114.84s -> 3120.32s]  So what this code would do is it computes the entire temp buffer.
+[3120.32s -> 3122.84s]  Notice that we've allocated the temp buffer.
+[3122.88s -> 3129.00s]  And then just accesses that temp buffer while iterating in tiles.
+[3129.00s -> 3130.04s]  It's a valid program.
+[3130.04s -> 3133.96s]  Doesn't make that much sense why you would do this, but it's valid.
+[3133.96s -> 3137.68s]  And now what I'm going to do is I'm going to say, hey, this blur x loop,
+[3137.68s -> 3143.28s]  let's go ahead and shove it right here so that for every tile of output,
+[3143.28s -> 3146.40s]  we first just generate a tile of temp.
+[3146.40s -> 3149.28s]  And then we use the tile of temp.
+[3149.28s -> 3152.48s]  So I'm going to say, hey, blur x, actually,
+[3152.52s -> 3157.00s]  I want you to compute it at the xi loop of out, which actually I shoved it
+[3157.00s -> 3157.72s]  in even further.
+[3157.72s -> 3159.48s]  I shoved it into the innermost loop.
+[3162.08s -> 3166.00s]  And so now Halide goes, oh, for every innermost loop,
+[3166.00s -> 3169.46s]  every output pixel needs three pixels of temp.
+[3169.46s -> 3173.76s]  So I'm going to create three pixels of temp, and then we're going to use it.
+[3173.76s -> 3176.60s]  I'm going to create three pixels of temp, and we're going to use it.
+[3176.60s -> 3178.88s]  And to get to the code that we actually talked about,
+[3178.88s -> 3184.04s]  I actually want to do blur x dot compute at what?
+[3184.04s -> 3189.40s]  I would actually want it to be blur x compute at x.
+[3189.40s -> 3195.64s]  And blur x compute at x would shove that into the x loop.
+[3195.64s -> 3202.88s]  And so it says for every tile, first compute 256 by 34 elements
+[3202.88s -> 3204.16s]  and then use them.
+[3204.16s -> 3208.24s]  And then throw it out and compute another set of elements
+[3208.28s -> 3211.60s]  and then use them.
+[3211.60s -> 3214.68s]  So the summary of actually getting to the loop nest
+[3214.68s -> 3217.12s]  that I showed you in that assembly code
+[3217.12s -> 3221.44s]  would be those two lines of Halide schedule.
+[3221.44s -> 3223.68s]  You set up a loop nest for output, and then you
+[3223.68s -> 3228.20s]  figure out where to put the producer inside that loop nest.
+[3228.20s -> 3229.96s]  So this is actually kind of interesting.
+[3229.96s -> 3232.08s]  This is not the most typical of systems.
+[3232.08s -> 3234.62s]  The philosophy here is the programmer
+[3234.62s -> 3238.46s]  is responsible for describing an image processing pipeline.
+[3238.46s -> 3240.06s]  That's the algorithm.
+[3240.06s -> 3242.54s]  But the programmer is also responsible for doing
+[3242.54s -> 3246.46s]  all the conceptual thinking about how to optimize it,
+[3246.46s -> 3248.86s]  and that's the schedule.
+[3248.86s -> 3251.46s]  And there's kind of two cooperating
+[3251.46s -> 3254.98s]  domain-specific languages to do those two things.
+[3254.98s -> 3257.46s]  And then the compiler is responsible for basically
+[3257.46s -> 3259.24s]  carrying out its orders.
+[3259.24s -> 3262.06s]  If you're on ARM, generate these intrinsics
+[3262.06s -> 3263.18s]  and this threaded code.
+[3263.22s -> 3265.50s]  If you're on x86, do this.
+[3265.50s -> 3267.94s]  Handle the boundary conditions and the allocations
+[3267.94s -> 3270.18s]  appropriately and stuff like that.
+[3270.18s -> 3273.54s]  So by knowing all of the dependencies,
+[3273.54s -> 3276.14s]  by being functional, basically, there's
+[3276.14s -> 3278.46s]  no pointer chasing or anything like that,
+[3278.46s -> 3280.30s]  the compiler has knowledge that it
+[3280.30s -> 3282.94s]  can move these loop nests around and change
+[3282.94s -> 3286.18s]  all your indexing for you and never change
+[3286.18s -> 3288.18s]  the correctness of the program.
+[3288.18s -> 3291.26s]  So the idea in Halide is that if you modify the scheduler,
+[3291.26s -> 3294.26s]  you will never change the output.
+[3294.26s -> 3297.02s]  It's just an optimization.
+[3297.02s -> 3298.54s]  And then some really early results,
+[3298.54s -> 3301.58s]  which are now basically a decade old,
+[3301.58s -> 3305.14s]  the initial papers show that, oh, we could write less code
+[3305.14s -> 3308.34s]  and actually get higher performance most of the time
+[3308.34s -> 3310.06s]  than hand-tuned assembly.
+[3310.06s -> 3313.06s]  Even if the compiler doesn't generate as good of a simple
+[3313.06s -> 3316.18s]  code as what a good programmer would do by hand,
+[3316.18s -> 3317.70s]  the programmer is able to iterate
+[3317.70s -> 3320.98s]  over the high-level design space more rapidly
+[3321.02s -> 3322.78s]  and try more things.
+[3322.78s -> 3324.62s]  So the global structure was better,
+[3324.62s -> 3327.98s]  even if the code might have been 10%, 20%, 30% slower
+[3327.98s -> 3331.46s]  than a good programmer.
+[3331.46s -> 3333.26s]  And so that was the thing.
+[3333.26s -> 3336.66s]  And then some of the folks that did this went to Google.
+[3336.66s -> 3338.20s]  And they did it full-time at Google,
+[3338.20s -> 3340.32s]  even though it stayed open source for a long time.
+[3340.32s -> 3342.82s]  And this became robust enough to be
+[3342.82s -> 3345.78s]  the compiler for the Google image processing pipeline.
+[3345.78s -> 3349.34s]  So that's the history here.
+[3349.42s -> 3352.78s]  So again, I want to emphasize, if we take a step back,
+[3352.78s -> 3356.66s]  Halide does not help you write fast code.
+[3356.66s -> 3359.50s]  It doesn't help a naive, non-performance-oriented
+[3359.50s -> 3360.94s]  programmer do anything.
+[3360.94s -> 3362.78s]  If you haven't taken 149, how the heck
+[3362.78s -> 3363.98s]  do you even write a schedule?
+[3363.98s -> 3366.54s]  You don't know any of the concepts.
+[3366.54s -> 3368.68s]  But it helps someone like you all,
+[3368.68s -> 3372.10s]  who kind of know what the space of things you want to try,
+[3372.10s -> 3374.00s]  get through that space of things
+[3374.00s -> 3376.86s]  in a couple hours, in an afternoon,
+[3376.86s -> 3379.34s]  for more complex functions.
+[3379.34s -> 3383.46s]  And it did turn out that there aren't very many 149
+[3383.46s -> 3384.50s]  programmers.
+[3384.50s -> 3387.58s]  Even at Google, there were about 80 programmers
+[3387.58s -> 3391.94s]  that wrote Halide algorithms, and a very small number
+[3391.94s -> 3395.74s]  of programmers that actually wrote the schedules.
+[3395.74s -> 3398.94s]  And I think by a very small number of three.
+[3398.94s -> 3401.06s]  Literally, when one of them went on paternity leave,
+[3401.06s -> 3403.18s]  nobody wrote schedules for a while at Halide.
+[3403.18s -> 3405.66s]  Right?
+[3405.66s -> 3410.22s]  Now, since about 20, in the last three to four years,
+[3410.22s -> 3413.58s]  one of the things that these abstractions of the schedule,
+[3413.58s -> 3415.14s]  notice what they do is they give you
+[3415.14s -> 3420.10s]  this very structured, organized design space.
+[3420.10s -> 3422.26s]  Like the process of optimizing a program
+[3422.26s -> 3424.30s]  is choosing the loop nest and choosing where
+[3424.30s -> 3426.78s]  to put things in that loop nest.
+[3426.78s -> 3429.30s]  And that extremely structured design space
+[3429.30s -> 3432.78s]  has turned out to also be incredibly useful
+[3432.78s -> 3435.34s]  to guide automated search.
+[3435.34s -> 3438.90s]  And so there's been this idea of how the heck do we actually
+[3438.90s -> 3441.78s]  get rid of those three programmers at Google
+[3441.78s -> 3445.38s]  for almost most of these computations, right?
+[3445.38s -> 3448.18s]  And we did a little bit of early work on this.
+[3448.18s -> 3451.54s]  And then in 2016 and then in 2019,
+[3451.54s -> 3453.22s]  there was a paper that was led by one
+[3453.22s -> 3455.10s]  of the co-creators of Google.
+[3455.10s -> 3456.58s]  I did help with it, but it really
+[3456.58s -> 3462.54s]  was this person, Andrew Adams, who is the big worker on it,
+[3462.54s -> 3465.74s]  that was able to come up with some algorithms that just kind
+[3465.74s -> 3469.66s]  of used game playing techniques, like tree search and stuff
+[3469.66s -> 3473.04s]  you know from an AI class, to search the space of schedules
+[3473.04s -> 3476.02s]  and come up with schedules that were pretty darn good,
+[3476.02s -> 3480.22s]  as in like all of you would work really hard to get
+[3480.22s -> 3481.74s]  as good a schedules.
+[3481.74s -> 3483.90s]  And I'll show you just some fun results from not
+[3483.90s -> 3484.50s]  this paper.
+[3484.50s -> 3485.92s]  The results I'm about to show you
+[3485.92s -> 3488.82s]  are not as good as this paper, but we'll step back two years
+[3488.82s -> 3491.22s]  because this paper didn't have a graph like this.
+[3491.22s -> 3495.58s]  Here was the human study assistance paper.
+[3495.58s -> 3497.98s]  The x-axis is time.
+[3497.98s -> 3500.70s]  The y-axis is throughput in pixels per second,
+[3500.70s -> 3502.14s]  so higher is better.
+[3502.14s -> 3505.30s]  And these are three different image processing applications.
+[3505.30s -> 3506.90s]  Doesn't matter what they are.
+[3506.90s -> 3511.34s]  So we went to two of these three people at Google
+[3511.34s -> 3514.08s]  that were the best in the world at optimizing schedules.
+[3514.08s -> 3517.70s]  And we said, you've never seen this program before.
+[3517.70s -> 3519.62s]  Here's the Halide algorithm.
+[3519.66s -> 3521.50s]  Please write the schedule for it.
+[3521.50s -> 3522.90s]  And basically, the way these folks
+[3522.90s -> 3524.86s]  work is they write the schedule, they
+[3524.86s -> 3526.62s]  obviously don't look at the assembly
+[3526.62s -> 3530.14s]  and go, yeah, that's not the right assembly.
+[3530.14s -> 3532.20s]  So they're actually looking at assembly,
+[3532.20s -> 3534.18s]  but never writing assembly.
+[3534.18s -> 3535.64s]  And what's kind of funny is this
+[3535.64s -> 3537.58s]  is what the auto schedule kicked out,
+[3537.58s -> 3538.74s]  like in a millisecond.
+[3538.74s -> 3539.58s]  That's the green line.
+[3539.58s -> 3540.54s]  That's why it doesn't get any better.
+[3540.54s -> 3542.14s]  It's just what the algorithm did.
+[3542.14s -> 3544.54s]  And then this is Andrew and Dylan's performance
+[3544.54s -> 3548.98s]  over minutes of what they were able to get to.
+[3548.98s -> 3552.10s]  So they were just writing schedule, run, performance
+[3552.10s -> 3552.62s]  profile.
+[3552.62s -> 3553.66s]  OK, that's not working.
+[3553.66s -> 3555.10s]  Let me try this other thing.
+[3555.10s -> 3558.22s]  So it's like an interactive 149 assignment kind
+[3558.22s -> 3560.18s]  of situation that they were in.
+[3560.18s -> 3561.34s]  And it's pretty impressive.
+[3561.34s -> 3563.38s]  So the auto scheduler won two out of three.
+[3563.38s -> 3565.34s]  I mean, obviously, we only gave them an hour.
+[3565.34s -> 3566.84s]  If they would have kept going, they
+[3566.84s -> 3569.14s]  would have beaten these things for sure.
+[3569.14s -> 3574.42s]  But the newer auto scheduler is even better than this.
+[3574.42s -> 3576.86s]  It'll schedule a conv layer better than most people.
+[3576.86s -> 3591.18s]  AUDIENCE MEMBER 1
+[3591.18s -> 3595.26s]  Well, this is just what they were trying at the time.
+[3595.26s -> 3596.90s]  So they're exploring the design space.
+[3596.90s -> 3599.26s]  That's why it's going down.
+[3599.26s -> 3602.70s]  Andrew is not dumb.
+[3602.70s -> 3603.62s]  He created Halide.
+[3603.62s -> 3605.10s]  He's not dumb.
+[3605.10s -> 3606.50s]  But he's trying different things.
+[3606.50s -> 3609.06s]  So that's him kind of going, I got a good program.
+[3609.06s -> 3610.90s]  Let me see if I can do a little bit better,
+[3610.90s -> 3612.14s]  go in another direction.
+[3612.14s -> 3614.02s]  And like 45 minutes in, he's like, I'm good.
+[3614.02s -> 3615.42s]  I quit.
+[3615.42s -> 3616.82s]  This is not going well.
+[3616.82s -> 3617.82s]  I quit.
+[3617.82s -> 3618.32s]  Yeah.
+[3618.32s -> 3623.42s]  AUDIENCE MEMBER 1
+[3623.42s -> 3627.22s]  Well, what they do is their methodology,
+[3627.22s -> 3631.18s]  I'm channeling them, and this is a while ago now,
+[3631.18s -> 3633.70s]  is they were like, oh, OK, I got this performance.
+[3633.70s -> 3636.14s]  I wonder why.
+[3636.18s -> 3639.02s]  I wonder if it's doing a good job with that inner loop.
+[3639.02s -> 3639.90s]  Let me go look at it.
+[3643.90s -> 3645.42s]  AUDIENCE MEMBER 2
+[3645.42s -> 3646.14s]  Not stepping.
+[3646.14s -> 3647.70s]  They're just OBS jumping and looking.
+[3647.70s -> 3651.38s]  In their head, they're stepping it, yeah.
+[3651.38s -> 3653.94s]  Yeah, they have a Halide schedule open here
+[3653.94s -> 3654.82s]  in a text editor.
+[3654.82s -> 3657.58s]  And they have a compiler and OBS jump open here.
+[3657.58s -> 3660.14s]  And then they're running code and looking at their output.
+[3660.14s -> 3662.18s]  Yeah, these guys are like, once you,
+[3662.18s -> 3664.26s]  they're just like, oh, I know sometimes
+[3664.26s -> 3668.78s]  when I do this, LLVM won't loop allocate or unroll this loop.
+[3668.78s -> 3671.70s]  So let me see if LLM is going to unroll this loop for me
+[3671.70s -> 3672.90s]  and stuff like that.
+[3672.90s -> 3675.18s]  Or not LLM, LLVM, excuse me.
+[3675.18s -> 3676.26s]  Yeah, cool.
+[3676.26s -> 3679.86s]  OK, so just to keep it going, since so many people are
+[3679.86s -> 3682.42s]  so interested in high performance image processing,
+[3682.42s -> 3684.18s]  there's the question of why are we even
+[3684.18s -> 3685.54s]  compiling to CPUs at all.
+[3685.54s -> 3686.94s]  And so there's a bunch of work
+[3686.94s -> 3688.32s]  by a bunch of different groups.
+[3688.32s -> 3690.66s]  Here's one from Stanford, where
+[3690.66s -> 3692.74s]  they took a language that looked a lot like Halide,
+[3692.74s -> 3693.70s]  if you look at it.
+[3693.74s -> 3696.50s]  It's a simplified version of Halide in some sense.
+[3696.50s -> 3698.94s]  And said, no, we're not going to emit instructions at all.
+[3698.94s -> 3703.50s]  We're going to emit FPGA circuits directly.
+[3703.50s -> 3706.34s]  So we're just going to skip the programmable processor
+[3706.34s -> 3707.98s]  and just generate hardware directly
+[3707.98s -> 3711.62s]  from the high level representation.
+[3711.62s -> 3713.26s]  In the last week of class, we'll
+[3713.26s -> 3715.90s]  come back to this topic a little bit more generally,
+[3715.90s -> 3717.78s]  is if you care about performance,
+[3717.78s -> 3721.90s]  why are you taking the baggage of all of these,
+[3721.90s -> 3724.38s]  like in some sense, you can think about the ISA,
+[3724.38s -> 3726.90s]  the instructions of a programmable processor.
+[3726.90s -> 3729.66s]  That's the interface between the hardware implementation
+[3729.66s -> 3731.54s]  and the software implementation.
+[3731.54s -> 3734.46s]  But if you're writing in a high level DSL,
+[3734.46s -> 3736.18s]  why do you need that interface at all?
+[3736.18s -> 3738.22s]  Why don't you directly just have the compiler
+[3738.22s -> 3739.94s]  be aware of the hardware implementation
+[3739.94s -> 3741.18s]  and just generate it directly?
+[3743.66s -> 3745.24s]  And this is the same philosophy
+[3745.24s -> 3747.12s]  behind a lot of these systems that you're using.
+[3747.12s -> 3749.46s]  Like for example, most of you, TensorFlow or PyTorch
+[3749.46s -> 3750.40s]  or something like that is probably
+[3750.40s -> 3752.12s]  the most common domain-specific language
+[3752.12s -> 3753.14s]  that you're used to working with.
+[3753.14s -> 3754.72s]  Maybe others have used SQL as probably
+[3754.72s -> 3756.56s]  the most common domain-specific language
+[3756.56s -> 3758.48s]  you're working with.
+[3758.48s -> 3760.76s]  And the point being is you can't
+[3760.76s -> 3762.88s]  do a whole lot in those languages
+[3762.88s -> 3764.76s]  compared to the space of programs
+[3764.76s -> 3767.12s]  that you can write in C or Java.
+[3767.12s -> 3769.56s]  But the compiler and the system
+[3769.56s -> 3772.50s]  knows about the semantics of the key operations.
+[3772.50s -> 3775.20s]  And because they know about those semantics,
+[3775.20s -> 3778.44s]  they can do some pretty intelligent things for you,
+[3778.44s -> 3781.04s]  things that it might be hard for many of us
+[3781.04s -> 3784.52s]  to even do because we're maybe not as experienced
+[3784.52s -> 3786.12s]  or as elite in the domain.
+[3786.12s -> 3789.20s]  And so this is very much where the world is going,
+[3789.20s -> 3790.80s]  especially in an era where there's
+[3790.80s -> 3792.94s]  so many different types of processors.
+[3792.94s -> 3795.96s]  Like imagine you came up with one Halide schedule,
+[3795.96s -> 3797.76s]  and then you go to an ARM processor.
+[3797.76s -> 3799.40s]  You probably need another one.
+[3799.40s -> 3801.04s]  You want something that knows enough
+[3801.04s -> 3802.44s]  about the type of programs you're
+[3802.44s -> 3804.68s]  writing to try and take some of that off of you.
+[3804.68s -> 3807.80s]  OK.
+[3807.80s -> 3809.72s]  So yeah, so those are some of the summaries.
+[3809.72s -> 3811.04s]  So we have 12 minutes.
+[3811.04s -> 3814.32s]  Let me just give you another example just really quickly
+[3814.32s -> 3817.56s]  just because I want to talk a little bit about the magnitude
+[3817.56s -> 3821.16s]  of optimizations that can occur in high-level languages.
+[3821.16s -> 3825.08s]  So this is a project done as part of a Stanford lab,
+[3825.08s -> 3827.60s]  probably almost 15, I don't know, still 12 years ago.
+[3827.60s -> 3829.18s]  Actually, about the same time Halide
+[3829.18s -> 3830.92s]  was being developed, to be honest.
+[3830.92s -> 3832.68s]  And the reason why I like to just use it as an example
+[3832.68s -> 3834.40s]  because there's some pretty big things
+[3834.44s -> 3835.28s]  that a compiler does.
+[3835.28s -> 3838.56s]  So this was a high-level.
+[3838.56s -> 3841.36s]  The early goal was to simulate a jet engine, which
+[3841.36s -> 3843.24s]  means you need fluid dynamics and you
+[3843.24s -> 3846.20s]  need finite element analysis and stuff like that.
+[3846.20s -> 3848.92s]  And how many people in here have a scientific computing
+[3848.92s -> 3849.60s]  background?
+[3849.60s -> 3852.72s]  Every class, there's always a couple that are here
+[3852.72s -> 3856.96s]  because they're like, I'm in ICME or something like that.
+[3856.96s -> 3858.20s]  Anybody?
+[3858.20s -> 3860.80s]  OK, not present today.
+[3860.80s -> 3863.04s]  So there's almost always a couple folks in the class
+[3863.04s -> 3864.84s]  that actually do this type of work.
+[3864.84s -> 3869.16s]  And if you've done any kind of physical simulation,
+[3869.16s -> 3871.40s]  you would know that that jet engine
+[3871.40s -> 3874.48s]  is going to be represented by a mesh.
+[3874.48s -> 3878.00s]  And we're going to perform operations on the mesh.
+[3878.00s -> 3881.34s]  So the domain that we're working on now
+[3881.34s -> 3884.76s]  is the set of programs where there's not
+[3884.76s -> 3890.88s]  pixels that we're dealing with, but operations on meshes.
+[3890.88s -> 3893.08s]  And one of the hallmarks of all of DSLs
+[3893.08s -> 3896.96s]  tends to be the system or the compiler
+[3896.96s -> 3899.48s]  knows what your data structure is.
+[3899.48s -> 3903.64s]  So in Halide, everything was a function,
+[3903.64s -> 3906.24s]  and the compiler handed the allocation.
+[3906.24s -> 3909.88s]  In PyTorch, everything is a dense tensor, and that's it.
+[3909.88s -> 3913.04s]  In some of these, in List or in any of these graph
+[3913.04s -> 3916.44s]  processing DSLs, the only thing you can operate on
+[3916.44s -> 3918.30s]  is a graph.
+[3918.30s -> 3923.50s]  So all of them give you some abstract notion of a graph.
+[3923.50s -> 3924.90s]  And there's 1,000 different ways
+[3924.90s -> 3927.64s]  I can represent a graph in a computer in the same way
+[3927.64s -> 3929.38s]  that there's 1,000 different ways that I
+[3929.38s -> 3931.22s]  can represent an ND tensor.
+[3931.22s -> 3933.70s]  In Halide, we never allocated the whole tensor.
+[3933.70s -> 3936.58s]  We just allocated the chunks that you actually needed.
+[3936.58s -> 3938.78s]  That could be true of graphs as well.
+[3938.78s -> 3944.02s]  So List will never give you a graph structure.
+[3944.02s -> 3946.58s]  It'll only give you a set of functions
+[3946.58s -> 3949.16s]  that allow you to access elements of that structure.
+[3949.16s -> 3950.82s]  So the first thing I want you to look at
+[3950.82s -> 3954.42s]  is this is a program in List which says, while not done,
+[3954.42s -> 3956.22s]  while i equals 0 to 1,000, this
+[3956.22s -> 3962.90s]  is time-stepping 1,000 times, for every edge in the mesh,
+[3962.90s -> 3964.50s]  do this.
+[3964.50s -> 3967.04s]  So we don't know what the representation of that mesh
+[3967.04s -> 3967.80s]  is at all.
+[3967.80s -> 3969.78s]  We don't know if it's a graph with pointers.
+[3969.78s -> 3971.78s]  We don't know if it's a compressed sparse row.
+[3971.78s -> 3975.44s]  We don't know how the particular computer wants
+[3975.44s -> 3977.20s]  to represent the mesh.
+[3977.20s -> 3981.68s]  All we know is that we have the ability to query for edges.
+[3981.68s -> 3983.88s]  And for every edge, we have the ability
+[3983.88s -> 3987.72s]  to query for the surrounding vertices.
+[3987.72s -> 3989.60s]  And for every vertex, we have the ability
+[3989.60s -> 3992.12s]  to query for the surrounding edges.
+[3992.12s -> 3994.68s]  And then the other thing we can do is not only get the parts
+[3994.68s -> 3997.60s]  of the mesh, we can programmatically say,
+[3997.60s -> 4000.96s]  I'm going to store data on those various parts.
+[4000.96s -> 4004.16s]  So on every edge of the mesh, or every vertex,
+[4004.16s -> 4011.28s]  I might store position, or a temperature, like a heat.
+[4011.28s -> 4015.84s]  Or for every edge, I guess there's
+[4015.84s -> 4017.48s]  nothing stored on edges in this.
+[4017.48s -> 4019.58s]  Everything is stored on vertices here.
+[4019.58s -> 4023.16s]  And so the data is, I could have said v1 dot temperature,
+[4023.16s -> 4025.36s]  but they've decided to write it this way,
+[4025.36s -> 4026.36s]  which is more familiar.
+[4026.36s -> 4028.12s]  For physicists, it's more like a field.
+[4028.12s -> 4030.48s]  So I have a field called temperature,
+[4030.48s -> 4033.64s]  a function temperature that's defined at all points.
+[4033.64s -> 4035.48s]  And I give it the point as a parameter
+[4035.48s -> 4037.72s]  to get the actual temperature.
+[4037.72s -> 4039.24s]  So you can look at this thing.
+[4039.24s -> 4041.24s]  And so this is just an algorithm
+[4041.24s -> 4043.04s]  that takes position and temperature
+[4043.04s -> 4046.00s]  from the vertices on both sides of an edge
+[4046.00s -> 4050.48s]  and then computes some computation on those values
+[4050.48s -> 4053.80s]  to compute the flux over that edge
+[4053.80s -> 4057.52s]  and distributes that flux to the various vertices.
+[4057.52s -> 4059.76s]  Details of the computation don't matter.
+[4059.76s -> 4061.68s]  But given an edge, the loop body
+[4061.72s -> 4064.72s]  accesses and modifies fields or data
+[4064.72s -> 4068.40s]  on all of the parts of the relevant mesh.
+[4068.40s -> 4072.08s]  So a list program only can describe operations
+[4072.08s -> 4074.40s]  on reading and writing fields of a mesh.
+[4074.40s -> 4077.72s]  That's the only thing that they can do.
+[4077.72s -> 4080.08s]  But scientists writing these scientific codes,
+[4080.08s -> 4083.40s]  that's how they think about writing their codes.
+[4083.40s -> 4087.92s]  And the mesh representation is chosen by list for you
+[4087.92s -> 4090.72s]  based on whatever computer you're running on.
+[4090.76s -> 4094.00s]  So let me give you some examples of that.
+[4094.00s -> 4097.52s]  So what the compiler has to do, or really what you need
+[4097.52s -> 4101.16s]  is the compiler has to identify parallelism.
+[4101.16s -> 4104.36s]  The compiler has to identify data locality.
+[4104.36s -> 4107.20s]  And the compiler has to now reason about what
+[4107.20s -> 4108.80s]  synchronization is required.
+[4108.80s -> 4112.92s]  This is exactly what you've done in all of your programs
+[4112.92s -> 4116.96s]  so far, except the reason why you've had to do it
+[4116.96s -> 4119.32s]  is because for arbitrary C, I can
+[4119.32s -> 4121.00s]  write code that looks like this.
+[4121.00s -> 4123.48s]  I want you to access A sub index, where
+[4123.48s -> 4126.04s]  index is some function dependent on data that's
+[4126.04s -> 4128.08s]  not known at compile time.
+[4128.08s -> 4129.76s]  So these are the types of things
+[4129.76s -> 4134.40s]  that prevent regular C++ or even Java
+[4134.40s -> 4137.80s]  from doing sophisticated analysis for you.
+[4137.80s -> 4141.08s]  In list, you can't write this code.
+[4141.08s -> 4144.08s]  The only way you can read and write values
+[4144.08s -> 4147.92s]  is by querying them from positions of the mesh.
+[4147.92s -> 4150.48s]  So the list compiler can look at this program
+[4150.48s -> 4153.96s]  and say, OK, this is a parallel loop over all the edges.
+[4153.96s -> 4156.16s]  And every body of the loop is only
+[4156.16s -> 4159.40s]  going to access information on the vertex
+[4159.40s -> 4161.64s]  on either side of the edge.
+[4161.64s -> 4164.12s]  So now all the dependencies are known.
+[4164.12s -> 4166.68s]  And it even knows that we're going to read some values,
+[4166.68s -> 4168.92s]  and then we're going to write some values.
+[4168.92s -> 4171.16s]  And so here is actually a challenge.
+[4171.16s -> 4173.92s]  Every edge is going to update values
+[4173.92s -> 4176.04s]  on the vertices, which means what?
+[4176.04s -> 4179.40s]  There's more than one edge connecting every vertex.
+[4179.40s -> 4183.04s]  So now we have multiple writers into this field.
+[4183.04s -> 4184.88s]  So the compiler will need to know that there
+[4184.88s -> 4187.04s]  needs to be some protection or some atomic here.
+[4189.76s -> 4192.92s]  So let me just give you really quickly two ways
+[4192.92s -> 4195.24s]  of parallelizing this code on two completely
+[4195.24s -> 4196.24s]  different machines.
+[4196.24s -> 4198.16s]  And the first machine is I want you to think
+[4198.16s -> 4200.16s]  about a cluster of computers.
+[4200.16s -> 4202.56s]  Don't have a shared address space at all.
+[4202.60s -> 4207.16s]  The only way to communicate is with meshes.
+[4207.16s -> 4212.96s]  So the program is, hey, list, here's my mesh topology.
+[4212.96s -> 4214.36s]  Here's my graph.
+[4214.36s -> 4216.60s]  It might be 100 billion nodes.
+[4216.60s -> 4219.12s]  You go figure out how to fit it on the cluster.
+[4219.12s -> 4221.68s]  And here's my program that says,
+[4221.68s -> 4223.36s]  I'm going to do work for every edge.
+[4223.36s -> 4225.40s]  And for every edge, we touch these vertices.
+[4225.40s -> 4227.12s]  Or I'm going to do work for every face.
+[4227.12s -> 4229.76s]  And for every face, we're going to touch these vertices.
+[4229.76s -> 4231.60s]  And list will go, oh, OK.
+[4231.64s -> 4233.88s]  I'm going to take your big old mesh,
+[4233.88s -> 4236.32s]  and I will distribute it across the cluster
+[4236.32s -> 4240.44s]  with equal number of mesh elements per cluster.
+[4240.44s -> 4242.64s]  And I'm coloring the different regions of the mesh
+[4242.64s -> 4246.40s]  according to what node they want.
+[4246.40s -> 4251.08s]  And since list knows that every edge here
+[4251.08s -> 4253.96s]  is going to need maybe a vertex over here,
+[4253.96s -> 4257.44s]  well, that means list can also, if we zoom in,
+[4257.44s -> 4259.44s]  we zoom into a region, we know
+[4259.44s -> 4261.76s]  that these cells might need this information
+[4261.76s -> 4263.12s]  and these cells might need this information.
+[4263.12s -> 4265.00s]  So those are those ghost cells.
+[4265.00s -> 4268.04s]  So that's the data that's copied to other nodes
+[4268.04s -> 4270.88s]  in order for you to read the correct data.
+[4270.88s -> 4272.88s]  And that's the data that has to be written back
+[4272.88s -> 4275.08s]  to exchange with other nodes
+[4275.08s -> 4277.80s]  every single iteration or step.
+[4277.80s -> 4280.06s]  So this is like, you get the message passing
+[4280.06s -> 4283.80s]  from the list compiler if you're running on a cluster.
+[4284.88s -> 4286.64s]  And believe me, that's a mess.
+[4286.64s -> 4288.68s]  Like, that's not fun code to write.
+[4288.68s -> 4292.08s]  But imagine we're compiling this with code to a GPU instead.
+[4292.96s -> 4296.64s]  Single address space, many tiny threads.
+[4296.64s -> 4299.64s]  I'm not gonna divide this big mesh
+[4299.64s -> 4303.20s]  into like all these tiny little blocks.
+[4303.20s -> 4305.28s]  What I might do, what might be much more natural
+[4305.28s -> 4306.52s]  would be to take that loop and say,
+[4306.52s -> 4309.52s]  you know, it used to be for all edges and mesh.
+[4309.52s -> 4310.48s]  Well, I should probably do something
+[4310.48s -> 4313.66s]  like there's a CUDA thread per edge, right?
+[4313.66s -> 4315.20s]  But there was this problem, right,
+[4315.20s -> 4319.68s]  where we said that for every edge in the mesh,
+[4319.68s -> 4323.44s]  we're gonna write some value to the vertex
+[4323.44s -> 4325.96s]  on one side of the edge and to the other.
+[4325.96s -> 4327.44s]  So we have multiple threads
+[4327.44s -> 4330.08s]  that have to write to the same value.
+[4330.08s -> 4332.16s]  So one solution would be this write
+[4332.16s -> 4334.12s]  needed to be an atomic write.
+[4334.12s -> 4336.68s]  So the compiler could just emit that.
+[4336.68s -> 4338.00s]  But what LIS did is, you know,
+[4338.00s -> 4340.24s]  atomics can be kind of slow.
+[4340.24s -> 4344.00s]  And this is a graph of the numbers are edges
+[4344.00s -> 4346.72s]  and the letters are vertices.
+[4346.72s -> 4350.38s]  So multiple edges write to the same vertex.
+[4352.08s -> 4353.52s]  So instead of using atomics,
+[4353.52s -> 4354.96s]  which they determined to be too slow,
+[4354.96s -> 4357.06s]  they said, here's what we're gonna do on a GPU.
+[4357.06s -> 4361.92s]  We're gonna pre-process the dependencies.
+[4361.92s -> 4364.14s]  So again, like the numbers are edges,
+[4364.14s -> 4367.64s]  the letters are vertices.
+[4367.64s -> 4369.50s]  And they said, well, we're gonna analyze that
+[4369.50s -> 4372.88s]  and we're gonna actually look at which edges
+[4372.88s -> 4375.88s]  share the same vertex.
+[4375.88s -> 4378.08s]  And we're gonna encode that in a graph
+[4378.08s -> 4383.02s]  where edge one and edge five have a line,
+[4383.02s -> 4385.02s]  an edge between them,
+[4385.02s -> 4390.02s]  if edge one and edge five in the mesh share a vertex.
+[4390.68s -> 4391.52s]  So you can encode,
+[4391.52s -> 4394.24s]  so one and five have an edge in this graph
+[4394.24s -> 4397.92s]  because one and five both write to C there.
+[4397.92s -> 4399.46s]  And notice that there's no edge
+[4399.46s -> 4403.20s]  between eight and two.
+[4403.20s -> 4406.26s]  So eight and two do not write to the same values.
+[4408.56s -> 4411.14s]  And then what they do is they take this graph down here
+[4411.14s -> 4413.38s]  and they run a graph coloring.
+[4413.38s -> 4415.44s]  And graph coloring is an algorithm to say,
+[4415.44s -> 4416.28s]  I'm gonna color,
+[4416.28s -> 4419.50s]  and there's no two adjacent nodes that get the same color.
+[4420.90s -> 4423.26s]  And then that for loop over edges
+[4423.26s -> 4425.70s]  is actually gonna be broken into,
+[4425.70s -> 4428.82s]  if we have one, two, three, four colors,
+[4428.82s -> 4430.90s]  four parallel for loops,
+[4430.90s -> 4434.82s]  which means for all edges colored blue,
+[4434.82s -> 4438.06s]  completely in parallel with no locks or no atomics,
+[4438.06s -> 4440.18s]  then for all edges colored orange
+[4440.18s -> 4442.18s]  for no locks or no atomics,
+[4442.18s -> 4444.00s]  for and so on and so on.
+[4444.00s -> 4446.66s]  And they do this and they show that the same list program,
+[4446.66s -> 4448.38s]  you know, the folks in mechanical engineering
+[4448.38s -> 4450.54s]  don't have to take 149 at all.
+[4450.54s -> 4453.50s]  And they can run a code on a cluster
+[4455.26s -> 4458.02s]  or they can run with this many cores,
+[4458.02s -> 4459.54s]  or I'm not showing you here,
+[4459.54s -> 4461.86s]  but they could run a code on the GPU
+[4461.86s -> 4463.48s]  and without any modifications,
+[4463.48s -> 4466.94s]  they got pretty good performance in both of those cases.
+[4466.94s -> 4467.98s]  So that's, you know,
+[4467.98s -> 4471.02s]  the benefits of these high level abstractions.
+[4471.02s -> 4471.86s]  And that's, you know,
+[4471.86s -> 4476.04s]  just a quick summary of some of the ideas behind lists.
+[4476.04s -> 4477.50s]  And again, it's sort of,
+[4477.50s -> 4480.46s]  typically most of these DSLs are,
+[4480.46s -> 4483.38s]  we're gonna handle the data structure.
+[4483.38s -> 4485.98s]  We're gonna give you accessors into the data structure
+[4485.98s -> 4489.34s]  that don't actually let you make any assumptions
+[4489.34s -> 4490.46s]  about its format.
+[4491.42s -> 4494.62s]  You write your program in terms of the accessors
+[4495.46s -> 4496.54s]  and we'll go to town
+[4496.54s -> 4499.58s]  because we know some details about dependencies
+[4499.58s -> 4502.78s]  or the data structures used from that point forward.
+[4502.78s -> 4504.44s]  And that pattern just repeats.
+[4504.44s -> 4507.62s]  Like if you look at PyTorch, what's the data structure?
+[4507.62s -> 4509.14s]  A tensor, right?
+[4509.14s -> 4511.86s]  And you're not allowed to manage any of that allocation
+[4511.86s -> 4512.70s]  or anything like that.
+[4512.70s -> 4514.18s]  You just ask for tensors and they say,
+[4514.42s -> 4515.32s]  we'll handle it.
+[4516.66s -> 4518.88s]  You just tell us what you're accessing.
+[4518.88s -> 4521.62s]  So there's just a few things I'll just refer for some,
+[4521.62s -> 4523.08s]  just some riffing is,
+[4524.14s -> 4527.30s]  these languages work out well
+[4527.30s -> 4529.84s]  when the structure of the primitives
+[4529.84s -> 4532.34s]  match the natural thinking of the user.
+[4533.70s -> 4537.58s]  So like physicists think in terms of operations on meshes.
+[4538.66s -> 4542.02s]  Image processing people think about operations on pixels.
+[4542.02s -> 4546.18s]  Machine learning people think about operations on tensors.
+[4546.18s -> 4549.34s]  And you really wanna get the operations aligned
+[4549.34s -> 4550.62s]  with the thought process.
+[4550.62s -> 4553.34s]  That's really, really important, right?
+[4554.90s -> 4556.34s]  But you also wanna think about
+[4556.34s -> 4559.80s]  the process of the performance, right?
+[4559.80s -> 4563.58s]  So a parallel programming system that is really convenient
+[4563.58s -> 4566.22s]  allows you to elegantly express things
+[4566.22s -> 4570.60s]  but precludes the best known implementations
+[4570.60s -> 4572.32s]  almost always fails.
+[4572.32s -> 4574.00s]  So the way we like to develop these things
+[4574.00s -> 4575.40s]  is like we write the code down
+[4575.40s -> 4578.36s]  in terms of how would the user wanna write things?
+[4578.36s -> 4579.86s]  And then we write the code down again
+[4579.86s -> 4582.24s]  in terms of how do we want it to execute
+[4582.24s -> 4583.88s]  on a real machine?
+[4583.88s -> 4584.84s]  And we start thinking about,
+[4584.84s -> 4588.20s]  is it possible for a compiler to go from point A to point B?
+[4588.20s -> 4590.64s]  What does the compiler need to know?
+[4590.64s -> 4592.32s]  And then we start adding a little bit more
+[4592.32s -> 4593.44s]  to the front end
+[4593.44s -> 4596.48s]  so that the user can just declare that information.
+[4596.48s -> 4598.92s]  That's kind of the process on how to think about it.
+[4598.92s -> 4599.84s]  And then the other thing is that
+[4599.84s -> 4602.04s]  a lot of these systems are incredibly simple.
+[4602.98s -> 4607.98s]  Good systems tend to have only a couple of perimeters
+[4608.20s -> 4610.32s]  that are well optimized
+[4610.32s -> 4612.80s]  and the power comes from composing them.
+[4612.80s -> 4614.28s]  So if you're ever designing one of these things,
+[4614.28s -> 4615.16s]  people are gonna come up to you and say,
+[4615.16s -> 4616.24s]  hey, can you just add this?
+[4616.24s -> 4617.92s]  Can you add that?
+[4617.92s -> 4622.78s]  And good architects actually are really curmudgeonly.
+[4622.78s -> 4623.96s]  They say, no, well, like,
+[4623.96s -> 4626.76s]  show me why you can't do it in what you have.
+[4626.76s -> 4628.16s]  Because they know that
+[4628.16s -> 4630.44s]  once you get more than a couple of perimeters,
+[4630.44s -> 4632.80s]  you just start losing control of this thing.
+[4632.80s -> 4636.32s]  All the beauty of being able to make a few things fast
+[4636.32s -> 4637.84s]  starts going away.
+[4637.84s -> 4639.64s]  So most of these systems
+[4639.64s -> 4642.14s]  have a very small number of perimeters.
+[4643.06s -> 4645.68s]  And if you have a small enough number of perimeters,
+[4645.68s -> 4647.48s]  they can pose.
+[4647.48s -> 4649.88s]  And so the other thing that really good architects add,
+[4649.88s -> 4650.72s]  so you come up to them and say,
+[4650.72s -> 4652.36s]  if I just had this primitive,
+[4652.36s -> 4654.78s]  my thing would run 10 times faster.
+[4654.78s -> 4656.46s]  And a good architects didn't think about it and go,
+[4657.10s -> 4657.94s]  but if I added that,
+[4657.94s -> 4661.52s]  it doesn't compose with the four other things that I have.
+[4661.52s -> 4662.98s]  Let me go figure out how to do it
+[4662.98s -> 4665.14s]  a little bit differently than what you're suggesting
+[4665.14s -> 4667.10s]  because we wanna be able to compose.
+[4667.10s -> 4669.30s]  And almost every good design
+[4669.30s -> 4671.94s]  that lasts for a decade or more,
+[4671.94s -> 4674.78s]  the creators kinda come up and go,
+[4674.78s -> 4677.82s]  I had no idea people were gonna use it for that.
+[4677.82s -> 4679.22s]  Like I was trying to write this thing
+[4679.22s -> 4682.30s]  for processing meshes or in the case of graphics,
+[4682.30s -> 4683.74s]  I was trying to write this program
+[4683.74s -> 4685.70s]  for like rendering pictures
+[4685.70s -> 4687.78s]  and these weirdos at Stanford and UNC
+[4687.78s -> 4690.46s]  started using it for doing protein folding.
+[4690.46s -> 4693.14s]  That means you've actually had a good system, right?
+[4693.14s -> 4696.86s]  Because you have a few small perimeters, they composed
+[4696.86s -> 4698.44s]  and people started using them in ways
+[4698.44s -> 4700.38s]  that you never thought possible, right?
+[4700.38s -> 4701.22s]  And in some sense,
+[4701.22s -> 4704.14s]  like that's one of the beauties
+[4704.14s -> 4706.02s]  that's been so impressive about these LLMs
+[4706.02s -> 4708.30s]  is they were kind of designed to do one thing
+[4708.30s -> 4710.62s]  and people are starting to figure out
+[4710.62s -> 4712.14s]  very different ways to do it
+[4712.14s -> 4713.82s]  than I'm sure the folks at OpenAI
+[4713.82s -> 4715.22s]  and other places ever imagined.
+[4715.78s -> 4717.82s]  You know something's powerful and you're onto something
+[4717.82s -> 4720.22s]  when someone teaches you a way to use your own system
+[4720.22s -> 4721.06s]  that you're like, I didn't know
+[4721.06s -> 4722.82s]  you could do that in this thing at all.
+[4722.82s -> 4724.30s]  So I'll stop there.
+[4724.30s -> 4727.86s]  But this is more philosophical today than anything else.

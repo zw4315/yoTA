@@ -1,0 +1,3241 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 25.12s]  I also thought it was okay and I also had a bug with the copy and copy app but I got
+[25.12s -> 26.12s]  that result.
+[26.76s -> 27.76s]  Good, good, good.
+[27.76s -> 30.92s]  Yeah, I think it's one of the tricky cases that you might not think about when you start
+[30.92s -> 31.92s]  programming.
+[31.92s -> 36.48s]  But luckily, user tests will find it for you.
+[36.48s -> 37.48s]  Caroline.
+[37.48s -> 38.48s]  Okay.
+[38.48s -> 41.48s]  That is going good.
+[41.48s -> 47.32s]  I haven't finished yet, actually.
+[47.32s -> 55.32s]  Sorry guys, I'm worried about copy in, I guess, but you should.
+[55.32s -> 63.56s]  How about Kendall Garner?
+[63.56s -> 67.72s]  I think for the most part, it was not too bad.
+[67.72s -> 73.48s]  For me, probably the weirdest part was just trying to figure out when it went below bounds
+[73.48s -> 75.48s]  of the stack.
+[75.48s -> 82.28s]  Yeah, into the guard page, basically.
+[82.84s -> 84.84s]  Good.
+[84.84s -> 90.76s]  Okay, well, it's about time to get started.
+[90.76s -> 98.84s]  So welcome to the next lecture in SO81, wherever you are, in whatever time zone.
+[98.84s -> 102.44s]  So today's lecture is about locks.
+[102.44s -> 107.76s]  You probably have seen locks in previous classes or at least been in touch with them
+[107.76s -> 108.76s]  in some way or another.
+[109.24s -> 114.24s]  And so this lecture is a little bit of a conceptual lecture, may overlap a little bit with some
+[114.24s -> 118.20s]  things you've seen before for locks, but we'll have a little bit more of a kernel
+[118.20s -> 119.20s]  and OS focus.
+[119.20s -> 123.04s]  And that changes a couple things.
+[123.04s -> 128.92s]  Just to get started, let's just remind ourselves why we need locks.
+[128.92s -> 135.92s]  And I guess the starting point is really that applications want to use multiple cores.
+[139.36s -> 144.36s]  They want to use multiple cores to get performance.
+[144.36s -> 149.64s]  And so even application actually wants to do runs on multiple cores and presumably
+[149.64s -> 154.04s]  wants to in these cores or the parts of the application may invoke system calls.
+[154.04s -> 160.04s]  And so the kernel must be able to handle parallel system calls.
+[169.76s -> 178.76s]  And that means that if the system calls run in parallel on different cores, they may
+[178.76s -> 188.76s]  actually access shared data structures, data structures in parallel.
+[188.76s -> 196.76s]  And as you've seen by now, actually x66 has quite a number of shared data structures,
+[196.76s -> 204.76s]  whether it's the proc structures or ticks or later we'll see the buffer cache.
+[204.76s -> 208.76s]  There's actually a ton of shared data structures.
+[208.76s -> 215.76s]  And so if you have parallaxes to a data structure and one of the cores is a writer
+[215.76s -> 220.76s]  and the other cores is a reader, we need basically locks to coordinate these updates
+[220.76s -> 225.76s]  through the shared data structure so that readers see a consistent view.
+[225.76s -> 234.76s]  So we need locks for control sharing or for correct sharing.
+[239.76s -> 246.76s]  Now this is in some sense a little bit of a bummer because we want this parallaxes.
+[246.76s -> 252.76s]  We want to run multiple consistent calls in parallel on different cores.
+[252.76s -> 257.76s]  But unfortunately, if they share the data structures, they need locks and locks
+[257.76s -> 260.76s]  serialize basically operations.
+[260.76s -> 264.76s]  And so, in fact, locks in the end can limit performance.
+[273.76s -> 277.76s]  And so we're sort of in a tricky situation where for correctness, we need locks.
+[277.76s -> 281.76s]  But for performance, they're not good.
+[281.76s -> 288.76s]  But there's going to be sort of a fact of life and we'll see what we can do about it.
+[288.76s -> 291.76s]  But that's sort of the top level scenario here.
+[291.76s -> 295.76s]  And maybe just to really bring this point to the hood,
+[295.76s -> 298.76s]  why do applications actually want to multiple cores?
+[298.76s -> 303.76s]  And that really has to do with technology trends over the last couple of decades.
+[303.76s -> 307.76s]  And there's classic graphs that sort of make these points.
+[307.76s -> 309.76s]  So let me pull up one of them.
+[309.76s -> 312.76s]  There's a little bit of a complicated graph.
+[312.76s -> 317.76s]  There's years on the x-axis and y-axis.
+[317.76s -> 319.76s]  There's units.
+[319.76s -> 322.76s]  There are different types of units depending on which line we're looking at.
+[322.76s -> 329.76s]  But the thing to really look at is that what has happened in the last couple of years
+[329.76s -> 333.76s]  or the last decades is that starting in the 2000s,
+[333.76s -> 338.76s]  that the clock frequency hasn't really increased anymore.
+[338.76s -> 344.76s]  So basically this has plateaued or constant.
+[344.76s -> 358.76s]  And as a result, basically single thread performance of a core also basically has reached sort of a limit.
+[359.76s -> 362.76s]  And yet on the other hand, the number of cores or the number of resistors
+[362.76s -> 365.76s]  are still increasing over the same time period.
+[365.76s -> 370.76s]  So if you can't use resistors to make a single core sort of run faster,
+[370.76s -> 373.76s]  the only other option basically is to have multiple cores.
+[373.76s -> 377.76s]  And you see indeed that starting from 2001 or early 2000s,
+[377.76s -> 380.76s]  the number of cores has gone up.
+[380.76s -> 383.76s]  And so there's an application that wants more performance,
+[383.76s -> 385.76s]  can't rely on a single core.
+[385.76s -> 387.76s]  It basically has to exploit multiple cores.
+[387.76s -> 392.76s]  And also this means if an application is kernel intensive, OS intensive,
+[392.76s -> 395.76s]  where it's like a server,
+[395.76s -> 401.76s]  then that means that the operating system also has to be run efficiently on multiple cores.
+[401.76s -> 409.76s]  So that's the main reason that we're sort of very interested in parallelism within the kernel.
+[411.76s -> 413.76s]  Any questions about this?
+[418.76s -> 421.76s]  Okay, I assume that you've seen some of these graphs before,
+[421.76s -> 426.76s]  but it's good to remind us what the starting point of all the discussion is.
+[426.76s -> 429.76s]  So why locks?
+[429.76s -> 433.76s]  I already hinted at this, they're there for correctness.
+[433.76s -> 439.76s]  If we have readers and writers accessing a shared data structure,
+[439.76s -> 444.76s]  the thing that goes wrong is that we want to avoid race conditions.
+[450.76s -> 453.76s]  So if you don't have locks, we run the risk.
+[453.76s -> 459.76s]  If we have shared data structures, then we're going to have race conditions.
+[459.76s -> 464.76s]  And it turns out that race conditions are pretty annoying.
+[464.76s -> 468.76s]  And so just to first get a little bit of sense of what it actually is,
+[468.76s -> 472.76s]  let's look at the, let's create a race condition in xv6
+[472.76s -> 477.76s]  and sort of see how it actually shows up and then understand what actually happens.
+[478.76s -> 484.76s]  So here's our function k3 in calloc.c.
+[484.76s -> 489.76s]  So this is the function that frees after you free a page, it puts it on the free list.
+[489.76s -> 494.76s]  The kernel has a very simple data structure to keep the free list of all three pages
+[494.76s -> 498.76s]  so that when it counts, each page has actually three graphics in the free list.
+[498.76s -> 503.76s]  As you see here, the allocation has one,
+[503.76s -> 508.76s]  the memory allocator has one lock, kmemlock,
+[508.76s -> 514.76s]  and here it actually updates the free list with a page that just has to be freed
+[514.76s -> 516.76s]  or the arguments are freed.
+[516.76s -> 520.76s]  So what we're going to do is comment out these two acquire releases
+[520.76s -> 525.76s]  that basically mark the acquiring of the lock and then releasing the lock.
+[525.76s -> 530.76s]  And so this piece of code that sits in the middle that used to be,
+[530.76s -> 535.76s]  there's now not more, it's not being executed anymore anatomically.
+[540.76s -> 545.76s]  So let's do that and then run
+[546.76s -> 551.76s]  the Qemu, so we'll compile it.
+[551.76s -> 555.76s]  And before I run it, notice actually we're already booted.
+[555.76s -> 560.76s]  And we actually presumably have made some calls probably to k3,
+[560.76s -> 564.76s]  as you probably know, and so if actually things seem to be working fine.
+[564.76s -> 566.76s]  So let's run the user test.
+[566.76s -> 569.76s]  And maybe it's interesting to think a little bit about this.
+[569.76s -> 573.76s]  What do you expect? Will this work? Will this not work?
+[575.76s -> 577.76s]  Anybody who tried it out?
+[579.76s -> 583.76s]  I think it could potentially lose some pages,
+[583.76s -> 589.76s]  but maybe it will not because maybe a race condition wouldn't occur.
+[589.76s -> 592.76s]  Yeah, so one of the things is that these race conditioners,
+[592.76s -> 593.76s]  they might not happen.
+[593.76s -> 595.76s]  So let's run the user test and see actually what happens.
+[598.76s -> 600.76s]  So here we started up.
+[600.76s -> 602.76s]  It'll take a little while.
+[602.76s -> 605.76s]  Zoom might complain a little bit because, you know,
+[605.76s -> 607.76s]  running a lot of,
+[607.76s -> 609.76s]  put a lot of load on my machine here.
+[609.76s -> 613.76s]  If you probably know, the Qemu is simulating three cores here,
+[613.76s -> 616.76s]  and these three cores might run in parallel.
+[618.76s -> 620.76s]  And so far, so good.
+[620.76s -> 622.76s]  We're starting to pass tests.
+[622.76s -> 631.76s]  A little bit slower because I'm running Zoom at the same time.
+[631.76s -> 637.76s]  Let's wait a couple more and just see what's going on.
+[637.76s -> 655.76s]  Okay, well, let's just go back to the slides,
+[655.76s -> 657.76s]  and then we'll check back in in a little while
+[657.76s -> 659.76s]  and sort of see what actually happens.
+[659.76s -> 661.76s]  But, you know, as pointed out,
+[661.76s -> 663.76s]  these race conditions may appear, may not appear, right?
+[663.76s -> 665.76s]  Because it's always the case that, you know,
+[665.76s -> 668.76s]  every core or every time we call K3,
+[668.76s -> 672.76s]  these two U lines are executed atomically,
+[672.76s -> 675.76s]  as they would have done with the lock,
+[675.76s -> 676.76s]  then there's no problem.
+[676.76s -> 678.76s]  And the only problem is, like,
+[678.76s -> 681.76s]  if two threads of two processors are executed at the same time,
+[681.76s -> 683.76s]  then something comes in between.
+[683.76s -> 684.76s]  Look at this.
+[684.76s -> 686.76s]  Actually, you know, while I'm talking, you know,
+[686.76s -> 687.76s]  we see actually there is a panic.
+[687.76s -> 690.76s]  And so there is some race condition that can actually cause a panic.
+[692.76s -> 694.76s]  There are other race conditions that will show up
+[694.76s -> 698.76s]  as indeed, as mentioned, or as I mentioned,
+[698.76s -> 700.76s]  that will show up as like not enough, you know,
+[700.76s -> 702.76s]  some free pages where some pages get lost.
+[702.76s -> 705.76s]  So basically user test runs fine until the very end,
+[705.76s -> 706.76s]  where it complains saying,
+[706.76s -> 708.76s]  well, you lost some pages
+[708.76s -> 712.76s]  during all of the runs of user tests, okay?
+[712.76s -> 715.76s]  So these race conditions can show up in different ways.
+[715.76s -> 717.76s]  They may happen, they may not happen.
+[717.76s -> 719.76s]  Clearly, something happened here.
+[719.76s -> 721.76s]  So let's try to understand, you know,
+[721.76s -> 724.76s]  what actually, what goes wrong.
+[727.76s -> 729.76s]  Back to the slides.
+[733.76s -> 735.76s]  So, you know, the picture you should have in your head,
+[735.76s -> 739.76s]  like there's this multiple cores that were running.
+[739.76s -> 741.76s]  So your CPU zero.
+[741.76s -> 743.76s]  So CPU zero is executing instructions
+[743.76s -> 746.76s]  and CPU one is executing instructions.
+[747.76s -> 749.76s]  And they're both connected, you know,
+[749.76s -> 751.76s]  through a memory, right?
+[751.76s -> 752.76s]  If you're looking back,
+[752.76s -> 754.76s]  think back about the scheme and schematics,
+[754.76s -> 756.76s]  you know, that we showed a couple of times before.
+[756.76s -> 758.76s]  In fact, there's a DRAM controller, you know,
+[758.76s -> 761.76s]  that actually connects, you know,
+[761.76s -> 764.76s]  to the DRAM chips where all the stage is living
+[765.76s -> 767.76s]  or all the memory is living.
+[767.76s -> 769.76s]  So I'm going to make that memory a little bit bigger
+[769.76s -> 773.76s]  because I want to have some place to draw.
+[773.76s -> 776.76s]  And so basically our tree list, you know,
+[776.76s -> 780.76s]  lives in memory.
+[780.76s -> 783.76s]  And let's say there's a tree list with two pages on it.
+[786.76s -> 791.76s]  And, you know, both CPUs, you know,
+[791.76s -> 794.76s]  call K3 roughly at the same time.
+[800.76s -> 801.76s]  So we'll look at a little bit of the code again,
+[801.76s -> 804.76s]  just to make sure that we have this right in our head.
+[804.76s -> 806.76s]  So we look at K3, you know,
+[806.76s -> 809.76s]  they get passed in some PA, you know,
+[809.76s -> 811.76s]  a physical address that we're going to use
+[811.76s -> 814.76s]  to actually hook up, you know, into the free list.
+[816.76s -> 821.76s]  So, you know, CPU zero has an R
+[823.76s -> 827.76s]  and that's pointing to some, you know, free page
+[827.76s -> 832.76s]  and maybe, yeah, and CPU one has one.
+[833.76s -> 836.76s]  Let me actually use another color for CPU one.
+[836.76s -> 838.76s]  So CPU one has an R.
+[838.76s -> 840.76s]  It also is pointing through some page, you know,
+[840.76s -> 842.76s]  that we want to hook into the free list.
+[842.76s -> 843.76s]  Make sense?
+[845.76s -> 847.76s]  And so, you know, we look back at the code,
+[847.76s -> 850.76s]  you know, the first thing they do is, you know,
+[850.76s -> 855.76s]  update R next to point to the free list.
+[855.76s -> 860.76s]  So let's assume, you know, that CPU one runs first
+[860.76s -> 864.76s]  and, you know, what it will do is we'll put its pointer,
+[864.76s -> 869.76s]  you know, to the beginning of the, you know,
+[869.76s -> 871.76s]  to wherever free list is pointing to.
+[871.76s -> 875.76s]  And if, you know, CPU one runs exactly at the same time,
+[875.76s -> 880.76s]  then, you know, it could run, you know,
+[880.76s -> 883.76s]  before, you know, CPU zero executes a second instruction
+[883.76s -> 885.76s]  and so it actually might do the same thing.
+[885.76s -> 887.76s]  You know, it might actually also run that first instruction
+[887.76s -> 899.76s]  and update, and update the pointer two.
+[899.76s -> 903.76s]  So now both R, you know, one from CPU one
+[903.76s -> 905.76s]  and from CPU zero, one from CPU one
+[905.76s -> 906.76s]  are pointing to the beginning of the free list.
+[906.76s -> 908.76s]  And the free list is also pointing to the beginning
+[908.76s -> 909.76s]  of the free list.
+[909.76s -> 911.76s]  And so now there are two remaining instructions
+[911.76s -> 913.76s]  that are being executed in parallel.
+[913.76s -> 916.76s]  So let me go back again, you know, at the code.
+[916.76s -> 918.76s]  You know, the remaining instruction that is being executed
+[918.76s -> 921.76s]  is actually updating the free list to point to R.
+[921.76s -> 926.76s]  You know, and so, you know, CPU zero and one
+[926.76s -> 927.76s]  are going to execute these instructions
+[927.76s -> 931.76s]  maybe exactly the same, roughly at the same time.
+[931.76s -> 932.76s]  But one is going to go first, correct?
+[932.76s -> 934.76s]  There's only one single shared memory
+[934.76s -> 936.76s]  and so one update is going to go first
+[936.76s -> 938.76s]  and the other one is going to go second.
+[938.76s -> 941.76s]  So let's say CPU one, you know, goes first
+[941.76s -> 942.76s]  and now what will then happen?
+[942.76s -> 944.76s]  Well, if CPU one goes first,
+[944.76s -> 947.76s]  the free list is going to be pointing to its R, correct?
+[948.76s -> 950.76s]  And then CPU two runs.
+[950.76s -> 953.76s]  So now CPU two runs this instruction
+[953.76s -> 955.76s]  and so what it's going to do,
+[955.76s -> 957.76s]  it is going to actually update, you know,
+[957.76s -> 959.76s]  free list to point.
+[961.76s -> 963.76s]  So you have a free list
+[964.76s -> 967.76s]  and it's actually going to point to the R
+[967.76s -> 969.76s]  that actually it passed in.
+[969.76s -> 971.76s]  And so, you know, we have a setting now, correct,
+[971.76s -> 975.76s]  where we've lost, you know, basically one page.
+[975.76s -> 980.76s]  The R, you know, that actually CPU zero actually freed,
+[980.76s -> 983.76s]  actually ended up not being on the free list at all.
+[983.76s -> 985.76s]  So we lost the page.
+[989.76s -> 992.76s]  And that's one, you know, bad particular outcome.
+[992.76s -> 994.76s]  Of course, it could be more bad outcomes
+[994.76s -> 995.76s]  because there could be more CPUs
+[995.76s -> 997.76s]  actually trying to do this free list.
+[997.76s -> 999.76s]  They may observe,
+[999.76s -> 1001.76s]  one of them may observe the free list pointing temporarily
+[1001.76s -> 1004.76s]  to the CPU zeros R.
+[1004.76s -> 1006.76s]  And so we start using that.
+[1006.76s -> 1009.76s]  Well, then immediately the free list is updated, you know,
+[1009.76s -> 1011.76s]  by the second CPU.
+[1011.76s -> 1012.76s]  So the more CPUs involved, you know,
+[1012.76s -> 1015.76s]  presumably we could actually get more bizarre outcomes
+[1015.76s -> 1017.76s]  than just the lost page.
+[1018.76s -> 1020.76s]  Does this make sense?
+[1022.76s -> 1023.76s]  Any questions?
+[1030.76s -> 1035.76s]  Okay, so the way, you know, as the code does,
+[1036.76s -> 1040.76s]  you know, the way to address this one way
+[1040.76s -> 1043.76s]  and a very common way is to address this problem
+[1043.76s -> 1045.76s]  is to use a lock.
+[1046.76s -> 1049.76s]  So let me talk a little bit about locks in more detail.
+[1053.76s -> 1056.76s]  So what is the lock abstraction?
+[1057.76s -> 1059.76s]  Well, it is just an object
+[1059.76s -> 1062.76s]  like any other sort of object in the kernel.
+[1062.76s -> 1064.76s]  And I think it has a, in fact,
+[1064.76s -> 1066.76s]  there's something called struct lock, you know,
+[1066.76s -> 1068.76s]  that has some fields, you know,
+[1068.76s -> 1071.76s]  to maintain state about locks.
+[1071.76s -> 1074.76s]  And it has a pretty straightforward API.
+[1074.76s -> 1076.76s]  You know, there's a acquired,
+[1076.76s -> 1078.76s]  in fact, there are only two calls
+[1078.76s -> 1080.76s]  going through this abstraction,
+[1080.76s -> 1082.76s]  which, you know,
+[1082.76s -> 1087.76s]  acquired, which takes a pointer to a lock struct
+[1090.76s -> 1093.76s]  and a release, you know,
+[1093.76s -> 1097.76s]  that actually also takes a pointer to the lock struct
+[1097.76s -> 1100.76s]  to basically update, you know, the lock object.
+[1100.76s -> 1102.76s]  And then basically the rule of the line,
+[1102.76s -> 1104.76s]  you know, the rule here is that
+[1106.76s -> 1107.76s]  the acquire
+[1107.76s -> 1111.76s]  enforces the following rule,
+[1111.76s -> 1113.76s]  that only one process
+[1117.76s -> 1119.76s]  can enter or can acquire the lock.
+[1124.76s -> 1126.76s]  So at any particular point in time,
+[1126.76s -> 1128.76s]  there's only going to be one process
+[1128.76s -> 1131.76s]  that is able to actually successfully acquire the lock.
+[1131.76s -> 1133.76s]  Any other process that is trying to acquire the lock
+[1133.76s -> 1135.76s]  at the same time has to wait
+[1135.76s -> 1138.76s]  until the first process actually calls a release.
+[1138.76s -> 1141.76s]  And so this sequence, you know,
+[1141.76s -> 1143.76s]  the instructions, you know,
+[1143.76s -> 1145.76s]  between the acquire and release
+[1145.76s -> 1147.76s]  are often called the critical section.
+[1153.76s -> 1155.76s]  And one reason it's called the critical section
+[1155.76s -> 1159.76s]  is because this is sort of the huge construction together
+[1159.76s -> 1160.76s]  to do the, you know,
+[1160.76s -> 1162.76s]  need to do the update, you know,
+[1162.76s -> 1164.76s]  to our whatever shared data structure
+[1164.76s -> 1167.76s]  that's protected by the lock in an atomic fashion.
+[1167.76s -> 1169.76s]  And it ensures that basically,
+[1169.76s -> 1172.76s]  if you have multiple instructions in this,
+[1172.76s -> 1174.76s]  you know, between the acquire and release,
+[1174.76s -> 1179.76s]  that they all are executed all together or none.
+[1180.76s -> 1181.76s]  So there's never the case
+[1181.76s -> 1183.76s]  that basically these instructions in the critical section
+[1183.76s -> 1185.76s]  are in a leaf as in the way
+[1185.76s -> 1187.76s]  that we saw in the race condition.
+[1187.76s -> 1188.76s]  And actually exactly that is
+[1188.76s -> 1190.76s]  what avoids these race conditions.
+[1194.76s -> 1196.76s]  Any questions about the lock abstraction?
+[1201.76s -> 1207.76s]  Now, programs typically have many locks.
+[1207.76s -> 1210.76s]  In fact, xv6 has many locks.
+[1214.76s -> 1216.76s]  And the reason to have many locks
+[1216.76s -> 1217.76s]  is because, you know,
+[1217.76s -> 1218.76s]  even the, you know,
+[1218.76s -> 1221.76s]  the lock serializes, you know, the execution, right?
+[1221.76s -> 1222.76s]  The two processes, you know,
+[1222.76s -> 1224.76s]  want to enter this critical section,
+[1224.76s -> 1225.76s]  only one succeeds
+[1225.76s -> 1228.76s]  and the other one really runs that critical section
+[1228.76s -> 1231.76s]  after the first one finishes.
+[1231.76s -> 1234.76s]  So there's no sort of parallelism at all.
+[1234.76s -> 1237.76s]  So if the kernel had only one lock, you know,
+[1237.76s -> 1239.76s]  which is typically called the big kernel lock,
+[1239.76s -> 1242.76s]  then basically every system call
+[1242.76s -> 1244.76s]  in the kernel would be serialized.
+[1244.76s -> 1245.76s]  You know, you would,
+[1245.76s -> 1247.76s]  you know, system call with one start
+[1247.76s -> 1249.76s]  gets the lock, the big kernel lock, you know,
+[1249.76s -> 1250.76s]  does whatever it needs to do
+[1250.76s -> 1251.76s]  and then releases the big kernel lock
+[1251.76s -> 1254.76s]  and then basically returns use space.
+[1254.76s -> 1256.76s]  And then the second system call would run.
+[1256.76s -> 1258.76s]  So we have a parallel application that runs,
+[1258.76s -> 1260.76s]  you know, once the run system calls in parallel,
+[1260.76s -> 1261.76s]  suddenly, you know,
+[1261.76s -> 1263.76s]  all the system calls actually run serially
+[1263.76s -> 1265.76s]  if we had only one lock.
+[1265.76s -> 1268.76s]  And so typically a program like, you know,
+[1268.76s -> 1270.76s]  xv6 has, you know, many locks
+[1270.76s -> 1271.76s]  because at least, you know,
+[1271.76s -> 1275.76s]  then we can get some parallelism
+[1275.76s -> 1279.76s]  because, you know,
+[1280.76s -> 1282.76s]  if two system calls, for example,
+[1282.76s -> 1284.76s]  use two different locks,
+[1284.76s -> 1285.76s]  then, you know,
+[1285.76s -> 1288.76s]  they can actually run completely in parallel
+[1288.76s -> 1290.76s]  without any, you know,
+[1290.76s -> 1292.76s]  serialization because they're basically,
+[1292.76s -> 1297.76s]  you know, using a different locks to serialize.
+[1297.76s -> 1304.76s]  Now, there's sort of a couple of important points.
+[1304.76s -> 1307.76s]  Nobody really sort of enforces in this interface,
+[1307.76s -> 1310.76s]  you know, that you put in the acquired and releases.
+[1310.76s -> 1312.76s]  You know, it's up to the program to do so.
+[1312.76s -> 1316.76s]  So if you want some particular piece of code to be atomic,
+[1316.76s -> 1318.76s]  then it's up to the developer
+[1318.76s -> 1321.76s]  to actually put these acquired and releases in.
+[1321.76s -> 1323.76s]  And clearly, as we'll see,
+[1323.76s -> 1326.76s]  if you can imagine,
+[1326.76s -> 1328.76s]  that is a little bit tricky.
+[1328.76s -> 1330.76s]  So it's important to realize that, you know,
+[1330.76s -> 1333.76s]  the locking is not actually done automatically for you.
+[1333.76s -> 1335.76s]  It's all up to the developer
+[1335.76s -> 1340.76s]  to figure out, to associate locks with data structures
+[1340.76s -> 1342.76s]  and ensuring that, you know,
+[1342.76s -> 1349.76s]  the appropriate acquired and releases are there.
+[1349.76s -> 1351.76s]  So clearly it's the case,
+[1351.76s -> 1356.76s]  you know, that locks limit parallelism
+[1356.76s -> 1358.76s]  and therefore limit performance.
+[1358.76s -> 1360.76s]  And so then this raises the question,
+[1360.76s -> 1364.76s]  when to lock?
+[1365.76s -> 1373.76s]  And, you know, we're going to give you sort of a very conservative rule,
+[1373.76s -> 1376.76s]  but it's a good one as a starting point to think about things.
+[1376.76s -> 1383.76s]  So the conservative rule,
+[1383.76s -> 1387.76s]  or maybe guideline is a better phrasing,
+[1387.76s -> 1392.76s]  is that if two processes,
+[1392.76s -> 1403.76s]  two processes can access a shared data structure,
+[1403.76s -> 1408.76s]  and one of them is a writer or an updater,
+[1408.76s -> 1413.76s]  so meaning it's actually going to modify the shared data structure,
+[1413.76s -> 1417.76s]  then you need a lock for that data structure.
+[1423.76s -> 1428.76s]  So this is a conservative rule,
+[1428.76s -> 1430.76s]  you know, sort of like a red flag.
+[1430.76s -> 1434.76s]  When you're programming and you have a data structure
+[1434.76s -> 1436.76s]  that is accessed by multiple processes
+[1436.76s -> 1437.76s]  and one can be a writer,
+[1437.76s -> 1438.76s]  at that point you should be thinking,
+[1438.76s -> 1440.76s]  okay, there's a possibility of a race condition.
+[1440.76s -> 1442.76s]  You want to avoid this in a race condition.
+[1442.76s -> 1444.76s]  You stick it in a lock.
+[1444.76s -> 1448.76s]  We'll use a lock to guarantee that this race condition can't happen.
+[1448.76s -> 1450.76s]  But, you know,
+[1450.76s -> 1453.76s]  this rule is in some ways too strict.
+[1457.76s -> 1459.76s]  There are cases where, you know,
+[1459.76s -> 1462.76s]  it's okay if two processes access a shared data structure
+[1462.76s -> 1463.76s]  and one is a writer.
+[1463.76s -> 1466.76s]  In particular, there are sort of styles of programming
+[1466.76s -> 1469.76s]  called lock-free programming
+[1469.76s -> 1470.76s]  that actually totally,
+[1470.76s -> 1474.76s]  where these kinds of scenarios actually do happen.
+[1475.76s -> 1480.76s]  The way you want to do lock-free programming
+[1480.76s -> 1483.76s]  is basically to get better performance or more parallelism.
+[1483.76s -> 1486.76s]  Lock-free programming is tricky,
+[1486.76s -> 1489.76s]  even more tricky than programming with locks.
+[1489.76s -> 1492.76s]  And, you know, we'll talk about it at the end of the semester.
+[1492.76s -> 1496.76s]  We'll study some lock-free styles of programming
+[1496.76s -> 1500.76s]  that particularly are common in operating system kernels.
+[1500.76s -> 1502.76s]  But basically for this lecture,
+[1502.76s -> 1504.76s]  and most of the rest of the semester,
+[1504.76s -> 1506.76s]  we're going to be thinking about the case
+[1506.76s -> 1512.76s]  where using locks, you know, to control sharing.
+[1512.76s -> 1514.76s]  And that's hard enough.
+[1514.76s -> 1517.76s]  You know, just using locks is not that straightforward either.
+[1519.76s -> 1522.76s]  So it's in one hand a little bit too strict
+[1522.76s -> 1524.76s]  because it's not always the case that you need it.
+[1524.76s -> 1526.76s]  And also in some cases too loose.
+[1527.76s -> 1529.76s]  You might just...
+[1532.76s -> 1533.76s]  You might even lose...
+[1533.76s -> 1535.76s]  You might actually want to use locks, you know,
+[1535.76s -> 1537.76s]  to enforce some other properties.
+[1537.76s -> 1541.76s]  Like if you look at printf,
+[1541.76s -> 1544.76s]  if you pass a string to printf,
+[1544.76s -> 1547.76s]  you know, the xv6 kernel tries to at least, you know,
+[1547.76s -> 1551.76s]  get the whole string to be printed atomically.
+[1551.76s -> 1554.76s]  And, you know, there's no shared data structure involved,
+[1554.76s -> 1556.76s]  but it's still useful to actually use a lock
+[1556.76s -> 1557.76s]  in that particular case
+[1557.76s -> 1560.76s]  because we want the output to be serialized.
+[1560.76s -> 1562.76s]  So this rule is not, you know, perfect,
+[1562.76s -> 1564.76s]  but it's a pretty good guideline.
+[1566.76s -> 1568.76s]  Any questions about this rule?
+[1571.76s -> 1573.76s]  I had a question not about this rule,
+[1573.76s -> 1576.76s]  but isn't it possible that two processes
+[1576.76s -> 1578.76s]  could acquire the lock at the same time
+[1578.76s -> 1582.76s]  and so would be able to modify the structure?
+[1582.76s -> 1583.76s]  Yeah, no.
+[1583.76s -> 1585.76s]  So part of the sort of contract
+[1585.76s -> 1587.76s]  of the lock abstraction is that it's impossible
+[1587.76s -> 1591.76s]  for two processes to acquire a lock at the same time.
+[1592.76s -> 1597.76s]  If the rule is that there's never a case
+[1597.76s -> 1600.76s]  where two processes actually acquire the lock,
+[1600.76s -> 1602.76s]  can hold the lock at the same time.
+[1602.76s -> 1604.76s]  You'll see in a second how to implement that.
+[1604.76s -> 1607.76s]  But the API or the specification for require is
+[1607.76s -> 1608.76s]  there's only one lock holder
+[1608.76s -> 1611.76s]  at any given point in time or zero.
+[1611.76s -> 1612.76s]  Nice.
+[1612.76s -> 1613.76s]  Okay.
+[1613.76s -> 1616.76s]  So, you know, as we see, you know,
+[1616.76s -> 1620.76s]  a lot of programming lock is here.
+[1620.76s -> 1624.76s]  It's problematic because of these race conditions.
+[1624.76s -> 1628.76s]  Now, of course, the particular race condition
+[1628.76s -> 1633.76s]  that we looked at in K3 or that we created in K3
+[1633.76s -> 1635.76s]  is not easily spotable in some ways.
+[1635.76s -> 1636.76s]  And in fact, you know,
+[1636.76s -> 1638.76s]  if you use a race detection tool,
+[1638.76s -> 1640.76s]  it would immediately find it.
+[1641.76s -> 1643.76s]  But, you know, there are more tricky cases.
+[1644.76s -> 1645.76s]  And so you may want to wonder,
+[1645.76s -> 1648.76s]  like, why could we make locks
+[1648.76s -> 1651.76s]  or could we make locking automatic?
+[1657.76s -> 1659.76s]  So do we follow this sort of simple rule
+[1659.76s -> 1660.76s]  that I just stated?
+[1660.76s -> 1663.76s]  You know, then if ever we see a shared data structure,
+[1663.76s -> 1665.76s]  then operations in that shared data structure
+[1665.76s -> 1667.76s]  basically should acquire a lock.
+[1667.76s -> 1669.76s]  We should associate a lock with that data structure
+[1669.76s -> 1671.76s]  and then every operation that actually,
+[1674.76s -> 1679.76s]  that is performed on that data structure
+[1679.76s -> 1681.76s]  basically acquires and releases the lock.
+[1681.76s -> 1683.76s]  So one way to think about it,
+[1683.76s -> 1688.76s]  maybe in XP6 terms, like every struct has a lock.
+[1690.76s -> 1694.76s]  And that lock is automatically acquired
+[1694.76s -> 1696.76s]  when we do anything related to that struct.
+[1696.76s -> 1698.76s]  And this turns out to be too rigid.
+[1698.76s -> 1699.76s]  And this is why, you know,
+[1699.76s -> 1702.76s]  locking cannot really be automatic.
+[1703.76s -> 1705.76s]  So the operating systems,
+[1705.76s -> 1707.76s]  an example from an operating system is the following.
+[1707.76s -> 1710.76s]  Let's say we have a call like rename
+[1711.76s -> 1714.76s]  that moves a file name from one directory
+[1714.76s -> 1715.76s]  to another directory.
+[1715.76s -> 1717.76s]  So let's say we have D1X
+[1718.76s -> 1722.76s]  and we rename it to D2Y.
+[1724.76s -> 1727.76s]  So we have a file name in the directory D1X
+[1727.76s -> 1731.76s]  and we rename it to D2Y.
+[1731.76s -> 1736.76s]  So the way, presumably, if we follow the rigid rule
+[1736.76s -> 1738.76s]  or like this rule of automatic locking,
+[1738.76s -> 1740.76s]  then what would happen is,
+[1740.76s -> 1741.76s]  you know, that rule,
+[1741.76s -> 1745.76s]  so we have two objects, we have D1 and D2, right?
+[1745.76s -> 1746.76s]  And so we follow the rule,
+[1746.76s -> 1748.76s]  then basically the automatic rule,
+[1748.76s -> 1750.76s]  then, you know, we lock D1,
+[1752.76s -> 1753.76s]  you know, erase X
+[1754.76s -> 1759.76s]  and release the lock for D1.
+[1763.76s -> 1765.76s]  And then, you know, we do the second part,
+[1765.76s -> 1770.76s]  update, you know, D2, lock D2 at Y
+[1772.76s -> 1776.76s]  and release D2.
+[1778.76s -> 1779.76s]  And then we're done.
+[1779.76s -> 1782.76s]  So this would be the sort of hypothetical schema
+[1783.76s -> 1788.76s]  that you imagine would happen if we did automatic locking.
+[1789.76s -> 1792.76s]  And the point of this example
+[1792.76s -> 1794.76s]  is that we'll have the wrong outcome.
+[1794.76s -> 1798.76s]  And why is this a problematic schema?
+[1798.76s -> 1800.76s]  Why is this not gonna work?
+[1809.76s -> 1810.76s]  And so think about,
+[1811.76s -> 1813.76s]  the thing to think about is like this period.
+[1814.76s -> 1816.76s]  And so we have done the first step,
+[1817.76s -> 1818.76s]  step one,
+[1818.76s -> 1820.76s]  we've not done step two yet.
+[1821.76s -> 1823.76s]  What could another process observe?
+[1830.76s -> 1831.76s]  Anybody?
+[1835.76s -> 1837.76s]  The file would just be gone?
+[1837.76s -> 1840.76s]  Yeah, you know, between step one and two,
+[1840.76s -> 1841.76s]  the file doesn't exist.
+[1848.76s -> 1849.76s]  And that is clearly wrong
+[1849.76s -> 1851.76s]  because the file does exist
+[1851.76s -> 1853.76s]  and just being renamed
+[1853.76s -> 1856.76s]  and never point in time really that it didn't exist.
+[1857.76s -> 1859.76s]  But by implementing this in this way,
+[1859.76s -> 1862.76s]  it just appears that the file might actually not exist
+[1862.76s -> 1863.76s]  even though it does.
+[1864.76s -> 1866.76s]  So the really right solution to this
+[1866.76s -> 1867.76s]  is what we need
+[1869.76s -> 1871.76s]  is that we actually lock D1
+[1873.76s -> 1876.76s]  and D2 first at the beginning of rename,
+[1877.76s -> 1879.76s]  then erase an F
+[1882.76s -> 1883.76s]  and then release
+[1885.76s -> 1887.76s]  the locks for D1 and D2.
+[1890.76s -> 1891.76s]  Does that make sense?
+[1893.76s -> 1894.76s]  So here's sort of an example
+[1894.76s -> 1896.76s]  where we have an operation
+[1897.76s -> 1899.76s]  that requires multiple locks
+[1900.76s -> 1902.76s]  and the locks cannot really be associated
+[1902.76s -> 1903.76s]  with the two objects
+[1903.76s -> 1905.76s]  that are the arguments of this operation.
+[1906.76s -> 1907.76s]  It has to be the case
+[1907.76s -> 1908.76s]  that actually the operation itself
+[1908.76s -> 1910.76s]  first requires the both locks
+[1911.76s -> 1912.76s]  then performs the operations.
+[1913.76s -> 1914.76s]  So this automatic locking
+[1914.76s -> 1916.76s]  is not sort of directly possible.
+[1917.76s -> 1918.76s]  There's going to be cases
+[1918.76s -> 1920.76s]  where this is not going to run
+[1921.76s -> 1922.76s]  or this naive scheme at least
+[1922.76s -> 1923.76s]  will run into a problem
+[1923.76s -> 1924.76s]  and problems.
+[1926.76s -> 1927.76s]  Any questions about this?
+[1932.76s -> 1933.76s]  Yeah.
+[1933.76s -> 1935.76s]  So could we just say that
+[1935.76s -> 1937.76s]  when we're accessing a data structure,
+[1937.76s -> 1938.76s]  we just have to access
+[1938.76s -> 1939.76s]  or we have to acquire
+[1939.76s -> 1941.76s]  all of the locks associated
+[1941.76s -> 1942.76s]  with all of the data structures
+[1942.76s -> 1944.76s]  we need at the beginning?
+[1946.76s -> 1947.76s]  Yeah, so there'll be one way doing it
+[1947.76s -> 1949.76s]  and I think that this quickly will
+[1950.76s -> 1951.76s]  come down to basically
+[1951.76s -> 1952.76s]  having a big kernel lock
+[1954.76s -> 1956.76s]  and then you run the risk,
+[1956.76s -> 1957.76s]  basically you have no parallelism anymore.
+[1958.76s -> 1959.76s]  So you want to do better than that.
+[1960.76s -> 1962.76s]  And I think this is always the tension.
+[1962.76s -> 1963.76s]  You can make things simpler
+[1963.76s -> 1965.76s]  by basically what's called
+[1965.76s -> 1967.76s]  your coarse-grained locking
+[1968.76s -> 1970.76s]  but then you lose performance
+[1971.76s -> 1972.76s]  or you may lose performance
+[1973.76s -> 1974.76s]  depending if the lock is contained or not.
+[1976.76s -> 1977.76s]  Makes sense. Thank you.
+[1979.76s -> 1980.76s]  So lock perspective.
+[1981.76s -> 1982.76s]  So there's different ways
+[1983.76s -> 1984.76s]  to think about locks.
+[1986.76s -> 1987.76s]  And, you know,
+[1987.76s -> 1988.76s]  there's sort of three common ones
+[1989.76s -> 1990.76s]  and, you know,
+[1991.76s -> 1992.76s]  go for all three of them
+[1992.76s -> 1993.76s]  and just maybe that may help you
+[1993.76s -> 1994.76s]  to think about locks
+[1994.76s -> 1995.76s]  and that maybe one of them
+[1995.76s -> 1996.76s]  is your favorite
+[1996.76s -> 1997.76s]  and you can use that one
+[1998.76s -> 1999.76s]  as your way of thinking about it
+[2000.76s -> 2001.76s]  but it's probably helpful to see
+[2001.76s -> 2002.76s]  that there are actually different ways
+[2002.76s -> 2003.76s]  of thinking about locks.
+[2005.76s -> 2006.76s]  So first of all,
+[2006.76s -> 2007.76s]  you know, one other way to think about it
+[2008.76s -> 2009.76s]  is actually lock,
+[2010.76s -> 2011.76s]  avoid
+[2014.76s -> 2015.76s]  lost updates or help.
+[2016.76s -> 2017.76s]  If you use locks correctly,
+[2018.76s -> 2019.76s]  you know, locks can help avoiding
+[2020.76s -> 2021.76s]  lost updates.
+[2025.76s -> 2026.76s]  And if you think about
+[2027.76s -> 2028.76s]  our early example in the calloc.c,
+[2029.76s -> 2030.76s]  you know, the lost update
+[2031.76s -> 2032.76s]  is basically we lose one update
+[2033.76s -> 2034.76s]  to the K3
+[2035.76s -> 2036.76s]  and by putting locks in it,
+[2037.76s -> 2038.76s]  you know, actually we didn't lose
+[2039.76s -> 2040.76s]  that update.
+[2040.76s -> 2041.76s]  So that's one way
+[2041.76s -> 2042.76s]  of thinking about it.
+[2042.76s -> 2043.76s]  It's a very low level way.
+[2044.76s -> 2045.76s]  Another way to think about it is,
+[2046.76s -> 2047.76s]  you know, you can make locks
+[2050.76s -> 2051.76s]  make
+[2052.76s -> 2053.76s]  multi-step operations
+[2057.76s -> 2058.76s]  atomic.
+[2060.76s -> 2061.76s]  And so there's sort of the view
+[2061.76s -> 2062.76s]  of a critical section.
+[2062.76s -> 2063.76s]  You know, we have a required lock.
+[2063.76s -> 2064.76s]  We do a whole bunch of
+[2066.76s -> 2067.76s]  steps or instructions.
+[2067.76s -> 2068.76s]  We execute all the instructions
+[2069.76s -> 2070.76s]  that were released
+[2070.76s -> 2071.76s]  and basically that whole critical section
+[2071.76s -> 2072.76s]  executes as an atomic operation.
+[2074.76s -> 2075.76s]  And that's sort of
+[2076.76s -> 2077.76s]  also a fine way
+[2077.76s -> 2078.76s]  to think about locks.
+[2079.76s -> 2080.76s]  And then the third one,
+[2081.76s -> 2082.76s]  you know, that may be helpful
+[2082.76s -> 2083.76s]  is that
+[2084.76s -> 2085.76s]  really what locks do is
+[2086.76s -> 2087.76s]  locks help
+[2088.76s -> 2089.76s]  maintain an invariant.
+[2093.76s -> 2094.76s]  Invariant for the DCR data
+[2095.76s -> 2096.76s]  structure that it's protecting.
+[2097.76s -> 2098.76s]  And
+[2099.76s -> 2100.76s]  what really was going on is
+[2100.76s -> 2101.76s]  that
+[2102.76s -> 2103.76s]  before acquire,
+[2103.76s -> 2104.76s]  there's no lock holder,
+[2104.76s -> 2105.76s]  you know, that invariant holds.
+[2106.76s -> 2107.76s]  When we acquire the lock
+[2108.76s -> 2109.76s]  and we do some operations,
+[2109.76s -> 2110.76s]  then temporarily,
+[2110.76s -> 2111.76s]  that invariant may be
+[2112.76s -> 2113.76s]  violated.
+[2114.76s -> 2115.76s]  But at the point that we do
+[2115.76s -> 2116.76s]  the release.
+[2119.76s -> 2120.76s]  And so if you think about
+[2121.76s -> 2122.76s]  our free list case,
+[2123.76s -> 2124.76s]  you know, the invariant is
+[2125.76s -> 2126.76s]  you know, the free pointer
+[2126.76s -> 2127.76s]  points to
+[2128.76s -> 2129.76s]  one other next pointer
+[2129.76s -> 2130.76s]  and all the free pages
+[2131.76s -> 2132.76s]  are on a single list.
+[2134.76s -> 2135.76s]  And that's temporarily violated
+[2136.76s -> 2137.76s]  at the point
+[2140.76s -> 2141.76s]  in the middle of the
+[2142.76s -> 2143.76s]  K3 because like multiple
+[2143.76s -> 2144.76s]  pointers actually point to
+[2144.76s -> 2145.76s]  the beginning of the free list.
+[2147.76s -> 2148.76s]  And then it's
+[2148.76s -> 2149.76s]  established at the end of it.
+[2150.76s -> 2151.76s]  And so, you know,
+[2151.76s -> 2152.76s]  for the free list,
+[2152.76s -> 2153.76s]  it has a not so
+[2153.76s -> 2154.76s]  complicated invariant,
+[2154.76s -> 2155.76s]  but like for more complicated
+[2155.76s -> 2156.76s]  shared data structures,
+[2157.76s -> 2158.76s]  it can be a helpful way
+[2158.76s -> 2159.76s]  of thinking actually what
+[2159.76s -> 2160.76s]  the lock is doing for you.
+[2162.76s -> 2163.76s]  And so you see,
+[2163.76s -> 2164.76s]  even in this K3 case,
+[2165.76s -> 2166.76s]  all three lock perspectives
+[2166.76s -> 2167.76s]  are reasonable perspectives.
+[2168.76s -> 2169.76s]  And
+[2170.76s -> 2171.76s]  one of them
+[2172.76s -> 2173.76s]  rings more with you
+[2174.76s -> 2175.76s]  than one of the other ones.
+[2176.76s -> 2177.76s]  And use that as your
+[2177.76s -> 2178.76s]  way to think about locks.
+[2181.76s -> 2182.76s]  Any questions
+[2182.76s -> 2183.76s]  about this point?
+[2189.76s -> 2190.76s]  OK.
+[2191.76s -> 2192.76s]  So I'm going to now run
+[2192.76s -> 2193.76s]  through a couple of things,
+[2195.76s -> 2196.76s]  sort of
+[2197.76s -> 2198.76s]  undesirable properties
+[2199.76s -> 2200.76s]  that can actually happen
+[2200.76s -> 2201.76s]  with locks.
+[2201.76s -> 2202.76s]  And we know locks
+[2203.76s -> 2204.76s]  are necessary to fix
+[2204.76s -> 2205.76s]  a correctness problem
+[2206.76s -> 2207.76s]  to avoid these race conditions,
+[2207.76s -> 2208.76s]  but locks themselves
+[2209.76s -> 2210.76s]  when inappropriately used
+[2211.76s -> 2212.76s]  can also introduce
+[2212.76s -> 2213.76s]  their own set of problems.
+[2214.76s -> 2215.76s]  And so I want to talk
+[2215.76s -> 2216.76s]  a little bit about that.
+[2216.76s -> 2217.76s]  And so the obvious one,
+[2217.76s -> 2218.76s]  of course, is deadlock.
+[2223.76s -> 2224.76s]  For example,
+[2225.76s -> 2226.76s]  the simplest case
+[2226.76s -> 2227.76s]  was a little bit boring,
+[2227.76s -> 2228.76s]  but maybe worthwhile
+[2228.76s -> 2229.76s]  thinking about
+[2229.76s -> 2230.76s]  if you do an acquirer
+[2232.76s -> 2233.76s]  a lock
+[2234.76s -> 2235.76s]  and so you start
+[2235.76s -> 2236.76s]  the critical section
+[2236.76s -> 2237.76s]  and in the critical section
+[2237.76s -> 2238.76s]  you do another acquirer
+[2239.76s -> 2240.76s]  up the same lock.
+[2243.76s -> 2244.76s]  What will happen?
+[2246.76s -> 2248.76s]  Can the second acquirer succeed?
+[2256.76s -> 2257.76s]  Well, with the spec
+[2257.76s -> 2258.76s]  that we've given early on,
+[2259.76s -> 2260.76s]  you know, this should be
+[2260.76s -> 2261.76s]  not allowed.
+[2261.76s -> 2262.76s]  So basically the second
+[2262.76s -> 2263.76s]  acquirer must lock
+[2263.76s -> 2265.76s]  until the first acquirer
+[2265.76s -> 2266.76s]  released the lock.
+[2266.76s -> 2267.76s]  But that was, you know,
+[2267.76s -> 2268.76s]  the process itself.
+[2268.76s -> 2269.76s]  So basically this will
+[2269.76s -> 2270.76s]  result in a deadlock.
+[2273.76s -> 2274.76s]  Now, this is a trivial
+[2274.76s -> 2275.76s]  example of a deadlock
+[2275.76s -> 2276.76s]  and maybe you know
+[2276.76s -> 2277.76s]  that's interesting.
+[2277.76s -> 2278.76s]  In fact, this is a deadlock
+[2278.76s -> 2279.76s]  that x360 detects, you know,
+[2279.76s -> 2280.76s]  because when it sees
+[2280.76s -> 2281.76s]  that the same process
+[2281.76s -> 2283.76s]  requires the same lock again,
+[2283.76s -> 2285.76s]  it actually causes a panic.
+[2286.76s -> 2287.76s]  The more interesting cases
+[2287.76s -> 2288.76s]  are when multiple locks
+[2288.76s -> 2289.76s]  are involved.
+[2290.76s -> 2291.76s]  So let's go
+[2291.76s -> 2293.76s]  to our previous example.
+[2293.76s -> 2294.76s]  Let's say we have
+[2294.76s -> 2295.76s]  the following.
+[2296.76s -> 2297.76s]  We have core one.
+[2298.76s -> 2299.76s]  Maybe CPU one.
+[2302.76s -> 2303.76s]  We have CPU two.
+[2306.76s -> 2307.76s]  And CPU one,
+[2307.76s -> 2308.76s]  you know, executes
+[2309.76s -> 2313.76s]  rename directory one x
+[2313.76s -> 2316.76s]  to directory two slash y.
+[2319.76s -> 2321.76s]  And CPU two executes
+[2321.76s -> 2322.76s]  at the same time,
+[2323.76s -> 2324.76s]  rename
+[2329.76s -> 2330.76s]  in the other way,
+[2330.76s -> 2331.76s]  in the other direction,
+[2331.76s -> 2335.76s]  you know, D2A to D1.
+[2336.76s -> 2337.76s]  You know, where I say D
+[2337.76s -> 2339.76s]  is to make the names different.
+[2340.76s -> 2342.76s]  So the critical thing
+[2342.76s -> 2343.76s]  to observe here
+[2343.76s -> 2345.76s]  is that CPU one, you know,
+[2345.76s -> 2348.76s]  runs a rename from D1 to D2
+[2348.76s -> 2351.76s]  and CPU two does exactly
+[2351.76s -> 2352.76s]  the opposite,
+[2352.76s -> 2354.76s]  it does a rename from D2 to D1.
+[2355.76s -> 2356.76s]  So let's assume then
+[2356.76s -> 2358.76s]  that we actually acquired locks
+[2358.76s -> 2359.76s]  in the order of their arguments.
+[2359.76s -> 2360.76s]  And so what will happen
+[2360.76s -> 2363.76s]  is that in this case,
+[2363.76s -> 2364.76s]  you know, we'll acquire both locks.
+[2364.76s -> 2366.76s]  We know from the previous example
+[2366.76s -> 2367.76s]  that is actually important.
+[2368.76s -> 2369.76s]  So we'll acquire
+[2371.76s -> 2372.76s]  D1 lock.
+[2374.76s -> 2375.76s]  And, you know,
+[2375.76s -> 2376.76s]  let's say they really run
+[2376.76s -> 2377.76s]  through the concurrent.
+[2378.76s -> 2379.76s]  So at that point, you know,
+[2379.76s -> 2381.76s]  this other guy might actually,
+[2381.76s -> 2382.76s]  this other CPU might acquire
+[2384.76s -> 2385.76s]  D2 first
+[2385.76s -> 2386.76s]  because that is
+[2386.76s -> 2387.76s]  its first argument.
+[2388.76s -> 2389.76s]  And now, of course,
+[2389.76s -> 2391.76s]  D1 wants to acquire D2.
+[2393.76s -> 2395.76s]  So I'll try to acquire D2.
+[2396.76s -> 2397.76s]  Will it succeed?
+[2398.76s -> 2399.76s]  It won't succeed
+[2399.76s -> 2400.76s]  because, you know,
+[2400.76s -> 2401.76s]  the other guy,
+[2401.76s -> 2402.76s]  you know, actually has the lock.
+[2402.76s -> 2404.76s]  And so this guy will stop here
+[2404.76s -> 2405.76s]  and proceed.
+[2406.76s -> 2408.76s]  Now let's look at the other CPU.
+[2408.76s -> 2410.76s]  CPU two acquired D2.
+[2410.76s -> 2411.76s]  It's not going to acquire D1
+[2411.76s -> 2412.76s]  for its second argument.
+[2413.76s -> 2414.76s]  It's going to try to call
+[2414.76s -> 2415.76s]  it's going to call acquire D1.
+[2416.76s -> 2417.76s]  And will it be able to proceed?
+[2418.76s -> 2419.76s]  No, it won't be able to proceed, right?
+[2420.76s -> 2421.76s]  Because the CPU one
+[2422.76s -> 2423.76s]  actually has the lock in D1.
+[2424.76s -> 2425.76s]  And so here we,
+[2425.76s -> 2426.76s]  you know, sometimes this is called
+[2426.76s -> 2427.76s]  the deadly embrace, you know,
+[2429.76s -> 2430.76s]  where, you know,
+[2431.76s -> 2432.76s]  because in the way we acquired
+[2432.76s -> 2433.76s]  the ordering, which we
+[2433.76s -> 2434.76s]  ordered, which required the locks
+[2434.76s -> 2435.76s]  results actually in a deadlock.
+[2445.76s -> 2446.76s]  Does that make sense?
+[2447.76s -> 2448.76s]  This example?
+[2450.76s -> 2451.76s]  This is like a little bit more
+[2451.76s -> 2452.76s]  of an interesting example
+[2452.76s -> 2453.76s]  of a deadlock.
+[2453.76s -> 2454.76s]  You know, it's not
+[2454.76s -> 2455.76s]  an obvious problem
+[2456.76s -> 2457.76s]  and the solution turns out
+[2457.76s -> 2458.76s]  in some sense reasonable simple.
+[2461.76s -> 2462.76s]  The solution is that,
+[2462.76s -> 2463.76s]  you know, if you have multiple locks,
+[2464.76s -> 2466.76s]  then you have to order the locks
+[2469.76s -> 2470.76s]  and all operations
+[2471.76s -> 2472.76s]  have to acquire locks
+[2473.76s -> 2474.76s]  in that order.
+[2483.76s -> 2484.76s]  So if you're a system designer,
+[2485.76s -> 2486.76s]  you have to decide what the
+[2487.76s -> 2488.76s]  global order is for
+[2489.76s -> 2490.76s]  all lock objects.
+[2490.76s -> 2492.76s]  And so, for example, in this case,
+[2492.76s -> 2493.76s]  when you might want to decide
+[2493.76s -> 2494.76s]  that D1 should be always
+[2495.76s -> 2496.76s]  ordered before D2.
+[2497.76s -> 2498.76s]  And that means that
+[2499.76s -> 2500.76s]  when we execute a rename,
+[2500.76s -> 2501.76s]  the rule of life is
+[2501.76s -> 2502.76s]  we always acquire
+[2503.76s -> 2504.76s]  the lower number
+[2506.76s -> 2507.76s]  directories first
+[2507.76s -> 2508.76s]  before we acquire
+[2508.76s -> 2509.76s]  the higher order
+[2509.76s -> 2510.76s]  directory numbers.
+[2511.76s -> 2512.76s]  And that will ensure
+[2513.76s -> 2514.76s]  that basically
+[2514.76s -> 2515.76s]  there's a global order
+[2515.76s -> 2516.76s]  and, you know,
+[2516.76s -> 2517.76s]  this particular case
+[2517.76s -> 2518.76s]  just cannot happen
+[2520.76s -> 2521.76s]  because, you know,
+[2521.76s -> 2522.76s]  the lock order is
+[2522.76s -> 2523.76s]  going to be then for
+[2523.76s -> 2525.76s]  D1, D2 for this guy
+[2526.76s -> 2527.76s]  and this guy will acquire
+[2527.76s -> 2528.76s]  the locks exactly
+[2528.76s -> 2529.76s]  in the same global order,
+[2529.76s -> 2530.76s]  you know, D1, D2,
+[2531.76s -> 2532.76s]  and then we don't have
+[2532.76s -> 2533.76s]  this debt-laying bridge.
+[2536.76s -> 2537.76s]  Does this make sense?
+[2541.76s -> 2542.76s]  Any questions about this?
+[2548.76s -> 2549.76s]  So this indicates
+[2549.76s -> 2551.76s]  a little bit of a problem,
+[2552.76s -> 2553.76s]  even though, like, okay,
+[2553.76s -> 2554.76s]  so it fixes, you know,
+[2554.76s -> 2555.76s]  this sort of debt lock problem
+[2555.76s -> 2556.76s]  by having a global order.
+[2556.76s -> 2557.76s]  And notice this
+[2557.76s -> 2558.76s]  order is global.
+[2560.76s -> 2561.76s]  And this is
+[2563.76s -> 2564.76s]  an issue a little bit
+[2565.76s -> 2566.76s]  when designing a system
+[2566.76s -> 2567.76s]  because...
+[2568.76s -> 2569.76s]  Hold on.
+[2590.76s -> 2591.76s]  So if you think about
+[2591.76s -> 2592.76s]  the, you know,
+[2592.76s -> 2593.76s]  sort of lock ordering,
+[2598.76s -> 2599.76s]  you know,
+[2599.76s -> 2600.76s]  that has to be
+[2600.76s -> 2601.76s]  sort of global.
+[2602.76s -> 2603.76s]  And so if one module,
+[2604.76s -> 2605.76s]  1M, you know,
+[2605.76s -> 2606.76s]  calls a method
+[2608.76s -> 2609.76s]  in module two
+[2613.76s -> 2614.76s]  and the caller,
+[2614.76s -> 2615.76s]  you know, M1G,
+[2616.76s -> 2617.76s]  you know, might actually
+[2617.76s -> 2618.76s]  needs to be aware,
+[2618.76s -> 2619.76s]  or could be need
+[2619.76s -> 2620.76s]  to be aware, actually,
+[2620.76s -> 2621.76s]  of what locks F acquires,
+[2623.76s -> 2624.76s]  or what locks N2 uses.
+[2628.76s -> 2629.76s]  Because if, you know,
+[2629.76s -> 2630.76s]  N2 uses some set of locks,
+[2633.76s -> 2634.76s]  you know,
+[2634.76s -> 2635.76s]  we follow our lock
+[2635.76s -> 2636.76s]  ordering rule,
+[2637.76s -> 2638.76s]  G's got to make sure
+[2638.76s -> 2639.76s]  that, you know,
+[2639.76s -> 2640.76s]  if it has some locks,
+[2640.76s -> 2641.76s]  then it acquires all locks,
+[2641.76s -> 2642.76s]  you know,
+[2642.76s -> 2643.76s]  from F and G together,
+[2643.76s -> 2644.76s]  actually, in some global order.
+[2644.76s -> 2645.76s]  And so that really means
+[2645.76s -> 2646.76s]  that these sort of internals,
+[2649.76s -> 2650.76s]  the internals of M2,
+[2651.76s -> 2652.76s]  in recent terms of locks,
+[2658.76s -> 2659.76s]  must be visible to M1.
+[2664.76s -> 2665.76s]  So that, you know,
+[2665.76s -> 2666.76s]  M1 can ensure
+[2666.76s -> 2667.76s]  that actually, you know,
+[2667.76s -> 2668.76s]  calls at N2
+[2670.76s -> 2671.76s]  in the N1,
+[2671.76s -> 2672.76s]  calls at N2
+[2673.76s -> 2674.76s]  in the appropriate way.
+[2676.76s -> 2677.76s]  And, you know,
+[2677.76s -> 2678.76s]  in some ways,
+[2678.76s -> 2679.76s]  that is sort of
+[2679.76s -> 2680.76s]  an abstraction violation, right?
+[2681.76s -> 2682.76s]  If abstraction worked out
+[2682.76s -> 2683.76s]  perfectly, you know,
+[2683.76s -> 2684.76s]  M1 doesn't really know,
+[2684.76s -> 2685.76s]  and you can know anything
+[2685.76s -> 2686.76s]  about how M2 is implemented.
+[2687.76s -> 2688.76s]  And unfortunately,
+[2688.76s -> 2689.76s]  locks are a common example
+[2690.76s -> 2691.76s]  of where some of the internals
+[2691.76s -> 2692.76s]  of M2 might actually leak out
+[2693.76s -> 2694.76s]  to M1,
+[2695.76s -> 2696.76s]  because M1 really needs to know.
+[2697.76s -> 2698.76s]  And so, you know,
+[2698.76s -> 2699.76s]  when you design
+[2699.76s -> 2700.76s]  a bigger system,
+[2700.76s -> 2701.76s]  this makes the modularity
+[2701.76s -> 2702.76s]  more complicated.
+[2707.76s -> 2708.76s]  Oh, sorry.
+[2708.76s -> 2709.76s]  I was just wondering,
+[2709.76s -> 2710.76s]  does it need to be
+[2710.76s -> 2713.76s]  a complete ordering of locks,
+[2713.76s -> 2715.76s]  or can there be some locks
+[2717.76s -> 2718.76s]  that can be ordered
+[2718.76s -> 2720.76s]  in whatever way they...
+[2721.76s -> 2722.76s]  Yeah.
+[2722.76s -> 2723.76s]  It depends if, like,
+[2723.76s -> 2724.76s]  F and G, you know,
+[2724.76s -> 2725.76s]  share any locks, right?
+[2726.76s -> 2727.76s]  For example,
+[2727.76s -> 2728.76s]  if you, like,
+[2728.76s -> 2729.76s]  look at the XV6,
+[2729.76s -> 2731.76s]  there are sort of multiple
+[2731.76s -> 2733.76s]  strands of lock orderings,
+[2733.76s -> 2734.76s]  because some locks
+[2734.76s -> 2735.76s]  have nothing to do
+[2735.76s -> 2736.76s]  with other locks,
+[2736.76s -> 2737.76s]  and so they know
+[2737.76s -> 2738.76s]  they're never acquired together.
+[2739.76s -> 2740.76s]  And so if they're
+[2740.76s -> 2741.76s]  never acquired together,
+[2741.76s -> 2742.76s]  they're just joined
+[2742.76s -> 2743.76s]  locksets, if you will,
+[2743.76s -> 2744.76s]  and then only you have
+[2744.76s -> 2745.76s]  to make sure that
+[2745.76s -> 2746.76s]  the ordering in one
+[2746.76s -> 2747.76s]  particular lockset is global,
+[2748.76s -> 2749.76s]  and the ordering
+[2749.76s -> 2750.76s]  in the other locksets
+[2750.76s -> 2751.76s]  is completely independent
+[2751.76s -> 2752.76s]  of the other ordering.
+[2754.76s -> 2755.76s]  So it is correct
+[2755.76s -> 2756.76s]  that there doesn't have
+[2756.76s -> 2757.76s]  to be a global ordering,
+[2757.76s -> 2758.76s]  but, like, all the functions
+[2758.76s -> 2759.76s]  that, you know,
+[2759.76s -> 2760.76s]  manipulate the same
+[2760.76s -> 2761.76s]  shared sort of locksets,
+[2762.76s -> 2763.76s]  they need to agree
+[2763.76s -> 2764.76s]  on a global order.
+[2765.76s -> 2766.76s]  Thank you.
+[2770.76s -> 2771.76s]  Okay, so,
+[2772.76s -> 2773.76s]  you know,
+[2773.76s -> 2775.76s]  another sort of challenge
+[2776.76s -> 2777.76s]  with locks,
+[2777.76s -> 2778.76s]  you know, we've seen
+[2778.76s -> 2779.76s]  two challenges,
+[2779.76s -> 2780.76s]  one is depth lock,
+[2780.76s -> 2781.76s]  one is modularity.
+[2781.76s -> 2782.76s]  The second challenge,
+[2782.76s -> 2783.76s]  or third challenge,
+[2783.76s -> 2784.76s]  is just locks
+[2785.76s -> 2786.76s]  versus performance.
+[2789.76s -> 2790.76s]  And, you know,
+[2790.76s -> 2791.76s]  we already hinted
+[2791.76s -> 2792.76s]  at this a couple of times,
+[2792.76s -> 2793.76s]  but it means
+[2794.76s -> 2796.76s]  it's important enough
+[2796.76s -> 2797.76s]  to sort of actually
+[2797.76s -> 2798.76s]  put some emphasis on.
+[2799.76s -> 2800.76s]  And so basically,
+[2800.76s -> 2801.76s]  if you want to get
+[2802.76s -> 2803.76s]  a performance,
+[2803.76s -> 2804.76s]  you need to
+[2804.76s -> 2806.76s]  split up data structure, right?
+[2806.76s -> 2807.76s]  So if you have
+[2807.76s -> 2808.76s]  one big kernel lock
+[2808.76s -> 2809.76s]  that will limit
+[2809.76s -> 2810.76s]  your performance
+[2810.76s -> 2811.76s]  to basically performance
+[2811.76s -> 2812.76s]  in a single CPU,
+[2812.76s -> 2813.76s]  if you want, you know,
+[2813.76s -> 2814.76s]  performance remove,
+[2814.76s -> 2815.76s]  you want that
+[2815.76s -> 2816.76s]  to perform scales
+[2816.76s -> 2817.76s]  with a number of CPUs,
+[2817.76s -> 2818.76s]  with a number of CPUs,
+[2818.76s -> 2819.76s]  you got to split up.
+[2820.76s -> 2821.76s]  You need to split up
+[2821.76s -> 2822.76s]  data structures.
+[2832.76s -> 2833.76s]  And the best split,
+[2833.76s -> 2834.76s]  you know,
+[2835.76s -> 2836.76s]  is not obvious,
+[2836.76s -> 2837.76s]  or it can be a challenge.
+[2844.76s -> 2845.76s]  For example,
+[2845.76s -> 2846.76s]  you know,
+[2846.76s -> 2847.76s]  should you associate
+[2847.76s -> 2848.76s]  a lock with every directory?
+[2848.76s -> 2849.76s]  Should you associate
+[2849.76s -> 2850.76s]  a lock with every inode?
+[2850.76s -> 2851.76s]  Should you associate
+[2851.76s -> 2852.76s]  a lock with every process
+[2852.76s -> 2853.76s]  or not?
+[2853.76s -> 2854.76s]  Or is it better,
+[2854.76s -> 2855.76s]  you know,
+[2855.76s -> 2856.76s]  to sort of split
+[2856.76s -> 2857.76s]  the data structures
+[2857.76s -> 2858.76s]  in a different way?
+[2860.76s -> 2861.76s]  And if you make a change,
+[2861.76s -> 2862.76s]  you know,
+[2862.76s -> 2863.76s]  you sort of
+[2863.76s -> 2864.76s]  redesigned
+[2864.76s -> 2865.76s]  sort of the locking
+[2865.76s -> 2866.76s]  discipline,
+[2866.76s -> 2867.76s]  and you've got
+[2867.76s -> 2868.76s]  to sort of make sure
+[2868.76s -> 2869.76s]  that, you know,
+[2869.76s -> 2870.76s]  you're still maintaining
+[2870.76s -> 2871.76s]  the invariance
+[2871.76s -> 2872.76s]  that actually the kernel
+[2872.76s -> 2873.76s]  is trying to maintain.
+[2873.76s -> 2874.76s]  And if you split locks,
+[2874.76s -> 2875.76s]  you know,
+[2875.76s -> 2876.76s]  you also have to
+[2876.76s -> 2877.76s]  rewrite the code.
+[2878.76s -> 2879.76s]  You may have to need,
+[2879.76s -> 2880.76s]  may write,
+[2880.76s -> 2881.76s]  may need to
+[2882.76s -> 2883.76s]  rewrite code too.
+[2889.76s -> 2890.76s]  And so it turns out
+[2890.76s -> 2891.76s]  that basically
+[2892.76s -> 2893.76s]  you sort of refactor,
+[2893.76s -> 2894.76s]  you know,
+[2894.76s -> 2895.76s]  the part of your kernel
+[2895.76s -> 2897.76s]  or part of your parallel program
+[2897.76s -> 2898.76s]  to get better performance
+[2898.76s -> 2900.76s]  by splitting data structure
+[2900.76s -> 2901.76s]  ops,
+[2901.76s -> 2902.76s]  introducing more locks,
+[2902.76s -> 2903.76s]  you know,
+[2903.76s -> 2904.76s]  that it's just,
+[2904.76s -> 2905.76s]  it's a lot of work.
+[2905.76s -> 2906.76s]  You have to carefully
+[2906.76s -> 2907.76s]  think through
+[2907.76s -> 2908.76s]  to maintain the
+[2908.76s -> 2909.76s]  environments
+[2909.76s -> 2910.76s]  that you intended
+[2910.76s -> 2911.76s]  to maintain.
+[2911.76s -> 2912.76s]  You have to
+[2912.76s -> 2913.76s]  rewrite the code.
+[2913.76s -> 2914.76s]  And so generally,
+[2914.76s -> 2915.76s]  this is just a lot of work
+[2915.76s -> 2916.76s]  and not easy.
+[2918.76s -> 2919.76s]  And so there's
+[2919.76s -> 2920.76s]  a little bit
+[2920.76s -> 2921.76s]  of a negative,
+[2921.76s -> 2922.76s]  you know,
+[2922.76s -> 2923.76s]  news point, right?
+[2923.76s -> 2924.76s]  Because, you know,
+[2924.76s -> 2925.76s]  we want to get better
+[2925.76s -> 2926.76s]  performance,
+[2926.76s -> 2927.76s]  not suggest,
+[2927.76s -> 2928.76s]  you know,
+[2928.76s -> 2929.76s]  more locks and,
+[2929.76s -> 2930.76s]  but that,
+[2930.76s -> 2931.76s]  you know,
+[2931.76s -> 2932.76s]  that's actually,
+[2932.76s -> 2933.76s]  you know,
+[2933.76s -> 2934.76s]  a lot of work.
+[2934.76s -> 2935.76s]  And so the general recipe,
+[2936.76s -> 2937.76s]  you know,
+[2937.76s -> 2938.76s]  how to go about this
+[2938.76s -> 2939.76s]  is to,
+[2939.76s -> 2940.76s]  you know,
+[2940.76s -> 2941.76s]  start with coarse-grained locks.
+[2951.76s -> 2952.76s]  And then measure.
+[2958.76s -> 2959.76s]  So whatever,
+[2959.76s -> 2960.76s]  run a bunch of applications
+[2960.76s -> 2961.76s]  through your kernel
+[2961.76s -> 2963.76s]  and see whether you get
+[2963.76s -> 2964.76s]  actually any speed up
+[2964.76s -> 2965.76s]  if they actually exploit
+[2965.76s -> 2966.76s]  multiple cores.
+[2967.76s -> 2968.76s]  And if they do,
+[2968.76s -> 2969.76s]  you know,
+[2969.76s -> 2970.76s]  you're basically done, right?
+[2970.76s -> 2971.76s]  The locking design
+[2971.76s -> 2972.76s]  is good enough.
+[2972.76s -> 2973.76s]  If you don't get speed up,
+[2973.76s -> 2974.76s]  and basically that means
+[2974.76s -> 2976.76s]  that some lock is contended,
+[2979.76s -> 2980.76s]  multiple processes
+[2980.76s -> 2981.76s]  you're trying to get
+[2981.76s -> 2982.76s]  the same lock
+[2982.76s -> 2983.76s]  and therefore
+[2983.76s -> 2984.76s]  they are serialized
+[2984.76s -> 2985.76s]  and therefore
+[2985.76s -> 2986.76s]  you don't get speed up,
+[2986.76s -> 2987.76s]  then,
+[2987.76s -> 2988.76s]  you know,
+[2988.76s -> 2989.76s]  you have to rethink about
+[2989.76s -> 2991.76s]  and then you need to redesign.
+[2995.76s -> 2996.76s]  But the point is
+[2996.76s -> 2997.76s]  that you want to be guided,
+[2997.76s -> 2998.76s]  you know,
+[2998.76s -> 2999.76s]  by these measurements
+[2999.76s -> 3001.76s]  because it may be the case
+[3001.76s -> 3002.76s]  that, you know,
+[3002.76s -> 3003.76s]  some module
+[3003.76s -> 3004.76s]  that uses a coarse-grained lock
+[3004.76s -> 3005.76s]  is just not called
+[3005.76s -> 3006.76s]  in parallel often
+[3006.76s -> 3007.76s]  and therefore
+[3007.76s -> 3008.76s]  it is not necessary
+[3008.76s -> 3009.76s]  to actually redesign.
+[3009.76s -> 3010.76s]  And since redesign
+[3010.76s -> 3011.76s]  is a lot of work,
+[3011.76s -> 3012.76s]  you know,
+[3012.76s -> 3013.76s]  and, you know,
+[3013.76s -> 3014.76s]  it also can complicate
+[3014.76s -> 3015.76s]  the reasoning about that code,
+[3015.76s -> 3016.76s]  you know,
+[3016.76s -> 3017.76s]  then, you know,
+[3017.76s -> 3018.76s]  it's a good idea
+[3018.76s -> 3019.76s]  to do that redesign
+[3019.76s -> 3020.76s]  if it's not necessary.
+[3022.76s -> 3023.76s]  And so,
+[3023.76s -> 3024.76s]  in general,
+[3024.76s -> 3026.76s]  a good rule of form is,
+[3026.76s -> 3027.76s]  you know,
+[3027.76s -> 3028.76s]  start with coarse-grained locks,
+[3028.76s -> 3029.76s]  measure whether
+[3029.76s -> 3030.76s]  a contention appears
+[3030.76s -> 3031.76s]  in one of these locks
+[3031.76s -> 3032.76s]  and then redesign
+[3032.76s -> 3033.76s]  that part of the system
+[3033.76s -> 3034.76s]  so that you get better
+[3034.76s -> 3035.76s]  parallelism.
+[3037.76s -> 3038.76s]  Does that all make sense?
+[3038.76s -> 3040.76s]  Any questions so far?
+[3045.76s -> 3046.76s]  Okay,
+[3046.76s -> 3047.76s]  let's look at
+[3048.76s -> 3049.76s]  in xv6,
+[3049.76s -> 3050.76s]  you know,
+[3050.76s -> 3051.76s]  some code,
+[3051.76s -> 3052.76s]  you know,
+[3052.76s -> 3053.76s]  to sort of understand
+[3053.76s -> 3054.76s]  a little bit
+[3054.76s -> 3055.76s]  how this locking
+[3055.76s -> 3056.76s]  sort of works out
+[3056.76s -> 3057.76s]  in practice in xv6.
+[3059.76s -> 3060.76s]  And so,
+[3060.76s -> 3061.76s]  I'm going to go back
+[3061.76s -> 3062.76s]  to our,
+[3064.76s -> 3065.76s]  to the,
+[3066.76s -> 3067.76s]  this screen.
+[3067.76s -> 3068.76s]  I really need this.
+[3069.76s -> 3070.76s]  And I want to look at
+[3070.76s -> 3071.76s]  view art
+[3071.76s -> 3072.76s]  because, you know,
+[3072.76s -> 3073.76s]  we start talking
+[3073.76s -> 3074.76s]  about locking there
+[3075.76s -> 3076.76s]  on
+[3078.76s -> 3079.76s]  a Monday,
+[3079.76s -> 3080.76s]  and I want to look
+[3080.76s -> 3081.76s]  at a little bit more
+[3081.76s -> 3082.76s]  in detail
+[3082.76s -> 3083.76s]  now that we know
+[3083.76s -> 3084.76s]  a little bit more about locks
+[3084.76s -> 3085.76s]  and then also
+[3085.76s -> 3086.76s]  illustrate a couple
+[3086.76s -> 3087.76s]  of interesting points.
+[3093.76s -> 3094.76s]  So first,
+[3095.76s -> 3096.76s]  you know,
+[3096.76s -> 3097.76s]  it turns out,
+[3097.76s -> 3098.76s]  you know,
+[3098.76s -> 3099.76s]  it's looking at
+[3100.76s -> 3101.76s]  lock,
+[3101.76s -> 3102.76s]  you know,
+[3102.76s -> 3103.76s]  it turns out that
+[3103.76s -> 3104.76s]  the UART actually
+[3104.76s -> 3105.76s]  has only one lock.
+[3105.76s -> 3106.76s]  So you can think about
+[3106.76s -> 3107.76s]  this as a reasonable
+[3107.76s -> 3109.76s]  coarse-grained design
+[3109.76s -> 3110.76s]  at this particular point,
+[3110.76s -> 3111.76s]  at least for the UART.
+[3111.76s -> 3112.76s]  And that particular lock,
+[3112.76s -> 3113.76s]  you know,
+[3113.76s -> 3114.76s]  protects basically
+[3114.76s -> 3116.76s]  the UART transmission buffer
+[3116.76s -> 3118.76s]  and the write pointer
+[3118.76s -> 3120.76s]  and the read pointer.
+[3121.76s -> 3122.76s]  So when we transmit,
+[3122.76s -> 3123.76s]  you know,
+[3123.76s -> 3124.76s]  the write pointer
+[3124.76s -> 3125.76s]  points through
+[3125.76s -> 3126.76s]  the next free slot
+[3126.76s -> 3127.76s]  in the transmission buffer
+[3127.76s -> 3128.76s]  and the read pointer
+[3128.76s -> 3129.76s]  is the next slot
+[3129.76s -> 3130.76s]  that actually
+[3130.76s -> 3131.76s]  needs to be transmitted.
+[3131.76s -> 3132.76s]  I mean,
+[3132.76s -> 3133.76s]  this is our
+[3133.76s -> 3135.76s]  standard design
+[3135.76s -> 3137.76s]  for parallelism,
+[3137.76s -> 3138.76s]  for consumer,
+[3138.76s -> 3140.76s]  producing consumer parallelism.
+[3141.76s -> 3142.76s]  So let me go back
+[3142.76s -> 3143.76s]  and
+[3144.76s -> 3145.76s]  draw that out.
+[3145.76s -> 3146.76s]  So
+[3147.76s -> 3148.76s]  case study.
+[3151.76s -> 3152.76s]  UART
+[3153.76s -> 3155.76s]  and there's basically a buffer
+[3156.76s -> 3157.76s]  and there's a read pointer
+[3157.76s -> 3158.76s]  and a write pointer
+[3158.76s -> 3160.76s]  or write read index
+[3160.76s -> 3161.76s]  and a read index
+[3161.76s -> 3162.76s]  read index.
+[3163.76s -> 3164.76s]  This has to go
+[3164.76s -> 3165.76s]  to the UART
+[3166.76s -> 3167.76s]  displayed
+[3169.76s -> 3170.76s]  and this is the writer
+[3173.76s -> 3174.76s]  printf,
+[3174.76s -> 3175.76s]  maybe,
+[3175.76s -> 3176.76s]  that actually sticks
+[3176.76s -> 3177.76s]  characters into this buffer.
+[3179.76s -> 3180.76s]  Okay.
+[3180.76s -> 3181.76s]  And so,
+[3181.76s -> 3182.76s]  you know,
+[3182.76s -> 3183.76s]  what we're gonna see
+[3183.76s -> 3184.76s]  is that the lock,
+[3184.76s -> 3185.76s]  you know,
+[3185.76s -> 3186.76s]  the lock has multiple roles.
+[3187.76s -> 3188.76s]  One is to basically
+[3188.76s -> 3189.76s]  protect this data structure.
+[3196.76s -> 3197.76s]  And this data structure
+[3197.76s -> 3198.76s]  has some invariance,
+[3199.76s -> 3200.76s]  namely,
+[3200.76s -> 3201.76s]  you know,
+[3201.76s -> 3202.76s]  the read to proceed
+[3202.76s -> 3203.76s]  the write.
+[3204.76s -> 3205.76s]  Anything between
+[3205.76s -> 3206.76s]  R and W
+[3206.76s -> 3207.76s]  are characters
+[3207.76s -> 3208.76s]  that need to be sent.
+[3208.76s -> 3209.76s]  Anything between
+[3209.76s -> 3210.76s]  W and R
+[3210.76s -> 3211.76s]  are things that actually
+[3211.76s -> 3212.76s]  are empty slots.
+[3213.76s -> 3214.76s]  And the locks
+[3214.76s -> 3215.76s]  are basically
+[3215.76s -> 3216.76s]  help us
+[3216.76s -> 3217.76s]  maintain
+[3217.76s -> 3218.76s]  that invariance.
+[3220.76s -> 3221.76s]  So,
+[3221.76s -> 3222.76s]  here we are.
+[3223.76s -> 3224.76s]  Code again.
+[3224.76s -> 3225.76s]  And,
+[3225.76s -> 3226.76s]  you know,
+[3226.76s -> 3227.76s]  let's look at the quires.
+[3228.76s -> 3229.76s]  So,
+[3229.76s -> 3230.76s]  here's the UART put C
+[3230.76s -> 3231.76s]  and,
+[3231.76s -> 3232.76s]  you know,
+[3232.76s -> 3233.76s]  the first thing,
+[3233.76s -> 3234.76s]  you know,
+[3234.76s -> 3235.76s]  UART put C to us
+[3235.76s -> 3236.76s]  is actually,
+[3236.76s -> 3237.76s]  you know,
+[3237.76s -> 3238.76s]  grab the lock
+[3238.76s -> 3239.76s]  and then stick
+[3239.76s -> 3240.76s]  the character
+[3240.76s -> 3241.76s]  if there's a place
+[3241.76s -> 3242.76s]  in the buffer,
+[3242.76s -> 3243.76s]  sticks the character
+[3243.76s -> 3244.76s]  in the buffer
+[3244.76s -> 3245.76s]  to search,
+[3245.76s -> 3246.76s]  you know,
+[3246.76s -> 3247.76s]  the printing
+[3247.76s -> 3248.76s]  and then releases
+[3248.76s -> 3249.76s]  the lock.
+[3250.76s -> 3251.76s]  So,
+[3251.76s -> 3252.76s]  if two processes
+[3252.76s -> 3253.76s]  at the same time
+[3253.76s -> 3254.76s]  call UART put C,
+[3255.76s -> 3256.76s]  then this lock
+[3256.76s -> 3257.76s]  will ensure
+[3257.76s -> 3258.76s]  that,
+[3258.76s -> 3259.76s]  you know,
+[3259.76s -> 3260.76s]  one character
+[3260.76s -> 3261.76s]  from the first process
+[3261.76s -> 3262.76s]  goes in the first slot
+[3262.76s -> 3263.76s]  and then
+[3263.76s -> 3264.76s]  the second character
+[3264.76s -> 3265.76s]  of the second process,
+[3265.76s -> 3266.76s]  you know,
+[3266.76s -> 3267.76s]  goes in the next slot
+[3267.76s -> 3268.76s]  and there
+[3268.76s -> 3269.76s]  don't happen to be
+[3269.76s -> 3270.76s]  end up
+[3270.76s -> 3271.76s]  in the same slot.
+[3271.76s -> 3272.76s]  Right.
+[3272.76s -> 3273.76s]  So,
+[3274.76s -> 3275.76s]  you know,
+[3275.76s -> 3276.76s]  of course,
+[3276.76s -> 3277.76s]  a race condition
+[3277.76s -> 3278.76s]  because otherwise,
+[3278.76s -> 3279.76s]  you know,
+[3279.76s -> 3280.76s]  the second process
+[3280.76s -> 3281.76s]  might overwrite,
+[3281.76s -> 3282.76s]  you know,
+[3282.76s -> 3283.76s]  the first processes
+[3283.76s -> 3284.76s]  character.
+[3285.76s -> 3286.76s]  That's one part.
+[3286.76s -> 3287.76s]  So,
+[3287.76s -> 3288.76s]  then when you go
+[3288.76s -> 3289.76s]  look at,
+[3289.76s -> 3290.76s]  that we did
+[3290.76s -> 3291.76s]  that a little bit
+[3291.76s -> 3292.76s]  before,
+[3292.76s -> 3293.76s]  if you look at start,
+[3293.76s -> 3294.76s]  you know,
+[3294.76s -> 3295.76s]  we see a couple
+[3295.76s -> 3296.76s]  more things going on.
+[3296.76s -> 3297.76s]  The,
+[3297.76s -> 3298.76s]  we see actually
+[3298.76s -> 3299.76s]  that the,
+[3299.76s -> 3300.76s]  if the buffer
+[3300.76s -> 3301.76s]  is not,
+[3301.76s -> 3302.76s]  you know,
+[3302.76s -> 3303.76s]  if the buffer's
+[3303.76s -> 3304.76s]  not empty,
+[3304.76s -> 3305.76s]  then,
+[3305.76s -> 3306.76s]  you know,
+[3306.76s -> 3307.76s]  we know that
+[3307.76s -> 3308.76s]  basically there's
+[3308.76s -> 3309.76s]  a bunch of
+[3309.76s -> 3310.76s]  characters that
+[3310.76s -> 3311.76s]  are being progressed
+[3311.76s -> 3312.76s]  or being sent
+[3312.76s -> 3313.76s]  and,
+[3313.76s -> 3314.76s]  you know,
+[3314.76s -> 3315.76s]  the lock,
+[3315.76s -> 3316.76s]  you know,
+[3316.76s -> 3317.76s]  make sure that
+[3317.76s -> 3318.76s]  we don't really
+[3318.76s -> 3319.76s]  overwrite any of those.
+[3319.76s -> 3320.76s]  And so anything
+[3320.76s -> 3321.76s]  that's sort of
+[3321.76s -> 3322.76s]  at the tail end
+[3322.76s -> 3323.76s]  of the queue
+[3323.76s -> 3324.76s]  is actually
+[3324.76s -> 3325.76s]  being processed
+[3325.76s -> 3326.76s]  by the UART
+[3326.76s -> 3327.76s]  itself.
+[3327.76s -> 3328.76s]  So,
+[3328.76s -> 3329.76s]  tail end
+[3329.76s -> 3330.76s]  is in flight.
+[3330.76s -> 3331.76s]  And we make sure
+[3331.76s -> 3332.76s]  that we basically
+[3332.76s -> 3333.76s]  don't modify
+[3333.76s -> 3334.76s]  or interfere
+[3334.76s -> 3335.76s]  with that
+[3335.76s -> 3336.76s]  particular aspect
+[3336.76s -> 3337.76s]  by,
+[3337.76s -> 3338.76s]  you know,
+[3338.76s -> 3339.76s]  grabbing a lock.
+[3339.76s -> 3340.76s]  And then finally,
+[3340.76s -> 3341.76s]  the sort of
+[3341.76s -> 3342.76s]  more and more
+[3342.76s -> 3343.76s]  thing is that
+[3343.76s -> 3344.76s]  the rights,
+[3344.76s -> 3345.76s]  you know,
+[3345.76s -> 3346.76s]  to the registers
+[3346.76s -> 3347.76s]  of the UART,
+[3347.76s -> 3348.76s]  like the THR register,
+[3348.76s -> 3349.76s]  which one,
+[3349.76s -> 3350.76s]  there's only one,
+[3350.76s -> 3351.76s]  you know,
+[3351.76s -> 3352.76s]  basically the lock
+[3352.76s -> 3353.76s]  ensures,
+[3353.76s -> 3354.76s]  you know,
+[3354.76s -> 3355.76s]  remember that
+[3355.76s -> 3356.76s]  UART is
+[3356.76s -> 3357.76s]  not empty.
+[3357.76s -> 3358.76s]  So,
+[3358.76s -> 3359.76s]  you know,
+[3359.76s -> 3360.76s]  remember that
+[3360.76s -> 3361.76s]  UART start
+[3361.76s -> 3362.76s]  is called
+[3362.76s -> 3363.76s]  with the lock held
+[3363.76s -> 3364.76s]  ensures that
+[3364.76s -> 3365.76s]  there's only one
+[3365.76s -> 3366.76s]  writer,
+[3366.76s -> 3367.76s]  you know,
+[3367.76s -> 3368.76s]  to the THR register.
+[3368.76s -> 3369.76s]  And so another
+[3369.76s -> 3370.76s]  sort of invariant
+[3370.76s -> 3371.76s]  or another aspect
+[3371.76s -> 3372.76s]  that the lock
+[3372.76s -> 3373.76s]  enforces
+[3373.76s -> 3374.76s]  is that
+[3374.76s -> 3375.76s]  hardware registers
+[3375.76s -> 3376.76s]  have one
+[3376.76s -> 3377.76s]  writer.
+[3377.76s -> 3378.76s]  Okay?
+[3378.76s -> 3379.76s]  Now,
+[3379.76s -> 3380.76s]  there's one
+[3380.76s -> 3381.76s]  other instant
+[3381.76s -> 3382.76s]  thing
+[3382.76s -> 3383.76s]  that I want
+[3383.76s -> 3384.76s]  to tell you
+[3384.76s -> 3385.76s]  about.
+[3385.76s -> 3386.76s]  Now,
+[3386.76s -> 3387.76s]  there's one
+[3387.76s -> 3388.76s]  other instant
+[3388.76s -> 3389.76s]  thing that
+[3389.76s -> 3390.76s]  I want to
+[3390.76s -> 3391.76s]  talk a little
+[3391.76s -> 3392.76s]  bit about,
+[3392.76s -> 3393.76s]  and that
+[3393.76s -> 3394.76s]  is,
+[3394.76s -> 3395.76s]  you know,
+[3395.76s -> 3396.76s]  if the UART
+[3396.76s -> 3397.76s]  is done,
+[3397.76s -> 3398.76s]  the hardware
+[3398.76s -> 3399.76s]  is done,
+[3399.76s -> 3400.76s]  then there
+[3400.76s -> 3401.76s]  was an
+[3401.76s -> 3402.76s]  interrupt.
+[3402.76s -> 3403.76s]  And,
+[3403.76s -> 3404.76s]  as you know,
+[3404.76s -> 3405.76s]  before UART
+[3405.76s -> 3406.76s]  start,
+[3406.76s -> 3407.76s]  you know,
+[3407.76s -> 3408.76s]  we have
+[3408.76s -> 3409.76s]  the caller,
+[3409.76s -> 3410.76s]  it's on
+[3410.76s -> 3411.76s]  the caller
+[3411.76s -> 3412.76s]  to require
+[3412.76s -> 3413.76s]  the lock
+[3413.76s -> 3414.76s]  to ensure
+[3414.76s -> 3415.76s]  that the
+[3415.76s -> 3416.76s]  UART interrupt
+[3416.76s -> 3417.76s]  itself
+[3417.76s -> 3418.76s]  could run
+[3418.76s -> 3419.76s]  in parallel
+[3419.76s -> 3420.76s]  with another
+[3420.76s -> 3421.76s]  process that's
+[3421.76s -> 3422.76s]  called printf.
+[3422.76s -> 3423.76s]  So,
+[3423.76s -> 3424.76s]  we have some
+[3424.76s -> 3425.76s]  process called
+[3425.76s -> 3426.76s]  printf that
+[3426.76s -> 3427.76s]  runs a CPU 0
+[3427.76s -> 3428.76s]  and on CPU 1
+[3428.76s -> 3429.76s]  actually takes
+[3429.76s -> 3430.76s]  the UART interrupt,
+[3430.76s -> 3431.76s]  you know,
+[3431.76s -> 3432.76s]  because maybe
+[3432.76s -> 3433.76s]  it's doing nothing
+[3433.76s -> 3434.76s]  and so it's ready
+[3434.76s -> 3435.76s]  to take the interrupt
+[3435.76s -> 3436.76s]  at any particular
+[3436.76s -> 3437.76s]  point in time
+[3437.76s -> 3438.76s]  and it will
+[3438.76s -> 3439.76s]  call UART start.
+[3439.76s -> 3440.76s]  And it has to be
+[3440.76s -> 3441.76s]  the case, correct?
+[3441.76s -> 3442.76s]  You know,
+[3442.76s -> 3443.76s]  we want to ensure
+[3443.76s -> 3444.76s]  that the variance
+[3444.76s -> 3445.76s]  actually of the
+[3445.76s -> 3446.76s]  transmission buffer,
+[3446.76s -> 3447.76s]  you know,
+[3447.76s -> 3448.76s]  we have to
+[3448.76s -> 3449.76s]  acquire the lock.
+[3449.76s -> 3450.76s]  And so it is
+[3450.76s -> 3451.76s]  the case that
+[3451.76s -> 3452.76s]  in xv6 actually
+[3452.76s -> 3453.76s]  that interrupts,
+[3453.76s -> 3454.76s]  you know,
+[3454.76s -> 3455.76s]  can run,
+[3455.76s -> 3456.76s]  you know,
+[3456.76s -> 3457.76s]  so the bottom
+[3457.76s -> 3458.76s]  half of the
+[3458.76s -> 3459.76s]  driver can run
+[3459.76s -> 3460.76s]  truly concurrent
+[3460.76s -> 3461.76s]  on different processors
+[3461.76s -> 3462.76s]  with the top
+[3462.76s -> 3463.76s]  half of the driver.
+[3463.76s -> 3464.76s]  And so therefore,
+[3464.76s -> 3465.76s]  you know,
+[3465.76s -> 3466.76s]  interrupt functions
+[3466.76s -> 3467.76s]  also require locks.
+[3467.76s -> 3468.76s]  And in fact,
+[3468.76s -> 3469.76s]  in this particular case,
+[3469.76s -> 3470.76s]  you know,
+[3470.76s -> 3471.76s]  requires the one lock
+[3471.76s -> 3472.76s]  that there's
+[3472.76s -> 3473.76s]  called UART start
+[3473.76s -> 3474.76s]  and then calls
+[3474.76s -> 3475.76s]  UART start
+[3475.76s -> 3476.76s]  and then releases
+[3476.76s -> 3477.76s]  the lock.
+[3477.76s -> 3478.76s]  And I'll come
+[3478.76s -> 3479.76s]  back to that
+[3479.76s -> 3480.76s]  in a second
+[3480.76s -> 3481.76s]  because there's
+[3481.76s -> 3482.76s]  a little bit
+[3482.76s -> 3483.76s]  trickiness
+[3483.76s -> 3484.76s]  in implementing
+[3484.76s -> 3485.76s]  a lock
+[3485.76s -> 3486.76s]  in such a way
+[3486.76s -> 3487.76s]  that this actually
+[3487.76s -> 3488.76s]  works out correctly.
+[3488.76s -> 3489.76s]  And the thing
+[3489.76s -> 3490.76s]  that actually
+[3490.76s -> 3491.76s]  you should be
+[3491.76s -> 3492.76s]  worried about
+[3492.76s -> 3493.76s]  is that,
+[3493.76s -> 3494.76s]  I'll actually
+[3494.76s -> 3495.76s]  talk about it
+[3495.76s -> 3496.76s]  in a second.
+[3496.76s -> 3497.76s]  Let me respond
+[3497.76s -> 3498.76s]  to that
+[3498.76s -> 3499.76s]  until I get there.
+[3499.76s -> 3500.76s]  Okay, so any
+[3500.76s -> 3501.76s]  questions about
+[3501.76s -> 3502.76s]  this is sort of
+[3502.76s -> 3503.76s]  a simple example
+[3503.76s -> 3505.76s]  of lock use
+[3505.76s -> 3507.76s]  in the UART.
+[3515.76s -> 3516.76s]  Okay, let me,
+[3516.76s -> 3517.76s]  if I bring this
+[3517.76s -> 3518.76s]  to a close,
+[3518.76s -> 3519.76s]  let me talk
+[3519.76s -> 3520.76s]  about implementing
+[3520.76s -> 3521.76s]  a lock.
+[3521.76s -> 3522.76s]  And so the
+[3522.76s -> 3523.76s]  spec is that
+[3523.76s -> 3525.76s]  only one process
+[3525.76s -> 3527.76s]  can acquire a lock.
+[3527.76s -> 3528.76s]  There's no more
+[3528.76s -> 3529.76s]  than one lock
+[3529.76s -> 3530.76s]  holder at any
+[3530.76s -> 3531.76s]  different point
+[3531.76s -> 3532.76s]  of time.
+[3532.76s -> 3533.76s]  And we now
+[3533.76s -> 3534.76s]  want to look
+[3534.76s -> 3535.76s]  and understand
+[3535.76s -> 3536.76s]  actually how
+[3536.76s -> 3537.76s]  you implement
+[3537.76s -> 3538.76s]  the lock in
+[3538.76s -> 3539.76s]  such a way that
+[3539.76s -> 3540.76s]  that actually
+[3540.76s -> 3541.76s]  is guaranteed.
+[3541.76s -> 3542.76s]  Let me first
+[3542.76s -> 3543.76s]  write a broken
+[3543.76s -> 3544.76s]  lock so that
+[3544.76s -> 3545.76s]  we understand
+[3545.76s -> 3546.76s]  what the
+[3546.76s -> 3547.76s]  challenge is
+[3547.76s -> 3548.76s]  for a broken
+[3548.76s -> 3549.76s]  acquire.
+[3551.76s -> 3552.76s]  So that we
+[3552.76s -> 3553.76s]  know what the
+[3553.76s -> 3554.76s]  challenge is
+[3554.76s -> 3555.76s]  actually in
+[3555.76s -> 3556.76s]  implementing
+[3556.76s -> 3557.76s]  acquire.
+[3557.76s -> 3558.76s]  So here's
+[3558.76s -> 3559.76s]  my broken
+[3559.76s -> 3560.76s]  structure.
+[3560.76s -> 3561.76s]  So broken
+[3561.76s -> 3562.76s]  struct takes
+[3562.76s -> 3563.76s]  an environment
+[3563.76s -> 3564.76s]  struct lock
+[3564.76s -> 3565.76s]  star L.
+[3565.76s -> 3566.76s]  And you know
+[3566.76s -> 3567.76s]  what it does
+[3567.76s -> 3568.76s]  is as follows,
+[3568.76s -> 3569.76s]  it has an
+[3569.76s -> 3570.76s]  independent loop
+[3570.76s -> 3571.76s]  while one,
+[3571.76s -> 3572.76s]  you know,
+[3572.76s -> 3573.76s]  if L is
+[3573.76s -> 3574.76s]  locked to zero,
+[3574.76s -> 3575.76s]  meaning nobody
+[3575.76s -> 3576.76s]  is holding it,
+[3576.76s -> 3577.76s]  then presumably
+[3577.76s -> 3578.76s]  the caller
+[3578.76s -> 3579.76s]  should grab
+[3579.76s -> 3580.76s]  the lock.
+[3580.76s -> 3581.76s]  So,
+[3581.76s -> 3582.76s]  you know,
+[3582.76s -> 3583.76s]  if L is
+[3583.76s -> 3584.76s]  locked to zero,
+[3584.76s -> 3585.76s]  meaning nobody
+[3585.76s -> 3586.76s]  is holding it,
+[3586.76s -> 3587.76s]  then presumably
+[3587.76s -> 3588.76s]  the caller
+[3588.76s -> 3589.76s]  should grab
+[3589.76s -> 3590.76s]  the lock.
+[3590.76s -> 3591.76s]  Then we
+[3591.76s -> 3592.76s]  set L lock
+[3592.76s -> 3593.76s]  to one.
+[3593.76s -> 3594.76s]  And,
+[3594.76s -> 3595.76s]  you know,
+[3595.76s -> 3596.76s]  at that point
+[3596.76s -> 3597.76s]  we got the
+[3597.76s -> 3598.76s]  lock so we
+[3598.76s -> 3599.76s]  can return.
+[3599.76s -> 3600.76s]  Nothing to do
+[3600.76s -> 3601.76s]  anymore.
+[3601.76s -> 3602.76s]  And close
+[3602.76s -> 3603.76s]  the loop.
+[3603.76s -> 3604.76s]  If we didn't
+[3604.76s -> 3605.76s]  get the lock
+[3605.76s -> 3606.76s]  because when
+[3606.76s -> 3607.76s]  the lock
+[3607.76s -> 3608.76s]  was one,
+[3608.76s -> 3609.76s]  that means
+[3609.76s -> 3610.76s]  somebody else
+[3610.76s -> 3611.76s]  is holding
+[3611.76s -> 3612.76s]  the lock so
+[3612.76s -> 3613.76s]  we just keep
+[3613.76s -> 3614.76s]  spinning.
+[3614.76s -> 3615.76s]  And we
+[3615.76s -> 3616.76s]  wait, you
+[3616.76s -> 3617.76s]  know, go
+[3617.76s -> 3618.76s]  back and
+[3618.76s -> 3619.76s]  we'll set lock
+[3619.76s -> 3620.76s]  to zero.
+[3620.76s -> 3621.76s]  And,
+[3621.76s -> 3622.76s]  you know,
+[3622.76s -> 3623.76s]  so what's
+[3623.76s -> 3624.76s]  wrong with
+[3624.76s -> 3625.76s]  this particular
+[3625.76s -> 3626.76s]  implementation?
+[3626.76s -> 3627.76s]  I think
+[3627.76s -> 3628.76s]  two processes
+[3628.76s -> 3629.76s]  might read
+[3629.76s -> 3630.76s]  that it's
+[3630.76s -> 3631.76s]  not locked
+[3631.76s -> 3632.76s]  at the same
+[3632.76s -> 3633.76s]  time.
+[3633.76s -> 3634.76s]  Yeah.
+[3634.76s -> 3635.76s]  Right.
+[3635.76s -> 3636.76s]  Yeah.
+[3636.76s -> 3637.76s]  So there's a
+[3637.76s -> 3638.76s]  race condition
+[3638.76s -> 3639.76s]  here.
+[3639.76s -> 3640.76s]  And
+[3640.76s -> 3641.76s]  just to
+[3641.76s -> 3642.76s]  make sure
+[3642.76s -> 3643.76s]  that the race
+[3643.76s -> 3644.76s]  is right
+[3644.76s -> 3645.76s]  here.
+[3645.76s -> 3646.76s]  You can
+[3646.76s -> 3647.76s]  have basically
+[3647.76s -> 3648.76s]  two CPUs
+[3648.76s -> 3649.76s]  coming in.
+[3649.76s -> 3650.76s]  So if we
+[3650.76s -> 3651.76s]  talk to time
+[3651.76s -> 3652.76s]  diagram,
+[3652.76s -> 3653.76s]  you know,
+[3653.76s -> 3654.76s]  CPU one,
+[3654.76s -> 3655.76s]  CPU zero,
+[3655.76s -> 3656.76s]  CPU one,
+[3656.76s -> 3657.76s]  you know,
+[3657.76s -> 3658.76s]  this is
+[3658.76s -> 3659.76s]  statement A.
+[3659.76s -> 3660.76s]  Maybe there's
+[3660.76s -> 3661.76s]  a statement
+[3661.76s -> 3662.76s]  B.
+[3662.76s -> 3663.76s]  Both CPU
+[3663.76s -> 3664.76s]  one,
+[3664.76s -> 3665.76s]  you know,
+[3665.76s -> 3666.76s]  reaches statement
+[3666.76s -> 3667.76s]  A and
+[3667.76s -> 3668.76s]  CPU zero
+[3668.76s -> 3669.76s]  and CPU
+[3669.76s -> 3670.76s]  zero and
+[3670.76s -> 3671.76s]  one both
+[3671.76s -> 3672.76s]  reach statement
+[3672.76s -> 3673.76s]  A.
+[3673.76s -> 3674.76s]  So they
+[3674.76s -> 3675.76s]  both see
+[3675.76s -> 3676.76s]  lock to
+[3676.76s -> 3677.76s]  zero and
+[3677.76s -> 3678.76s]  then they
+[3678.76s -> 3679.76s]  both execute
+[3679.76s -> 3680.76s]  B.
+[3680.76s -> 3681.76s]  Right.
+[3681.76s -> 3682.76s]  So here
+[3682.76s -> 3683.76s]  they see
+[3683.76s -> 3684.76s]  lock to
+[3684.76s -> 3685.76s]  zero.
+[3685.76s -> 3686.76s]  This guy
+[3686.76s -> 3687.76s]  see lock
+[3687.76s -> 3688.76s]  to zero
+[3688.76s -> 3689.76s]  and so
+[3689.76s -> 3690.76s]  they both
+[3690.76s -> 3691.76s]  execute
+[3691.76s -> 3692.76s]  statement B
+[3692.76s -> 3693.76s]  and now
+[3693.76s -> 3694.76s]  both have
+[3694.76s -> 3695.76s]  acquired a
+[3695.76s -> 3696.76s]  lock and
+[3696.76s -> 3697.76s]  which violated
+[3697.76s -> 3698.76s]  the spec
+[3698.76s -> 3699.76s]  of this
+[3699.76s -> 3700.76s]  particular
+[3700.76s -> 3701.76s]  function.
+[3701.76s -> 3702.76s]  Does
+[3702.76s -> 3703.76s]  make sense?
+[3703.76s -> 3704.76s]  So it
+[3704.76s -> 3705.76s]  solves this
+[3705.76s -> 3706.76s]  problem and
+[3706.76s -> 3707.76s]  sort of get
+[3707.76s -> 3708.76s]  a correct
+[3708.76s -> 3709.76s]  implementation.
+[3709.76s -> 3710.76s]  There are
+[3710.76s -> 3711.76s]  multiple ways
+[3711.76s -> 3712.76s]  of going
+[3712.76s -> 3713.76s]  about it,
+[3713.76s -> 3714.76s]  but the
+[3714.76s -> 3715.76s]  most common
+[3715.76s -> 3716.76s]  way is to
+[3716.76s -> 3717.76s]  rely basically
+[3717.76s -> 3718.76s]  on a special
+[3718.76s -> 3719.76s]  hardware
+[3719.76s -> 3720.76s]  instruction.
+[3720.76s -> 3721.76s]  An
+[3721.76s -> 3722.76s]  instruction that
+[3722.76s -> 3723.76s]  basically what
+[3723.76s -> 3724.76s]  it does,
+[3724.76s -> 3725.76s]  it does
+[3725.76s -> 3726.76s]  this test
+[3726.76s -> 3727.76s]  and this set
+[3727.76s -> 3728.76s]  atomically.
+[3728.76s -> 3729.76s]  And so
+[3729.76s -> 3730.76s]  the solution
+[3730.76s -> 3731.76s]  to this
+[3731.76s -> 3732.76s]  problem is
+[3732.76s -> 3733.76s]  hardware
+[3733.76s -> 3734.76s]  test
+[3734.76s -> 3735.76s]  and set
+[3735.76s -> 3736.76s]  support.
+[3736.76s -> 3737.76s]  And
+[3737.76s -> 3738.76s]  the way
+[3738.76s -> 3739.76s]  you can
+[3739.76s -> 3740.76s]  think about
+[3740.76s -> 3741.76s]  it on
+[3741.76s -> 3742.76s]  the risk
+[3742.76s -> 3743.76s]  five,
+[3743.76s -> 3744.76s]  this
+[3744.76s -> 3745.76s]  instruction
+[3745.76s -> 3746.76s]  actually is
+[3746.76s -> 3747.76s]  the atomic
+[3747.76s -> 3748.76s]  memory
+[3748.76s -> 3749.76s]  operation swap
+[3749.76s -> 3750.76s]  that we're
+[3750.76s -> 3751.76s]  going to be
+[3751.76s -> 3752.76s]  using.
+[3752.76s -> 3753.76s]  Basically
+[3753.76s -> 3754.76s]  boils down to
+[3754.76s -> 3755.76s]  a test
+[3755.76s -> 3756.76s]  and then a
+[3756.76s -> 3757.76s]  set.
+[3757.76s -> 3758.76s]  Basically
+[3758.76s -> 3759.76s]  with the
+[3759.76s -> 3760.76s]  hardware
+[3760.76s -> 3761.76s]  guarantees, if
+[3761.76s -> 3762.76s]  you will,
+[3762.76s -> 3763.76s]  it takes
+[3763.76s -> 3764.76s]  two arguments
+[3764.76s -> 3765.76s]  or three
+[3765.76s -> 3766.76s]  arguments,
+[3766.76s -> 3767.76s]  an
+[3767.76s -> 3768.76s]  address,
+[3768.76s -> 3769.76s]  a register
+[3769.76s -> 3770.76s]  one,
+[3770.76s -> 3771.76s]  R1,
+[3771.76s -> 3772.76s]  and a
+[3772.76s -> 3773.76s]  register
+[3773.76s -> 3774.76s]  two.
+[3774.76s -> 3775.76s]  And
+[3775.76s -> 3776.76s]  essentially
+[3776.76s -> 3777.76s]  what the
+[3777.76s -> 3778.76s]  hardware does
+[3778.76s -> 3779.76s]  conceptually
+[3779.76s -> 3780.76s]  is basically
+[3780.76s -> 3781.76s]  it locks
+[3781.76s -> 3782.76s]  the address
+[3782.76s -> 3783.76s]  if you will.
+[3783.76s -> 3784.76s]  We'll talk
+[3784.76s -> 3785.76s]  about that
+[3785.76s -> 3786.76s]  in a second
+[3786.76s -> 3787.76s]  a little bit
+[3787.76s -> 3788.76s]  more, but
+[3788.76s -> 3789.76s]  locks
+[3789.76s -> 3790.76s]  address.
+[3790.76s -> 3791.76s]  It puts
+[3791.76s -> 3792.76s]  the value
+[3792.76s -> 3793.76s]  that actually
+[3793.76s -> 3794.76s]  is at that
+[3794.76s -> 3795.76s]  particular address
+[3795.76s -> 3796.76s]  and
+[3796.76s -> 3797.76s]  then
+[3797.76s -> 3798.76s]  writes
+[3798.76s -> 3799.76s]  the value
+[3799.76s -> 3800.76s]  of R1
+[3800.76s -> 3801.76s]  into that
+[3801.76s -> 3802.76s]  address
+[3802.76s -> 3803.76s]  and then
+[3803.76s -> 3804.76s]  basically
+[3804.76s -> 3805.76s]  puts the
+[3805.76s -> 3806.76s]  value
+[3806.76s -> 3807.76s]  that was
+[3807.76s -> 3808.76s]  originally
+[3808.76s -> 3809.76s]  at the
+[3809.76s -> 3810.76s]  address
+[3810.76s -> 3811.76s]  into
+[3811.76s -> 3812.76s]  the
+[3812.76s -> 3813.76s]  temporary
+[3813.76s -> 3814.76s]  value
+[3814.76s -> 3815.76s]  that was
+[3815.76s -> 3816.76s]  actually
+[3816.76s -> 3817.76s]  into an
+[3817.76s -> 3818.76s]  R2
+[3818.76s -> 3819.76s]  and then
+[3819.76s -> 3820.76s]  basically
+[3821.76s -> 3822.76s]  this lock
+[3822.76s -> 3823.76s]  if you will
+[3823.76s -> 3824.76s]  guarantees
+[3824.76s -> 3825.76s]  that
+[3825.76s -> 3826.76s]  basically
+[3826.76s -> 3827.76s]  this test
+[3827.76s -> 3828.76s]  where the
+[3828.76s -> 3829.76s]  result of
+[3829.76s -> 3830.76s]  the test
+[3830.76s -> 3831.76s]  is returned
+[3831.76s -> 3832.76s]  into R2
+[3832.76s -> 3833.76s]  and the set
+[3833.76s -> 3834.76s]  actually
+[3834.76s -> 3835.76s]  happen
+[3835.76s -> 3836.76s]  atomically.
+[3836.76s -> 3837.76s]  So this is
+[3837.76s -> 3838.76s]  a hardware
+[3838.76s -> 3839.76s]  instruction.
+[3839.76s -> 3840.76s]  Most
+[3840.76s -> 3841.76s]  processors
+[3841.76s -> 3842.76s]  have an
+[3842.76s -> 3843.76s]  hardware
+[3843.76s -> 3844.76s]  instruction
+[3844.76s -> 3845.76s]  like this
+[3845.76s -> 3846.76s]  because it's
+[3846.76s -> 3847.76s]  a convenient
+[3847.76s -> 3848.76s]  way to
+[3848.76s -> 3849.76s]  actually
+[3849.76s -> 3850.76s]  implement it.
+[3850.76s -> 3851.76s]  What we've
+[3851.76s -> 3852.76s]  done is
+[3852.76s -> 3853.76s]  we've reduced
+[3853.76s -> 3854.76s]  the
+[3854.76s -> 3855.76s]  automaticity
+[3855.76s -> 3856.76s]  of this
+[3856.76s -> 3857.76s]  software
+[3857.76s -> 3858.76s]  lock
+[3858.76s -> 3859.76s]  implementation
+[3859.76s -> 3860.76s]  to basically
+[3860.76s -> 3861.76s]  a hardware
+[3861.76s -> 3862.76s]  lock
+[3862.76s -> 3863.76s]  implementation.
+[3863.76s -> 3864.76s]  So the
+[3864.76s -> 3865.76s]  processor might
+[3865.76s -> 3866.76s]  implement this
+[3866.76s -> 3867.76s]  in very
+[3867.76s -> 3868.76s]  different ways.
+[3868.76s -> 3869.76s]  So basically
+[3869.76s -> 3870.76s]  the instruction
+[3870.76s -> 3871.76s]  set itself
+[3871.76s -> 3872.76s]  is like a
+[3872.76s -> 3873.76s]  specification
+[3873.76s -> 3874.76s]  that doesn't
+[3874.76s -> 3875.76s]  actually say
+[3875.76s -> 3876.76s]  how it's
+[3876.76s -> 3877.76s]  implemented
+[3877.76s -> 3878.76s]  and this
+[3878.76s -> 3879.76s]  operation
+[3879.76s -> 3880.76s]  can
+[3880.76s -> 3881.76s]  basically
+[3881.76s -> 3882.76s]  allow
+[3882.76s -> 3883.76s]  basically
+[3883.76s -> 3884.76s]  set a lock
+[3884.76s -> 3885.76s]  in a particular
+[3885.76s -> 3886.76s]  address
+[3886.76s -> 3887.76s]  and then
+[3887.76s -> 3888.76s]  let
+[3888.76s -> 3889.76s]  one
+[3889.76s -> 3890.76s]  processor do
+[3890.76s -> 3891.76s]  exactly
+[3891.76s -> 3892.76s]  the same
+[3892.76s -> 3893.76s]  thing.
+[3893.76s -> 3894.76s]  So
+[3894.76s -> 3895.76s]  basically
+[3895.76s -> 3896.76s]  the
+[3896.76s -> 3897.76s]  processor
+[3897.76s -> 3898.76s]  can
+[3898.76s -> 3899.76s]  do
+[3899.76s -> 3900.76s]  exactly
+[3900.76s -> 3901.76s]  the same
+[3901.76s -> 3902.76s]  thing.
+[3902.76s -> 3903.76s]  So
+[3903.76s -> 3904.76s]  for example
+[3904.76s -> 3905.76s]  if
+[3905.76s -> 3906.76s]  you know
+[3906.76s -> 3907.76s]  the
+[3907.76s -> 3908.76s]  one
+[3908.76s -> 3909.76s]  processor
+[3909.76s -> 3910.76s]  do two
+[3910.76s -> 3911.76s]  operations
+[3911.76s -> 3912.76s]  or three
+[3912.76s -> 3913.76s]  instructions
+[3913.76s -> 3914.76s]  and then
+[3914.76s -> 3915.76s]  it will
+[3915.76s -> 3916.76s]  unlock and
+[3916.76s -> 3917.76s]  so since
+[3917.76s -> 3918.76s]  all the
+[3918.76s -> 3919.76s]  processors
+[3919.76s -> 3920.76s]  go through
+[3920.76s -> 3921.76s]  this memory
+[3921.76s -> 3922.76s]  controller,
+[3922.76s -> 3923.76s]  the memory
+[3923.76s -> 3924.76s]  controller can
+[3924.76s -> 3925.76s]  do the
+[3925.76s -> 3926.76s]  ordering or
+[3926.76s -> 3927.76s]  the blocking.
+[3927.76s -> 3928.76s]  If the
+[3928.76s -> 3929.76s]  memories are
+[3929.76s -> 3930.76s]  in this
+[3930.76s -> 3931.76s]  processor
+[3931.76s -> 3932.76s]  sitting on a
+[3932.76s -> 3933.76s]  shared bus,
+[3933.76s -> 3934.76s]  it's often
+[3934.76s -> 3935.76s]  the bus
+[3935.76s -> 3936.76s]  arbiter that
+[3936.76s -> 3937.76s]  if the
+[3937.76s -> 3938.76s]  processors
+[3938.76s -> 3939.76s]  have
+[3939.76s -> 3940.76s]  caches
+[3940.76s -> 3941.76s]  then
+[3941.76s -> 3942.76s]  it's sort of
+[3942.76s -> 3943.76s]  typically part
+[3943.76s -> 3944.76s]  of the
+[3944.76s -> 3945.76s]  cache coherence
+[3945.76s -> 3946.76s]  protocol
+[3946.76s -> 3947.76s]  where
+[3947.76s -> 3948.76s]  the cache
+[3948.76s -> 3949.76s]  coherence
+[3949.76s -> 3950.76s]  protocol
+[3950.76s -> 3951.76s]  will ensure
+[3951.76s -> 3952.76s]  that if
+[3952.76s -> 3953.76s]  there's a
+[3953.76s -> 3954.76s]  writer
+[3954.76s -> 3955.76s]  that particular
+[3955.76s -> 3956.76s]  cache line
+[3956.76s -> 3957.76s]  that holds
+[3957.76s -> 3958.76s]  the value
+[3958.76s -> 3959.76s]  that we want
+[3959.76s -> 3960.76s]  to update
+[3960.76s -> 3961.76s]  ends up in
+[3961.76s -> 3962.76s]  one single
+[3962.76s -> 3963.76s]  cache and
+[3963.76s -> 3964.76s]  then basically
+[3964.76s -> 3965.76s]  the processors
+[3965.76s -> 3966.76s]  go through
+[3966.76s -> 3967.76s]  this memory
+[3967.76s -> 3968.76s]  controller
+[3968.76s -> 3969.76s]  and the
+[3969.76s -> 3970.76s]  memory
+[3970.76s -> 3971.76s]  controller
+[3971.76s -> 3972.76s]  can be
+[3972.76s -> 3973.76s]  done in
+[3973.76s -> 3974.76s]  many different
+[3974.76s -> 3975.76s]  ways but
+[3975.76s -> 3976.76s]  conceptually
+[3976.76s -> 3977.76s]  what's going
+[3977.76s -> 3978.76s]  on is you
+[3978.76s -> 3979.76s]  walk the
+[3979.76s -> 3980.76s]  address, you
+[3980.76s -> 3981.76s]  read the
+[3981.76s -> 3982.76s]  original value,
+[3982.76s -> 3983.76s]  you store
+[3983.76s -> 3984.76s]  in the new
+[3984.76s -> 3985.76s]  value and
+[3985.76s -> 3986.76s]  you return
+[3986.76s -> 3987.76s]  the old
+[3987.76s -> 3988.76s]  value.
+[3988.76s -> 3989.76s]  Does that
+[3989.76s -> 3990.76s]  make sense?
+[3990.76s -> 3991.76s]  To see how
+[3991.76s -> 3992.76s]  we can use
+[3992.76s -> 3993.76s]  that instruction,
+[3993.76s -> 3994.76s]  let's look
+[3994.76s -> 3995.76s]  at this.
+[3995.76s -> 3996.76s]  So let me
+[3996.76s -> 3997.76s]  first bring
+[3997.76s -> 3998.76s]  up spinlock.h.
+[3998.76s -> 3999.76s]  Spinlock.h,
+[3999.76s -> 4000.76s]  as you can
+[4000.76s -> 4001.76s]  see, it's
+[4001.76s -> 4002.76s]  pretty
+[4002.76s -> 4003.76s]  straightforward.
+[4003.76s -> 4004.76s]  It has
+[4004.76s -> 4005.76s]  this flat
+[4005.76s -> 4006.76s]  block exactly
+[4006.76s -> 4007.76s]  as in our
+[4007.76s -> 4008.76s]  pseudocode
+[4008.76s -> 4009.76s]  and then it
+[4009.76s -> 4010.76s]  has two other
+[4010.76s -> 4011.76s]  things for
+[4011.76s -> 4012.76s]  debugging,
+[4012.76s -> 4013.76s]  namely the
+[4013.76s -> 4014.76s]  name of the
+[4014.76s -> 4015.76s]  lock and
+[4015.76s -> 4016.76s]  the CPU, the
+[4016.76s -> 4017.76s]  last, the
+[4017.76s -> 4018.76s]  current CPU
+[4018.76s -> 4019.76s]  that actually is
+[4019.76s -> 4020.76s]  holding the
+[4020.76s -> 4021.76s]  lock and
+[4021.76s -> 4022.76s]  this is mostly
+[4022.76s -> 4023.76s]  to print out
+[4023.76s -> 4024.76s]  this, for
+[4024.76s -> 4025.76s]  example, if
+[4025.76s -> 4026.76s]  you do two
+[4026.76s -> 4027.76s]  acquires on
+[4027.76s -> 4028.76s]  the same CPU.
+[4028.76s -> 4029.76s]  Okay, so then
+[4029.76s -> 4030.76s]  let's look
+[4030.76s -> 4031.76s]  at the
+[4031.76s -> 4032.76s]  implementation.
+[4032.76s -> 4033.76s]  So let's
+[4033.76s -> 4034.76s]  start out
+[4034.76s -> 4035.76s]  with acquire
+[4035.76s -> 4036.76s]  and let's
+[4036.76s -> 4037.76s]  first look
+[4037.76s -> 4038.76s]  at this
+[4038.76s -> 4039.76s]  loop.
+[4039.76s -> 4040.76s]  So
+[4040.76s -> 4041.76s]  this is
+[4041.76s -> 4042.76s]  actually the
+[4042.76s -> 4043.76s]  sort of
+[4043.76s -> 4044.76s]  test and set
+[4044.76s -> 4045.76s]  loop that
+[4045.76s -> 4046.76s]  I just talked
+[4046.76s -> 4047.76s]  about.
+[4047.76s -> 4048.76s]  It turns
+[4048.76s -> 4049.76s]  out that
+[4049.76s -> 4050.76s]  in the
+[4050.76s -> 4051.76s]  test and
+[4051.76s -> 4052.76s]  set loop
+[4052.76s -> 4053.76s]  it turns
+[4053.76s -> 4054.76s]  out that in
+[4054.76s -> 4055.76s]  the C
+[4055.76s -> 4056.76s]  standard
+[4056.76s -> 4057.76s]  actually
+[4057.76s -> 4058.76s]  defines one
+[4058.76s -> 4059.76s]  of these
+[4059.76s -> 4060.76s]  atomic
+[4060.76s -> 4061.76s]  operations
+[4061.76s -> 4062.76s]  and so
+[4062.76s -> 4063.76s]  the C
+[4063.76s -> 4064.76s]  standard
+[4064.76s -> 4065.76s]  actually has
+[4065.76s -> 4066.76s]  a function
+[4066.76s -> 4067.76s]  that says
+[4067.76s -> 4068.76s]  sync lock
+[4068.76s -> 4069.76s]  test and
+[4069.76s -> 4070.76s]  set and
+[4070.76s -> 4071.76s]  basically it
+[4071.76s -> 4072.76s]  specifies the
+[4072.76s -> 4073.76s]  behavior that
+[4073.76s -> 4074.76s]  I just
+[4074.76s -> 4075.76s]  described and
+[4075.76s -> 4076.76s]  then every
+[4076.76s -> 4077.76s]  processor
+[4077.76s -> 4078.76s]  basically is
+[4078.76s -> 4079.76s]  required to
+[4079.76s -> 4080.76s]  implement that
+[4080.76s -> 4081.76s]  behavior and
+[4081.76s -> 4082.76s]  that
+[4082.76s -> 4083.76s]  instruction.
+[4083.76s -> 4084.76s]  This turns
+[4084.76s -> 4085.76s]  out to be
+[4085.76s -> 4086.76s]  reasonably
+[4086.76s -> 4087.76s]  straightforward
+[4087.76s -> 4088.76s]  for a
+[4088.76s -> 4089.76s]  processor to
+[4089.76s -> 4090.76s]  implement.
+[4090.76s -> 4091.76s]  In fact, if
+[4091.76s -> 4092.76s]  you look at
+[4092.76s -> 4093.76s]  kernel.asm
+[4093.76s -> 4094.76s]  we can look
+[4094.76s -> 4095.76s]  at the
+[4095.76s -> 4096.76s]  assembly
+[4096.76s -> 4097.76s]  instructions
+[4097.76s -> 4098.76s]  and see
+[4098.76s -> 4099.76s]  exactly what
+[4099.76s -> 4100.76s]  the risk
+[4100.76s -> 4101.76s]  value
+[4101.76s -> 4102.76s]  processor does.
+[4102.76s -> 4103.76s]  So
+[4103.76s -> 4104.76s]  here is
+[4104.76s -> 4105.76s]  our assembly
+[4105.76s -> 4106.76s]  instructions
+[4106.76s -> 4107.76s]  for
+[4107.76s -> 4108.76s]  require and
+[4108.76s -> 4109.76s]  let's see
+[4109.76s -> 4110.76s]  here is our
+[4110.76s -> 4111.76s]  system.
+[4111.76s -> 4112.76s]  So if you
+[4112.76s -> 4113.76s]  can see
+[4113.76s -> 4114.76s]  if atomic
+[4114.76s -> 4115.76s]  swap
+[4115.76s -> 4116.76s]  basically is
+[4116.76s -> 4117.76s]  called with
+[4117.76s -> 4118.76s]  the register
+[4118.76s -> 4119.76s]  A5 and
+[4119.76s -> 4120.76s]  as the
+[4120.76s -> 4121.76s]  input and
+[4121.76s -> 4122.76s]  output also
+[4122.76s -> 4123.76s]  ends up in
+[4123.76s -> 4124.76s]  A5 and
+[4124.76s -> 4125.76s]  S1 is the
+[4125.76s -> 4126.76s]  hold of the
+[4126.76s -> 4127.76s]  address and
+[4127.76s -> 4128.76s]  if it's
+[4128.76s -> 4129.76s]  not equal
+[4129.76s -> 4130.76s]  we return
+[4130.76s -> 4131.76s]  and
+[4131.76s -> 4132.76s]  otherwise
+[4132.76s -> 4133.76s]  basically we
+[4133.76s -> 4134.76s]  go back
+[4134.76s -> 4135.76s]  to jump
+[4135.76s -> 4136.76s]  back to
+[4136.76s -> 4137.76s]  the
+[4137.76s -> 4138.76s]  system.
+[4138.76s -> 4139.76s]  So
+[4139.76s -> 4140.76s]  we jump
+[4140.76s -> 4141.76s]  back to
+[4141.76s -> 4142.76s]  double check
+[4142.76s -> 4143.76s]  that I'm
+[4143.76s -> 4144.76s]  saying the
+[4144.76s -> 4145.76s]  right thing
+[4145.76s -> 4146.76s]  here.
+[4146.76s -> 4147.76s]  Move a
+[4147.76s -> 4148.76s]  four in
+[4148.76s -> 4149.76s]  six if
+[4149.76s -> 4150.76s]  not equal
+[4150.76s -> 4151.76s]  we go to
+[4151.76s -> 4152.76s]  OX 20
+[4152.76s -> 4153.76s]  plus OX 22.
+[4153.76s -> 4154.76s]  That's a
+[4154.76s -> 4155.76s]  little bit
+[4155.76s -> 4156.76s]  hard to
+[4156.76s -> 4157.76s]  calculate but
+[4157.76s -> 4158.76s]  in one case
+[4158.76s -> 4159.76s]  we branch
+[4159.76s -> 4160.76s]  out and
+[4160.76s -> 4161.76s]  in the
+[4161.76s -> 4162.76s]  other case
+[4162.76s -> 4163.76s]  we branch
+[4163.76s -> 4164.76s]  back.
+[4164.76s -> 4165.76s]  So it is
+[4165.76s -> 4166.76s]  easier to
+[4166.76s -> 4167.76s]  look at the
+[4167.76s -> 4168.76s]  C code.
+[4168.76s -> 4169.76s]  So if the
+[4169.76s -> 4170.76s]  lock is
+[4170.76s -> 4171.76s]  not held
+[4171.76s -> 4172.76s]  what will be
+[4172.76s -> 4173.76s]  the value of
+[4173.76s -> 4174.76s]  L locked?
+[4174.76s -> 4175.76s]  Well L locked
+[4175.76s -> 4176.76s]  will be zero.
+[4176.76s -> 4177.76s]  And so we
+[4177.76s -> 4178.76s]  call this
+[4178.76s -> 4179.76s]  test and set
+[4179.76s -> 4180.76s]  what will happen
+[4180.76s -> 4181.76s]  is we'll
+[4181.76s -> 4182.76s]  write a one
+[4182.76s -> 4183.76s]  in locked
+[4183.76s -> 4184.76s]  but return
+[4184.76s -> 4185.76s]  the previous
+[4185.76s -> 4186.76s]  value.
+[4186.76s -> 4187.76s]  So if the
+[4187.76s -> 4188.76s]  previous value
+[4188.76s -> 4189.76s]  is zero
+[4189.76s -> 4190.76s]  then we're
+[4190.76s -> 4191.76s]  good.
+[4191.76s -> 4192.76s]  Because that
+[4192.76s -> 4193.76s]  means that
+[4193.76s -> 4194.76s]  nobody was
+[4194.76s -> 4195.76s]  holding the
+[4195.76s -> 4196.76s]  lock and
+[4196.76s -> 4197.76s]  we fall
+[4197.76s -> 4198.76s]  out.
+[4198.76s -> 4199.76s]  So if the
+[4199.76s -> 4200.76s]  lock value
+[4200.76s -> 4201.76s]  was one
+[4201.76s -> 4202.76s]  so the
+[4202.76s -> 4203.76s]  lock was
+[4203.76s -> 4204.76s]  actually locked
+[4204.76s -> 4205.76s]  well what
+[4205.76s -> 4206.76s]  will this
+[4206.76s -> 4207.76s]  instruction do?
+[4207.76s -> 4208.76s]  It will
+[4208.76s -> 4209.76s]  read the
+[4209.76s -> 4210.76s]  old value
+[4210.76s -> 4211.76s]  put that at
+[4211.76s -> 4212.76s]  the site
+[4212.76s -> 4213.76s]  that is one
+[4213.76s -> 4214.76s]  actually in
+[4214.76s -> 4215.76s]  this case
+[4215.76s -> 4216.76s]  and then
+[4216.76s -> 4217.76s]  write a new
+[4217.76s -> 4218.76s]  one into
+[4218.76s -> 4219.76s]  that location
+[4219.76s -> 4220.76s]  but that will
+[4220.76s -> 4221.76s]  change nothing
+[4221.76s -> 4222.76s]  because the
+[4222.76s -> 4223.76s]  lock was
+[4223.76s -> 4224.76s]  already locked
+[4224.76s -> 4225.76s]  and the
+[4225.76s -> 4226.76s]  function will
+[4226.76s -> 4227.76s]  release.
+[4227.76s -> 4228.76s]  It's unequal
+[4228.76s -> 4229.76s]  to zero and
+[4229.76s -> 4230.76s]  so it will
+[4230.76s -> 4231.76s]  spin and
+[4231.76s -> 4232.76s]  will keep
+[4232.76s -> 4233.76s]  spinning until
+[4233.76s -> 4234.76s]  lock actually
+[4234.76s -> 4235.76s]  is set back
+[4235.76s -> 4236.76s]  to zero
+[4236.76s -> 4237.76s]  and zoom
+[4237.76s -> 4238.76s]  that will
+[4238.76s -> 4239.76s]  happen in
+[4239.76s -> 4240.76s]  the release.
+[4240.76s -> 4241.76s]  Any
+[4241.76s -> 4242.76s]  questions about
+[4242.76s -> 4243.76s]  this?
+[4244.76s -> 4245.76s]  No
+[4245.76s -> 4246.76s]  questions?
+[4246.76s -> 4247.76s]  Okay.
+[4247.76s -> 4248.76s]  Um,
+[4248.76s -> 4249.76s]  so now
+[4249.76s -> 4250.76s]  basically
+[4250.76s -> 4251.76s]  you know
+[4251.76s -> 4252.76s]  let's look
+[4252.76s -> 4253.76s]  at the
+[4253.76s -> 4254.76s]  corresponding
+[4254.76s -> 4255.76s]  uh, the
+[4255.76s -> 4256.76s]  release
+[4256.76s -> 4257.76s]  operation
+[4257.76s -> 4258.76s]  and
+[4258.76s -> 4259.76s]  uh,
+[4259.76s -> 4260.76s]  let's
+[4260.76s -> 4261.76s]  look at
+[4261.76s -> 4262.76s]  the
+[4262.76s -> 4263.76s]  release
+[4263.76s -> 4264.76s]  operation
+[4264.76s -> 4265.76s]  and
+[4265.76s -> 4266.76s]  uh,
+[4266.76s -> 4267.76s]  let's
+[4267.76s -> 4268.76s]  look at
+[4268.76s -> 4269.76s]  the
+[4269.76s -> 4270.76s]  release
+[4270.76s -> 4271.76s]  operation
+[4271.76s -> 4272.76s]  and
+[4272.76s -> 4273.76s]  uh,
+[4273.76s -> 4274.76s]  here's
+[4274.76s -> 4275.76s]  uh,
+[4275.76s -> 4276.76s]  the
+[4276.76s -> 4277.76s]  release
+[4277.76s -> 4278.76s]  operation
+[4278.76s -> 4279.76s]  and if
+[4279.76s -> 4280.76s]  you look
+[4280.76s -> 4281.76s]  at the
+[4281.76s -> 4282.76s]  kernel ASM
+[4282.76s -> 4283.76s]  again
+[4283.76s -> 4284.76s]  that
+[4284.76s -> 4285.76s]  instruction
+[4285.76s -> 4286.76s]  uh,
+[4286.76s -> 4287.76s]  so let's
+[4287.76s -> 4288.76s]  look at
+[4288.76s -> 4289.76s]  release
+[4289.76s -> 4290.76s]  probably
+[4290.76s -> 4291.76s]  right
+[4291.76s -> 4292.76s]  afterwards
+[4292.76s -> 4293.76s]  here
+[4293.76s -> 4294.76s]  release
+[4294.76s -> 4295.76s]  so the
+[4295.76s -> 4296.76s]  release
+[4296.76s -> 4297.76s]  actually
+[4297.76s -> 4298.76s]  also uses
+[4298.76s -> 4299.76s]  this atomic
+[4299.76s -> 4300.76s]  swap
+[4300.76s -> 4301.76s]  instruction
+[4301.76s -> 4302.76s]  there's a
+[4302.76s -> 4303.76s]  guarantee
+[4303.76s -> 4304.76s]  basically
+[4304.76s -> 4305.76s]  that this
+[4305.76s -> 4306.76s]  atomic
+[4306.76s -> 4307.76s]  update
+[4307.76s -> 4308.76s]  you know
+[4308.76s -> 4309.76s]  to
+[4309.76s -> 4310.76s]  uh,
+[4310.76s -> 4311.76s]  locked
+[4311.76s -> 4312.76s]  or
+[4312.76s -> 4313.76s]  lk-locked
+[4313.76s -> 4314.76s]  uh,
+[4314.76s -> 4315.76s]  writing a
+[4315.76s -> 4316.76s]  zero into
+[4316.76s -> 4317.76s]  lk-locked
+[4317.76s -> 4318.76s]  is an
+[4318.76s -> 4319.76s]  atomic
+[4319.76s -> 4320.76s]  operation.
+[4320.76s -> 4321.76s]  Many
+[4321.76s -> 4322.76s]  of you
+[4322.76s -> 4323.76s]  asked
+[4323.76s -> 4324.76s]  why not
+[4324.76s -> 4325.76s]  just
+[4325.76s -> 4326.76s]  you know
+[4326.76s -> 4327.76s]  you store
+[4327.76s -> 4328.76s]  a store
+[4328.76s -> 4329.76s]  instruction
+[4329.76s -> 4330.76s]  to
+[4330.76s -> 4331.76s]  the process
+[4331.76s -> 4332.76s]  might be
+[4332.76s -> 4333.76s]  writing a
+[4333.76s -> 4334.76s]  one to
+[4334.76s -> 4335.76s]  the lock
+[4335.76s -> 4336.76s]  or no
+[4336.76s -> 4337.76s]  or writing
+[4337.76s -> 4338.76s]  another
+[4338.76s -> 4339.76s]  zero but
+[4339.76s -> 4340.76s]  that can be
+[4340.76s -> 4341.76s]  the case
+[4341.76s -> 4342.76s]  right
+[4342.76s -> 4343.76s]  yeah well
+[4343.76s -> 4344.76s]  there could
+[4344.76s -> 4345.76s]  be okay
+[4345.76s -> 4346.76s]  so there
+[4346.76s -> 4347.76s]  could be
+[4347.76s -> 4348.76s]  two processes
+[4348.76s -> 4349.76s]  or two CPUs
+[4349.76s -> 4350.76s]  writing to
+[4350.76s -> 4351.76s]  l-locked at
+[4351.76s -> 4352.76s]  the same time
+[4352.76s -> 4353.76s]  correct
+[4353.76s -> 4354.76s]  but I think
+[4354.76s -> 4355.76s]  what the
+[4355.76s -> 4356.76s]  the question
+[4356.76s -> 4357.76s]  really is
+[4357.76s -> 4358.76s]  that you know
+[4358.76s -> 4359.76s]  for many
+[4359.76s -> 4360.76s]  uh and it
+[4360.76s -> 4361.76s]  really depends on
+[4361.76s -> 4362.76s]  on the
+[4362.76s -> 4363.76s]  architectural
+[4363.76s -> 4364.76s]  implementation
+[4364.76s -> 4365.76s]  like example
+[4365.76s -> 4366.76s]  if the
+[4366.76s -> 4367.76s]  cache
+[4367.76s -> 4368.76s]  protocol works
+[4368.76s -> 4369.76s]  or the cache
+[4369.76s -> 4370.76s]  system works
+[4370.76s -> 4371.76s]  using cache
+[4371.76s -> 4372.76s]  lines where
+[4372.76s -> 4373.76s]  a cache
+[4373.76s -> 4374.76s]  line may
+[4374.76s -> 4375.76s]  be bigger
+[4375.76s -> 4376.76s]  than an
+[4376.76s -> 4377.76s]  integer
+[4377.76s -> 4378.76s]  typically
+[4378.76s -> 4379.76s]  bigger than
+[4379.76s -> 4380.76s]  an
+[4380.76s -> 4381.76s]  integer
+[4381.76s -> 4382.76s]  then what
+[4382.76s -> 4383.76s]  is happening
+[4383.76s -> 4384.76s]  is the
+[4384.76s -> 4385.76s]  first operation
+[4385.76s -> 4386.76s]  is loading
+[4386.76s -> 4387.76s]  the cache
+[4387.76s -> 4388.76s]  line and
+[4388.76s -> 4389.76s]  the
+[4389.76s -> 4390.76s]  the void
+[4390.76s -> 4391.76s]  you know
+[4391.76s -> 4392.76s]  having to
+[4392.76s -> 4393.76s]  understand
+[4393.76s -> 4394.76s]  anything of
+[4394.76s -> 4395.76s]  the hardware
+[4395.76s -> 4396.76s]  implementation
+[4396.76s -> 4397.76s]  exactly and
+[4397.76s -> 4398.76s]  whether integer
+[4398.76s -> 4399.76s]  operations are
+[4399.76s -> 4400.76s]  atomic or
+[4400.76s -> 4401.76s]  not or
+[4401.76s -> 4402.76s]  writing to 64
+[4402.76s -> 4403.76s]  bit 64
+[4403.76s -> 4404.76s]  bit memory
+[4404.76s -> 4405.76s]  values and
+[4405.76s -> 4406.76s]  atomic operation
+[4406.76s -> 4407.76s]  you know we
+[4407.76s -> 4408.76s]  use the
+[4408.76s -> 4409.76s]  uh the
+[4409.76s -> 4410.76s]  RISC-V
+[4410.76s -> 4411.76s]  operation that
+[4411.76s -> 4412.76s]  is guaranteed
+[4412.76s -> 4413.76s]  to be executed
+[4413.76s -> 4414.76s]  atomically
+[4414.76s -> 4415.76s]  does that make
+[4415.76s -> 4416.76s]  sense
+[4416.76s -> 4417.76s]  yes
+[4417.76s -> 4418.76s]  okay so just
+[4418.76s -> 4419.76s]  uh
+[4419.76s -> 4420.76s]  just for
+[4420.76s -> 4421.76s]  your amusement
+[4421.76s -> 4422.76s]  uh
+[4422.76s -> 4423.76s]  the atomic
+[4423.76s -> 4424.76s]  swap is not
+[4424.76s -> 4425.76s]  the only
+[4425.76s -> 4426.76s]  instruction that
+[4426.76s -> 4427.76s]  exists
+[4427.76s -> 4428.76s]  so here's the
+[4428.76s -> 4429.76s]  RISC-V
+[4429.76s -> 4430.76s]  manual uh
+[4430.76s -> 4431.76s]  and you know
+[4431.76s -> 4432.76s]  it lists a
+[4432.76s -> 4433.76s]  whole bunch of
+[4433.76s -> 4434.76s]  the atomic
+[4434.76s -> 4435.76s]  operations so
+[4435.76s -> 4436.76s]  there's an
+[4436.76s -> 4437.76s]  atomic ends
+[4437.76s -> 4438.76s]  an atomic
+[4438.76s -> 4439.76s]  or there's
+[4439.76s -> 4440.76s]  a max min
+[4440.76s -> 4441.76s]  that all
+[4441.76s -> 4442.76s]  uh can read
+[4442.76s -> 4443.76s]  and write
+[4443.76s -> 4444.76s]  a value in
+[4444.76s -> 4445.76s]  an atomic
+[4445.76s -> 4446.76s]  operation
+[4446.76s -> 4447.76s]  okay so
+[4447.76s -> 4448.76s]  there's a couple
+[4448.76s -> 4449.76s]  other things
+[4449.76s -> 4450.76s]  that i want
+[4450.76s -> 4451.76s]  to point out
+[4451.76s -> 4452.76s]  uh in this
+[4452.76s -> 4453.76s]  particular
+[4453.76s -> 4454.76s]  implementation
+[4454.76s -> 4455.76s]  um and
+[4455.76s -> 4456.76s]  let me start
+[4456.76s -> 4457.76s]  again and go
+[4457.76s -> 4458.76s]  back to
+[4458.76s -> 4459.76s]  acquire
+[4459.76s -> 4460.76s]  uh so one
+[4460.76s -> 4461.76s]  of the first
+[4461.76s -> 4462.76s]  things that
+[4462.76s -> 4463.76s]  the acquire
+[4463.76s -> 4464.76s]  function does
+[4464.76s -> 4466.76s]  uh is it
+[4466.76s -> 4467.76s]  uh turns off
+[4467.76s -> 4468.76s]  interrupts
+[4468.76s -> 4469.76s]  and it'd be
+[4469.76s -> 4470.76s]  good to
+[4470.76s -> 4471.76s]  understand why
+[4471.76s -> 4472.76s]  that is the
+[4472.76s -> 4473.76s]  case and so
+[4473.76s -> 4474.76s]  for now i'm
+[4474.76s -> 4475.76s]  going to go
+[4475.76s -> 4476.76s]  back to the
+[4476.76s -> 4477.76s]  code and you
+[4477.76s -> 4478.76s]  think a little
+[4478.76s -> 4479.76s]  bit about this
+[4479.76s -> 4480.76s]  uh and so we're
+[4480.76s -> 4481.76s]  going to think
+[4481.76s -> 4482.76s]  about the case
+[4482.76s -> 4483.76s]  where
+[4483.76s -> 4484.76s]  uh
+[4484.76s -> 4485.76s]  acquired is
+[4485.76s -> 4486.76s]  actually maybe
+[4486.76s -> 4487.76s]  incorrectly
+[4487.76s -> 4488.76s]  implemented and
+[4488.76s -> 4489.76s]  does not turn
+[4489.76s -> 4490.76s]  off interrupts
+[4490.76s -> 4491.76s]  so the way
+[4491.76s -> 4492.76s]  to think about
+[4492.76s -> 4493.76s]  this is if we go
+[4493.76s -> 4494.76s]  through your
+[4494.76s -> 4495.76s]  proceed and
+[4495.76s -> 4496.76s]  here let's say
+[4496.76s -> 4497.76s]  your procedure
+[4497.76s -> 4498.76s]  runs and
+[4498.76s -> 4499.76s]  uh acquires
+[4499.76s -> 4500.76s]  the lock and
+[4500.76s -> 4501.76s]  but does not
+[4501.76s -> 4502.76s]  turn off
+[4502.76s -> 4503.76s]  interrupts what
+[4503.76s -> 4504.76s]  can happen
+[4505.76s -> 4506.76s]  if everybody a
+[4506.76s -> 4507.76s]  couple seconds
+[4507.76s -> 4508.76s]  to think about
+[4508.76s -> 4509.76s]  it uh but if
+[4509.76s -> 4510.76s]  you have an
+[4510.76s -> 4511.76s]  idea or why
+[4511.76s -> 4512.76s]  it might be
+[4512.76s -> 4513.76s]  wrong you
+[4513.76s -> 4514.76s]  know like
+[4514.76s -> 4515.76s]  uh jump in
+[4515.76s -> 4516.76s]  um perhaps
+[4516.76s -> 4517.76s]  it could be
+[4517.76s -> 4518.76s]  um interrupted
+[4518.76s -> 4519.76s]  because of um
+[4519.76s -> 4520.76s]  because of the
+[4520.76s -> 4521.76s]  clock and
+[4521.76s -> 4522.76s]  then something
+[4522.76s -> 4523.76s]  happens or
+[4523.76s -> 4524.76s]  something
+[4524.76s -> 4525.76s]  happens or
+[4525.76s -> 4526.76s]  something
+[4526.76s -> 4527.76s]  happens or
+[4527.76s -> 4528.76s]  something
+[4528.76s -> 4529.76s]  happens or
+[4529.76s -> 4530.76s]  something
+[4530.76s -> 4531.76s]  happens or
+[4531.76s -> 4532.76s]  something
+[4532.76s -> 4533.76s]  happens or
+[4533.76s -> 4534.76s]  something
+[4534.76s -> 4535.76s]  happens and
+[4535.76s -> 4536.76s]  it needs to
+[4536.76s -> 4537.76s]  print something
+[4537.76s -> 4538.76s]  else and it
+[4538.76s -> 4539.76s]  tries to do
+[4539.76s -> 4540.76s]  your put C
+[4540.76s -> 4541.76s]  again but
+[4541.76s -> 4542.76s]  the lock is
+[4542.76s -> 4543.76s]  already taken
+[4543.76s -> 4544.76s]  yeah that might
+[4544.76s -> 4545.76s]  be a possible
+[4545.76s -> 4546.76s]  scenario uh
+[4546.76s -> 4547.76s]  there's a much
+[4547.76s -> 4548.76s]  more direct
+[4548.76s -> 4549.76s]  example for this
+[4549.76s -> 4550.76s]  so let's say
+[4550.76s -> 4551.76s]  you are put
+[4551.76s -> 4552.76s]  C you know
+[4552.76s -> 4553.76s]  grows the lock
+[4553.76s -> 4554.76s]  and the user
+[4554.76s -> 4555.76s]  is basically
+[4555.76s -> 4556.76s]  transmitting some
+[4556.76s -> 4557.76s]  character so
+[4557.76s -> 4558.76s]  one that you
+[4558.76s -> 4559.76s]  already done
+[4559.76s -> 4560.76s]  transmitting
+[4560.76s -> 4561.76s]  character what
+[4561.76s -> 4562.76s]  does it do
+[4562.76s -> 4563.76s]  and your
+[4563.76s -> 4564.76s]  interrupt runs
+[4564.76s -> 4565.76s]  and what does
+[4565.76s -> 4566.76s]  your interrupt
+[4566.76s -> 4567.76s]  do
+[4567.76s -> 4568.76s]  it grabs the
+[4568.76s -> 4569.76s]  same lock
+[4569.76s -> 4570.76s]  you know that
+[4570.76s -> 4571.76s]  the put C is
+[4571.76s -> 4572.76s]  holding right
+[4572.76s -> 4573.76s]  so what will
+[4573.76s -> 4574.76s]  happen here
+[4574.76s -> 4575.76s]  if there's
+[4575.76s -> 4576.76s]  only one CPU
+[4576.76s -> 4577.76s]  and so there's
+[4577.76s -> 4578.76s]  no other CPU
+[4578.76s -> 4579.76s]  where this
+[4579.76s -> 4580.76s]  interrupt could
+[4580.76s -> 4581.76s]  be running
+[4581.76s -> 4582.76s]  well we have
+[4582.76s -> 4583.76s]  a deadlock right
+[4583.76s -> 4584.76s]  because the
+[4584.76s -> 4585.76s]  current CPU is
+[4585.76s -> 4586.76s]  holding the
+[4586.76s -> 4587.76s]  lock as part
+[4587.76s -> 4588.76s]  of you put
+[4588.76s -> 4589.76s]  C then later
+[4589.76s -> 4590.76s]  the interrupt
+[4590.76s -> 4591.76s]  came in and
+[4591.76s -> 4592.76s]  actually
+[4592.76s -> 4593.76s]  helped in fact
+[4593.76s -> 4594.76s]  you know in
+[4594.76s -> 4595.76s]  the case of
+[4595.76s -> 4596.76s]  xv6 you
+[4596.76s -> 4597.76s]  know we'll
+[4597.76s -> 4598.76s]  get a panic
+[4598.76s -> 4599.76s]  you know because
+[4599.76s -> 4600.76s]  you know the
+[4600.76s -> 4601.76s]  same CPU is
+[4601.76s -> 4602.76s]  actually trying to
+[4602.76s -> 4603.76s]  acquire the
+[4603.76s -> 4604.76s]  same walk
+[4604.76s -> 4605.76s]  again
+[4605.76s -> 4606.76s]  so basically
+[4606.76s -> 4607.76s]  you know what
+[4607.76s -> 4608.76s]  acquiring or spin
+[4608.76s -> 4609.76s]  lock deals with
+[4609.76s -> 4610.76s]  sort of two
+[4610.76s -> 4611.76s]  different types
+[4611.76s -> 4612.76s]  of concurrency
+[4612.76s -> 4613.76s]  you know one
+[4613.76s -> 4614.76s]  there's concurrency
+[4614.76s -> 4615.76s]  between two
+[4615.76s -> 4616.76s]  different CPUs
+[4616.76s -> 4617.76s]  and we got to
+[4617.76s -> 4618.76s]  make sure that
+[4618.76s -> 4619.76s]  for example if
+[4619.76s -> 4620.76s]  the interrupt
+[4620.76s -> 4621.76s]  but if they're
+[4621.76s -> 4622.76s]  running the same
+[4622.76s -> 4623.76s]  CPU we got to
+[4623.76s -> 4624.76s]  make sure that
+[4624.76s -> 4625.76s]  it's still a
+[4625.76s -> 4626.76s]  topic and that
+[4626.76s -> 4627.76s]  is not being
+[4627.76s -> 4628.76s]  interrupted and
+[4628.76s -> 4629.76s]  therefore we
+[4629.76s -> 4630.76s]  actually turn
+[4630.76s -> 4631.76s]  the interrupts
+[4631.76s -> 4632.76s]  off in
+[4632.76s -> 4633.76s]  acquire and
+[4633.76s -> 4634.76s]  they're only
+[4634.76s -> 4635.76s]  turned on
+[4635.76s -> 4636.76s]  again at the
+[4636.76s -> 4637.76s]  end of release
+[4637.76s -> 4638.76s]  when the lock
+[4638.76s -> 4639.76s]  actually has
+[4639.76s -> 4640.76s]  been released
+[4640.76s -> 4641.76s]  and at that
+[4641.76s -> 4642.76s]  point it's safe
+[4642.76s -> 4643.76s]  again you know to
+[4643.76s -> 4644.76s]  take these
+[4644.76s -> 4645.76s]  interrupts because
+[4645.76s -> 4646.76s]  the lock
+[4646.76s -> 4647.76s]  actually is not
+[4647.76s -> 4648.76s]  released anymore
+[4648.76s -> 4649.76s]  or is not
+[4649.76s -> 4652.76s]  released
+[4655.76s -> 4656.76s]  okay there's
+[4656.76s -> 4657.76s]  one more subtle
+[4657.76s -> 4658.76s]  thing in
+[4658.76s -> 4659.76s]  this
+[4659.76s -> 4660.76s]  implementation that
+[4660.76s -> 4661.76s]  i want to
+[4661.76s -> 4662.76s]  talk about
+[4662.76s -> 4663.76s]  and
+[4663.76s -> 4664.76s]  that we need
+[4664.76s -> 4669.76s]  to deal with
+[4669.76s -> 4672.76s]  and that is
+[4672.76s -> 4673.76s]  memory ordering
+[4673.76s -> 4674.76s]  so uh
+[4674.76s -> 4675.76s]  you know
+[4675.76s -> 4676.76s]  example if
+[4676.76s -> 4677.76s]  you think
+[4677.76s -> 4678.76s]  about you
+[4678.76s -> 4679.76s]  know lock
+[4679.76s -> 4680.76s]  is let's
+[4680.76s -> 4681.76s]  say acquire
+[4681.76s -> 4682.76s]  sets locks
+[4682.76s -> 4683.76s]  you know to
+[4683.76s -> 4684.76s]  one uh
+[4684.76s -> 4685.76s]  maybe we have
+[4685.76s -> 4686.76s]  a critical
+[4686.76s -> 4687.76s]  section in
+[4687.76s -> 4688.76s]  which you
+[4688.76s -> 4689.76s]  know x
+[4689.76s -> 4690.76s]  is x plus
+[4690.76s -> 4691.76s]  one and
+[4691.76s -> 4692.76s]  uh and
+[4692.76s -> 4693.76s]  then acquire
+[4693.76s -> 4694.76s]  you know
+[4694.76s -> 4695.76s]  release you
+[4695.76s -> 4696.76s]  know says
+[4696.76s -> 4697.76s]  lock to
+[4697.76s -> 4698.76s]  zero so
+[4698.76s -> 4699.76s]  you sort of
+[4699.76s -> 4700.76s]  think about
+[4700.76s -> 4701.76s]  the instruction
+[4701.76s -> 4702.76s]  stream that's
+[4702.76s -> 4703.76s]  being executed
+[4703.76s -> 4704.76s]  on the
+[4704.76s -> 4705.76s]  particular CPU
+[4705.76s -> 4706.76s]  you know so
+[4706.76s -> 4707.76s]  these are sort
+[4707.76s -> 4708.76s]  of the
+[4708.76s -> 4709.76s]  instructions
+[4709.76s -> 4710.76s]  that are being
+[4710.76s -> 4711.76s]  executed right
+[4711.76s -> 4712.76s]  now if the
+[4712.76s -> 4713.76s]  code were
+[4713.76s -> 4714.76s]  just purely
+[4714.76s -> 4715.76s]  uh sequential
+[4715.76s -> 4716.76s]  uh
+[4716.76s -> 4717.76s]  the
+[4717.76s -> 4718.76s]  the compiler
+[4718.76s -> 4719.76s]  or the
+[4719.76s -> 4720.76s]  uh
+[4720.76s -> 4721.76s]  processor
+[4721.76s -> 4722.76s]  could actually
+[4722.76s -> 4723.76s]  or reorder
+[4723.76s -> 4724.76s]  instructions
+[4724.76s -> 4725.76s]  you know just
+[4725.76s -> 4726.76s]  to get better
+[4726.76s -> 4727.76s]  performance
+[4727.76s -> 4728.76s]  uh so for
+[4728.76s -> 4729.76s]  example uh if it
+[4729.76s -> 4730.76s]  were a sequential
+[4730.76s -> 4731.76s]  stream would
+[4731.76s -> 4732.76s]  change this
+[4732.76s -> 4733.76s]  instruction to
+[4733.76s -> 4734.76s]  afterwards
+[4734.76s -> 4735.76s]  would that
+[4735.76s -> 4736.76s]  change the
+[4736.76s -> 4737.76s]  correctness of
+[4737.76s -> 4738.76s]  the single
+[4738.76s -> 4739.76s]  stream of
+[4739.76s -> 4740.76s]  execution
+[4740.76s -> 4741.76s]  you know not
+[4741.76s -> 4742.76s]  really right
+[4742.76s -> 4743.76s]  because locked
+[4743.76s -> 4744.76s]  and x are
+[4744.76s -> 4745.76s]  totally independent
+[4745.76s -> 4746.76s]  of each other
+[4746.76s -> 4747.76s]  there's no
+[4747.76s -> 4748.76s]  relation to it
+[4748.76s -> 4749.76s]  so it'd be
+[4749.76s -> 4750.76s]  perfectly fine if
+[4750.76s -> 4751.76s]  it were a
+[4751.76s -> 4752.76s]  sequential execution
+[4752.76s -> 4753.76s]  that the x
+[4753.76s -> 4754.76s]  you know has
+[4754.76s -> 4755.76s]  moved after
+[4755.76s -> 4756.76s]  the locked
+[4756.76s -> 4757.76s]  uh one zero
+[4757.76s -> 4758.76s]  uh so that
+[4758.76s -> 4759.76s]  you know on
+[4759.76s -> 4760.76s]  the single
+[4760.76s -> 4761.76s]  single serial
+[4761.76s -> 4762.76s]  execution
+[4762.76s -> 4763.76s]  that's okay
+[4763.76s -> 4764.76s]  and in fact
+[4764.76s -> 4765.76s]  so in fact
+[4765.76s -> 4766.76s]  processors
+[4766.76s -> 4767.76s]  you know do
+[4767.76s -> 4768.76s]  this all the
+[4768.76s -> 4769.76s]  time you know
+[4769.76s -> 4770.76s]  they do
+[4770.76s -> 4771.76s]  expectively
+[4771.76s -> 4772.76s]  execute stuff
+[4772.76s -> 4773.76s]  uh or
+[4773.76s -> 4774.76s]  expectively
+[4774.76s -> 4775.76s]  execute instructions
+[4775.76s -> 4776.76s]  and so then
+[4776.76s -> 4777.76s]  that can
+[4777.76s -> 4778.76s]  result in
+[4778.76s -> 4779.76s]  basically these
+[4779.76s -> 4780.76s]  instructions
+[4780.76s -> 4781.76s]  reorderings
+[4781.76s -> 4782.76s]  uh the compiler
+[4782.76s -> 4783.76s]  does it too
+[4783.76s -> 4784.76s]  you know to
+[4784.76s -> 4785.76s]  maybe optimize
+[4785.76s -> 4786.76s]  some code path
+[4786.76s -> 4787.76s]  and also will
+[4787.76s -> 4788.76s]  reorder instructions
+[4788.76s -> 4789.76s]  as long as
+[4789.76s -> 4790.76s]  it's the same
+[4790.76s -> 4791.76s]  serial execution
+[4791.76s -> 4792.76s]  but clearly
+[4792.76s -> 4793.76s]  during concurrent
+[4793.76s -> 4794.76s]  execution this
+[4794.76s -> 4795.76s]  would be a
+[4795.76s -> 4796.76s]  disaster right
+[4796.76s -> 4797.76s]  because if
+[4797.76s -> 4798.76s]  locked was
+[4798.76s -> 4799.76s]  our acquire
+[4799.76s -> 4800.76s]  and this was
+[4800.76s -> 4801.76s]  our release
+[4801.76s -> 4802.76s]  then basically
+[4802.76s -> 4803.76s]  what we've done
+[4803.76s -> 4804.76s]  we move to
+[4804.76s -> 4805.76s]  a critical
+[4805.76s -> 4806.76s]  section outside
+[4806.76s -> 4807.76s]  of the
+[4807.76s -> 4808.76s]  the acquiring
+[4808.76s -> 4809.76s]  release and
+[4809.76s -> 4810.76s]  that'd be
+[4810.76s -> 4811.76s]  totally incorrect
+[4811.76s -> 4812.76s]  and so that's
+[4812.76s -> 4813.76s]  wrong
+[4813.76s -> 4814.76s]  wronging in
+[4814.76s -> 4815.76s]  a concurrent
+[4815.76s -> 4816.76s]  execution
+[4817.76s -> 4818.76s]  and so you
+[4818.76s -> 4819.76s]  know to
+[4819.76s -> 4820.76s]  forbid or tell
+[4820.76s -> 4821.76s]  the compiler
+[4821.76s -> 4822.76s]  and the
+[4822.76s -> 4823.76s]  hardware not
+[4823.76s -> 4824.76s]  you know to
+[4824.76s -> 4825.76s]  do this
+[4825.76s -> 4826.76s]  there's
+[4826.76s -> 4827.76s]  you know
+[4827.76s -> 4828.76s]  something what's
+[4828.76s -> 4829.76s]  called a
+[4829.76s -> 4830.76s]  memory fence
+[4830.76s -> 4831.76s]  or something
+[4831.76s -> 4832.76s]  kind of
+[4832.76s -> 4833.76s]  synchronized
+[4833.76s -> 4834.76s]  there's
+[4834.76s -> 4835.76s]  instruction that
+[4835.76s -> 4836.76s]  basically says
+[4836.76s -> 4837.76s]  like any
+[4837.76s -> 4838.76s]  motor stores
+[4838.76s -> 4839.76s]  before this
+[4839.76s -> 4840.76s]  point you
+[4840.76s -> 4841.76s]  are not
+[4841.76s -> 4842.76s]  allowed to
+[4842.76s -> 4843.76s]  move beyond
+[4843.76s -> 4844.76s]  this point
+[4844.76s -> 4845.76s]  and so
+[4845.76s -> 4846.76s]  uh
+[4846.76s -> 4847.76s]  updated after
+[4847.76s -> 4848.76s]  the acquire
+[4848.76s -> 4849.76s]  and before
+[4849.76s -> 4850.76s]  the release
+[4850.76s -> 4851.76s]  that x plus
+[4851.76s -> 4852.76s]  x plus one
+[4852.76s -> 4853.76s]  has to stay
+[4853.76s -> 4854.76s]  before you
+[4854.76s -> 4855.76s]  know this
+[4855.76s -> 4856.76s]  particular memory
+[4856.76s -> 4857.76s]  synchronization
+[4857.76s -> 4858.76s]  point and
+[4858.76s -> 4859.76s]  so it will
+[4859.76s -> 4860.76s]  not be there
+[4860.76s -> 4861.76s]  will be no
+[4861.76s -> 4862.76s]  trouble uh
+[4862.76s -> 4863.76s]  with uh
+[4863.76s -> 4864.76s]  memory ordering
+[4864.76s -> 4865.76s]  so this is
+[4865.76s -> 4866.76s]  the reason
+[4866.76s -> 4867.76s]  why sync
+[4867.76s -> 4868.76s]  synchronizes
+[4868.76s -> 4869.76s]  there both
+[4869.76s -> 4870.76s]  in the
+[4870.76s -> 4871.76s]  release and
+[4871.76s -> 4872.76s]  also there's
+[4872.76s -> 4873.76s]  one in the
+[4873.76s -> 4874.76s]  acquire
+[4874.76s -> 4875.76s]  is it
+[4875.76s -> 4876.76s]  is it by
+[4876.76s -> 4877.76s]  convention that
+[4877.76s -> 4878.76s]  the start
+[4878.76s -> 4879.76s]  of
+[4879.76s -> 4880.76s]  um
+[4880.76s -> 4881.76s]  the port
+[4881.76s -> 4882.76s]  so i guess
+[4882.76s -> 4883.76s]  i guess
+[4883.76s -> 4884.76s]  the compiler
+[4884.76s -> 4885.76s]  could figure
+[4885.76s -> 4886.76s]  out that
+[4886.76s -> 4887.76s]  there is an
+[4887.76s -> 4888.76s]  instruction
+[4888.76s -> 4889.76s]  before the
+[4889.76s -> 4890.76s]  lock is even
+[4890.76s -> 4891.76s]  acquired and
+[4891.76s -> 4892.76s]  that it can
+[4892.76s -> 4893.76s]  be just as
+[4893.76s -> 4894.76s]  well moved
+[4894.76s -> 4895.76s]  after the lock
+[4895.76s -> 4896.76s]  is released
+[4896.76s -> 4897.76s]  um
+[4897.76s -> 4898.76s]  can that
+[4898.76s -> 4899.76s]  happen or
+[4899.76s -> 4900.76s]  will it
+[4900.76s -> 4901.76s]  encounter the
+[4901.76s -> 4902.76s]  barrier and
+[4902.76s -> 4903.76s]  see that
+[4903.76s -> 4904.76s]  you will see
+[4904.76s -> 4905.76s]  you know in
+[4905.76s -> 4906.76s]  this case correct
+[4906.76s -> 4907.76s]  acquire has a
+[4907.76s -> 4908.76s]  barrier and
+[4908.76s -> 4909.76s]  release has a
+[4909.76s -> 4910.76s]  barrier so
+[4910.76s -> 4911.76s]  anything that
+[4911.76s -> 4912.76s]  happens before
+[4912.76s -> 4913.76s]  locked in
+[4913.76s -> 4914.76s]  step one will
+[4914.76s -> 4915.76s]  happen before
+[4915.76s -> 4916.76s]  that and will
+[4916.76s -> 4917.76s]  never pass
+[4917.76s -> 4918.76s]  that instruction
+[4918.76s -> 4919.76s]  so this is a
+[4919.76s -> 4920.76s]  barrier so
+[4920.76s -> 4921.76s]  it will this
+[4921.76s -> 4922.76s]  is barrier one
+[4922.76s -> 4923.76s]  and this is
+[4923.76s -> 4924.76s]  barrier two and
+[4924.76s -> 4925.76s]  so it means
+[4925.76s -> 4926.76s]  that any
+[4926.76s -> 4927.76s]  instruction before
+[4927.76s -> 4928.76s]  here stay
+[4928.76s -> 4929.76s]  here and
+[4929.76s -> 4930.76s]  instructions
+[4930.76s -> 4931.76s]  between will
+[4931.76s -> 4932.76s]  happen between
+[4932.76s -> 4933.76s]  after the
+[4933.76s -> 4934.76s]  release
+[4934.76s -> 4935.76s]  okay
+[4935.76s -> 4936.76s]  okay okay
+[4936.76s -> 4937.76s]  so i'm running
+[4937.76s -> 4938.76s]  uh you know
+[4938.76s -> 4939.76s]  close to the
+[4939.76s -> 4940.76s]  end uh so let
+[4940.76s -> 4941.76s]  me just
+[4941.76s -> 4942.76s]  actually uh
+[4942.76s -> 4943.76s]  uh wrap up
+[4943.76s -> 4944.76s]  here
+[4944.76s -> 4945.76s]  so uh
+[4945.76s -> 4946.76s]  so locks
+[4946.76s -> 4947.76s]  you know
+[4947.76s -> 4948.76s]  locks are
+[4948.76s -> 4949.76s]  good for
+[4949.76s -> 4950.76s]  correctness
+[4950.76s -> 4951.76s]  uh
+[4951.76s -> 4952.76s]  but can be
+[4952.76s -> 4953.76s]  bad for
+[4953.76s -> 4954.76s]  performance
+[4954.76s -> 4955.76s]  uh which is
+[4955.76s -> 4956.76s]  sort of a
+[4956.76s -> 4957.76s]  bummer correct
+[4957.76s -> 4958.76s]  because one
+[4958.76s -> 4959.76s]  reason we
+[4959.76s -> 4960.76s]  actually you know
+[4960.76s -> 4961.76s]  got into locks
+[4961.76s -> 4962.76s]  is basically to
+[4962.76s -> 4963.76s]  get the
+[4963.76s -> 4964.76s]  barrier in
+[4964.76s -> 4965.76s]  order to
+[4965.76s -> 4966.76s]  get the
+[4966.76s -> 4967.76s]  barrier in
+[4967.76s -> 4968.76s]  order to
+[4968.76s -> 4969.76s]  get the
+[4969.76s -> 4970.76s]  barrier in
+[4970.76s -> 4971.76s]  order to
+[4971.76s -> 4972.76s]  get the
+[4972.76s -> 4973.76s]  barrier in
+[4973.76s -> 4974.76s]  order to
+[4974.76s -> 4975.76s]  get the
+[4975.76s -> 4976.76s]  barrier in
+[4976.76s -> 4977.76s]  order to
+[4977.76s -> 4978.76s]  get the
+[4978.76s -> 4979.76s]  unlock
+[4979.76s -> 4980.76s]  done
+[4980.76s -> 4981.76s]  so locks
+[4981.76s -> 4982.76s]  is basically
+[4982.76s -> 4983.76s]  to get
+[4983.76s -> 4984.76s]  correctness
+[4984.76s -> 4985.76s]  during
+[4985.76s -> 4986.76s]  stains so
+[4986.76s -> 4987.76s]  locks
+[4987.76s -> 4988.76s]  actually
+[4988.76s -> 4989.76s]  limit
+[4989.76s -> 4990.76s]  execution
+[4991.76s -> 4992.76s]  that's one
+[4992.76s -> 4993.76s]  and two
+[4993.76s -> 4994.76s]  locks
+[4994.76s -> 4995.76s]  complicate
+[4995.76s -> 4996.76s]  programming
+[4996.76s -> 4997.76s]  and you
+[4997.76s -> 4998.76s]  will experience
+[4998.76s -> 4999.76s]  that in some
+[4999.76s -> 5000.76s]  of the
+[5000.76s -> 5001.76s]  laps that
+[5001.76s -> 5002.76s]  we're going
+[5002.76s -> 5003.76s]  to be doing
+[5003.76s -> 5004.76s]  in fact from
+[5004.76s -> 5005.76s]  now on we'll
+[5005.76s -> 5006.76s]  see locks
+[5006.76s -> 5007.76s]  showing up
+[5007.76s -> 5009.60s]  are there and what they protect.
+[5010.64s -> 5012.20s]  But they're sort of inherent
+[5012.20s -> 5014.32s]  if you need to do parallel programming,
+[5014.32s -> 5016.52s]  that you need to use locks.
+[5017.96s -> 5020.48s]  And so, if you want to avoid the complications
+[5020.48s -> 5023.40s]  due to locks, there's a couple of things you could do.
+[5023.40s -> 5025.20s]  Don't share if you don't have to.
+[5030.14s -> 5032.24s]  If you don't have shared data structures,
+[5033.60s -> 5036.08s]  these race conditions cannot happen.
+[5036.08s -> 5038.68s]  And so, you don't need locks.
+[5038.68s -> 5041.84s]  And so, you don't need this complicated programming.
+[5041.84s -> 5043.96s]  But typically, you will have some shared data structures
+[5043.96s -> 5046.48s]  and you will need locks.
+[5046.48s -> 5049.28s]  And I think the thing to do is start with coarse-grained
+[5051.38s -> 5054.88s]  and then move to fine-grained,
+[5054.88s -> 5057.44s]  if necessary, based on measurements.
+[5057.44s -> 5060.36s]  You wanna make sure that the lock is actually contented
+[5060.36s -> 5062.72s]  before actually you start redesigning.
+[5062.72s -> 5064.88s]  And then finally, use a race detector
+[5064.88s -> 5069.16s]  to one of these race detector tools
+[5069.16s -> 5073.20s]  to actually find problems or race conditions
+[5073.20s -> 5074.60s]  because you put the locks in the wrong,
+[5074.60s -> 5076.60s]  or you put the acquiring the releases in the wrong place.
+[5076.60s -> 5080.04s]  And in fact, you still have races.
+[5080.04s -> 5082.40s]  Okay, so this is a quick introduction to locks.
+[5082.40s -> 5084.76s]  We're gonna talk a lot more about locks
+[5084.76s -> 5086.56s]  basically for the rest of the semester that will show up.
+[5086.56s -> 5087.72s]  And we'll talk a little bit more
+[5087.72s -> 5089.72s]  about lock-free programming in the end
+[5089.72s -> 5092.84s]  and see how that is done in kernels.
+[5092.88s -> 5095.00s]  Okay, so let me stop here
+[5095.00s -> 5097.64s]  so that anybody who has to go to somewhere else can go.
+[5097.64s -> 5100.32s]  But if you have any more questions, please feel free
+[5100.32s -> 5101.16s]  to ask them.
+[5102.04s -> 5104.24s]  We have a question in the chat.
+[5104.24s -> 5106.14s]  Isn't the fence instruction unnecessary
+[5106.14s -> 5108.08s]  because the AMO swap instruction
+[5108.08s -> 5110.10s]  can have the acquire release ordering?
+[5111.76s -> 5113.16s]  Yeah, okay.
+[5114.52s -> 5117.84s]  So the two things, the sync instructions,
+[5117.84s -> 5120.32s]  they're both for the compiler and for the hardware.
+[5122.84s -> 5123.68s]  Okay.
+[5132.24s -> 5134.24s]  Yeah, I'm jumping off to start office hours,
+[5134.24s -> 5136.28s]  but I think there's still more questions in the chat.
+[5136.28s -> 5138.32s]  How do you do it for the compiler only?
+[5140.64s -> 5143.12s]  The compiler knows for which architecture it's compiling.
+[5143.12s -> 5145.68s]  And so we will know whether it actually has to insert
+[5145.68s -> 5148.48s]  the appropriate fences for whatever architecture
+[5148.48s -> 5152.00s]  it's running on and whatever memory consistency model it has.
+[5152.08s -> 5154.04s]  So this gets into a little bit more complicated discussion
+[5154.04s -> 5157.40s]  is that every piece of hardware has a memory model
+[5157.40s -> 5159.48s]  and the compiler has to decide,
+[5160.80s -> 5163.32s]  given the memory model for that particular architecture,
+[5163.32s -> 5165.56s]  what actually it can do, what it cannot do.
+[5167.00s -> 5169.12s]  I guess my question was that,
+[5169.12s -> 5171.60s]  the fence instruction only becomes unnecessary
+[5171.60s -> 5176.60s]  if you call AMO swap, like .w.release,
+[5177.60s -> 5182.60s]  and like putting in the sync in there
+[5185.72s -> 5189.48s]  that will sync with the compiler ordering
+[5189.48s -> 5193.92s]  and then the memory ordering
+[5193.92s -> 5196.88s]  and the out of ordering machinery
+[5196.88s -> 5198.40s]  using the fence instruction as well.
+[5198.40s -> 5200.20s]  The fence instruction is only unnecessary
+[5200.20s -> 5202.32s]  in the case that you do .RL.
+[5202.32s -> 5204.28s]  So it seems like it wouldn't detect that.
+[5204.28s -> 5205.76s]  So how would you do it?
+[5205.84s -> 5209.88s]  So the compiler enforces the ordering on its end,
+[5209.88s -> 5213.60s]  but you already cover it using the AMO swap.
+[5213.60s -> 5217.32s]  So it's like, if you, it's a very good question.
+[5217.32s -> 5218.96s]  And, you know, it's a more sophisticated
+[5218.96s -> 5221.36s]  acquiring these implementations would be,
+[5221.36s -> 5225.04s]  we were like under specialized acquire
+[5225.04s -> 5226.64s]  or release implementation or at least implementation
+[5226.64s -> 5228.64s]  for response, we would probably do more sophisticated
+[5228.64s -> 5230.40s]  things than we do, where we pretty of course,
+[5230.40s -> 5232.64s]  grain by just issuing the fence instruction.
+[5233.56s -> 5238.56s]  The, but it's slightly complicated.
+[5238.56s -> 5242.68s]  And so if you're interested in this,
+[5242.68s -> 5247.36s]  the memory model for the RISC-V is really complicated.
+[5247.36s -> 5250.36s]  So if you look at the instruction manual
+[5250.36s -> 5252.28s]  for the unprivileged instructions,
+[5252.28s -> 5256.00s]  there's a whole chapter dedicated to memory ordering
+[5256.00s -> 5257.40s]  and tells you what they have to,
+[5257.40s -> 5261.64s]  what the compiler should do in this particular case.
+[5262.64s -> 5267.20s]  So you're saying that the compiler would pick up
+[5267.20s -> 5270.12s]  on the fact that we just put that assembly instruction
+[5270.12s -> 5272.48s]  inside of there and it wouldn't reorder
+[5272.48s -> 5274.48s]  any of the memory accesses on its own?
+[5274.48s -> 5278.88s]  Sorry, the synchronized library function
+[5278.88s -> 5280.08s]  is a library function, right?
+[5280.08s -> 5282.88s]  Then it can be implemented in different ways.
+[5282.88s -> 5285.68s]  And this is one particular implementation
+[5285.68s -> 5288.24s]  and the library function is provided by the compiler.
+[5290.12s -> 5292.20s]  But is there like the option for the compiler
+[5292.72s -> 5295.04s]  to do optimization where it itself moves
+[5295.04s -> 5296.76s]  the loads and stores around?
+[5297.92s -> 5299.72s]  Yes, compilers do.
+[5299.72s -> 5301.24s]  So how do you prevent that
+[5301.24s -> 5303.32s]  without emitting the fence instruction?
+[5303.32s -> 5304.32s]  That's what I was curious about.
+[5304.32s -> 5306.64s]  I guess what I'm saying is that the,
+[5308.00s -> 5310.60s]  maybe what I'm saying is that basically
+[5311.72s -> 5313.56s]  this indication, the sync synchronize
+[5313.56s -> 5315.28s]  basically both tells the compiler and the hardware,
+[5315.28s -> 5316.56s]  but the compiler could actually implement
+[5316.56s -> 5318.08s]  sync synchronize differently.
+[5318.08s -> 5320.12s]  It knows that it can't move things around,
+[5320.12s -> 5321.88s]  but it doesn't have issue and fence instruction
+[5322.48s -> 5323.32s]  on the RISC-V.
+[5323.32s -> 5324.92s]  It knew that it was running in a particular way
+[5324.92s -> 5325.76s]  on the RISC-V.
+[5330.08s -> 5332.76s]  But isn't the RISC-V memory model
+[5332.76s -> 5335.84s]  like loose enough to where the out of order machinery
+[5335.84s -> 5337.32s]  could reorganize stuff?
+[5337.32s -> 5340.00s]  So you do need like the acquire,
+[5341.04s -> 5342.84s]  like the whole point of having-
+[5342.84s -> 5347.84s]  Okay, so there are more complicated interfaces
+[5347.96s -> 5349.32s]  than sync synchronize.
+[5350.32s -> 5353.16s]  And would you give the compiler writer more,
+[5353.16s -> 5354.80s]  just the programming more freedom
+[5354.80s -> 5355.88s]  and we'll give the compiler
+[5355.88s -> 5357.68s]  and sort of decouple the compiler part
+[5357.68s -> 5358.92s]  and the processor part.
+[5360.24s -> 5361.72s]  So for example, I think there's a flag
+[5361.72s -> 5362.76s]  that you can pass in,
+[5362.76s -> 5366.44s]  to say that this is release consistent synchronize.
+[5368.24s -> 5371.16s]  I don't know whether the details right off my head,
+[5371.16s -> 5373.16s]  but if you look into this,
+[5373.16s -> 5374.84s]  this is sort of the course grade interface
+[5374.84s -> 5376.28s]  and there are more fine grade interfaces
+[5376.28s -> 5378.52s]  that give the programmer more control.
+[5378.52s -> 5380.48s]  Okay, thank you.
+[5383.20s -> 5384.72s]  I have two questions.
+[5384.72s -> 5389.72s]  One is how do you like for having multiple threads
+[5389.96s -> 5391.40s]  on one processor,
+[5391.40s -> 5393.56s]  do you argue in roughly the same way
+[5393.56s -> 5397.28s]  as we did for multiple processors?
+[5400.48s -> 5402.88s]  Can you repeat that question just to make sure I-
+[5403.88s -> 5405.40s]  So we didn't,
+[5405.40s -> 5408.36s]  I don't think we really talked about multiple threads.
+[5408.96s -> 5411.36s]  Mostly talked about multiple CPU's.
+[5411.36s -> 5415.32s]  So for multiple threads is the,
+[5415.32s -> 5418.96s]  I guess the solution the same as
+[5418.96s -> 5420.92s]  for when you have multiple CPU's
+[5420.92s -> 5423.76s]  like do you have the same arguments there?
+[5423.76s -> 5425.84s]  More or less,
+[5425.84s -> 5428.60s]  at least conceptually is the right way to think about it.
+[5428.60s -> 5430.16s]  So if you have multiple threads,
+[5430.16s -> 5431.76s]  but only one CPU,
+[5432.92s -> 5434.44s]  it's still the case that you wanna ensure
+[5434.48s -> 5438.24s]  that certain kernel code sequences are executed atomically.
+[5439.60s -> 5441.88s]  And so you still have to have a notion
+[5441.88s -> 5442.92s]  of critical sections.
+[5444.24s -> 5446.92s]  You might not need locks or releases explicitly,
+[5446.92s -> 5449.12s]  but you do need a way of sort of turning on interrupts
+[5449.12s -> 5451.24s]  off and on in a particular piece of code.
+[5452.24s -> 5455.56s]  So if you look at older operating system kernels,
+[5455.56s -> 5458.92s]  they typically don't have really lock and acquire
+[5458.92s -> 5460.40s]  in the kernel because they assume
+[5460.40s -> 5462.12s]  they're running on a single processor,
+[5462.12s -> 5464.04s]  but they do have something like locks,
+[5464.64s -> 5468.32s]  to basically turn off interrupt and interrupt on and off.
+[5470.80s -> 5472.16s]  Okay, I see.
+[5472.16s -> 5476.28s]  And my other question was actually on the slide
+[5476.28s -> 5481.28s]  with the yard picture, the buffer.
+[5485.00s -> 5485.96s]  Yeah, is it?
+[5485.96s -> 5487.04s]  Yeah, that one.
+[5487.04s -> 5489.88s]  Is it always the case that the read
+[5489.88s -> 5493.00s]  is going to be like lagging behind?
+[5493.04s -> 5494.44s]  I didn't understand that.
+[5494.44s -> 5495.28s]  Yeah, okay.
+[5496.60s -> 5497.76s]  So this goes through the display.
+[5497.76s -> 5499.20s]  Yeah, whatever is in this.
+[5499.20s -> 5500.68s]  Basically, this is the sequence of characters
+[5500.68s -> 5502.56s]  that needs to go through the display.
+[5504.60s -> 5506.32s]  And the writer basically is appending
+[5506.32s -> 5508.08s]  more and more and more characters.
+[5509.32s -> 5512.44s]  And so the writer is going that way.
+[5512.44s -> 5515.56s]  And basically the reader is following the writer
+[5515.56s -> 5516.84s]  because it can't print a character
+[5516.84s -> 5518.88s]  that hasn't been put into buffer yet.
+[5519.88s -> 5524.88s]  And so the UART puts things on the display.
+[5529.52s -> 5532.56s]  We'll start basically putting the first characters
+[5532.56s -> 5535.16s]  in this slot onto the display.
+[5535.16s -> 5536.68s]  Meanwhile, print-off could come in,
+[5536.68s -> 5538.36s]  multiple print-offs come in.
+[5538.36s -> 5539.96s]  They put more characters in here
+[5539.96s -> 5542.24s]  so that the right pointer is basically standing here.
+[5542.24s -> 5544.48s]  And then when there's one character is displayed,
+[5544.48s -> 5547.24s]  then the UART will move up this pointer
+[5547.48s -> 5549.56s]  to display the next character.
+[5549.56s -> 5552.68s]  So the UART is always lagging a little bit behind
+[5552.68s -> 5556.00s]  the writer until the point that it catches up.
+[5556.00s -> 5558.20s]  And where R and W are the same,
+[5558.20s -> 5559.52s]  and at that point basically that means
+[5559.52s -> 5561.92s]  that there's no character anymore in the buffer.
+[5563.12s -> 5564.00s]  Oh, okay, I see.
+[5564.00s -> 5565.96s]  That makes a lot more sense.
+[5565.96s -> 5567.64s]  Okay, thank you so much.
+[5567.64s -> 5568.48s]  You're welcome.
+[5570.08s -> 5571.08s]  Any more questions?
+[5571.08s -> 5576.08s]  Just us left here.
+[5577.76s -> 5578.60s]  Okay.
+[5580.88s -> 5582.64s]  All right, guys, see you later.

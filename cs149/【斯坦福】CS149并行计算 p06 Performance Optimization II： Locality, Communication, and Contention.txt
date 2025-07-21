@@ -1,0 +1,1912 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 10.44s]  So, we're getting to the end of sort of, this is lecture six.
+[10.44s -> 17.62s]  Next week is GPUs and GPU programming and lecture eight, which would be data parallel
+[17.62s -> 20.72s]  programming and data parallel thinking.
+[20.72s -> 25.38s]  And then there'll be a bit of a switch in the class, so I do a bunch of software
+[25.38s -> 29.08s]  and performance optimization lectures for the first eight lectures.
+[29.12s -> 33.28s]  And then Kumail is going to come in and tell you a little bit about hardware and things like that.
+[33.28s -> 35.28s]  So, that's where we're going.
+[35.28s -> 42.56s]  Okay, so if last time, if on Tuesday, Tuesday was about scheduling.
+[42.56s -> 46.64s]  So, we talked about different strategies for if I have a number of threads or a number
+[46.64s -> 52.48s]  of processors and I had a bunch of work to do, what are some basic techniques to make sure
+[52.48s -> 55.48s]  that the workload is distributed evenly onto all the workers
+[55.48s -> 59.20s]  without incurring too much overhead in that distribution.
+[59.20s -> 68.32s]  Today is going to be adding in the extra thinking of, it's not just about good workload balance,
+[68.32s -> 72.72s]  it often is about reducing communication and synchronization overhead.
+[72.72s -> 75.68s]  So, today is going to be a lot more about communication.
+[75.68s -> 80.92s]  So, I'm going to talk about reducing cost of communication between processors,
+[80.92s -> 83.96s]  again techniques that you as a software developer might use.
+[83.96s -> 89.16s]  And then at the end, if there's time, I'd like to go into some general program optimization tips
+[89.16s -> 92.36s]  that are not necessarily relevant to your assignments or anything like that,
+[92.36s -> 94.76s]  but now that you have so much background, it might be a good idea
+[94.76s -> 98.00s]  to talk about that kind of stuff.
+[98.00s -> 103.88s]  So, so far in this course, and in all of the assignments basically that you'll do
+[103.88s -> 107.96s]  in this course, we've assumed that all of the processors are connected
+[107.96s -> 114.96s]  to some shared memory system, or in other words, there was one address space
+[114.96s -> 119.80s]  and all threads could read and write to variables in that address space.
+[119.80s -> 124.24s]  And I've given you some hints about even though that's conceptually simple,
+[124.24s -> 129.48s]  the actual underlying implementation of the ability for all processors to read
+[129.48s -> 133.52s]  and write to all variables is actually pretty complex.
+[133.52s -> 139.08s]  For example, if you have like your multi-core CPU, that address space with the data,
+[139.08s -> 143.28s]  you know, is all of the data might be stored out in DRAM, but lots of copies
+[143.28s -> 146.32s]  of that data are stored in your various caches.
+[146.32s -> 152.56s]  And the first thing Kumail is going to talk about next week is what starts happening,
+[152.56s -> 155.68s]  or the end of next week, is what starts happening if, you know,
+[155.68s -> 161.00s]  this core makes a copy of some data, and this core makes a copy of the same address,
+[161.00s -> 162.76s]  and they both write.
+[162.76s -> 166.28s]  Now all of a sudden, we've got a real challenge because I have different parties
+[166.28s -> 171.32s]  in the system writing to the same address, there might be different values
+[171.32s -> 174.36s]  of these copies, and that can become a big mess really quickly.
+[174.36s -> 180.56s]  So we'll tell you a little bit about how modern systems keep everything coherent.
+[180.56s -> 184.96s]  If I take like, you know, kind of a standard Intel CPU these days,
+[184.96s -> 190.48s]  it has a couple of cores, there's a GPU on the same thing, there's a network
+[190.48s -> 196.60s]  on this chip that connects all those cores and gets them all out to the same memory system.
+[196.60s -> 199.72s]  And these networks can be quite complex.
+[199.72s -> 205.80s]  So for example, in Intel architectures, all of the various processors are connected
+[205.80s -> 210.32s]  together and to memory actually by a ring.
+[210.32s -> 214.68s]  So there's a, you know, like we just think about it as load and store to the value x,
+[214.68s -> 219.92s]  but load and store to value x from a processor here, this is like the four cores,
+[220.60s -> 226.28s]  is actually sending a request out on this ring that ultimately gets routed out to memory.
+[226.28s -> 231.20s]  And in different parts on this ring, like if it's a cache hit, it might actually go to one
+[231.20s -> 233.60s]  of the pieces of the cache and get the data out of the cache.
+[233.60s -> 238.56s]  It can be quite a complicated thing.
+[238.56s -> 241.84s]  Actually, one thing that's kind of interesting is did you notice that like all
+[241.84s -> 245.12s]  of the different cores are kind of connected to or, you know, like if you think about this
+[245.12s -> 248.92s]  as being a core plus its piece of the L3, notice how everything is connected
+[248.92s -> 253.68s]  to the ring twice, do you have any idea why they do that?
+[253.68s -> 260.88s]  Is that to reduce latency to the ring?
+[260.88s -> 264.68s]  Well, first of all, yeah, it is, and first of all, it makes things simple
+[264.68s -> 268.28s]  if you're always sending messages always in clockwise order.
+[268.28s -> 271.48s]  So things like deadlock and stuff are not much of a problem.
+[271.48s -> 274.24s]  And if you want to reduce latency, if you get hit, if you're touching, you know,
+[274.24s -> 277.72s]  if you have two contact points, exactly, like so if you're going to go to your left neighbor
+[277.76s -> 280.80s]  or your right neighbor and you can only send right,
+[280.80s -> 284.76s]  you can actually get there a little bit faster.
+[284.76s -> 286.04s]  Here's another processor.
+[286.04s -> 292.28s]  It's actually a processor that Kunlei was a big part
+[292.28s -> 294.72s]  of the initial design of this technology.
+[294.72s -> 299.96s]  This was done by Sun at the time when Sun existed, you know,
+[299.96s -> 303.44s]  then it got bought by Oracle later for the UltraSparks.
+[303.44s -> 306.64s]  And this was one of the first mainstream multithreaded chips.
+[306.64s -> 313.16s]  So it had, in this case, eight cores, and each of those cores had a bunch of threads,
+[313.16s -> 319.60s]  but all of those cores were connected out to the main memories via what's a crossbar switch,
+[319.60s -> 322.52s]  the CCX's crossbar, and a crossbar means
+[322.52s -> 325.44s]  that every core is actually like physically wired to every other one.
+[325.44s -> 328.24s]  It's like N squared wires for N cores.
+[328.24s -> 331.96s]  And what's kind of interesting is if you look at the chip diagram, the actual area,
+[331.96s -> 339.04s]  the footprint of a processor core is about the same as the footprint of the network.
+[339.04s -> 342.12s]  So like these networks that get high bandwidth connection
+[342.12s -> 346.48s]  between all the processors are extremely expensive and extremely complex.
+[346.48s -> 356.44s]  And even in a simple, oh by the way, if I go to this, it actually means that depending
+[356.44s -> 362.60s]  on what core you're at, an L3 cache can actually hit, be a different cost based
+[362.60s -> 367.56s]  on what the address is and where it actually is and which of these slices of the L3 cache.
+[367.56s -> 373.20s]  So this is like a sharded cache where different addresses go in different places.
+[373.20s -> 377.76s]  Another example of it is if you just go out and buy a motherboard that has two sockets
+[377.76s -> 386.04s]  in it for two physical CPUs, you know, let's say there's two different four core CPUs,
+[386.04s -> 390.52s]  there's an on-chip network, that ring connecting the cores, the one I showed you,
+[390.52s -> 400.04s]  and then there are traces out over the dual socket board and a load or a store
+[400.04s -> 406.40s]  from like core one to address X in that diagram might be a lot faster or a good bit faster
+[406.40s -> 410.24s]  than a load and store from let's say core eight to address X regardless
+[410.24s -> 412.88s]  of the caching behavior, things like that.
+[412.92s -> 417.84s]  So in a modern system as we get bigger and bigger, and this is incredibly true in these big,
+[417.84s -> 422.64s]  you know, like a modern GPU and things like that, it's not just,
+[422.64s -> 425.84s]  if you think about like how close something is, it's not just it's either in memory
+[425.84s -> 429.72s]  or it's in cache, there's actually a lot more nuance to that.
+[429.72s -> 434.56s]  We don't necessarily think about when we were programming because our minds would explode,
+[434.56s -> 441.00s]  but if you actually really wanted to optimize things, you would be aware of that placement.
+[441.00s -> 445.12s]  So, you know, even though we like to just basically think in terms of like a computer
+[445.12s -> 450.08s]  as a big pile of cores connected to a shared memory, you know, those loads and stores
+[450.08s -> 455.04s]  on how the different threads communicate, those can have very, very different costs.
+[455.04s -> 460.36s]  And if you're elite, you're actually asking where is this address in this machine
+[460.36s -> 464.60s]  and you might be doing different things based on those costs.
+[464.60s -> 470.16s]  Now, one way to think about communication and make it a little bit easier
+[470.36s -> 477.68s]  to reason about is to think about other designs where moving data is more explicit.
+[477.68s -> 481.40s]  So I want to talk about a different model of computing for a second,
+[481.40s -> 484.24s]  which is called message passing, which is something all of you are used
+[484.24s -> 487.88s]  to if you've written any distributed programs in a web setting.
+[487.88s -> 492.32s]  It's not like if you're on the internet you just say I want the data at this memory address
+[492.32s -> 496.44s]  and all computers on the internet have access to a unified address space.
+[496.44s -> 500.60s]  When we communicate on, you know, in a distributed system we do it via sending messages.
+[500.60s -> 504.88s]  You know, maybe it's an HTTP get or a post or something like that or a response.
+[504.88s -> 509.40s]  But the name of the game is I have two different computers or two different threads
+[509.40s -> 514.72s]  and each thread keyword now works in its own address space.
+[514.72s -> 522.40s]  So address X in thread one's address space is not the same address as address X
+[522.40s -> 523.96s]  in thread two's address space.
+[523.96s -> 526.32s]  They are different address spaces.
+[526.32s -> 530.84s]  And the only way to exchange information, like every thread can load and store the variables
+[530.84s -> 534.12s]  in its own address space, but the only way to exchange information
+[534.12s -> 538.28s]  across these threads is to explicitly send a message.
+[538.28s -> 542.16s]  So in this case, you know, rather than an HTTP request I said look,
+[542.16s -> 548.72s]  let's just abstractly say thread one is going to send the contents of its address X
+[548.72s -> 554.08s]  to thread two and tag the message with an ID so that the receiver
+[554.12s -> 557.76s]  on the other side knows what it's getting, okay?
+[557.76s -> 562.92s]  And correspondingly, thread two is going to post a receive which says I want
+[562.92s -> 569.84s]  to receive the message with this ID from thread one and when we get the data we're going
+[569.84s -> 578.16s]  to put that data and store it as the contents of the address Y in my own address space, okay?
+[578.16s -> 582.64s]  So these messages say how do I identify data in my address space?
+[582.64s -> 588.16s]  Who is it going to go to and is there like an abstract ID that the other side can know
+[588.16s -> 590.12s]  to listen to and stuff like that?
+[590.12s -> 593.92s]  So in a message passing setting like the, you know, the real world way of thinking
+[593.92s -> 597.16s]  about it is if a shared memory is like a bulletin board
+[597.16s -> 599.72s]  where anybody can post a message without asking and anybody can read
+[599.72s -> 603.88s]  that message without passing, message passing is a little bit more like sending snail mail.
+[603.88s -> 607.08s]  Like you put up, you know, you wrap up your data in an envelope,
+[607.08s -> 610.80s]  you address it to a particular location and then someone is responsible
+[610.84s -> 613.20s]  for getting it to that location.
+[613.20s -> 614.52s]  Question, yeah?
+[614.52s -> 622.84s]  So where is this messaging through a network of buyers similar to the internet?
+[622.84s -> 626.80s]  For example, if your site targets the data with your address, source and destination.
+[626.80s -> 631.04s]  Yeah, and any message passing system is basically going to have some mechanism
+[631.04s -> 634.08s]  of addressing, like this is where this needs to go.
+[634.08s -> 638.24s]  And the difference is between is it done at the scale of the internet,
+[638.24s -> 643.52s]  is it done at the scale of inside a single computer with threads or is it maybe done
+[643.52s -> 647.44s]  at the scale of a small cluster of computers or at large scale
+[647.44s -> 649.60s]  with like a big rack or something like that.
+[649.60s -> 653.64s]  There might be different mechanisms for how we identify the recipient.
+[653.64s -> 656.76s]  There might be different mechanisms for how the data moves, right?
+[656.76s -> 662.44s]  Is it TCPIP, is it UDP, like there are many different implementations of how
+[662.44s -> 664.16s]  to get the message to the location.
+[664.16s -> 669.92s]  But conceptually, the difference is in a shared address space system,
+[669.92s -> 676.60s]  we all talk about the same addresses and we all have direct access to read and write.
+[676.60s -> 681.52s]  In a message passing system, we all operate in our own address spaces
+[681.52s -> 685.60s]  and we send messages, meaning I say, hey, here's some data.
+[685.60s -> 689.32s]  Go make a copy of it and put it in your address space.
+[689.32s -> 693.72s]  And I think this will become more explicit if we go back to this example
+[693.72s -> 702.68s]  that we talked about last time, which again, to re-remind everybody is the workload was
+[702.68s -> 708.88s]  for every red cell, update the value of the red cell given read access
+[708.88s -> 713.72s]  to the surrounding neighbors and if we haven't converged, basically do it again
+[713.72s -> 716.64s]  but this time with the black cells, okay?
+[716.64s -> 722.76s]  And I'd like you to think about implementing this program on, let's say,
+[722.76s -> 729.48s]  not a two core machine but let's think about it as a cluster with two different computers
+[729.48s -> 734.00s]  that can only exchange messages like internet traffic or something like that,
+[734.00s -> 735.76s]  let's say over ethernet.
+[735.76s -> 739.16s]  So here's my new kind of like simple computer.
+[739.16s -> 743.92s]  I have a processor with its own memory, its own memory DRAM,
+[743.92s -> 749.52s]  which implements its own address space and I have some network, whether it be the internet,
+[749.52s -> 755.92s]  whether it be ethernet, whether it be carrier pigeon, I have some way to get information
+[755.92s -> 760.40s]  from one memory to the other, okay?
+[760.40s -> 769.08s]  And yeah, this is just to reiterate like I only have these two operations, send and receive.
+[769.08s -> 776.08s]  So here's what I'm going to do is first of all, now let's imagine that I want to,
+[776.08s -> 782.80s]  first of all I have to divide all the data, I have to partition the grid across these processors
+[782.80s -> 785.72s]  and before it was like I had one big array, right?
+[785.72s -> 789.96s]  Like when we did this assignment one, there was one big array and then the code
+[789.96s -> 794.76s]  of the program said, hey thread zero or thread one, you should touch these addresses
+[794.76s -> 797.44s]  and thread two, you should touch these addresses.
+[797.44s -> 798.68s]  So now things are a little bit different.
+[798.68s -> 801.36s]  We don't have a shared address space, right?
+[801.36s -> 805.28s]  So now every thread or every machine in this cluster
+[805.32s -> 810.00s]  and all of a sudden I jumped to four machines just to make it a little bit easier,
+[810.00s -> 813.48s]  has its own copy of part of the array.
+[813.48s -> 818.44s]  There are four different allocations now in these four different address spaces
+[818.44s -> 823.60s]  that hold the data that each worker is responsible for.
+[823.60s -> 825.56s]  So you see that difference conceptually?
+[825.56s -> 829.68s]  Before we had a shared allocation and we all just kind of got our own,
+[829.68s -> 831.38s]  we touched our own part of it.
+[831.38s -> 834.40s]  Now we have four different address spaces.
+[834.40s -> 840.88s]  There is no way for thread three in this diagram to directly say load a value here.
+[840.88s -> 843.68s]  In the same way that if you have a computer in your dorm and I have a computer
+[843.68s -> 847.60s]  in my office, I cannot issue a load store for my computer
+[847.60s -> 852.76s]  that stores data to your computer, okay?
+[852.76s -> 858.80s]  Now to compute, let's say if I wanted to compute the value of this element here,
+[858.80s -> 861.48s]  what information do I need?
+[861.48s -> 865.76s]  Well, I need my left neighbor, I need my right neighbor and I need the neighbor below me
+[865.76s -> 869.04s]  which is fine because thread three has all this information.
+[869.04s -> 872.56s]  But I also need information that currently is stored
+[872.56s -> 878.32s]  in an address space that I cannot access, okay?
+[878.32s -> 883.96s]  All right, so what almost all of these systems in a message passing do is they say,
+[883.96s -> 889.84s]  well, I need to be able to access this data but I can't because it's not in my address space.
+[889.84s -> 895.36s]  So I'm going to make a copy of it and keep a copy of it here in my address space.
+[895.36s -> 901.72s]  So what I'm actually doing now is on each of the nodes, I'm actually over allocating.
+[901.72s -> 908.12s]  I'm allocating an extra row and an extra row above and below my section.
+[908.12s -> 914.20s]  And I'm going to need to ask my neighbors to send me via a message the values
+[914.20s -> 916.76s]  that I should store in this row.
+[916.76s -> 920.00s]  And if you look at my code on the right, the side of the diagram,
+[920.00s -> 924.12s]  this is the logic that every thread is executing.
+[924.12s -> 929.48s]  And notice that it allocates a buffer that is two rows larger
+[929.48s -> 933.28s]  than the data that it is responsible for.
+[933.28s -> 936.76s]  So some terminology would be like, for example, in thread two,
+[936.76s -> 943.92s]  there's an extra over allocation that corresponds to holding a copy of this data.
+[943.92s -> 948.84s]  So this extra over allocation where you're storing data that that thread doesn't own
+[948.84s -> 955.08s]  or is not responsible for updating, you'll often hear that's like ghost rows or ghost cells,
+[955.08s -> 960.36s]  ghost values, that's a common thing you'll see in scientific computing.
+[960.36s -> 967.04s]  Now let's take a look at a full implementation of one iteration of the solver application
+[967.04s -> 972.28s]  written in a message passing kind of way, not in a loads and stores kind of way.
+[972.32s -> 976.48s]  So here it is, it's a little bit, the font size is a little small,
+[976.48s -> 980.64s]  but take a look at it and see, give it some talk.
+[980.64s -> 983.28s]  Now this is code that's being executed by every thread.
+[983.28s -> 986.12s]  It's like an SPMD kind of way, right?
+[986.12s -> 990.16s]  So what every thread does is going to come from its thread ID.
+[990.16s -> 993.96s]  So that's TID is the thread ID here.
+[993.96s -> 999.46s]  And I'll go ahead and give you a minute or so, it's sort of commented in some sense,
+[999.46s -> 1002.98s]  but talk it over and make sure that you all kind of understand the flow here.
+[1002.98s -> 1004.82s]  So I'll let you discuss.
+[1008.94s -> 1010.94s]  Yeah, let's discuss.
+[1010.94s -> 1015.06s]  I want to make sure everybody understands this, this is worth discussing.
+[1015.06s -> 1017.58s]  So what is this thing like doing?
+[1017.58s -> 1024.06s]  So there's a phase of sending and receiving data, there's a phase of doing the work you're supposed to do,
+[1024.06s -> 1028.22s]  there's a phase of sending the updated data to everybody else,
+[1028.22s -> 1032.62s]  and then there's a phase of determining if we're done and whether or not we have to repeat again, okay?
+[1032.62s -> 1034.62s]  So discuss.
+[1039.62s -> 1046.42s]  Okay, so let's get back together, I think most people have converged the conversation.
+[1046.42s -> 1049.42s]  So let's start talking just through, make sure everybody understands this,
+[1049.42s -> 1054.42s]  and there was a question about, good, and I purposely kind of didn't clarify this
+[1054.42s -> 1057.42s]  because I was going to get into it a little bit more later,
+[1057.62s -> 1059.62s]  how does a send and receive work?
+[1059.62s -> 1069.62s]  So if I'm a thread and I call receive, that will return when some other thread has send, right?
+[1069.62s -> 1075.62s]  So in some sense it's like when that call returns, the data is now with me in my address space.
+[1075.62s -> 1081.62s]  So technically if I call receive and nobody sends me anything, I'll just wait there for forever, right?
+[1081.82s -> 1087.82s]  Okay, so let's just take a look at this code and pick out some of the details.
+[1087.82s -> 1092.82s]  So one of the more interesting things is just the allocation at the top.
+[1092.82s -> 1103.82s]  So I have this variable localA, which is just this thread's local copy of some portion of this whole conceptual grid.
+[1104.02s -> 1112.02s]  And localA has rows per thread plus two allocation.
+[1112.02s -> 1118.02s]  So it's my fraction of the array plus one row on top and one row on bottom.
+[1118.02s -> 1123.02s]  And notice that these calls to send and receive, the if statements are just,
+[1123.02s -> 1128.02s]  you know, if I'm the first thread, there's nothing to my left, so I don't need to...
+[1128.22s -> 1140.22s]  But notice that they're storing data into the first row of localA or in fact the last row of localA.
+[1140.22s -> 1146.22s]  So the data that I send and receive kind of goes right into my local array at the top or the bottom.
+[1146.22s -> 1151.22s]  And I did that so that when I iterate with actual memory accesses,
+[1151.22s -> 1156.22s]  I don't have to differentiate between what's like the ghost row and what's not the ghost row.
+[1156.42s -> 1162.42s]  At that point, I just put all the data where it's supposed to be so my code is simple.
+[1162.42s -> 1165.42s]  Now that's good? Yes?
+[1172.42s -> 1174.42s]  They all allocate the same.
+[1174.42s -> 1180.42s]  In this case, the last one doesn't have a ghost row underneath it, right?
+[1180.42s -> 1185.42s]  And so that data is allocated but nothing is ever written there.
+[1185.62s -> 1187.62s]  So it's just, you know, just to keep the code simple.
+[1187.62s -> 1191.62s]  I didn't want to put a conditional around the allocation.
+[1191.62s -> 1194.62s]  I was going to ask what happens in the middle of the first one
+[1194.62s -> 1200.62s]  where kind of top and bottom rows is going to be reaching into that unallocated.
+[1200.62s -> 1202.62s]  Did I mess this up?
+[1202.62s -> 1205.62s]  So I'm going from rows per thread.
+[1209.62s -> 1213.62s]  Yeah, so I'm starting on the first row and on the next row
+[1213.82s -> 1214.82s]  and then...
+[1216.82s -> 1220.82s]  Yeah, I think I just didn't guard that properly. Sorry about that.
+[1220.82s -> 1222.82s]  Yeah, because if you look at this example,
+[1222.82s -> 1225.82s]  now I'm only showing the ghost rows for thread 3
+[1225.82s -> 1228.82s]  but as you pointed out, there'd be a ghost row here and here.
+[1228.82s -> 1230.82s]  There'd be a ghost row here.
+[1230.82s -> 1234.82s]  And to be honest, if you recall our code from before,
+[1234.82s -> 1237.82s]  it would just iterate from i equals 1
+[1237.82s -> 1242.82s]  to i equal to like the last row that we compute values for was this one.
+[1243.02s -> 1245.02s]  That was the definition of the problem, right?
+[1245.02s -> 1250.02s]  So yeah, I was a little sloppy but I hope you get the point.
+[1253.02s -> 1255.02s]  And then kind of an interesting thing is
+[1255.02s -> 1258.02s]  remember last time we had in the shared address space
+[1258.02s -> 1262.02s]  we had the lock and we had the barriers
+[1262.02s -> 1266.02s]  but there's no locks and there's no barriers here.
+[1266.02s -> 1268.02s]  So how is this message patches code?
+[1268.02s -> 1270.02s]  Like can you describe to me
+[1270.02s -> 1272.02s]  and I know there's a comment here on the slide
+[1272.22s -> 1274.22s]  and we'll talk it over in our own words,
+[1274.22s -> 1278.22s]  how do we determine whether or not we should keep going?
+[1278.22s -> 1280.22s]  Yeah.
+[1280.22s -> 1282.22s]  Is it all that we're seeing?
+[1282.22s -> 1284.22s]  Do we wait for all that we're seeing?
+[1284.22s -> 1286.22s]  Is it a for loop?
+[1286.22s -> 1288.22s]  Which one right here?
+[1288.22s -> 1290.22s]  Okay, so look at this.
+[1290.22s -> 1293.22s]  So it says if thread ID is not thread 0
+[1293.22s -> 1299.22s]  so every thread but thread 0 sends its local diff.
+[1299.42s -> 1302.42s]  If you're thread 0
+[1302.42s -> 1305.42s]  you wait to receive that local diff
+[1305.42s -> 1307.42s]  from all other threads.
+[1307.42s -> 1310.42s]  You do a calculation to compute
+[1310.42s -> 1312.42s]  whether or not we are done
+[1312.42s -> 1314.42s]  so thread 0 determines this calculation
+[1314.42s -> 1316.42s]  and then actually sends
+[1316.42s -> 1318.42s]  the boolean value done equals true
+[1318.42s -> 1320.42s]  to every other thread
+[1320.42s -> 1322.42s]  which is then received right here
+[1322.42s -> 1324.42s]  by every other thread.
+[1324.42s -> 1326.42s]  Now of course we could have done it
+[1326.42s -> 1328.42s]  I could have just computed the total value
+[1328.42s -> 1330.42s]  back and everybody independently could have computed
+[1330.42s -> 1332.42s]  if we were done.
+[1332.42s -> 1334.42s]  But that's just how I did it in this code.
+[1334.42s -> 1336.42s]  So why is there no lock in this code?
+[1336.42s -> 1338.42s]  It's like
+[1338.42s -> 1340.42s]  by receiving
+[1340.42s -> 1342.42s]  you're like waiting
+[1342.42s -> 1344.42s]  so you're like
+[1344.42s -> 1346.42s]  Correct?
+[1346.42s -> 1348.42s]  And even more fundamentally
+[1348.42s -> 1350.42s]  why would we never see a lock
+[1350.42s -> 1352.42s]  in any message passing code?
+[1352.42s -> 1354.42s]  There's no lock.
+[1354.42s -> 1356.42s]  There's nothing shared
+[1356.42s -> 1358.42s]  and there's nothing mutual exclusion on.
+[1358.42s -> 1360.42s]  So the only way to synchronize
+[1360.42s -> 1362.42s]  is via these messages.
+[1362.42s -> 1364.42s]  So we've essentially
+[1364.42s -> 1366.42s]  we've created a situation
+[1366.42s -> 1368.42s]  where everybody sends a partial sum
+[1368.42s -> 1370.42s]  to one thread here
+[1370.42s -> 1372.42s]  one thread does all the math
+[1372.42s -> 1374.42s]  and then gives the result back to everybody else.
+[1374.42s -> 1376.42s]  Why do we not see any barriers here?
+[1380.42s -> 1382.42s]  Yeah, essentially the barrier
+[1382.42s -> 1384.42s]  is inherent in this communication
+[1384.42s -> 1386.42s]  pattern that I did exactly.
+[1386.42s -> 1388.42s]  And since everybody
+[1388.42s -> 1390.42s]  has their own copy of the done variable
+[1390.42s -> 1392.42s]  because there's no shared address space
+[1392.42s -> 1394.42s]  there's no worry about someone starting
+[1394.42s -> 1396.42s]  in the future and overwriting something
+[1396.42s -> 1398.42s]  that somebody else receives.
+[1398.42s -> 1400.42s]  So the communication is really
+[1400.42s -> 1402.42s]  really explicit in these sends and receives.
+[1404.42s -> 1406.42s]  So just like a summary
+[1406.42s -> 1408.42s]  notice that all of the
+[1408.42s -> 1410.42s]  array computation was relative
+[1410.42s -> 1412.42s]  now. So if I go back here just keep in mind
+[1412.42s -> 1414.42s]  that all threads
+[1414.42s -> 1416.42s]  are iterating over the same
+[1416.42s -> 1418.42s]  indices now.
+[1418.42s -> 1420.42s]  They're iterating over the same
+[1420.42s -> 1422.42s]  indices in their own local
+[1422.42s -> 1424.42s]  piece of the array.
+[1424.42s -> 1426.42s]  Whereas before in the shared address space
+[1426.42s -> 1428.42s]  I did some math to make sure that everybody was iterating
+[1428.42s -> 1430.42s]  over different indices.
+[1430.42s -> 1432.42s]  So that's another example.
+[1432.42s -> 1434.42s]  Array indexing is relative
+[1434.42s -> 1436.42s]  communication is performed via
+[1436.42s -> 1438.42s]  sends and
+[1438.42s -> 1440.42s]  receives. In this case we decided to
+[1440.42s -> 1442.42s]  send many elements at a time
+[1442.42s -> 1444.42s]  for efficiency
+[1444.42s -> 1446.42s]  do one send instead of a bunch of little ones
+[1446.42s -> 1448.42s]  and synchronization is not done through
+[1448.42s -> 1450.42s]  locks and barriers. Synchronization is
+[1450.42s -> 1452.42s]  manifest in how we construct the message
+[1452.42s -> 1454.42s]  the messages.
+[1454.42s -> 1456.42s]  Now there was something that you all assumed
+[1456.42s -> 1458.42s]  there was a question from the back that got to this
+[1458.42s -> 1460.42s]  like wait a minute let's just make sure we
+[1460.42s -> 1462.42s]  understand the order of
+[1462.42s -> 1464.42s]  things that happen in a
+[1464.42s -> 1466.42s]  what's called a blocking send
+[1466.42s -> 1468.42s]  and receive. So the sends and receives
+[1468.42s -> 1470.42s]  that I just showed you that
+[1470.42s -> 1472.42s]  we all kind of assumed would be if the
+[1472.42s -> 1474.42s]  sender calls send foo
+[1476.42s -> 1478.42s]  data from the variable
+[1478.42s -> 1480.42s]  foo in my local address
+[1480.42s -> 1482.42s]  space in the sender's address space
+[1482.42s -> 1484.42s]  will be copied kind of into the
+[1484.42s -> 1486.42s]  network. The network will transmit
+[1486.42s -> 1488.42s]  the message
+[1488.42s -> 1490.42s]  and assuming that the receiver
+[1490.42s -> 1492.42s]  has called receive on
+[1492.42s -> 1494.42s]  some of its own local variable bar
+[1494.42s -> 1496.42s]  the
+[1496.42s -> 1498.42s]  receiver will get the message
+[1498.42s -> 1500.42s]  copy whatever is in the message
+[1500.42s -> 1502.42s]  into the local variable
+[1502.42s -> 1504.42s]  and when the receiver is
+[1504.42s -> 1506.42s]  done copying that data
+[1506.42s -> 1508.42s]  and has that data
+[1508.42s -> 1510.42s]  it might send an acknowledgement back to the sender
+[1510.42s -> 1512.42s]  and the sender
+[1512.42s -> 1514.42s]  the send call returns
+[1514.42s -> 1516.42s]  once we are guaranteed
+[1516.42s -> 1518.42s]  that the receiver has the data
+[1518.42s -> 1520.42s]  that's a blocking send
+[1520.42s -> 1522.42s]  and similarly
+[1522.42s -> 1524.42s]  a blocking receive
+[1524.42s -> 1526.42s]  this receive returns
+[1526.42s -> 1528.42s]  when the receiver
+[1528.42s -> 1530.42s]  has the data
+[1530.42s -> 1532.42s]  in the appropriate variable in its address
+[1532.42s -> 1534.42s]  space.
+[1534.42s -> 1536.42s]  What if the data never
+[1536.42s -> 1538.42s]  arrives?
+[1538.42s -> 1540.42s]  If there's a
+[1540.42s -> 1542.42s]  network failure for example
+[1542.42s -> 1544.42s]  if there's a network failure
+[1544.42s -> 1546.42s]  in this simplistic
+[1546.42s -> 1548.42s]  definition of blocking send and
+[1548.42s -> 1550.42s]  receive the receiver
+[1550.42s -> 1552.42s]  never returns just for now
+[1552.42s -> 1554.42s]  and the sender wouldn't get
+[1554.42s -> 1556.42s]  an acknowledgement
+[1556.42s -> 1558.42s]  and the sender never returns
+[1558.42s -> 1560.42s]  so you're kind of thinking about it
+[1560.42s -> 1562.42s]  like I am in a network
+[1562.42s -> 1564.42s]  I'm in a network distributed program
+[1564.42s -> 1566.42s]  environment failures happen
+[1566.42s -> 1568.42s]  I need to be robust to it
+[1568.42s -> 1570.42s]  now take this and let's just say you
+[1570.42s -> 1572.42s]  bought a 16 core computer
+[1572.42s -> 1574.42s]  and one
+[1574.42s -> 1576.42s]  message from one core couldn't get
+[1576.42s -> 1578.42s]  to the L3 cache
+[1578.42s -> 1580.42s]  you throw it out
+[1580.42s -> 1582.42s]  for all of the reliability
+[1582.42s -> 1584.42s]  of the protocol
+[1584.42s -> 1586.42s]  let's say if we're talking about a network on a chip
+[1586.42s -> 1588.42s]  all of the failure retransmission
+[1588.42s -> 1590.42s]  is going to be handled at the
+[1590.42s -> 1592.42s]  hardware level
+[1592.42s -> 1594.42s]  and so a message sent from one core
+[1594.42s -> 1596.42s]  if your processor
+[1596.42s -> 1598.42s]  stores to memory
+[1598.42s -> 1600.42s]  and you get an error
+[1600.42s -> 1602.42s]  sorry
+[1602.42s -> 1604.42s]  you throw the machine out
+[1604.42s -> 1606.42s]  so that's kind of how I want you to think about it right now
+[1606.42s -> 1608.42s]  or you should think about it as
+[1608.42s -> 1610.42s]  something underneath this API
+[1610.42s -> 1612.42s]  maybe some system software
+[1612.42s -> 1614.42s]  or something that will do all of the retries
+[1614.42s -> 1616.42s]  and just keep retrying until that thing happens
+[1616.42s -> 1618.42s]  obviously
+[1618.42s -> 1620.42s]  you can think of alternative APIs
+[1620.42s -> 1622.42s]  that like the send could fail
+[1622.42s -> 1624.42s]  like let's say the hardware returns
+[1624.42s -> 1626.42s]  some error code the API could say
+[1626.42s -> 1628.42s]  well it didn't get sent
+[1628.42s -> 1630.42s]  and it will return an error code or something like that
+[1630.42s -> 1632.42s]  but trust me if you're like writing code
+[1632.42s -> 1634.42s]  like this you're not checking your error codes
+[1634.42s -> 1636.42s]  on whether or not memory doesn't work
+[1636.42s -> 1638.42s]  and stuff like that
+[1638.42s -> 1640.42s]  ok
+[1640.42s -> 1642.42s]  so
+[1642.42s -> 1644.42s]  you all discussed
+[1644.42s -> 1646.42s]  and you all correctly told me
+[1646.42s -> 1648.42s]  how that code on the previous slide worked
+[1648.42s -> 1650.42s]  but
+[1650.42s -> 1652.42s]  nobody told me
+[1652.42s -> 1654.42s]  that there was a fatal bug in the code
+[1654.42s -> 1656.42s]  let's go back to the code
+[1656.42s -> 1658.42s]  I'd like you to take
+[1658.42s -> 1660.42s]  another look at it
+[1660.42s -> 1662.42s]  I'd like you to tell me what
+[1662.42s -> 1664.42s]  happens if I run this code
+[1664.42s -> 1666.42s]  with blocking sends and receives
+[1666.42s -> 1668.42s]  so everybody, I want everybody to take
+[1668.42s -> 1670.42s]  15-20 seconds to think about it
+[1672.42s -> 1674.42s]  my hint is that
+[1674.42s -> 1676.42s]  it will be as bad as this
+[1676.42s -> 1678.42s]  comment just a second ago if memory
+[1678.42s -> 1680.42s]  does not work
+[1680.42s -> 1682.42s]  alright
+[1682.42s -> 1684.42s]  so it feels like I see some eyes
+[1684.42s -> 1686.42s]  lighting up, anybody want to tell me what's wrong
+[1686.42s -> 1688.42s]  yes?
+[1688.42s -> 1690.42s]  so imagine that all of you
+[1690.42s -> 1692.42s]  in this room
+[1692.42s -> 1694.42s]  are sort of
+[1694.42s -> 1696.42s]  imagine every
+[1696.42s -> 1698.42s]  processor is like a row in this room
+[1698.42s -> 1700.42s]  and so the first thing
+[1700.42s -> 1702.42s]  all of you do is you look
+[1702.42s -> 1704.42s]  I guess in this case you look backwards
+[1704.42s -> 1706.42s]  or you send
+[1706.42s -> 1708.42s]  backwards
+[1708.42s -> 1710.42s]  that's what you're doing, you're sending backwards
+[1710.42s -> 1712.42s]  and your send will complete
+[1712.42s -> 1714.42s]  when the person behind you acknowledges
+[1714.42s -> 1716.42s]  or makes a matching receive
+[1716.42s -> 1718.42s]  but what did the person behind you do?
+[1718.42s -> 1720.42s]  they're sending backwards too
+[1720.42s -> 1722.42s]  so they're never going to get around to that receive
+[1722.42s -> 1724.42s]  how can we fix this?
+[1724.42s -> 1726.42s]  while still
+[1726.42s -> 1728.42s]  making, only using blocking sends
+[1728.42s -> 1730.42s]  and stuff like that
+[1730.42s -> 1732.42s]  no asynchronous
+[1732.42s -> 1734.42s]  operation, you can only use blocking sends
+[1746.42s -> 1748.42s]  so a simple solution would be
+[1748.42s -> 1750.42s]  to keep everybody up by their row parity
+[1750.42s -> 1752.42s]  so first row sends
+[1752.42s -> 1754.42s]  sends back
+[1754.42s -> 1756.42s]  you know, the next row
+[1756.42s -> 1758.42s]  first thing is they receive forward
+[1758.42s -> 1760.42s]  and then you can
+[1760.42s -> 1762.42s]  that would be like one way of doing it
+[1762.42s -> 1764.42s]  I guess if you look carefully
+[1766.42s -> 1768.42s]  some people sometimes say
+[1768.42s -> 1770.42s]  won't the first row because they don't actually send anything
+[1770.42s -> 1772.42s]  won't it work?
+[1772.42s -> 1774.42s]  it actually doesn't even work
+[1774.42s -> 1776.42s]  because the first row
+[1776.42s -> 1778.42s]  if it doesn't send back
+[1778.42s -> 1780.42s]  it sends forward
+[1780.42s -> 1782.42s]  so everybody is going to do a send before they post
+[1782.42s -> 1784.42s]  their first receive
+[1784.42s -> 1786.42s]  so this will deadlock under any conditions
+[1786.42s -> 1788.42s]  this is a form of deadlock
+[1788.42s -> 1790.42s]  you are not making any progress at all
+[1790.42s -> 1792.42s]  you're waiting on someone else
+[1792.42s -> 1794.42s]  who also can't make any progress at all
+[1794.42s -> 1796.42s]  so good
+[1796.42s -> 1798.42s]  so moving forward
+[1798.42s -> 1800.42s]  one possible implementation would be
+[1800.42s -> 1802.42s]  to pair folks up by parity
+[1802.42s -> 1804.42s]  so you say okay, I'm going to have a partner
+[1804.42s -> 1806.42s]  someone is going to send first and someone is going to receive first
+[1806.42s -> 1808.42s]  and so on and so on
+[1810.42s -> 1812.42s]  question? no? okay
+[1812.42s -> 1814.42s]  it just feels really terrible
+[1814.42s -> 1816.42s]  it feels like a very small mistake
+[1816.42s -> 1820.42s]  could cause your program to lock
+[1820.42s -> 1822.42s]  absolutely
+[1822.42s -> 1824.42s]  so we could also go in a different direction
+[1824.42s -> 1826.42s]  we could also go in a direction where
+[1826.42s -> 1828.42s]  communication is asynchronous
+[1828.42s -> 1830.42s]  so last time when we were talking about Cilk
+[1830.42s -> 1832.42s]  I talked about an asynchronous function call
+[1832.42s -> 1834.42s]  a function call that can carry on
+[1834.42s -> 1836.42s]  potentially concurrently with the caller
+[1836.42s -> 1838.42s]  and
+[1838.42s -> 1840.42s]  a message
+[1840.42s -> 1842.42s]  you could think about it as
+[1842.42s -> 1844.42s]  it could also be an asynchronous function call
+[1844.42s -> 1846.42s]  so here is an asynchronous
+[1846.42s -> 1848.42s]  send and receive
+[1848.42s -> 1850.42s]  so now when a thread calls send
+[1850.42s -> 1852.42s]  it's more of like
+[1852.42s -> 1854.42s]  I want this message to be sent at some point
+[1854.42s -> 1856.42s]  in the future
+[1856.42s -> 1858.42s]  so the sender calls send
+[1858.42s -> 1860.42s]  but send returns immediately
+[1860.42s -> 1862.42s]  you don't know at this point
+[1862.42s -> 1864.42s]  you meaning the thread
+[1864.42s -> 1866.42s]  you don't know that the data is gone
+[1866.42s -> 1868.42s]  or has been sent yet
+[1868.42s -> 1870.42s]  so typically the API will give you back a handle
+[1870.42s -> 1872.42s]  like it says hey, if you ever need to know if this is done
+[1872.42s -> 1874.42s]  here's the ID that you can use to check
+[1874.42s -> 1876.42s]  so I'm calling that h1 here
+[1876.42s -> 1878.42s]  so at some point in the future
+[1878.42s -> 1880.42s]  so this thread can just keep running
+[1880.42s -> 1882.42s]  at some point in the future
+[1882.42s -> 1884.42s]  the message library gets around to copying the data
+[1884.42s -> 1886.42s]  to the network
+[1886.42s -> 1888.42s]  and pushing it over
+[1888.42s -> 1890.42s]  and at some point
+[1890.42s -> 1892.42s]  the receiver will get around
+[1892.42s -> 1894.42s]  to actually doing the receive
+[1894.42s -> 1896.42s]  and once
+[1896.42s -> 1898.42s]  we know that the data has been
+[1898.42s -> 1900.42s]  received
+[1900.42s -> 1902.42s]  we can like probe the system
+[1902.42s -> 1904.42s]  we can say like are you done
+[1904.42s -> 1906.42s]  which I'm writing here is check the send status
+[1906.42s -> 1908.42s]  check the send of that message
+[1908.42s -> 1910.42s]  and if that returns true
+[1910.42s -> 1912.42s]  it's now I guarantee
+[1912.42s -> 1914.42s]  that the data is gone
+[1914.42s -> 1916.42s]  and I can delete
+[1916.42s -> 1918.42s]  like delete foo or modify foo
+[1918.42s -> 1920.42s]  notice that if I do anything to foo
+[1920.42s -> 1922.42s]  in between this point and this confirmation
+[1922.42s -> 1924.42s]  I have no guarantee
+[1924.42s -> 1926.42s]  that the message passing
+[1926.42s -> 1928.42s]  library has picked up the data
+[1928.42s -> 1930.42s]  and sent it over the wire
+[1930.42s -> 1932.42s]  it'd be like me putting a package
+[1932.42s -> 1934.42s]  out on my porch telling
+[1934.42s -> 1936.42s]  UPS to come take it
+[1936.42s -> 1938.42s]  and then me like changing the contents of the package
+[1938.42s -> 1940.42s]  before UPS shows up
+[1940.42s -> 1942.42s]  the modified message is what's
+[1942.42s -> 1944.42s]  going to get sent
+[1944.42s -> 1946.42s]  or if I remove the package from the porch
+[1946.42s -> 1948.42s]  UPS is going to say you told me to come get it
+[1948.42s -> 1950.42s]  and there's nothing here
+[1950.42s -> 1952.42s]  on the flip side on the receive
+[1952.42s -> 1954.42s]  this is an asynchronous receive
+[1954.42s -> 1956.42s]  so if I say I want you to receive a message
+[1956.42s -> 1958.42s]  that I'm expecting
+[1958.42s -> 1960.42s]  that returns immediately with the handle
+[1960.42s -> 1962.42s]  and then the receiver
+[1962.42s -> 1964.42s]  at some point later can say hey is it here yet
+[1964.42s -> 1966.42s]  is it here yet
+[1966.42s -> 1968.42s]  is it here yet and if so
+[1968.42s -> 1970.42s]  I know I can touch the data in bar
+[1970.42s -> 1972.42s]  at this point
+[1972.42s -> 1974.42s]  if I read bar at this point
+[1974.42s -> 1976.42s]  it's unclear what data I will get
+[1976.42s -> 1978.42s]  so that's the
+[1978.42s -> 1980.42s]  asynchronous version of these things
+[1980.42s -> 1982.42s]  and so the asynchronous version
+[1982.42s -> 1984.42s]  can make it easier to implement some
+[1984.42s -> 1986.42s]  things like what I just talked about
+[1986.42s -> 1988.42s]  because you're not so worried necessarily about
+[1988.42s -> 1990.42s]  deadlock
+[1990.42s -> 1992.42s]  that's a good
+[1992.42s -> 1994.42s]  that's a really good point
+[1994.42s -> 1996.42s]  is what will happen in
+[1996.42s -> 1998.42s]  let's say this send and receive were a library
+[1998.42s -> 2000.42s]  which is what it normally would be
+[2000.42s -> 2002.42s]  if you were the library implementer
+[2002.42s -> 2004.42s]  inside of send and receive
+[2004.42s -> 2006.42s]  you definitely would be putting
+[2006.42s -> 2008.42s]  various what's called memory fences
+[2008.42s -> 2010.42s]  or other things in there
+[2010.42s -> 2012.42s]  so the compiler would not reorder
+[2012.42s -> 2014.42s]  around those instructions
+[2014.42s -> 2016.42s]  I'll talk a little bit about that in a lecture later
+[2016.42s -> 2018.42s]  which is about implementing synchronization
+[2018.42s -> 2020.42s]  how do acknowledgements work
+[2020.42s -> 2022.42s]  in this system?
+[2022.42s -> 2024.42s]  well the acknowledgements would be
+[2024.42s -> 2026.42s]  an underlying detail
+[2026.42s -> 2028.42s]  of the communication transport
+[2028.42s -> 2030.42s]  so they don't appear on this slide
+[2030.42s -> 2032.42s]  on purpose
+[2032.42s -> 2034.42s]  from the consumer, from the threads perspective
+[2034.42s -> 2036.42s]  what I have available to me is
+[2036.42s -> 2038.42s]  I initiate a send
+[2038.42s -> 2040.42s]  I essentially get a tracking number
+[2040.42s -> 2042.42s]  which is the handle
+[2042.42s -> 2044.42s]  and I can check via that tracking number
+[2044.42s -> 2046.42s]  later if the send is complete, yes or no
+[2046.42s -> 2048.42s]  or maybe if it failed
+[2048.42s -> 2050.42s]  now how under the hood
+[2050.42s -> 2052.42s]  the network layer implements
+[2052.42s -> 2054.42s]  reliable transport
+[2054.42s -> 2056.42s]  that's a completely different story
+[2056.42s -> 2058.42s]  from the scope of this class
+[2058.42s -> 2060.42s]  when you have two consecutive
+[2060.42s -> 2062.42s]  sends, how does this
+[2062.42s -> 2064.42s]  set up under your scope?
+[2064.42s -> 2066.42s]  so in this slide
+[2066.42s -> 2068.42s]  if I said send foo
+[2068.42s -> 2070.42s]  and again foo is the variable
+[2070.42s -> 2072.42s]  that I'm sending in my local address space
+[2072.42s -> 2074.42s]  if I send foo again
+[2074.42s -> 2076.42s]  here, and these were asynchronous
+[2076.42s -> 2078.42s]  it's pretty undefined
+[2078.42s -> 2080.42s]  what will happen because there's no guarantee
+[2080.42s -> 2082.42s]  of what order those two messages would be sent
+[2082.42s -> 2084.42s]  they're actually both sending the contents
+[2084.42s -> 2086.42s]  of the same local variable
+[2086.42s -> 2088.42s]  so are you saying what if I had send foo
+[2088.42s -> 2090.42s]  and then another send
+[2090.42s -> 2092.42s]  fizz or something like that
+[2092.42s -> 2094.42s]  I'm just sending two messages
+[2094.42s -> 2096.42s]  so there's no guarantee that they will be
+[2096.42s -> 2098.42s]  unless the library gives you
+[2098.42s -> 2100.42s]  states guarantees, there's no fundamental reason
+[2100.42s -> 2102.42s]  that they would arrive at the receiver
+[2102.42s -> 2104.42s]  in the same order
+[2104.42s -> 2106.42s]  you know, unless
+[2106.42s -> 2108.42s]  there's some configuration on the
+[2108.42s -> 2110.42s]  message passing API which says
+[2110.42s -> 2112.42s]  if you set this flag, we guarantee you
+[2112.42s -> 2114.42s]  it will be in the same order
+[2114.42s -> 2116.42s]  are you making sure, would you just
+[2116.42s -> 2118.42s]  busy wait here?
+[2118.42s -> 2120.42s]  one way would be to busy wait
+[2120.42s -> 2122.42s]  another way, some libraries
+[2122.42s -> 2124.42s]  might be designed
+[2124.42s -> 2126.42s]  that you register a callback
+[2126.42s -> 2128.42s]  you know, like in asynchronous JavaScript
+[2128.42s -> 2130.42s]  it's more like essentially posting that
+[2130.42s -> 2132.42s]  AJAX request, it's like you're putting yourself
+[2132.42s -> 2134.42s]  in a queue and you get invoked
+[2134.42s -> 2136.42s]  when it's done
+[2136.42s -> 2138.42s]  just about the ordering of the receives
+[2138.42s -> 2140.42s]  if there's sends
+[2140.42s -> 2142.42s]  I think previously there was a
+[2142.42s -> 2144.42s]  message ID also
+[2144.42s -> 2146.42s]  yeah, like the way you would do it
+[2146.42s -> 2148.42s]  is I'm just being simple here
+[2148.42s -> 2150.42s]  send foo ID whatever
+[2150.42s -> 2152.42s]  and then the receive
+[2152.42s -> 2154.42s]  you could either receive most of these APIs
+[2154.42s -> 2156.42s]  it's very specific now to the threading
+[2156.42s -> 2158.42s]  to the message passing
+[2158.42s -> 2160.42s]  you might say, I want to explicitly receive
+[2160.42s -> 2162.42s]  the message with this ID
+[2162.42s -> 2164.42s]  or you just post receive and say
+[2164.42s -> 2166.42s]  I'm just receiving
+[2166.42s -> 2168.42s]  and then once you have checked the receive
+[2168.42s -> 2170.42s]  the message is here and here's the
+[2170.42s -> 2172.42s]  here's the ID of what it was
+[2172.42s -> 2174.42s]  and then your program might be, oh, if it's ID43
+[2174.42s -> 2176.42s]  I do this, if it's ID42 I do that
+[2176.42s -> 2178.42s]  yeah, so every message
+[2178.42s -> 2180.42s]  you should think of as having an ID
+[2180.42s -> 2182.42s]  and sending or waiting
+[2182.42s -> 2184.42s]  or receiving can be wait for
+[2184.42s -> 2186.42s]  a message, any message
+[2186.42s -> 2188.42s]  wait for a message from this sender
+[2188.42s -> 2190.42s]  wait for a message with this ID
+[2190.42s -> 2192.42s]  those are all parameters and details
+[2192.42s -> 2194.42s]  of your message passing thing
+[2194.42s -> 2196.42s]  now even though I set this up
+[2196.42s -> 2198.42s]  imagine these are different computers
+[2198.42s -> 2200.42s]  communicating, I want you to just keep in mind
+[2200.42s -> 2202.42s]  that there's many different types of
+[2202.42s -> 2204.42s]  communication, so there's no difference
+[2204.42s -> 2206.42s]  conceptually if we're talking about communication
+[2206.42s -> 2208.42s]  between a core and its memory
+[2208.42s -> 2210.42s]  or two different cores
+[2210.42s -> 2212.42s]  on the same chip, or two different computers
+[2212.42s -> 2214.42s]  in different dorm rooms, like abstractly
+[2214.42s -> 2216.42s]  we can send messages between anything
+[2216.42s -> 2218.42s]  and communication
+[2218.42s -> 2220.42s]  can be between movement of data
+[2220.42s -> 2222.42s]  can happen between the processor and its registers
+[2222.42s -> 2224.42s]  or its local L1 or its L3
+[2224.42s -> 2226.42s]  or DRAM on my own computer
+[2226.42s -> 2228.42s]  or DRAM on somebody else's computer
+[2228.42s -> 2230.42s]  or DRAM off in Google
+[2230.42s -> 2232.42s]  so communication I want you to think of
+[2232.42s -> 2234.42s]  as just being abstract
+[2234.42s -> 2236.42s]  and once you start
+[2236.42s -> 2238.42s]  thinking about this, like these diagrams
+[2238.42s -> 2240.42s]  that I showed you a few
+[2240.42s -> 2242.42s]  lectures earlier
+[2242.42s -> 2244.42s]  where I said imagine a processor issues
+[2244.42s -> 2246.42s]  a load instruction
+[2246.42s -> 2248.42s]  and there's some memory latency
+[2248.42s -> 2250.42s]  and then the data
+[2250.42s -> 2252.42s]  has to actually start moving back to me
+[2252.42s -> 2254.42s]  so now hopefully you get a little bit
+[2254.42s -> 2256.42s]  of a sense of where all this memory latency
+[2256.42s -> 2258.42s]  comes from, like it's an L1
+[2258.42s -> 2260.42s]  cache lookup, an L2 cache lookup
+[2260.42s -> 2262.42s]  maybe you actually have a TLB miss
+[2262.42s -> 2264.42s]  because of an operating system
+[2264.42s -> 2266.42s]  or something like that
+[2266.42s -> 2268.42s]  maybe a request
+[2268.42s -> 2270.42s]  a message has to get sent to memory
+[2270.42s -> 2272.42s]  saying I want the data at this address
+[2272.42s -> 2274.42s]  and at some point the memory starts sending
+[2274.42s -> 2276.42s]  you the data back
+[2276.42s -> 2278.42s]  and if you have a bandwidth of B bits
+[2278.42s -> 2280.42s]  per second, you start getting B bits
+[2280.42s -> 2282.42s]  per second back in that blue region
+[2282.42s -> 2284.42s]  and so
+[2284.42s -> 2286.42s]  that's why when I
+[2286.42s -> 2288.42s]  when I drew this thing
+[2288.42s -> 2290.42s]  I drew an example
+[2290.42s -> 2292.42s]  like this, where this was
+[2292.42s -> 2294.42s]  a program that did two
+[2294.42s -> 2296.42s]  instructions and then a memory
+[2296.42s -> 2298.42s]  transaction, so it's like
+[2298.42s -> 2300.42s]  math math read
+[2300.42s -> 2302.42s]  math math read
+[2302.42s -> 2304.42s]  and the main idea of this diagram
+[2304.42s -> 2306.42s]  is if we just look very carefully
+[2306.42s -> 2308.42s]  first of all, even though the reads don't come back
+[2308.42s -> 2310.42s]  for a while
+[2310.42s -> 2312.42s]  as long as the
+[2312.42s -> 2314.42s]  processor has some ability to hide the latency
+[2314.42s -> 2316.42s]  like multi-threading or something like that
+[2316.42s -> 2318.42s]  we don't really care so much
+[2318.42s -> 2320.42s]  about the latency
+[2320.42s -> 2322.42s]  we actually care the most about the length
+[2322.42s -> 2324.42s]  of the blue bar
+[2324.42s -> 2326.42s]  so if you look carefully
+[2326.42s -> 2328.42s]  at this diagram, just double
+[2328.42s -> 2330.42s]  convince yourself that memory
+[2330.42s -> 2332.42s]  is always busy
+[2332.42s -> 2334.42s]  and the processor
+[2334.42s -> 2336.42s]  is not always busy
+[2336.42s -> 2338.42s]  so I drew these yellow bars to show you
+[2338.42s -> 2340.42s]  that memory was always busy
+[2340.42s -> 2342.42s]  and the pink bars are times when the processor
+[2342.42s -> 2344.42s]  is not executing instructions
+[2344.42s -> 2346.42s]  because it's waiting
+[2346.42s -> 2348.42s]  for the next
+[2348.42s -> 2350.42s]  piece of data to come back from memory
+[2350.42s -> 2352.42s]  so like
+[2352.42s -> 2354.42s]  you can think about this blue bar as being
+[2354.42s -> 2356.42s]  like it's a cache line, it's like 64 bytes
+[2356.42s -> 2358.42s]  or something like that, if every one of these
+[2358.42s -> 2360.42s]  reads is a unique cache line
+[2360.42s -> 2362.42s]  good question, so is this
+[2362.42s -> 2364.42s]  message passing an alternative
+[2364.42s -> 2366.42s]  to what we talked about last time
+[2366.42s -> 2368.42s]  how does it work together
+[2368.42s -> 2370.42s]  message passing is just a way
+[2370.42s -> 2372.42s]  to exchange data between
+[2372.42s -> 2374.42s]  threads
+[2374.42s -> 2376.42s]  an alternative on how to
+[2376.42s -> 2378.42s]  communicate data between threads
+[2378.42s -> 2380.42s]  is everybody reads and writes to a shared address space
+[2380.42s -> 2382.42s]  and so
+[2382.42s -> 2384.42s]  the reason why I brought up message passing
+[2384.42s -> 2386.42s]  other than to make everybody familiar with the idea
+[2386.42s -> 2388.42s]  of message passing
+[2388.42s -> 2390.42s]  is it's kind of helpful to think about communication
+[2390.42s -> 2392.42s]  in the context of message passing
+[2392.42s -> 2394.42s]  because you literally see it in the program
+[2394.42s -> 2396.42s]  here is where the communication is
+[2396.42s -> 2398.42s]  whereas what we talked about in
+[2398.42s -> 2400.42s]  assignment 1, or like this was an
+[2400.42s -> 2402.42s]  example that I used for the bandwidth bound
+[2402.42s -> 2404.42s]  problem in assignment 1
+[2404.42s -> 2406.42s]  where is the communication, well the communication
+[2406.42s -> 2408.42s]  is the load and store
+[2408.42s -> 2410.42s]  but that load and store is actually
+[2410.42s -> 2412.42s]  about sending a request
+[2412.42s -> 2414.42s]  out to memory and getting the data back
+[2414.42s -> 2416.42s]  so the communication in a shared address
+[2416.42s -> 2418.42s]  space program is kind of implicit
+[2418.42s -> 2420.42s]  in the implementation of memory
+[2420.42s -> 2422.42s]  so you know I'm just like
+[2422.42s -> 2424.42s]  there's, but I could implement
+[2424.42s -> 2426.42s]  shared work queues
+[2426.42s -> 2428.42s]  using message passing
+[2428.42s -> 2430.42s]  on a bunch of machines on a cluster
+[2430.42s -> 2432.42s]  that had no shared address space
+[2432.42s -> 2434.42s]  I could do that dynamic
+[2434.42s -> 2436.42s]  work stealing with different queues very easily
+[2436.42s -> 2438.42s]  except now stealing work is about
+[2438.42s -> 2440.42s]  sending another computer a message
+[2440.42s -> 2442.42s]  and getting work back as opposed
+[2442.42s -> 2444.42s]  to directly accessing their data structure
+[2444.42s -> 2446.42s]  okay, yeah
+[2446.42s -> 2448.42s]  so if you're writing
+[2448.42s -> 2450.42s]  a program on a practical system
+[2450.42s -> 2452.42s]  where it's not a cluster but just
+[2452.42s -> 2454.42s]  one processor, is there ever
+[2454.42s -> 2456.42s]  a reason to use message passing as opposed to
+[2456.42s -> 2458.42s]  there definitely can be
+[2458.42s -> 2460.42s]  there definitely can be, because in some sense
+[2460.42s -> 2462.42s]  message passing forces you to think about
+[2462.42s -> 2464.42s]  all the communication
+[2464.42s -> 2466.42s]  so a lot of folks do actually
+[2466.42s -> 2468.42s]  write with a message passing model
+[2468.42s -> 2470.42s]  on a multi-core
+[2470.42s -> 2472.42s]  shared memory system
+[2472.42s -> 2474.42s]  just because
+[2474.42s -> 2476.42s]  locks are hard
+[2476.42s -> 2478.42s]  like if messages were to throw something
+[2478.42s -> 2480.42s]  in a message queue and let the other side
+[2480.42s -> 2482.42s]  pick it up, that could actually be
+[2482.42s -> 2484.42s]  an easier way to reason about concurrency
+[2484.42s -> 2486.42s]  like for example in most multi-processing
+[2486.42s -> 2488.42s]  systems
+[2488.42s -> 2490.42s]  you might send a message
+[2490.42s -> 2492.42s]  to another process as opposed to
+[2492.42s -> 2494.42s]  memory map the address space
+[2494.42s -> 2496.42s]  into both processes and stuff like that
+[2496.42s -> 2498.42s]  so message passing is a highly structured
+[2498.42s -> 2500.42s]  form of communication
+[2500.42s -> 2502.42s]  which forces you to work hard to
+[2502.42s -> 2504.42s]  get it right, but once you get it right
+[2504.42s -> 2506.42s]  communication is really explicit
+[2506.42s -> 2508.42s]  you kind of know where any stalls might be
+[2508.42s -> 2510.42s]  it might be easier to debug and performance tune
+[2510.42s -> 2512.42s]  shared memory
+[2512.42s -> 2514.42s]  is just a different mechanism that doesn't
+[2514.42s -> 2516.42s]  force you to have any discipline at all
+[2516.42s -> 2518.42s]  so it might be easier to get your first program
+[2518.42s -> 2520.42s]  running
+[2520.42s -> 2522.42s]  maybe you just throw a big global lock around everything
+[2522.42s -> 2524.42s]  or something like that, but as you start to
+[2524.42s -> 2526.42s]  performance tune it, now you don't
+[2526.42s -> 2528.42s]  get maybe as much structure
+[2528.42s -> 2530.42s]  or as help, and there's different
+[2530.42s -> 2532.42s]  reasons why you might want to use different things
+[2533.42s -> 2535.42s]  One more question about performance
+[2535.42s -> 2537.42s]  it seems like when we're doing
+[2537.42s -> 2539.42s]  machine passing there's this extra
+[2539.42s -> 2541.42s]  write that's happening where you have to first write
+[2541.42s -> 2543.42s]  to the network
+[2543.42s -> 2545.42s]  there's a copy in and out
+[2545.42s -> 2547.42s]  is there any way to get around that?
+[2547.42s -> 2549.42s]  there are plenty of ways to get around that
+[2549.42s -> 2551.42s]  so let's go back here
+[2553.42s -> 2555.42s]  in a modern high performance network
+[2555.42s -> 2557.42s]  even like a modern data center
+[2557.42s -> 2559.42s]  where you've got a bunch of machines
+[2559.42s -> 2561.42s]  and let's say you're running
+[2561.42s -> 2563.42s]  a key value store that needs to be distributed
+[2563.42s -> 2565.42s]  over a bunch of machines
+[2565.42s -> 2567.42s]  there's a lot of interest in reducing
+[2567.42s -> 2569.42s]  the latency and the cost
+[2569.42s -> 2571.42s]  of sending messages
+[2571.42s -> 2573.42s]  so it could be very easy that this send foo
+[2573.42s -> 2575.42s]  this foo is a variable, it's a pointer
+[2575.42s -> 2577.42s]  and the only thing that happens
+[2577.42s -> 2579.42s]  is that pointer is sent to your NIC
+[2579.42s -> 2581.42s]  and your NIC goes reads
+[2581.42s -> 2583.42s]  that data out of memory directly
+[2583.42s -> 2585.42s]  itself and pushes data out over the wire
+[2585.42s -> 2587.42s]  so there are very high performance networking
+[2587.42s -> 2589.42s]  implementations that don't necessarily
+[2589.42s -> 2591.42s]  mean that data is copied unnecessarily
+[2591.42s -> 2593.42s]  but even in that
+[2593.42s -> 2595.42s]  implementation
+[2595.42s -> 2597.42s]  until the data has been
+[2597.42s -> 2599.42s]  at some point it has to get copied
+[2599.42s -> 2601.42s]  because it's got to get copied into the network
+[2601.42s -> 2603.42s]  until that copy happens, any modification
+[2603.42s -> 2605.42s]  to foo by the calling thread
+[2605.42s -> 2607.42s]  could in fact change the bits
+[2607.42s -> 2609.42s]  prior to that copy
+[2609.42s -> 2611.42s]  which means that even though you thought you were
+[2611.42s -> 2613.42s]  sending the contents of foo when I called
+[2613.42s -> 2615.42s]  the thing, you actually send the contents of foo later
+[2615.42s -> 2617.42s]  and that's going to be a bug
+[2617.42s -> 2619.42s]  so asynchronous
+[2619.42s -> 2621.42s]  all of a sudden
+[2621.42s -> 2623.42s]  if it's synchronous you never think about
+[2623.42s -> 2625.42s]  concurrency between the caller and the message
+[2625.42s -> 2627.42s]  transmission. Asynchronous
+[2627.42s -> 2629.42s]  like it was suggested that it might be
+[2629.42s -> 2631.42s]  an easier way to do things, it can also be a
+[2631.42s -> 2633.42s]  harder way to do things because now you've introduced
+[2633.42s -> 2635.42s]  more concurrency in your program and you potentially
+[2635.42s -> 2637.42s]  have more problems
+[2637.42s -> 2639.42s]  ok
+[2639.42s -> 2641.42s]  so let's see here
+[2643.42s -> 2645.42s]  I talked about this a few lectures ago
+[2645.42s -> 2647.42s]  but I wanted to put another slide
+[2647.42s -> 2649.42s]  this is something I'd like you to take offline
+[2649.42s -> 2651.42s]  and when you look at this
+[2651.42s -> 2653.42s]  diagram here
+[2653.42s -> 2655.42s]  I want you to be able to go
+[2655.42s -> 2657.42s]  yeah, that program is bandwidth bound
+[2657.42s -> 2659.42s]  it is basically
+[2659.42s -> 2661.42s]  communication bound between memory
+[2661.42s -> 2663.42s]  and the processor
+[2663.42s -> 2665.42s]  and I'd like you to be able to answer all of these questions
+[2665.42s -> 2667.42s]  like, if you increased
+[2667.42s -> 2669.42s]  memory latency
+[2669.42s -> 2671.42s]  which means if you increase the distance
+[2671.42s -> 2673.42s]  from here to here
+[2673.42s -> 2675.42s]  would any of the utilization
+[2675.42s -> 2677.42s]  or efficiency change
+[2677.42s -> 2679.42s]  and your answer should be no
+[2679.42s -> 2681.42s]  as long as you can hide that latency
+[2681.42s -> 2683.42s]  right, if you increase
+[2683.42s -> 2685.42s]  the bandwidth of the system
+[2685.42s -> 2687.42s]  what would happen
+[2687.42s -> 2689.42s]  the blue bar should shrink
+[2689.42s -> 2691.42s]  and if the blue bar shrinks
+[2691.42s -> 2693.42s]  that means I'm stalled less in the pink regions
+[2693.42s -> 2695.42s]  if I increase
+[2695.42s -> 2697.42s]  the number of math operations
+[2697.42s -> 2699.42s]  per blue memory
+[2699.42s -> 2701.42s]  request, utilization
+[2701.42s -> 2703.42s]  goes up, those are all things
+[2703.42s -> 2705.42s]  that I want you to be able to think through
+[2705.42s -> 2707.42s]  and at the end of the day it all comes out
+[2707.42s -> 2709.42s]  if we're not worried about latency
+[2709.42s -> 2711.42s]  if we have the ability to hide latency
+[2711.42s -> 2713.42s]  whether it be multithreading, prefetching data
+[2713.42s -> 2715.42s]  or whatever, the name of the game
+[2715.42s -> 2717.42s]  is going to come down to
+[2717.42s -> 2719.42s]  something called arithmetic intensity
+[2719.42s -> 2721.42s]  which is the number of math
+[2721.42s -> 2723.42s]  operations you're going to do
+[2723.42s -> 2725.42s]  per unit data that you read
+[2725.42s -> 2727.42s]  some people like to call it
+[2727.42s -> 2729.42s]  communication to computation ratio
+[2729.42s -> 2731.42s]  which is one over this
+[2731.42s -> 2733.42s]  I like arithmetic intensity because
+[2733.42s -> 2735.42s]  A sounds cooler and B hires better
+[2735.42s -> 2737.42s]  which is intuitive for me
+[2737.42s -> 2739.42s]  so
+[2739.42s -> 2741.42s]  let's talk a little bit about
+[2741.42s -> 2743.42s]  a few more ideas about communication
+[2743.42s -> 2745.42s]  ok, so
+[2745.42s -> 2747.42s]  you will find that
+[2747.42s -> 2749.42s]  it's helpful to
+[2749.42s -> 2753.42s]  break apart communication in two ways
+[2753.42s -> 2755.42s]  one is communication that
+[2755.42s -> 2757.42s]  just has to happen
+[2757.42s -> 2759.42s]  because of the nature of the algorithm
+[2759.42s -> 2761.42s]  and another one is communication
+[2761.42s -> 2763.42s]  that happens
+[2763.42s -> 2765.42s]  because of the way machines actually work
+[2765.42s -> 2767.42s]  so the first one is called
+[2767.42s -> 2769.42s]  inherent communication, the second one
+[2769.42s -> 2771.42s]  is artifactual, and that
+[2771.42s -> 2773.42s]  comes from the fact that like I have
+[2773.42s -> 2775.42s]  some real details of how a computer works
+[2775.42s -> 2777.42s]  and there are artifacts of that
+[2777.42s -> 2779.42s]  so let me just give you an example here
+[2779.42s -> 2781.42s]  ok, so in this grid solver
+[2781.42s -> 2783.42s]  application
+[2783.42s -> 2785.42s]  I cannot do the application
+[2785.42s -> 2787.42s]  I can't get the right answer
+[2787.42s -> 2789.42s]  unless I move this data
+[2789.42s -> 2791.42s]  to this thread
+[2791.42s -> 2793.42s]  that is inherent to the computation
+[2793.42s -> 2795.42s]  so that's communication
+[2795.42s -> 2797.42s]  that just has to happen
+[2797.42s -> 2799.42s]  somehow I have to pay that cost
+[2799.42s -> 2801.42s]  and we talked a little bit last time
+[2801.42s -> 2803.42s]  about how much communication
+[2803.42s -> 2805.42s]  is there
+[2805.42s -> 2807.42s]  let's take a look at this
+[2807.42s -> 2809.42s]  so if I partition my work
+[2809.42s -> 2811.42s]  across my processors
+[2811.42s -> 2813.42s]  sorry for interleaving P1 and T1
+[2813.42s -> 2815.42s]  the threads to me are the same in this lecture
+[2815.42s -> 2817.42s]  how much communication
+[2817.42s -> 2819.42s]  do we do
+[2819.42s -> 2821.42s]  for every
+[2821.42s -> 2823.42s]  every
+[2823.42s -> 2825.42s]  element that we process
+[2825.42s -> 2827.42s]  so what is that ratio
+[2827.42s -> 2829.42s]  like elements processed
+[2829.42s -> 2831.42s]  to amount of communication that happens
+[2831.42s -> 2833.42s]  so let's think about one thread
+[2833.42s -> 2835.42s]  if the total amount of data
+[2835.42s -> 2837.42s]  is N squared
+[2837.42s -> 2839.42s]  and there are
+[2839.42s -> 2841.42s]  divide this up amongst P processors
+[2841.42s -> 2843.42s]  how much work does every
+[2843.42s -> 2845.42s]  processor do
+[2845.42s -> 2847.42s]  N squared over P
+[2847.42s -> 2849.42s]  N squared over P
+[2849.42s -> 2851.42s]  and how much communication does every processor do
+[2851.42s -> 2853.42s]  2P
+[2853.42s -> 2855.42s]  so if we have N squared
+[2855.42s -> 2857.42s]  over P
+[2857.42s -> 2859.42s]  I'm going to drop my constants
+[2859.42s -> 2861.42s]  and I have 2N
+[2861.42s -> 2863.42s]  communication
+[2863.42s -> 2865.42s]  did I say 2P?
+[2865.42s -> 2867.42s]  oh sorry, 2N
+[2867.42s -> 2869.42s]  it's the width of a thing
+[2869.42s -> 2871.42s]  and the kinetic intensity is N over P
+[2871.42s -> 2873.42s]  right? sorry
+[2873.42s -> 2875.42s]  N over P
+[2875.42s -> 2877.42s]  now if I went with this interleaved assignment
+[2877.42s -> 2879.42s]  and
+[2879.42s -> 2881.42s]  we think about the message passing
+[2881.42s -> 2883.42s]  program, what is the amount of
+[2883.42s -> 2885.42s]  computation I do?
+[2885.42s -> 2887.42s]  still N squared over P
+[2887.42s -> 2889.42s]  and how much data do I move?
+[2895.42s -> 2897.42s]  another way to think about it
+[2897.42s -> 2899.42s]  the total that I compute
+[2899.42s -> 2901.42s]  how much data do I have to move?
+[2901.42s -> 2903.42s]  two rows of data, right?
+[2903.42s -> 2905.42s]  so now my arithmetic intensity has gone from
+[2905.42s -> 2907.42s]  N over P
+[2907.42s -> 2909.42s]  and let's just assume that N is probably a good bit
+[2909.42s -> 2911.42s]  bigger than P
+[2911.42s -> 2913.42s]  to one half
+[2913.42s -> 2915.42s]  so
+[2915.42s -> 2917.42s]  if I go back to that diagram
+[2917.42s -> 2919.42s]  where the speed of my utilization
+[2919.42s -> 2921.42s]  is going to be a function of
+[2921.42s -> 2923.42s]  can I not be bandwidth or communication bound
+[2923.42s -> 2925.42s]  here I'm doing
+[2925.42s -> 2927.42s]  every P elements communicated
+[2927.42s -> 2929.42s]  there I'm doing one operation
+[2929.42s -> 2931.42s]  for every two elements communicated
+[2931.42s -> 2933.42s]  and I'm much more likely to be
+[2933.42s -> 2935.42s]  bandwidth bound with the scheme on the right
+[2935.42s -> 2937.42s]  than I am on the scheme on the left
+[2937.42s -> 2939.42s]  ok
+[2939.42s -> 2941.42s]  can anybody think of how to maybe do better?
+[2941.42s -> 2943.42s]  so
+[2943.42s -> 2945.42s]  left is way better than right
+[2945.42s -> 2947.42s]  for sure
+[2947.42s -> 2949.42s]  can you do better than left?
+[2949.42s -> 2951.42s]  yep
+[2951.42s -> 2953.42s]  so
+[2953.42s -> 2955.42s]  so the arithmetic intensity
+[2955.42s -> 2957.42s]  very good, is basically the ratio
+[2957.42s -> 2959.42s]  of the area
+[2959.42s -> 2961.42s]  of a region to its perimeter
+[2961.42s -> 2963.42s]  in this case
+[2963.42s -> 2965.42s]  and the way to create a shape
+[2965.42s -> 2967.42s]  that has the highest ratio
+[2967.42s -> 2969.42s]  of area to perimeter is what?
+[2969.42s -> 2971.42s]  is a square
+[2971.42s -> 2973.42s]  right? so let's
+[2973.42s -> 2975.42s]  look at this, let's divide up the work
+[2975.42s -> 2977.42s]  this way instead
+[2977.42s -> 2979.42s]  I had to create a few more processors here
+[2979.42s -> 2981.42s]  just to make the diagram
+[2981.42s -> 2983.42s]  a little bit more obvious
+[2983.42s -> 2985.42s]  so now let's just say I have 9 cores
+[2985.42s -> 2987.42s]  and so again I have
+[2987.42s -> 2989.42s]  N squared elements, P processors
+[2989.42s -> 2991.42s]  what is the work for processor?
+[2991.42s -> 2993.42s]  stays N squared over P
+[2993.42s -> 2995.42s]  that hasn't changed
+[2995.42s -> 2997.42s]  what's the communication?
+[2997.42s -> 2999.42s]  well, every one of these borders
+[2999.42s -> 3001.42s]  is a square root
+[3001.42s -> 3003.42s]  of N over square root
+[3003.42s -> 3005.42s]  of P
+[3005.42s -> 3007.42s]  right?
+[3007.42s -> 3009.42s]  so the elements communicated
+[3009.42s -> 3011.42s]  times N over square root of P
+[3011.42s -> 3013.42s]  did you follow that?
+[3013.42s -> 3015.42s]  because I basically
+[3015.42s -> 3017.42s]  I divided
+[3017.42s -> 3019.42s]  something of width N
+[3019.42s -> 3021.42s]  I have P processors total
+[3021.42s -> 3023.42s]  so there are square root
+[3023.42s -> 3025.42s]  P processors along one row
+[3025.42s -> 3027.42s]  and so now my arithmetic
+[3027.42s -> 3029.42s]  intensity, before remember it was
+[3029.42s -> 3031.42s]  N over P
+[3031.42s -> 3033.42s]  now it is N over root P
+[3033.42s -> 3035.42s]  which is a larger value
+[3035.42s -> 3037.42s]  and potentially very important
+[3037.42s -> 3039.42s]  if my P is large
+[3039.42s -> 3041.42s]  on a large core count machine
+[3041.42s -> 3043.42s]  so this
+[3043.42s -> 3045.42s]  trick of redistributing the
+[3045.42s -> 3047.42s]  work in this
+[3047.42s -> 3049.42s]  tile format as opposed to
+[3049.42s -> 3051.42s]  the chunks of rows
+[3051.42s -> 3053.42s]  means that I have higher
+[3053.42s -> 3055.42s]  arithmetic intensity, I'm doing more operations
+[3055.42s -> 3057.42s]  per byte sent
+[3057.42s -> 3059.42s]  and I can stay running
+[3059.42s -> 3061.42s]  at full utilization with lower memory
+[3061.42s -> 3063.42s]  bandwidth
+[3063.42s -> 3065.42s]  or if I'm under a machine with a lot of cores
+[3065.42s -> 3067.42s]  I have higher utilization
+[3067.42s -> 3069.42s]  for longer
+[3077.42s -> 3079.42s]  well I mean you could, but go for it
+[3083.42s -> 3085.42s]  it's going to be up to you
+[3085.42s -> 3087.42s]  if you are bandwidth bound
+[3087.42s -> 3089.42s]  if you're communication bound
+[3089.42s -> 3091.42s]  anything you do to
+[3091.42s -> 3093.42s]  increase arithmetic intensity will translate
+[3093.42s -> 3095.42s]  into enhanced performance
+[3095.42s -> 3097.42s]  now you want to cut this up into circles
+[3097.42s -> 3099.42s]  what are you going to do with the regions inside
+[3099.42s -> 3101.42s]  I'm not exactly sure
+[3101.42s -> 3103.42s]  you're probably going to waste so much math at that point
+[3103.42s -> 3105.42s]  to figure out what you're doing that it may not be faster
+[3105.42s -> 3107.42s]  but this is a pretty substantial improvement
+[3109.42s -> 3111.42s]  in other words think about it this way
+[3111.42s -> 3113.42s]  imagine you're running on a
+[3113.42s -> 3115.42s]  64 core machine
+[3115.42s -> 3117.42s]  or something like that, or let's just say a 16 core machine
+[3117.42s -> 3119.42s]  root P versus P
+[3119.42s -> 3121.42s]  that's a 4x difference
+[3121.42s -> 3123.42s]  maintain peak utilization
+[3123.42s -> 3125.42s]  with 4x less bandwidth
+[3125.42s -> 3127.42s]  using this scheme
+[3127.42s -> 3129.42s]  that can be a really big deal
+[3129.42s -> 3131.42s]  ok, so that was an example
+[3131.42s -> 3133.42s]  of an optimization
+[3133.42s -> 3135.42s]  to reduce inherent communication
+[3135.42s -> 3137.42s]  because that was data that had to move
+[3137.42s -> 3139.42s]  often we're fighting
+[3139.42s -> 3141.42s]  a bunch of stuff that is
+[3141.42s -> 3143.42s]  inherent, or sorry, artifactual communication
+[3143.42s -> 3145.42s]  which kind of comes from the fact that we never
+[3145.42s -> 3147.42s]  move one piece of data in a computer
+[3147.42s -> 3149.42s]  we always move a cache line
+[3149.42s -> 3151.42s]  or the minimum packet size might be
+[3151.42s -> 3153.42s]  a kilobyte or something like that
+[3153.42s -> 3155.42s]  so there's always details of how a machine works
+[3155.42s -> 3157.42s]  where you're like, oh that communication shouldn't be so bad
+[3157.42s -> 3159.42s]  and then you're like, oh gosh
+[3159.42s -> 3161.42s]  that was really bad, so let me give you a common example
+[3161.42s -> 3163.42s]  which is caches, why we teach
+[3163.42s -> 3165.42s]  caches in this class
+[3165.42s -> 3167.42s]  think about the caching behavior of the
+[3167.42s -> 3169.42s]  grid solver
+[3169.42s -> 3171.42s]  and so imagine that I have a cache
+[3171.42s -> 3173.42s]  that the cache line size is 4 elements
+[3173.42s -> 3175.42s]  so each of those blue things
+[3175.42s -> 3177.42s]  is 4 dots wide, so it's 4 elements
+[3177.42s -> 3179.42s]  and imagine I have a cache
+[3179.42s -> 3181.42s]  that is 6 lines, or 24 total
+[3181.42s -> 3183.42s]  grid elements, so imagine
+[3183.42s -> 3185.42s]  that when I'm computing that red dot
+[3185.42s -> 3187.42s]  there, as a result of
+[3187.42s -> 3189.42s]  computing that red dot, I read the 4
+[3189.42s -> 3191.42s]  cardinal neighbors and hopefully
+[3191.42s -> 3193.42s]  you agree with me that these would be the
+[3193.42s -> 3195.42s]  cache lines that would be loaded
+[3195.42s -> 3197.42s]  so after producing that red dot
+[3197.42s -> 3199.42s]  those would be the cache lines
+[3199.42s -> 3201.42s]  I move over horizontally
+[3201.42s -> 3203.42s]  one element
+[3203.42s -> 3205.42s]  will there be any cache misses?
+[3205.42s -> 3207.42s]  no actually, they're all cache hits
+[3207.42s -> 3209.42s]  and now, imagine
+[3209.42s -> 3211.42s]  we proceed
+[3211.42s -> 3213.42s]  in the horizontal direction
+[3213.42s -> 3215.42s]  when we get to the end of the row
+[3215.42s -> 3217.42s]  I've computed
+[3217.42s -> 3219.42s]  all of these elements and that
+[3219.42s -> 3221.42s]  is the state of my cache, remember my cache
+[3221.42s -> 3223.42s]  can hold 6 lines
+[3223.42s -> 3225.42s]  now I want you to think
+[3225.42s -> 3227.42s]  about what happens
+[3227.42s -> 3229.42s]  when I get back
+[3229.42s -> 3231.42s]  to here
+[3231.42s -> 3233.42s]  I want to process the red dot
+[3233.42s -> 3235.42s]  my cache has
+[3235.42s -> 3237.42s]  the blue region in it
+[3237.42s -> 3239.42s]  but not too long ago
+[3239.42s -> 3241.42s]  I had all the data that I needed
+[3241.42s -> 3243.42s]  except for the row
+[3243.42s -> 3245.42s]  underneath the red dot
+[3245.42s -> 3247.42s]  sitting there in cache
+[3247.42s -> 3249.42s]  and now it's not there
+[3249.42s -> 3251.42s]  so I'm going to miss on everything again
+[3251.42s -> 3253.42s]  that's kind of artifactual
+[3253.42s -> 3255.42s]  communication, right?
+[3255.42s -> 3257.42s]  like theoretically, I loaded that data
+[3257.42s -> 3259.42s]  and if I had some magical cache
+[3259.42s -> 3261.42s]  I'm not communicating it back to the processor again
+[3261.42s -> 3263.42s]  but if you actually looked
+[3263.42s -> 3265.42s]  at this program, you would say no
+[3265.42s -> 3267.42s]  I'm taking all these cache
+[3267.42s -> 3269.42s]  misses every single time
+[3269.42s -> 3271.42s]  I touch data
+[3271.42s -> 3273.42s]  so if you look carefully
+[3273.42s -> 3275.42s]  this program
+[3275.42s -> 3277.42s]  for every 4 elements of output
+[3277.42s -> 3279.42s]  I load
+[3279.42s -> 3281.42s]  3 new cache lines
+[3281.42s -> 3283.42s]  that's one way to think about it
+[3283.42s -> 3285.42s]  that's probably easier to see here
+[3285.42s -> 3287.42s]  if I go
+[3287.42s -> 3289.42s]  once I get into steady state
+[3289.42s -> 3291.42s]  the first element
+[3291.42s -> 3293.42s]  3 cache lines
+[3293.42s -> 3295.42s]  second element, no new cache lines
+[3295.42s -> 3297.42s]  the third element actually
+[3297.42s -> 3299.42s]  is going to load 3 more cache lines
+[3299.42s -> 3301.42s]  but in steady state across the thing
+[3301.42s -> 3303.42s]  I'm going to do 4 red dots for every
+[3303.42s -> 3305.42s]  3 cache lines that I load
+[3307.42s -> 3309.42s]  so that's my arithmetic intensity
+[3309.42s -> 3311.42s]  4 elements of output
+[3311.42s -> 3313.42s]  per 3 cache lines
+[3313.42s -> 3315.42s]  that's a ratio of work
+[3315.42s -> 3317.42s]  to bandwidth
+[3317.42s -> 3319.42s]  there's a lot of examples of artifactual communication
+[3319.42s -> 3321.42s]  like cache lines
+[3321.42s -> 3323.42s]  or finite size caches
+[3323.42s -> 3325.42s]  or network traffic that has to be
+[3325.42s -> 3327.42s]  transmitted on
+[3327.42s -> 3329.42s]  boundaries of size 16
+[3329.42s -> 3331.42s]  and stuff like that
+[3331.42s -> 3333.42s]  so my blocking
+[3333.42s -> 3335.42s]  example about tiling
+[3335.42s -> 3337.42s]  that was an example of
+[3337.42s -> 3339.42s]  changing the assignment of work
+[3339.42s -> 3341.42s]  to processors
+[3341.42s -> 3343.42s]  to reduce
+[3343.42s -> 3345.42s]  inherent communication
+[3345.42s -> 3347.42s]  when I divided the world up into tiles
+[3347.42s -> 3349.42s]  I said, ok, if I do a different
+[3349.42s -> 3351.42s]  workload balance
+[3351.42s -> 3353.42s]  you're going to communicate less
+[3353.42s -> 3355.42s]  because inherently
+[3355.42s -> 3357.42s]  you will communicate less
+[3357.42s -> 3359.42s]  now let me give you a technique
+[3359.42s -> 3361.42s]  for reducing the artifactual
+[3361.42s -> 3363.42s]  communication, or in fact
+[3363.42s -> 3365.42s]  maybe you can come up with a technique
+[3365.42s -> 3367.42s]  instead of running across
+[3367.42s -> 3369.42s]  the array like this, is there a way I can change
+[3369.42s -> 3371.42s]  the program
+[3371.42s -> 3373.42s]  to increase its arithmetic intensity
+[3373.42s -> 3375.42s]  yes sir
+[3375.42s -> 3377.42s]  inherent communication
+[3377.42s -> 3379.42s]  inherent communication
+[3379.42s -> 3381.42s]  is
+[3381.42s -> 3383.42s]  given the scheme
+[3383.42s -> 3385.42s]  like given the assignment scheme
+[3385.42s -> 3387.42s]  how much data actually has to move
+[3387.42s -> 3389.42s]  between the processors to actually
+[3389.42s -> 3391.42s]  get the job done
+[3391.42s -> 3393.42s]  in this example actually I removed
+[3393.42s -> 3395.42s]  parallelism, so assume that this is
+[3395.42s -> 3397.42s]  all going on inside of one thread
+[3397.42s -> 3399.42s]  right
+[3399.42s -> 3401.42s]  so now I'm saying that even inside of one thread
+[3401.42s -> 3403.42s]  there was before
+[3403.42s -> 3405.42s]  communication across
+[3405.42s -> 3407.42s]  the processors
+[3407.42s -> 3409.42s]  or across the workers
+[3409.42s -> 3411.42s]  this is communication
+[3411.42s -> 3413.42s]  within a worker between the processor
+[3413.42s -> 3415.42s]  and its own memory
+[3417.42s -> 3419.42s]  so can I do better
+[3419.42s -> 3421.42s]  maybe if you go across
+[3421.42s -> 3423.42s]  the top and then just move down
+[3423.42s -> 3425.42s]  and then go right to left, like zigzag pattern
+[3425.42s -> 3427.42s]  so my goal here is when I come back to the left
+[3427.42s -> 3429.42s]  I want to come back
+[3429.42s -> 3431.42s]  quick enough
+[3431.42s -> 3433.42s]  before the data has fallen out of cache
+[3433.42s -> 3435.42s]  that's like what's going on
+[3435.42s -> 3437.42s]  so if I change the
+[3437.42s -> 3439.42s]  let me jump forward again
+[3439.42s -> 3441.42s]  if I change the order in which I iterate
+[3441.42s -> 3443.42s]  over this array
+[3443.42s -> 3445.42s]  I compute the same answer
+[3445.42s -> 3447.42s]  I'm just going to iterate in a different order
+[3447.42s -> 3449.42s]  this is not about
+[3449.42s -> 3451.42s]  parallelism again, this is just about
+[3451.42s -> 3453.42s]  communication
+[3453.42s -> 3455.42s]  now whenever I get back to here
+[3455.42s -> 3457.42s]  some of the data
+[3457.42s -> 3459.42s]  that I've already accessed is still valid
+[3459.42s -> 3461.42s]  and in my cache
+[3461.42s -> 3463.42s]  and I only have to load this one new line
+[3463.42s -> 3465.42s]  below me
+[3465.42s -> 3467.42s]  and if you carry this pattern out
+[3467.42s -> 3469.42s]  before it was
+[3469.42s -> 3471.42s]  four pieces of output
+[3471.42s -> 3473.42s]  for every three lines loaded
+[3473.42s -> 3475.42s]  this new pattern
+[3475.42s -> 3477.42s]  is six elements of output
+[3477.42s -> 3479.42s]  for every two lines loaded
+[3479.42s -> 3481.42s]  so I've again increased my arithmetic
+[3481.42s -> 3483.42s]  intensities pretty substantially
+[3483.42s -> 3485.42s]  this is called cache blocking
+[3485.42s -> 3487.42s]  this is probably
+[3487.42s -> 3489.42s]  the most important technique
+[3489.42s -> 3491.42s]  that you'll ever do
+[3491.42s -> 3493.42s]  in any kind of code that involves
+[3493.42s -> 3495.42s]  tensors and
+[3495.42s -> 3497.42s]  matrices and stuff like that
+[3497.42s -> 3499.42s]  so any modern matrix multiplication
+[3499.42s -> 3501.42s]  any modern
+[3501.42s -> 3503.42s]  tensor operation
+[3503.42s -> 3505.42s]  the reason why cuDNN is so fast
+[3505.42s -> 3507.42s]  is because of choosing really good orderings
+[3507.42s -> 3509.42s]  to move over the data
+[3509.42s -> 3511.42s]  if you iterate in reverse order
+[3511.42s -> 3513.42s]  across the rows
+[3513.42s -> 3515.42s]  if I iterate in reverse
+[3515.42s -> 3517.42s]  order across the rows
+[3517.42s -> 3519.42s]  you mean all the way across
+[3519.42s -> 3521.42s]  and then all the way back
+[3521.42s -> 3523.42s]  yeah that would also be a reasonable
+[3523.42s -> 3525.42s]  scheme here
+[3525.42s -> 3527.42s]  kind of, actually it would not be
+[3527.42s -> 3529.42s]  a reasonable scheme here
+[3529.42s -> 3531.42s]  it's a reasonable scheme if you look at this
+[3531.42s -> 3533.42s]  diagram, but imagine n being
+[3533.42s -> 3535.42s]  really wide
+[3535.42s -> 3537.42s]  if n is really wide, sure you get a little bit
+[3537.42s -> 3539.42s]  of reuse at the ends
+[3539.42s -> 3541.42s]  but you're back to this failure mode in the middle
+[3541.42s -> 3543.42s]  so, yes
+[3543.42s -> 3545.42s]  on this diagram you look at it and go
+[3545.42s -> 3547.42s]  yeah most of the reuse on the ends is about everything
+[3547.42s -> 3549.42s]  but now imagine n is 1000
+[3549.42s -> 3551.42s]  yes
+[3551.42s -> 3553.42s]  or I'll permit
+[3553.42s -> 3555.42s]  like our cache is like
+[3555.42s -> 3557.42s]  in the order of megabytes large
+[3557.42s -> 3559.42s]  but not your L1, it's 16k
+[3559.42s -> 3561.42s]  or 32k or something like that
+[3561.42s -> 3563.42s]  I think it's 32k, yeah
+[3563.42s -> 3565.42s]  and a matrix
+[3565.42s -> 3567.42s]  it's quite big, like a 2k by 2k matrix
+[3567.42s -> 3569.42s]  is blowing out your L3
+[3569.42s -> 3571.42s]  yep
+[3571.42s -> 3573.42s]  yep
+[3573.42s -> 3575.42s]  is there a way for us to figure out
+[3575.42s -> 3577.42s]  from the core
+[3577.42s -> 3579.42s]  without us I would think about
+[3579.42s -> 3581.42s]  well hey, this is kind of exactly
+[3581.42s -> 3583.42s]  going to be exactly like mine
+[3583.42s -> 3585.42s]  with the cache stuff
+[3585.42s -> 3587.42s]  is there a way for us to figure out
+[3587.42s -> 3589.42s]  from the core profile
+[3589.42s -> 3591.42s]  well profile will tell you what your
+[3591.42s -> 3593.42s]  arithmetic intensity is
+[3593.42s -> 3595.42s]  tools can say
+[3595.42s -> 3597.42s]  you are bandwidth bound
+[3597.42s -> 3599.42s]  they'll tell you that
+[3599.42s -> 3601.42s]  but they're not going to tell you how to fix it
+[3601.42s -> 3603.42s]  so here's another example that pops up
+[3603.42s -> 3605.42s]  in all of your lives very often
+[3605.42s -> 3607.42s]  so here is a program
+[3607.42s -> 3609.42s]  that might look, I wrote it in C
+[3609.42s -> 3611.42s]  but it looks a lot like
+[3611.42s -> 3613.42s]  code you might run in NumPy
+[3613.42s -> 3615.42s]  or something like that, right?
+[3615.42s -> 3617.42s]  I have a bunch of library functions for
+[3617.42s -> 3619.42s]  multiplying arrays or adding arrays
+[3619.42s -> 3621.42s]  this is very much like Saxby from
+[3621.42s -> 3623.42s]  assignment 1
+[3623.42s -> 3625.42s]  but usually if you have that library
+[3625.42s -> 3627.42s]  you might do a more complex calculation
+[3627.42s -> 3629.42s]  on arrays by
+[3629.42s -> 3631.42s]  basically performing some expression
+[3631.42s -> 3633.42s]  which I wrote here in C code
+[3633.42s -> 3635.42s]  so each one
+[3635.42s -> 3637.42s]  of those library functions
+[3637.42s -> 3639.42s]  has the arithmetic intensity of basically
+[3639.42s -> 3641.42s]  our thing from the slide
+[3641.42s -> 3643.42s]  before, right?
+[3643.42s -> 3645.42s]  it loads two values, does one math op
+[3645.42s -> 3647.42s]  writes one value
+[3647.42s -> 3649.42s]  and so any program
+[3649.42s -> 3651.42s]  that is created by
+[3651.42s -> 3653.42s]  composing these library functions
+[3653.42s -> 3655.42s]  if all of the library functions
+[3655.42s -> 3657.42s]  have arithmetic intensity
+[3657.42s -> 3659.42s]  one third, your program
+[3659.42s -> 3661.42s]  is going to have arithmetic intensity
+[3661.42s -> 3663.42s]  one third, right?
+[3663.42s -> 3665.42s]  so this is a really convenient
+[3665.42s -> 3667.42s]  way to write code, it's like you just write it like this
+[3667.42s -> 3669.42s]  and hopefully every one of those
+[3669.42s -> 3671.42s]  are these big vector operations
+[3671.42s -> 3673.42s]  and it's in pretty bad shape
+[3673.42s -> 3675.42s]  now here's an example where I took the program
+[3675.42s -> 3677.42s]  and I rewrote it
+[3677.42s -> 3679.42s]  I rewrote it by
+[3679.42s -> 3681.42s]  instead of iterating over all elements
+[3681.42s -> 3683.42s]  and doing the add
+[3683.42s -> 3685.42s]  and then iterating over all elements
+[3685.42s -> 3687.42s]  and doing the mul
+[3687.42s -> 3689.42s]  I'm iterating over all elements
+[3689.42s -> 3691.42s]  but for every element I'm doing the entire expression
+[3691.42s -> 3693.42s]  and then writing the result
+[3693.42s -> 3695.42s]  so why is this better?
+[3695.42s -> 3699.42s]  iterating over four arrays instead of six
+[3699.42s -> 3701.42s]  so I'm iterating over four arrays
+[3701.42s -> 3703.42s]  instead of six, but in particular
+[3703.42s -> 3705.42s]  oh yeah, yeah, that's the way to say it
+[3705.42s -> 3707.42s]  that's the way to say it, yeah
+[3707.42s -> 3711.42s]  I'm reading the value from A, B, C, D
+[3711.42s -> 3713.42s]  I'm computing all of the intermediates
+[3713.42s -> 3715.42s]  which probably get stored in a register
+[3715.42s -> 3717.42s]  or in cache
+[3717.42s -> 3719.42s]  and then I get done with all of that stuff
+[3719.42s -> 3721.42s]  and then dump the result out
+[3721.42s -> 3723.42s]  so as a result
+[3723.42s -> 3725.42s]  as pointed out
+[3725.42s -> 3729.42s]  I'm iterating over far fewer
+[3729.42s -> 3731.42s]  I'm doing far fewer math operations
+[3731.42s -> 3733.42s]  so in this case
+[3733.42s -> 3737.42s]  one math operation for every three loads and stores
+[3737.42s -> 3739.42s]  in this I do
+[3739.42s -> 3741.42s]  one, two, three, four, five
+[3741.42s -> 3743.42s]  math loads and stores
+[3743.42s -> 3747.42s]  and I do one, two, three math operations
+[3747.42s -> 3749.42s]  so my arithmetic intensity has gone from
+[3749.42s -> 3751.42s]  one third to three fifth
+[3751.42s -> 3755.42s]  and given that we know that this is bandwidth bound
+[3755.42s -> 3757.42s]  my speed up is going to be
+[3757.42s -> 3759.42s]  how much I improve arithmetic intensity
+[3759.42s -> 3763.42s]  so this is a common optimization
+[3763.42s -> 3765.42s]  that a lot of the deep learning compilers
+[3765.42s -> 3767.42s]  are now starting to do for you
+[3767.42s -> 3769.42s]  you want to kind of write your code
+[3769.42s -> 3771.42s]  in terms of adds and moles
+[3771.42s -> 3773.42s]  in terms of these vector tensor operations
+[3773.42s -> 3775.42s]  but you sure as heck
+[3775.42s -> 3777.42s]  don't want it to actually run under the hood
+[3777.42s -> 3779.42s]  like that
+[3779.42s -> 3781.42s]  so in a high level language like TensorFlow
+[3781.42s -> 3783.42s]  or PyTorch JIT
+[3783.42s -> 3785.42s]  that's what these things are doing
+[3785.42s -> 3787.42s]  they're taking your tensor program
+[3787.42s -> 3789.42s]  which depends on vectors
+[3789.42s -> 3791.42s]  but they want to execute it in a manner that looks like this
+[3799.42s -> 3801.42s]  we're not going to get into co-locating threads
+[3801.42s -> 3803.42s]  to share data across threads today
+[3803.42s -> 3805.42s]  alright, so let's see
+[3805.42s -> 3807.42s]  how are we doing?
+[3807.42s -> 3809.42s]  11.38, alright
+[3809.42s -> 3811.42s]  any other questions?
+[3811.42s -> 3815.42s]  I have a section on contention
+[3815.42s -> 3817.42s]  and I actually want to
+[3817.42s -> 3819.42s]  I'll give it like two minutes
+[3819.42s -> 3821.42s]  but I'll let you kind of read it offline
+[3821.42s -> 3823.42s]  I don't think it's the
+[3823.42s -> 3825.42s]  completely on-brand for the lecture
+[3825.42s -> 3827.42s]  one thing I just wanted to point out
+[3827.42s -> 3829.42s]  is that
+[3829.42s -> 3831.42s]  what I'm trying to stress is
+[3831.42s -> 3833.42s]  at the end of the day, everything you do
+[3833.42s -> 3835.42s]  is going to be ratio of bytes communicated
+[3835.42s -> 3837.42s]  to the amount of work you do
+[3837.42s -> 3839.42s]  that's the point I want to instill
+[3839.42s -> 3841.42s]  this section is just pointing out
+[3841.42s -> 3843.42s]  that sometimes
+[3843.42s -> 3845.42s]  when you do that communication
+[3845.42s -> 3847.42s]  or when you do that work matters
+[3847.42s -> 3849.42s]  so let me just give you one example
+[3849.42s -> 3851.42s]  imagine you all come into office hours
+[3851.42s -> 3853.42s]  and you come into my office hours
+[3853.42s -> 3855.42s]  and the steps would be
+[3855.42s -> 3857.42s]  you take five minutes to walk over to my office
+[3857.42s -> 3859.42s]  you wait in line if necessary
+[3859.42s -> 3861.42s]  and you get your question answered
+[3861.42s -> 3863.42s]  let's say in five minutes
+[3863.42s -> 3865.42s]  pretty useful office hours
+[3865.42s -> 3867.42s]  so the latency here
+[3867.42s -> 3869.42s]  is what?
+[3869.42s -> 3871.42s]  it's at least ten minutes
+[3871.42s -> 3873.42s]  plus your waiting time in line
+[3873.42s -> 3875.42s]  so the first student that shows up
+[3875.42s -> 3877.42s]  in my office hours
+[3877.42s -> 3879.42s]  immediately starts talking to me
+[3879.42s -> 3881.42s]  they take five minutes to walk over
+[3881.42s -> 3883.42s]  we start working on their question
+[3883.42s -> 3885.42s]  immediately, so five minutes to walk over
+[3885.42s -> 3887.42s]  that's the yellow bar
+[3887.42s -> 3889.42s]  five minutes to deal with their question
+[3889.42s -> 3891.42s]  they're done in ten minutes
+[3891.42s -> 3893.42s]  the next student that arrives at office hours
+[3893.42s -> 3895.42s]  maybe they come also right on time
+[3895.42s -> 3897.42s]  but right after the start of office hours
+[3897.42s -> 3899.42s]  they take five minutes to walk
+[3899.42s -> 3901.42s]  put everybody else in line
+[3901.42s -> 3903.42s]  and then they get their question answered
+[3903.42s -> 3905.42s]  so it's like basically if people arrive
+[3905.42s -> 3907.42s]  at my office hours all at the same time
+[3907.42s -> 3909.42s]  there's going to be contention for me
+[3909.42s -> 3911.42s]  and the later you come
+[3911.42s -> 3913.42s]  the longer you're going to wait
+[3913.42s -> 3915.42s]  it's kind of an inefficient thing
+[3915.42s -> 3917.42s]  to have happen
+[3917.42s -> 3919.42s]  so like the bottom of the slide
+[3919.42s -> 3921.42s]  student five is kind of screwed
+[3921.42s -> 3923.42s]  so this is a contention
+[3923.42s -> 3925.42s]  for a shared resource
+[3925.42s -> 3927.42s]  and so this is a little bit of a different
+[3927.42s -> 3929.42s]  concept than everything I've been talking about
+[3929.42s -> 3931.42s]  with bandwidth
+[3931.42s -> 3933.42s]  the amount of work
+[3933.42s -> 3935.42s]  and the amount of travel time of all of these requests
+[3935.42s -> 3937.42s]  are the same, it just so happens that one's
+[3937.42s -> 3939.42s]  behind the queue
+[3939.42s -> 3941.42s]  whereas instead if you make an appointment with me
+[3941.42s -> 3943.42s]  and I give you an appointment
+[3943.42s -> 3945.42s]  well you can be guaranteed that you can be in and out
+[3945.42s -> 3947.42s]  in ten minutes
+[3947.42s -> 3949.42s]  so that's actually why I kind of like
+[3949.42s -> 3951.42s]  appointment driven office hours because it's a lot more
+[3951.42s -> 3953.42s]  efficient for the students
+[3953.42s -> 3955.42s]  so the time cost of the student is ten minutes
+[3955.42s -> 3957.42s]  and so when we were talking last time
+[3957.42s -> 3959.42s]  about
+[3959.42s -> 3961.42s]  contention
+[3961.42s -> 3963.42s]  we talked about it like the shared
+[3963.42s -> 3965.42s]  mydiff variable, the shared queues
+[3965.42s -> 3967.42s]  last class I was talking about
+[3967.42s -> 3969.42s]  how we often like to replicate
+[3969.42s -> 3971.42s]  things to avoid contention
+[3971.42s -> 3973.42s]  and
+[3973.42s -> 3975.42s]  in memory communication the contention
+[3975.42s -> 3977.42s]  is for memory
+[3977.42s -> 3979.42s]  so it could be the case where if all processors
+[3979.42s -> 3981.42s]  asked for data
+[3981.42s -> 3983.42s]  from memory at the same time
+[3983.42s -> 3985.42s]  some of this beautiful
+[3985.42s -> 3987.42s]  pipeline diagrams and stuff that I'm drawing
+[3987.42s -> 3989.42s]  maybe don't quite actually work out
+[3989.42s -> 3991.42s]  in practice
+[3991.42s -> 3993.42s]  so that's why I just wanted to put this wrinkle in there
+[3993.42s -> 3995.42s]  and say in practice usually
+[3995.42s -> 3997.42s]  in many systems there's not a lot of contention
+[3997.42s -> 3999.42s]  so we think in terms of averages
+[3999.42s -> 4001.42s]  bytes read per operations
+[4001.42s -> 4003.42s]  but if all of those bytes read
+[4003.42s -> 4005.42s]  happen to happen at the same time
+[4005.42s -> 4007.42s]  memory could
+[4007.42s -> 4009.42s]  appear to be a lot slower than it really is
+[4009.42s -> 4011.42s]  and stuff like that
+[4011.42s -> 4013.42s]  some people
+[4013.42s -> 4015.42s]  in the work queue setting we talked about different work queues
+[4015.42s -> 4017.42s]  in the memory request scheduling
+[4017.42s -> 4019.42s]  you'll actually see sometimes it's good to actually
+[4019.42s -> 4021.42s]  randomize things to avoid
+[4021.42s -> 4023.42s]  contention like everybody leave their house and get on the
+[4023.42s -> 4025.42s]  highway at a random time
+[4025.42s -> 4027.42s]  and then the highway is more
+[4027.42s -> 4029.42s]  likely to get peak bandwidth and stuff out of it
+[4029.42s -> 4031.42s]  so just a little aside on
+[4031.42s -> 4033.42s]  when stuff happens
+[4033.42s -> 4035.42s]  really matters
+[4035.42s -> 4037.42s]  so what do we talk about?
+[4037.42s -> 4039.42s]  we talked about
+[4039.42s -> 4041.42s]  we talked about a number of different techniques
+[4041.42s -> 4043.42s]  so we talked about
+[4043.42s -> 4045.42s]  reassigning work to workers to reduce
+[4045.42s -> 4047.42s]  inherent communication
+[4047.42s -> 4049.42s]  we talked about reordering
+[4049.42s -> 4051.42s]  the order that any one worker
+[4051.42s -> 4053.42s]  does things in order to reduce
+[4053.42s -> 4055.42s]  artificial communication in particular
+[4055.42s -> 4057.42s]  cache locality
+[4057.42s -> 4059.42s]  and so we gave you just a couple of examples of stuff like that
+[4059.42s -> 4061.42s]  cool
+[4061.42s -> 4063.42s]  ok, so
+[4063.42s -> 4065.42s]  let me just finish up on just a few
+[4065.42s -> 4067.42s]  a few tricks
+[4067.42s -> 4069.42s]  reminders going forward as you get into
+[4069.42s -> 4071.42s]  assignment and these assignments
+[4071.42s -> 4073.42s]  one is sometimes
+[4073.42s -> 4075.42s]  the simplest dumb static solution
+[4075.42s -> 4077.42s]  with no optimizations
+[4077.42s -> 4079.42s]  is faster than a complex solution
+[4079.42s -> 4081.42s]  always
+[4081.42s -> 4083.42s]  try the simplest thing first in this class
+[4083.42s -> 4085.42s]  if it works
+[4085.42s -> 4087.42s]  great, move on, go work on some other class
+[4087.42s -> 4089.42s]  and then the question
+[4089.42s -> 4091.42s]  is when you're not happy with your performance
+[4091.42s -> 4093.42s]  you know
+[4093.42s -> 4095.42s]  one question that I always ask myself
+[4095.42s -> 4097.42s]  is is there an
+[4097.42s -> 4099.42s]  opportunity to do better
+[4099.42s -> 4101.42s]  so you ask this question about how do I get
+[4101.42s -> 4103.42s]  measurements to know if I should
+[4103.42s -> 4105.42s]  just keep trying
+[4105.42s -> 4107.42s]  so in assignment one you made a lot of measurements that told you
+[4107.42s -> 4109.42s]  whether or not workload was well
+[4109.42s -> 4111.42s]  balanced and that was really helpful
+[4111.42s -> 4113.42s]  because if it wasn't balanced you know you could work a little harder
+[4113.42s -> 4115.42s]  but what about measurements
+[4115.42s -> 4117.42s]  about am I bandwidth bound or not
+[4117.42s -> 4119.42s]  so you know
+[4119.42s -> 4121.42s]  one technique would be to go grab a
+[4121.42s -> 4123.42s]  tool like vtune
+[4123.42s -> 4125.42s]  or any of a performance profiler
+[4125.42s -> 4127.42s]  and it might just tell you
+[4127.42s -> 4129.42s]  but there's a lot of other tools
+[4129.42s -> 4131.42s]  that are kind of interesting like
+[4131.42s -> 4133.42s]  let's say that I know that I
+[4133.42s -> 4135.42s]  am computing at this many
+[4135.42s -> 4137.42s]  instructions per second
+[4137.42s -> 4139.42s]  or in the math like this many mega flops
+[4139.42s -> 4141.42s]  well if I just knew the total
+[4141.42s -> 4143.42s]  mega flops of my program
+[4143.42s -> 4145.42s]  of my computer I could ask the
+[4145.42s -> 4147.42s]  question what fraction of peak mega flops
+[4147.42s -> 4149.42s]  am I actually getting and that might
+[4149.42s -> 4151.42s]  give me a sense of whether I should keep trying
+[4151.42s -> 4153.42s]  or go on
+[4153.42s -> 4155.42s]  so there's these graphs that are pretty useful
+[4155.42s -> 4157.42s]  graphs this is actually something worth really
+[4157.42s -> 4159.42s]  knowing that is a way to
+[4159.42s -> 4161.42s]  plot where you are
+[4161.42s -> 4163.42s]  on the curve so let me
+[4163.42s -> 4165.42s]  explain this graph to you
+[4165.42s -> 4167.42s]  so the x axis of the graph
+[4167.42s -> 4169.42s]  are different arithmetic
+[4169.42s -> 4171.42s]  intensities
+[4171.42s -> 4173.42s]  it's labeled operational intensity
+[4173.42s -> 4175.42s]  because some people call arithmetic intensity
+[4175.42s -> 4177.42s]  operational intensity it's the same thing
+[4177.42s -> 4179.42s]  and notice the units are flops
+[4179.42s -> 4181.42s]  per byte so that's math
+[4181.42s -> 4183.42s]  operations per byte read
+[4183.42s -> 4185.42s]  from memory
+[4185.42s -> 4187.42s]  and so these different
+[4187.42s -> 4189.42s]  points on the x axis
+[4189.42s -> 4191.42s]  are different programs
+[4191.42s -> 4193.42s]  if I move along the x axis
+[4193.42s -> 4195.42s]  I'm talking about a program that does one op
+[4195.42s -> 4197.42s]  for every 4 bytes from memory
+[4197.42s -> 4199.42s]  or on the far left a program
+[4199.42s -> 4201.42s]  that does 16 ops
+[4201.42s -> 4203.42s]  for every byte from memory
+[4203.42s -> 4205.42s]  so this is going to be
+[4205.42s -> 4207.42s]  not very
+[4207.42s -> 4209.42s]  arithmetically intense
+[4209.42s -> 4211.42s]  this is extremely arithmetically intense
+[4211.42s -> 4213.42s]  over here
+[4213.42s -> 4215.42s]  and so imagine that
+[4215.42s -> 4217.42s]  I guess empirically
+[4217.42s -> 4219.42s]  you took programs that you
+[4219.42s -> 4221.42s]  manufactured to have those arithmetic intensities
+[4221.42s -> 4223.42s]  and you
+[4223.42s -> 4225.42s]  ran them on a computer
+[4225.42s -> 4227.42s]  and when you run them on the computer
+[4227.42s -> 4229.42s]  you're going to get a performance
+[4229.42s -> 4231.42s]  in terms of operations per second
+[4231.42s -> 4233.42s]  so gigaflops
+[4233.42s -> 4235.42s]  if your
+[4235.42s -> 4237.42s]  if your
+[4237.42s -> 4239.42s]  if your program
+[4239.42s -> 4241.42s]  or if your computer can do
+[4241.42s -> 4243.42s]  let's say 16
+[4243.42s -> 4245.42s]  gigaflops
+[4245.42s -> 4247.42s]  has a 1 gigahertz clock
+[4247.42s -> 4249.42s]  and has 16 cores
+[4249.42s -> 4251.42s]  and your program
+[4251.42s -> 4253.42s]  is compute bound
+[4253.42s -> 4255.42s]  you should expect
+[4255.42s -> 4257.42s]  to run at what?
+[4257.42s -> 4259.42s]  if you're doing a good job
+[4259.42s -> 4261.42s]  and your program runs at 16
+[4261.42s -> 4263.42s]  gigaflops you're like this is as good as I can do
+[4263.42s -> 4265.42s]  right?
+[4265.42s -> 4267.42s]  so this is a plot
+[4267.42s -> 4269.42s]  of all of those different programs
+[4269.42s -> 4271.42s]  what they actually achieve
+[4271.42s -> 4273.42s]  and let's see if you can explain
+[4273.42s -> 4275.42s]  the shape of this graph
+[4275.42s -> 4277.42s]  it's called a roofline graph
+[4277.42s -> 4279.42s]  because it looks like a roof
+[4279.42s -> 4281.42s]  so let's start over here
+[4281.42s -> 4283.42s]  and I just want you to look at this line
+[4283.42s -> 4285.42s]  and this blue line
+[4285.42s -> 4287.42s]  because this is one computer
+[4287.42s -> 4289.42s]  the other line is a different computer
+[4289.42s -> 4291.42s]  let's just look at this blue line
+[4291.42s -> 4293.42s]  this blue line says that
+[4293.42s -> 4295.42s]  for all programs of arithmetic
+[4295.42s -> 4297.42s]  intensity 1 or higher
+[4297.42s -> 4299.42s]  when you run them on this computer
+[4299.42s -> 4301.42s]  you get
+[4301.42s -> 4303.42s]  the same performance
+[4303.42s -> 4305.42s]  does that make sense?
+[4305.42s -> 4307.42s]  and if it does make sense to you, why?
+[4309.42s -> 4311.42s]  ok, so it must be memory bound
+[4311.42s -> 4313.42s]  why is that?
+[4313.42s -> 4315.42s]  it could be off-grid
+[4315.42s -> 4317.42s]  so if you work memory bound
+[4317.42s -> 4319.42s]  you should expect to be doing
+[4319.42s -> 4321.42s]  ok, let's take a look at that
+[4321.42s -> 4323.42s]  so these are programs
+[4323.42s -> 4325.42s]  that access memory
+[4325.42s -> 4327.42s]  less and less often
+[4327.42s -> 4329.42s]  higher arithmetic intensity
+[4329.42s -> 4331.42s]  less frequent memory access
+[4331.42s -> 4333.42s]  so as I do less
+[4333.42s -> 4335.42s]  and less memory access
+[4335.42s -> 4337.42s]  my performance is unchanged
+[4339.42s -> 4341.42s]  so wait a minute, right?
+[4341.42s -> 4343.42s]  anyone want to help?
+[4343.42s -> 4345.42s]  I guess that's like the maximum
+[4345.42s -> 4347.42s]  so this is basically saying
+[4347.42s -> 4349.42s]  for these programs
+[4349.42s -> 4351.42s]  I'm doing so many operations
+[4351.42s -> 4353.42s]  per unit byte red
+[4353.42s -> 4355.42s]  my performance is limited
+[4355.42s -> 4357.42s]  by what my arithmetic units
+[4357.42s -> 4359.42s]  can crank out
+[4359.42s -> 4361.42s]  and I'm maxing them out
+[4361.42s -> 4363.42s]  all the way until this point
+[4363.42s -> 4365.42s]  and then at this point
+[4365.42s -> 4367.42s]  my performance starts going down
+[4367.42s -> 4369.42s]  why is that?
+[4369.42s -> 4371.42s]  at that point it's memory bound
+[4371.42s -> 4373.42s]  at that point
+[4373.42s -> 4375.42s]  at that point
+[4375.42s -> 4377.42s]  you can't get data to the processor
+[4377.42s -> 4379.42s]  fast enough
+[4379.42s -> 4381.42s]  in order to run these ops
+[4381.42s -> 4383.42s]  and so as you begin to lower
+[4383.42s -> 4385.42s]  arithmetic intensity
+[4385.42s -> 4387.42s]  it takes you more and more time
+[4387.42s -> 4389.42s]  to get the data to the processor
+[4389.42s -> 4391.42s]  in order to carry out the ops
+[4391.42s -> 4393.42s]  because before it was like one byte per op
+[4393.42s -> 4395.42s]  and now I've got to get two bytes per op
+[4395.42s -> 4397.42s]  so it takes me half the time
+[4397.42s -> 4399.42s]  if you look at this as a log plot
+[4399.42s -> 4401.42s]  I used to get done at 16 gigaflops
+[4401.42s -> 4403.42s]  so I double the amount of bandwidth per op
+[4403.42s -> 4405.42s]  which means I double my run time
+[4405.42s -> 4407.42s]  if I'm bandwidth bound
+[4407.42s -> 4409.42s]  which means I half my performance
+[4409.42s -> 4411.42s]  exactly
+[4411.42s -> 4413.42s]  so if you look carefully at this
+[4413.42s -> 4415.42s]  the slope of this curve should be the bandwidth
+[4415.42s -> 4417.42s]  so now imagine you
+[4417.42s -> 4419.42s]  you have a program
+[4419.42s -> 4421.42s]  and somehow you kind of
+[4421.42s -> 4423.42s]  look at your code and you kind of know
+[4423.42s -> 4425.42s]  what your arithmetic intensity is
+[4425.42s -> 4427.42s]  like you kind of look at the main loop
+[4427.42s -> 4429.42s]  you're like okay it seems to be
+[4429.42s -> 4431.42s]  so you're like okay I'm let's say
+[4431.42s -> 4433.42s]  an arithmetic intensity 4
+[4433.42s -> 4435.42s]  and then you run it and you compute that you're like
+[4435.42s -> 4437.42s]  right here on the graph
+[4437.42s -> 4439.42s]  what does that mean?
+[4441.42s -> 4443.42s]  that means that this should not be memory bound
+[4443.42s -> 4445.42s]  and I'm a good fraction
+[4445.42s -> 4447.42s]  off of peak
+[4447.42s -> 4449.42s]  something is wrong
+[4449.42s -> 4451.42s]  maybe I have workload balance
+[4451.42s -> 4453.42s]  maybe I have contention, maybe I have something
+[4453.42s -> 4455.42s]  so that's like this graph gives you this
+[4455.42s -> 4457.42s]  like where do I stand
+[4457.42s -> 4459.42s]  this green curve
+[4459.42s -> 4461.42s]  is just another processor
+[4461.42s -> 4463.42s]  the other processor even though this is called
+[4463.42s -> 4465.42s]  x2 and this is x4 these are actually like
+[4465.42s -> 4467.42s]  marketing names
+[4467.42s -> 4469.42s]  this is a processor with
+[4469.42s -> 4471.42s]  4 times more total compute
+[4471.42s -> 4473.42s]  and so notice that
+[4473.42s -> 4475.42s]  with 4 times more total compute
+[4475.42s -> 4477.42s]  the peak performance is about 4 times higher
+[4477.42s -> 4479.42s]  what do you notice about
+[4479.42s -> 4481.42s]  the memory bound to
+[4481.42s -> 4483.42s]  compute bound tradeoff?
+[4484.42s -> 4486.42s]  you have more
+[4486.42s -> 4488.42s]  operational intensity before you need that
+[4488.42s -> 4490.42s]  it's the same memory system
+[4490.42s -> 4492.42s]  but with 4 times more compute
+[4492.42s -> 4494.42s]  which means you need
+[4494.42s -> 4496.42s]  approximately
+[4496.42s -> 4498.42s]  4 times more arithmetic intensity
+[4498.42s -> 4500.42s]  to stay bandwidth bound
+[4500.42s -> 4502.42s]  or to stay compute bound
+[4503.42s -> 4505.42s]  so if you buy a computer
+[4505.42s -> 4507.42s]  you pack it full of parallel capability
+[4507.42s -> 4509.42s]  that's only going to run at peak performance
+[4509.42s -> 4511.42s]  if you have applications
+[4511.42s -> 4513.42s]  that have the math to use it
+[4513.42s -> 4515.42s]  and the way you make your application
+[4515.42s -> 4517.42s]  go this way on the chart
+[4517.42s -> 4519.42s]  is you do the things I talked about
+[4519.42s -> 4521.42s]  in class, you fuse loops
+[4521.42s -> 4523.42s]  you block loops, you reorder things
+[4523.42s -> 4525.42s]  to reduce communication
+[4525.42s -> 4527.42s]  so almost everything you do is trying to drive
+[4527.42s -> 4529.42s]  your program this way
+[4529.42s -> 4531.42s]  so that your program performance
+[4531.42s -> 4533.42s]  rides up on this curve
+[4533.42s -> 4535.42s]  until you hit the flat line
+[4535.42s -> 4537.42s]  that's basically the name of the game of everything
+[4537.42s -> 4539.42s]  ok, we should stop
+[4539.42s -> 4541.42s]  and answer these two questions again
+[4541.42s -> 4543.42s]  is there any
+[4543.42s -> 4545.42s]  is there ever any situation
+[4545.42s -> 4547.42s]  where you want to go and collect
+[4547.42s -> 4549.42s]  like any of your
+[4549.42s -> 4551.42s]  in that operational intensity
+[4551.42s -> 4553.42s]  is there ever
+[4553.42s -> 4555.42s]  if you're way out here
+[4555.42s -> 4557.42s]  and
+[4557.42s -> 4559.42s]  you never want to go
+[4559.42s -> 4561.42s]  well, ok
+[4561.42s -> 4563.42s]  so
+[4563.42s -> 4565.42s]  this curve says if you're out here
+[4565.42s -> 4567.42s]  you're running at peak performance
+[4567.42s -> 4569.42s]  what is your wall clock time
+[4569.42s -> 4571.42s]  your wall clock time is how much work
+[4571.42s -> 4573.42s]  you're doing times the rate
+[4573.42s -> 4575.42s]  so if you could change your algorithm
+[4575.42s -> 4577.42s]  and it moves you
+[4577.42s -> 4579.42s]  in this direction but keeps you
+[4579.42s -> 4581.42s]  on the roof line
+[4581.42s -> 4583.42s]  and that algorithmic change means
+[4583.42s -> 4585.42s]  you do less work
+[4585.42s -> 4587.42s]  then you're in good shape, right
+[4587.42s -> 4589.42s]  because I'm running at the same peak performance
+[4589.42s -> 4591.42s]  and maybe I have something that's algorithmically
+[4591.42s -> 4593.42s]  more efficient and does less work
+[4593.42s -> 4595.42s]  so this is a plot about efficiency
+[4595.42s -> 4597.42s]  and throughput
+[4597.42s -> 4599.42s]  so if you make a change and it reduces
+[4599.42s -> 4601.42s]  your arithmetic intensity
+[4601.42s -> 4603.42s]  but makes you do ten times fewer things
+[4603.42s -> 4605.42s]  if you stay at high throughput
+[4605.42s -> 4607.42s]  you're doing ten times less work
+[4607.42s -> 4609.42s]  at the same throughput, that's good
+[4609.42s -> 4611.42s]  but if you change your algorithm
+[4611.42s -> 4613.42s]  and you do two times less work
+[4613.42s -> 4615.42s]  like you make a computer graphics
+[4615.42s -> 4617.42s]  algorithm improvement
+[4617.42s -> 4619.42s]  and that algorithm change brings your
+[4619.42s -> 4621.42s]  arithmetic intensity from here to here
+[4621.42s -> 4623.42s]  it could be a wash
+[4623.42s -> 4625.42s]  because you might be doing two times less work
+[4625.42s -> 4627.42s]  but twice as
+[4627.42s -> 4629.42s]  less efficiently and so maybe
+[4629.42s -> 4631.42s]  it doesn't matter
+[4631.42s -> 4633.42s]  so that's the
+[4633.42s -> 4635.42s]  that's maybe the reason why you would
+[4635.42s -> 4637.42s]  you would move down the curve if you felt
+[4637.42s -> 4639.42s]  like there was an overall benefit

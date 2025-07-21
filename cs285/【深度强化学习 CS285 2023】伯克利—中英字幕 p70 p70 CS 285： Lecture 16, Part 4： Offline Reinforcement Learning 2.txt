@@ -1,0 +1,339 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 3.36s]  In the last part of today's lecture,
+[3.36s -> 6.20s]  I'm going to conclude my discussion of offline RL
+[6.20s -> 9.88s]  with a brief summary, some discussion of applications
+[9.88s -> 11.88s]  and some discussion of open questions.
+[13.56s -> 16.78s]  So the first question that I'll talk about here
+[16.78s -> 19.36s]  as part of the summary is maybe something
+[19.36s -> 20.92s]  that some of you already have on your mind,
+[20.92s -> 23.40s]  which is, well, I talked about lots of algorithms,
+[23.40s -> 26.00s]  which offline or algorithm should you actually use?
+[27.60s -> 29.56s]  Here is a rough back of the envelope
+[29.56s -> 31.36s]  kind of rule of thumb.
+[31.36s -> 33.48s]  Of course, this is not the final word on anything
+[33.48s -> 36.16s]  and your mileage may vary, but you know,
+[36.16s -> 39.36s]  if I were to try to approach some new offline RL problem,
+[39.36s -> 41.84s]  here's the decision tree that I would use.
+[42.90s -> 44.74s]  If you want to train only offline,
+[44.74s -> 47.32s]  meaning that you're not going to do online fine tuning,
+[47.32s -> 49.52s]  conservative Q-learning is a good choice
+[49.52s -> 51.62s]  because it has just one hyperparameter
+[51.62s -> 53.20s]  and it's well understood and widely tested.
+[53.20s -> 56.08s]  And there has been extensive verification
+[56.08s -> 57.48s]  in many different papers showing that
+[57.48s -> 59.52s]  conservative Q-learning does work decently well
+[59.52s -> 61.42s]  in pure offline mode.
+[61.42s -> 63.32s]  Implicit Q-learning is also a good choice.
+[63.32s -> 65.52s]  It's a bit more flexible because it also works well
+[65.52s -> 67.52s]  for both offline and online,
+[67.52s -> 69.16s]  but it has more hyperparameters.
+[70.48s -> 72.64s]  If you want to only train offline
+[72.64s -> 74.48s]  and then fine tune online,
+[75.36s -> 77.72s]  then advantage-weighted actual critic is a good choice.
+[77.72s -> 80.58s]  It's widely used and well-tested in exactly this regime.
+[80.58s -> 82.48s]  Conservative Q-learning is actually not a good choice
+[82.48s -> 83.62s]  because conservative Q-learning,
+[83.62s -> 85.28s]  while it works very well offline,
+[85.28s -> 86.46s]  it doesn't fine tune very well
+[86.46s -> 88.50s]  because it tends to be too conservative.
+[88.50s -> 90.58s]  Implicit Q-learning is a good choice
+[90.58s -> 92.60s]  for offline training followed by online fine tuning.
+[92.60s -> 94.66s]  In pure Q-learning, that seems to work pretty well.
+[94.66s -> 95.96s]  And it actually seems to perform better
+[95.96s -> 97.62s]  than advantage-weighted actual critic.
+[97.62s -> 99.18s]  Although it hasn't been around for as long
+[99.18s -> 102.16s]  and it's quite kind of not as widely validated.
+[104.66s -> 107.06s]  If you have a good way to train models in your domain,
+[107.06s -> 110.58s]  then you can opt for a model-based offline RL method.
+[110.58s -> 112.52s]  Now this is rather domain dependent.
+[112.52s -> 115.94s]  So basically depending on the particular dynamics
+[116.38s -> 117.78s]  that you have, it may be easy to train a good model
+[117.78s -> 119.46s]  or it may be very hard.
+[119.46s -> 120.66s]  But if you're pretty confident
+[120.66s -> 123.42s]  that you can train a good model, combo is a good choice.
+[123.42s -> 125.38s]  It's one of the best performing current
+[125.38s -> 127.66s]  offline model-based RL methods.
+[127.66s -> 129.22s]  It has similar properties as CQL,
+[129.22s -> 130.26s]  but it benefits from models.
+[130.26s -> 133.10s]  So you can think of combo as basically CQL over models.
+[134.30s -> 136.10s]  But it's not always easy to train a good model
+[136.10s -> 136.94s]  in your domain.
+[136.94s -> 138.10s]  So you need to first check
+[138.10s -> 140.50s]  that you can actually get good models.
+[140.50s -> 142.60s]  Trajectory transformer can be a good choice
+[142.60s -> 145.08s]  because it has very powerful and effective models.
+[145.08s -> 147.32s]  The downsides are that it's extremely computationally
+[147.32s -> 149.08s]  expensive to train and evaluate.
+[149.08s -> 151.76s]  And because it's not learning a policy,
+[151.76s -> 153.36s]  there's still some limitations on horizon.
+[153.36s -> 155.20s]  So if you have very long horizon,
+[155.20s -> 157.00s]  a method that is more dyno-like
+[157.00s -> 160.24s]  that benefits from dynamic programming may still be better.
+[160.24s -> 162.36s]  So this is kind of the rule of thumb
+[162.36s -> 163.76s]  that I would suggest.
+[163.76s -> 166.22s]  Now offline RL is a very rapidly evolving field,
+[166.22s -> 168.04s]  and it could be that by next year,
+[168.04s -> 169.00s]  some of these will change,
+[169.00s -> 170.48s]  maybe new methods will come out
+[170.48s -> 172.64s]  or something better will be understood
+[172.64s -> 173.96s]  about current methods.
+[173.96s -> 176.44s]  But this is roughly what this looks like,
+[176.44s -> 177.84s]  as of when I recorded this lecture,
+[177.84s -> 180.00s]  which is in late 2021.
+[183.24s -> 185.24s]  Now, next, what I wanna talk about
+[185.24s -> 187.36s]  is a little discussion of applications
+[187.36s -> 190.56s]  and a little discussion of why offline RL
+[190.56s -> 192.24s]  can be a very powerful framework
+[192.24s -> 193.40s]  for getting reinforcement learning
+[193.40s -> 195.16s]  to really work in the real world.
+[196.16s -> 197.64s]  Now, oftentimes you will do
+[197.64s -> 199.70s]  reinforcement learning with simulation,
+[199.70s -> 202.28s]  in which case you basically don't have to worry about this.
+[202.32s -> 204.72s]  If you are blessed enough to have a good simulator,
+[204.72s -> 207.16s]  doing online RL is perfectly fine.
+[207.16s -> 208.56s]  But if you want to actually do
+[208.56s -> 211.12s]  reinforcement learning directly in the real world,
+[211.12s -> 212.32s]  if you wanna use online RL,
+[212.32s -> 214.28s]  this is what your process might look like.
+[214.28s -> 216.36s]  Step one is you might instrument the task
+[216.36s -> 217.90s]  so that you can run RL.
+[217.90s -> 220.04s]  So you probably need some safety mechanism.
+[220.04s -> 222.42s]  Whether you're doing robotics or algorithmic trading,
+[222.42s -> 223.36s]  you need something to make sure
+[223.36s -> 226.16s]  that your exploration policy doesn't do crazy stuff.
+[226.16s -> 228.82s]  You may need to put some work into autonomous collection.
+[228.82s -> 230.60s]  So especially in robotics,
+[230.60s -> 232.36s]  maybe you try a task, then you need to try it again.
+[232.36s -> 234.68s]  So you need to reset between trials.
+[234.68s -> 237.58s]  You need to take care of the design rewards.
+[237.58s -> 239.16s]  For offline RL, you can just label
+[239.16s -> 240.16s]  the rewards in the dataset.
+[240.16s -> 242.82s]  You can, for example, crowdsource it.
+[242.82s -> 244.44s]  But for online RL,
+[244.44s -> 246.08s]  you really need an automated reward function,
+[246.08s -> 247.84s]  which means you need to write some code
+[247.84s -> 250.04s]  or train some model to do this.
+[250.04s -> 252.24s]  Then you would wait a long time for RL to run.
+[252.24s -> 254.56s]  And this can be a rather manual process
+[254.56s -> 257.48s]  because you might need some kind of safety monitor.
+[257.48s -> 259.36s]  And then you would change something about your algorithm
+[259.36s -> 260.56s]  in some small way to improve it
+[261.48s -> 262.32s]  and then do this all over again.
+[262.32s -> 263.88s]  So the iteration is very slow
+[263.88s -> 265.16s]  because each time you change something,
+[265.16s -> 267.44s]  you have to rerun the whole process.
+[267.44s -> 269.48s]  And when you're done, you throw it all in the garbage
+[269.48s -> 270.84s]  to start over for the next task.
+[270.84s -> 274.16s]  So if you trained a robot to make a cup of coffee
+[274.16s -> 276.84s]  and now you wanted to make a cup of tea,
+[276.84s -> 279.32s]  typically you would throw this all out and start all over.
+[280.48s -> 284.06s]  With offline RL, you would collect your initial dataset,
+[284.06s -> 285.98s]  which would come from a wide range of different sources.
+[285.98s -> 288.84s]  It could be human data, scripted controllers.
+[288.84s -> 291.08s]  It could come from some baseline policy
+[291.08s -> 293.28s]  or even a combination of all of the above.
+[293.28s -> 295.04s]  You might still need to design a reward function,
+[295.04s -> 297.92s]  but you could also have humans just label the reward
+[297.92s -> 300.72s]  because you only need the reward on your training data.
+[302.52s -> 304.84s]  Then you would train your policy with offline RL.
+[304.84s -> 307.16s]  And then you might change the algorithm in some small way.
+[307.16s -> 308.60s]  But if you change the algorithm,
+[308.60s -> 310.42s]  you don't need to recollect your data.
+[310.42s -> 313.02s]  So this process becomes a lot more lightweight.
+[314.20s -> 315.84s]  You might choose to collect more data
+[315.84s -> 317.54s]  and add it to a growing dataset.
+[318.54s -> 320.50s]  But again, you don't need to recollect the data from scratch
+[320.50s -> 322.18s]  to anything you collect, you add to your dataset,
+[322.18s -> 323.94s]  you append it, you aggregate it
+[323.94s -> 326.02s]  and then just keep reusing it.
+[326.02s -> 327.16s]  Now for full disclosure,
+[327.16s -> 329.94s]  you will periodically need to run your policy online,
+[329.94s -> 332.02s]  mostly to see how well let's do it.
+[332.02s -> 334.78s]  But that's a lot less onerous than doing training online.
+[336.24s -> 337.94s]  And then if you have another project
+[337.94s -> 340.28s]  that you wanna do in the future in a similar domain,
+[340.28s -> 342.58s]  you can keep your dataset around and reuse it again.
+[342.58s -> 345.26s]  So if you really need to do real world RL training,
+[345.26s -> 346.82s]  if you don't have a simulator,
+[346.82s -> 349.46s]  the offline process can be a lot more practical.
+[349.46s -> 351.58s]  And I'll illustrate this with a few examples
+[351.58s -> 355.74s]  from some of my own research with colleagues at Google
+[355.74s -> 357.64s]  and also some folks at UC Berkeley.
+[358.70s -> 362.10s]  So this is kind of the fun video research portion
+[362.10s -> 363.14s]  of the lecture.
+[363.14s -> 365.70s]  This is not really like key material that you have to know
+[365.70s -> 369.00s]  it's more of some examples and some fun videos
+[369.00s -> 370.70s]  to hopefully keep you entertained.
+[370.70s -> 375.70s]  So as I mentioned in the lecture on Monday,
+[378.02s -> 381.18s]  in 2018, we had this large project
+[381.18s -> 385.26s]  on real world reinforcement learning with Q-learning
+[385.26s -> 387.46s]  for robotic grasping.
+[387.46s -> 391.58s]  And more recently in 2021, we extended the system.
+[391.58s -> 394.16s]  This is also some work that was done at Google
+[394.16s -> 395.62s]  to handle multiple tasks.
+[395.62s -> 397.64s]  And the multitask part is not that important,
+[397.64s -> 399.68s]  but just to give you an idea of what was involved,
+[399.72s -> 400.92s]  there are 12 different tasks,
+[400.92s -> 402.20s]  several thousand different objects
+[402.20s -> 403.56s]  and months of data collection.
+[403.56s -> 405.36s]  So this is a really big manual effort
+[405.36s -> 408.84s]  to like get lots of data collected with lots of robots.
+[408.84s -> 411.92s]  But once we did that, we had a hypothesis.
+[411.92s -> 413.56s]  The particular hypothesis is not that important
+[413.56s -> 415.08s]  for this lecture, but just to give you a sense
+[415.08s -> 415.92s]  for the process.
+[415.92s -> 417.24s]  So the hypothesis we had was,
+[417.24s -> 420.60s]  could we learn these tasks, these 12 tasks
+[420.60s -> 422.46s]  without actually using rewards at all,
+[422.46s -> 425.28s]  just by using goal condition reinforcement learning.
+[425.28s -> 427.76s]  So the idea here is instead of giving the robot
+[427.76s -> 430.40s]  ground truth reward functions for which task it's doing,
+[430.40s -> 432.04s]  we just give it a goal image
+[432.04s -> 433.76s]  and we assign rewards automatically
+[433.76s -> 436.40s]  based on how similar the final state it reaches
+[436.40s -> 437.72s]  is to that goal image.
+[437.72s -> 439.18s]  Okay, that's just a hypothesis we had.
+[439.18s -> 440.84s]  It's a robotic centric hypothesis,
+[440.84s -> 443.72s]  it's not really about offline RL per se.
+[443.72s -> 446.64s]  But then what we did is instead of collecting all new data,
+[446.64s -> 448.98s]  we just reuse the same data that we already had
+[448.98s -> 450.60s]  for these 12 different tasks,
+[451.44s -> 452.88s]  but train a policy with goals
+[452.88s -> 454.88s]  instead of ground truth reward functions.
+[455.72s -> 458.04s]  And we could actually evaluate our hypothesis
+[458.04s -> 460.36s]  without any new data collection whatsoever.
+[460.36s -> 462.32s]  So this is that goal condition policy.
+[462.32s -> 464.64s]  The goal is shown in the lower right hand corner.
+[464.64s -> 467.76s]  And you can see that the robot does kind of a decent job.
+[467.76s -> 469.82s]  These grasping tasks are fairly simple.
+[470.84s -> 473.28s]  So here, the goal image just has it holding an object
+[473.28s -> 476.28s]  and it figures out that means it has to go and pick it up.
+[476.28s -> 478.76s]  But we can also do some rearrangement tasks.
+[478.76s -> 480.12s]  So that's gonna come next.
+[483.24s -> 484.74s]  So in this rearrangement tasks,
+[485.46s -> 486.78s]  the goal image has the carrot lying on the plate
+[486.78s -> 488.18s]  and then the robot figures out that it needs
+[488.18s -> 491.10s]  to pick up the carrot and move it to the plate.
+[491.10s -> 492.70s]  So here, there's no reward function at all.
+[492.70s -> 495.98s]  The task is defined entirely using a goal image.
+[495.98s -> 497.62s]  Well, there's no hand designed reward function.
+[497.62s -> 498.98s]  I mean, there's an automated reward function
+[498.98s -> 500.16s]  for reaching the goal.
+[500.16s -> 502.82s]  The method was very similar to conservative Q learning,
+[502.82s -> 505.06s]  just adapted to goal reaching.
+[505.06s -> 506.50s]  And one fun thing you can do with this
+[506.50s -> 507.34s]  is you can actually use it
+[507.34s -> 508.90s]  as an unsupervised pre-training objective.
+[508.90s -> 510.14s]  So kind of in the same way
+[510.14s -> 513.34s]  that you might pre-train with a language model in NLP
+[513.34s -> 514.50s]  and then fine tune it to a task,
+[515.14s -> 515.98s]  you can pre-train this goal condition thing
+[515.98s -> 519.18s]  on a large data set and fine tune it with a task reward.
+[519.18s -> 521.90s]  And that leads to some pretty substantial improvements.
+[521.90s -> 522.74s]  So that's kind of nice.
+[522.74s -> 524.28s]  You can verify a new hypothesis in this case
+[524.28s -> 527.72s]  about goal condition RL without collecting any new data,
+[527.72s -> 530.50s]  but you can test it directly in the real world.
+[530.50s -> 532.58s]  Here's another robotics example.
+[532.58s -> 534.54s]  So in 2020, Gregory Kahn,
+[534.54s -> 536.98s]  who's a PhD student here at Berkeley at the time,
+[536.98s -> 538.66s]  collected a data set of about 40 hours
+[538.66s -> 541.42s]  of off-road navigation using a small ground robot
+[542.42s -> 543.80s]  in early 2020.
+[543.80s -> 546.72s]  In late 2020, Drew Shaw, another PhD student,
+[546.72s -> 548.04s]  used the same data
+[548.04s -> 549.90s]  to build a goal condition navigation system
+[549.90s -> 553.48s]  that could do things like deliver mail or deliver a pizza.
+[553.48s -> 556.48s]  And he didn't need to collect any new data to do this.
+[556.48s -> 559.12s]  He could just reuse the same data with offline RL.
+[559.12s -> 561.08s]  And in early 2021,
+[561.08s -> 563.20s]  Drew could use the same data set to train a policy
+[563.20s -> 564.80s]  that would learn to search
+[564.80s -> 567.52s]  for particular goals in an environment.
+[567.52s -> 569.12s]  The techniques used in this work
+[569.12s -> 569.96s]  were a little different
+[569.96s -> 571.28s]  than the algorithms that I covered in this lecture,
+[571.28s -> 573.44s]  but the basic principle that offline RL
+[573.96s -> 575.76s]  would let you test out these hypotheses very quickly
+[575.76s -> 576.84s]  in the real world,
+[576.84s -> 579.08s]  but without additional real world data collection,
+[579.08s -> 581.00s]  in my opinion, kind of illustrates
+[582.20s -> 583.46s]  one of the benefits of using this
+[583.46s -> 586.52s]  for kind of rapidly testing out new algorithmic ideas
+[586.52s -> 587.62s]  while sticking to real data
+[587.62s -> 589.92s]  without having to rely entirely on simulation.
+[591.38s -> 593.08s]  All right, now let me talk about some takeaways,
+[593.08s -> 596.32s]  some conclusions, and also maybe some future directions.
+[596.32s -> 598.72s]  So the dream in offline RL
+[598.72s -> 599.88s]  is you could collect the data set
+[599.88s -> 602.40s]  using any policy or mixture of policies,
+[602.40s -> 603.92s]  and then you could run offline RL
+[603.92s -> 605.36s]  on this data set to learn a policy
+[605.36s -> 606.96s]  and then just deploy directly in the real world
+[606.96s -> 609.60s]  for medical diagnosis, for algorithmic trading,
+[609.60s -> 612.24s]  for logistics, driving, what have you.
+[612.24s -> 613.84s]  And then there's current RL algorithms
+[613.84s -> 616.12s]  and there's still a gap there.
+[616.12s -> 618.24s]  So here are a few things,
+[618.24s -> 620.24s]  and this is partly this is for you guys
+[620.24s -> 621.42s]  to think about project ideas,
+[621.42s -> 623.78s]  also to think about open problems.
+[623.78s -> 626.72s]  One of the open problems is workflows.
+[626.72s -> 629.16s]  So if you're doing supervised learning,
+[629.16s -> 631.96s]  you have a training validation test split.
+[632.44s -> 633.28s]  So you have pretty good confidence
+[633.28s -> 635.08s]  that if you train your policy on a training set
+[635.08s -> 637.64s]  and it does well according to the validation set,
+[637.64s -> 640.00s]  then it will probably do well in the real world.
+[640.00s -> 642.00s]  So in supervised learning,
+[642.00s -> 644.28s]  you typically don't even need to deploy your policy
+[644.28s -> 645.64s]  in the real environment.
+[645.64s -> 646.70s]  You can get a pretty good sense
+[646.70s -> 648.16s]  for how well you expect it to do
+[648.16s -> 650.36s]  just from your validation set or test set.
+[651.54s -> 653.64s]  What's the equivalent of that in offline RL?
+[653.64s -> 654.80s]  These days in offline RL,
+[654.80s -> 658.24s]  if you want to learn how well your policy is doing
+[658.24s -> 659.08s]  in the real world,
+[659.08s -> 659.92s]  if you wanna understand how well it's doing
+[659.92s -> 660.96s]  in the real world,
+[660.96s -> 662.76s]  you would actually deploy it and run it.
+[662.76s -> 664.44s]  So the training is offline,
+[664.44s -> 665.96s]  but the evaluation is still online
+[665.96s -> 668.12s]  and that can be costly or even dangerous.
+[669.28s -> 670.28s]  There is some work on this.
+[670.28s -> 671.64s]  We have actually,
+[671.64s -> 673.72s]  some of my students have a paper on this
+[673.72s -> 675.44s]  called the Workflow for Offline Model-Free
+[675.44s -> 677.56s]  Robotic Reinforcement Learning,
+[677.56s -> 679.32s]  but there's still a big gap in understanding that.
+[679.32s -> 680.68s]  There's still a lot of theory that's missing.
+[680.68s -> 683.16s]  There's still a lot of basic understanding
+[683.16s -> 684.08s]  of how we should have,
+[684.08s -> 687.04s]  we should structure our offline RL workflows
+[687.04s -> 689.34s]  without requiring online evaluation
+[689.38s -> 690.68s]  that needs a lot of work.
+[691.58s -> 694.34s]  Classic techniques like off-policy evaluation, OPE,
+[694.34s -> 695.28s]  also get at this point,
+[695.28s -> 696.82s]  but OPE methods themselves
+[696.82s -> 698.46s]  require hyperparameter tuning,
+[698.46s -> 701.18s]  which in turn also often requires online evaluation.
+[701.18s -> 702.72s]  So it's a big open problem.
+[703.74s -> 706.22s]  Statistical guarantees are a big problem in offline RL.
+[706.22s -> 708.74s]  So there are a lot of bounds
+[708.74s -> 711.22s]  and results involving distributional shift,
+[711.22s -> 713.94s]  but they tend to be pretty loose and incomplete.
+[713.94s -> 715.30s]  And then of course,
+[715.30s -> 717.54s]  scalable methods in large scale applications.
+[717.54s -> 719.50s]  So in principle, offline RL can be applied
+[719.50s -> 720.96s]  to a wide range of settings.
+[720.96s -> 723.84s]  In practice, it still hasn't been applied that widely.
+[723.84s -> 726.14s]  And I think better understanding of the real limitations
+[726.14s -> 728.10s]  and constraints of real world applications
+[728.10s -> 730.22s]  is really important to push us in the right direction.
+[730.22s -> 732.30s]  So I've talked about some examples in robotics,
+[732.30s -> 734.38s]  but there are a lot of things outside of robotics.
+[734.38s -> 735.84s]  These things could be applied to,
+[735.84s -> 737.02s]  and a lot of open questions
+[737.02s -> 738.98s]  as to what goes wrong when we do that.

@@ -1,0 +1,372 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 18.00s]  She works on all sorts of things that broadly speaking involve human interaction and robots and learning, I guess, yes, some some combination some Venn diagram involving those three things.
+[18.00s -> 29.00s]  And today, she'll tell us what interactive learning is right. Thank you so much. Thanks for the introduction, Sergey and thanks for inviting me excited to be here for the last lecture of this course, actually the first time that I'm in this building.
+[29.00s -> 43.00s]  So it's fancy building. I really like it. Um, so yeah so today I want to talk a little bit about some of the work that we have been doing in my lap around this idea of interactive learning and Sergey was just asking what is interactive learning.
+[43.00s -> 55.00s]  And when I think of interactive learning, basically I think about this idea of learning from various sources of human data, and you could learn a robot policy you could learn a reward function you could learn a representation, but the idea is that there
+[55.00s -> 67.00s]  is a human that is providing that data you could interact with that human, or you could collect offline data from that human, and you could try to actually learn from that and, and that is a topic that we have been thinking about in my lab for a period
+[67.00s -> 81.00s]  of time. So let's start to talk with that idea. And I'm going to talk about kind of like a recent journey that we have had in the age of large language models and how some of these things have changed over the past year, and kind of like our views
+[81.00s -> 93.00s]  have changed about this idea of interactive learning. Now that we have large language models vision language models and how we should think about that. Um, I know I have until 6pm I might not be able to get through all of this, which is fine.
+[93.00s -> 99.00s]  Feel free to stop me at any point in time, we can chat about things, I don't really need to go through all the slides.
+[99.00s -> 110.00s]  Okay, so let's start with kind of like one of the tasks that we are pretty interested in in the lab is to motivate some of the problems that I think are difficult in robotics.
+[110.00s -> 122.00s]  And one of these problems is the problem of assisted feeding so so we have been looking at this problem of picking up food and thinking about transferring food to a person's mouth in a way that is safe and comfortable.
+[122.00s -> 135.00s]  And this is an interesting robotics problem because you have to pick up things like food that deformable. And then you also need to transfer that to to a person so you have human robot interaction, and you need to make sure that that is safe and comfortable.
+[135.00s -> 148.00s]  And we started with kind of like a baseline policy that is doing visual survey so it figures out where your mouth is there, it does have a camera, it figures out where your mouth is, and it tries to go to a fixed offset from your mouth.
+[148.00s -> 153.00s]  It's extremely uncomfortable. Are you looking at this video makes you sad.
+[153.00s -> 168.00s]  And what we wanted to do was we wanted to think about like how we could go about improving thing, improving some of these policies. And the question is, maybe we could use some level of learning here.
+[168.00s -> 172.00s]  But maybe we could try to bring personal learning.
+[173.00s -> 186.00s]  And it turns out that enforcement learning is really difficult here because first of all, I don't have a good signal. Right, but I don't really know who they are, and how to match interact with the carrots and the fourth.
+[186.00s -> 194.00s]  And also if I were to do reinforcement learning in real I really don't want to hit the person's nose and like get a negative reward that also wouldn't wouldn't be that ideal.
+[194.00s -> 207.00s]  So there's also the other extreme which is where we could collect some amount of data we could try to do imitation learning right like we could collect some amount of expert data and from that expert data maybe I can figure out what what is the right way.
+[207.00s -> 222.00s]  What are the parameters of like this idea of transferring the food to a mouth, something that we have been working on in general but it turns out that even when you're looking at data collection and doing imitation learning collecting data is honestly like not that easy.
+[222.00s -> 234.00s]  Right, like when you start like going that route of, let me do supervised learning, let me just collect a lot of data from humans and just be like humans, you start
+[234.00s -> 245.00s]  right well first off you need specific type of devices to collect that data, you need to have a VR system, there's this really nice like a local system that's okay and Chelsea I've been looking at right the my manual setup, where you could actually
+[245.00s -> 259.00s]  tell operate things really nicely, but again, you need to have like four arms, or cheese, and then, but you still need to have like a full on set up to actually like collect that data and that tends to put some constraints in terms of data collection.
+[259.00s -> 270.00s]  And beyond that when you start to collect that data. There's a question of like how that data looks like it is like human data tends to be pretty different from like scripted data.
+[270.00s -> 272.00s]  If you look at human data.
+[272.00s -> 282.00s]  We tend to call it suboptimal I don't know if it's suboptimal is necessarily the right word for like human data, whether humans for example have pauses in their demonstrations, and like the very first thing you do is you remove all the pauses
+[282.00s -> 285.00s]  because you want to have clean data.
+[285.00s -> 290.00s]  So the question to ask is like why is it that humans have pauses in their data.
+[290.00s -> 296.00s]  And I don't do that one reason is when you're looking at human cell operating and picking up an item.
+[296.00s -> 305.00s]  They're not just picking up the item they are, they're thinking about other things are thinking about dinner, right, they're doing other processes other cognitive processes in their head.
+[305.00s -> 319.00s]  And we can't just kind of like restrict them to like picking up the cup. And that kind of like makes the data, maybe not as clean as scripted scripted data and there are other types of biases or suboptimalities that are present in human data and again
+[319.00s -> 329.00s]  and again, with the kind of like see this when you collect human data and we try to learn from that human data. So in practice, it turns out that demonstrations.
+[329.00s -> 344.00s]  They're a good source of data, but they're not the only thing that we could tap into. And for the time something that we were excited about, we are looking at demonstrations, but something that we're excited about is maybe we could tap into other sources of data.
+[344.00s -> 355.00s]  So if you're looking at humans, they tend to leak information all the time or there are other ways of interacting with humans beyond expert demonstrations that you could actually tap into and try to learn from.
+[355.00s -> 370.00s]  So one of the sources of data is pairwise comparisons. So, what I mean by that is, instead of like me asking a person to tell a operator what I could show two different trajectories or I don't five different trajectories, and I could actually ask a person
+[370.00s -> 384.00s]  about what your preferences are, or ask a person to provide a full on ranking. And from that I could learn something about what it is that a person actually wants. I've been looking at this idea of learning from pairwise comparisons for a period of time, but there are also other sources
+[384.00s -> 395.00s]  of data like, if you have a robot, it does have an embodiment you could physically move it when you're physically moving it, there's quite a bit of information about that movement and what you could actually learn from that movement.
+[395.00s -> 407.00s]  And also like I mentioned sub-optimality and there are various ways of handling sub-optimality so I'm sure in this class you have looked at offline or all like that's potentially one way of going about learning from sub-optimal demonstrations, but you could also take
+[407.00s -> 422.00s]  more like imitation learning type approaches and think about like weighted approaches to kind of like take a weighted perspective of it and then do imitation learning on sub-optimal demonstrations and that is also perfectly fine way of going about things.
+[422.00s -> 432.00s]  So we have been looking at all of these different nodes, but in the first section of the talk what I'd like to talk a little bit about is mainly that idea of learning from pairwise comparisons.
+[432.00s -> 447.00s]  And then after that I want to kind of like switch to this kind of like fact that we have now, we are now living in the world of large language models and how things evolve in that setting. So, so let me start discussing interactive learning, learning from preferences.
+[447.00s -> 451.00s]  First, and then after that we can talk about L1s.
+[451.00s -> 458.00s]  Alright, so, so what does it mean when you're trying to learn human preferences from pairwise comparisons.
+[458.00s -> 468.00s]  So in practice when you're asking these types of questions from people, we could try to figure out how they act in the world, like build a model of the person.
+[468.00s -> 483.00s]  But you could also try to figure out how the person wants the robot to actually act in the environment. For example, how a person wants an autonomous car to drive, or how a person wants a robot to open a drawer or maybe like an exoskeleton to how that exoskeleton should help you
+[483.00s -> 491.00s]  like walk or do various tasks.
+[491.00s -> 504.00s]  And the question, what is your name from these pairwise comparisons. So, in this body of work what we are looking at is we're looking at group work functions as a representation that you could actually learn from pairwise comparisons, they seem to be an okay and compact representation
+[505.00s -> 514.00s]  And then after that, you could optimize that you could find reinforcement learning, and that tends to be generally a powerful like way of going about learning models of humans.
+[514.00s -> 526.00s]  I want to point that group work functions are not the only thing that you could learn there's actually recent work from Brad Martin's group where they are looking at advantage functions and it seems that human preferences like asking these pairwise
+[526.00s -> 537.00s]  variations are actually more representative of advantage functions as opposed to rewards functions. Um, but you could you could go about learning, let's say rewards functions and for this first section.
+[537.00s -> 541.00s]  Let's imagine you're trying to learn rewards function.
+[541.00s -> 548.00s]  So then, the setup is, I'm not sure what that one.
+[548.00s -> 560.00s]  Um, so the service that I'm going to show two different trajectories to a person or and different trajectories. And then I'm going to ask you person well would you prefer and then based on that response that the person told me all day like one over two or two
+[560.00s -> 566.00s]  over one, then that is going to give me some information about the underlying rewards function.
+[566.00s -> 581.00s]  And for second imagine that this rewards function is simple, it doesn't need to be this simple, but for a second imagine that the reward function is simply a linear combination of a set of nonlinear feature some w, some set of fees, some some set of vectors,
+[581.00s -> 590.00s]  vector of w times some set of features. So for instance, you can imagine w lies in a three dimensional space right w one w two w three.
+[590.00s -> 603.00s]  And then you could you could really imagine that your w lies on the unit well because the thing you care about is in your reward function is a relationship between these different features, and you can sample from this, this unit ball.
+[603.00s -> 607.00s]  So if true w is somewhere here.
+[607.00s -> 617.00s]  Then every question every query that you're asking from a person do you like a or do you like corresponds to separating hyper plane in this space corresponds to the point of double you got to be being equal to zero.
+[617.00s -> 623.00s]  And that's the difference between the features over trajectory one versus two.
+[623.00s -> 634.00s]  And the human telling me go, I like a over b or like b over a that basically tells me which side of the hyper plane is prefer to the right side of the hyper plane, or the left side.
+[634.00s -> 645.00s]  And from that response, what I could do is, I could kind of like realize that the true w lies on the right side of the hyper plane, as opposed to the left side of the hyper plane.
+[645.00s -> 655.00s]  So I could remove this from one question that I asked one person. I've become like proving my search space, I could almost like remove everything from the wrong side of the hyper plane.
+[655.00s -> 662.00s]  I'm not going to do that because humans are noisy. So I'm actually going to use the ultimate rational model of humans assume that they are noisy.
+[662.00s -> 674.00s]  So I'm going to kind of like me sample, my points, and put the higher weights on the double use that are on the right side of the hyper plane, because the person told me, like a over b, that tells me the true w summary.
+[674.00s -> 676.00s]  So that was one question.
+[676.00s -> 690.00s]  So then the interesting research question here is, what is the sequence of informative diverse questions that I could be asking from a person, so that I could quickly kind of conversion that true rewards function.
+[690.00s -> 703.00s]  This very much sounds like an active learning problem, right, like the same active learning problem that we have seen in machine learning from way back, right, like it kind of like shows up, like it is very much a similar type of question you might
+[703.00s -> 716.00s]  have seen this in movie recommendations like you would have like the Netflix challenge from 2007 or something like they were also looking at a very similar question right like what is a pair of movies that I can ask you, and I can ask your preferences, so
+[716.00s -> 728.00s]  basically figure out what your preferences, and that was movie preferences. This is about your reward preferences about how a robot should do a task. It could be a very functional thing like how do I open a drawer.
+[728.00s -> 740.00s]  Or it could be a very stylistic thing like it could be about your preferences about being gentle when you're trying to I don't open a drawer. So so no we're here like we're defining what that rewards function is actually representing.
+[740.00s -> 752.00s]  So if you look at human preferences. What I mean is like truly your rewards function the functional rewards function that you could go and optimize, and then kind of like get a policy for your robot and then actually like execute with that calls.
+[752.00s -> 763.00s]  So how do you solve this if this is just like movie recommendations, then it should be easy right like we should we should just run the usual active learning methods and then that should just generally work.
+[763.00s -> 773.00s]  To some extent, I think there are a number of challenges that is worth mentioning, which is that we are trying to bring this idea to the field of robotics where you're looking at a continuous space.
+[773.00s -> 784.00s]  It is not like I have a library of like movies that I can pull from I don't have a library of trajectories that I can pull from what I would like to do here is I want to actively generate questions.
+[784.00s -> 790.00s]  I want to actively synthesize like to two questions, and then ask a person or which one do you prefer.
+[790.00s -> 802.00s]  And that seems to be a little bit more complicated than just like optimizing for information and when, when I simply have like a library of like I don't know these two to kind of like pull out from.
+[802.00s -> 807.00s]  So, I just have like one slide on this I'm simplifying this a little too much.
+[807.00s -> 820.00s]  So what I'm going to do here was be shifted in our group. This thesis is basically on this I'm summarizing these pieces in one slide, but but basically the idea here is what we would like to do is you would like to find a set of trajectories, like
+[820.00s -> 833.00s]  two trajectories maybe they want to generate, and the speed here corresponds to those two trajectories, the speed is the difference between feature vectors of those two trajectories, and what I like to do is you like to find trajectories that are
+[834.00s -> 839.00s]  So what we're going to optimize is some sort of information theoretic metric.
+[839.00s -> 851.00s]  And then we have explored a number of information theoretic metrics, you could use information gain, you could use determinantal point processes for a measure of diversity, or here in this case what we are really optimizing is the volume that would
+[852.00s -> 863.00s]  space after asking that question. Because when I asked the question that's a hyperplane, you're going to answer it, based on that answer, I'm going to remove something from the hypothesis over the true WS.
+[863.00s -> 876.00s]  And what I would like to do is, I would like to find a question that's informative, that is going to remove a lot of volume from from that hypothesis space. And this objective is simply saying, what this objective is saying is that maximize
+[876.00s -> 894.00s]  that volume, what is that volume, I said, you're looking at a unit ball. So the volume of the unit ball is one. If you tell me you like A over B, or if you tell me like E over A, in either case there's going to be some volume that would be removed from the hypothesis space, based on some human update function that is noisily rational.
+[894.00s -> 907.00s]  And in either case right like the expected volume that would be removed in either case, I'm going to minimize that so the minimum volume, that would be removed, maximizing the minimum volume, that would be removed from the hypothesis.
+[907.00s -> 920.00s]  Okay, so so that is kind of like the metric of information that we're, we're optimizing here. This is a modular objective so you could use the same sort of theory that's a module optimization methods usually use and and and you can get some convergence results
+[920.00s -> 935.00s]  here, because because of that, but there is one extra thing that I want to mention, which is that again we are in a robotic setting. So, this is not an unconstrained optimization. In this case, we are looking at a robot that needs to satisfy things like dynamics.
+[935.00s -> 944.00s]  And since I'm generating these trajectories I'm synthesizing these trajectories from the continuous space, I need to make sure that those trajectories satisfy a bunch of constraints.
+[944.00s -> 954.00s]  So so again I need to like really solve the constraint optimization here to be able to generate this next most informative question that I could be asked.
+[954.00s -> 961.00s]  Okay, so that was kind of what you'd extend of math that I want to go into here, but again like simplifying it to some level.
+[961.00s -> 976.00s]  So, if you do that in a very simple setting, you're going to be able to like, kind of like learn reward functions for simple tasks like having any driving simulator after zero questions you don't really know what to do, but after 30 questions, you kind
+[976.00s -> 978.00s]  of like learn how to drive.
+[978.00s -> 981.00s]  And then you kind of learn how to keep heading.
+[981.00s -> 992.00s]  And then finally like after 70 questions the car that we are driving is the orange car. It generally learns how to do collision avoidance and drive and avoid like obstacles and things like that.
+[992.00s -> 1004.00s]  And I do think this is interesting because this is 70 binary questions I didn't go with any demonstrations, I just asked 70 like kind of like binary pairwise questions, and from that, I'm able to learn something that I had a hard time like tuning
+[1004.00s -> 1011.00s]  myself, getting this this this this upon and start to drive in this very simple, simple driving simulator.
+[1011.00s -> 1020.00s]  One of the point that I want to mention here is that the simplest form of this was with that linear reward so kind of like the common complaint here is that oh that was a linear reward.
+[1020.00s -> 1030.00s]  At the end of the day, I have a neural report I'm not going to write a linear word function that's very fair, right, like, in practice, we're going to write nonlinear reward functions, neural reward functions, and then kind of like extensions
+[1030.00s -> 1043.00s]  of the neural network, we have been looking at this idea of active learning you're going to lose a lot of like theory and math around it, but you could still like optimize for the most uncertain, uncertain set of questions and still try to learn
+[1043.00s -> 1055.00s]  what their rewards function is, and one of the settings that we actually looked at this is kind of like a setting where you're wearing an exoskeleton and you're trying to learn human preferences like human walking preferences, when they were wearing
+[1055.00s -> 1066.00s]  and this was in collaboration with folks at Caltech, and usually people wear these exoskeletons when they're trying in rehab and they're trying to learn how to walk again, and different people have different gauge preferences.
+[1066.00s -> 1078.00s]  So what you'd like to do is you'd like to query people to figure out what those gate preferences are so you could quickly kind of like convergent and get a sense of how to help this person walk in these settings.
+[1078.00s -> 1090.00s]  The other point that I want to mention is that, again, like every time I talk about active learning to a machine learning crowd, like usually there's skepticism and it's a fair skepticism because if you look at active learning, any active learning paper
+[1090.00s -> 1107.00s]  has like two curves that kind of look like that. One is active learning, the other one is random sampling. They kind of look close, and eventually like converge. And is it worth it to do active learning and I think it's a very fair question of is it worth it to do active learning.
+[1107.00s -> 1119.00s]  And I'd argue that in a lot of machine learning settings it's actually not worth it to do active learning. Random sampling is simpler and it's just fine. Like, I know you have the computer, you have the bandwidth to actually run random sample.
+[1119.00s -> 1131.00s]  But I don't need that in this robotics domain. That difference between those two curves is actually important. That difference is going to be the difference between sitting in that system like for three hours versus half an hour.
+[1131.00s -> 1140.00s]  Like if you're running a user study if you're interacting with actual people with a real robotic system, the difference between three hours and half an hour, does matter.
+[1140.00s -> 1153.00s]  So so I do think there's quite a bit of room for active learning in the space of robotics and interacting with humans, because that starts to matter that time, like that time complexity and sample complexity starts to matter, way more than like a lot of machine
+[1153.00s -> 1155.00s]  learning settings.
+[1155.00s -> 1170.00s]  All right, so, um, so we have talked about this idea of learning human preferences and asking questions paralyzed comparison questions from from a single human, and I think that that's like an okay idea that you could use in robotics.
+[1170.00s -> 1183.00s]  What an interesting thing is, again, it applies outside of robotics to right like it doesn't need to be in robotics so so we decided to use a very similar idea in a different domain in the negotiation domain so so this is a negotiation domain where
+[1183.00s -> 1195.00s]  we have a bunch of items so we have one book, two hats, two balls, a bunch of shared items. And the idea is that we have Alice and Bob here and Alice and Bob are trying to negotiate on the shared items here.
+[1195.00s -> 1200.00s]  Alice and Bob individually have their own utility so they can see their own utility.
+[1200.00s -> 1215.00s]  And the idea here is that Bob can come in, and we have a bunch of like action items so proposing or like accepting a proposal or like rejecting a proposal and so on, and Bob here comes in and says well based on my utility, what I'm going to propose
+[1215.00s -> 1219.00s]  is I'm going to take zero books, two hats and two balls.
+[1219.00s -> 1229.00s]  And the question is, what should Alice do. So can I build an AI agent can I can I build an AI agent for Alice, so that Alice can actually negotiate with Bob.
+[1229.00s -> 1238.00s]  What should I do. Any, any suggestions.
+[1238.00s -> 1243.00s]  What's up.
+[1243.00s -> 1254.00s]  I'll shoot so you're telling me what the policy is right so you're saying okay good policy for Alice's ask for a book right like that is what I'll say, how do you come up with that policy.
+[1254.00s -> 1258.00s]  What do you guys do in this class.
+[1258.00s -> 1263.00s]  Try to infer reward function and then what what to do with that reward function.
+[1263.00s -> 1266.00s]  Hello.
+[1266.00s -> 1277.00s]  Right, yes. So, you could you have the reward function for some you're saying try to infer reward function but Alice knows her reward function, it's right here, Alice has access to her utility to kind of like her reward function.
+[1278.00s -> 1289.00s]  I could optimize that I could run our right like I could, I could reinforce from learning with that.
+[1289.00s -> 1301.00s]  Uh huh. So you could kind of like explore and then I'll take actions and try to like explore like what Bob is how Bob is actually like going to respond, you could do a model based approach and try to like actually learn Bob's reward function
+[1301.00s -> 1314.00s]  and use that. You could also kind of like take a more model free approach and, and just like propose a bunch of things, and you have you know your own rewards function but like take exploratory actions and see how Bob responds to that.
+[1314.00s -> 1326.00s]  And then based on that, decide like what to do. That's like a perfectly fine. That's right here. So that's a perfectly fine way of doing things so you could do reinforcement learning, that would be the game you could also solve the game right but you could take
+[1326.00s -> 1332.00s]  a game theoretic approach, you know your utility, you could do reinforcement learning.
+[1332.00s -> 1344.00s]  Problem with reinforcement learning. And the problem with reinforcement learning is, if you, if you do reinforcement learning in this setting, your Alice agent is going to be a little too aggressive.
+[1344.00s -> 1352.00s]  Your Alice agent is going to insist on getting the same thing and badgering and badgering and being kind of like aggressive.
+[1352.00s -> 1366.00s]  And it's kind of like fair for this reinforcement learning to be aggressive because nowhere in the reward function. I said well when you're trying to do this, maybe try to be polite or maybe try to be fair or don't be too aggressive that doesn't sound very human
+[1366.00s -> 1376.00s]  like so so there are a bunch of things there are a bunch of objectives that like I never said that's part of the reward function, and there is no reason for Alice to optimize for this.
+[1377.00s -> 1384.00s]  There's also the other extreme, which is, I could collect the data set, and I could just do supervised learning I could do imitation learn.
+[1384.00s -> 1395.00s]  And then there was actually like like this, this kind of game is coming from a paper called deal or no deal. There's a data set that comes with the paper, and you could actually train on that data set.
+[1395.00s -> 1409.00s]  And I think that for some reason that data set is extremely nice. So the supervised learning agent is on the other end of the spectrum and is very agreeable so so your Alice ends up just agreeing with whatever Bob says, and that is also not extremely human like.
+[1409.00s -> 1423.00s]  So in some sense, this is kind of the usual value alignment question this is usually like the usual like reward design question. I don't really have access to the true rewards function this utility is not really capturing the true rewards function
+[1423.00s -> 1425.00s]  that you're actually after.
+[1425.00s -> 1435.00s]  And one way of getting down is the morning so exactly an algorithm that I mentioned earlier, you could basically apply that algorithm and try to identify novel scenarios.
+[1435.00s -> 1450.00s]  And from those all those scenarios you could ask an expert like how you would act in this scenario and try to like identify a better version of this reinforcement learning agent that is like more aware of some of these properties that you're actually after.
+[1450.00s -> 1465.00s]  So so that is a perfectly fine way of doing things and actually in fact with me and said, how did this I see him on 2021, where they kind of like had this targeted data acquisition approach where you actively ask questions and you end up with a better negotiation agent,
+[1465.00s -> 1471.00s]  better than reinforcement learning plus imitation learning that tries to like capture human preferences.
+[1471.00s -> 1481.00s]  But the interesting thing is, you could do something else, instead of asking a single person instead of like doing this active learning from a single person.
+[1481.00s -> 1491.00s]  Another thing that you could do is, you could take a query a large language model, and just ask a large language model, what it thinks.
+[1491.00s -> 1498.00s]  And then kind of treats the large language model as a proxy reward function for this task.
+[1498.00s -> 1509.00s]  And at the time, when we were thinking about this we were extremely worried about this idea, because it sounded kind of crazy that you're using the LLM as a reward function.
+[1509.00s -> 1523.00s]  But actually since then, there are a number of works that are using LLMs and VLMs as reward functions or success detectors. And this was very much also trying to the same thing in this negotiation game right like in this negotiation game, because it's
+[1524.00s -> 1537.00s]  I have a lot of information like on internet about negotiations and about text and semantics. And because of that, an interesting thing that I could do this, I could simply ask an LLM, was this negotiation okay or not.
+[1537.00s -> 1547.00s]  Right. I don't need to ask an LLM to write down the reward function for me, but I can ask an LLM to assess, was this okay or not, was this polite, was this fair.
+[1547.00s -> 1559.00s]  So the way we actually do this is we kind of create a prompt where we say, Alice and Bob are negotiating, let's say how to split a set of books, hats and bolts. And then what we're going to do is we're going to give it an example.
+[1559.00s -> 1567.00s]  So we have Alice and Bob kind of negotiating, maybe you're looking at the property of versatility here to say well this was a versatile negotiation.
+[1567.00s -> 1577.00s]  And then after that we have a policy or initial policies of random policy, we're going to roll out to that random policy. And then we're going to get that policy to play with the other agents.
+[1577.00s -> 1584.00s]  And then again you're going to ask well was this policy versatile was Alice versatile in this last one.
+[1584.00s -> 1587.00s]  And this is our prompt looks.
+[1587.00s -> 1602.00s]  So so then you didn't ask an LLM like what do you think I'm probably out of the LLM we can get more probabilities or we could simply get a yes no answer, but that output is a signal about the reward function, right, like, it's not writing down a reward
+[1602.00s -> 1611.00s]  function for me, but it is some signal that it could actually use, and it could go and use that and further train my agent, based on that signal.
+[1611.00s -> 1627.00s]  And once I take that signal, I could actually train a reinforcement learning agent with that signal and continue training that and generate a new policy and go and change the pink part of this prompt and call an LLM again and go through the school.
+[1627.00s -> 1639.00s]  So in some sense, this is the opposite of our leadership, because I'm training an RL agent by calling an LLM within the training loop of the reinforcement learning agent.
+[1639.00s -> 1651.00s]  So I'm getting like signals I'm getting kind of like a reward regularizer or full on rewards function, you can use this in different ways you could use it to shape your queue function or use it to shape directly like the report function, but in either way
+[1651.00s -> 1659.00s]  like it is actually like acting as a as a reward shaping strategy to get your policy to actually do the same thing.
+[1659.00s -> 1670.00s]  And it turns out that in this negotiation setting and actually works really well so so we looked at a number of properties like versatility being pushover being competitive being stubborn and so on.
+[1670.00s -> 1675.00s]  And across all of these properties, these are properties where we have access to the ground truth report.
+[1675.00s -> 1685.00s]  What we could do is we could actually show that using a large language model acts as an okay proxy it actually matches the ground truth reward across like these different songs.
+[1685.00s -> 1694.00s]  And it outperforms the supervised learning baseline, which honestly is not a fair baseline because like how much data would you give your supervised learning agents.
+[1694.00s -> 1699.00s]  But I think the more important point is that it is actually like very close to ground truth reward.
+[1699.00s -> 1710.00s]  And also in settings where we don't have access to ground truth reward, we can run a user study and we can ask users well in that setting like is this agent that is using an LLM as a proxy reward.
+[1711.00s -> 1720.00s]  And it turns out that in general people, people like, and you think that it matches the correct style that they were actually.
+[1720.00s -> 1731.00s]  Okay, so, so that was all great. That was a negotiation setting. It's kind of expected an LLM to be good at negotiations and assessing negotiations, what does that mean for robotics.
+[1731.00s -> 1744.00s]  Okay, does that tell me oh I could use an LLM for robotics, like it sounds a little questionable when you're thinking about that and I think a big part of that is the grounding problem right there's question.
+[1744.00s -> 1746.00s]  Yeah.
+[1746.00s -> 1751.00s]  But was the LLM itself that you use.
+[1751.00s -> 1759.00s]  Did it involve the model.
+[1760.00s -> 1771.00s]  Actually, this was a nice one favorite so we actually played around with, like, GPTJ and GPT2 and like some of the earlier models doing, they also like works fairly okay in some of these settings.
+[1771.00s -> 1777.00s]  Yeah, essentially because it wasn't like a giant confounding. Yeah.
+[1777.00s -> 1780.00s]  Yeah, yeah.
+[1780.00s -> 1788.00s]  I think it's true that they are today like you're using like more like two bottles then then you kind of want me to worry about that sometimes.
+[1788.00s -> 1801.00s]  Um, yeah, so so going back to the robotic setting there's a question of like, do the same idea is kind of like transfer into robotic setting and there are a number of what follow up works is work actually, there's a work by folks at Google.
+[1802.00s -> 1817.00s]  We were looking at a very similar idea of using a large language model as a report the designer, and the idea here is that you could start with, in this case like you were starting with language instructions and very high level language instructions.
+[1817.00s -> 1833.00s]  So if you're talking about fairness or versatility or like these properties of negotiations, it is really about starting with like a very high level semantically meaningful language like it is late in the afternoon, make the robot face towards the sunset.
+[1833.00s -> 1846.00s]  And then you can start with this and get your large language model to output the weights of a reward function, and then you can go and optimize that reward so in this work, they're not doing our own, they're actually doing model predictive control
+[1846.00s -> 1853.00s]  with that reward parallel model predictive control, but it turns out that with some level of
+[1853.00s -> 1863.00s]  prompt tuning, which is important, but with some level of prompt tuning you can actually get the robots to do these types of behaviors, or it could get it to sit down like a dog or with the front bar.
+[1863.00s -> 1871.00s]  One of my favorite examples was doing a moonwalk, you can tell the robot, do a moonwalk, and like you can actually generate the weights that correspond to doing a moonwalk.
+[1871.00s -> 1878.00s]  And I think that is actually like pretty impressive. And then yeah, you could look at a bunch of other set of tasks and simulation.
+[1878.00s -> 1890.00s]  The one point that I want to mention here is grounding again, right, like a lot of these are in simulation, where you have ground truth access to the state of information, or like a quad robot example.
+[1890.00s -> 1894.00s]  It is not interacting with the world right it's just moving its top.
+[1894.00s -> 1910.00s]  So it's much simpler but when it comes to like actually doing proper state estimation and interacting with the world, it becomes like much more difficult to actually use these models to output correct reward functions, or using
+[1910.00s -> 1925.00s]  vision language models to output correct reward functions, and even like in the past couple of months there have been a bunch of works where they were using VLMs to act as success detectors reward functions, but in our experience, in general,
+[1925.00s -> 1935.00s]  it is hard to get like reliable results, like with these models, they're getting better. So that is exciting, but in general I think at the moment, it is a little questionable the results that one can get from them.
+[1935.00s -> 1950.00s]  So just to summarize some of the key takeaways here. So what I've talked about so far is this idea of learning human preferences like reward functions. And one way of doing that maybe one more traditional way of doing that is by actively asking questions
+[1950.00s -> 1951.00s]  from humans.
+[1951.00s -> 1955.00s]  That is a way of tapping into informative human feedback.
+[1955.00s -> 1977.00s]  And then in addition to that like that's not the only way you could actually kind of tap into the knowledge of large language models and try to leverage that knowledge and try to get at human preferences by really like asking an LM or asking a BLM to give you, give you some feedback and information.
+[1977.00s -> 1978.00s]  Cool.
+[1978.00s -> 1984.00s]  So, I do have a short section that I'm debating to skip, honestly.
+[1984.00s -> 1986.00s]  So I'm going to do that.
+[1986.00s -> 1991.00s]  Let me do that because I think that might be easier.
+[1991.00s -> 2002.00s]  Let me skip this section real quick and kind of like come back up here.
+[2002.00s -> 2007.00s]  Hopefully that didn't mess up zoom. What do you think?
+[2007.00s -> 2011.00s]  Oh, I can reset the screen sharing. Yes. Yeah.
+[2011.00s -> 2013.00s]  Yes.
+[2013.00s -> 2015.00s]  Share screen.
+[2015.00s -> 2018.00s]  Sure.
+[2018.00s -> 2020.00s]  There you go.
+[2020.00s -> 2022.00s]  Okay.
+[2022.00s -> 2024.00s]  All right.
+[2024.00s -> 2035.00s]  So we talked about the idea of learning human preferences and that is great, but, and that kind of like helps us to tap into some other source of data beyond demonstrations right like we can.
+[2035.00s -> 2037.00s]  Yes, is it.
+[2037.00s -> 2039.00s]  Oh, is it presented to you.
+[2040.00s -> 2044.00s]  Stop sharing.
+[2044.00s -> 2051.00s]  There is share screen.
+[2051.00s -> 2055.00s]  Is this desktop to that is desktop to. Yeah, sure.
+[2055.00s -> 2057.00s]  Is it good.
+[2057.00s -> 2059.00s]  Okay.
+[2059.00s -> 2064.00s]  All right, so.
+[2064.00s -> 2070.00s]  There you go. Yeah, so some kind of preferences, you can tap into demonstrations.
+[2070.00s -> 2086.00s]  But I think also another interesting source of data that we started seeing a little bit in this last section was the fact that we can tap into large free train models you can tap into all limbs and that can tends to be also useful source of information about what it is that people want.
+[2086.00s -> 2103.00s]  And it comes to the script like if you look at the past couple years like like I think you're all realizing that large language models are now. And I think a good question to ask is what that means for robotics, right, so so so like, how are we going to go move forward, knowing that.
+[2103.00s -> 2105.00s]  Yeah, I know.
+[2105.00s -> 2119.00s]  And I practice, like, I don't care to take services and then I will talk about both of these things. And the first take is this idea of this kind of grand vision of building something that resembles a large language model for robotics.
+[2119.00s -> 2133.00s]  And I think like I remember like at the time when you came out, you're all thinking about like what are the right ways of using GPT three. And there were some immediate ways of using GPT three within robotics like as is, but that didn't seem that exciting
+[2133.00s -> 2142.00s]  like the thing that was exciting was like what would be the analog of that for robotics and I think it's a very grand vision it's a wonderful thing to try to shoot for.
+[2142.00s -> 2157.00s]  And, and under the stake like the idea is that instead of tapping into preference queries or demonstrations. The question is, can we tap into large offline data sets right but the thing the promise of this is that there are large offline data sets out there,
+[2157.00s -> 2166.00s]  and from these data sets you could try to train a model or a free training model and actually like happy to that information and be able to use that in downstream settings.
+[2166.00s -> 2169.00s]  And that would be really wonderful.
+[2169.00s -> 2178.00s]  And if you think about like a robotics foundation model there's this question of like, what are the right ways of looking at it so so if you think you would have a foundation model paper.
+[2178.00s -> 2186.00s]  The idea is that you have many different data sources maybe have some amount of robotic interaction data we have human videos natural language simulation.
+[2186.00s -> 2197.00s]  And I think an interesting question is, if you have that data, but if we have that data. What is it that we are pre training like what is the right representation that you should get from that data.
+[2197.00s -> 2209.00s]  And what does fine tuning look like like what is adaptation look like how could I use that model for downstream tasks right like like if you look at like an island right like you could use it for many different downstream downstream
+[2209.00s -> 2218.00s]  tasks for language, and there's a question of like we have many different downstream tasks for robotics, like, or is it just like imitation like is it just control.
+[2218.00s -> 2227.00s]  So I think there are a number of like interesting downstream testing robotics and we should think about how we are using these models in downstream settings and how we could we could think about fine tuning.
+[2227.00s -> 2237.00s]  So, so we started thinking about this and and we started really looking at this from the perspective of learning visual representations and probably because we don't have anything else.
+[2237.00s -> 2251.00s]  Like, we only have like human robot videos, human videos, initially to tap into, and there are many efforts that are trying to like collect large robot data and really train a model and robot data, but at the moment let's say that we only have human
+[2251.00s -> 2258.00s]  videos you have what's a YouTube videos, and there's a question of can be learned visual representations that are useful.
+[2258.00s -> 2268.00s]  So it's not visual representation learning, right like there are two extremes at the moment if you look at the field of vision and then what we have from the field of vision.
+[2268.00s -> 2277.00s]  The two kind of like ends of the spectrum, or things like master coding, where you take it and then you mask it out and you try to reproduce the master image.
+[2277.00s -> 2284.00s]  And that's really great because it gives you kind of what these local spatial features if you want to do, I don't know if you want to grasp an object.
+[2284.00s -> 2295.00s]  And that's really good because it actually like gives you like all the details of the object you can actually hope for grasping with that model, and it gives you what the syntax of what you're actually after.
+[2295.00s -> 2305.00s]  But the problem with things like mascot encoding is that they destroy like all the semantics. So let's say that you want to pick up a jar of, I don't know, orange juice versus a jar of milk.
+[2305.00s -> 2315.00s]  So if you're boring like from a jar of liquid, you should like perform like the same task, but you wouldn't really be able to like kind of like get that similarity, because the pixels look different.
+[2315.00s -> 2327.00s]  And then, kind of like you have the other end of the spectrum with models like clip for our three and where we are really trying to capture semantics you're using contrastive objectives to capture semantics, you're trying to match language
+[2327.00s -> 2337.00s]  with images. And then these are great because they kind of give us generalizable concepts, but the contrastive objective actually like turns out to destroy all the local and spatial features.
+[2337.00s -> 2346.00s]  So it's really hard to expect like clip representations to like go and do fine grained grasping right like they wouldn't really be able to capture any of that.
+[2346.00s -> 2358.00s]  So, what we're really after was, could we get the best of both worlds, could we try to learn a visual representation that could actually like try to connect syntax and semantics.
+[2358.00s -> 2370.00s]  And the idea that we had was maybe we could use language as a bridge between syntax and semantics. So, instead of just doing reconstruction without any language, or instead of just captioning that just generates language.
+[2370.00s -> 2380.00s]  What we could do is we could do grounded reconstruction, you could really start with a nice volume coding backbone, but you could condition on language, so we don't lose the semantics.
+[2380.00s -> 2394.00s]  And this was a key idea behind this model that they started training on human videos. And in addition to just syntax and semantics, you also need to like capture things like context and pragmatics in some sense right like if you look at a robotic
+[2394.00s -> 2408.00s]  task, there was quite a bit of interaction and dynamic interaction that goes on, and we need to like capture those dynamic interactions too. So there's a question of how do we go after capturing dynamics and pragmatics, in addition to syntax and semantics.
+[2408.00s -> 2416.00s]  And these are kind of like the three key factors for building this model that's called Voltron. It's a language driven representation learning model, it's a collaboration with a number of folks.
+[2417.00s -> 2431.00s]  And then the idea of the will try and model is starts with mascot encoding, right like it's great to do mascot encoding, right like like that gives us all these details that you're actually asked to start the mascot encoding backbone.
+[2431.00s -> 2440.00s]  And then in addition to that, try to do like language capturing so so we could have, let's say an image that's about filling the carriage with a killer.
+[2440.00s -> 2445.00s]  And then you're capturing on top of that, so so you have filling the carrot as a caption.
+[2445.00s -> 2454.00s]  And that tries to get both syntax and semantics, but in order to get that pragmatics that extra bit. The idea is that you could also generate language.
+[2454.00s -> 2466.00s]  So if you do language generation that tries to kind of like get out like understanding of what the task really is is filling a carriage with a killer. And then if you do multi frame conditioning, like you're doing to frame conditioning, that also
+[2466.00s -> 2469.00s]  gets a little bit of dynamics information.
+[2469.00s -> 2482.00s]  So with all of these pieces together. You could train a model that is framed on large scale like human videos, and that model is going to be more grounded than than usual like suspects that you would have in this domain.
+[2482.00s -> 2492.00s]  And then you could actually like fine tune that model on a number of downstream tasks so I think we had like a evaluation so you have like five different tasks, and I'm just showing a couple of them here.
+[2492.00s -> 2499.00s]  The thing that people care about at the end of the day usually is control and imitation learning. In this case you're looking at language condition imitation learning.
+[2499.00s -> 2504.00s]  These are the tasks that you're actually after the robot here that does the tasks.
+[2504.00s -> 2517.00s]  The performance is low, the reason you don't see a video of it is that the performance is low for across like all of these models, but basically training like taking this representation again it's a visual representation, taking that representation
+[2517.00s -> 2529.00s]  and then fine tuning it on 20 demonstrations, you end up having the small time model different versions of it shown in orange, that can start perform things like our 3M or things like mass visual pre training, and I would argue that again the reason
+[2529.00s -> 2538.00s]  for that is it's more grounded and it tries to like capture things like semantics and and pragmatics a little more than, like, like the existing models.
+[2538.00s -> 2550.00s]  So, one other interesting result that we had with the Voltron model that I found pretty exciting is, if you give it a video if you give it like a video of a person, let's say on an opening faucet, and you just look at like what their representation
+[2550.00s -> 2563.00s]  outputs, you could do like zero shot intent inference, like the model is actually like pretty aligned like if you look at the representations, it's pretty aligned in terms of figuring out when the faucet is being opened so so it actually like figures
+[2564.00s -> 2577.00s]  from this video, like zero shot without any any any fine tuning and I thought that was that was very interesting. And the more interesting thing is, if you give it a robot video, even though it hasn't seen any robots like this is just trained on human videos,
+[2577.00s -> 2589.00s]  it is able to do something similar it's able to do zero shot intent inference of robot videos without any fine tuning and anything of that form. And I think that's pretty exciting because again that shows that the model is a lot more grounded in terms of what
+[2589.00s -> 2591.00s]  we're actually after.
+[2591.00s -> 2601.00s]  Um, so this is open source you could pip install Voltron robotics, and you were you're calling the resident, you can call Voltron. Please use it, let us know how it goes.
+[2601.00s -> 2614.00s]  Um, but what I think kind of the main point of like the section was that as you're training these large models and the thing that we were training here was a visual representation but we were trying to tap into our offline data sets by training
+[2614.00s -> 2626.00s]  a visual representation, I think we could be careful about that pre training objective. And you could try to like kind of like shape that pre training objective, so it is actually useful for downstream robotic stuff that we are interested in.
+[2626.00s -> 2639.00s]  And in this case we were looking at language and multi frame conditioning, really as the key differences for bringing syntax semantics and the dynamics of the tasks together, so that these representations are useful for robotics.
+[2639.00s -> 2651.00s]  And I think on top of that idea I mentioned you don't have robot data right like the reason that you looked at Voltron on human videos was you don't have robot data, and I'm pretty excited about all these different efforts that are going on across multiple
+[2651.00s -> 2666.00s]  labs, in terms of collecting large offline data sets robot data sets that you could actually train these these these pretend models on. So this is our Tx effort that Sergei and folks at Berkeley, and folks at Google and a number of labs have been have been kind
+[2666.00s -> 2682.00s]  And then the idea here is really like trying to train a cross embodiment model trained on robots have many different embodiments many different skills many different data sets and have a single model that could actually like get all of these different diversity
+[2682.00s -> 2693.00s]  of robot data, and then act as that foundation model. And then there's a question of what what should it output right like what I showed in Voltron was a visual representation it wasn't an action.
+[2693.00s -> 2704.00s]  So this is our Tx model right like you could act with an action right it could be a vision language action model. And I think it's an interesting question in terms of like, what level of abstraction do we want to be as we are trying to pre training these models
+[2704.00s -> 2713.00s]  like is action the right representation is visual representations are right in representation, and how we should go about it, and kind of like building on top of that there's also a number of efforts.
+[2713.00s -> 2730.00s]  So this is the R2D2 effort, again it's an operation across multiple labs, Sergei's lab, Chelsea's lab, number of labs outside of Stanford and Berkeley, where we are trying to collect data on kind of like a safe platform, but like really diverse data in the wild, in the wild,
+[2730.00s -> 2744.00s]  meaning the dorms of students. So this is one of the standard terms, it's I think very common in the data set, where you could actually get the robot and teleoperated like kind of like, like in, in the wild and then try to train a model on this type
+[2744.00s -> 2750.00s]  of data that's being collected and I think that is also really exciting when we're thinking about training these models.
+[2750.00s -> 2757.00s]  Alright, so that was my first thing, this is kind of like and then again very active area of research, everyone is interested in building these foundation models.
+[2757.00s -> 2765.00s]  I don't have five minutes but I think in the last five minutes. I do want to briefly talk about the second page.
+[2765.00s -> 2774.00s]  And the second take was something that I was very skeptical of initially, and let me tell you what the second thing is this take is okay, like the foundation models exists.
+[2774.00s -> 2779.00s]  I don't want to go and build a robotics foundation model that sounds like really difficult.
+[2779.00s -> 2793.00s]  So VLMs and VLMs exist and there's a question of can I use them in creative ways for robotics. So the idea is instead of tapping into preference queries and demonstrations, or instead of tapping into large offline data sets like found the
+[2793.00s -> 2801.00s]  robotics foundation models try to do, can I tap into existing knowledge of large language models and vision language models.
+[2801.00s -> 2813.00s]  And what I was not that excited about this initially was, it was okay with what can I do with an LLM, but the initial efforts were things like using a large language model at the taskbar.
+[2813.00s -> 2824.00s]  Right, like if you look at like works like say can like initially I was like what does say can do say can tries to make this work by folks at Google, what it tries to do is it tries to use a large language model to come up with tasks
+[2824.00s -> 2839.00s]  and a bunch of other things but the key part of say can is that it's coming up the task lines, and the initial reaction of what myself and a number of people was like, okay, was that the problem in robotics like did we really like suffer from task planning.
+[2839.00s -> 2852.00s]  And I don't think that was, I don't think that's the case, but I don't think that was the point of saying that either. And then and like over time I'm becoming less and less skeptical of this idea of using LMs and VLMs.
+[2852.00s -> 2862.00s]  I think, like thinking about large language models and visual language models kinds of kind of opens up a number of other ways that we could think about robotics that we wouldn't think about before.
+[2862.00s -> 2875.00s]  Like if you look at works like code as policies where you're using a large language model to generate robot code, but I wasn't thinking of that as the approach for scaling up robot learning, like two years ago, but now I wonder if that is the right
+[2875.00s -> 2888.00s]  way to go. And I do think this stage, the sake of using large models for various types of downstream tasks, kind of like opens up a number of interesting downstream things that we could actually look into.
+[2888.00s -> 2898.00s]  And then that is something that over the past year we have been looking at I'm not going to get into too much details about any of them, maybe like one of them like just briefly, but just to kind of pinpoint a bunch of them.
+[2898.00s -> 2908.00s]  We talked about reward design already using LMs as reward designers, like using VLMs as reward designers I do think that's a very interesting use of existing LMs or VLMs.
+[2908.00s -> 2919.00s]  You could also fine tune these large language models and vision language models to be more aligned to what you're after. So some of the works that you're looking at is kind of like looking at fine tuning VLMs to be more physically grounded or to be more
+[2919.00s -> 2926.00s]  spatially grounded, and that is a way of getting them to be more aligned in terms of rewards functions that you're actually after.
+[2926.00s -> 2940.00s]  You could use them for things like common sense reasoning. So for example, you can ask a BLM, like should I should I clean up the Legos on the right or should I clean up the Legos on the left so so for example, if you have a scene like this, a human immediately knows that you shouldn't clean the stable
+[2940.00s -> 2944.00s]  I spent a lot of time building these Legos, right.
+[2944.00s -> 2947.00s]  But a human would also know that it's okay to clean this table.
+[2947.00s -> 2959.00s]  And like, for the longest this was one of the problems that value alignment people were interested in right like this common sense reasoning, how do you get a robot and AI agent to have the same knowledge that is kind of solved that.
+[2959.00s -> 2972.00s]  The language models and LMs. If you take a picture of these two and kind of like describing the large language model, it knows the answer, it kind of like understands that you should not throw away these types of Legos, and that is kind of interesting
+[2972.00s -> 2985.00s]  in the sense that we can do a lot of common sense reasoning and social reasoning. Now, just by tapping into the knowledge of large language models and vision language models, we can look at other things like semantic manipulation, like referring to objects
+[2985.00s -> 2996.00s]  like parts like laces or heels. And again, like I could, I can do semantic manipulation using LMs along with training a very simple key point based model that could actually respond to that.
+[2996.00s -> 3007.00s]  So using humans, this is something that we were discussing earlier with you guys like this idea of using LMs to actually teach humans give corrective feedback to humans, when you're looking at exercises.
+[3007.00s -> 3019.00s]  And then maybe the last thing that I want to spend like two slides on is kind of like going beyond some of these applications and using LMs as pattern recognition machines.
+[3019.00s -> 3029.00s]  So the application that I've said so far is really leveraging large language models and vision language models, because they have a lot of context. They have rich context they have access to internet scale data.
+[3029.00s -> 3039.00s]  This allows us to tap into internet scale data. That is great, right, like we could, we could tap into internet scale data we can tap into social reasoning semantic reasoning common sense reasoning.
+[3039.00s -> 3051.00s]  And one interesting observation that we recently had is, you could even go beyond that, but using LMs and VLMs actually allows us to go beyond just semantics and context.
+[3051.00s -> 3063.00s]  And specifically these models can simply act as really good pattern machines. They can like just find very abstract patterns, not even, not even like semantically meaningful patterns.
+[3064.00s -> 3071.00s]  So we have been leading this, this work, but the idea is, I'm just going to show three examples that ended up there.
+[3071.00s -> 3078.00s]  Like one example is that you could do sequence transformation so you can take an image. This is an image.
+[3078.00s -> 3086.00s]  And if you have this image, and then you have an image without words right but the, the red cup goes on down on the green, green plate.
+[3086.00s -> 3095.00s]  You can have a test example, and like you know what the output should be the output should be that the red cup should go on the green, green, green plate. So that is what we're asking.
+[3095.00s -> 3101.00s]  I have access to a large language model, not a vision language model for a second. What I could do is I could discretize this.
+[3101.00s -> 3110.00s]  Once I discretize I could put it in numbers, I could put these numbers in the context of a large language model, input output input.
+[3110.00s -> 3121.00s]  So if an LLM is actually going to output, a set of numbers that I do if I de projected back to high resolution. It ends up being the thing that I'm actually after.
+[3121.00s -> 3134.00s]  I'm not proposing to use an LLM for this task or use an LLM to solve vision, but it's actually like pretty interesting that I can get these types of patterns and it's like absolutely like a token invariant, like the tokens have no have no meanings,
+[3134.00s -> 3148.00s]  but because there are patterns it's able to capture those patterns and kind of like predict what goes next, from that pattern. It can continue patterns you can simply give it x y location of assignment, and it can continue that x y location.
+[3148.00s -> 3158.00s]  So, so we can try this out, try this out tonight right like like give chat to be like x y location of any assignment if you want. And it's actually like able to like continue that behavior.
+[3158.00s -> 3173.00s]  And that could be useful for things like, I don't know robotics and data collection. So, maybe that is the stretch, but I think it's interesting that you can do this you could give the end effector location of a robot, x, y, z, yaw control of that end effector.
+[3173.00s -> 3183.00s]  And that is the thing that I'm putting in the context of the LLM. And you could give like that motion right like that is the thing that I would put in context, x, y, z, yaw control x, y, z, yaw control and so on.
+[3183.00s -> 3190.00s]  And then the robot is able to continue that. The robot is actually able to put out a control that actually continues that behavior.
+[3190.00s -> 3206.00s]  And then I think that's kind of cool. And then I think the most interesting one is that it could do some level of optimization. So for example, if you pick what the inverted pendulum problem, and you give it again like the kind of like controlling
+[3207.00s -> 3221.00s]  a lot with the reward, it's able to stabilize that you might say okay but the pendulum like exists on internet so it probably has quite a bit of knowledge, that is true but again, but the thing that you're inputting to the LLM is just the kind of like the coordinates
+[3221.00s -> 3234.00s]  of the end effector, and the rewards. Like in this case I'm looking at a robot trying to reach a cup, and I'm sorting what goes into context with the reward. So I'll put the reward and the trajectory reward and the trajectory and I sort that out.
+[3234.00s -> 3243.00s]  And the robot is actually able to continue the pattern and output high reward trajectories, which is also kind of cool.
+[3243.00s -> 3254.00s]  So, and that kind of like resembles things like clicker training right you could actually do clicker training with the robot so let's say that you provide a clicker as it goes closer and closer to the object.
+[3254.00s -> 3262.00s]  That is the thing that gives it high reward. And that is the thing that you're putting in the context of the LLM, and eventually it's able to like reach the object.
+[3262.00s -> 3275.00s]  And here so so so kind of like the takeaway of this last part is that, like, elements in the elements that are wonderful. They're kind of like two takes in terms of how we should think about it for robotics there's, I think, a grand vision of trying
+[3275.00s -> 3287.00s]  to build something similar to that that's wonderful. They does missing, what to pre train on is still like a question that we should be thinking about, but there's also the second view which is, maybe you could tap into existing LMS and VLMs because they have
+[3287.00s -> 3295.00s]  a lot of context they could do social reasoning, they could do semantic manipulation they could teach humans, they could tap into internet scale data and that is really wonderful.
+[3295.00s -> 3309.00s]  But even beyond that they can access pattern machines they can find patterns and, and that is kind of surprising. Again, I'm not proposing using that for vision or control or anything, but that is surprising and that maybe tells us how we should go and maybe continue
+[3309.00s -> 3321.00s]  fine tuning these models on patterns or what are some future applications that we could actually use when you are when you're thinking about these large, large pre trained models for for the applications of robotics.
+[3321.00s -> 3323.00s]  I didn't talk about feeding.
+[3323.00s -> 3337.00s]  That is something you're looking at I'm just going to end with some videos here we are actively looking at this we are using some learning based models that are trying to pick up various types of food items.
+[3337.00s -> 3345.00s]  For example, like throwing spaghetti actually you're using an hour left to decide on this.
+[3345.00s -> 3355.00s]  This slide like what by the food to pick up, then you have like people on spaghetti and go to get any door that you do, and be able to feed people. Oh, and then you're feeding people.
+[3355.00s -> 3359.00s]  We show the feeding people.
+[3360.00s -> 3365.00s]  requires a lot of good engineering to so it's not just the learning policy that does that.
+[3365.00s -> 3371.00s]  There's a reactive controller that has different levels of reactivity but it enters a map and exits.
+[3371.00s -> 3380.00s]  I think it's better than the first video I showed some argue before closing a little too far.
+[3380.00s -> 3389.00s]  And with that, I'm just going to end it here.
+[3389.00s -> 3398.00s]  I think we have a few minutes for questions.
+[3398.00s -> 3427.00s]  So, for example, the initial examples that you provide is that there's a robot on ground, and it's not what movies, or it's just like standing on the ground.
+[3427.00s -> 3443.00s]  So here is a reward function for standing looks great. And after work on parameters and number of ways. And at that point you can take your pop up, and it kind of like generates a big figure it out like what is the response to move in your car.
+[3443.00s -> 3452.00s]  And you could, and you could run this panel and you see things that would kind of see what behavior is actually working, and if it doesn't get that zero.
+[3452.00s -> 3468.00s]  So, in that work, you're also looking at corrective language, and improving that you can hear a little very obnoxious I think actually the moonwalk example that I was giving that was over like a number of interactions, I don't think that would be a lot.
+[3468.00s -> 3477.00s]  And it sounds a lot like
+[3477.00s -> 3483.00s]  parallel when you get
+[3483.00s -> 3491.00s]  Yeah, that's very true. It's very similar to like the new world of our
+[3492.00s -> 3507.00s]  works around like meeting all each other for for robotic specific to be like, I think one difference in all each other is that a lot of these preferences learning work and literature around that did not care as much about more words.
+[3507.00s -> 3523.00s]  So like kind of like the work that people usually cite for like always just Christiana's like you're 17 years, and the reason is that that was the first word that was fine to use the neural reward, I didn't really care about, like, a mathematical model of uncertainty
+[3523.00s -> 3530.00s]  or anything like that, which would be an ensemble model to capture uncertainty. And that is really what we're things are right now.
+[3530.00s -> 3541.00s]  There are a lot of parallels or the question of like how much active learning again, matter, like in these settings, you know, argue that in some of our settings and see what we're doing making settings, it does matter more.
+[3541.00s -> 3551.00s]  We have a reasonable way actually have some good work there is going to like pass the knowledge to fall into the process of learning and reduce overall part of it.
+[3551.00s -> 3559.00s]  Yeah, so, I think they're looking at that.
+[3559.00s -> 3576.00s]  So, as you mentioned in the earlier was assumed a national model of human is that included at all with your work with the elements, which is not going to be
+[3577.00s -> 3580.00s]  there we're getting into.
+[3580.00s -> 3585.00s]  So the input that you're getting from the human level.
+[3585.00s -> 3592.00s]  So are you saying we're going to get on the other level like reward sheet.
+[3592.00s -> 3598.00s]  Or do some bottle account for possibility.
+[3598.00s -> 3601.00s]  It's not.
+[3601.00s -> 3604.00s]  You're not doing that right now.
+[3604.00s -> 3618.00s]  So, so I mean like it is not what since the model is continuing training right and it has like a separate rewarding addition to that one. So, to that one the word is not the only report that it's using it's just using it doesn't hurt it so much.
+[3618.00s -> 3642.00s]  It was kind of like a natural model, you know, the output of the one.
+[3642.00s -> 3653.00s]  So exactly in context, I guess the point that I was trying to make here is that it doesn't need to be meaningful semantically meaningful tokens, which is kind of surprising.
+[3654.00s -> 3665.00s]  work that really like a sense to like give people that are semantically meaningful actions that are going to be meaningful, and it is true that if you have semantically meaningful actions, for example for the inverted pendulum.
+[3665.00s -> 3675.00s]  If you say left, I don't know twice left first left, you actually like give like language to the actions that you're thinking, it converges faster, but if you give it like any token.
+[3675.00s -> 3691.00s]  It can identify the pattern to so so I think the point that the interesting and surprising point there was, it is spoken very and it's the patterns that is picking up rather than the fact that there are some semantics that I'm trying to understand.
+[3691.00s -> 3701.00s]  All right, let's give us another round of applause.

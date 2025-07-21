@@ -1,0 +1,83 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 7.80s]  In this video, I'm going to explain some details about Transport Layer Security, or
+[7.80s -> 18.54s]  TLS. It's what you use when you use HTTPS, secure HTTP. TLS is specified in RFC 5246.
+[18.54s -> 22.56s]  Transport Layer Security is exactly that. It provides security at the transport layer,
+[22.56s -> 28.62s]  so between applications. It's a session layer on top of TCP. It provides a stream
+[28.62s -> 34.98s]  abstraction just like TCP. So to most applications, it looks just like TCP, a bidirectional, reliable
+[34.98s -> 42.50s]  byte stream. But TLS adds confidentiality, integrity, and authenticity to the stream.
+[42.50s -> 48.22s]  So using TLS properly, you can protect your communication from eavesdropping, tampering,
+[48.22s -> 53.60s]  and spoofing attacks. The most recent version of TLS is version 1.2, specified
+[53.60s -> 60.56s]  in RFC 5246. TLS started as the secure socket layer SSL by Netscape, back when the web was
+[60.56s -> 66.64s]  just starting. The version order is a cell 2.0, SSL 3.0, TLS 1.0, TLS 1.1, and now
+[66.64s -> 78.80s]  TLS 1.2. TLS is used by HTTPS.
+[78.80s -> 84.16s]  So what ciphers and keys does TLS use? It has a wide range that are available. As part
+[84.16s -> 89.44s]  of setting up a TLS session, the client and server negotiate four separate ciphers. The
+[89.44s -> 94.20s]  first is the cipher used to authenticate the server. You can also optionally authenticate
+[94.20s -> 99.60s]  a client. The second is the cipher used to exchange symmetric keys. The third is
+[99.60s -> 103.84s]  the cipher used for symmetric confidentiality, and the fourth is the cipher used for symmetric
+[103.84s -> 111.12s]  integrity. These are negotiated in the five-step session initiation protocol.
+[111.12s -> 120.52s]  This all happens after we open a TCP connection, so these messages are sent over TCP.
+[120.52s -> 125.42s]  In the first step, which is sent as clear text, the client sends a list of ciphers
+[125.42s -> 133.36s]  it supports, and a random number is generated. The server responds with what ciphers to use,
+[133.40s -> 138.88s]  its own random number, and a certificate containing its public key. This is also sent as clear
+[138.88s -> 141.48s]  text.
+[141.48s -> 146.92s]  In the third step, the client sends something called a pre-master secret to the server,
+[146.92s -> 152.00s]  encrypted with the server's public key. Using this pre-master secret and the two
+[152.00s -> 156.88s]  random numbers exchanged in the clear text, the client and server compute the keys for
+[156.88s -> 162.24s]  the session. I'll explain the details of how this works in a moment. But for now, realize
+[162.24s -> 166.08s]  that at this point, the client and server have generated the symmetric keys that their
+[166.08s -> 168.32s]  ciphers need.
+[168.32s -> 174.60s]  Next, the client sends a finished message, encrypted and mapped with the symmetric
+[174.60s -> 179.72s]  keys generated with the server random, client random, and pre-master secret. This message
+[179.72s -> 185.88s]  includes a MAC of the handshake messages to ensure that both sides saw the same messages.
+[185.88s -> 189.92s]  The MAC is also computed with the symmetric key generated from the server random, client
+[189.92s -> 192.60s]  random, and pre-master secret.
+[192.60s -> 198.36s]  Finally, the server sends a finished message. This is secured similarly to the client finished
+[198.36s -> 202.68s]  message, and also contains a MAC of the handshake messages.
+[202.68s -> 206.76s]  MACing the handshake messages allows TLS to protect against an adversary trying to
+[206.76s -> 210.96s]  force the two parties to choose a different cipher. Since the first two steps are not
+[210.96s -> 215.44s]  secured, they have neither confidentiality nor integrity, then an adversary could perform
+[215.44s -> 219.20s]  a man-in-the-middle attack to try and change the offered and selected ciphers.
+[219.20s -> 223.68s]  MACing the handshake messages lets them detect this.
+[223.68s -> 228.44s]  So now, at this point, we have a secure connection, protected through symmetric ciphers
+[228.44s -> 230.88s]  that both sides have agreed on.
+[230.88s -> 238.76s]  So what does that look like? Well, to provide integrity, TLS needs to break application
+[238.76s -> 244.04s]  data up into chunks that it can provide message authentication codes for. So TLS takes
+[244.04s -> 247.96s]  the application stream of data and breaks it up into records. There are also records
+[247.96s -> 251.90s]  that don't contain data, such as records that generate new keys. But let's focus
+[251.90s -> 257.48s]  on data records. TLS takes the application stream and breaks it into data records, which
+[257.48s -> 261.54s]  state their length and have a MAC. These records are encrypted with the chosen ciphers
+[261.54s -> 266.56s]  and keys, and then sent over TCP. This appears as a stream of data at TCP, which
+[266.56s -> 271.52s]  then breaks it into segments. Records can be much larger than TCP segments, so a single
+[271.52s -> 275.04s]  record might be broken into many segments, and record and segment boundaries might
+[275.04s -> 277.04s]  not line up.
+[277.12s -> 282.68s]  TLS includes compression as one of its features. If, for example, you configure TLS to provide
+[282.68s -> 288.28s]  integrity but not confidentiality, then you'd be sending plain text. English texts are
+[288.28s -> 292.28s]  generally very compressible, almost 10 to 1, so you can configure TLS to compress
+[292.28s -> 296.92s]  the data. By default, compression is off. If there's confidentiality, then compression
+[296.92s -> 302.92s]  won't help, since the bits should seem like they're random.
+[303.80s -> 310.80s]  So let's look at how TLS establishes its session keys. Remember, both the server and
+[310.80s -> 315.44s]  the client provide random numbers. That way, if even one of them has a bad random
+[315.44s -> 320.64s]  number generator, you'll still have randomness. The client also sends a pre-master secret
+[320.64s -> 325.74s]  encrypted with the server's public key. The client and server both combine these
+[325.74s -> 331.04s]  three pieces of information to create something called a master secret, from which they
+[331.04s -> 335.92s]  generate their session keys. Once they compute the master secret, the client and server
+[335.92s -> 342.20s]  throw away the pre-master secret. They generate six keys, whose lengths are
+[342.20s -> 346.40s]  determined by the ciphers used. They generate a key used to encrypt data from
+[346.40s -> 351.24s]  the client to the server, a key to MAC data from the client to the server, a key
+[351.24s -> 355.40s]  to encrypt data from the server to the client, a key to MAC data from the server
+[355.40s -> 360.56s]  to the client, a client initialization vector for ciphers that need it, and a server
+[360.60s -> 364.96s]  initialization vector for ciphers that need it.
+[364.96s -> 368.88s]  Having this master secret, the client and server can regenerate new keys by choosing
+[368.88s -> 372.04s]  new random numbers. So you can resume a session with the same
+[372.04s -> 379.04s]  master secret, but with new keys. Here's a picture of the whole process.
+[379.40s -> 385.32s]  The client and server take this client random, server random, and the pre-master secret
+[385.32s -> 389.28s]  and pass them as input to something called the pseudo-random function, or PRF, which
+[389.28s -> 395.88s]  basically generates bits that look random. This produces 48 bytes worth of random bits,
+[395.88s -> 399.68s]  the master secret. TLS takes the master secret and the two
+[399.68s -> 404.36s]  random values and passes them as input to a pseudo-random function to generate as many
+[404.36s -> 411.12s]  bits as you need for all of the keys. So for example, if the MAC keys are 512
+[411.12s -> 416.00s]  bits and the right keys are 256 bits and the initialization vectors are 128 bits, then
+[416.00s -> 421.20s]  you call the pseudo-random function enough times to generate 1792 bits, which become
+[421.20s -> 421.72s]  the keys.

@@ -1,0 +1,2683 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.76s]  Welcome. Welcome to week seven. We're getting there. How's assignment five
+[5.76s -> 10.32s]  going? It's alright, hopefully. This one's the first threading assignment,
+[10.32s -> 14.12s]  obviously, and it's got some nuances to it. You definitely have to
+[14.12s -> 16.68s]  think about locks, and you have to think about semaphores, you have to think about
+[16.68s -> 20.32s]  mutexes, and we've thrown in all that stuff about, oh, you have to make sure
+[20.32s -> 24.60s]  that you only have so many threads, and this and that, and that's all to test
+[24.60s -> 31.12s]  your ability to use semaphores. RSS news feeds are something that we don't really
+[31.12s -> 36.48s]  use too much now, but about, I want to say six or seven years ago, it was kind of
+[36.48s -> 40.28s]  a rage, like when these came out, it was this big deal of like, this is how
+[40.28s -> 42.64s]  you're gonna read your news from now on, you're gonna get all these feeds, and
+[42.64s -> 45.20s]  it's gonna be all these little snippets of news that you can go
+[45.20s -> 48.92s]  read the bigger articles and all that, and everybody thought it was cool, and
+[48.92s -> 52.28s]  then we all used it for about a week, and then went, ah, this is boring, we like the
+[52.28s -> 55.84s]  old way, and just kind of went back and, but, most, like lots of places still have
+[55.84s -> 62.20s]  these RSS news feed services, so you can get a news feed reader, which is what
+[62.20s -> 67.60s]  you're building, to actually create that, okay? Hopefully it's not too, too bad.
+[67.60s -> 72.16s]  It is due Friday. What I think I'm gonna do is, we're a little behind on
+[72.16s -> 75.12s]  the assignments, only because the midterm happened, and I wanted to give you a
+[75.12s -> 78.60s]  little extra time in the last one, so what we're probably gonna do is, I'm
+[78.60s -> 83.16s]  probably gonna release the next assignment maybe Thursday, give you a
+[83.16s -> 87.68s]  slightly smaller assignment than what we were thinking before, I've got to work
+[87.68s -> 91.88s]  all the details out, and then we'll get back on track, because the last two
+[91.88s -> 96.48s]  assignments, seven and eight, are pretty meaty, good ones, but pretty meaty, and I
+[96.48s -> 100.40s]  wanted to give you enough time to wrap your heads around those, without
+[100.40s -> 106.20s]  making it feel like it was going, you're going a little crazy, all right? But,
+[106.20s -> 110.76s]  even though we are still in the midst of threading for assignments, we are
+[110.76s -> 117.88s]  moving on to new and hopefully interesting material. We're talking about,
+[117.88s -> 122.96s]  there we go, we're talking about networking today, so this is kind of the
+[122.96s -> 127.28s]  next big thing, and pretty much the last big thing that we're going to talk
+[127.28s -> 132.56s]  about for the quarter, actually. We're going to talk about networking, which is
+[132.56s -> 139.28s]  connecting two computers together through, kind of similar to a read-write
+[139.28s -> 143.24s]  mentality, it's kind of, it's very similar to creating a pipe between two
+[143.24s -> 147.96s]  processes, but not processes, but now we're creating this kind of glorified
+[147.96s -> 151.96s]  pipe between two computers, and it's how the Internet works, and it's how
+[151.96s -> 156.72s]  the World Wide Web works, and and so forth, so we're gonna see a little bit
+[156.72s -> 164.84s]  how to do it. By the way, if you really like this stuff, CS 144, is it, networks?
+[164.84s -> 169.48s]  Yeah, 144 is networks, which goes into obviously much more detail than what
+[169.48s -> 173.68s]  we're going to kind of touch on in this class, and I think you'd enjoy
+[173.68s -> 178.16s]  that. By the way, if you've enjoyed the other stuff than operating systems,
+[178.16s -> 184.96s]  which is 143? No, sorry, 140. What is 143, compilers? Yeah, compilers.
+[184.96s -> 189.28s]  Compilers is also a great class, by the way, and then 140 is the operating
+[189.28s -> 192.24s]  systems class, which goes into, like, how do you build thread, a threading
+[192.24s -> 195.32s]  library, how do you build multi-processing into an operating
+[195.32s -> 200.20s]  system, and that sort of stuff. If you really didn't like that, then maybe stay
+[200.20s -> 208.44s]  away from those classes. Go take more AI, or whatever. And that's, but anyway, if you do enjoy it, there
+[208.44s -> 210.88s]  are lots of follow-on classes, and we'll spend some time talking about
+[210.96s -> 217.36s]  those soon anyway. So let's talk networking. What is networking? Well,
+[217.36s -> 221.68s]  it's like I said, it's basically connecting two computers on a network,
+[221.68s -> 226.36s]  and that network can be very local. In fact, networking can happen between two
+[226.36s -> 232.40s]  computers on the same, or between two processes on a single computer, much like
+[232.40s -> 236.60s]  a pipe would, but it's using network protocols instead of the kind of the
+[236.64s -> 240.96s]  underlying pipe protocol. So you can network between two processes on one
+[240.96s -> 245.40s]  computer, but most often we're talking about multiple computers talking to
+[245.40s -> 251.20s]  each other, okay? The way that works is you need one of the computers to
+[251.20s -> 256.40s]  act as a server, and a server is simply a computer that's waiting around
+[256.40s -> 260.52s]  for some other computer to ask it something, waiting around for some other
+[260.52s -> 265.72s]  computer to say, can I connect to you? And if you don't have that server set
+[266.04s -> 270.20s]  up, you can ask all day, but the other computer is not going to respond, okay?
+[270.20s -> 272.20s]  So that's what you have to have. You have to have a server, and then you have
+[272.20s -> 280.08s]  to have one or more clients which are connecting to the server, okay? And the
+[280.08s -> 285.96s]  World Wide Web works this way. If you connect to cs110.stanford.edu,
+[286.12s -> 290.28s]  you connect to a web server, and you are the client, and many of you can
+[290.28s -> 295.40s]  do that at the same time. So when I say that it's the same time, we do
+[295.40s -> 299.40s]  have to think about efficiency here, because there's going to be some kind
+[299.40s -> 304.76s]  of ability for, there has to be an ability for the server to get the
+[304.76s -> 307.96s]  information back to the clients quickly, and there might be lots and
+[307.96s -> 310.88s]  lots of clients. So we have to think about that. First, we're not
+[310.88s -> 314.28s]  going to worry too much about it, but then we will eventually think
+[314.28s -> 318.20s]  more about that. How does networking work? It works through this thing
+[318.20s -> 326.92s]  called sockets, and a socket is a number, all it is, just an int. In fact,
+[326.92s -> 330.84s]  it's an int that goes from 0 to 65535. In other words, you can only
+[330.84s -> 339.32s]  have up to 64 kilo sockets open at once, 65,000 sockets open at
+[339.32s -> 342.60s]  once, which would be many more than you probably have. Most computers do
+[342.60s -> 347.04s]  not have that many open at once. But it's just a 16-bit integer, so
+[347.04s -> 352.32s]  that's why it's limited to 65535. And you basically set your program
+[352.32s -> 357.44s]  up to say, hey, listen on this socket or port, another thing we call
+[357.44s -> 362.68s]  it. And when another computer, the client wants to connect to your
+[362.68s -> 366.60s]  server, the operating system notices this. There's lots of operating
+[366.60s -> 369.44s]  system and hardware support for this. The operating system notices
+[369.44s -> 373.00s]  this and then sends a little wake up message to your server that
+[373.00s -> 377.96s]  says, hey, you've got a client, deal with it. And that's what we're
+[377.96s -> 383.96s]  trying to do. You can kind of think of the port number or the socket
+[383.96s -> 389.64s]  number as a virtual process ID. So you can kind of think of it that
+[389.64s -> 394.72s]  there's some socket here that connects you to a particular process
+[394.72s -> 401.12s]  on the server. That's the way it goes. And the reason we don't
+[401.12s -> 405.20s]  have to do like the why not make just the process ID the socket
+[405.20s -> 407.56s]  ID is because you want to be you want to say, hey, listen,
+[407.56s -> 410.24s]  tell people go listen on this particular port. And that changes
+[410.24s -> 412.76s]  every time you do a new process. So that's, that's how
+[412.76s -> 415.84s]  we're going to do it. How might we look these up on your
+[415.84s -> 421.12s]  computer to see what you're connected to? Well, we can do
+[421.12s -> 427.72s]  the following we can do, let's see. Hang on. There we go. We
+[427.72s -> 432.16s]  can do here netstat. And then I always forget what the ones are
+[432.16s -> 437.68s]  PLNT dash PLNT make this a bit bigger so we can see the whole
+[437.68s -> 440.72s]  thing here. Okay, let me make it let me make it so that
+[440.72s -> 445.12s]  it comes out nicely. Like this. There we go. That's very
+[445.12s -> 447.28s]  nice. Alright, so what you can do is you can do that on the
+[447.32s -> 449.84s]  mid servers. And it looks like the mid servers are
+[449.84s -> 453.96s]  listening on a whole bunch of ports that are that you are
+[453.96s -> 456.16s]  able to see what they're listening on. Okay, they're
+[456.16s -> 461.44s]  listening on port 25. Let's see if I can get my cursor. There
+[461.44s -> 467.52s]  we go. Port 25. Okay, they're listening on port 587. Those
+[467.52s -> 470.28s]  happen to be associated with the mail server. So all the
+[470.28s -> 472.72s]  myths listen on a mail server, your computer listens on a mail
+[472.72s -> 476.92s]  server. Okay. This one is listening on 53. Did I write
+[476.92s -> 481.72s]  down what 53 was? 53 is the domain name service. So when
+[481.72s -> 487.16s]  you go to www.google.com, well, some somebody needs to
+[487.16s -> 489.68s]  translate that into a number because your computer is
+[489.68s -> 491.96s]  dealing with numbers. And people like to deal with
+[491.96s -> 495.00s]  words. So that is a translation layer there, which
+[495.00s -> 497.64s]  is handled by the domain name service, which is
+[497.64s -> 499.80s]  running on your computer, which connects to another
+[499.80s -> 502.64s]  computer, which connects to another computer, which which
+[502.64s -> 505.72s]  has all the domains on there, like your computer
+[505.72s -> 508.84s]  kind of keeps a little list of where I go first. And then
+[508.88s -> 511.80s]  that queries another computer, which eventually gives you
+[511.80s -> 514.00s]  back the name. I guess in some sense, it's like the
+[514.00s -> 517.04s]  directory search for your first the file system
+[517.04s -> 520.24s]  programs. It's kind of what's going on there. Okay, port
+[520.24s -> 524.56s]  22 is for telnet. I'm sorry, for SSH, we will talk
+[524.56s -> 526.68s]  about telnet in a minute. It's for SSH, which is when
+[526.68s -> 530.80s]  you SSH it goes to port 22. By default, some people
+[530.80s -> 533.92s]  like to set their computers up to listen on some other
+[533.92s -> 537.76s]  port for SSH, because port 22 tends to be one that lots
+[537.76s -> 541.56s]  of bad actors try to like connect to because they know
+[541.56s -> 543.32s]  that if they can figure out a password, they can get
+[543.32s -> 545.48s]  into the computer. So they change that but ours is
+[545.48s -> 551.80s]  just the default 22. 631 happens to be the printer
+[551.80s -> 553.76s]  server. In fact, we may not know this, but you can
+[553.76s -> 557.40s]  generally on your computers, let's do it in a new
+[557.40s -> 563.72s]  window here. You can generally go to make this a
+[563.72s -> 569.92s]  little bigger here. 127.0.0.1, which is your local computer,
+[569.92s -> 574.76s]  it's always your IP address, colon 631. If all works
+[574.76s -> 577.04s]  right, there's the little printer details. So it's
+[577.04s -> 580.64s]  actually a web server that you are listening to, to
+[580.72s -> 583.20s]  actually do printing. And it happens to be set up on
+[583.20s -> 585.28s]  many computers. And you might get a little message that
+[585.28s -> 587.00s]  says not set up and it tells you how to set it up
+[587.00s -> 591.20s]  if it's if it's not. We could also have typed local
+[591.20s -> 595.92s]  host colon 631. Local host is, as you might guess,
+[595.92s -> 599.04s]  your own computer. Okay, and it should also come up
+[599.04s -> 604.48s]  there. That's what's going on there. Okay, so
+[604.48s -> 606.16s]  that's that. Let's see, we've got another little
+[606.16s -> 613.28s]  22 and 631 in there for TCP 6. So it turns out
+[613.32s -> 619.84s]  that normal IP addresses are 32 bit numbers. They've
+[619.92s -> 623.28s]  got these colons in them, you know, like 127.0.0.1.
+[623.52s -> 626.48s]  That's a 32 bit number just kind of separated up
+[626.48s -> 632.04s]  into little two byte numbers. But it's a 32 bit
+[632.04s -> 636.72s]  number. And with 32 bits, how many different IP
+[636.72s -> 641.40s]  addresses could we have? Four billion about. There's
+[641.40s -> 643.60s]  actually more than four billion computers on the
+[643.60s -> 646.20s]  internet. Back when the internet was designed, which
+[646.72s -> 650.72s]  turns out it was a Defense Department program back
+[650.72s -> 652.68s]  in the day. In fact, I don't know if I showed you
+[652.68s -> 657.16s]  this before. Original internet. See, there should
+[657.16s -> 659.48s]  be some images here. I'll probably should be able
+[659.48s -> 662.44s]  to find out. Let's see. Where's the good one
+[662.44s -> 664.36s]  that I always like to use? This one? Yeah, this
+[664.36s -> 668.88s]  might be it. Yeah, there's there. That's a
+[668.88s -> 672.44s]  slightly or slightly. There's the there's one I
+[672.44s -> 674.24s]  was thinking of. Oh, no, that's it. That's the
+[674.24s -> 675.60s]  tiniest little one. You can't see it on there.
+[675.64s -> 678.56s]  Well, you can kind of see it. Stanford is on
+[678.56s -> 680.28s]  there. We were part of the original internet.
+[680.28s -> 684.96s]  Nice, right? Notice who's not there. Nobody
+[684.96s -> 688.16s]  else relatively local out there. MIT is on
+[688.16s -> 690.64s]  there. BBN, which is one of the original
+[690.64s -> 692.56s]  places. It's a it's a company that kind of
+[692.56s -> 695.48s]  started all this. Let's see. Let's see.
+[695.92s -> 697.72s]  Carnegie Mellon was on there used to just be
+[697.72s -> 699.60s]  the Carnegie Institute at that point. Illinois,
+[699.60s -> 701.76s]  Utah was on there. Utah, believe it or not, is
+[701.76s -> 703.32s]  a really good computer science department. And
+[703.32s -> 705.92s]  back in the 1970s, they happened to get on the
+[705.92s -> 709.72s]  Internet really early. So lots of lots of
+[709.72s -> 712.36s]  early things. But anyway, back then, they said
+[712.36s -> 714.76s]  32 bits, four billion computers on the
+[714.76s -> 717.28s]  Internet. It'll never be that many computers
+[717.28s -> 718.72s]  on the Internet. That's ridiculous. So that's
+[718.72s -> 721.44s]  why they kind of started out with 32 bit
+[721.44s -> 722.68s]  numbers. But of course, today we don't do
+[722.68s -> 725.44s]  that. How do we get away with this now? What
+[725.44s -> 728.56s]  we have is routers that then give like in
+[728.56s -> 731.32s]  this building, there might be one IP address
+[731.32s -> 733.40s]  and then the router gives each one of you a
+[733.40s -> 736.48s]  local IP address. And so it's one level removed.
+[737.08s -> 738.52s]  So that's what's that's just going on there.
+[738.60s -> 740.76s]  We are trying to fix this issue so that every
+[740.76s -> 744.68s]  computer can have its own email or its own IP
+[744.68s -> 748.24s]  address. We do that through we do that through
+[748.48s -> 752.84s]  IP version six versus version four, which has a
+[752.84s -> 757.64s]  128 bit address, which is many more computers
+[757.64s -> 759.56s]  that you could practically in fact, I think you
+[759.56s -> 762.92s]  could probably give every atom in the universe
+[762.92s -> 764.76s]  its own IP address if you wanted to with that
+[764.76s -> 767.64s]  many numbers. So there's lots in there. So
+[767.64s -> 771.28s]  there's plenty, plenty of room to grow with
+[771.28s -> 772.56s]  that. But it's going to take a while to get
+[772.56s -> 774.24s]  everybody up to speed. Some servers are
+[774.24s -> 777.24s]  listening for that. Okay, now, if you happen to
+[777.24s -> 780.32s]  be running a program yourself, notice that over
+[780.32s -> 782.00s]  in this side, it says PID programming doesn't
+[782.00s -> 783.80s]  say anything. That's because it kind of hides
+[783.80s -> 786.72s]  it from non super users, which we are not as
+[786.72s -> 789.76s]  just regular users, we can actually let me run
+[789.92s -> 792.56s]  something we're gonna actually create here time
+[792.56s -> 794.96s]  server descriptors, I think that there we go. So
+[794.96s -> 797.16s]  if I do this, it has to be on the same
+[797.16s -> 799.60s]  computer. What are we on over here myth 58.
+[799.96s -> 801.56s]  So let's actually do it on the same one.
+[801.56s -> 805.60s]  Let's do myth 58. Okay, let's do it again. And
+[805.64s -> 809.52s]  oh, look at that. It says 2655 slash time
+[809.52s -> 811.00s]  server, and that doesn't get the whole thing.
+[811.00s -> 812.76s]  But that's ours. Like that's the one I'm
+[812.76s -> 815.24s]  running right now. Okay, so that happens to be
+[815.24s -> 824.88s]  port 12345. It's kind of nice. Yeah. That's a
+[824.88s -> 827.80s]  good question. Why is it 000 instead of 127? I
+[827.80s -> 829.64s]  don't know why to tell you the truth. I'm not
+[829.64s -> 834.92s]  actually sure why that's true. Why are we
+[834.92s -> 839.44s]  127.0.0.1 is the way the internet says local
+[839.44s -> 841.24s]  computer. That's just the number it gives to
+[841.24s -> 843.16s]  all local computers. All your local computer is
+[843.16s -> 845.16s]  the same as every other local computer. I don't
+[845.16s -> 846.24s]  know why. It's a good question. I'm not sure
+[846.24s -> 849.08s]  why it says 0.0 up there. But anyway, port is
+[849.08s -> 852.24s]  correct. But the you're right. The other part
+[852.24s -> 854.84s]  is not. Okay, so what else can I tell you
+[854.84s -> 861.40s]  about these addresses? As I said, there's, let's
+[861.40s -> 865.88s]  see, there are 65 or 64,000 of them, or 65,000
+[865.88s -> 867.96s]  of them. You're really only, you really only
+[867.96s -> 870.48s]  should use some in a particular range. Yeah,
+[870.48s -> 870.76s]  question?
+[870.76s -> 878.92s]  Why didn't it show that my SSH connection was
+[878.92s -> 884.16s]  established? Where? I am SSH in the myth. This is
+[884.16s -> 886.52s]  on the myth computer. But it doesn't say what's,
+[886.56s -> 888.68s]  doesn't say the actual connection. Like there
+[888.68s -> 890.40s]  might be many connect. This is just showing you
+[890.40s -> 892.56s]  which servers are available or listening. That's
+[892.56s -> 894.16s]  all this is showing you right now. Good
+[894.16s -> 898.68s]  question. All right. So you can actually go and
+[898.68s -> 905.00s]  see a full list of common ports. Okay. The
+[905.00s -> 908.12s]  common ports, if we go, there's lots of them.
+[908.52s -> 910.00s]  Okay, this is like, that's actually just a
+[910.00s -> 913.60s]  tiny little list of them here. Let's see if I
+[913.60s -> 918.44s]  go to there, here, here's the common port.
+[918.44s -> 919.76s]  So I'll make this a little bit bigger here.
+[920.00s -> 925.84s]  Okay, very big. So basically, ports zero through
+[925.84s -> 930.08s]  1023 are kind of used for systemy things like you
+[930.08s -> 932.44s]  don't want to do a port that's really low. Notice
+[932.44s -> 933.60s]  all the ones we talked about earlier were kind
+[933.60s -> 936.36s]  of low. They're like, very different, well
+[936.36s -> 938.28s]  defined. Don't use these ones because they're
+[938.28s -> 940.96s]  all ready for SSH. And for Oh, by the way, 80
+[940.96s -> 944.76s]  is for the web, the web and so forth. And so
+[944.76s -> 947.92s]  there's, you want to be able to you don't want
+[947.92s -> 949.56s]  to use those ones. Okay, but there are lists
+[949.56s -> 951.40s]  them all in there. Does it say up here what
+[951.40s -> 953.72s]  the other ones are? No. So we've got lots of
+[953.84s -> 957.72s]  let's look at 80 in there. 80 is for HTTP,
+[957.72s -> 960.08s]  which is the web and so forth. Lots of ports
+[960.08s -> 962.04s]  in there that you can look at that are well
+[962.04s -> 963.92s]  as well defined and don't use them if you
+[963.92s -> 965.16s]  can help it. Let me go down to the next
+[965.16s -> 970.12s]  list here. After that, okay, from 1024 to
+[970.12s -> 974.76s]  489,151, which is you can see why they
+[974.80s -> 977.28s]  chose that number based on some powers of two.
+[978.12s -> 982.88s]  Those are assigned ports. But it's kind of
+[982.88s -> 984.80s]  wishy washy. It's basically like somebody
+[984.80s -> 986.52s]  says, Hey, I want to use this port, can you
+[986.52s -> 990.96s]  assign it to me? And the the IANA, which is
+[990.96s -> 992.92s]  like this organization that does this kind of
+[992.92s -> 993.92s]  determines whether or not you have a
+[993.92s -> 995.72s]  legitimate reason. Are you a company? Are you
+[995.72s -> 996.68s]  some, you know, you're doing something
+[996.68s -> 999.00s]  interesting, they say, fine, you can have
+[999.00s -> 1001.40s]  one, we'll say that this is your port. And
+[1001.44s -> 1003.88s]  some of them in there, they, they do that.
+[1004.48s -> 1007.56s]  Open VPN for like, connecting your computer
+[1007.56s -> 1009.32s]  through a virtual private network. That's
+[1009.32s -> 1013.80s]  1194, etc. Okay. There's, but lots of
+[1013.80s -> 1015.16s]  there's, there's thousands and thousands
+[1015.16s -> 1017.08s]  of these. But you don't have to live by
+[1017.08s -> 1018.44s]  those, right? If you do your own, nobody's
+[1018.44s -> 1020.32s]  going to go and you broke my thing. If
+[1020.32s -> 1021.68s]  you're running a program that needs that
+[1021.68s -> 1023.44s]  port, and you run another program that's
+[1023.44s -> 1025.04s]  on that port, they can't both be
+[1025.04s -> 1026.44s]  listening to the port at the same time.
+[1026.56s -> 1029.40s]  So that's the the big issue there. We
+[1029.40s -> 1030.84s]  used for the one I just showed you, we
+[1030.84s -> 1036.68s]  used 12345 12345. This happens to be set
+[1036.68s -> 1039.40s]  up for CubeWorld, Little Fighter II, and
+[1039.40s -> 1041.44s]  Netbus. They all kind of, you know, are,
+[1041.48s -> 1043.00s]  I guess they assume that, or they all
+[1043.00s -> 1045.56s]  wanted 12345. We will often use that
+[1045.56s -> 1047.48s]  one just because it's easy to type and
+[1047.48s -> 1049.20s]  whatever. But if you happen to be running
+[1049.24s -> 1051.60s]  a CubeWorld server on your computer, well,
+[1051.60s -> 1053.56s]  that's probably going to conflict with
+[1053.76s -> 1055.24s]  the one you want to do. So I don't
+[1055.24s -> 1057.60s]  know what CubeWorld is, but anyway, you
+[1057.60s -> 1059.48s]  can do that. Or Little Fighter II, whatever.
+[1059.84s -> 1061.76s]  Okay. Anyway, and then above the
+[1061.80s -> 1063.60s]  whatever the 40,000 or whatever it was,
+[1064.00s -> 1065.28s]  they're kind of up for grabs. They will
+[1065.28s -> 1067.64s]  not predefine those. You can use those
+[1067.64s -> 1069.68s]  for whatever you want. And nobody's going
+[1069.68s -> 1071.32s]  to say, hey, that was the one we kind
+[1071.32s -> 1073.68s]  of wanted after that. Okay, so those
+[1073.68s -> 1079.68s]  are the port numbers. And let's see,
+[1079.68s -> 1083.00s]  there we go. And those are what you
+[1083.00s -> 1084.60s]  will see. You'll see a lot of normal
+[1084.60s -> 1085.76s]  ones, and then we'll use our own.
+[1085.80s -> 1086.20s]  Question.
+[1086.76s -> 1089.68s]  So ports exist on computers to listen to
+[1089.68s -> 1092.00s]  other devices, and sockets exist on
+[1092.00s -> 1095.36s]  servers to listen to things.
+[1095.72s -> 1099.12s]  Well, that's a good question. Ports are
+[1099.44s -> 1100.64s]  on a server to listen to other
+[1100.64s -> 1102.76s]  computers. A socket in a port is kind
+[1102.76s -> 1105.00s]  of interchangeable. A socket is more or
+[1105.00s -> 1106.96s]  less, once you set up a socket, think
+[1106.96s -> 1108.76s]  of you setting up a pipe. That's kind
+[1108.76s -> 1110.52s]  of the way it is. But the port
+[1110.52s -> 1112.32s]  number is the socket number. That's
+[1112.32s -> 1114.20s]  the, you use a socket on a port
+[1114.20s -> 1115.44s]  number. Let's put it that way.
+[1115.44s -> 1117.64s]  So can sockets be on both computers
+[1117.64s -> 1119.72s]  and servers, or?
+[1120.36s -> 1121.88s]  Well, a server just is a computer,
+[1121.88s -> 1123.00s]  right? So it's not like, yeah, I mean,
+[1123.00s -> 1125.60s]  you're, you're, you are, when you
+[1125.60s -> 1127.16s]  send a message to another computer,
+[1127.16s -> 1129.08s]  you actually use a port, but it's
+[1129.08s -> 1130.04s]  not necessarily the one you're
+[1130.04s -> 1132.36s]  connecting to. So let's say I want to
+[1132.36s -> 1134.28s]  connect to your server on one, two,
+[1134.28s -> 1136.48s]  three, four, five. My outgoing port
+[1136.48s -> 1138.60s]  might be, you know, 1800 or
+[1138.60s -> 1139.44s]  something like that, or just
+[1139.44s -> 1141.28s]  whatever it goes out on. And then
+[1141.28s -> 1142.28s]  and then the other computer goes,
+[1142.32s -> 1143.80s]  Oh, when I respond, go back to
+[1143.80s -> 1145.56s]  that port. We actually hide that a
+[1145.56s -> 1146.56s]  bit of that from you from here.
+[1146.56s -> 1147.20s]  You don't need to worry about
+[1147.20s -> 1148.92s]  those details quite as much for
+[1148.92s -> 1150.00s]  this one. It's just kind of all
+[1150.00s -> 1151.40s]  built into libraries we're using.
+[1152.04s -> 1154.28s]  That makes sense? Yeah. Anybody
+[1154.28s -> 1156.84s]  else? Good questions. Lots of
+[1156.84s -> 1159.12s]  details here that you can get
+[1159.12s -> 1161.60s]  into. All right. Let's see.
+[1161.60s -> 1164.32s]  What else? That's that. Let us
+[1164.32s -> 1167.68s]  create our first server. Okay, so
+[1167.68s -> 1168.76s]  we're going to create a server
+[1169.12s -> 1170.60s]  and all the server is going to
+[1170.60s -> 1174.96s]  do is we do it right here. It
+[1174.96s -> 1178.20s]  is called time server. And we're
+[1178.20s -> 1179.76s]  going to use descriptors to start
+[1179.76s -> 1182.28s]  out, okay, to do this. And
+[1182.28s -> 1183.24s]  there's a bunch of like set up
+[1183.24s -> 1185.24s]  obviously. In here, what we're
+[1185.24s -> 1186.28s]  going to do is we're going to
+[1186.28s -> 1188.20s]  set up a server that basically
+[1188.44s -> 1190.60s]  gets the time on the server.
+[1190.68s -> 1191.60s]  As it turns out, it's going to
+[1191.60s -> 1194.32s]  get GMT, which is the time at
+[1194.32s -> 1195.68s]  Greenwich Mean Time in England.
+[1195.68s -> 1196.32s]  It's going to get that for
+[1196.32s -> 1197.68s]  well, it gets the time and
+[1197.68s -> 1198.88s]  then it converts it to whatever
+[1199.28s -> 1200.32s]  we want. We're in this case,
+[1200.32s -> 1201.72s]  we're going to convert it to
+[1202.04s -> 1203.44s]  Greenwich Mean Time, which is
+[1204.04s -> 1205.76s]  which is pretty standard. It's
+[1205.76s -> 1206.76s]  the easiest one to type as it
+[1206.80s -> 1208.48s]  turns out. But what we're going
+[1208.48s -> 1209.36s]  to do, it's going to get the
+[1209.36s -> 1211.32s]  time. It's going to when a
+[1211.32s -> 1214.00s]  connection, when you get to
+[1214.00s -> 1215.08s]  connection request, it's going
+[1215.08s -> 1216.24s]  to find the time and then
+[1216.64s -> 1217.80s]  format the time into a string
+[1217.80s -> 1218.52s]  and then push it back to the
+[1218.52s -> 1220.84s]  computer. So basically like a
+[1220.84s -> 1222.32s]  time server, it just tells you
+[1222.32s -> 1226.00s]  the time. Okay. And that's all
+[1226.00s -> 1227.40s]  there is to it. Okay, how do
+[1227.40s -> 1229.20s]  we do this? Well, you can do
+[1229.20s -> 1232.48s]  int server equal. Remember,
+[1232.48s -> 1233.92s]  the server is just a well, in
+[1233.92s -> 1237.60s]  this case, it's a in this case,
+[1237.60s -> 1239.72s]  it is a number that associates
+[1239.72s -> 1241.08s]  itself with a server. It's kind
+[1241.08s -> 1242.04s]  of like a file descriptor in
+[1242.04s -> 1243.76s]  that sense. Okay. And then
+[1243.76s -> 1245.08s]  we're going to use create
+[1245.12s -> 1248.96s]  server sockets. Okay, 12345.
+[1249.48s -> 1250.88s]  Okay, that's it. That's all
+[1250.88s -> 1251.60s]  we're gonna do for this. Now
+[1251.60s -> 1253.00s]  the create server socket uses
+[1253.00s -> 1256.12s]  some underlying built in system
+[1256.12s -> 1257.20s]  calls and so forth. You can go
+[1257.20s -> 1259.72s]  look at that in, I believe it
+[1259.72s -> 1262.00s]  is serversocket.cpp. Actually,
+[1262.00s -> 1264.24s]  let's just see. Let's see if we
+[1264.24s -> 1267.96s]  can find server socket.
+[1269.56s -> 1273.64s]  serversocket.cpp. And that's
+[1273.64s -> 1278.44s]  not it. Server. Hang on.
+[1279.96s -> 1283.32s]  serversocket.cc. Oh, that's
+[1283.32s -> 1285.16s]  CC. Yeah, let's do it.
+[1285.28s -> 1287.08s]  serversocket.cc. There we go.
+[1287.08s -> 1288.72s]  Okay, and create server socket
+[1288.84s -> 1291.32s]  uses some underlying function, a
+[1291.32s -> 1293.08s]  function called socket, which
+[1293.08s -> 1294.44s]  does and it's got some, some
+[1294.44s -> 1295.56s]  parameters in there and things
+[1295.56s -> 1296.20s]  that we're not going to worry
+[1296.20s -> 1296.92s]  about right now. We're just
+[1296.92s -> 1297.96s]  always going to use these
+[1297.96s -> 1299.56s]  ones. You feel free to look at
+[1299.56s -> 1300.68s]  those. We'll talk about some of
+[1300.68s -> 1302.60s]  the details of this pretty
+[1302.60s -> 1307.40s]  soon. Okay. And then, by the
+[1307.40s -> 1308.36s]  way, did you notice that I
+[1308.36s -> 1311.16s]  did control Z and then FG. Now
+[1311.16s -> 1312.04s]  you know what that all does.
+[1313.04s -> 1313.92s]  I've been using it all year
+[1313.92s -> 1314.96s]  and some of you now you know.
+[1315.44s -> 1316.72s]  There it is. Okay, so we
+[1316.72s -> 1317.84s]  create the we create the
+[1317.84s -> 1320.04s]  server. And then we basically
+[1320.08s -> 1322.80s]  do a little while loop that just
+[1322.80s -> 1324.60s]  sits here and waits for
+[1324.60s -> 1326.48s]  connections. Okay, so we're just
+[1326.48s -> 1327.32s]  going to sit here and wait for
+[1327.32s -> 1330.76s]  connections. And when we find
+[1330.76s -> 1333.48s]  well, we're going to do the
+[1333.48s -> 1334.72s]  client, we're going to get
+[1334.72s -> 1338.16s]  the client equals accept. And
+[1338.16s -> 1339.28s]  then we're going to ask for
+[1339.28s -> 1340.96s]  the tell it to accept on the
+[1340.96s -> 1342.44s]  server number. And then we're
+[1342.44s -> 1343.20s]  going to pass in a couple
+[1343.20s -> 1345.56s]  nulls. If we wanted to get
+[1345.56s -> 1348.36s]  the client's IP address, we
+[1348.36s -> 1349.40s]  could use those we could use
+[1349.56s -> 1350.48s]  nulls to be a couple
+[1350.48s -> 1351.92s]  parameters. One's like a one's
+[1351.92s -> 1352.84s]  like a status and the other
+[1352.84s -> 1353.84s]  one's like, what do you want
+[1353.84s -> 1354.96s]  to get kind of like wait p
+[1354.96s -> 1358.52s]  ID, we could use that for to
+[1358.52s -> 1359.68s]  get information about the
+[1359.68s -> 1361.52s]  client that we want. Okay, and
+[1361.52s -> 1362.16s]  then we're just going to call
+[1362.16s -> 1362.84s]  this function we're going to
+[1362.84s -> 1363.60s]  write in a second called
+[1363.60s -> 1366.60s]  publish time to the client.
+[1367.40s -> 1371.36s]  And that's it for me. Waits
+[1371.36s -> 1374.72s]  for it does the accept when
+[1374.72s -> 1376.16s]  by the way, accept blocks
+[1376.20s -> 1378.68s]  until you get an actual
+[1378.76s -> 1381.16s]  client that comes in. Okay,
+[1381.16s -> 1383.00s]  just sits on waits. And then
+[1383.04s -> 1384.88s]  when a client requests the
+[1385.00s -> 1386.24s]  connection, it goes to the
+[1386.24s -> 1387.16s]  next line, it creates the
+[1387.16s -> 1387.92s]  connection, then goes to the
+[1387.92s -> 1389.96s]  next line. And then and then
+[1389.96s -> 1391.48s]  it repeats. That's all there
+[1391.48s -> 1393.32s]  is to it. Okay. All right.
+[1393.36s -> 1395.64s]  Now, if published time took a
+[1395.64s -> 1397.04s]  long time, then you might
+[1397.04s -> 1398.24s]  start to drop connections.
+[1398.24s -> 1398.92s]  This is something we have to
+[1398.92s -> 1400.12s]  worry about. We will get
+[1400.12s -> 1401.04s]  there a little bit later.
+[1403.16s -> 1403.92s]  It never breaks out of the
+[1403.92s -> 1405.08s]  wire loop. This this server
+[1405.08s -> 1405.76s]  goes on until you do
+[1405.76s -> 1407.24s]  control C. And in fact, most
+[1407.24s -> 1408.04s]  servers are like that. They
+[1408.04s -> 1409.12s]  just kind of go and go and go.
+[1409.12s -> 1410.80s]  And then when you want to
+[1410.80s -> 1411.80s]  break them, you stop the
+[1411.80s -> 1412.76s]  program. And that's it.
+[1412.80s -> 1413.40s]  Because this is really
+[1413.40s -> 1414.32s]  simple now. You could
+[1414.32s -> 1415.12s]  certainly have some other
+[1415.12s -> 1417.20s]  way to do this and stop it
+[1417.32s -> 1418.52s]  nicely. But it doesn't really
+[1418.52s -> 1419.72s]  matter in this case. Yeah,
+[1419.72s -> 1420.72s]  good question. Anybody else?
+[1421.08s -> 1421.28s]  Yeah.
+[1429.08s -> 1430.00s]  Yeah, good question. Why do
+[1430.00s -> 1430.84s]  we want to do this? This
+[1430.84s -> 1432.28s]  is so that we can get you
+[1432.28s -> 1433.24s]  can ask for the time, then I
+[1433.24s -> 1434.24s]  can ask the time and you
+[1434.24s -> 1435.40s]  can ask the time. This is
+[1435.40s -> 1436.08s]  so that it's going to sit
+[1436.08s -> 1437.48s]  there and just anybody who
+[1437.48s -> 1438.28s]  requests the time is going
+[1438.28s -> 1439.24s]  to get the time back. So
+[1439.24s -> 1439.96s]  does it one after the other
+[1439.96s -> 1440.52s]  after the other after the
+[1440.52s -> 1441.40s]  other? That's why we want
+[1441.40s -> 1442.32s]  it in a wire loop. It's
+[1442.32s -> 1443.44s]  serving the time forever
+[1443.44s -> 1444.80s]  more, as long as we have
+[1444.80s -> 1446.76s]  it written. Good. Yeah.
+[1460.76s -> 1461.76s]  Right. So good question.
+[1461.76s -> 1462.64s]  The question is, wait, this
+[1462.64s -> 1463.60s]  seems a little more hidden
+[1463.60s -> 1464.48s]  from us than like all the
+[1464.48s -> 1465.40s]  file descriptors and so
+[1465.40s -> 1466.84s]  forth. For now, at least,
+[1467.16s -> 1468.72s]  we're really when you're
+[1468.72s -> 1469.64s]  writing your programs, all
+[1469.64s -> 1470.24s]  you're really going to need
+[1470.24s -> 1471.76s]  to know is, look, do I have
+[1471.76s -> 1473.04s]  I set up a server using
+[1473.04s -> 1474.52s]  create server socket? And
+[1474.52s -> 1476.52s]  then have I accepted the
+[1476.52s -> 1477.96s]  server and gotten a client
+[1477.96s -> 1479.08s]  from it? That's really all
+[1479.08s -> 1480.16s]  the that's the level
+[1480.16s -> 1480.96s]  you're going to look at.
+[1480.96s -> 1481.92s]  And feel free to look at
+[1481.92s -> 1483.52s]  the header files and the
+[1483.52s -> 1485.84s]  actual C, C++ code, if you
+[1485.84s -> 1486.48s]  want to dig a little
+[1486.48s -> 1487.72s]  deeper. We're also going to
+[1487.72s -> 1489.16s]  use well, we'll see in a
+[1489.16s -> 1490.12s]  few minutes, how we're
+[1490.12s -> 1490.84s]  going to make it a little
+[1490.84s -> 1491.68s]  even a little simpler.
+[1491.92s -> 1492.92s]  Honestly, that's not the
+[1492.92s -> 1493.68s]  level we care about. The
+[1493.68s -> 1494.36s]  kind of level we care
+[1494.36s -> 1495.32s]  about is create the
+[1495.32s -> 1498.40s]  server, respond adequately
+[1498.48s -> 1499.60s]  and send it to me.
+[1509.60s -> 1510.96s]  Yeah, good question. Let's
+[1510.96s -> 1512.28s]  try it. So right now I'm
+[1512.28s -> 1513.68s]  listening on port. The
+[1513.68s -> 1514.60s]  question was, wait, what
+[1514.60s -> 1516.44s]  if I create a two, what
+[1516.44s -> 1517.36s]  if I create two programs
+[1517.36s -> 1517.92s]  that try to listen to
+[1517.92s -> 1519.16s]  the same port? Well, this
+[1519.16s -> 1519.96s]  one happens to be running
+[1519.96s -> 1521.40s]  right now and 12345 on
+[1521.40s -> 1523.36s]  myth 58. If we do the
+[1523.36s -> 1526.40s]  same thing again, and do
+[1526.52s -> 1530.88s]  another one on 12345, also
+[1530.88s -> 1532.44s]  on myth 58, it says could
+[1532.44s -> 1533.36s]  not start the server.
+[1533.68s -> 1534.44s]  It doesn't let you. It
+[1534.44s -> 1535.36s]  says, Oh, you've already,
+[1535.36s -> 1536.04s]  somebody's already using
+[1536.04s -> 1536.88s]  it. Sorry. And that's
+[1536.88s -> 1538.28s]  all there is to it. Okay.
+[1538.32s -> 1539.48s]  Yeah. So you have to be
+[1539.48s -> 1540.52s]  a little careful when
+[1540.52s -> 1541.52s]  you're setting these up.
+[1542.12s -> 1542.80s]  You don't need it. So
+[1542.80s -> 1543.80s]  for instance, when you
+[1543.80s -> 1545.80s]  do your assignments with
+[1545.80s -> 1547.16s]  these networking clients,
+[1547.24s -> 1548.88s]  we're going to set up
+[1548.88s -> 1550.48s]  the port you use based
+[1550.48s -> 1551.32s]  on a hash of your
+[1551.32s -> 1552.32s]  username, which is
+[1552.32s -> 1553.68s]  unlikely to match
+[1553.68s -> 1555.12s]  anybody else's. So it's
+[1555.12s -> 1555.84s]  going to, uh, should
+[1555.84s -> 1556.92s]  work out just fine. But
+[1556.92s -> 1557.64s]  yeah, good question. You
+[1557.64s -> 1558.68s]  can't, you can't duplicate
+[1558.68s -> 1559.52s]  it on the same machine.
+[1559.68s -> 1560.96s]  It doesn't work. Very
+[1560.96s -> 1562.36s]  good question. Okay. Let's
+[1562.36s -> 1565.12s]  write the publish time
+[1565.60s -> 1566.60s]  function here. So to
+[1566.60s -> 1567.24s]  publish the time we have
+[1567.24s -> 1568.56s]  to get the time. All
+[1568.56s -> 1570.72s]  right. Time. Uh, and
+[1570.72s -> 1572.36s]  then it's actually timed
+[1572.40s -> 1573.32s]  underscore T. We're
+[1573.32s -> 1573.80s]  going to look at that
+[1573.80s -> 1575.04s]  in a second. It's a
+[1575.08s -> 1577.96s]  struct that is, uh, built
+[1577.96s -> 1580.12s]  for you. Raw, and I
+[1580.12s -> 1581.84s]  don't need struct time T
+[1581.84s -> 1583.08s]  because it's C plus plus
+[1583.08s -> 1583.60s]  you don't need it in C
+[1583.60s -> 1585.28s]  plus plus. Uh, and then
+[1585.32s -> 1586.04s]  we're going to just
+[1586.04s -> 1587.24s]  basically use the time
+[1587.24s -> 1589.88s]  function to pass in a
+[1589.88s -> 1590.88s]  pointer to this raw
+[1590.88s -> 1592.36s]  time, which populates
+[1592.36s -> 1595.12s]  it. Okay. And then, uh,
+[1595.16s -> 1597.32s]  we are going to use,
+[1597.60s -> 1598.64s]  uh, now we do need a
+[1598.64s -> 1599.16s]  different one. Now
+[1599.16s -> 1600.28s]  we're actually, we
+[1600.28s -> 1600.72s]  probably wouldn't need
+[1600.72s -> 1601.36s]  to do this anyway, but
+[1601.36s -> 1602.04s]  anyway, we're doing it
+[1602.04s -> 1603.80s]  this way. Uh, PT a
+[1603.80s -> 1605.72s]  pointer to a time,
+[1606.24s -> 1607.04s]  which we are going to
+[1607.04s -> 1608.96s]  do, uh, that we're
+[1608.96s -> 1612.24s]  going to say GM time,
+[1612.68s -> 1614.40s]  and we are also going
+[1614.40s -> 1615.12s]  to pass in the raw
+[1615.12s -> 1615.72s]  time. This is going
+[1615.72s -> 1616.56s]  to do the, some of the
+[1616.56s -> 1619.20s]  conversion for us. Okay.
+[1619.20s -> 1619.64s]  And there's another
+[1619.64s -> 1621.48s]  struct called TM, which
+[1621.48s -> 1622.68s]  we're going to do. And
+[1622.68s -> 1623.48s]  GM time is going to
+[1623.48s -> 1624.40s]  do that. Now let's talk
+[1624.40s -> 1625.00s]  about time for a
+[1625.00s -> 1626.56s]  second. It turns out
+[1626.56s -> 1627.76s]  that if you look at
+[1627.76s -> 1629.36s]  time T, sorry, I said
+[1629.36s -> 1630.32s]  this wasn't a, this was
+[1630.32s -> 1631.00s]  a struct. This is not
+[1631.00s -> 1631.84s]  a struct. It's actually
+[1631.84s -> 1634.16s]  just an integer. Uh,
+[1634.16s -> 1635.20s]  time T, if you look
+[1635.20s -> 1636.04s]  up time T, it's just
+[1636.04s -> 1637.80s]  an integer. And when
+[1637.80s -> 1638.96s]  you ask for the time,
+[1638.96s -> 1640.48s]  when you say time, it
+[1640.48s -> 1641.76s]  populates the integer
+[1642.00s -> 1644.36s]  based on the number of
+[1644.40s -> 1647.08s]  seconds since the epic.
+[1647.40s -> 1648.48s]  Okay. In fact, if we
+[1648.48s -> 1650.00s]  go and look this up,
+[1650.00s -> 1650.72s]  let's do it over in
+[1650.72s -> 1652.00s]  here. Uh, let's close
+[1652.00s -> 1655.92s]  this man. Time. I
+[1655.92s -> 1656.92s]  believe this is it
+[1656.92s -> 1660.40s]  here. And, uh, let's
+[1660.40s -> 1661.40s]  see, here we go.
+[1661.72s -> 1663.48s]  Time returns the time
+[1663.48s -> 1664.04s]  as the number of
+[1664.04s -> 1665.52s]  seconds since the epic
+[1665.52s -> 1666.40s]  or epoch, depending
+[1666.40s -> 1666.96s]  on how you pronounce
+[1666.96s -> 1668.40s]  it, which happens to
+[1668.40s -> 1669.68s]  be the beginning of
+[1669.68s -> 1670.92s]  time in Unix world is
+[1670.92s -> 1674.52s]  1970, January 1st, 1970.
+[1674.92s -> 1676.36s]  And you say, who came
+[1676.36s -> 1677.20s]  up with that number?
+[1677.72s -> 1678.28s]  What was the reason
+[1678.28s -> 1679.32s]  for making that number
+[1679.32s -> 1680.44s]  as the beginning of
+[1680.44s -> 1682.04s]  time? Well, Unix was
+[1682.04s -> 1683.68s]  created in 1970 and
+[1683.68s -> 1686.40s]  Unix was, because they
+[1686.40s -> 1686.88s]  did that, they said,
+[1686.88s -> 1687.60s]  well, let's, we got
+[1687.60s -> 1688.28s]  to have the time
+[1688.28s -> 1689.36s]  basically from some
+[1689.36s -> 1690.00s]  time. Why don't we
+[1690.00s -> 1691.20s]  just start it now? I
+[1691.20s -> 1691.64s]  don't know if they
+[1691.64s -> 1692.56s]  never thought that
+[1692.56s -> 1693.20s]  there might be an
+[1693.20s -> 1694.96s]  issue with using time
+[1694.96s -> 1696.16s]  based on numbers before
+[1696.16s -> 1697.28s]  1970. I don't know.
+[1697.52s -> 1698.40s]  They, uh, they didn't
+[1698.40s -> 1699.16s]  think they'd use this
+[1699.16s -> 1701.00s]  anyway for that. Uh,
+[1701.04s -> 1702.16s]  but it was the time
+[1702.16s -> 1705.48s]  since 1970. And once
+[1705.48s -> 1707.52s]  again, many computers
+[1707.52s -> 1709.76s]  these days still have
+[1709.84s -> 1712.40s]  time underscore T, an
+[1712.40s -> 1713.72s]  integer that's actually a
+[1713.72s -> 1715.52s]  four byte or 32 bit
+[1715.52s -> 1718.24s]  integer. Hmm. Once again,
+[1718.40s -> 1719.76s]  number of seconds since
+[1719.76s -> 1721.68s]  1970, January 19th,
+[1721.68s -> 1724.64s]  first 1970. Let's find
+[1724.64s -> 1725.28s]  out how many seconds
+[1725.28s -> 1726.36s]  that is. How many
+[1726.40s -> 1728.28s]  numbers can we fit into
+[1728.28s -> 1729.64s]  a 32 bit number?
+[1731.64s -> 1733.08s]  4 billion, right? We
+[1733.08s -> 1734.16s]  want to just do this.
+[1734.24s -> 1735.08s]  We'll do it this way.
+[1735.16s -> 1736.52s]  Um, let's say, so
+[1736.52s -> 1739.60s]  there's two to the 32,
+[1739.84s -> 1740.76s]  which is how many bits
+[1740.76s -> 1741.52s]  we have, right? And
+[1741.52s -> 1741.88s]  that's how many
+[1741.88s -> 1742.44s]  different numbers we
+[1742.44s -> 1743.68s]  can do. Um, it turns
+[1743.68s -> 1745.00s]  out this is a signed
+[1745.00s -> 1745.80s]  number. So it's actually
+[1745.80s -> 1748.00s]  only two to the 31.
+[1749.00s -> 1750.44s]  Okay. Two to 31. In
+[1750.44s -> 1751.88s]  fact, it's minus one
+[1751.88s -> 1752.96s]  because, uh, you're
+[1752.96s -> 1753.64s]  not getting, you don't
+[1753.64s -> 1754.44s]  get that whole range
+[1754.44s -> 1755.16s]  that turns out because
+[1755.16s -> 1756.40s]  it's second since. So
+[1756.60s -> 1757.32s]  there's no, I guess
+[1757.32s -> 1757.96s]  there's no zero in
+[1757.96s -> 1758.88s]  there. Minus one.
+[1759.04s -> 1759.60s]  That's how many
+[1759.60s -> 1760.72s]  different numbers we
+[1760.72s -> 1761.92s]  have, which is 2
+[1761.92s -> 1762.80s]  billion something.
+[1762.80s -> 1763.32s]  Let me bump this up
+[1763.32s -> 1764.44s]  a little. 2 billion
+[1764.96s -> 1765.92s]  different numbers,
+[1766.00s -> 1767.84s]  seconds since 1970.
+[1768.20s -> 1768.96s]  Well, if we wanted
+[1768.96s -> 1770.80s]  to figure out, uh,
+[1770.84s -> 1773.12s]  how long this is
+[1773.12s -> 1775.28s]  going to be, right?
+[1775.48s -> 1776.56s]  Uh, how are we going
+[1776.56s -> 1777.72s]  to, or how, how are
+[1777.72s -> 1778.52s]  we going to do this
+[1778.52s -> 1780.04s]  so that we can figure
+[1780.04s -> 1782.76s]  out how many, uh,
+[1783.00s -> 1784.56s]  years it is? How are
+[1784.56s -> 1785.08s]  we going to convert
+[1785.08s -> 1785.84s]  seconds to years in
+[1785.84s -> 1789.32s]  this case? Divided by
+[1789.32s -> 1793.04s]  maybe 365.25, right?
+[1793.04s -> 1793.80s]  Got to leap you in
+[1793.80s -> 1794.96s]  there, I suppose.
+[1795.44s -> 1796.92s]  Right. Okay. That's
+[1796.92s -> 1797.80s]  going to be the number
+[1797.80s -> 1801.44s]  of days per, uh, what
+[1801.44s -> 1801.84s]  is this? There's
+[1801.84s -> 1802.76s]  seconds, seconds per
+[1802.76s -> 1803.80s]  day. Now we want to,
+[1803.80s -> 1804.48s]  we end up wanting to
+[1804.48s -> 1805.44s]  know the number of
+[1805.48s -> 1807.36s]  years. Okay. Uh, and
+[1807.36s -> 1810.36s]  then times 24 times 60
+[1810.36s -> 1812.52s]  times 60. Oops, did I
+[1812.52s -> 1813.20s]  forget a parenthesis in
+[1813.24s -> 1816.16s]  there? That can be,
+[1816.84s -> 1819.36s]  there we go. Okay. So
+[1819.40s -> 1823.36s]  68 years, right? 68
+[1823.36s -> 1826.92s]  years from 1970 gives
+[1826.92s -> 1829.76s]  you 2038. What's going
+[1829.76s -> 1831.40s]  to happen to computers
+[1831.40s -> 1832.64s]  that still use this
+[1832.68s -> 1838.16s]  time in 2038? It's going
+[1838.16s -> 1839.56s]  to wrap, right? This is
+[1839.56s -> 1840.36s]  one of seven stuff, I
+[1840.36s -> 1841.36s]  guess, right? It's going
+[1841.36s -> 1842.84s]  to wrap around and any
+[1842.88s -> 1844.44s]  time after that is going
+[1844.44s -> 1845.92s]  to start from 1970
+[1845.92s -> 1847.92s]  again. So in 2038, we're
+[1847.92s -> 1848.68s]  going to end up with an
+[1848.68s -> 1850.32s]  issue where there are
+[1850.32s -> 1851.52s]  computers in the world
+[1851.64s -> 1852.72s]  that are currently not
+[1852.72s -> 1853.32s]  going to be updated
+[1853.32s -> 1854.20s]  until then because, well,
+[1854.20s -> 1855.12s]  they might be, who knows?
+[1855.44s -> 1856.96s]  Uh, let's see. Some of
+[1856.96s -> 1858.44s]  you are actually younger
+[1858.44s -> 1860.04s]  than 2000. Who's born
+[1860.04s -> 1862.24s]  after 2000? A few of
+[1862.24s -> 1862.92s]  you. Yeah. A few of
+[1862.92s -> 1864.04s]  you. Okay. It scares me,
+[1864.60s -> 1866.08s]  by the way, um, that
+[1866.08s -> 1866.80s]  vividly remember the
+[1866.80s -> 1867.72s]  year 2000. Anybody
+[1867.72s -> 1869.56s]  remember the Y2K? Anybody
+[1869.56s -> 1870.76s]  know about, you don't
+[1870.76s -> 1872.96s]  remember the Y2K issue?
+[1873.20s -> 1874.00s]  But what happened in the
+[1874.00s -> 1875.96s]  year 19, about 1997,
+[1876.00s -> 1877.28s]  people realized that
+[1877.28s -> 1878.32s]  there was a very similar
+[1878.32s -> 1880.40s]  issue with many programs
+[1880.40s -> 1882.44s]  where programmers would
+[1882.44s -> 1884.68s]  write the year with only
+[1884.68s -> 1886.28s]  two digits because they
+[1886.28s -> 1886.76s]  were writing these
+[1886.76s -> 1887.44s]  programs in like the
+[1887.44s -> 1888.56s]  1970s. And they're
+[1888.56s -> 1889.52s]  like, who's going to be
+[1889.52s -> 1890.84s]  using these computers 25
+[1890.84s -> 1892.12s]  years from now? Ha ha ha.
+[1892.12s -> 1893.56s]  Right? Well, banks are,
+[1894.16s -> 1894.96s]  right? And banks still
+[1894.96s -> 1895.56s]  use the computer. They
+[1895.56s -> 1896.44s]  use the same programs
+[1896.44s -> 1897.28s]  and whatever. And what
+[1897.28s -> 1898.04s]  they do is they wrote
+[1898.04s -> 1899.48s]  the date with only two
+[1899.52s -> 1901.16s]  days, mainly to save or
+[1901.16s -> 1902.68s]  just two numbers to save
+[1902.68s -> 1903.68s]  memory. Because back
+[1903.68s -> 1904.24s]  when they were building
+[1904.24s -> 1904.88s]  these computers in the
+[1904.88s -> 1906.36s]  seventies, the memory
+[1906.36s -> 1907.24s]  actually meant something
+[1907.24s -> 1907.76s]  and they, well, for
+[1907.76s -> 1909.12s]  every date, if we save
+[1909.12s -> 1909.80s]  two digits, that's
+[1909.80s -> 1910.88s]  actually a lot of, a lot
+[1910.88s -> 1911.80s]  of memory back in the
+[1911.80s -> 1912.64s]  day. It was a lot of
+[1912.64s -> 1913.96s]  memory. So they did
+[1913.96s -> 1915.64s]  this well when 2000 was
+[1915.64s -> 1916.52s]  going to come around,
+[1916.72s -> 1918.68s]  then it was going to
+[1918.68s -> 1919.64s]  wrap around and go back
+[1919.64s -> 1920.96s]  to zero, which instead of
+[1920.96s -> 1922.68s]  2000 would be 1900. And
+[1922.68s -> 1924.04s]  then, uh, this would be
+[1924.04s -> 1926.08s]  a big deal, uh, around
+[1926.16s -> 1927.00s]  the first time I heard
+[1927.00s -> 1928.72s]  about it was about 1997.
+[1928.72s -> 1929.36s]  Some people had thought
+[1929.36s -> 1930.04s]  about this a little bit
+[1930.04s -> 1931.84s]  before then, but 1997 was
+[1931.84s -> 1932.88s]  when most of the world
+[1932.88s -> 1933.56s]  all of a sudden woke up
+[1933.56s -> 1934.72s]  and went, Oh, we're in
+[1934.72s -> 1935.88s]  trouble, right? We're
+[1935.88s -> 1936.44s]  going to, we're going to
+[1936.44s -> 1937.32s]  like the entire world
+[1937.32s -> 1938.28s]  could collapse if all the
+[1938.28s -> 1939.24s]  banks collapsed because
+[1939.24s -> 1940.20s]  all their software thinks
+[1940.20s -> 1941.24s]  that it's 1900 instead of
+[1941.24s -> 1943.00s]  2000. Um, and so the
+[1943.00s -> 1944.72s]  world will burn. And
+[1944.76s -> 1945.80s]  this was, uh, this was
+[1945.80s -> 1948.08s]  a big deal in, uh, 1997
+[1948.08s -> 1949.16s]  or so. Well, people
+[1949.16s -> 1950.00s]  went and looked at all
+[1950.00s -> 1950.60s]  these computers and
+[1950.60s -> 1951.28s]  said, well, okay, we
+[1951.28s -> 1952.32s]  can fix these. We just
+[1952.32s -> 1953.36s]  have to hire people to
+[1953.40s -> 1954.52s]  do rewrite the code and
+[1954.52s -> 1955.32s]  recompile it and so
+[1955.32s -> 1957.00s]  forth. Most, much of the
+[1957.00s -> 1958.48s]  code, believe it or not,
+[1958.48s -> 1959.36s]  was still written in
+[1959.36s -> 1961.48s]  COBOL, a language designed
+[1961.48s -> 1963.36s]  in the 1950s. Turns
+[1963.36s -> 1964.32s]  out that's still kind of
+[1964.32s -> 1965.00s]  true that a lot of
+[1965.00s -> 1965.92s]  banking software, for
+[1965.92s -> 1966.68s]  instance, happens to be
+[1966.68s -> 1968.20s]  written in COBOL. Uh,
+[1968.24s -> 1969.36s]  and most of the COBOL
+[1969.36s -> 1970.64s]  programmers have retired.
+[1970.72s -> 1971.28s]  They're all living in
+[1971.28s -> 1972.84s]  Florida retired. Right.
+[1973.00s -> 1974.48s]  And so they all started
+[1974.48s -> 1975.24s]  picking up their phones
+[1975.24s -> 1975.96s]  and somebody said, Hey,
+[1976.00s -> 1977.24s]  we'll pay you a million
+[1977.24s -> 1978.04s]  dollars to come to our
+[1978.04s -> 1978.88s]  bank and fix this. And
+[1978.88s -> 1979.72s]  they all went, I'm on
+[1979.72s -> 1980.48s]  a plane. And they went
+[1980.48s -> 1981.44s]  and like made lots of
+[1981.44s -> 1983.12s]  money, um, and fixed
+[1983.12s -> 1984.08s]  it, fixed it mostly.
+[1984.36s -> 1986.00s]  Uh, but it really
+[1986.00s -> 1987.56s]  people, December 31st were
+[1987.56s -> 1989.24s]  like storing like tuna
+[1989.24s -> 1990.56s]  cans and things and like
+[1990.56s -> 1991.40s]  lots of water and all
+[1991.40s -> 1991.84s]  that, because they
+[1991.84s -> 1992.60s]  thought this was going
+[1992.60s -> 1993.32s]  to like, the world was
+[1993.32s -> 1994.36s]  going to blow up because
+[1994.36s -> 1994.92s]  of this. And of course
+[1994.92s -> 1996.20s]  it didn't happen. Uh, I
+[1996.20s -> 1998.68s]  remember one website I
+[1998.68s -> 1999.64s]  went to that said the
+[1999.64s -> 2001.24s]  date was like January
+[2001.24s -> 2003.16s]  1st, 101 or something
+[2003.16s -> 2003.92s]  weird like that. And
+[2003.92s -> 2005.56s]  it, um, it was probably
+[2005.56s -> 2006.60s]  that issue is what
+[2006.60s -> 2007.24s]  happened. But anyway,
+[2007.60s -> 2008.40s]  that issue happened in
+[2008.40s -> 2009.52s]  2000. We were coming
+[2009.52s -> 2011.24s]  up with another Y2K,
+[2011.24s -> 2012.96s]  like, you know, more
+[2012.96s -> 2014.00s]  better, bigger, faster,
+[2014.00s -> 2015.88s]  whatever, uh, in 2038.
+[2015.92s -> 2016.60s]  And there are still
+[2016.60s -> 2017.92s]  computers that deal with
+[2017.92s -> 2020.60s]  that. So all of that is
+[2020.60s -> 2021.68s]  to say that we still use
+[2021.68s -> 2022.68s]  this time underscore T
+[2022.88s -> 2023.92s]  some computers like the
+[2023.92s -> 2025.20s]  ones we use now use a
+[2025.20s -> 2027.00s]  64 bit number. Oh, by
+[2027.00s -> 2030.00s]  the way, uh, 64 bit
+[2030.00s -> 2031.88s]  number would be instead
+[2031.88s -> 2033.04s]  of two to 31, two to
+[2033.04s -> 2036.16s]  the 63. And this gives
+[2036.16s -> 2037.68s]  us until, well, it gives
+[2037.68s -> 2039.84s]  us, what is that 292
+[2039.84s -> 2042.16s]  billion more years. So
+[2042.20s -> 2043.16s]  if people are talking
+[2043.16s -> 2045.44s]  about that 292 billion
+[2045.44s -> 2046.60s]  years from now, probably
+[2046.60s -> 2047.44s]  not going to be us is
+[2047.44s -> 2048.08s]  going to be computers
+[2048.08s -> 2048.84s]  talking about it because
+[2048.84s -> 2050.40s]  you know, probably not
+[2050.40s -> 2051.08s]  going to be any human
+[2051.08s -> 2052.00s]  stalking anymore. They're
+[2052.00s -> 2052.88s]  going to go, oh, we've
+[2052.88s -> 2053.40s]  got to deal with this.
+[2053.76s -> 2055.12s]  Um, it's, uh, that could
+[2055.12s -> 2056.96s]  happen. I think the sun
+[2056.96s -> 2058.48s]  is going to become a red
+[2058.48s -> 2059.60s]  giant before then. And
+[2059.60s -> 2060.32s]  then we're all, you
+[2060.32s -> 2060.96s]  know, the earth is
+[2060.96s -> 2061.68s]  going to get engulfed.
+[2061.68s -> 2063.12s]  And I think, so probably
+[2063.12s -> 2063.92s]  won't be computers. They
+[2063.92s -> 2064.80s]  might ship some computers
+[2064.80s -> 2065.76s]  off to some other solar
+[2065.76s -> 2067.00s]  system. Who knows? Anyway,
+[2067.00s -> 2067.40s]  they're gonna have to
+[2067.40s -> 2068.92s]  deal with that 292 billion
+[2068.92s -> 2070.44s]  years from now. Uh, but
+[2070.44s -> 2072.24s]  that's that. So back to
+[2072.24s -> 2072.96s]  what we were talking
+[2072.96s -> 2073.72s]  about, all that
+[2073.72s -> 2075.32s]  digression aside, uh,
+[2075.32s -> 2076.40s]  we're trying, we are
+[2076.40s -> 2077.36s]  getting a time to you.
+[2077.36s -> 2078.40s]  We're converting it to
+[2078.40s -> 2080.96s]  this struct TM, which
+[2080.96s -> 2081.76s]  kind of breaks it up a
+[2081.76s -> 2082.96s]  little bit. Question? Yeah.
+[2087.04s -> 2087.84s]  Why would the time TV
+[2087.84s -> 2089.44s]  signs who it's probably
+[2089.44s -> 2090.40s]  because you can get a
+[2090.40s -> 2092.08s]  neg. You want a negative,
+[2092.44s -> 2094.04s]  uh, like return value
+[2094.04s -> 2094.84s]  and like, oh, let's just
+[2094.84s -> 2095.48s]  make it so we can get
+[2095.48s -> 2096.28s]  negative one back. That's
+[2096.28s -> 2097.56s]  probably the reason like
+[2097.56s -> 2098.72s]  it. Yeah. Who knows?
+[2098.72s -> 2099.92s]  But they also thought,
+[2100.00s -> 2101.92s]  well again, 68 years, if
+[2101.92s -> 2102.52s]  they'd done it, if
+[2102.52s -> 2103.96s]  they'd done 32 bits on
+[2103.96s -> 2104.36s]  some, we would have
+[2104.36s -> 2105.60s]  gotten another 68 years,
+[2105.60s -> 2106.24s]  which is the ring kind
+[2106.24s -> 2107.92s]  of guys. But, um, they
+[2107.92s -> 2108.80s]  didn't, they didn't think
+[2108.80s -> 2109.88s]  about it probably just
+[2109.88s -> 2111.16s]  because of the, I want
+[2111.16s -> 2111.96s]  to return value would be
+[2111.96s -> 2113.24s]  negative one. Probably the
+[2113.24s -> 2113.84s]  reason. Yeah.
+[2120.32s -> 2121.08s]  Oh, for the time. Yeah.
+[2121.08s -> 2121.68s]  So it's such a good
+[2121.68s -> 2123.60s]  question. Is there a timer
+[2123.68s -> 2124.32s]  in your computer is
+[2124.32s -> 2125.04s]  really what you're asking,
+[2125.04s -> 2125.56s]  right? I mean, is there
+[2125.56s -> 2126.80s]  a clock that's updated?
+[2126.80s -> 2127.56s]  Yeah, sure. There is.
+[2127.80s -> 2130.20s]  Yep. And, um, the
+[2130.20s -> 2132.08s]  timer runs at whatever
+[2132.08s -> 2133.36s]  your clock frequency is,
+[2133.36s -> 2133.84s]  but then they just
+[2133.84s -> 2135.36s]  divide by the number of
+[2135.40s -> 2137.40s]  clock ticks per computer.
+[2137.40s -> 2138.20s]  If your computer runs
+[2138.20s -> 2139.72s]  at one gigahertz or
+[2139.72s -> 2140.56s]  whatever, it just divides
+[2140.56s -> 2141.44s]  by one gigahertz to get
+[2141.44s -> 2141.84s]  you the number of
+[2141.84s -> 2144.16s]  seconds. And it, uh, and
+[2144.16s -> 2145.20s]  it does update that
+[2145.20s -> 2146.88s]  every, you know, every
+[2147.48s -> 2148.84s]  second in that case for
+[2148.84s -> 2151.04s]  that time. Um, that's
+[2151.04s -> 2151.92s]  happened. That uses a
+[2151.92s -> 2153.04s]  signal, by the way, just
+[2153.04s -> 2153.76s]  the operating system.
+[2153.80s -> 2154.76s]  Basically, it's, it's a
+[2154.76s -> 2155.64s]  signal that happens
+[2155.64s -> 2156.72s]  every, it's a timer that
+[2156.72s -> 2157.52s]  happens every second. It
+[2157.52s -> 2158.28s]  just goes and does that.
+[2158.64s -> 2159.96s]  Uh, it actually happens
+[2159.96s -> 2161.16s]  much more frequently than
+[2161.16s -> 2162.64s]  that, um, because there's
+[2162.64s -> 2163.96s]  other more precise
+[2163.96s -> 2165.00s]  timers than one second.
+[2165.04s -> 2165.84s]  But yes, there's
+[2165.84s -> 2166.72s]  actually a timer that
+[2166.72s -> 2167.52s]  updates every second.
+[2167.80s -> 2168.00s]  Yeah.
+[2168.00s -> 2169.56s]  How will you synchronize,
+[2169.56s -> 2172.12s]  like, I run a lot of
+[2172.12s -> 2173.16s]  different timers, so, like,
+[2173.16s -> 2173.88s]  you can connect them to,
+[2173.88s -> 2174.92s]  like, multiple times, like,
+[2174.92s -> 2175.88s]  or you can use...
+[2175.88s -> 2176.76s]  Oh, yeah. Good question.
+[2176.76s -> 2177.64s]  How do you synchronize
+[2177.64s -> 2178.40s]  these timers?
+[2178.68s -> 2180.04s]  Um, using time servers,
+[2180.04s -> 2181.60s]  basically. Like somebody
+[2181.60s -> 2183.44s]  in Greenwich, England,
+[2183.44s -> 2184.48s]  says, this is the real
+[2184.48s -> 2185.76s]  time. Boom. And then
+[2185.76s -> 2186.28s]  it's, and it's a bunch
+[2186.28s -> 2187.12s]  of astronomers who do this,
+[2187.12s -> 2187.60s]  by the way. And they
+[2187.60s -> 2188.12s]  all say, this is the
+[2188.12s -> 2189.04s]  real time based on this
+[2189.04s -> 2189.36s]  and that. And there's
+[2189.36s -> 2190.28s]  all these leap seconds
+[2190.28s -> 2190.96s]  and things every couple
+[2190.96s -> 2192.20s]  years we get and, uh,
+[2192.20s -> 2193.36s]  whatever. And they say,
+[2193.36s -> 2194.00s]  this is a real time.
+[2194.00s -> 2194.68s]  And then all, a bunch
+[2194.68s -> 2196.40s]  of time servers connect
+[2196.40s -> 2197.40s]  to that and then have
+[2197.40s -> 2198.44s]  their own local versions.
+[2198.44s -> 2199.56s]  And then we connect to
+[2199.56s -> 2200.88s]  those and it's all very
+[2200.88s -> 2201.84s]  coordinated. It doesn't
+[2201.84s -> 2202.40s]  always work, but it's
+[2202.40s -> 2202.96s]  pretty coordinated.
+[2203.92s -> 2205.24s]  Yeah. Yep.
+[2205.96s -> 2207.40s]  So I got a refurbished
+[2207.40s -> 2209.48s]  computer from Germany or
+[2209.48s -> 2212.12s]  something. But, um, so the
+[2212.12s -> 2213.40s]  clock always resets to,
+[2213.40s -> 2215.04s]  like, sometime in Europe,
+[2215.04s -> 2216.08s]  sometimes not in Europe
+[2216.08s -> 2216.80s]  when I start out and
+[2216.80s -> 2217.60s]  only when it connects to
+[2217.60s -> 2218.80s]  internet, it sets the
+[2218.80s -> 2220.08s]  right time. And I go to
+[2220.08s -> 2221.20s]  them and say, oh, this
+[2221.20s -> 2222.04s]  is a hardware clock
+[2222.04s -> 2223.68s]  issue. So is that, is
+[2223.68s -> 2225.00s]  that what is going on?
+[2225.24s -> 2226.76s]  Yeah. Yeah. So, so, uh,
+[2226.80s -> 2227.28s]  people didn't hear
+[2227.28s -> 2228.72s]  that the, the, so Amy
+[2228.72s -> 2229.72s]  got a computer and it
+[2229.72s -> 2230.72s]  was from Germany or
+[2230.72s -> 2231.28s]  something. And every
+[2231.28s -> 2232.00s]  time she turns it on,
+[2232.00s -> 2232.64s]  it resets to the
+[2232.64s -> 2233.92s]  German time zone or
+[2233.92s -> 2234.96s]  whatever. Yeah. When
+[2234.96s -> 2236.16s]  they, when they set up
+[2236.16s -> 2237.56s]  the BIOS on that
+[2237.56s -> 2238.68s]  computer, it probably
+[2238.68s -> 2239.88s]  said, if you can't,
+[2239.88s -> 2240.96s]  don't know the time,
+[2241.16s -> 2242.76s]  uh, look it up by just,
+[2242.76s -> 2243.56s]  or just set it to
+[2243.56s -> 2244.40s]  this time and some
+[2244.40s -> 2245.88s]  other time zone where
+[2245.88s -> 2247.16s]  it was first originally
+[2247.40s -> 2248.84s]  like built. Um, and
+[2248.84s -> 2249.28s]  that's, that's a
+[2249.28s -> 2250.20s]  hardware sort of
+[2250.20s -> 2251.12s]  issue. By the way,
+[2251.12s -> 2251.76s]  it may be because
+[2251.76s -> 2252.72s]  your battery, there's
+[2252.72s -> 2253.12s]  another, there's a
+[2253.12s -> 2254.04s]  battery, a tiny
+[2254.04s -> 2254.84s]  battery inside your
+[2254.84s -> 2255.44s]  computer that might be
+[2255.44s -> 2256.60s]  dead. That might be
+[2256.60s -> 2257.24s]  the reason that it's
+[2257.24s -> 2258.36s]  a, that it does like
+[2258.36s -> 2259.16s]  does it, does that,
+[2259.60s -> 2260.32s]  but then it connects to
+[2260.32s -> 2260.88s]  the server and it's
+[2260.88s -> 2261.80s]  okay once it does it.
+[2262.12s -> 2264.08s]  Okay. Anything else?
+[2265.20s -> 2266.40s]  Good. All right. So
+[2266.40s -> 2267.12s]  let's actually finish
+[2267.12s -> 2268.32s]  this, this program up
+[2268.36s -> 2269.08s]  before we can go to
+[2269.12s -> 2270.40s]  next programs. Uh, we
+[2270.40s -> 2271.36s]  are going to get the
+[2271.36s -> 2272.60s]  time using this GM
+[2272.60s -> 2274.60s]  time function. Uh, and
+[2274.60s -> 2275.60s]  then we are, we're
+[2275.60s -> 2276.72s]  going to convert it,
+[2276.80s -> 2277.72s]  uh, using this GM time
+[2277.72s -> 2278.52s]  function. Then we're
+[2278.52s -> 2278.88s]  going to have to
+[2278.88s -> 2280.04s]  convert it to a string.
+[2280.28s -> 2281.88s]  Let's just use a char
+[2281.88s -> 2284.72s]  star time string there.
+[2285.00s -> 2288.00s]  128 is definitely long
+[2288.00s -> 2289.12s]  enough to hold our
+[2289.12s -> 2290.96s]  little time string. Okay.
+[2291.20s -> 2291.96s]  And then we're going
+[2291.96s -> 2294.40s]  to do STRF time. This
+[2294.40s -> 2294.88s]  is the thing that
+[2294.88s -> 2297.08s]  converts the time, uh,
+[2297.12s -> 2298.56s]  to the actual string
+[2298.56s -> 2299.36s]  for you. And this is
+[2299.36s -> 2300.32s]  in many languages has
+[2300.32s -> 2302.28s]  this STRF time, uh,
+[2302.32s -> 2304.08s]  function. And then you
+[2304.08s -> 2304.88s]  takes in the time
+[2304.88s -> 2306.76s]  string and then, uh,
+[2306.76s -> 2307.56s]  what else does it take
+[2307.56s -> 2309.52s]  in? It takes in how big
+[2309.52s -> 2311.76s]  it is, size of time
+[2311.80s -> 2312.64s]  string. So it doesn't
+[2312.64s -> 2314.88s]  overwrite past the thing.
+[2314.88s -> 2316.60s]  Percent C in this case,
+[2316.92s -> 2318.48s]  uh, actually means,
+[2318.72s -> 2320.08s]  uh, not one character,
+[2320.08s -> 2321.04s]  but it means do it in
+[2321.04s -> 2323.12s]  a local defined time.
+[2323.12s -> 2324.24s]  And this is the GMT
+[2324.52s -> 2325.28s]  time that it's going to
+[2325.28s -> 2326.60s]  do. And then it needs
+[2326.60s -> 2327.96s]  to take in the pointer
+[2327.96s -> 2329.60s]  to the actual time,
+[2329.84s -> 2331.60s]  uh, STRF TM that we
+[2331.60s -> 2333.48s]  have there. Okay. And
+[2333.48s -> 2334.48s]  then, uh, what are
+[2334.48s -> 2335.48s]  we going to do? Well,
+[2335.48s -> 2335.92s]  we're going to do
+[2335.92s -> 2337.60s]  this. This will give
+[2337.60s -> 2338.72s]  you flashbacks, maybe
+[2338.72s -> 2339.72s]  not good ones to the,
+[2340.04s -> 2341.84s]  uh, the midterm exam
+[2342.20s -> 2345.80s]  number of bytes written
+[2346.64s -> 2350.40s]  equals zero size T num
+[2350.56s -> 2353.80s]  bytes, bytes to write
+[2354.08s -> 2356.08s]  equals the string length
+[2356.16s -> 2359.40s]  of time string. We're
+[2359.40s -> 2360.00s]  sending the, we don't
+[2360.00s -> 2361.04s]  need the zero on there.
+[2361.04s -> 2362.20s]  As it turns out, we
+[2362.20s -> 2363.08s]  don't need to send that.
+[2363.32s -> 2365.84s]  And then while num bytes
+[2365.88s -> 2368.12s]  written is less than
+[2368.12s -> 2373.04s]  num bytes to write num
+[2373.28s -> 2375.12s]  bytes, uh, what is it?
+[2375.12s -> 2376.28s]  Num bytes written. I
+[2376.28s -> 2376.72s]  always get this wrong.
+[2376.72s -> 2377.20s]  I have to think about
+[2377.20s -> 2379.32s]  it. Num bytes written
+[2379.60s -> 2381.48s]  plus equals write, and
+[2381.48s -> 2382.12s]  then let's write to the
+[2382.12s -> 2385.12s]  client and then the time
+[2385.12s -> 2388.80s]  STR plus the num num
+[2388.80s -> 2392.36s]  bytes written and then
+[2392.36s -> 2394.80s]  num bytes to write
+[2394.80s -> 2396.00s]  minus num, this is the
+[2396.00s -> 2396.64s]  long, becoming a long
+[2396.64s -> 2399.52s]  line, num bytes written.
+[2400.80s -> 2402.68s]  Okay. All right. And
+[2402.68s -> 2404.48s]  then that was in a while
+[2404.48s -> 2407.36s]  loop. And after that, we
+[2407.36s -> 2408.44s]  are done writing and then
+[2408.44s -> 2409.68s]  we need to close the
+[2409.68s -> 2412.04s]  client. Okay. So, uh, this
+[2412.04s -> 2413.12s]  is actually now all of a
+[2413.12s -> 2414.40s]  sudden really important to
+[2414.40s -> 2416.00s]  do the write in a loop
+[2416.00s -> 2416.52s]  because when you're
+[2416.52s -> 2417.60s]  dealing with networks, it
+[2417.60s -> 2418.92s]  may, it's very likely
+[2418.92s -> 2419.64s]  that you will not push
+[2419.64s -> 2420.56s]  all of those bytes out of
+[2420.56s -> 2422.48s]  the network. Files, it's
+[2422.48s -> 2423.16s]  pretty likely that you're
+[2423.16s -> 2423.64s]  going to get them all
+[2423.64s -> 2424.68s]  pushed. But in this case,
+[2424.68s -> 2426.36s]  unless you have a pipe
+[2426.36s -> 2427.72s]  that's filled, another
+[2428.20s -> 2429.80s]  maybe like making you
+[2429.80s -> 2430.48s]  twitch a little from the
+[2430.48s -> 2431.84s]  midterm. Um, but that's
+[2431.84s -> 2433.56s]  what, that's, um, what's
+[2433.56s -> 2434.52s]  going on there. We need
+[2434.52s -> 2435.88s]  to write this to actually
+[2435.88s -> 2436.72s]  write all the bytes out.
+[2436.84s -> 2438.56s]  But notice that the
+[2438.56s -> 2440.64s]  client in this case, okay,
+[2440.64s -> 2442.20s]  the write function, like
+[2442.24s -> 2443.64s]  node uses, treats that
+[2443.64s -> 2444.68s]  just as a file descriptor,
+[2444.68s -> 2445.76s]  which in Unix, it is a
+[2445.76s -> 2447.20s]  file descriptor, turns out.
+[2447.76s -> 2448.56s]  Okay. It's file descriptor
+[2448.56s -> 2449.36s]  that ends up pointing to
+[2449.36s -> 2450.44s]  a socket that point, that
+[2450.44s -> 2451.28s]  sends it to the client.
+[2452.16s -> 2454.16s]  Okay. All right. Let's
+[2454.20s -> 2455.84s]  see if I made any mistakes
+[2455.84s -> 2458.60s]  here. Time server
+[2458.60s -> 2461.92s]  descriptors. Looks okay.
+[2462.00s -> 2464.48s]  Okay. And then let me run
+[2464.48s -> 2465.16s]  in the other one over
+[2465.16s -> 2467.84s]  here. Time, we've seen
+[2467.84s -> 2468.68s]  this already, server
+[2468.68s -> 2469.44s]  descriptor, we haven't
+[2469.44s -> 2470.00s]  actually seen it work
+[2470.00s -> 2470.72s]  yet. Time server
+[2470.72s -> 2471.96s]  descriptors is running.
+[2472.48s -> 2474.20s]  Okay. And you can
+[2474.20s -> 2475.28s]  actually get that
+[2475.28s -> 2476.68s]  information by connecting
+[2476.68s -> 2477.48s]  to the thing. I have
+[2477.48s -> 2478.76s]  written a little client
+[2478.76s -> 2479.60s]  that we'll talk about
+[2479.60s -> 2481.68s]  probably next time, but
+[2481.68s -> 2482.36s]  you can do it in an
+[2482.36s -> 2483.40s]  interesting way using a
+[2483.40s -> 2484.84s]  function called Telnet,
+[2484.88s -> 2485.24s]  which we're going to
+[2485.24s -> 2486.08s]  talk about a little bit
+[2486.08s -> 2489.08s]  later too. Telnet is kind
+[2489.08s -> 2490.92s]  of, it's what used to
+[2490.92s -> 2492.60s]  be, or it's the original
+[2492.60s -> 2494.12s]  kind of version of SSH,
+[2494.16s -> 2495.32s]  except it was very much,
+[2495.32s -> 2496.92s]  SSH stands for secure
+[2496.92s -> 2498.20s]  shell, Telnet is very
+[2498.20s -> 2499.92s]  much not secure. But
+[2499.92s -> 2500.60s]  what it does, all it
+[2500.60s -> 2501.88s]  does is it connects to a
+[2501.88s -> 2503.36s]  network and sets up a
+[2503.36s -> 2504.24s]  connection and then you
+[2504.24s -> 2505.12s]  can talk back and forth
+[2505.12s -> 2506.12s]  to the network. So if
+[2506.12s -> 2509.40s]  we type Telnet NIF 58
+[2509.40s -> 2510.20s]  and then give a port
+[2510.20s -> 2512.52s]  number 1, 2, 3, 4, 5,
+[2512.84s -> 2514.44s]  okay, if all goes well,
+[2514.48s -> 2515.64s]  there we go. It tells you
+[2515.64s -> 2516.64s]  some details. It says
+[2516.64s -> 2518.72s]  trying NIF 58 as it
+[2518.72s -> 2519.56s]  turns out, that's the IP
+[2519.56s -> 2520.36s]  address for NIF 58,
+[2520.56s -> 2521.72s]  connected to it, tells you
+[2521.72s -> 2522.48s]  something about how you
+[2522.76s -> 2523.92s]  exit out of it. All you
+[2523.92s -> 2524.80s]  do is you do the
+[2524.80s -> 2525.60s]  connection. The instant
+[2525.60s -> 2526.56s]  you get the connection,
+[2526.64s -> 2528.20s]  the time server goes,
+[2528.24s -> 2529.56s]  here's the time, close
+[2529.56s -> 2530.72s]  the connection. And so
+[2530.72s -> 2531.24s]  that's what happened
+[2531.24s -> 2534.28s]  here. And that's it.
+[2534.32s -> 2534.96s]  Okay. So there is no
+[2534.96s -> 2536.64s]  back and forth. We'll
+[2536.64s -> 2537.44s]  get to the back and
+[2537.44s -> 2538.72s]  forth in a little bit,
+[2538.88s -> 2539.72s]  but that's it. Okay.
+[2539.72s -> 2541.08s]  Notice it is May 13th,
+[2541.08s -> 2544.24s]  9-14. It's 9-14
+[2544.24s -> 2546.04s]  because that's the
+[2546.04s -> 2547.36s]  current time in Greenwich,
+[2547.36s -> 2548.80s]  England, as it turns out.
+[2549.08s -> 2550.64s]  Okay. And 21-14 is 9-14.
+[2550.76s -> 2551.80s]  I believe that's correct.
+[2552.52s -> 2553.24s]  Seven hours difference,
+[2553.24s -> 2553.80s]  something like that.
+[2554.92s -> 2555.80s]  So, and some, who's
+[2555.80s -> 2556.76s]  sending messages?
+[2557.08s -> 2557.84s]  Hi, and you know what,
+[2557.84s -> 2560.12s]  don't do that. Thank
+[2560.12s -> 2560.84s]  you, though, but don't
+[2560.84s -> 2563.28s]  do that. So the, so
+[2563.28s -> 2564.12s]  anyway, once we have
+[2564.12s -> 2565.36s]  the server going, now
+[2565.40s -> 2566.40s]  this while loop, what
+[2566.40s -> 2567.32s]  happened, it needed one
+[2567.32s -> 2568.00s]  connection. And you
+[2568.00s -> 2568.56s]  guys could all check
+[2568.56s -> 2569.16s]  that by the way. You
+[2569.16s -> 2570.76s]  could go right now to
+[2570.96s -> 2572.64s]  town that to Myth 58,
+[2572.68s -> 2574.80s]  port 12345, and get the
+[2574.80s -> 2578.08s]  actual time from Myth 58.
+[2578.68s -> 2579.04s]  Okay. You could
+[2579.04s -> 2579.96s]  actually do that and
+[2579.96s -> 2581.32s]  check it out. We
+[2581.32s -> 2581.80s]  could do this in a
+[2581.80s -> 2583.48s]  little while loop here.
+[2583.56s -> 2587.00s]  While one do, let's
+[2587.00s -> 2587.84s]  see, actually, let me
+[2587.84s -> 2588.52s]  run, let me just show
+[2588.52s -> 2589.04s]  you. I'll run the
+[2589.04s -> 2592.76s]  time client right now. I
+[2592.76s -> 2595.24s]  need to do Myth 58 and
+[2595.24s -> 2597.12s]  then 12345. And there
+[2597.12s -> 2597.80s]  we go. It just kind
+[2597.80s -> 2598.80s]  of, it takes away all
+[2598.80s -> 2599.84s]  the other garbage. But
+[2599.84s -> 2600.40s]  if we do this in a
+[2600.40s -> 2601.24s]  while loop, you can see
+[2601.24s -> 2603.08s]  that it updates. While
+[2603.08s -> 2607.60s]  one do time client
+[2607.64s -> 2612.12s]  Myth 58, 1345. And
+[2612.12s -> 2612.92s]  then let's sleep for
+[2612.92s -> 2616.00s]  one second. And done.
+[2616.00s -> 2616.56s]  And that should, there
+[2616.56s -> 2617.72s]  we go. And then every
+[2617.72s -> 2618.80s]  second it'll just kind
+[2618.80s -> 2619.76s]  of update. It might skip
+[2619.76s -> 2620.68s]  once it's not right
+[2620.68s -> 2621.28s]  on the second or
+[2621.28s -> 2622.24s]  whatever it might do
+[2622.24s -> 2623.16s]  that. But you can see
+[2623.16s -> 2623.96s]  that every second it's
+[2623.96s -> 2624.96s]  updating because it just
+[2624.96s -> 2626.56s]  updates as we go along.
+[2627.08s -> 2628.16s]  Okay. You can do some
+[2628.16s -> 2628.88s]  other kind of fun
+[2628.88s -> 2629.72s]  stuff with this. I
+[2629.72s -> 2632.36s]  wrote a little, a little
+[2632.36s -> 2634.12s]  shell call, let's see,
+[2634.12s -> 2637.52s]  CornerTime.sh, which
+[2637.88s -> 2638.92s]  looks kind of weird.
+[2638.92s -> 2639.48s]  And it's got, it's
+[2639.48s -> 2641.36s]  basically calling this,
+[2641.36s -> 2641.96s]  let me change, oh, it
+[2641.96s -> 2642.84s]  is Myth 58. That's
+[2642.84s -> 2643.96s]  good. Here's what
+[2643.96s -> 2644.92s]  CornerTime does. Let me
+[2644.92s -> 2645.68s]  run it for you first.
+[2646.00s -> 2648.08s]  CornerTime just basically
+[2648.08s -> 2649.72s]  keeps the time up in
+[2649.72s -> 2650.84s]  the top left corner of
+[2650.84s -> 2652.88s]  your shell, right? Anybody
+[2652.88s -> 2654.52s]  ever wonder how Vim and
+[2654.56s -> 2655.96s]  Emacs actually makes it
+[2655.96s -> 2657.00s]  so you can type up here
+[2657.00s -> 2657.88s]  in your shell and not
+[2657.88s -> 2659.20s]  down here and it actually
+[2659.20s -> 2660.28s]  does. It's using these
+[2660.28s -> 2662.40s]  things called ANSI escape
+[2662.40s -> 2664.00s]  characters. So if we look
+[2664.00s -> 2667.36s]  at this, let's see, ANSI
+[2668.08s -> 2670.48s]  escape sequences. There we
+[2670.48s -> 2674.16s]  go. So here's a table of
+[2674.52s -> 2675.84s]  all these ANSI escape
+[2675.84s -> 2676.92s]  sequences. It's basically
+[2676.92s -> 2679.76s]  these agreed upon things
+[2679.76s -> 2680.52s]  you have to send to your
+[2680.52s -> 2681.32s]  terminal to make the
+[2681.32s -> 2682.88s]  cursor move around. Right.
+[2682.88s -> 2683.44s]  And you can do it, you
+[2683.44s -> 2684.52s]  could build a Pac-Man game
+[2684.52s -> 2685.24s]  or whatever, make it in
+[2685.24s -> 2686.64s]  the terminal, just like,
+[2686.68s -> 2687.68s]  you know, you can do
+[2687.68s -> 2688.16s]  anything else. You can
+[2688.16s -> 2688.88s]  make it move around the
+[2688.88s -> 2689.96s]  screen, which is kind of
+[2689.96s -> 2690.92s]  fun. It takes these
+[2690.92s -> 2691.80s]  things called escape
+[2691.80s -> 2696.12s]  commands. And if we look
+[2696.12s -> 2697.84s]  back at here again, the
+[2697.88s -> 2700.16s]  escape character, it's
+[2700.16s -> 2700.92s]  actually a little weird
+[2700.92s -> 2702.08s]  to type that. It's
+[2702.08s -> 2702.72s]  actually, it's actually
+[2702.72s -> 2703.64s]  one character. You
+[2703.64s -> 2704.40s]  actually have to type
+[2704.48s -> 2706.08s]  control V and then the
+[2706.08s -> 2707.12s]  escape character and it
+[2707.12s -> 2708.24s]  puts that one character
+[2708.24s -> 2709.24s]  in there for you. And
+[2709.24s -> 2709.96s]  then every time you want
+[2709.96s -> 2711.04s]  to print something, you
+[2711.04s -> 2711.84s]  print the escape
+[2711.84s -> 2712.72s]  character and then some
+[2712.72s -> 2714.28s]  command. Basically, in
+[2714.28s -> 2715.40s]  this case, it saves the
+[2715.40s -> 2716.44s]  cursor position and then
+[2716.44s -> 2717.68s]  moves to the top left
+[2717.68s -> 2720.16s]  and then makes it white
+[2720.16s -> 2721.44s]  with red background. I
+[2721.44s -> 2722.44s]  wanted to do that. And
+[2722.44s -> 2723.16s]  then it calls the time
+[2723.16s -> 2724.36s]  client and updates it.
+[2724.36s -> 2725.04s]  And then it only sleeps
+[2725.04s -> 2726.60s]  for 0.2 seconds in this
+[2726.60s -> 2728.40s]  case. If you do corner
+[2728.40s -> 2730.00s]  time.sh in the
+[2730.00s -> 2731.44s]  background, well, then
+[2731.44s -> 2732.44s]  you can do LS and
+[2732.44s -> 2733.20s]  whatever and it'll keep
+[2733.20s -> 2734.96s]  coming back. Kind of nice
+[2735.00s -> 2735.52s]  if you want to keep
+[2735.52s -> 2736.48s]  that little timer up
+[2736.48s -> 2736.88s]  there. Of course, you've
+[2736.88s -> 2737.40s]  got one in the other
+[2737.40s -> 2738.00s]  part of your computer
+[2738.00s -> 2739.40s]  anyway. And then we
+[2739.40s -> 2740.36s]  can, we can do that.
+[2740.68s -> 2741.76s]  It doesn't necessarily
+[2741.76s -> 2744.24s]  work well with like
+[2744.24s -> 2746.76s]  Vim. It works okay,
+[2746.76s -> 2749.08s]  but then if you want like
+[2749.08s -> 2750.04s]  it'll, it'll work okay
+[2750.04s -> 2750.72s]  if you do that. But
+[2750.72s -> 2751.68s]  then sometimes it goes
+[2751.68s -> 2752.40s]  like, if we go back up
+[2752.40s -> 2753.88s]  to the top, it'll
+[2753.88s -> 2755.04s]  probably not work. There
+[2755.04s -> 2755.92s]  we go. So, yeah, it's
+[2755.92s -> 2756.84s]  not, not the most
+[2756.84s -> 2757.64s]  robust thing in the
+[2757.64s -> 2760.04s]  world, but, um, that's
+[2760.04s -> 2761.32s]  that. Let's see, let's
+[2761.32s -> 2762.48s]  get rid of that. There
+[2762.48s -> 2764.52s]  we go. So, uh, so you
+[2764.52s -> 2765.40s]  can use this time server
+[2765.40s -> 2766.24s]  if you, if you want
+[2766.24s -> 2767.48s]  to. Okay. Did anyone try
+[2767.48s -> 2768.40s]  connecting to it? Did it
+[2768.40s -> 2769.80s]  connect? Okay. If you
+[2769.80s -> 2770.36s]  connected the time
+[2770.36s -> 2771.48s]  server, can we get
+[2771.48s -> 2774.16s]  connected to it? Okay. So
+[2774.16s -> 2774.80s]  what do we want to do
+[2774.80s -> 2775.64s]  to make this program a
+[2775.68s -> 2778.28s]  little bit better? Well,
+[2778.56s -> 2779.12s]  what we want to do
+[2779.12s -> 2782.00s]  first is the screen
+[2782.00s -> 2782.96s]  bigger. Uh, what we
+[2782.96s -> 2783.64s]  want to do first is
+[2783.64s -> 2784.60s]  we want to, this is
+[2784.60s -> 2785.20s]  the publish time we
+[2785.20s -> 2785.72s]  already talked about
+[2785.72s -> 2788.04s]  here. Um, we want
+[2788.04s -> 2789.64s]  to actually get rid of
+[2789.64s -> 2790.52s]  that whole while loop
+[2790.52s -> 2791.48s]  write business. That's
+[2791.48s -> 2792.28s]  midterm stuff. We
+[2792.28s -> 2792.68s]  don't want to write
+[2792.68s -> 2794.24s]  that. Right. We want
+[2794.24s -> 2795.20s]  to make it easier to
+[2795.20s -> 2796.08s]  print stuff out to the
+[2796.08s -> 2798.36s]  server. And, uh, let's
+[2798.36s -> 2799.68s]  do that using a
+[2799.68s -> 2801.00s]  library called
+[2801.00s -> 2803.00s]  Socket++. Okay. The
+[2803.00s -> 2806.32s]  Socket++ library is a,
+[2806.36s -> 2807.24s]  uh, just a library that
+[2807.24s -> 2808.56s]  wraps that right
+[2808.56s -> 2809.48s]  command and does all
+[2809.48s -> 2810.08s]  the buffering and
+[2810.08s -> 2811.08s]  whatever's necessary for
+[2811.08s -> 2812.24s]  you. So it makes it
+[2812.24s -> 2814.16s]  easier to, uh, to do
+[2814.16s -> 2815.04s]  that. So let's actually
+[2815.04s -> 2816.52s]  just quickly, uh,
+[2816.56s -> 2818.72s]  rewrite this. Uh, no,
+[2818.72s -> 2821.20s]  we want to do a time
+[2821.20s -> 2823.08s]  server. We'll keep the
+[2823.08s -> 2823.64s]  same ones. We don't
+[2823.64s -> 2824.28s]  have to type all the
+[2824.28s -> 2825.88s]  differences here. Uh, so
+[2825.88s -> 2826.48s]  what we need to do
+[2826.48s -> 2827.64s]  is you just need to
+[2827.64s -> 2828.40s]  pass and you're allowed
+[2828.40s -> 2829.08s]  to use this. It is
+[2829.08s -> 2829.80s]  not, it's a library
+[2829.80s -> 2830.92s]  that's not built into
+[2830.92s -> 2832.52s]  C plus plus, but you
+[2832.52s -> 2833.80s]  can use it. Uh, it's
+[2833.80s -> 2836.76s]  called socket plus
+[2836.76s -> 2839.36s]  plus slash sock
+[2839.40s -> 2841.16s]  stream, which is
+[2841.16s -> 2843.20s]  nice. Okay. And then
+[2843.20s -> 2843.80s]  all you need to do
+[2843.80s -> 2845.20s]  down here is get rid
+[2845.20s -> 2846.52s]  of all this that we
+[2846.52s -> 2847.76s]  don't like writing. And
+[2847.76s -> 2848.40s]  we just have to set
+[2848.40s -> 2850.72s]  it up to, to, uh, know
+[2850.72s -> 2852.24s]  how to connect to
+[2852.24s -> 2853.04s]  our, talk to our
+[2853.04s -> 2854.00s]  client. We do the
+[2854.00s -> 2854.72s]  following. We say
+[2854.72s -> 2857.92s]  sock buff SB, which
+[2857.92s -> 2859.32s]  is sock buffer. And
+[2859.32s -> 2860.04s]  we tell it, here's
+[2860.04s -> 2861.32s]  the file descriptor. We
+[2861.32s -> 2862.28s]  want you to write
+[2862.28s -> 2863.64s]  out to, okay. And
+[2863.64s -> 2866.28s]  then we do IO sock
+[2866.28s -> 2869.04s]  stream, SS, which is
+[2869.04s -> 2870.84s]  now a sock stream,
+[2871.20s -> 2872.04s]  uh, which is in this
+[2872.04s -> 2873.44s]  library as well. And
+[2873.44s -> 2873.96s]  then we can do
+[2873.96s -> 2875.68s]  something like SS and
+[2875.68s -> 2876.44s]  then these should look
+[2876.44s -> 2878.12s]  very familiar time
+[2878.12s -> 2880.08s]  string and L and it
+[2880.08s -> 2880.60s]  takes care of all
+[2880.60s -> 2881.96s]  that. Okay. And the
+[2881.96s -> 2884.08s]  other nice thing is we
+[2884.08s -> 2885.56s]  also, because of the
+[2885.60s -> 2886.28s]  way the socket
+[2886.28s -> 2887.72s]  number works, when the
+[2887.72s -> 2888.72s]  function goes out, when
+[2888.72s -> 2890.44s]  the, uh, socks, the,
+[2890.44s -> 2892.04s]  when the sock stream
+[2892.04s -> 2894.44s]  goes out of scope, the
+[2894.44s -> 2896.92s]  sock buff descriptor, I
+[2896.92s -> 2898.36s]  mean, sorry, destructor
+[2899.88s -> 2900.96s]  closes the clients. You
+[2900.96s -> 2901.36s]  don't even need to
+[2901.36s -> 2902.88s]  close it anymore. Once
+[2902.88s -> 2904.00s]  it goes out of scope,
+[2904.00s -> 2904.84s]  the client gets closed
+[2904.84s -> 2905.96s]  for you. It's kind of
+[2905.96s -> 2907.48s]  nice. So that makes it
+[2907.48s -> 2908.00s]  so you don't have to
+[2908.00s -> 2909.20s]  write those. You don't
+[2909.20s -> 2910.32s]  have to write those,
+[2910.68s -> 2913.72s]  um, why that wild,
+[2913.76s -> 2914.56s]  that's really annoying
+[2914.56s -> 2916.12s]  to write time server
+[2916.12s -> 2917.08s]  descriptors again,
+[2918.72s -> 2923.92s]  Oh, no socket sock
+[2923.92s -> 2925.84s]  stream. You're wrong
+[2925.84s -> 2930.32s]  here. Socks. Let's see.
+[2930.32s -> 2931.32s]  I think that's right.
+[2931.32s -> 2932.12s]  I mean, let's just see,
+[2932.52s -> 2938.20s]  um, time server that'll
+[2938.20s -> 2943.12s]  do socket plus, plus
+[2943.16s -> 2944.92s]  slash sock stream. They
+[2944.92s -> 2949.24s]  do that. Right. Oh,
+[2950.04s -> 2951.76s]  Oh, okay. Thank you.
+[2952.88s -> 2953.76s]  Better than me looking
+[2953.76s -> 2954.44s]  at this stuff. There we
+[2954.44s -> 2957.08s]  go. Okay. And there we
+[2957.08s -> 2957.64s]  go. So it's going to be
+[2957.64s -> 2958.64s]  the same, same exact
+[2958.64s -> 2961.28s]  soccer server. Okay. All
+[2961.28s -> 2963.24s]  right. And that's the
+[2963.24s -> 2963.88s]  next thing we want to
+[2963.88s -> 2967.88s]  do. Um, this is going
+[2967.88s -> 2968.84s]  to make it much easier
+[2968.92s -> 2969.52s]  so you don't have to
+[2969.52s -> 2970.40s]  do the writing and
+[2970.76s -> 2972.12s]  waiting and all that.
+[2972.12s -> 2972.92s]  It's just a, you can
+[2972.92s -> 2973.72s]  use that as long as we
+[2973.72s -> 2974.40s]  have a C plus plus
+[2974.40s -> 2975.04s]  program. You can use
+[2975.04s -> 2976.20s]  that, which we're going
+[2976.20s -> 2977.32s]  to do, uh, for all the
+[2977.32s -> 2978.00s]  rest of the projects
+[2978.00s -> 2979.36s]  and things. It makes it
+[2979.36s -> 2981.44s]  easier. All right. Um,
+[2981.56s -> 2983.96s]  what else, uh, are we
+[2983.96s -> 2985.40s]  going to worry about?
+[2985.40s -> 2987.60s]  Well, turns out, and
+[2987.60s -> 2988.32s]  let's actually try
+[2988.32s -> 2990.56s]  something. Let's say that
+[2990.56s -> 2992.28s]  we add, I mean, let's
+[2992.28s -> 2993.12s]  say we made published
+[2993.12s -> 2995.32s]  time very slow. Okay.
+[2995.56s -> 2999.04s]  So let's say time
+[2999.04s -> 3002.92s]  server descriptor CC.
+[3003.08s -> 3004.68s]  Let's make, uh, let's
+[3004.68s -> 3005.72s]  say that it might
+[3005.72s -> 3006.92s]  publish the time, but
+[3006.92s -> 3007.48s]  then it's going to be
+[3007.48s -> 3008.76s]  really slow. So we say
+[3008.76s -> 3010.04s]  something like sleep,
+[3010.60s -> 3014.12s]  uh, two or something
+[3014.12s -> 3015.80s]  like that. Nope. That's
+[3015.80s -> 3016.28s]  not going to work. How
+[3016.28s -> 3017.08s]  about two? There we go.
+[3017.48s -> 3019.32s]  If we do that, let's
+[3019.32s -> 3021.00s]  see, there we go. And
+[3021.00s -> 3022.24s]  then let's say I run
+[3022.24s -> 3026.56s]  this again and we go
+[3026.56s -> 3027.48s]  up in our, do our one
+[3027.48s -> 3028.84s]  second business here.
+[3030.16s -> 3031.72s]  There it is. Okay. What
+[3031.72s -> 3032.36s]  it's going to do is
+[3032.40s -> 3033.48s]  it's trying every
+[3033.48s -> 3034.80s]  second to actually get
+[3034.80s -> 3037.32s]  the number, but hang
+[3037.32s -> 3041.16s]  on. Let's see. We
+[3041.16s -> 3042.40s]  want to do this instead
+[3042.40s -> 3043.00s]  of let's get rid of
+[3043.00s -> 3043.64s]  that sleep and see if
+[3043.64s -> 3044.20s]  that makes a difference.
+[3044.20s -> 3045.28s]  It should, there we
+[3045.28s -> 3046.44s]  go. So it's not
+[3046.44s -> 3047.48s]  sleeping anymore. Who's
+[3047.48s -> 3048.20s]  doing the sleeping
+[3048.20s -> 3050.00s]  now? That's the actual
+[3050.00s -> 3051.68s]  server that's got the
+[3051.68s -> 3054.00s]  issue. And when you
+[3054.00s -> 3055.40s]  try to request a
+[3055.40s -> 3057.52s]  client, it blocks
+[3057.52s -> 3058.12s]  requests from the
+[3058.12s -> 3059.56s]  client. And so it takes
+[3059.56s -> 3060.68s]  time to actually do this.
+[3060.68s -> 3061.44s]  We want to get rid of
+[3061.44s -> 3063.20s]  that delay because you
+[3063.20s -> 3063.76s]  don't want to have to
+[3063.76s -> 3064.76s]  wait for someone else's
+[3064.76s -> 3065.72s]  Google search before you
+[3065.72s -> 3067.12s]  do a Google search. Right.
+[3067.12s -> 3068.08s]  You want to do it much
+[3068.08s -> 3070.44s]  quicker. Well, and
+[3070.44s -> 3071.24s]  actually before we do
+[3071.24s -> 3071.96s]  anything else, let's
+[3071.96s -> 3073.20s]  actually get rid of that
+[3073.20s -> 3074.36s]  sleep too. So we, well,
+[3074.48s -> 3075.20s]  I guess we could, we
+[3075.20s -> 3076.32s]  could do it later, but
+[3076.36s -> 3077.04s]  how are we going to do
+[3077.04s -> 3079.84s]  that? Threads. Okay.
+[3079.92s -> 3080.76s]  Now that you know about
+[3080.76s -> 3082.92s]  threads, you can launch
+[3082.96s -> 3084.32s]  a thread every time
+[3084.32s -> 3085.44s]  someone wants to connect
+[3085.44s -> 3086.80s]  to you. And remember
+[3086.80s -> 3087.96s]  how threading works.
+[3087.96s -> 3088.72s]  You're doing it now.
+[3088.72s -> 3090.24s]  Thread says, okay, I'm
+[3090.24s -> 3091.76s]  going to be in some,
+[3091.76s -> 3092.68s]  let's say, while loop.
+[3092.68s -> 3093.32s]  I'm going to launch
+[3093.32s -> 3094.64s]  the thread, forget about
+[3094.64s -> 3095.88s]  it, let it do its own
+[3095.88s -> 3097.08s]  thing, and then go back
+[3097.08s -> 3098.24s]  up to the top of my,
+[3098.60s -> 3101.32s]  uh, my, uh, while loop
+[3101.32s -> 3102.00s]  or whatever. And then
+[3102.00s -> 3102.92s]  I can accept another
+[3102.92s -> 3104.44s]  connection. Okay. So
+[3104.44s -> 3104.76s]  that's what we're
+[3104.76s -> 3105.44s]  actually going to do.
+[3105.60s -> 3107.00s]  We're going to use,
+[3107.28s -> 3108.40s]  um, a thing called a
+[3108.40s -> 3109.60s]  thread pool, which I
+[3109.60s -> 3110.28s]  had mentioned a couple
+[3110.28s -> 3112.44s]  times thread pool. And
+[3112.44s -> 3114.28s]  a thread pool is what
+[3114.28s -> 3115.00s]  you're going to build
+[3115.00s -> 3115.56s]  for the next
+[3115.56s -> 3116.84s]  assignment. Okay. So
+[3116.84s -> 3117.40s]  we're going to use it
+[3117.40s -> 3118.60s]  now, uh, but you're
+[3118.60s -> 3119.32s]  going to build it for
+[3119.32s -> 3120.16s]  the next assignment.
+[3120.52s -> 3121.08s]  And you're going to
+[3121.08s -> 3122.48s]  see, uh, how that
+[3122.48s -> 3123.68s]  works in, uh, in the
+[3123.68s -> 3124.56s]  next assignment, but
+[3124.56s -> 3126.08s]  it makes it relatively
+[3126.08s -> 3127.12s]  straightforward about
+[3127.12s -> 3128.32s]  what we have to do
+[3128.56s -> 3129.96s]  to actually do this.
+[3129.96s -> 3132.00s]  Let's do this. We
+[3132.00s -> 3133.00s]  need to go down to
+[3133.00s -> 3134.36s]  main and this while
+[3134.36s -> 3134.88s]  loop is where the
+[3134.88s -> 3136.40s]  problem is, right? We're
+[3136.40s -> 3137.72s]  blocking basically until
+[3137.72s -> 3138.72s]  publish time comes
+[3138.72s -> 3140.00s]  back. So what we want
+[3140.00s -> 3140.64s]  to do is we want
+[3140.64s -> 3141.60s]  to say, oh, okay,
+[3141.72s -> 3144.40s]  let's create a, what
+[3144.40s -> 3146.16s]  we call a pool of
+[3146.16s -> 3148.32s]  threads that allows us
+[3148.32s -> 3151.52s]  to, uh, to go and set
+[3151.52s -> 3152.44s]  these threads up. Every
+[3152.44s -> 3153.44s]  time we get a request
+[3153.44s -> 3154.60s]  and a request, we're
+[3154.60s -> 3155.36s]  going to throw it off
+[3155.36s -> 3156.56s]  to a thread for some
+[3156.56s -> 3157.28s]  maximum number of
+[3157.28s -> 3158.36s]  threads. In this case,
+[3158.36s -> 3158.68s]  we're just going to
+[3158.68s -> 3159.88s]  use four, as it turns
+[3159.88s -> 3161.16s]  out, you do need
+[3161.20s -> 3162.04s]  another pound
+[3162.04s -> 3162.92s]  includes, if I can
+[3162.92s -> 3163.56s]  type this one right
+[3163.56s -> 3164.60s]  this time, pound
+[3164.60s -> 3166.92s]  include, uh, I believe
+[3166.92s -> 3170.84s]  it is thread pool dot
+[3170.88s -> 3172.60s]  H there we go. And
+[3172.60s -> 3173.72s]  that's that. And then
+[3173.72s -> 3174.08s]  what we're going to
+[3174.08s -> 3175.56s]  do in main is we are
+[3175.56s -> 3177.28s]  going to, uh, we are
+[3177.28s -> 3178.92s]  still going to, uh, do
+[3178.92s -> 3180.40s]  the accept, but once the
+[3180.40s -> 3181.24s]  accept happens, we want
+[3181.24s -> 3181.96s]  to get back to that
+[3181.96s -> 3183.12s]  accept, accept as fast
+[3183.12s -> 3184.32s]  as we can so that we
+[3184.32s -> 3185.56s]  don't, uh, block. So
+[3185.56s -> 3186.40s]  we don't like make
+[3186.40s -> 3187.80s]  the, uh, user weight
+[3187.80s -> 3190.12s]  on it. Okay. And in
+[3190.12s -> 3191.40s]  this case, we are
+[3191.40s -> 3193.72s]  going to, uh, do the
+[3193.72s -> 3195.44s]  following. Okay. We're
+[3195.44s -> 3197.48s]  going to say pool dot
+[3197.48s -> 3198.92s]  schedule. When you
+[3198.92s -> 3199.60s]  write yours, you will
+[3199.60s -> 3200.16s]  see what this is all
+[3200.16s -> 3200.80s]  about. We're basically
+[3200.80s -> 3201.84s]  going to schedule a
+[3201.84s -> 3203.32s]  pool. This takes a
+[3203.32s -> 3204.48s]  function. Great. So
+[3204.48s -> 3205.24s]  we'll use a, an
+[3205.24s -> 3206.68s]  anonymous Lambda function
+[3206.68s -> 3208.16s]  here. We need to do
+[3208.16s -> 3209.76s]  the client and then we
+[3209.76s -> 3210.52s]  need to do publish
+[3210.52s -> 3213.60s]  time, publish time with
+[3213.60s -> 3217.36s]  a client, and that is
+[3217.36s -> 3218.36s]  going to be it. And
+[3218.36s -> 3218.92s]  then we don't need
+[3218.92s -> 3220.32s]  that anymore. Okay. So
+[3220.32s -> 3221.28s]  now we're going to,
+[3221.44s -> 3222.24s]  this is going to happen
+[3222.24s -> 3223.48s]  instantly and go back
+[3223.48s -> 3224.12s]  up to the accept.
+[3224.12s -> 3224.52s]  You'll be able to
+[3224.52s -> 3225.56s]  accept many, many more
+[3225.56s -> 3227.40s]  clients very quickly.
+[3227.60s -> 3228.40s]  They will all go into
+[3228.40s -> 3229.16s]  their own thread up to
+[3229.16s -> 3230.04s]  four threads. In this
+[3230.04s -> 3230.84s]  case, we could make it
+[3230.84s -> 3231.60s]  40 if we wanted to,
+[3231.60s -> 3232.80s]  but we haven't done that.
+[3232.88s -> 3233.64s]  We haven't set that up
+[3233.64s -> 3235.32s]  yet. Uh, we need to
+[3235.32s -> 3236.24s]  do that. Let's see
+[3236.28s -> 3239.44s]  thread pool, pool four.
+[3239.92s -> 3240.84s]  Pretty straightforward.
+[3240.96s -> 3242.00s]  You set up a thread pool
+[3242.00s -> 3242.36s]  and then you can
+[3242.36s -> 3243.40s]  schedule threads to go
+[3243.40s -> 3244.12s]  off on there. You can
+[3244.12s -> 3245.36s]  schedule work to go
+[3245.36s -> 3246.56s]  happen on those threads
+[3246.88s -> 3249.76s]  as they go. Okay. That's
+[3249.76s -> 3250.40s]  what's happening there.
+[3250.40s -> 3253.52s]  Questions on that? Yes.
+[3263.52s -> 3264.72s]  So the question is, do
+[3264.72s -> 3265.36s]  we do this because it
+[3265.36s -> 3265.92s]  doesn't take up as much
+[3265.92s -> 3266.80s]  resources? No, this
+[3266.80s -> 3269.12s]  takes up more resources,
+[3269.52s -> 3272.28s]  as it turns out, but with
+[3272.28s -> 3274.16s]  the benefit of doing it
+[3274.16s -> 3276.60s]  fast. So each time
+[3276.68s -> 3278.32s]  somebody requests the time
+[3278.80s -> 3280.64s]  we go and set another
+[3280.64s -> 3283.36s]  thread off or say to one
+[3283.36s -> 3284.12s]  of the threads that's
+[3284.12s -> 3284.88s]  waiting around, do it to
+[3284.88s -> 3286.92s]  do work, please go publish
+[3286.92s -> 3288.72s]  the time. That's how we
+[3288.72s -> 3290.16s]  use that. Okay. Pretty
+[3290.16s -> 3291.08s]  straightforward. Using
+[3291.08s -> 3291.88s]  thread pools is actually
+[3291.88s -> 3292.96s]  very nice as it turns
+[3292.96s -> 3297.72s]  out. Does it
+[3297.72s -> 3298.52s]  automatically do which?
+[3299.36s -> 3300.16s]  It automatically, thread
+[3300.16s -> 3300.68s]  pool does all the
+[3300.68s -> 3301.48s]  joining. Yeah. You'll
+[3301.48s -> 3302.08s]  build that into your
+[3302.08s -> 3303.32s]  thread pool when you do
+[3303.32s -> 3304.96s]  that. Okay. But the one
+[3304.96s -> 3306.24s]  thing that we do need
+[3306.24s -> 3306.80s]  to change, you have a
+[3306.80s -> 3317.40s]  question? Why do we need
+[3317.40s -> 3318.12s]  to create the threads when
+[3318.12s -> 3318.92s]  we're downloading things?
+[3319.12s -> 3320.56s]  So the next assignment,
+[3320.56s -> 3321.16s]  you're going to see how
+[3321.16s -> 3322.52s]  you use a thread pool to
+[3322.52s -> 3323.24s]  make things a little bit
+[3323.24s -> 3324.20s]  faster than what you're
+[3324.20s -> 3326.28s]  doing now for, you
+[3326.28s -> 3326.92s]  won't be able to tell
+[3326.92s -> 3328.08s]  necessarily for the
+[3328.12s -> 3332.12s]  assignment five. But
+[3332.12s -> 3333.68s]  basically having threads
+[3333.68s -> 3335.56s]  already running means
+[3335.56s -> 3336.40s]  that you don't have to
+[3336.40s -> 3337.36s]  get them running when
+[3337.36s -> 3337.92s]  you call it so it's
+[3337.92s -> 3338.92s]  faster in that sense.
+[3339.00s -> 3339.68s]  They're all just waiting
+[3339.68s -> 3340.36s]  around going, give me
+[3340.36s -> 3340.96s]  some work to do, just
+[3340.96s -> 3342.60s]  like Farm did for your
+[3342.60s -> 3344.88s]  assignment three. Yeah.
+[3348.56s -> 3349.28s]  I just picked four
+[3349.28s -> 3351.16s]  because it was a number
+[3351.16s -> 3351.76s]  bigger than one.
+[3352.76s -> 3354.80s]  How many do you know
+[3354.80s -> 3355.36s]  how many you need?
+[3355.36s -> 3356.20s]  Good question. Depends
+[3356.20s -> 3357.56s]  on what your load you
+[3357.68s -> 3359.00s]  expect your load to be.
+[3359.44s -> 3360.64s]  So Google is going to
+[3360.64s -> 3361.32s]  have thousands and
+[3361.32s -> 3362.16s]  thousands of threads
+[3362.40s -> 3362.96s]  running because they
+[3362.96s -> 3363.64s]  know that millions of
+[3363.64s -> 3364.48s]  people are going to be
+[3364.52s -> 3365.56s]  each server's got it's
+[3365.56s -> 3366.76s]  like lots and lots of
+[3366.76s -> 3368.20s]  threads. For our, I'm
+[3368.20s -> 3369.08s]  just making it small just
+[3369.08s -> 3369.68s]  to do it. We could
+[3369.68s -> 3370.28s]  have made it 40 and it
+[3370.28s -> 3370.84s]  wouldn't have mattered.
+[3371.12s -> 3372.52s]  You are generally limited
+[3372.52s -> 3373.00s]  to the number of
+[3373.00s -> 3374.32s]  threads on a particular
+[3374.32s -> 3375.68s]  machine if you're not
+[3375.68s -> 3376.52s]  the super user,
+[3376.76s -> 3377.72s]  thousands or something
+[3377.72s -> 3378.92s]  like that. So we don't
+[3378.92s -> 3379.60s]  want to do that. Now,
+[3379.72s -> 3380.28s]  the other thing we
+[3380.28s -> 3381.12s]  don't want to do is
+[3382.04s -> 3383.84s]  make the bandwidth of
+[3383.84s -> 3386.04s]  the system such that
+[3386.04s -> 3388.08s]  it's, we don't, we're
+[3388.08s -> 3388.60s]  not going to want to
+[3388.60s -> 3389.72s]  like tie it up to too
+[3389.72s -> 3390.92s]  much. This is what for
+[3390.92s -> 3391.96s]  assignment five, what
+[3391.96s -> 3392.60s]  you're doing is you're
+[3392.60s -> 3394.12s]  saying, oh, I only want
+[3394.12s -> 3395.40s]  24 total threads and I
+[3395.40s -> 3396.44s]  only want 10 threads
+[3396.44s -> 3397.36s]  going to any particular
+[3397.36s -> 3398.44s]  server. You don't want
+[3398.44s -> 3399.44s]  to blast it with all
+[3399.44s -> 3400.88s]  your requests. That's
+[3400.88s -> 3401.32s]  kind of what we're
+[3401.32s -> 3401.92s]  trying to do with
+[3401.92s -> 3402.88s]  limiting these things as
+[3402.88s -> 3406.20s]  well. Okay, so let's do
+[3406.20s -> 3406.84s]  this. We have to do
+[3406.84s -> 3407.84s]  one other thing here.
+[3408.52s -> 3409.56s]  We need to actually
+[3409.56s -> 3412.24s]  make a published time,
+[3412.24s -> 3413.12s]  what we call thread
+[3413.12s -> 3414.92s]  safe. It's not right
+[3414.92s -> 3415.44s]  now. And you wouldn't
+[3415.44s -> 3416.32s]  know that because you
+[3416.32s -> 3416.88s]  wouldn't necessarily
+[3416.88s -> 3417.96s]  think about it, but the
+[3417.96s -> 3418.72s]  way we're doing this,
+[3418.72s -> 3421.68s]  we are using one, we
+[3421.68s -> 3423.20s]  are using one kind of
+[3423.28s -> 3426.04s]  globally available pointer
+[3426.04s -> 3427.40s]  here, or one pointer
+[3427.40s -> 3428.40s]  that actually tries to go
+[3428.40s -> 3429.72s]  to this, that shares the
+[3429.72s -> 3431.08s]  same time struct. We can
+[3431.08s -> 3432.16s]  use a different function
+[3432.16s -> 3434.84s]  to do this. The first
+[3434.84s -> 3435.36s]  couple lines are going
+[3435.36s -> 3436.28s]  to be exactly the same.
+[3436.68s -> 3437.80s]  And what we're going to
+[3437.80s -> 3438.64s]  do now is we're just
+[3438.64s -> 3439.64s]  going to, instead of
+[3439.64s -> 3440.80s]  making it a pointer to a
+[3440.80s -> 3442.40s]  time struct, we are going
+[3442.40s -> 3444.96s]  to, or a TM struct, a
+[3444.96s -> 3446.24s]  struct TM, we're just
+[3446.24s -> 3448.00s]  going to make it an
+[3448.00s -> 3451.40s]  actual local copy of the
+[3451.80s -> 3454.16s]  time, the TM struct. And
+[3454.16s -> 3454.72s]  then what we're going
+[3454.72s -> 3455.32s]  to do is we're going to
+[3455.32s -> 3456.88s]  use another function,
+[3457.08s -> 3460.44s]  gmTime underscore r. R
+[3460.44s -> 3462.04s]  stands for re-entrant,
+[3462.08s -> 3463.36s]  which basically means it's
+[3463.36s -> 3464.88s]  thread safe. Why is it
+[3464.88s -> 3465.84s]  thread safe now? You are
+[3465.84s -> 3466.88s]  going to be copying the
+[3466.88s -> 3468.28s]  time into your local
+[3468.28s -> 3469.96s]  copy, threads copy of the
+[3469.96s -> 3471.08s]  time. So they're not all
+[3471.08s -> 3472.32s]  trying to share this copy.
+[3473.24s -> 3474.56s]  Okay. So that's, that's
+[3474.56s -> 3476.12s]  why we're doing that. And
+[3476.12s -> 3476.96s]  it takes a little bit
+[3476.96s -> 3478.12s]  more information here.
+[3478.12s -> 3480.16s]  It takes the raw time and
+[3480.16s -> 3482.12s]  it takes a pointer to TM,
+[3482.40s -> 3483.48s]  which is what we're
+[3483.48s -> 3484.60s]  trying to do. And then
+[3484.84s -> 3487.48s]  otherwise, I think, except
+[3487.48s -> 3492.08s]  for this being ampersand TM,
+[3492.08s -> 3493.12s]  I think that's all we
+[3493.12s -> 3494.00s]  need to do to change
+[3494.00s -> 3497.16s]  that. Say again? Did I
+[3497.16s -> 3500.48s]  screw some up? You don't
+[3500.48s -> 3501.08s]  think it does it? I think
+[3501.08s -> 3501.88s]  it does. It has to because
+[3501.88s -> 3503.88s]  it's a pointer to a time
+[3503.88s -> 3504.64s]  before it was a point
+[3504.64s -> 3506.56s]  PTM, a pointer. So now I
+[3506.56s -> 3508.12s]  think it does. We'll see.
+[3508.88s -> 3509.56s]  But anyway, that's all
+[3509.56s -> 3510.08s]  you have to do to make
+[3510.08s -> 3511.48s]  it re-entrant. You have
+[3511.48s -> 3512.20s]  to think about these
+[3512.20s -> 3513.60s]  things. When you do
+[3513.96s -> 3515.24s]  functions with threading,
+[3515.40s -> 3516.40s]  you always have to worry,
+[3516.44s -> 3518.96s]  hey, is my, can I do the
+[3519.36s -> 3521.16s]  function? Is it thread
+[3521.16s -> 3522.18s]  safe? Things like
+[3522.20s -> 3523.96s]  strtalk, not thread
+[3523.96s -> 3525.12s]  safe. Why? Because
+[3525.12s -> 3526.32s]  strtalk has its own
+[3526.32s -> 3527.44s]  internal state, which is
+[3527.44s -> 3528.16s]  not really what you want.
+[3528.32s -> 3528.80s]  Why should you use
+[3528.80s -> 3529.40s]  another one? So for
+[3529.40s -> 3530.64s]  instance, we look up
+[3531.16s -> 3534.08s]  man gm time, right? It
+[3534.08s -> 3534.84s]  should have, there's a
+[3534.84s -> 3535.56s]  whole bunch of different
+[3535.56s -> 3537.28s]  times in here. There it
+[3537.28s -> 3538.76s]  is right there. gm time,
+[3538.76s -> 3541.48s]  gm time underscore r,
+[3541.64s -> 3543.84s]  which is, let's see,
+[3543.84s -> 3544.48s]  does it say that it's
+[3544.48s -> 3545.48s]  the re-entrant version?
+[3545.56s -> 3548.20s]  Yeah. The gm time r
+[3548.20s -> 3548.76s]  function doesn't say
+[3548.76s -> 3549.60s]  but stores the data in a
+[3549.60s -> 3551.08s]  user supplied struct. So
+[3551.08s -> 3552.20s]  basically it's there. I
+[3552.20s -> 3552.84s]  don't know if it even
+[3553.08s -> 3554.60s]  can look up thread. There
+[3554.60s -> 3555.48s]  we go. Tells you if
+[3555.48s -> 3556.24s]  they're thread safe or
+[3556.24s -> 3557.40s]  not. You have to think
+[3557.40s -> 3558.12s]  about these things when
+[3558.12s -> 3563.84s]  you're doing threads. Oh,
+[3563.84s -> 3564.64s]  yeah. The question was,
+[3564.64s -> 3565.20s]  why do we have to change
+[3565.20s -> 3565.84s]  from a pointer to a
+[3565.84s -> 3567.20s]  local one? Well, first
+[3567.20s -> 3568.84s]  of all, the gm time
+[3568.88s -> 3569.92s]  underscore r function
+[3569.92s -> 3572.00s]  takes a pointer to the
+[3572.00s -> 3573.08s]  thing, but it populates
+[3573.08s -> 3574.84s]  it for you. So in this
+[3574.84s -> 3575.68s]  case, it populates it
+[3575.68s -> 3576.36s]  for you instead of
+[3576.36s -> 3577.28s]  giving you a pointer of
+[3577.28s -> 3578.28s]  a local copy that it's
+[3578.28s -> 3579.48s]  got. So that's the
+[3579.48s -> 3580.36s]  difference there. The
+[3580.36s -> 3581.44s]  regular gm time says,
+[3581.48s -> 3582.68s]  oh, here's, here's my
+[3582.68s -> 3583.56s]  pointer that I'm keeping
+[3583.56s -> 3584.88s]  the time in the one
+[3584.88s -> 3586.12s]  minute or I'm creating it
+[3586.52s -> 3587.84s]  for you and giving it to
+[3587.84s -> 3589.12s]  you. And then if you
+[3589.16s -> 3590.08s]  called it again, it
+[3590.08s -> 3591.04s]  would just redo that
+[3591.04s -> 3592.32s]  time. And so you don't
+[3592.32s -> 3592.84s]  want your threads
+[3592.84s -> 3594.04s]  sharing that one value.
+[3594.04s -> 3595.20s]  You want their own copy
+[3595.20s -> 3595.88s]  of it. Good question.
+[3603.44s -> 3604.00s]  Is there anything you
+[3604.00s -> 3604.84s]  can do with threads
+[3604.84s -> 3605.68s]  manually? You can't do
+[3605.68s -> 3608.16s]  a thread pool? Not
+[3608.16s -> 3609.32s]  really. I mean, the
+[3609.32s -> 3610.64s]  threads, you're going
+[3610.64s -> 3611.52s]  to want to do threads
+[3611.52s -> 3612.92s]  if you have no idea
+[3612.92s -> 3613.72s]  what your load is
+[3613.72s -> 3615.28s]  going to be, or you
+[3615.32s -> 3616.16s]  just want a one off
+[3616.16s -> 3616.84s]  thread or something
+[3616.84s -> 3617.36s]  like that. You probably
+[3617.36s -> 3617.80s]  don't need a whole
+[3617.80s -> 3619.12s]  thread pool for it. Yeah.
+[3619.28s -> 3619.92s]  Once you write that
+[3619.92s -> 3620.52s]  assignment, you'll see
+[3620.52s -> 3621.20s]  kind of the differences
+[3621.20s -> 3622.32s]  of when, when you
+[3622.32s -> 3623.12s]  might use it or not.
+[3623.16s -> 3623.80s]  Good question. Yeah,
+[3623.80s -> 3624.32s]  it's on. Yeah.
+[3630.00s -> 3630.60s]  Good question. Why
+[3630.60s -> 3631.12s]  wouldn't it be thread
+[3631.12s -> 3631.56s]  safe if it's not
+[3631.56s -> 3632.40s]  changing the value? It
+[3632.40s -> 3633.12s]  will change the value
+[3633.12s -> 3634.12s]  when you call the
+[3634.12s -> 3635.36s]  function again, if two
+[3635.36s -> 3637.64s]  functions call the, call
+[3637.64s -> 3639.48s]  the gm time, it will
+[3639.48s -> 3640.48s]  get updated and then
+[3640.60s -> 3641.56s]  it won't be the same.
+[3641.84s -> 3642.68s]  They're trying to use
+[3642.68s -> 3643.44s]  the same value and
+[3643.44s -> 3644.20s]  you just are only
+[3644.20s -> 3645.24s]  storing it once. So
+[3645.24s -> 3645.84s]  let's say another one
+[3645.84s -> 3647.00s]  came by a second later.
+[3647.12s -> 3647.80s]  The first one might
+[3647.80s -> 3648.92s]  get that later time if
+[3648.92s -> 3649.64s]  it hadn't published it
+[3649.64s -> 3651.08s]  yet or whatever. So
+[3651.08s -> 3651.76s]  there's some issues
+[3651.76s -> 3652.28s]  with that. Yeah.
+[3660.60s -> 3661.24s]  Yes, we took out the
+[3661.24s -> 3661.84s]  thread two to make it
+[3661.84s -> 3663.00s]  multi-threaded. Yes.
+[3664.36s -> 3665.24s]  And as your question,
+[3665.24s -> 3665.72s]  like, should we try
+[3665.72s -> 3666.16s]  it again with the
+[3666.16s -> 3667.08s]  thread sleep two?
+[3670.68s -> 3671.24s]  Oh, if I put the
+[3671.24s -> 3672.00s]  sleep two back in, it
+[3672.00s -> 3672.56s]  would make it, it would
+[3672.56s -> 3673.76s]  be the, so here's
+[3673.76s -> 3674.56s]  what we did before.
+[3674.76s -> 3676.32s]  We just put a, we
+[3676.32s -> 3677.44s]  put a little thread, we
+[3677.44s -> 3679.24s]  put a little inside
+[3679.24s -> 3680.88s]  here, we put like a
+[3680.88s -> 3682.04s]  sleep two or whatever,
+[3682.04s -> 3683.80s]  right? So every time a
+[3683.80s -> 3685.12s]  server requests it, that
+[3685.12s -> 3685.60s]  server is going to
+[3685.60s -> 3686.52s]  get it and then have
+[3686.52s -> 3687.20s]  to wait a little bit
+[3687.20s -> 3687.92s]  before it closes its
+[3687.92s -> 3688.88s]  connection, two seconds,
+[3688.88s -> 3689.96s]  as it turns out. If you
+[3689.96s -> 3691.20s]  have multiple clients
+[3691.20s -> 3693.20s]  coming in at once, then
+[3693.24s -> 3693.96s]  they will all get their
+[3693.96s -> 3694.64s]  own. They will still
+[3694.64s -> 3695.12s]  have to wait two
+[3695.12s -> 3695.84s]  seconds as it turns
+[3695.84s -> 3696.96s]  out, but there's that
+[3697.00s -> 3697.88s]  each one does not have
+[3697.88s -> 3698.52s]  to wait two seconds.
+[3698.56s -> 3700.00s]  Each one independently
+[3700.00s -> 3700.68s]  waits two seconds,
+[3700.68s -> 3701.08s]  doesn't have to wait
+[3701.08s -> 3701.52s]  for the other one to
+[3701.52s -> 3703.08s]  finish. That's the
+[3703.12s -> 3703.68s]  difference there.
+[3704.52s -> 3707.84s]  Okay. So all of that
+[3707.84s -> 3709.80s]  said, we now have our
+[3710.68s -> 3712.44s]  good version, which is,
+[3712.44s -> 3713.96s]  which uses threading,
+[3713.96s -> 3714.96s]  a thread pool, as it
+[3714.96s -> 3716.92s]  turns out, and it allows
+[3716.92s -> 3720.24s]  the server to accept a
+[3720.24s -> 3722.20s]  connection, spin off a
+[3722.20s -> 3723.12s]  thread really quickly, and
+[3723.12s -> 3723.76s]  then accept another
+[3723.76s -> 3724.52s]  connection. So if there
+[3724.52s -> 3725.68s]  are a hundred connections
+[3725.68s -> 3726.24s]  coming, well, there are
+[3726.24s -> 3727.28s]  four in this case
+[3727.56s -> 3728.72s]  connections at once, it
+[3728.72s -> 3729.72s]  will very quickly deal
+[3729.72s -> 3730.72s]  with them. It's already
+[3730.72s -> 3731.36s]  pretty quick, but it
+[3731.36s -> 3732.04s]  would very quickly deal
+[3732.04s -> 3733.04s]  with them and not have
+[3733.04s -> 3734.40s]  to wait for the
+[3734.44s -> 3735.40s]  published time function
+[3735.40s -> 3738.12s]  to end. That's the big
+[3738.12s -> 3741.88s]  deal there. Now, let's
+[3741.88s -> 3742.36s]  see, we've talked
+[3742.36s -> 3742.92s]  about the published
+[3742.92s -> 3745.04s]  time, there's the
+[3745.04s -> 3746.48s]  updated time. Okay.
+[3747.72s -> 3749.44s]  Given the time now, I
+[3749.44s -> 3749.88s]  think we're going to
+[3749.88s -> 3751.00s]  talk a little bit about
+[3751.00s -> 3752.48s]  building a client. I
+[3752.48s -> 3752.84s]  don't know, we might
+[3752.84s -> 3753.76s]  get a chance to build
+[3753.76s -> 3755.08s]  the client, but I want
+[3755.08s -> 3755.80s]  to show you a little
+[3755.80s -> 3758.24s]  bit more about the,
+[3758.32s -> 3758.92s]  well, I'm going to use
+[3758.92s -> 3759.96s]  Telnet to show you a
+[3759.96s -> 3760.60s]  little bit more about
+[3760.60s -> 3761.64s]  how the internet works.
+[3762.28s -> 3763.48s]  Okay. Here's what I
+[3763.48s -> 3765.80s]  want to show you. Okay.
+[3766.08s -> 3769.32s]  So we use Telnet to
+[3769.44s -> 3770.52s]  go to our server. In
+[3770.52s -> 3771.04s]  fact, it's still
+[3771.04s -> 3774.68s]  running. Telnet myth 58
+[3774.68s -> 3777.80s]  12345 and maybe not,
+[3778.28s -> 3780.56s]  hang on, maybe, oh,
+[3780.56s -> 3781.04s]  maybe we have the,
+[3781.12s -> 3781.84s]  oh, I bet we still
+[3781.84s -> 3783.20s]  had the, we still
+[3783.20s -> 3783.88s]  have the, we still
+[3783.88s -> 3784.44s]  have the delay in
+[3784.44s -> 3786.28s]  there probably. And
+[3786.28s -> 3786.84s]  there we go. We
+[3786.84s -> 3787.40s]  still have the delay
+[3787.40s -> 3789.16s]  in there. So we
+[3789.16s -> 3790.12s]  used Telnet to do
+[3790.12s -> 3791.84s]  that. Telnet again,
+[3791.88s -> 3792.96s]  simply opens a
+[3792.96s -> 3794.16s]  connection and then
+[3794.16s -> 3795.36s]  has a plain text
+[3795.36s -> 3796.56s]  communications with
+[3796.56s -> 3798.28s]  the server. Okay.
+[3798.52s -> 3799.60s]  So you could do the
+[3799.60s -> 3801.52s]  following. Telnet
+[3803.12s -> 3805.68s]  google.com, port 80.
+[3805.76s -> 3806.40s]  Well, we know that
+[3806.40s -> 3807.68s]  port, the internet is
+[3807.68s -> 3808.92s]  on port 80. And if
+[3808.92s -> 3809.48s]  you do the following
+[3809.48s -> 3810.04s]  when you do that,
+[3810.08s -> 3811.00s]  we are now connected
+[3811.00s -> 3812.32s]  to Google. Okay.
+[3812.32s -> 3812.76s]  Now we're not
+[3812.76s -> 3813.56s]  connected to Google's
+[3813.56s -> 3815.56s]  like pay server or
+[3815.56s -> 3816.72s]  whatever. We're not
+[3816.72s -> 3817.20s]  connected to like
+[3817.20s -> 3818.08s]  their internal
+[3818.24s -> 3818.88s]  network, connected to
+[3818.88s -> 3819.60s]  their website, just
+[3819.60s -> 3820.20s]  like your browser.
+[3820.20s -> 3821.00s]  This is exactly what
+[3821.04s -> 3821.84s]  your browser does.
+[3822.28s -> 3823.04s]  Okay. Your browser
+[3823.04s -> 3824.64s]  says, Hey, connect
+[3824.64s -> 3825.72s]  to Google. So that's
+[3825.72s -> 3826.44s]  that. There's a bit
+[3826.44s -> 3827.24s]  of a timeout. So
+[3827.24s -> 3827.92s]  hopefully I'll do the
+[3827.92s -> 3828.68s]  rest of it fast
+[3828.68s -> 3829.56s]  enough. But how do
+[3829.56s -> 3831.16s]  you do this? Uh, if
+[3831.16s -> 3833.28s]  we want to request
+[3833.28s -> 3834.56s]  a webpage, you have
+[3834.56s -> 3835.56s]  to do a very
+[3835.56s -> 3837.24s]  particular protocol. And
+[3837.24s -> 3838.40s]  the protocol is
+[3838.48s -> 3840.76s]  HTTP, which you may
+[3840.76s -> 3841.20s]  or may not have
+[3841.20s -> 3841.88s]  heard about before,
+[3841.88s -> 3842.40s]  but it's the
+[3842.40s -> 3844.24s]  protocol, which is
+[3844.24s -> 3848.08s]  talked on by the
+[3848.08s -> 3849.64s]  entire internet. Okay.
+[3849.72s -> 3850.08s]  There's a few
+[3850.08s -> 3850.92s]  different versions of
+[3850.92s -> 3851.68s]  it, as it turns out.
+[3851.80s -> 3852.44s]  What you can say
+[3852.44s -> 3853.04s]  though, is you can
+[3853.04s -> 3855.08s]  say, get slash,
+[3855.08s -> 3855.96s]  which means the
+[3855.96s -> 3857.80s]  homepage. And then
+[3857.80s -> 3859.88s]  you say, uh, I am
+[3859.88s -> 3862.68s]  using HTTP slash
+[3862.68s -> 3864.44s]  1.1. There's 1.0.
+[3864.44s -> 3865.12s]  There's 1.1. There's
+[3865.12s -> 3866.80s]  2.0. Now 2.0, you
+[3866.80s -> 3867.12s]  can't use
+[3867.12s -> 3867.96s]  Telnet 4 anymore.
+[3867.96s -> 3868.64s]  It's a binary
+[3868.64s -> 3869.40s]  format, so that's
+[3869.40s -> 3870.48s]  too bad. Sad face,
+[3870.80s -> 3871.36s]  but that's that.
+[3871.56s -> 3872.56s]  And then, uh, if
+[3872.56s -> 3873.16s]  you hit return one
+[3873.16s -> 3874.40s]  more time, there's
+[3874.40s -> 3875.32s]  Google's homepage.
+[3876.00s -> 3877.80s]  Okay. So that's the
+[3877.80s -> 3879.12s]  homepage for Google
+[3879.16s -> 3879.96s]  that you've now, that
+[3879.96s -> 3880.72s]  we've now gotten.
+[3880.72s -> 3881.72s]  It's kind of, it's,
+[3881.72s -> 3883.00s]  it's actually, believe
+[3883.00s -> 3883.56s]  it or not, smaller
+[3883.56s -> 3884.56s]  than you might expect.
+[3884.64s -> 3886.32s]  It's mostly JavaScript
+[3886.32s -> 3887.68s]  in there. Okay.
+[3887.76s -> 3890.28s]  And it's, it's kind
+[3890.28s -> 3891.52s]  of compressed, right?
+[3891.52s -> 3892.16s]  You can see that
+[3892.72s -> 3893.48s]  Google doesn't bother
+[3893.48s -> 3895.20s]  with new lines, right?
+[3895.24s -> 3895.64s]  Why would they
+[3895.64s -> 3896.12s]  bother with new
+[3896.12s -> 3896.96s]  lines? If your
+[3896.96s -> 3897.84s]  program, if Google
+[3897.84s -> 3898.88s]  is sending every
+[3898.88s -> 3900.88s]  query new lines that
+[3900.88s -> 3901.32s]  don't, that the
+[3901.32s -> 3902.16s]  browser doesn't care
+[3902.16s -> 3902.80s]  about, the browser
+[3902.80s -> 3903.56s]  could care less about
+[3903.56s -> 3904.24s]  new lines. It just
+[3904.24s -> 3905.04s]  knows go to the next
+[3905.04s -> 3906.32s]  thing, right? Well,
+[3906.32s -> 3907.56s]  if it sends a thousand
+[3907.56s -> 3908.16s]  new lines, well,
+[3908.16s -> 3908.92s]  that's a thousand
+[3908.92s -> 3909.56s]  bytes it needs to
+[3909.56s -> 3910.84s]  send to you and a
+[3910.84s -> 3911.88s]  billion other people
+[3911.88s -> 3912.60s]  that are requesting
+[3912.60s -> 3913.08s]  from Google right
+[3913.08s -> 3914.20s]  now. Google wants
+[3914.20s -> 3915.60s]  to minimize the
+[3915.60s -> 3916.36s]  amount of stuff it
+[3916.36s -> 3917.32s]  sends you because
+[3917.32s -> 3917.88s]  it has to pay for
+[3917.88s -> 3918.48s]  bandwidth. I mean,
+[3918.48s -> 3919.44s]  it's not like free,
+[3919.64s -> 3920.12s]  right? It has to pay
+[3920.12s -> 3920.92s]  for bandwidth and a
+[3920.92s -> 3922.04s]  billion times a hundred
+[3922.04s -> 3923.20s]  is, you know, a lot
+[3923.20s -> 3924.12s]  of characters extra
+[3924.12s -> 3924.64s]  that has to send
+[3924.64s -> 3925.72s]  every, you know, day
+[3925.72s -> 3926.68s]  or whatever, you
+[3926.68s -> 3927.44s]  know, two hours or
+[3927.44s -> 3928.60s]  whatever. It also
+[3928.60s -> 3929.68s]  wants to do it fast.
+[3929.76s -> 3930.40s]  So the more new
+[3930.40s -> 3931.16s]  lines that get sent
+[3931.16s -> 3932.04s]  to your browser that
+[3932.04s -> 3933.52s]  don't matter are just
+[3933.52s -> 3935.12s]  wasted time sending
+[3935.12s -> 3936.08s]  you your query and
+[3936.08s -> 3936.52s]  you don't want to
+[3936.52s -> 3937.00s]  have to wait for
+[3937.00s -> 3938.40s]  your query. So what
+[3938.40s -> 3939.20s]  does Google do?
+[3939.32s -> 3940.28s]  They get rid of new
+[3940.28s -> 3941.80s]  lines. They run what's
+[3941.80s -> 3943.04s]  called a minifier on
+[3943.04s -> 3943.88s]  their JavaScript, which
+[3943.88s -> 3945.12s]  kind of takes it on,
+[3945.12s -> 3945.92s]  does this for you.
+[3945.96s -> 3946.64s]  Like the programmers
+[3946.64s -> 3947.32s]  don't write like this,
+[3947.32s -> 3948.20s]  right? You don't go to
+[3948.20s -> 3949.00s]  Google and write like,
+[3949.08s -> 3949.56s]  oh, you're not allowed
+[3949.56s -> 3950.12s]  to use new lines at
+[3950.12s -> 3951.00s]  Google, right? They
+[3951.00s -> 3951.76s]  don't do that, right?
+[3951.84s -> 3952.36s]  You can use all new
+[3952.36s -> 3953.32s]  lines you want. Then
+[3953.32s -> 3953.84s]  when they run it
+[3953.84s -> 3954.84s]  through this minifier
+[3954.92s -> 3956.44s]  that actually produces
+[3956.44s -> 3957.20s]  this so that that's
+[3957.20s -> 3958.56s]  what you get. Okay. But
+[3958.56s -> 3960.00s]  that's the, that's how
+[3960.00s -> 3961.04s]  you get the details
+[3961.04s -> 3963.48s]  from, from Google.
+[3963.56s -> 3965.00s]  Okay. We can also
+[3965.00s -> 3968.48s]  Talnet to web.stanford.edu
+[3968.48s -> 3970.96s]  port 80, right? I'll do
+[3970.96s -> 3972.32s]  it up here. Okay. Same
+[3972.32s -> 3972.76s]  sort of thing. This
+[3972.76s -> 3973.52s]  actually has a slightly
+[3973.52s -> 3975.04s]  smaller timeout. Um, if
+[3975.04s -> 3977.04s]  we do get, and then
+[3977.04s -> 3977.84s]  you can get the actual
+[3977.84s -> 3980.92s]  one class slash CS 110,
+[3981.04s -> 3982.20s]  it actually requires a
+[3982.20s -> 3983.40s]  slash at the end. It's
+[3983.40s -> 3984.68s]  very particular. You
+[3984.68s -> 3985.68s]  always wonder why in
+[3985.68s -> 3986.76s]  106A they tell you
+[3986.76s -> 3987.44s]  you have to be exact
+[3987.44s -> 3988.40s]  or 106B it's gotta be
+[3988.40s -> 3989.40s]  the exact output. This
+[3989.40s -> 3990.44s]  is why computers
+[3990.44s -> 3991.20s]  talking to each other.
+[3991.32s -> 3991.88s]  It's exactly the
+[3991.88s -> 3992.64s]  reason. Let's make
+[3992.64s -> 3993.88s]  timeout. Um, and then
+[3993.88s -> 3994.88s]  if we type it without
+[3994.88s -> 3996.12s]  the slash and say
+[3996.12s -> 3998.08s]  1.1, uh, most web
+[3998.08s -> 3999.00s]  servers require that
+[3999.00s -> 3999.96s]  you actually say which
+[3999.96s -> 4000.96s]  host do you actually
+[4000.96s -> 4002.88s]  want? Google for some
+[4002.88s -> 4003.64s]  reason didn't require
+[4003.64s -> 4004.28s]  that. Although we
+[4004.28s -> 4004.84s]  could have done it
+[4005.12s -> 4007.04s]  stanford.edu. And
+[4007.04s -> 4008.24s]  then one more note.
+[4008.24s -> 4008.80s]  There we go. What
+[4008.80s -> 4010.36s]  does it say? It says,
+[4010.40s -> 4011.80s]  Oh, I'm sorry. Your
+[4011.80s -> 4013.16s]  document that you asked
+[4013.16s -> 4015.84s]  for, which was, uh,
+[4015.88s -> 4016.76s]  the one without the
+[4016.76s -> 4018.68s]  slash on it, slash
+[4018.68s -> 4020.04s]  class last CS 110
+[4020.04s -> 4020.96s]  without the slash has
+[4020.96s -> 4022.36s]  changed and gone to
+[4022.48s -> 4024.40s]  slash class last CS 110
+[4024.40s -> 4026.00s]  slash, right? It doesn't
+[4026.00s -> 4026.60s]  figure that out for
+[4026.60s -> 4027.60s]  you. It just says you
+[4027.60s -> 4029.16s]  did it wrong. And so,
+[4029.20s -> 4029.96s]  uh, that's why we did
+[4029.96s -> 4030.36s]  it. So let's try it
+[4030.36s -> 4032.32s]  again. Uh, and then
+[4032.32s -> 4033.00s]  this is still
+[4033.00s -> 4033.80s]  Stanford. We're going
+[4033.80s -> 4036.44s]  to get slash class
+[4037.12s -> 4040.32s]  slash CS 110 slash.
+[4040.80s -> 4044.00s]  Okay. H T T P slash
+[4044.00s -> 4046.88s]  1.1 and then host
+[4046.96s -> 4051.60s]  web.stanford.edu. And
+[4051.60s -> 4052.44s]  there we go. There's
+[4052.44s -> 4053.16s]  our webpage for the
+[4053.16s -> 4054.84s]  class, right? And
+[4054.84s -> 4055.56s]  that's the, you can
+[4055.60s -> 4056.68s]  look, it's exactly the
+[4056.72s -> 4058.16s]  HTML and like the
+[4058.16s -> 4058.92s]  JavaScript and whatever
+[4058.92s -> 4060.24s]  for the class. Um, it's
+[4060.24s -> 4060.84s]  probably actually, it's
+[4060.84s -> 4061.36s]  probably not the
+[4061.36s -> 4064.16s]  JavaScript. Uh, it many
+[4064.16s -> 4065.64s]  web pages load external
+[4065.64s -> 4066.56s]  resources too. And your
+[4066.56s -> 4067.40s]  browser has to figure
+[4067.40s -> 4068.32s]  all this out. Your
+[4068.32s -> 4068.96s]  browser says, let me
+[4068.96s -> 4069.72s]  make load the main
+[4069.72s -> 4070.40s]  page. Oh, is there
+[4070.40s -> 4071.24s]  anything else I need to
+[4071.24s -> 4071.92s]  load? And it goes and
+[4071.92s -> 4072.48s]  loads that. And then
+[4072.48s -> 4073.08s]  that tells you more
+[4073.08s -> 4074.08s]  stuff to load. And it's
+[4074.08s -> 4074.68s]  this big, that's why
+[4074.68s -> 4075.44s]  it takes some time
+[4075.44s -> 4076.12s]  sometimes for these
+[4076.12s -> 4078.12s]  web pages like CNN.com,
+[4078.12s -> 4078.88s]  which has a billion
+[4078.88s -> 4079.64s]  different files that
+[4079.64s -> 4080.40s]  wants to load on your
+[4080.40s -> 4081.72s]  computer, mostly ads, I
+[4081.72s -> 4082.92s]  would say. Um, and
+[4082.92s -> 4083.72s]  then it, uh, and then
+[4083.72s -> 4084.76s]  it takes a while to do
+[4084.76s -> 4086.44s]  all that. So, uh,
+[4086.48s -> 4088.60s]  that's that. Okay. All
+[4088.60s -> 4089.08s]  right. Anybody have
+[4089.08s -> 4090.40s]  any questions about the
+[4090.40s -> 4091.72s]  protocol right now?
+[4092.44s -> 4092.92s]  You're going to, we're
+[4092.92s -> 4093.56s]  going to build a little
+[4093.56s -> 4095.44s]  client to do this
+[4095.44s -> 4096.08s]  protocol. In fact, we
+[4096.08s -> 4096.92s]  might as well do, do
+[4096.92s -> 4098.28s]  the client. Um, this,
+[4098.36s -> 4099.28s]  we're also going to
+[4099.28s -> 4101.60s]  start building a, a
+[4101.60s -> 4103.92s]  program called w get,
+[4104.20s -> 4105.04s]  which is built in your
+[4105.04s -> 4106.04s]  program. If you do w
+[4106.04s -> 4108.44s]  get google.com, what
+[4108.44s -> 4109.28s]  it does is it actually
+[4109.28s -> 4110.24s]  goes and requests the
+[4110.24s -> 4111.04s]  web page, just like we
+[4111.04s -> 4112.16s]  just did. It's pretty
+[4112.16s -> 4112.96s]  simple. As it turns out,
+[4112.96s -> 4114.96s]  if we look at index dot
+[4114.96s -> 4116.36s]  HTML, there's the Google
+[4116.36s -> 4117.72s]  page again that we just
+[4117.72s -> 4118.36s]  did. So you can do, you
+[4118.36s -> 4119.80s]  can pull pages from the
+[4119.80s -> 4121.12s]  terminal all you want.
+[4121.28s -> 4121.68s]  Question.
+[4122.28s -> 4123.08s]  Uh, yeah. So when I
+[4123.08s -> 4124.32s]  type a URL in the
+[4124.32s -> 4125.20s]  address part of doing
+[4125.20s -> 4126.80s]  something similar to get
+[4126.80s -> 4128.48s]  it, when you type a
+[4128.48s -> 4130.12s]  URL in the web page, it
+[4130.12s -> 4131.44s]  is doing exactly again.
+[4131.44s -> 4132.24s]  Okay, cool. Cause when I
+[4132.24s -> 4133.52s]  leave out the slash in
+[4133.52s -> 4134.88s]  like CS 110, it figures
+[4134.88s -> 4135.96s]  out how to redirect it
+[4135.96s -> 4137.48s]  anyway. Yeah. Well,
+[4137.52s -> 4138.52s]  notice that that's good
+[4138.52s -> 4139.56s]  question. The little
+[4139.56s -> 4140.40s]  message that came back
+[4140.40s -> 4141.36s]  and said, your thing
+[4141.36s -> 4142.48s]  has permanently moved.
+[4142.76s -> 4143.52s]  Well, your browser
+[4143.52s -> 4144.92s]  goes, Oh, that was
+[4144.92s -> 4145.76s]  silly. I need to put
+[4145.76s -> 4146.48s]  the slash on and it
+[4146.48s -> 4147.28s]  just does another get
+[4147.28s -> 4148.12s]  request and gets it with
+[4148.12s -> 4149.12s]  the slash. It's a,
+[4149.12s -> 4150.16s]  it's, there are lots
+[4150.16s -> 4151.36s]  of error message or
+[4151.36s -> 4152.40s]  messages that come
+[4152.40s -> 4154.08s]  through, uh, your
+[4154.08s -> 4154.84s]  browser that are all
+[4154.84s -> 4155.72s]  hidden from you because
+[4155.72s -> 4156.52s]  your brother, I can
+[4156.52s -> 4157.40s]  figure that out. That's
+[4157.40s -> 4158.92s]  one of them. Good
+[4158.92s -> 4160.28s]  question. Okay. Uh,
+[4160.28s -> 4161.00s]  what I'm going to do
+[4161.00s -> 4164.88s]  is client dot, uh,
+[4164.92s -> 4168.76s]  starter whoops to time
+[4169.16s -> 4171.20s]  client dot CC. Yes.
+[4171.20s -> 4173.52s]  Okay. Time client dot
+[4173.52s -> 4174.72s]  CC. This is actually
+[4174.88s -> 4176.68s]  relatively, uh,
+[4176.72s -> 4178.00s]  straightforward. Okay.
+[4178.00s -> 4178.44s]  We don't have to do
+[4178.44s -> 4179.96s]  too much for the time.
+[4179.96s -> 4180.76s]  This is just saying how
+[4180.76s -> 4181.76s]  to, the first part is
+[4181.76s -> 4182.40s]  just saying how to
+[4182.40s -> 4183.72s]  actually, uh, get the
+[4183.72s -> 4184.92s]  information here or how
+[4184.92s -> 4186.88s]  to get the parameters
+[4186.88s -> 4187.76s]  for that from the,
+[4187.88s -> 4189.00s]  uh, from the command
+[4189.00s -> 4190.36s]  line. Okay. What we're
+[4190.36s -> 4190.92s]  going to do is we're
+[4190.92s -> 4192.60s]  going to do in client
+[4193.04s -> 4194.44s]  socket this time, not
+[4194.44s -> 4196.20s]  client. I can type
+[4196.20s -> 4197.48s]  right. Client socket
+[4197.64s -> 4199.88s]  equals create client
+[4199.96s -> 4203.76s]  socket R V one. And
+[4204.00s -> 4204.68s]  we're going to convert
+[4204.68s -> 4207.72s]  the other one to a R V
+[4208.16s -> 4209.20s]  two convert to an
+[4209.20s -> 4212.08s]  integer. Okay. That's
+[4212.08s -> 4213.04s]  going to create the
+[4213.04s -> 4214.28s]  client socket. Okay.
+[4214.44s -> 4215.04s]  We're going to just
+[4215.04s -> 4216.24s]  assert that it actually
+[4216.24s -> 4217.64s]  worked. Client is
+[4217.64s -> 4218.32s]  greater than or equal
+[4218.32s -> 4220.36s]  to zero. Okay. You
+[4220.36s -> 4221.04s]  could do some better
+[4221.04s -> 4221.80s]  error checking if you
+[4221.80s -> 4227.60s]  want to on this. Uh,
+[4227.60s -> 4232.64s]  the let's see, um, the
+[4232.68s -> 4233.84s]  client. Yeah, you're
+[4233.84s -> 4234.80s]  right. It should be
+[4235.60s -> 4236.88s]  client socket. You're
+[4236.88s -> 4237.92s]  right. I don't know
+[4237.92s -> 4238.60s]  why that's, that's
+[4238.60s -> 4239.44s]  actually wrong. So
+[4239.44s -> 4240.84s]  client socket. Thank
+[4240.84s -> 4242.08s]  you. All right. It
+[4242.08s -> 4242.64s]  should be greater than
+[4242.64s -> 4245.28s]  zero. Uh, okay. And
+[4245.28s -> 4246.68s]  then we are going to
+[4246.68s -> 4249.80s]  do sock buff and SB
+[4249.80s -> 4250.24s]  because this is what
+[4250.24s -> 4251.36s]  we're going to set up
+[4251.40s -> 4251.88s]  just like we did
+[4251.88s -> 4252.92s]  before, because all
+[4252.92s -> 4253.44s]  we're going to do is
+[4253.68s -> 4254.44s]  we need to be able to
+[4254.72s -> 4255.60s]  get the information
+[4255.60s -> 4258.60s]  from the server. Okay.
+[4258.84s -> 4263.20s]  IO sock stream and
+[4263.20s -> 4267.04s]  SB, SB like that. And
+[4267.04s -> 4268.24s]  then we're going to
+[4268.24s -> 4270.84s]  do string timeline,
+[4270.84s -> 4272.44s]  we'll say, and get
+[4272.44s -> 4273.60s]  line. That's nice. So
+[4273.60s -> 4274.20s]  we can just do get
+[4274.20s -> 4275.72s]  line, takes the socket
+[4275.72s -> 4276.60s]  server and then takes
+[4276.60s -> 4277.60s]  in timeline and it just
+[4277.60s -> 4278.80s]  basically reads it in.
+[4279.40s -> 4280.24s]  Okay. And then we
+[4280.24s -> 4282.60s]  print it out timeline
+[4283.12s -> 4285.20s]  and L and that's
+[4285.20s -> 4286.24s]  it. So there's our
+[4286.24s -> 4288.40s]  first client. Okay. If
+[4288.40s -> 4288.80s]  I didn't make a
+[4288.80s -> 4289.56s]  mistake, that's what
+[4289.56s -> 4290.20s]  it should look like.
+[4291.04s -> 4292.96s]  Okay. Make time
+[4292.96s -> 4296.36s]  client. Oh, lots of,
+[4296.36s -> 4298.32s]  Oh, I know why. Um,
+[4299.80s -> 4304.88s]  client thread pool. Do
+[4304.88s -> 4305.44s]  we have thread pool?
+[4305.44s -> 4305.96s]  We shouldn't have
+[4305.96s -> 4306.48s]  thread pool in here.
+[4306.52s -> 4309.88s]  Hold on. Make time
+[4310.20s -> 4313.20s]  client. Oh, no. Oh,
+[4313.20s -> 4314.12s]  cert was not declared.
+[4314.52s -> 4318.12s]  Um, and there's lots
+[4318.12s -> 4318.64s]  of other stuff in there
+[4318.64s -> 4320.72s]  too. Let's see. How
+[4320.72s -> 4324.32s]  about pound include
+[4325.32s -> 4326.60s]  cert? How about C
+[4326.60s -> 4328.76s]  assert? See if that
+[4328.76s -> 4335.24s]  works. Nope. Did I do
+[4335.24s -> 4335.96s]  something else here?
+[4335.96s -> 4339.12s]  Let's see. I think
+[4339.16s -> 4340.32s]  you're right. Hang
+[4340.32s -> 4346.24s]  on. Let's see. Soft
+[4346.24s -> 4350.08s]  buff that. I never
+[4350.08s -> 4351.84s]  declared SS. You're
+[4351.84s -> 4353.24s]  right. Thank you very
+[4353.24s -> 4354.40s]  much. How about we
+[4354.40s -> 4357.08s]  do that? Like I know
+[4357.08s -> 4358.20s]  we did. Oh, you're
+[4358.20s -> 4359.40s]  right. Thank you. How
+[4359.40s -> 4360.52s]  about that? We need
+[4360.52s -> 4360.80s]  to call the
+[4360.80s -> 4361.72s]  constructor on that
+[4361.72s -> 4363.20s]  call variable. Oops.
+[4364.20s -> 4371.04s]  Timeline. Timeline. Oh,
+[4371.04s -> 4374.44s]  perfect. Okay. Thanks. Oh,
+[4374.44s -> 4376.12s]  no. Same thing. Hang
+[4376.12s -> 4379.48s]  on. Well, now it
+[4379.48s -> 4380.20s]  seems to say it's up
+[4380.20s -> 4380.84s]  to date. Oh, maybe the
+[4380.84s -> 4381.48s]  other thing was not
+[4381.48s -> 4383.60s]  was broken. Uh, time
+[4383.64s -> 4385.84s]  client. And then do
+[4385.84s -> 4386.24s]  we still have one
+[4386.24s -> 4387.40s]  running? We do. Myth
+[4387.84s -> 4389.24s]  58, one, two, three,
+[4389.24s -> 4390.52s]  four, five. And there
+[4390.52s -> 4391.20s]  we go. Now we got
+[4391.20s -> 4392.72s]  the time. We made
+[4392.76s -> 4394.00s]  it. But anyway, the
+[4394.00s -> 4394.88s]  point is that a client
+[4394.88s -> 4396.12s]  is actually not that hard
+[4396.12s -> 4398.44s]  to build, right? You,
+[4398.56s -> 4399.68s]  uh, all you really
+[4399.68s -> 4401.68s]  need to do is say,
+[4401.68s -> 4403.12s]  create a client socket
+[4403.76s -> 4405.00s]  and to a particular
+[4405.00s -> 4405.92s]  machine on a particular
+[4405.92s -> 4408.20s]  port and then get the
+[4408.20s -> 4408.88s]  information to send you
+[4408.88s -> 4410.60s]  back. Right. And that's
+[4410.60s -> 4411.36s]  that. Now you could
+[4411.36s -> 4412.16s]  connect up the connection
+[4412.16s -> 4413.16s]  then have to send more
+[4413.16s -> 4414.00s]  information. That's fine
+[4414.00s -> 4415.88s]  too, but you can still
+[4415.88s -> 4416.76s]  do it this way. So
+[4416.76s -> 4417.32s]  it's relatively
+[4417.32s -> 4418.08s]  straightforward to set
+[4418.08s -> 4418.96s]  up a client. And now
+[4418.96s -> 4419.52s]  you have two different
+[4419.52s -> 4421.40s]  computers talking to,
+[4421.56s -> 4422.80s]  uh, in fact, I think
+[4422.80s -> 4423.52s]  you're both on the same
+[4423.52s -> 4424.96s]  computer here, but you
+[4424.96s -> 4425.48s]  could have to, you
+[4425.48s -> 4427.00s]  could do this from your
+[4427.24s -> 4428.40s]  computer as well at
+[4428.40s -> 4429.80s]  home and your parents
+[4429.80s -> 4430.32s]  could do it wherever
+[4430.32s -> 4430.84s]  they were. Yeah.
+[4437.00s -> 4437.60s]  It's more or less the
+[4437.60s -> 4438.32s]  same thing. It's a
+[4438.32s -> 4440.04s]  very, um, it's not
+[4440.04s -> 4441.08s]  perfectly symmetric, but
+[4441.08s -> 4442.32s]  it's, it's a relatively
+[4442.32s -> 4443.36s]  symmetric thing. You're
+[4443.36s -> 4444.80s]  setting up the, I am
+[4444.80s -> 4446.44s]  going to listen server.
+[4446.88s -> 4447.80s]  I'm setting up. I just
+[4447.80s -> 4448.24s]  want to make a
+[4448.24s -> 4449.04s]  connection to you and
+[4449.04s -> 4450.00s]  say, please give me,
+[4450.20s -> 4451.08s]  please send me some
+[4451.08s -> 4452.04s]  details, some stuff.
+[4452.56s -> 4453.36s]  That's the difference.
+[4453.48s -> 4454.40s]  One is setting up a
+[4454.40s -> 4456.00s]  server and then waiting
+[4456.00s -> 4457.64s]  for connections. That's
+[4457.64s -> 4458.68s]  the server. The client
+[4458.68s -> 4459.56s]  is saying, I'm setting
+[4459.56s -> 4460.48s]  up this connection and
+[4460.48s -> 4461.60s]  then immediately
+[4461.60s -> 4462.96s]  connecting to it. That's
+[4462.96s -> 4464.32s]  the difference to a
+[4464.32s -> 4468.36s]  particular one. All
+[4468.36s -> 4471.04s]  right. If there are
+[4471.04s -> 4472.00s]  other questions, we'll
+[4472.00s -> 4473.44s]  see you all Wednesday.

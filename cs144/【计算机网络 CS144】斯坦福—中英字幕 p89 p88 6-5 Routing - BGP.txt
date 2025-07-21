@@ -1,0 +1,200 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.60s]  Continuing on a theme of routing, by now you've learned about the basics of routing, distance
+[6.60s -> 11.40s]  vector and link state algorithms, and how routing works in the Internet, the structure
+[11.40s -> 17.08s]  of the Internet, autonomous systems, the hierarchy of those autonomous systems, exterior
+[17.08s -> 20.48s]  routing protocols, interior routing protocols.
+[20.48s -> 24.80s]  So in this video, I'm going to tell you about the specific exterior routing protocol
+[24.80s -> 29.52s]  that all autonomous systems must use when connecting to their neighbours.
+[29.52s -> 35.64s]  That's BGP, or the Border Gateway Protocol, currently in version 4.
+[35.64s -> 38.96s]  OK let's start with the basics of BGP4.
+[38.96s -> 44.76s]  BGP is not a link state or a distance vector routing protocol.
+[44.76s -> 49.40s]  Instead it uses what's called a path vector.
+[49.40s -> 55.44s]  The way this works is that the BGP routers at the boundary of each autonomous system
+[55.44s -> 61.84s]  will advertise a complete path, and that path has a list of ASs that you pass through in
+[61.84s -> 64.56s]  order to reach a particular destination prefix.
+[64.56s -> 69.44s]  This is also called the AS path, and that's the path vector.
+[69.44s -> 73.12s]  So an example of a path advertisement might look like this.
+[73.12s -> 80.24s]  It says the network prefix 171.64.16 can be reached via the path going through these
+[80.24s -> 83.54s]  three ASs, 1, 5 and 13.
+[83.54s -> 92.10s]  So that might be an example of an advertisement that BGP might advertise to one of its neighbours.
+[92.10s -> 98.86s]  The consequence of sending out a path is that paths with loops are very easily detected locally.
+[98.86s -> 103.78s]  You just look for repetition of an AS, and then you can simply remove those or just
+[103.78s -> 106.74s]  completely ignore those advertisements.
+[106.74s -> 111.98s]  And that makes it very easy to find and eliminate loops.
+[111.98s -> 117.98s]  But perhaps the most important feature of BGP is that local policies that are private
+[117.98s -> 125.12s]  and secret to a particular autonomous system can pick the preferred path among those that
+[125.12s -> 126.26s]  are advertised to it.
+[126.26s -> 131.14s]  So if a number of neighbouring autonomous systems advertise different paths to reach the same
+[131.14s -> 137.08s]  prefix, then the local policy can pick whichever one it wants.
+[137.08s -> 141.94s]  It's not accountable to anyone else when it's picking that.
+[141.94s -> 145.30s]  Finally, when a link or a router fails, the path is withdrawn.
+[145.30s -> 151.76s]  Just like an advertisement comes with, just like the one above, a withdrawal would look
+[151.76s -> 155.98s]  very similar in which it would say this particular prefix can no longer be reached
+[155.98s -> 159.50s]  via this path.
+[159.50s -> 166.22s]  So BGP 4 starts with a relationship between customers and providers.
+[166.22s -> 169.56s]  Let's take a look at this.
+[169.56s -> 174.24s]  So let's start with drawing a particular AS.
+[174.24s -> 183.28s]  This would be the provider AS, the one sitting above in the hierarchy, and then the customer
+[183.28s -> 187.24s]  AS sitting below.
+[187.24s -> 193.84s]  The relationship between them is, although traffic can flow to or from the customer
+[193.84s -> 201.32s]  through the provider in either direction and may go off through multiple exit points,
+[201.32s -> 209.56s]  because of this specific relationship between them, and that relationship is one of provider
+[209.56s -> 215.28s]  to customer, it has specific implications.
+[215.28s -> 220.28s]  One of them is that the customer will always pay the provider to carry its packets.
+[220.32s -> 227.04s]  So if we're thinking of how money flows, money is flowing up in this direction here.
+[227.04s -> 232.96s]  The customer is paying the provider in order to carry its packets.
+[232.96s -> 236.52s]  So this hierarchy of customers to providers continues.
+[236.52s -> 243.08s]  So if we have multiple ASs, so let's draw some ASs here and some down here.
+[243.08s -> 247.32s]  These could be the access ASs that we saw before.
+[247.36s -> 255.40s]  And then this relationship between them of provider towards customer could go like this.
+[255.40s -> 263.76s]  And what that tells us is that, as before, the money is actually flowing in the other
+[263.76s -> 269.20s]  direction for settlement charges between them.
+[269.20s -> 275.36s]  And IP traffic can go in the following way.
+[275.36s -> 283.76s]  So IP traffic could flow from a customer up to its provider, up to its provider, down
+[283.76s -> 288.40s]  through its customer, and down through its customer down here.
+[288.40s -> 295.04s]  Similarly, something from here, traffic from here, could flow through this way.
+[295.04s -> 304.40s]  If there was another relationship, for example, this particular one access AS down here had
+[304.40s -> 310.52s]  relationships with providers above it in two places.
+[310.52s -> 316.76s]  Traffic is allowed to flow through any of these paths, so it could flow down this
+[316.76s -> 319.08s]  way or down this way.
+[319.08s -> 327.56s]  In general, they will not flow through an intermediate at the same level, and we'll
+[327.56s -> 333.40s]  see an example of that a little bit later.
+[333.40s -> 337.60s]  So the reason for telling about this customer-provider hierarchy is we're going to see it show up
+[337.60s -> 343.08s]  a little bit later in the policies that BGP uses.
+[343.08s -> 346.84s]  And basically the peering relationship is as follows.
+[346.84s -> 353.16s]  So looking at this example here, where we have, just as before, we have three ASs here,
+[353.16s -> 359.28s]  here, and here, which are the providers, and then three down here that are the customers
+[359.28s -> 363.96s]  of those, and the key here is telling us what the provider-customer relationship is,
+[363.96s -> 370.60s]  and that these ones up here are peers of each other.
+[370.60s -> 376.28s]  So in general, a peer cannot be a transit for its other peers.
+[376.28s -> 381.00s]  In other words, this particular path that's shown here, the black dotted line, is not
+[381.00s -> 386.88s]  allowed because it's going through this peer.
+[386.88s -> 392.20s]  That's because typically the relationship here between two peers is settlement-free.
+[392.20s -> 394.88s]  There's no dollars flowing across here.
+[394.88s -> 399.64s]  So peers do not provide transit between peers.
+[399.64s -> 402.84s]  Now let's take a look at BGP messages, and then we'll look at the policies that
+[402.84s -> 404.64s]  BGP implements.
+[404.64s -> 407.28s]  So there are basically four types of BGP message.
+[407.28s -> 410.28s]  There's an open message to establish a BGP session.
+[410.28s -> 414.68s]  There's a keep-alive in order to provide a handshake at regular intervals.
+[414.68s -> 419.92s]  That's just basically an occasional message just to be able to check that the BGP session
+[419.92s -> 424.68s]  is still alive between two routers that are connected to each other.
+[424.68s -> 427.38s]  And there's a notification to shut down a peering session.
+[427.38s -> 432.20s]  So these three here, open, keep-alive, and notification, are basically the ones that
+[432.20s -> 434.44s]  keep the session alive.
+[434.44s -> 439.32s]  The ones that actually announce and then withdraw routes are the update messages, and these
+[439.32s -> 441.60s]  are the most important ones.
+[441.60s -> 446.24s]  They announce new routes, or they withdraw ones that were previously announced.
+[446.24s -> 453.04s]  And these are the – we saw an example of that earlier with the advertisement of
+[453.04s -> 457.08s]  the particular path for a prefix.
+[457.08s -> 464.34s]  An announcement basically consists of the prefix and then the path attributes.
+[464.34s -> 470.52s]  So it'll be the path of ASs and then attributes associated with it, and we'll
+[470.52s -> 473.56s]  see an example of that now.
+[473.56s -> 480.08s]  So the path attributes are the next-hop information, where you go in order to be able to use
+[480.08s -> 481.08s]  this.
+[481.08s -> 485.64s]  In other words, who it is that's advertising this particular path to us.
+[485.64s -> 491.00s]  The particular AS path, so that's the sequence of ASs that you would go through.
+[491.00s -> 495.72s]  And then various other things, the local preference and the multi-exit discriminator,
+[495.72s -> 500.92s]  and there are various other parameters that are passed as well that tell us information
+[500.92s -> 509.24s]  that would allow us to pick the particular path when we receive multiple advertisements
+[509.24s -> 511.00s]  from different peers.
+[511.00s -> 515.72s]  So these are used to select amongst multiple options for paths, because we may hear from
+[515.72s -> 520.36s]  multiple peers on how to reach a particular destination prefix.
+[520.36s -> 526.72s]  And then basically, when we have a choice, the sequence goes something like this.
+[526.72s -> 532.30s]  So we start with the highest local preference.
+[532.30s -> 534.92s]  This is the highest local preference.
+[534.92s -> 537.36s]  We'll see an example of that in a moment.
+[537.36s -> 542.30s]  It's a local preference that tells us how we enforce relationships.
+[542.30s -> 545.84s]  We might prefer customer routes over peer routes, and we'll see an example of that
+[545.84s -> 548.16s]  in a moment.
+[548.16s -> 553.20s]  If the local preference, which is essentially our local policy, if that doesn't tell us
+[553.20s -> 557.68s]  which particular path to pick when we have some choice, the next one is we'll simply
+[557.68s -> 563.46s]  pick the shortest autonomous system path, in other words, the shortest path to a destination.
+[563.46s -> 566.16s]  And then there are various other parameters that we might pick that are all to do with
+[566.16s -> 568.78s]  helping us do good traffic engineering.
+[568.78s -> 575.72s]  What this means is that we will tend to send traffic over lightly loaded paths, and
+[575.72s -> 578.04s]  will cause less congestion in the network.
+[578.04s -> 581.96s]  But the ones that we are most interested in are the highest local preference and the
+[581.96s -> 584.08s]  shortest AS path.
+[584.08s -> 588.60s]  If all of these fail to distinguish or identify a particular path that we should
+[588.60s -> 591.44s]  choose, then we simply go with the lowest router ID.
+[591.44s -> 596.12s]  In other words, that's the lowest router ID of one of our neighbors, and that's
+[596.12s -> 600.12s]  essentially throwing up our hands in a means of breaking ties if there's no other way
+[600.12s -> 604.60s]  to pick between advertised routes.
+[604.60s -> 610.84s]  Let's take a look at how the autonomous system path, the AS path attribute, might work.
+[610.84s -> 617.60s]  So we'll look at an example of how we might pick the shortest path.
+[617.60s -> 624.04s]  So let's say that we are sitting over here, at this particular autonomous system here,
+[624.04s -> 628.12s]  and we're hearing about a prefix that originated down here.
+[628.12s -> 638.76s]  Here's the prefix, 135.207.0.0.16, and it originated from here, and so it will initially
+[638.76s -> 644.16s]  be advertised up here, and then it will be advertised up here, and when it gets advertised
+[644.16s -> 656.10s]  here, it will say, you can reach this particular prefix, 135.207.0.0.16, you can
+[656.10s -> 664.88s]  reach it via AS7018, followed by 6341.
+[664.88s -> 668.76s]  And then that will flow around here, and then the added one AS to the path, and so
+[668.76s -> 670.54s]  it will get advertised here.
+[670.54s -> 677.66s]  So by the time it comes down here, we will find out that the prefix 135.207.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.
+[677.66s -> 692.58s]  135.207.0.0.0.0.0.0.0.16 can be reached through 1129, 1755, and so on, until we get to 7018.
+[692.58s -> 697.02s]  And likewise there will be an advertisement that will come around this path, that will
+[697.02s -> 708.74s]  say, hey, I can get you to 135.207.0.0.0.0.0.1.16, through the sequence 70183549, so it's over
+[708.74s -> 710.58s]  a much shorter path.
+[710.58s -> 718.06s]  So with this particular case, if I haven't got a higher local preference, then the router
+[718.06s -> 724.46s]  will say, this is the shorter path, so I will pick as my favourite to send packets
+[724.46s -> 728.32s]  this way in order to reach this particular prefix.
+[728.32s -> 733.68s]  And so it will install that decision locally in its routers that says, when I see a packet
+[733.68s -> 740.06s]  with this prefix, then I'm going to send it out this direction, and that's my choice.
+[740.06s -> 741.54s]  There can be many, many choices.
+[741.54s -> 744.14s]  So let's look at an example here.
+[744.14s -> 750.34s]  So in this particular network, Frank's internet barn is trying to decide which route it
+[750.34s -> 759.06s]  should pick in order to reach this prefix 13.13 slash 16, which is down here in AS1.
+[759.06s -> 764.02s]  The nature of the relationship here is that Frank is connected directly to a provider
+[764.02s -> 772.02s]  AS4, it's connected to a peer AS3, and it's connected to a customer AS2, which
+[772.02s -> 776.34s]  in turn is connected to another customer down here.
+[776.34s -> 783.06s]  So it could have a number of different local preferences, and it might say, I'm going to
+[783.06s -> 794.82s]  give a local preference of, let's say, 100 to my peer to customer, my provider to customer
+[794.82s -> 795.82s]  relationship.
+[795.82s -> 801.98s]  In other words, I'm going to give preference of 100 to routes that are advertised by my
+[801.98s -> 804.42s]  customers to me.
+[804.42s -> 813.86s]  Maybe I just say, I'll give a local preference of 80 to ones that are received from my provider,
+[813.86s -> 817.42s]  and 90 to ones that are received from my peer.
+[817.42s -> 825.54s]  What that basically says is, if I hear a route that arrives from my customer, I'm going to
+[825.54s -> 829.46s]  take that very seriously, because that's a paying relationship, and I would prefer to
+[829.46s -> 834.82s]  send it to my customer, rather than sending it over to a provider where I'm going to have
+[834.82s -> 835.94s]  to pay.
+[835.94s -> 842.40s]  So I'm going to give preference if they're coming up from the customer.
+[842.40s -> 845.54s]  My second favorite choice is from a peer, because I don't pay there either, because
+[845.54s -> 849.56s]  it's presumably settlement free, but where I actually have to pay for the traffic is
+[849.56s -> 850.56s]  to the provider.
+[850.56s -> 856.22s]  So if I hear a route that's advertised down here, I'm not likely to pick that, unless
+[856.22s -> 859.06s]  that's my only choice.
+[859.06s -> 867.62s]  So basically I'm saying, in terms of my choice, customer advertised routes are better than
+[867.62s -> 873.82s]  peer advertised routes are better than provider advertised routes.
+[873.82s -> 878.90s]  And this is pretty common for, it's not baked into BGP, you can just set the preference
+[878.90s -> 880.26s]  values to do this.
+[880.26s -> 883.38s]  You could also set the preference values to be the opposite, although that would be
+[883.38s -> 885.30s]  pretty unlikely.
+[885.30s -> 891.76s]  So when these advertisements are going to arrive for this particular AS, they're going
+[891.76s -> 896.54s]  to come up through here to Frank, they're going to come up through here to Frank,
+[896.54s -> 898.82s]  and they're going to come this way to Frank.
+[898.82s -> 901.70s]  Frank is going to pick the one that goes down through the customer.
+[901.70s -> 906.66s]  So when he sends traffic, he's going to send traffic down this way to AS1, because
+[906.66s -> 912.16s]  that's his favorite path, because that's the one with the lowest local preference.
+[912.16s -> 918.32s]  So local preference is the one that I use first, and if that doesn't tell me my choice,
+[918.32s -> 921.64s]  then I'll pick the shortest AS path, and then I'll walk down that list that was
+[921.64s -> 926.72s]  on the previous slide.
+[926.72s -> 932.82s]  So in summary, all autonomous systems in the internet must connect using BGP4.
+[932.82s -> 937.36s]  That's the exterior protocol that they must use to talk to their peers or to their
+[937.36s -> 938.36s]  neighbors.
+[938.36s -> 940.28s]  The routers are their neighboring autonomous system.
+[940.40s -> 943.16s]  BGP4 is a path vector algorithm.
+[943.16s -> 949.52s]  That means a list of the autonomous systems is sent along with every advertised prefix,
+[949.52s -> 954.84s]  and this allows loops to be detected very easily, and for a router to examine that
+[954.84s -> 959.96s]  path and choose whether it wants to use it or not, depending on its policies.
+[959.96s -> 966.96s]  BGP4 has a rich and complex interface to let autonomous systems choose a local private
+[966.96s -> 968.88s]  policy based on all sorts of things.
+[969.20s -> 974.56s]  You could spend a whole quarter learning about nothing else than how BGP works and what
+[974.56s -> 975.56s]  the consequences are.
+[975.56s -> 981.40s]  There have been many, many papers written on the consequences of these policies.
+[981.40s -> 986.40s]  So EJS decides a local policy for traffic engineering security and any other private
+[986.40s -> 991.44s]  preferences that it might have so that it can choose amongst advertised paths coming
+[991.44s -> 995.68s]  from different neighboring autonomous systems.
+[995.68s -> 997.32s]  That's the end of this video about BGP.

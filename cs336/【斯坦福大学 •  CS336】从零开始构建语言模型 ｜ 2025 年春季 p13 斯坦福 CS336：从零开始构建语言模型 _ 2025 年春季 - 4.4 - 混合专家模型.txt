@@ -1,0 +1,2035 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.34s]  So, we'll get started.
+[6.38s -> 8.98s]  Today we're gonna cover a mixture of experts.
+[9.02s -> 11.38s]  Last year this was kind of a fun bonus lecture
+[11.42s -> 13.78s]  that I threw together, but this year,
+[13.82s -> 16.32s]  thanks to lots of people doing MOEs,
+[16.36s -> 18.40s]  this has become a much more critical lecture.
+[18.42s -> 21.00s]  So I've added a lot of the recent developments
+[21.02s -> 23.86s]  and at the end we'll try to walk through
+[23.90s -> 25.96s]  DeepSeek v3 and try to understand
+[26.00s -> 28.24s]  what are all the components that make up
+[28.24s -> 30.34s]  a state-of-the-art open-source system,
+[30.38s -> 34.14s]  or at least on the architecture side, what that looks like.
+[34.18s -> 38.36s]  So, mixture of experts is how a lot of
+[38.38s -> 41.16s]  the most modern high-performance systems today
+[41.18s -> 43.52s]  are built and deployed.
+[43.56s -> 48.12s]  So, there was the funny NVIDIA leak of GPT-4
+[48.16s -> 53.56s]  actually being potentially revealed as GPT-MOE1-BT.
+[53.60s -> 58.00s]  But more broadly, others like Grok
+[58.00s -> 61.64s]  and DeepSeek and Llama4 now have all adopted
+[61.66s -> 64.04s]  a mixture of experts architecture.
+[64.06s -> 67.44s]  And it seems like at this point in 2025
+[67.48s -> 69.54s]  that the advantage of mixtures of experts
+[69.58s -> 72.62s]  over dense architectures is very much clear, right?
+[72.64s -> 76.58s]  Almost all compute scales training a mixture
+[76.62s -> 79.26s]  of experts model, if you do it well,
+[79.28s -> 81.28s]  is gonna give you benefits over a dense model.
+[81.32s -> 83.56s]  And so everyone seems to be doing it
+[83.58s -> 85.02s]  in both the East and the West.
+[85.06s -> 87.72s]  And so this will be an important thing to understand
+[87.72s -> 89.98s]  if you're trying to build sort of the best model
+[90.02s -> 92.96s]  that you can for the flops that you have.
+[95.48s -> 98.22s]  So, mixture of experts is very simple.
+[98.26s -> 100.80s]  It's a very terribly named concept.
+[100.82s -> 102.70s]  I think you hear mixture of experts and you think,
+[102.72s -> 104.66s]  oh, there must be experts specialized
+[104.70s -> 106.56s]  for different domains, and they're like
+[106.60s -> 108.66s]  doing different things, like there's a coding expert
+[108.70s -> 111.48s]  and like an English expert and a other languages expert.
+[112.64s -> 115.48s]  It is very far from that mental model.
+[115.50s -> 119.14s]  A mixture of experts is a type of fancy architecture
+[119.18s -> 121.54s]  that has several subcomponents called experts
+[121.58s -> 123.62s]  that are activated sparsely.
+[123.64s -> 126.62s]  And in particular, when you think about mixture of experts
+[126.64s -> 128.62s]  you should be thinking about the MLPs.
+[128.64s -> 130.72s]  This is where all the action is, right?
+[130.76s -> 134.12s]  So a MOE architecture and a non-MOE architecture
+[134.16s -> 137.76s]  are gonna be similar in almost all of its components
+[137.80s -> 139.12s]  except for one.
+[139.16s -> 142.54s]  And that is, if you look at this slide over here,
+[142.56s -> 146.20s]  this is the components of a standard transformer.
+[146.24s -> 149.16s]  You got your self attention, you got your FFN.
+[149.20s -> 151.20s]  If you zoom in, in a dense model
+[151.24s -> 153.74s]  the feed forward component just sort of is there,
+[153.78s -> 154.98s]  it's one big block.
+[155.00s -> 157.04s]  In a sparse model, what you would do
+[157.08s -> 159.84s]  is that you would take this FFN and you would split it up
+[159.88s -> 161.98s]  or you would copy it depending on how you're gonna be
+[162.02s -> 163.22s]  setting up your MOE.
+[163.24s -> 165.24s]  You're gonna have multiple copies, let's say,
+[165.28s -> 167.76s]  of your FFN, your fully connected networks,
+[167.78s -> 169.42s]  and you're gonna have a router that picks
+[169.44s -> 172.74s]  some smaller number of those in each forward pass
+[172.78s -> 173.98s]  or at each inference.
+[174.02s -> 176.24s]  So this is the basic idea behind the MOE
+[176.28s -> 178.32s]  and we're gonna replace this one big feed forward
+[178.34s -> 180.88s]  on the left side with a selector layer
+[180.92s -> 182.48s]  and many smaller ones.
+[182.52s -> 184.36s]  And what's the advantage of this thing?
+[184.38s -> 186.22s]  Well, if it's sparsely activated,
+[186.26s -> 188.36s]  that is, let's say only picks one expert
+[188.40s -> 191.80s]  and an expert is the same size as your dense FFN,
+[191.82s -> 194.64s]  then the flops between the left side and the right side,
+[194.66s -> 196.60s]  the dense model and the MOE model,
+[196.64s -> 197.90s]  they have the same flops, right?
+[197.92s -> 199.76s]  They're doing the same matrix multiplies
+[199.78s -> 201.12s]  as you do your forward pass.
+[202.66s -> 206.12s]  So you have more parameters without affecting your flops.
+[206.16s -> 207.72s]  And if you're a believer that what matters
+[207.76s -> 209.56s]  is having more parameters to, for example,
+[209.60s -> 211.36s]  memorize facts about the world,
+[211.40s -> 213.90s]  well, this is a great architecture.
+[213.94s -> 217.80s]  So you can kind of see the intuition behind MOEs.
+[217.84s -> 219.90s]  Hopefully that's all very clear.
+[219.94s -> 222.54s]  And you might wonder, okay, so it makes sense
+[222.58s -> 225.58s]  that you can get more parameters per flops,
+[225.60s -> 228.66s]  but does that translate to actually better performance
+[228.70s -> 230.40s]  for the models that you're training?
+[230.44s -> 232.34s]  And there's been, I think at this point,
+[232.38s -> 234.50s]  many, many, many papers showing
+[234.54s -> 236.04s]  that at the same flop count,
+[236.08s -> 238.04s]  at the same training amount of flops,
+[238.08s -> 241.64s]  you get better performance out of a mixture of experts
+[241.68s -> 243.52s]  than out of a dense model.
+[243.54s -> 245.68s]  So this is a nice paper.
+[245.72s -> 247.42s]  So today I'm gonna go over a couple
+[247.46s -> 251.96s]  of the classic Google papers that put this field together.
+[251.98s -> 254.96s]  And this is one of them by Fedes et al. 2022,
+[254.98s -> 257.78s]  where they show that if you, flops match,
+[257.82s -> 260.38s]  you're training flops, so that's the same amount
+[260.42s -> 262.08s]  of compute used for training.
+[262.12s -> 263.66s]  And as you increase the number of experts,
+[263.68s -> 265.36s]  the training loss of your language model
+[265.38s -> 266.92s]  just keeps going down and down and down
+[266.96s -> 268.06s]  and down and down, right?
+[268.08s -> 270.10s]  So more experts, better.
+[270.12s -> 271.82s]  Of course the experts aren't free.
+[271.86s -> 274.00s]  You need to store the memory for these experts.
+[274.02s -> 275.06s]  And when you do parallelism,
+[275.10s -> 277.74s]  you're gonna have to think about routing your data
+[277.76s -> 280.34s]  into 256 separate experts.
+[280.36s -> 282.70s]  So there's gonna be systems complexities.
+[282.72s -> 285.12s]  But if you're only thinking about flops,
+[285.16s -> 286.48s]  this is a great chart to see,
+[286.52s -> 288.20s]  because you have the same flops,
+[288.22s -> 291.56s]  but you've gotten free test loss here.
+[291.60s -> 293.90s]  And you see the same thing reflected on the right side.
+[293.92s -> 295.80s]  As you train for longer and longer,
+[295.82s -> 298.66s]  the model, the switch base with 128 experts,
+[298.70s -> 303.70s]  the model with more experts gets better perplexity faster.
+[303.74s -> 306.00s]  So hopefully that is quite clear.
+[306.04s -> 308.54s]  You might say, well, this is a 2022 paper.
+[308.58s -> 310.98s]  Is this true sort of on modern architectures,
+[310.98s -> 312.76s]  modern scales?
+[312.80s -> 315.40s]  It continues to very much be true.
+[316.50s -> 319.54s]  AI2 had a very nice paper, Omo,
+[319.56s -> 321.44s]  which did a whole bunch of ablations
+[321.46s -> 323.24s]  and carefully controlled comparisons
+[323.28s -> 326.98s]  into Dense versus MOE and other architectures.
+[327.00s -> 329.04s]  And they sort of see exactly the same thing.
+[329.08s -> 329.88s]  So here on the left side,
+[329.92s -> 331.24s]  this is still from Fettis et al.
+[331.28s -> 332.44s]  You see the 7x speed up
+[332.48s -> 333.88s]  from having many experts.
+[333.92s -> 336.64s]  On the right side, this is the Omo comparison.
+[336.68s -> 339.18s]  You see the pink one is the MOE,
+[339.22s -> 341.52s]  and the teal one is Dense.
+[341.56s -> 343.30s]  And the training loss for the Dense model
+[343.32s -> 346.16s]  goes down much more slowly than the MOE.
+[346.20s -> 349.04s]  So hopefully, I have in some sense sold you
+[349.06s -> 351.60s]  on the value of MOEs and for learning
+[351.64s -> 354.34s]  this kind of new, slightly new architecture.
+[354.38s -> 356.64s]  So we're gonna pay up a price for all of this,
+[356.68s -> 358.04s]  but at least at the FLOPS level,
+[358.08s -> 359.60s]  this looks very compelling.
+[359.64s -> 360.48s]  So yes, question?
+[361.54s -> 362.82s]  The last lecture you mentioned
+[362.84s -> 365.34s]  was blank, for instance.
+[365.34s -> 370.34s]  So the question was, in the last lecture,
+[384.50s -> 387.94s]  I was saying, even small non-FLOPS,
+[387.96s -> 391.20s]  negligible FLOPS can be really big in wall clock.
+[391.24s -> 393.34s]  Is anything in the MOE world going to look like that?
+[393.34s -> 395.78s]  And so, I think one of the drawbacks of MOEs,
+[395.82s -> 398.58s]  why that's not the standard thing that's being taught,
+[398.62s -> 401.52s]  let's say at 224n, is because there's significant
+[401.56s -> 404.02s]  systems complexities to making this thing efficient.
+[404.06s -> 405.62s]  So I'll get to that.
+[405.66s -> 407.62s]  It's possible to make these things very efficient,
+[407.66s -> 410.72s]  especially if each expert lives on a separate device
+[410.76s -> 413.70s]  so that you're routing data to different places.
+[413.72s -> 415.50s]  You can be very efficient when you do that,
+[415.54s -> 417.26s]  but it's not easy, right?
+[417.30s -> 419.04s]  So there's a lot of infrastructural concerns
+[419.06s -> 420.90s]  and you're gonna see a lot of complexities
+[420.94s -> 421.94s]  to get this thing to work.
+[421.94s -> 424.38s]  But when it does work, you're putting all of your FLOPS
+[424.40s -> 425.24s]  to use.
+[428.54s -> 432.28s]  Okay, and then, the last one that I wanted to show
+[432.32s -> 435.56s]  is a lot of the companies really love MOEs
+[435.58s -> 436.82s]  because you get to present plots
+[436.86s -> 438.72s]  that look very compelling like this, right?
+[438.76s -> 440.90s]  This was from the DeepSeek V2 paper.
+[441.92s -> 444.30s]  On the x-axis, this is a little bit of sleight of hand.
+[444.32s -> 446.22s]  This is only activated parameters, right?
+[446.26s -> 447.60s]  So this is only the parameters
+[447.64s -> 449.66s]  that are used for computation.
+[449.66s -> 452.22s]  So you ignore all the deactivated experts,
+[452.26s -> 454.96s]  and the y-axis is MMLU performance, right?
+[455.00s -> 456.96s]  And we see DeepSeek V2, wow, look,
+[457.00s -> 458.94s]  very few activated parameters,
+[458.96s -> 461.16s]  really good MMLU performance, right?
+[461.20s -> 462.86s]  And so, if you're only interested
+[462.90s -> 464.88s]  in both training and inference FLOPS,
+[464.90s -> 467.00s]  activated parameters is the name of the game,
+[467.04s -> 468.48s]  you get really good performance here.
+[468.50s -> 469.98s]  And this is not just an ablation,
+[470.00s -> 472.78s]  this is a real system that someone spent a lot of money
+[472.82s -> 475.08s]  to train and deployed out in the wild, right?
+[475.12s -> 477.38s]  And we'll see this sort of pattern recur
+[477.40s -> 479.54s]  in other examples as well.
+[480.78s -> 482.04s]  Oh, was there a question?
+[483.62s -> 485.82s]  All right, and so the systems thing
+[485.84s -> 489.52s]  that is also a benefit is that MOEs
+[489.56s -> 492.42s]  allow us to have another axis of parallelism.
+[492.46s -> 494.22s]  So I'm gonna get into parallelism in much,
+[494.26s -> 496.86s]  much more detail sort of in the systems lectures.
+[496.90s -> 499.10s]  I'm gonna talk about how you're gonna take your model
+[499.12s -> 501.60s]  and you're gonna cut it up into many small pieces
+[501.62s -> 504.16s]  and lay them out across many different devices.
+[504.20s -> 506.96s]  But I'm gonna talk at a very high level,
+[506.98s -> 510.16s]  but when you have experts, there's a very natural way
+[510.18s -> 512.46s]  to parallelize at the expert level, right?
+[512.48s -> 515.52s]  So you have multiple different feed forward blocks,
+[515.56s -> 517.52s]  you can take each of these experts
+[517.56s -> 520.06s]  and you can put them on a different device, right?
+[520.10s -> 522.40s]  And because experts are sparsely activated,
+[522.44s -> 524.06s]  all you have to do is take your token
+[524.10s -> 525.74s]  and route it to the appropriate device
+[525.76s -> 527.84s]  and the computation will happen on that device, right?
+[527.86s -> 529.84s]  So it's a natural sort of cutting point
+[529.88s -> 532.60s]  to be able to shard your model into different devices.
+[532.64s -> 534.48s]  And so this is called expert parallelism.
+[534.50s -> 537.80s]  And this is another reason why MOEs are very popular, right?
+[537.84s -> 540.40s]  If you really want to parallelize really big models,
+[540.44s -> 543.40s]  this is a thing that you're gonna have to do.
+[543.44s -> 545.68s]  And kind of interestingly enough,
+[545.70s -> 549.22s]  I think MOEs developed at Google
+[549.24s -> 552.12s]  and many of the frontier labs, the closed labs,
+[552.14s -> 554.42s]  were doing it, but I think the open results
+[554.46s -> 558.16s]  actually came from China very frequently.
+[558.18s -> 561.72s]  Quen and DeepSeek were doing a lot of MOE work
+[561.76s -> 564.10s]  last year and it's only really recently
+[564.62s -> 566.08s]  that I think Western open source groups
+[566.12s -> 568.58s]  have started to do more MOE work.
+[568.62s -> 571.82s]  So Mixstrol, Grok, I guess Grok's not open,
+[571.86s -> 575.16s]  and then now Llama is now an MOE architecture, right?
+[575.20s -> 578.20s]  And so here, Llama 4 just got released, right?
+[578.22s -> 579.56s]  Latest and greatest.
+[579.60s -> 581.36s]  This is also a sparse MOE.
+[581.40s -> 583.36s]  And I'll talk about Llama 4 as well
+[583.40s -> 584.80s]  as I go through the lecture.
+[587.44s -> 590.84s]  As I said before, so one of the kind of starting points
+[590.88s -> 593.74s]  for this is some of the Chinese groups,
+[594.72s -> 596.96s]  Quen and DeepSeek, have actually done some really nice work
+[596.98s -> 600.16s]  benchmarking and understanding and evaluating
+[600.18s -> 602.80s]  some of these MOE results, so these MOEs.
+[602.82s -> 606.80s]  So Quen 1.5 was one of the first models
+[606.82s -> 610.34s]  that I knew of to have this large scale,
+[610.36s -> 613.10s]  well tested, well documented MOE.
+[613.14s -> 616.84s]  And what they did was they took a Quen 1.5 dense model
+[616.88s -> 619.34s]  and they had a nice trick to upcycle it
+[619.38s -> 621.54s]  into a mixture of experts.
+[621.58s -> 624.02s]  That's a clever kind of trick to take a dense model
+[624.04s -> 625.58s]  and then turn it into an MOE,
+[625.62s -> 627.32s]  and they showed sort of significant gains,
+[627.36s -> 629.88s]  at least in terms of compute efficiency,
+[629.92s -> 632.92s]  while sort of decreasing the total number of parameters
+[632.96s -> 636.40s]  relative to their sort of 7B model.
+[636.42s -> 638.76s]  DeepSeek, which is now famous,
+[638.80s -> 640.80s]  but originally when these papers were coming out
+[640.84s -> 643.00s]  were not quite as famous,
+[643.04s -> 646.98s]  did some of the, I think, really foundational MOE work
+[647.00s -> 649.30s]  in the open source world.
+[649.34s -> 651.30s]  A big part of this lecture is actually gonna be
+[651.30s -> 655.00s]  tracing the trajectory of the DeepSeek MOE architecture,
+[655.04s -> 658.00s]  but if you look at their original DeepSeek MOE paper,
+[658.04s -> 660.08s]  you'll see very nice papers, sorry,
+[660.12s -> 662.64s]  very nice sort of comparisons showing things like
+[662.68s -> 664.22s]  what happens when you train a dense model
+[664.24s -> 665.78s]  with a particular amount of flops.
+[665.82s -> 668.36s]  What happens when you train a really naive MOE
+[668.38s -> 670.76s]  that doesn't do very smart routing, what happens?
+[670.78s -> 672.26s]  And then if you use a smarter routing
+[672.28s -> 674.96s]  called the switch sort of MOE, what happens?
+[675.00s -> 676.00s]  And so you'll see all of these
+[676.02s -> 677.50s]  very carefully controlled comparisons
+[677.52s -> 680.44s]  and you see as you go from dense to sparse, right?
+[680.44s -> 682.68s]  So that's the leftmost column to the rightmost column,
+[682.70s -> 684.68s]  you see all of these sort of benchmark metrics
+[684.70s -> 688.48s]  very consistently improve for a fixed amount of flops.
+[688.52s -> 691.32s]  So this is very consistent.
+[691.34s -> 694.06s]  And kind of one thing that I think
+[694.08s -> 696.66s]  almost everyone at this point has probably heard of, right,
+[696.68s -> 699.66s]  is DeepSeek v3, and that's in some sense
+[699.70s -> 702.00s]  a culmination of all this line of work.
+[702.02s -> 703.96s]  But if you hadn't been following MOEs
+[704.00s -> 705.66s]  and you were excited about kind of this branch
+[705.70s -> 708.60s]  of neural networks and language modeling,
+[708.62s -> 710.50s]  you would have actually known about DeepSeek
+[710.54s -> 713.10s]  long before v3 got popular.
+[713.14s -> 715.34s]  And we'll see at the very end of this lecture,
+[715.36s -> 718.00s]  actually DeepSeek v3 is not very different
+[718.04s -> 720.34s]  from the very earliest DeepSeek MOEs.
+[720.38s -> 723.04s]  Architecturally, they had kind of nailed it
+[723.08s -> 724.82s]  way back when they were training
+[724.84s -> 727.58s]  these sort of much smaller two billion parameter models,
+[727.62s -> 730.06s]  they really just kind of got the engineering right
+[730.08s -> 731.38s]  to get something that is actually
+[731.42s -> 734.52s]  really quite remarkably good, which is their v3 model.
+[736.96s -> 737.80s]  Okay.
+[738.92s -> 741.90s]  So now I think, I've spent quite a few minutes
+[741.92s -> 744.10s]  trying to really hype you up on MOEs.
+[744.14s -> 745.96s]  And they really are, I think, worth hyping up,
+[746.00s -> 747.76s]  they're very good.
+[747.80s -> 749.74s]  But I think there's a question of why haven't they
+[749.76s -> 751.38s]  been more popular, right?
+[751.40s -> 754.18s]  Why isn't it the standard thing we teach in NLP
+[754.20s -> 756.04s]  and language modeling classes?
+[757.18s -> 758.78s]  It's just that they're very complex
+[758.82s -> 760.58s]  and they're very messy, and I'm hoping
+[760.62s -> 762.78s]  that they'll get simplified over the next few years,
+[762.82s -> 766.28s]  but they still remain pretty nasty.
+[766.30s -> 769.90s]  So one of the things is, the infrastructure is very complex
+[769.94s -> 772.98s]  and the biggest advantages of MOEs really happen
+[773.00s -> 774.38s]  when you're doing multi-node training,
+[774.40s -> 777.02s]  like when you have to split up your models anyway,
+[777.04s -> 779.24s]  then it starts to make sense to shard experts
+[779.28s -> 781.88s]  across different models, that's a very natural thing to do.
+[781.92s -> 783.48s]  But until you get to that point,
+[783.52s -> 786.16s]  maybe MOEs are not quite as good, right?
+[786.18s -> 788.42s]  So some of the earlier Google papers
+[788.46s -> 790.52s]  really talk about this trade-off where they say,
+[790.56s -> 792.26s]  actually when you get these really big models
+[792.30s -> 793.46s]  that you have to split up,
+[793.50s -> 795.80s]  then experts become uniquely good.
+[796.70s -> 799.90s]  There's also other things that are really tricky.
+[799.94s -> 801.44s]  If you think about it carefully, right,
+[801.48s -> 804.64s]  this decision of which expert you route tokens to
+[804.68s -> 806.34s]  is a very difficult thing to learn, right?
+[806.38s -> 808.54s]  In deep learning, we really like differentiable objectives,
+[808.58s -> 810.94s]  right, very smooth things that we can take gradients of.
+[810.98s -> 812.82s]  Routing decisions are not differentiable,
+[812.84s -> 815.88s]  because we have to pick and commit to a particular expert.
+[815.92s -> 817.42s]  So if we're doing that, you know,
+[817.46s -> 819.42s]  we're gonna have a very tricky optimization problem,
+[819.46s -> 822.40s]  and the training objectives to make that work
+[822.42s -> 825.86s]  is either heuristic and or unstable, right?
+[825.88s -> 827.68s]  And so we're gonna have to really carefully
+[827.72s -> 830.12s]  engineer those guys to get them to work, right?
+[830.16s -> 833.52s]  So those are two reasons why you don't really
+[833.56s -> 835.76s]  want to maybe do this normally.
+[837.66s -> 839.00s]  So what do MOEs look like?
+[839.02s -> 841.32s]  As I started this lecture with, you know,
+[841.36s -> 844.00s]  the classic MOEs that you should think of
+[844.04s -> 846.56s]  is you take, you know, the densely connected layers,
+[846.60s -> 848.60s]  the FFNs, and you split them up,
+[848.64s -> 850.80s]  or you, you know, copy them,
+[850.84s -> 853.20s]  and you have sparse routing decisions among them.
+[853.24s -> 855.30s]  Of course, you could do the same kind of idea.
+[855.32s -> 857.88s]  You could have a sparsely routed attention layer,
+[857.92s -> 859.28s]  and some people have done this.
+[859.32s -> 861.72s]  There's been a couple papers and a couple releases
+[861.76s -> 863.96s]  that have taken this approach.
+[864.00s -> 866.90s]  But it is actually quite rare to see this
+[866.92s -> 868.86s]  in the major model releases.
+[868.90s -> 871.54s]  I think I've seen people talking on the internet
+[871.56s -> 873.60s]  saying, like, this approach is actually really much,
+[873.64s -> 875.70s]  even more unstable, and very difficult
+[875.74s -> 878.00s]  to really train consistently.
+[878.04s -> 880.48s]  It's sort of, I haven't really seen the oblations
+[880.50s -> 883.04s]  to back that out, but certainly there haven't really
+[883.08s -> 885.46s]  been many people training those kinds of models
+[885.48s -> 887.32s]  with MOE attentions.
+[888.72s -> 890.36s]  So now, you know, I've told you
+[890.38s -> 892.36s]  about the basic architecture, right?
+[892.40s -> 893.60s]  It's really simple.
+[893.62s -> 895.00s]  It's just you have a router of some kind,
+[895.02s -> 898.14s]  and you route, and then you have different MLPs.
+[898.16s -> 900.44s]  So what are the things that might vary
+[900.46s -> 903.20s]  across different MOE choices?
+[903.24s -> 905.20s]  You might ask, how do we route, right?
+[905.24s -> 908.20s]  The routing function is an obviously important choice.
+[908.24s -> 910.88s]  How many experts and how big should the experts be?
+[910.92s -> 912.22s]  That's another choice.
+[912.26s -> 914.90s]  And then the final one is, how would we train this router?
+[914.92s -> 916.50s]  This non-differentiable objective
+[916.54s -> 918.24s]  that seems very difficult to train.
+[918.26s -> 920.36s]  So those are very important design questions,
+[920.40s -> 922.14s]  and we're gonna go through each one,
+[922.16s -> 924.20s]  hopefully covering the design space
+[924.24s -> 926.74s]  of all these MOE things.
+[926.78s -> 928.54s]  Yeah, any questions before I get into each one
+[928.58s -> 930.48s]  of these different subcomponents here?
+[932.62s -> 933.44s]  Good, okay.
+[937.12s -> 939.62s]  So if you're interested in just kind of understanding
+[939.66s -> 943.80s]  a broad overview of MOEs, at least circa 2022,
+[943.82s -> 946.86s]  there's a really nice sort of survey or a review paper
+[946.90s -> 950.06s]  by Thetis et al. in 2022 that covers a lot of these,
+[950.10s -> 953.34s]  and many of my figures are credited to that paper.
+[954.50s -> 955.98s]  If we're thinking about how we're gonna route
+[956.00s -> 959.84s]  or essentially match tokens to experts, right?
+[959.88s -> 962.28s]  This is the core component of a MOE,
+[962.32s -> 964.48s]  because what a MOE does is, you know,
+[964.52s -> 965.88s]  tokens are gonna be coming in, right?
+[965.92s -> 967.96s]  You have your sequence that you're processing,
+[967.96s -> 970.42s]  and those sequences are going to be assigned to experts,
+[970.46s -> 972.46s]  right, not all experts will process every token.
+[972.50s -> 975.54s]  That's the whole point of a sparsely routed MOE.
+[975.56s -> 979.04s]  And so you can ask, how are these routing decisions made?
+[979.08s -> 982.50s]  So you can sort of have three different kinds of choices.
+[982.54s -> 985.24s]  You can have token choice, where each token
+[985.28s -> 987.62s]  is going to have a sort of routing sort of preference
+[987.64s -> 990.62s]  for different experts, and I will choose the top K,
+[990.64s -> 994.86s]  experts for each token, or I can have expert choice
+[994.88s -> 996.58s]  where each expert is gonna sort of have
+[996.58s -> 998.72s]  a rank preference over tokens,
+[998.74s -> 1001.02s]  and then I'm gonna choose the top K tokens for each expert.
+[1001.04s -> 1002.32s]  This has a really nice benefit
+[1002.34s -> 1005.08s]  of being balanced over experts.
+[1005.12s -> 1006.66s]  And then the last one is sort of,
+[1006.68s -> 1008.22s]  you could solve some sort of complicated
+[1008.26s -> 1011.22s]  optimization problem to make sure that the mapping
+[1011.26s -> 1013.92s]  between experts and tokens is somehow balanced, right?
+[1013.96s -> 1015.26s]  This is global assignment.
+[1018.00s -> 1021.94s]  And just to, you know, give you a bit of a teaser here,
+[1021.96s -> 1026.54s]  almost all the MOEs do token choice top K.
+[1026.58s -> 1029.44s]  In the early days of MOEs, people tried many,
+[1029.48s -> 1032.64s]  many different things, sort of spanning this whole spectrum
+[1032.68s -> 1035.42s]  of design space of token routers.
+[1035.44s -> 1037.14s]  If you look at the big releases,
+[1037.18s -> 1040.22s]  they have all converged to basically one class
+[1040.26s -> 1042.68s]  of routing mechanisms, which is token choice top K.
+[1042.72s -> 1046.82s]  So each token is gonna rank order experts by affinity,
+[1046.86s -> 1048.72s]  and then there's gonna be kind of a top K choice
+[1048.76s -> 1050.32s]  for each one of this.
+[1050.36s -> 1052.66s]  And OMO, which I'll keep referring to
+[1052.70s -> 1053.86s]  throughout this lecture, because they have
+[1053.90s -> 1055.60s]  a really nice series of ablations,
+[1055.66s -> 1057.56s]  so it's really nice to teach off of,
+[1057.60s -> 1059.10s]  have exactly this ablation.
+[1059.12s -> 1060.92s]  They compare a token choice routing
+[1060.96s -> 1062.52s]  versus an expert choice routing,
+[1062.56s -> 1064.40s]  and they show if you look at validation loss,
+[1064.42s -> 1066.96s]  token choice is much, much nicer behaved,
+[1067.00s -> 1069.24s]  much faster in loss to K.
+[1069.26s -> 1070.44s]  Yes?
+[1070.46s -> 1072.94s]  Is this function a function of the token itself,
+[1072.98s -> 1074.40s]  or is it a function?
+[1074.44s -> 1077.94s]  It's a function of the sort of the hidden state, right?
+[1077.98s -> 1079.44s]  So the token is gonna get processed
+[1079.48s -> 1081.62s]  with all the position embeddings and so on,
+[1081.64s -> 1083.02s]  and then the hidden state will come in,
+[1083.04s -> 1085.18s]  and then it will be processed by the MLP.
+[1085.20s -> 1089.64s]  So for the other two experts choosing the token
+[1089.68s -> 1091.20s]  and also the next one,
+[1091.24s -> 1092.90s]  when you say that it's more balanced
+[1092.94s -> 1095.88s]  across the experts, are they,
+[1097.28s -> 1100.12s]  like it's still for the current token sequence,
+[1100.14s -> 1103.58s]  but it's forcing them to be more distributed?
+[1103.62s -> 1104.62s]  I guess like,
+[1104.66s -> 1106.96s]  Yeah, it's still gonna be the same set of tokens,
+[1106.98s -> 1107.96s]  but really it's about kind of
+[1107.98s -> 1109.72s]  the ranking selector function, right?
+[1109.76s -> 1112.02s]  In token choice, I'm just gonna take
+[1112.06s -> 1113.90s]  the top K amongst the column.
+[1113.92s -> 1115.76s]  Like maybe the scores are even identical, right?
+[1115.78s -> 1118.16s]  I'm just gonna take the top K amongst the columns.
+[1118.20s -> 1121.12s]  In expert choice, I'm gonna take top K amongst the rows.
+[1121.16s -> 1122.52s]  Right?
+[1122.56s -> 1125.30s]  And top K amongst the columns is kind of nice
+[1125.32s -> 1126.40s]  because you might be able to say,
+[1126.42s -> 1128.60s]  oh, I can define a scoring function
+[1128.64s -> 1130.06s]  such that the score is how well
+[1130.10s -> 1131.94s]  each token gets processed by each expert.
+[1131.96s -> 1133.34s]  And token choice will route me
+[1133.36s -> 1135.20s]  to the best expert, right, for that token.
+[1135.24s -> 1136.90s]  So that makes sense from processing.
+[1136.94s -> 1138.28s]  But expert choice has the benefit
+[1138.30s -> 1141.28s]  that each expert gets exactly the same number of tokens.
+[1141.30s -> 1142.12s]  And so now you might,
+[1142.14s -> 1143.68s]  like if you're putting different experts
+[1143.70s -> 1146.24s]  on different devices, you've got balanced utilization.
+[1146.26s -> 1148.10s]  So there's different trade-offs at play
+[1148.14s -> 1149.34s]  as you think about routing.
+[1149.38s -> 1150.20s]  Yes.
+[1151.20s -> 1154.44s]  How does a token know which expert is the best expert?
+[1154.48s -> 1155.94s]  Good, yes, so the question was
+[1155.98s -> 1158.32s]  how does each token know which expert is good?
+[1158.34s -> 1160.42s]  That is exactly the role of the router.
+[1160.44s -> 1162.28s]  And I'll give you the router equation.
+[1162.32s -> 1163.76s]  But to give you a bit of a,
+[1163.78s -> 1165.52s]  not really a spoiler, but you know,
+[1165.56s -> 1167.80s]  the routers are much more lightweight than you think.
+[1167.82s -> 1170.72s]  So your token, let's say, is represented by vector X.
+[1170.74s -> 1173.70s]  That's your hidden residual stream coming in.
+[1173.74s -> 1177.14s]  So now X is gonna get multiplied by W, a matrix,
+[1177.18s -> 1179.64s]  and then you'll just take a sigmoid or something.
+[1179.68s -> 1180.82s]  And that's the score.
+[1180.84s -> 1183.82s]  So it's really just a vector-vector inner product,
+[1183.84s -> 1186.18s]  almost like an attention operation, in a way.
+[1187.08s -> 1187.92s]  Yes.
+[1187.96s -> 1192.02s]  Is top here like top one, or is H-turn going to drive?
+[1192.06s -> 1193.22s]  Right, so the choice of,
+[1193.26s -> 1195.76s]  so the question was is K one here?
+[1195.80s -> 1197.66s]  So K is actually a hyperparameter,
+[1197.70s -> 1200.64s]  and different MOEs will choose different things.
+[1201.62s -> 1202.62s]  I will talk about this again,
+[1202.66s -> 1203.62s]  but to give you the high-level intuition,
+[1203.66s -> 1207.02s]  the initial argument that the earliest MOE papers made
+[1207.06s -> 1209.50s]  was that K should be greater than two,
+[1209.52s -> 1211.66s]  because that way you get some exploration.
+[1211.70s -> 1212.70s]  If you're doing K equals one,
+[1212.74s -> 1215.34s]  maybe you're just always exploiting the best arm,
+[1215.36s -> 1216.86s]  and you'll never know about the potential
+[1216.90s -> 1217.70s]  other things you could do.
+[1217.74s -> 1220.20s]  But if K is two, then maybe that second arm
+[1220.24s -> 1222.24s]  can tell you a little bit of exploration information.
+[1222.28s -> 1226.18s]  So, you know, K equals two was the canonical choice,
+[1226.22s -> 1229.18s]  and K equals two actually continues to be very popular.
+[1229.22s -> 1231.72s]  So that would be like double the flops, like, right?
+[1231.76s -> 1233.80s]  That's right, that's right, so that would double the flops.
+[1233.82s -> 1235.92s]  And so when people talk about MOEs,
+[1235.96s -> 1237.00s]  they usually say things like
+[1237.02s -> 1238.84s]  X number of activated parameters,
+[1238.86s -> 1239.86s]  and that would account for the fact
+[1239.90s -> 1243.16s]  that you're putting in two MOPs.
+[1243.20s -> 1244.00s]  Yes.
+[1244.04s -> 1246.40s]  So when K is greater than one,
+[1246.44s -> 1247.94s]  like even at first time,
+[1247.98s -> 1252.04s]  do we combine the outputs of the different experts into?
+[1252.08s -> 1253.48s]  Yes, the question was when K is one,
+[1253.52s -> 1255.78s]  do the outputs get combined?
+[1255.82s -> 1257.08s]  That's right, like if you look at,
+[1257.42s -> 1259.96s]  look at the attention diagram over there,
+[1259.98s -> 1263.20s]  you got the router, it's routed to two MLPs up top,
+[1263.22s -> 1265.56s]  and then they get combined together right after, right?
+[1265.60s -> 1266.96s]  So, that's exactly right.
+[1268.70s -> 1270.96s]  So in that case, you can just set a simple average,
+[1271.00s -> 1272.20s]  like a weighted average.
+[1272.24s -> 1275.26s]  So the question was how does the aggregation happen?
+[1275.30s -> 1276.20s]  It's just a sum.
+[1278.14s -> 1280.98s]  Right, so I'm gonna go over the variance,
+[1281.00s -> 1282.84s]  very common variance that people do.
+[1283.74s -> 1285.98s]  And really, in some ways,
+[1285.98s -> 1287.68s]  all you need to know is top K
+[1287.72s -> 1291.08s]  in order to actually implement a high performance MOE,
+[1291.12s -> 1292.46s]  but I'll give you the other variance
+[1292.48s -> 1294.92s]  because they're natural things you might think of.
+[1294.96s -> 1297.60s]  Top K routing is what is used in most MOEs,
+[1297.62s -> 1299.46s]  token choice top routing, top K routing.
+[1299.50s -> 1302.16s]  So how that works is you have your residual stream
+[1302.20s -> 1304.76s]  inputs X, that will go into a router,
+[1304.80s -> 1306.26s]  and as I said, a router is really
+[1306.30s -> 1307.64s]  kind of like the attention operation.
+[1307.66s -> 1310.34s]  There's like a linear inner product and then a softmax,
+[1310.38s -> 1315.38s]  and then you pick the top K most highly activated experts,
+[1316.48s -> 1318.54s]  and then those outputs are gated.
+[1318.58s -> 1319.82s]  Depending on the implementation,
+[1319.84s -> 1323.48s]  you might weight the outputs based on this router weight,
+[1323.52s -> 1326.52s]  or you might not, and then you will just output
+[1326.56s -> 1328.48s]  the weighted average or just a straight sum,
+[1328.52s -> 1331.36s]  depending on how your MOE implementation works.
+[1331.40s -> 1335.66s]  And so a lot of the MOE papers and methods use top K,
+[1335.70s -> 1338.20s]  Switch Transformer, G-Shard, Grok, Mixpro, Clan,
+[1338.24s -> 1343.24s]  all the DeepSeek variants use different top K variants.
+[1343.66s -> 1348.50s]  Maybe a very surprising fact, and this should really
+[1348.54s -> 1351.64s]  make you think about what's going on with MOEs.
+[1351.68s -> 1354.12s]  There are a lot of results that show that actually
+[1354.14s -> 1356.22s]  you don't even need a smart router at all.
+[1356.24s -> 1357.92s]  You can actually just use a hashing function
+[1357.94s -> 1361.66s]  at the very bottom to map these Xs onto your experts,
+[1361.68s -> 1362.92s]  and even if you're doing hashing,
+[1362.96s -> 1365.02s]  so no semantic information at all,
+[1365.06s -> 1368.10s]  you will still get gains from a hashing based MOE,
+[1368.12s -> 1369.56s]  which is pretty wild.
+[1370.36s -> 1374.76s]  Some of the earliest work on MOEs,
+[1374.78s -> 1377.32s]  I think had the very smart idea, and in many ways,
+[1377.36s -> 1379.90s]  the right idea, if you're thinking about this top down,
+[1379.92s -> 1383.56s]  of using RL to learn the routing behavior, right?
+[1383.60s -> 1386.16s]  Of course, the choice of where to route to
+[1386.20s -> 1388.68s]  is a discrete decision, and RL is great
+[1388.70s -> 1390.20s]  for learning discrete decisions.
+[1390.24s -> 1392.10s]  Why don't you use RL to learn routing?
+[1392.14s -> 1393.80s]  It was used in some of the earliest work
+[1393.84s -> 1395.18s]  on a mixture of experts.
+[1395.20s -> 1397.78s]  As far as I know, basically no one does this now.
+[1397.86s -> 1399.50s]  If you have the compute cost to do this,
+[1399.54s -> 1401.40s]  it's too prohibitive, and you already have
+[1401.44s -> 1403.88s]  stability issues, you might not want to do that.
+[1404.78s -> 1407.14s]  There have been a couple of papers
+[1407.18s -> 1408.68s]  that have explored things like solving
+[1408.72s -> 1410.94s]  linear assignment problems, or optimal transport
+[1410.98s -> 1412.54s]  style problems.
+[1412.58s -> 1414.38s]  They're very elegant, but once again,
+[1414.42s -> 1416.48s]  the cost of doing this is much higher
+[1416.52s -> 1418.42s]  than the benefits that it gives you, I think,
+[1418.46s -> 1421.02s]  in practice, and it hasn't really been adopted.
+[1421.06s -> 1422.66s]  But there's a lot of really interesting things
+[1422.70s -> 1424.76s]  that people are doing like this
+[1424.80s -> 1427.10s]  to try to improve the routing.
+[1428.76s -> 1430.56s]  So now I can point at this slide
+[1430.60s -> 1434.80s]  and really talk through how routing works in detail.
+[1434.84s -> 1437.54s]  So this is the kind of top K routing
+[1437.58s -> 1440.44s]  that almost everyone has converged to now.
+[1441.54s -> 1444.98s]  This is the router that's used in DeepSeq v1-2.
+[1445.02s -> 1447.62s]  Quen and Grok do almost exactly this.
+[1448.88s -> 1450.78s]  There's a, instead of having a softmax
+[1450.82s -> 1452.68s]  directly at the bottom here,
+[1452.72s -> 1456.72s]  they do a DeepSeq v3 mixed role DBRX.
+[1457.00s -> 1458.30s]  Don't have a softmax at the bottom,
+[1458.34s -> 1460.20s]  but they'll softmax the G of ITs.
+[1460.24s -> 1462.30s]  But it's a very minor difference.
+[1462.34s -> 1464.78s]  So let's walk through what's going on here
+[1464.80s -> 1469.14s]  and try to reason about the behavior of this.
+[1469.18s -> 1472.78s]  So what's happening here is at the very bottom,
+[1472.82s -> 1473.82s]  we've got our inputs.
+[1473.84s -> 1477.48s]  This is our U of L input,
+[1477.52s -> 1479.82s]  and I would like to take this
+[1479.86s -> 1481.66s]  sort of residual stream input
+[1481.68s -> 1484.96s]  and process it through my MOE.
+[1485.00s -> 1486.06s]  So the first thing I'm gonna do
+[1486.44s -> 1487.64s]  is I have to figure out which experts
+[1487.66s -> 1489.00s]  are going to be activated.
+[1489.04s -> 1490.24s]  Now how am I gonna do that?
+[1490.28s -> 1491.54s]  Well, how I'm going to do that
+[1491.58s -> 1493.20s]  is very similar to attention.
+[1493.24s -> 1496.28s]  I'm gonna take my U, which is my residual stream input,
+[1496.32s -> 1499.38s]  and I'm gonna take the inner products with the E of I's.
+[1499.42s -> 1501.52s]  These are kind of learned vectors
+[1501.54s -> 1504.82s]  that are for each expert that tells the expert
+[1504.86s -> 1507.82s]  I'm an expert that points in this direction.
+[1507.86s -> 1510.12s]  And so I'm computing in this inner product here
+[1510.16s -> 1512.10s]  expert and input affinity,
+[1512.12s -> 1514.00s]  and I'm computing a softmax to determine
+[1514.00s -> 1518.34s]  for each token, what are the best experts.
+[1518.38s -> 1519.18s]  So I normalize.
+[1519.22s -> 1520.92s]  This is S of I of T.
+[1520.94s -> 1523.14s]  Now I take the S of I of T,
+[1523.18s -> 1524.82s]  and I go through a top K function.
+[1524.84s -> 1528.56s]  I only select the K best weights,
+[1528.58s -> 1531.06s]  and then I use this as my gate.
+[1531.08s -> 1533.36s]  So I zero out everything else,
+[1533.40s -> 1535.36s]  and I take the weighted average
+[1535.40s -> 1538.36s]  of each of the experts' outputs,
+[1538.40s -> 1541.84s]  and then I add that to my original residual stream,
+[1541.86s -> 1543.60s]  and then I return that.
+[1543.64s -> 1545.88s]  So this is hopefully very familiar
+[1545.90s -> 1549.00s]  to kind of what you're all very familiar with
+[1549.04s -> 1551.74s]  in terms of how Transformer works
+[1551.78s -> 1555.22s]  with only the difference of this top K routing piece.
+[1555.24s -> 1559.86s]  Is that clear kind of to everyone how this thing works?
+[1559.88s -> 1561.66s]  Good, excellent.
+[1561.68s -> 1564.56s]  So in some sense, the mechanics of the forward process
+[1564.58s -> 1566.72s]  of the routing is very simple.
+[1566.76s -> 1569.62s]  What is kind of mystifying is that
+[1569.66s -> 1571.26s]  fact that you can learn this very well, right?
+[1571.30s -> 1573.34s]  This is in some sense a fairly complicated
+[1573.34s -> 1576.00s]  set of things to have to learn to do well by a model.
+[1576.04s -> 1576.88s]  Yes?
+[1578.14s -> 1581.04s]  So, we're using Softmax here.
+[1582.44s -> 1585.68s]  Previously, one of the benefits of Softmax
+[1585.72s -> 1587.02s]  is that it's gonna push you
+[1587.06s -> 1590.82s]  pretty extremely to choosing a singular max.
+[1590.86s -> 1594.66s]  It's not a hard max, but a implicit tool.
+[1594.70s -> 1596.20s]  I'm having trouble thinking of the intuition
+[1596.22s -> 1600.14s]  of playing Softmax, basically on top of
+[1600.16s -> 1601.90s]  like combining it with a top K
+[1601.90s -> 1604.26s]  where you're getting multiple and then you're using
+[1604.30s -> 1605.46s]  something that's gonna push you
+[1605.50s -> 1608.76s]  towards choosing just one thing.
+[1608.80s -> 1611.10s]  Yeah, I mean, I think maybe one way
+[1611.14s -> 1613.68s]  of thinking about the Softmax is,
+[1613.70s -> 1616.58s]  you know, the whole purpose of this
+[1616.60s -> 1618.64s]  is just to make it so that when I average
+[1618.68s -> 1621.04s]  my experts later, it kind of sums to one.
+[1621.08s -> 1624.18s]  Don't think of the Softmax as like a softmax operation,
+[1624.22s -> 1626.12s]  even though that's literally the name.
+[1626.16s -> 1627.48s]  Really, the Softmax operation
+[1627.52s -> 1629.88s]  is a normalized to one operation.
+[1629.92s -> 1631.72s]  And the normalized to one operation
+[1632.58s -> 1634.54s]  is gonna make that a weighted average up top.
+[1634.58s -> 1636.52s]  The other thing that's very important is,
+[1636.54s -> 1637.72s]  you know, you might think,
+[1637.74s -> 1639.22s]  why can't I just get rid of the top K?
+[1639.26s -> 1640.98s]  Why don't I just use the Softmax here
+[1641.02s -> 1643.16s]  and just, you know, gate all the experts?
+[1643.18s -> 1644.42s]  Well, then you immediately lose
+[1644.46s -> 1647.32s]  the systems efficiency aspect of this, right?
+[1647.36s -> 1649.86s]  You have to have top K during training,
+[1649.90s -> 1651.56s]  otherwise you pay the training cost
+[1651.60s -> 1654.34s]  of all capital N of your experts, right?
+[1654.36s -> 1655.96s]  This is the key thing about MOEs.
+[1656.00s -> 1658.90s]  Like, we have to do all this gymnastics
+[1658.94s -> 1661.38s]  to make sure that both at training time
+[1662.20s -> 1663.90s]  we have a sparse number of activated experts.
+[1663.94s -> 1666.40s]  That's why we go through the top K, right?
+[1666.44s -> 1668.18s]  Okay, yes, from the back.
+[1668.20s -> 1671.24s]  Yeah, so, because you're doing Softmax first
+[1671.28s -> 1673.34s]  and then you're not getting the weights,
+[1673.38s -> 1674.68s]  you no longer have the guarantees
+[1674.72s -> 1678.12s]  to do something like this, right?
+[1678.16s -> 1680.72s]  So the question was, yeah, so the question was,
+[1680.76s -> 1682.98s]  if you Softmax first, you no longer sum to one.
+[1683.02s -> 1684.90s]  And yes, that's absolutely right,
+[1684.92s -> 1686.32s]  you no longer sum to one.
+[1686.36s -> 1688.96s]  And in some ways, like, there's no requirement
+[1689.00s -> 1690.10s]  that you have to sum to one,
+[1690.12s -> 1692.76s]  because, you know, the next layer can magnify it back up.
+[1692.80s -> 1694.26s]  You know, there's layer norms everywhere.
+[1694.30s -> 1696.12s]  It's not as if it has to sum to one.
+[1696.16s -> 1697.42s]  But I think that is the reason
+[1697.46s -> 1698.76s]  why some of the other architectures
+[1698.80s -> 1700.50s]  basically move the location of the Softmax.
+[1700.52s -> 1701.70s]  There's a kind of aesthetic choice
+[1701.72s -> 1703.64s]  about whether you really want that weight
+[1703.66s -> 1705.30s]  to be normalized to one or not.
+[1706.64s -> 1707.60s]  Yes.
+[1707.64s -> 1708.84s]  Yeah, so I was wondering, like,
+[1708.88s -> 1711.50s]  how does the e-vector here relates to the weight
+[1711.54s -> 1714.04s]  of the pieces of the feed forward network?
+[1714.08s -> 1716.04s]  Okay, so the question was whether and how
+[1716.08s -> 1717.98s]  the e-vectors relate to the feed forward.
+[1718.02s -> 1719.28s]  They're not really tied in any way.
+[1719.30s -> 1721.50s]  The e-vectors are just learned vectors for that.
+[1721.54s -> 1724.20s]  Just think of the e's as parameters for the router, right?
+[1724.24s -> 1726.20s]  They're just separate objects from the FFM.
+[1727.70s -> 1728.90s]  All right, yeah.
+[1728.94s -> 1730.74s]  I was just wondering,
+[1730.78s -> 1734.84s]  how does it compare to, like, sampling from the Softmax?
+[1734.88s -> 1736.32s]  Great, the question was about
+[1736.34s -> 1738.98s]  how does it compare to sampling from the Softmax.
+[1739.02s -> 1740.58s]  You can sample from the Softmax,
+[1740.62s -> 1744.38s]  and some methods actually do
+[1744.42s -> 1746.42s]  kind of soft sampling from the Softmax.
+[1746.44s -> 1750.10s]  Specifically, one of the Google papers has a procedure
+[1750.14s -> 1752.50s]  where they take the top element of the Softmax
+[1752.54s -> 1754.44s]  and then they randomly sample the second element
+[1754.48s -> 1757.74s]  proportional to the remainder of the Softmax,
+[1757.78s -> 1760.32s]  and that gives you more exploration, which is good,
+[1760.34s -> 1761.68s]  but the drawback of that is that
+[1761.72s -> 1763.12s]  if you don't sample at test time,
+[1763.14s -> 1764.98s]  now you've got a train-test mismatch.
+[1767.02s -> 1768.32s]  Okay, yes.
+[1768.36s -> 1771.42s]  How about just re-normalize at the top K?
+[1771.46s -> 1773.06s]  Why not just re-normalize at the top K,
+[1773.10s -> 1774.52s]  was the question, is that right?
+[1774.66s -> 1776.86s]  And some models do, some models do re-normalize
+[1776.90s -> 1779.16s]  at the top K, but that's kind of a choice.
+[1779.20s -> 1781.30s]  Like, some architectures don't do that,
+[1781.34s -> 1782.40s]  some architectures do.
+[1782.44s -> 1784.20s]  It doesn't actually matter because
+[1784.24s -> 1786.80s]  the scale can be basically adjusted post-hoc, right?
+[1786.84s -> 1789.04s]  So there's no reason why it has to sum to one
+[1789.08s -> 1790.98s]  after the G operation.
+[1793.32s -> 1794.18s]  Cool.
+[1794.22s -> 1795.02s]  Oh, sorry.
+[1795.04s -> 1795.84s]  Yes.
+[1795.88s -> 1798.88s]  The bias, you don't know what term,
+[1798.92s -> 1800.68s]  is U raised up there?
+[1800.72s -> 1802.08s]  Yeah, yeah.
+[1802.08s -> 1804.32s]  So first term of the sum,
+[1804.36s -> 1809.12s]  if G is approximating probability vector,
+[1809.16s -> 1811.52s]  could be seen as an expectation
+[1811.56s -> 1815.76s]  of the function FFN, right, plus U.
+[1815.80s -> 1818.76s]  So FFN actually, this is not an expectation of FFN
+[1818.80s -> 1822.04s]  because each FFN is a different FFN.
+[1822.06s -> 1824.24s]  So this is not actually an expectation,
+[1824.28s -> 1826.20s]  and the gates are sparse,
+[1826.24s -> 1828.44s]  so this is like a weighted selection operation
+[1828.48s -> 1831.88s]  over K different, or actually capital N different FFNs.
+[1831.88s -> 1834.48s]  And then the UTL at the very end there,
+[1834.52s -> 1835.68s]  you know, if you remember the transformer,
+[1835.72s -> 1836.88s]  that's the residual stream, right?
+[1836.92s -> 1838.38s]  So I'm adding back the inputs
+[1838.42s -> 1842.56s]  because I want sort of a identity connection through it.
+[1842.58s -> 1845.00s]  Okay, oh, there's another question.
+[1845.02s -> 1848.02s]  Why does the router have such a basic parameterization?
+[1848.06s -> 1850.36s]  Like, what happens if you put more weights
+[1850.40s -> 1853.26s]  into your router function?
+[1853.30s -> 1855.76s]  Great, the question was, why is the router so basic?
+[1855.80s -> 1857.50s]  It seems like, if you're gonna have experts,
+[1857.54s -> 1860.04s]  it seems important to route to the right experts,
+[1860.08s -> 1861.84s]  so why don't you do that?
+[1861.88s -> 1864.74s]  I think, you know, there have been some oblations
+[1864.78s -> 1866.54s]  in some of the earlier Google papers
+[1866.58s -> 1869.22s]  on having like MLP routers
+[1869.24s -> 1871.92s]  and like more sophisticated things.
+[1871.96s -> 1874.66s]  I think the sort of complex answer here
+[1874.68s -> 1877.52s]  is that the systems concerns sort of weigh heavily.
+[1877.56s -> 1880.26s]  If you're using a lot of flops to make routing decisions,
+[1880.30s -> 1881.80s]  you know, you have to pay for those flops,
+[1881.82s -> 1883.60s]  and so you have to get performance improvements
+[1883.62s -> 1885.40s]  in just the routing, you know.
+[1885.44s -> 1888.04s]  And I think that one other thing to appreciate here
+[1888.06s -> 1889.64s]  is that there are really big limits
+[1889.66s -> 1891.10s]  to how well you can route
+[1891.36s -> 1893.22s]  because the learning process for this routing thing
+[1893.26s -> 1895.56s]  is actually pretty dicey, right?
+[1895.60s -> 1897.06s]  Because how are you gonna get gradients
+[1897.10s -> 1899.30s]  for which routers are good or bad?
+[1899.34s -> 1901.54s]  Well, the only thing you have is if you have top two,
+[1901.56s -> 1903.70s]  then you can compare the two things that you have,
+[1903.74s -> 1905.64s]  and you can push the gradients into S of T
+[1905.68s -> 1907.40s]  because your G is a weight,
+[1907.44s -> 1910.52s]  and then the S of T might inform your inner products,
+[1910.54s -> 1911.78s]  but that's a very indirect way
+[1911.82s -> 1913.12s]  to be learning your affinity.
+[1913.14s -> 1914.58s]  So even if you make it complex,
+[1914.62s -> 1915.98s]  there's no guarantee that you're gonna really learn
+[1916.02s -> 1917.32s]  the optimal router, right?
+[1918.88s -> 1920.32s]  Great, okay.
+[1921.52s -> 1924.96s]  So I think one of the great innovations
+[1925.00s -> 1926.60s]  of the DeepSeek MOE,
+[1926.62s -> 1929.50s]  and which was very quickly adopted
+[1929.52s -> 1933.80s]  by all the other sort of Chinese MOE releases,
+[1933.84s -> 1937.24s]  is this idea of both a shared expert
+[1937.28s -> 1939.34s]  and a fine-grained expert.
+[1939.38s -> 1942.34s]  And so the basic MOE structure
+[1942.38s -> 1944.62s]  that was sort of originally proposed
+[1944.64s -> 1946.48s]  is to take your dense architecture
+[1946.52s -> 1948.72s]  and kind of copy the experts over, right?
+[1948.74s -> 1950.86s]  So in this case, you know, you're gonna have,
+[1951.68s -> 1953.68s]  let's say if you have top two routing,
+[1953.72s -> 1956.06s]  you're gonna have twice the activated parameters
+[1956.08s -> 1957.56s]  of your original dense model, right?
+[1957.58s -> 1960.08s]  So you take your MOE and you copy it over,
+[1960.12s -> 1962.06s]  and you activate K equals two.
+[1962.10s -> 1963.36s]  So this is kind of what you might think of
+[1963.40s -> 1965.62s]  as like the vanilla or like the basic MOE
+[1965.66s -> 1967.00s]  that you might start with.
+[1968.10s -> 1970.74s]  People realized fairly quickly
+[1970.76s -> 1973.34s]  that having lots of experts is good.
+[1973.36s -> 1975.24s]  And the logical sort of next step
+[1975.26s -> 1977.38s]  beyond having lots of experts is good
+[1977.40s -> 1979.04s]  is I want lots of experts,
+[1979.06s -> 1980.76s]  but I don't want to pay the parameter cost
+[1980.80s -> 1982.42s]  for having lots of experts.
+[1982.46s -> 1984.96s]  And so DeepSeq basically argued
+[1985.00s -> 1986.46s]  that the right thing to do then
+[1986.50s -> 1989.74s]  was to cut the expert up into smaller pieces, right?
+[1989.76s -> 1992.24s]  So remember last lecture, I was telling you about,
+[1992.26s -> 1994.50s]  oh, the kind of golden rule in some sense
+[1994.54s -> 1996.50s]  is to have your hidden layer
+[1996.54s -> 1997.84s]  and then you multiply that by four,
+[1997.88s -> 2000.04s]  and that will give you kind of your projection layer.
+[2000.08s -> 2001.32s]  So now what you would do is you would,
+[2001.34s -> 2003.12s]  instead of multiplying by let's say four,
+[2003.14s -> 2004.58s]  you might multiply by two, right?
+[2004.62s -> 2006.18s]  So now you have smaller matrices,
+[2006.22s -> 2007.46s]  you have more fine-grained experts,
+[2007.46s -> 2009.54s]  you can have twice as many of them, right?
+[2009.58s -> 2011.04s]  And you can kind of take that logic
+[2011.08s -> 2012.24s]  much more to the extreme.
+[2012.28s -> 2014.62s]  You can like quadruple or multiply by eight,
+[2014.64s -> 2015.98s]  and you can keep decreasing
+[2016.02s -> 2019.28s]  the size of your sort of projection dimension there.
+[2019.32s -> 2020.68s]  That's fine-grained experts.
+[2020.72s -> 2023.22s]  And there's drawbacks I'll talk about later.
+[2023.26s -> 2024.46s]  It doesn't come for free,
+[2024.48s -> 2025.66s]  so you have to be very careful
+[2025.68s -> 2027.72s]  about how you structure these things.
+[2027.76s -> 2029.80s]  And then the other thing
+[2029.82s -> 2032.96s]  that has been sort of studied and noted
+[2033.00s -> 2037.36s]  is maybe it's helpful to have at least some MLP
+[2037.36s -> 2039.50s]  that can capture shared structure, right?
+[2039.54s -> 2040.90s]  Like maybe there's just like processing
+[2040.94s -> 2042.20s]  that always needs to happen
+[2042.24s -> 2044.34s]  no matter which token you're processing.
+[2044.38s -> 2046.64s]  In that case, it seems like kind of a waste
+[2046.68s -> 2048.28s]  to do all this routing work
+[2048.32s -> 2051.34s]  and to have all these parameters spread out everywhere
+[2051.38s -> 2054.88s]  when we can just have one or a few shared experts
+[2054.92s -> 2057.02s]  whose job it is to handle
+[2057.06s -> 2059.02s]  all of this shared processing that's needed.
+[2059.06s -> 2060.56s]  And so they're shared experts.
+[2061.52s -> 2064.30s]  And so this setup of using fine-grained experts
+[2064.32s -> 2066.06s]  plus shared experts
+[2066.06s -> 2069.84s]  originally came out in DeepSeq MOE,
+[2069.86s -> 2071.34s]  although I think the original inspiration
+[2071.36s -> 2073.10s]  came from DeepSpeed MOE.
+[2074.14s -> 2076.14s]  And Quynh and others,
+[2076.18s -> 2081.18s]  so almost all of the open MOE releases since DeepSeq,
+[2082.24s -> 2084.12s]  have adopted some sets of these innovations
+[2084.14s -> 2085.68s]  because it's quite clear
+[2085.72s -> 2087.62s]  that especially fine-grained experts
+[2087.66s -> 2089.16s]  is just really, really useful.
+[2089.18s -> 2091.96s]  That's a kind of no-brainer at this point to do.
+[2091.96s -> 2096.86s]  One of the things I really like about reading
+[2096.90s -> 2099.96s]  DeepSeq papers is that they do ablations.
+[2100.00s -> 2103.14s]  It's not like a, whatever, sales, tech report.
+[2103.18s -> 2104.58s]  They actually care about whether or not
+[2104.60s -> 2106.30s]  their methods work.
+[2106.34s -> 2108.44s]  And so they have this lovely ablation
+[2108.48s -> 2110.28s]  in the DeepSeq MOE paper
+[2110.32s -> 2113.32s]  where they show the blue bar over here,
+[2113.34s -> 2115.42s]  this is GShard, this is a very basic
+[2115.46s -> 2117.92s]  vanilla implementation of the MOE.
+[2117.96s -> 2120.82s]  You can have one shared expert, that's the orange bar,
+[2120.88s -> 2122.66s]  and that gives you a big boost on some tasks
+[2122.68s -> 2124.58s]  and no boost on others.
+[2124.62s -> 2126.32s]  You can have fine-grained experts,
+[2126.36s -> 2128.42s]  that's the green and orange bars,
+[2128.46s -> 2129.80s]  and you get further boosts from that.
+[2129.82s -> 2131.72s]  And if you compare the blue to the orange,
+[2131.76s -> 2133.20s]  composing all of these differences
+[2133.22s -> 2137.46s]  give you quite the big boost over others.
+[2137.50s -> 2139.10s]  And so we can see that more experts
+[2139.14s -> 2142.60s]  and shared experts generally seem to help.
+[2142.64s -> 2143.98s]  Okay, yes, question.
+[2144.00s -> 2147.04s]  Is that odd, like when it says seven out of something?
+[2147.08s -> 2149.32s]  Does that mean it's doing like top seven?
+[2149.34s -> 2152.18s]  Yes, sorry, I should have explained that, that's right.
+[2152.22s -> 2155.28s]  So x out of y means x activated
+[2155.32s -> 2158.26s]  out of y total routed experts, that's right, yeah.
+[2158.28s -> 2160.60s]  And so you can kind of see the pattern here as well
+[2160.62s -> 2162.22s]  of as you increase the number of experts
+[2162.26s -> 2165.86s]  you also often increase the number of activated experts.
+[2165.90s -> 2168.16s]  Especially if you're doing fine-grained experts.
+[2168.20s -> 2169.54s]  Phops-wise it's free, right,
+[2169.56s -> 2171.80s]  because each expert is now small.
+[2173.64s -> 2174.48s]  Good, okay.
+[2175.20s -> 2179.20s]  So Olmo has basically corroborating evidence
+[2179.24s -> 2182.78s]  that shows really nicely that these things work.
+[2182.82s -> 2185.44s]  So the bottom one I think I'll start with
+[2185.48s -> 2187.02s]  because it's more decisive,
+[2187.04s -> 2190.78s]  shows fine-grained experts going from eight to 32 to 64,
+[2190.82s -> 2192.76s]  fine-grained experts mirroring in some sense
+[2192.78s -> 2194.26s]  the deep-sea cablations,
+[2194.28s -> 2196.56s]  and you see very clear trends and losses
+[2196.60s -> 2200.40s]  and other kinds of metrics that you see improvements
+[2200.42s -> 2202.26s]  going from eight to 32 to 64, right.
+[2202.30s -> 2203.66s]  Fine-grained experts is great.
+[2204.08s -> 2208.42s]  Shared experts, which is purple versus teal at the very top,
+[2208.46s -> 2210.38s]  you actually don't see really any gains,
+[2210.42s -> 2212.46s]  at least in the Olmo setup.
+[2212.48s -> 2215.36s]  So they actually end up going with no shared experts,
+[2215.38s -> 2217.72s]  even though the deep-sea paper seemed to show more gains.
+[2217.76s -> 2219.32s]  So that one actually is maybe more mixed
+[2219.36s -> 2220.60s]  given this sort of follow-up
+[2220.62s -> 2224.76s]  or this third-party replication of these kinds of ideas.
+[2226.84s -> 2229.30s]  So at this point, you might be wondering,
+[2229.34s -> 2231.20s]  you know, what are common configurations?
+[2232.18s -> 2235.88s]  I think I'm gonna take the page out of last lecture's
+[2235.92s -> 2239.42s]  playbook of looking at a lot of the recent releases,
+[2239.46s -> 2241.02s]  looking at what people do,
+[2241.06s -> 2242.82s]  and trying to talk a little bit about
+[2242.86s -> 2245.26s]  the patterns that have arisen.
+[2245.30s -> 2248.76s]  So some of the early Google papers,
+[2248.80s -> 2252.20s]  so GShard, Switch Transformer, STMOE,
+[2252.24s -> 2255.20s]  some of them had really large numbers of routed experts,
+[2255.24s -> 2257.40s]  and there was a lot of really interesting stuff
+[2257.44s -> 2258.44s]  going on in those papers.
+[2258.48s -> 2259.94s]  I'd encourage you to read them.
+[2260.42s -> 2261.98s]  Some of them happened in LSTMs
+[2262.02s -> 2263.52s]  and other kinds of architectures.
+[2264.66s -> 2266.32s]  Regardless, you know, very quickly,
+[2266.36s -> 2267.86s]  I think there was like kind of a period
+[2267.88s -> 2269.76s]  of like eight to 16 experts,
+[2269.80s -> 2274.12s]  like Mixtrol, DBRX, Grok, with two active experts.
+[2274.16s -> 2275.76s]  Those worked reasonably well,
+[2275.80s -> 2277.30s]  but then kind of deep-sea MOE
+[2277.34s -> 2280.76s]  or deep-sea MOEv1 comes out.
+[2280.80s -> 2282.90s]  That has kind of the prototypical configuration
+[2282.94s -> 2283.74s]  I told you about.
+[2283.78s -> 2285.50s]  Fine-grained experts, 64 of them,
+[2285.54s -> 2288.78s]  six actively routed, two shared experts,
+[2288.92s -> 2291.42s]  and each sort of expert is sort of one-fourth the size
+[2291.46s -> 2293.42s]  of a normally-sized expert.
+[2293.46s -> 2295.00s]  Take that last column with a grain of salt
+[2295.02s -> 2296.76s]  because I had to sort of back them out
+[2296.80s -> 2298.30s]  from like config files and things like that,
+[2298.32s -> 2300.96s]  so I'm not 100% sure about the exact ratios here.
+[2302.20s -> 2307.10s]  So we've then got essentially QEN 1.5, deep-sea V3,
+[2307.14s -> 2309.58s]  Minimax, these are, you know, Chinese MOEs.
+[2309.60s -> 2311.44s]  They follow essentially in the same footsteps
+[2311.48s -> 2312.64s]  as deep-sea V1.
+[2312.68s -> 2314.22s]  The specific numbers are different,
+[2314.24s -> 2317.14s]  but in the sense that they use, you know,
+[2317.18s -> 2320.32s]  fine-grained experts, and they often have shared experts,
+[2320.34s -> 2323.12s]  they're very similar to kind of this original
+[2323.14s -> 2325.38s]  deep-sea MOE configuration.
+[2325.42s -> 2328.86s]  Olmo, Minimax, and Llama are very recent MOEs.
+[2328.88s -> 2333.22s]  They definitely do all this fine-grained expert stuff,
+[2333.26s -> 2336.12s]  and Llama4 also uses a shared expert,
+[2336.16s -> 2339.34s]  and you kind of see sort of variations in configuration,
+[2339.36s -> 2340.74s]  but you see what's basically shared,
+[2340.76s -> 2342.86s]  which is this fine-grained experts idea,
+[2342.90s -> 2344.00s]  and especially for the big models,
+[2344.04s -> 2345.30s]  like Llama4 and deep-sea,
+[2345.30s -> 2347.84s]  very, very large numbers of routed experts.
+[2347.86s -> 2350.50s]  Or sorry, not routed, like total experts, yes.
+[2350.54s -> 2354.30s]  So can you explain what the ratios are?
+[2354.34s -> 2356.98s]  The ratio is representing roughly
+[2357.02s -> 2359.84s]  like how much each expert is sliced
+[2359.88s -> 2362.74s]  relative to having just the standard dense configuration.
+[2362.78s -> 2364.58s]  So in terms of hyperparameters,
+[2364.62s -> 2366.72s]  you know that if you're following the rule of thumb,
+[2366.76s -> 2369.26s]  your hidden dimension and sort of your projection
+[2369.28s -> 2371.50s]  from in your MLP should be about one to four,
+[2371.52s -> 2374.72s]  or one to 2.6 if you're doing a gated network, right?
+[2375.22s -> 2376.38s]  And so by looking at the hidden layers
+[2376.42s -> 2377.68s]  of these architectures, you can kind of see
+[2377.72s -> 2379.58s]  how many times they sliced up
+[2379.62s -> 2383.12s]  that original feed-forward size.
+[2383.16s -> 2384.62s]  So if like, for instance,
+[2384.66s -> 2387.02s]  we want to have ratios one to four,
+[2387.06s -> 2389.00s]  but then they have 64 of those experts,
+[2389.02s -> 2391.56s]  does that mean they're still increasing
+[2391.60s -> 2394.40s]  the rule of thumb, you're probably like the factor?
+[2394.44s -> 2395.70s]  That's right, yeah, so you know,
+[2395.74s -> 2397.80s]  you can think of this as roughly,
+[2397.84s -> 2401.08s]  you know, they have 16 normally-sized experts.
+[2401.10s -> 2403.20s]  And so they're of course having more parameters
+[2403.22s -> 2405.02s]  than the density equivalent.
+[2405.06s -> 2408.86s]  They have six routed, so they have eight total
+[2408.90s -> 2411.80s]  active experts at any time, each that are quarter-sized.
+[2411.84s -> 2413.04s]  And so you should think of them as like
+[2413.06s -> 2415.94s]  roughly double the flux, right, of a dense equivalent.
+[2415.96s -> 2419.24s]  So, some arithmetic, but hopefully the math is clear
+[2419.28s -> 2420.94s]  and consistent, hopefully, yes.
+[2421.98s -> 2423.92s]  And like the ratio's like one to four,
+[2423.94s -> 2426.84s]  are you like, okay, yeah, what do you think?
+[2426.88s -> 2430.32s]  It's like, about like three to four.
+[2430.36s -> 2431.76s]  So for some of the exotic ratios,
+[2431.78s -> 2433.78s]  I'm not quite sure why they're that way,
+[2433.82s -> 2436.02s]  but they are very precisely whole numbers
+[2436.06s -> 2438.58s]  when you take the ratios between the FFNs
+[2438.62s -> 2440.12s]  and the implied hyperparameters.
+[2440.16s -> 2443.02s]  And so I think those are exactly the split counts
+[2443.06s -> 2444.32s]  of like how much they were sliced,
+[2444.36s -> 2447.56s]  but I'm not sure why they have one over 14.
+[2447.60s -> 2449.70s]  I mean like, does it, do you ever like project
+[2449.74s -> 2451.50s]  towards like the smaller dimensions,
+[2451.54s -> 2454.50s]  because like that ratio is like the, in the MLT?
+[2454.54s -> 2456.24s]  So yeah, that's what you're asking,
+[2456.28s -> 2457.90s]  like do they down project, yeah, that's right.
+[2457.94s -> 2459.94s]  In some of them, they are actually smaller.
+[2459.98s -> 2461.44s]  I don't remember which models in particular,
+[2462.16s -> 2463.00s]  but in some of them, I do remember
+[2463.02s -> 2465.30s]  they were actually down project.
+[2465.34s -> 2466.50s]  Yes?
+[2466.54s -> 2467.56s]  What is the intuition for wanting
+[2467.60s -> 2470.16s]  more than one shared expert?
+[2470.20s -> 2473.00s]  Yeah, I mean, it does kind of seem like
+[2473.04s -> 2475.14s]  there was a period where some of the Chinese
+[2475.18s -> 2477.14s]  LM companies tried many shared experts,
+[2477.18s -> 2479.94s]  and then people have come back to zero or one.
+[2479.98s -> 2482.68s]  And if you look at the OMO ablations,
+[2482.72s -> 2484.52s]  it's not quite clear that even one shared expert
+[2484.54s -> 2486.52s]  is decisively useful.
+[2486.56s -> 2489.02s]  I think the original motivation was that
+[2489.04s -> 2491.84s]  then you have equally sized experts,
+[2491.88s -> 2494.48s]  like these are both one quarter sized experts,
+[2494.52s -> 2497.54s]  and now you have eight active experts total,
+[2497.58s -> 2499.68s]  and so you can keep the sizes consistent.
+[2499.72s -> 2502.58s]  Otherwise, I don't really see particular justification
+[2502.62s -> 2504.22s]  for why it should be two smaller ones
+[2504.26s -> 2505.46s]  versus one larger one.
+[2508.26s -> 2509.26s]  Okay, cool.
+[2511.36s -> 2512.66s]  So then, hopefully, you know,
+[2512.70s -> 2515.40s]  you get a sense of how the routing works
+[2515.44s -> 2517.60s]  for a lot of these MOEs and how it's all set up.
+[2517.62s -> 2520.58s]  So a forward pass, hopefully, you fully understand.
+[2520.62s -> 2522.16s]  Now we need to think about training,
+[2522.20s -> 2524.72s]  and training is pretty gnarly, right?
+[2524.76s -> 2527.62s]  And the major challenge I foreshadowed earlier,
+[2527.66s -> 2530.86s]  when we train, we cannot turn on all the experts,
+[2530.90s -> 2533.56s]  because if we do that, then we pay
+[2533.60s -> 2536.20s]  the full flops cost of all of the experts.
+[2536.24s -> 2538.06s]  Having a model that's like, I don't know,
+[2538.10s -> 2541.50s]  256 times more expensive to train is a total no-go.
+[2541.54s -> 2543.90s]  So we need train times sparsity,
+[2543.94s -> 2545.30s]  but sparse gaining decisions
+[2545.34s -> 2547.24s]  are obviously not differentiable.
+[2547.24s -> 2550.46s]  We now have a kind of annoying RL-ish problem.
+[2550.48s -> 2552.36s]  And so we could do any of these things,
+[2552.38s -> 2554.52s]  like RL to optimize gaining policies,
+[2554.56s -> 2556.66s]  we could do bandit-inspired things
+[2556.70s -> 2560.20s]  of doing randomization to do exploration,
+[2560.22s -> 2562.46s]  or we can just have some heuristics
+[2562.50s -> 2564.24s]  that try to balance things out, right?
+[2564.26s -> 2565.74s]  Like, put some loss terms in there
+[2565.76s -> 2567.00s]  and hope things work out.
+[2568.18s -> 2569.78s]  Having gone through deep learning,
+[2569.80s -> 2572.48s]  classes of many kinds, you can kind of guess internally
+[2572.50s -> 2574.44s]  which one people use in practice,
+[2574.44s -> 2577.78s]  and I'll talk about each one of these three in turn.
+[2579.78s -> 2583.52s]  Okay, so RL, I think, is one of the earliest things
+[2583.56s -> 2585.80s]  that people tried, it's probably the most
+[2585.82s -> 2587.86s]  principle thing that you can do in this space, right?
+[2587.90s -> 2591.30s]  You have a non-differentiable routing decision,
+[2591.34s -> 2593.34s]  well, think of that as a policy,
+[2593.36s -> 2595.90s]  throw RL at it, and then solve the problem.
+[2597.14s -> 2599.80s]  Unfortunately, it's not better
+[2599.84s -> 2602.74s]  than a lot of the other things that you can do.
+[2602.74s -> 2605.88s]  There is a paper by Clark et al. in 2020
+[2605.92s -> 2609.08s]  who were exploring various scaling-related questions
+[2609.12s -> 2613.56s]  in MOEs, and they do have an RL baseline
+[2613.58s -> 2616.56s]  that I was able to dig up, but unfortunately,
+[2616.60s -> 2618.80s]  it's not really that much better
+[2618.82s -> 2621.06s]  than, say, using hashing for decisions,
+[2621.10s -> 2623.54s]  and they were really interested in benchmarking
+[2623.56s -> 2624.84s]  this thing on the left called SBase,
+[2624.86s -> 2627.16s]  which is like a linear assignment kind of a method,
+[2627.20s -> 2630.84s]  and that thing handily beats doing RL.
+[2630.84s -> 2634.02s]  And I think in practice, the gradient variances
+[2634.04s -> 2637.02s]  and complexity means that it's pretty finicky to use,
+[2637.04s -> 2640.68s]  and no one at scale has really used
+[2640.72s -> 2644.18s]  an RL-based approach to optimize these gating decisions,
+[2644.22s -> 2645.62s]  as far as I know.
+[2646.96s -> 2650.20s]  A thing that has been done much more at scale
+[2650.22s -> 2653.30s]  is stochastic approximations of various kinds.
+[2654.46s -> 2657.60s]  So what they might do is they might add
+[2657.64s -> 2660.08s]  a bit of perturbations.
+[2660.58s -> 2664.68s]  So here is an example of one from Shazir in 2017.
+[2664.72s -> 2667.76s]  This is one of the early MOE papers,
+[2667.78s -> 2670.62s]  where they're still gonna do kind of top K routing,
+[2670.66s -> 2672.32s]  so they're gonna keep the top K elements
+[2672.36s -> 2676.06s]  of this H of X operation, and they're gonna softmax that
+[2676.10s -> 2678.84s]  to get the gate, but what we're going to do
+[2678.86s -> 2682.50s]  to get this H of X operation is kind of the following.
+[2682.54s -> 2684.68s]  So what we're gonna do is we're gonna have
+[2684.70s -> 2687.34s]  our original sort of linear affinity.
+[2687.38s -> 2689.90s]  This is identical to what we were doing before.
+[2690.76s -> 2692.86s]  We were basically just computing our inputs, X,
+[2692.90s -> 2695.76s]  and a sort of learned weight for each gate,
+[2695.80s -> 2697.20s]  and so this part's the same,
+[2697.24s -> 2699.38s]  but I'm actually now gonna jitter it a little bit.
+[2699.40s -> 2702.34s]  I'm gonna add a normal, and then I'm gonna pick
+[2702.38s -> 2706.52s]  sort of a W noise scale that's learned,
+[2706.54s -> 2707.72s]  and this thing is gonna control
+[2707.74s -> 2710.62s]  how much noise to inject into this process,
+[2710.64s -> 2711.58s]  and you kind of think of this
+[2711.62s -> 2714.16s]  as a stochastic exploration policy,
+[2714.18s -> 2716.62s]  and by manipulating W noise in particular ways,
+[2716.66s -> 2719.30s]  like sort of annealing it down or doing various things,
+[2719.96s -> 2723.16s]  I can control the exploration, exploitation, trade-offs
+[2723.20s -> 2724.96s]  that this MOE is gonna have, right?
+[2725.00s -> 2727.46s]  And so this is gonna give you one solution
+[2727.50s -> 2729.66s]  to the explore-exploit dilemma,
+[2730.90s -> 2732.80s]  and especially if you're noising things up,
+[2732.84s -> 2736.00s]  each expert might randomly get some other tokens
+[2736.04s -> 2737.34s]  that it wasn't expecting to get,
+[2737.38s -> 2739.68s]  so it'll lead to experts that are less specialized,
+[2739.72s -> 2741.52s]  but maybe a little bit more robust,
+[2742.68s -> 2745.86s]  and so that seems generally quite nice.
+[2745.88s -> 2747.68s]  Of course, the stochasticity also means
+[2747.70s -> 2750.10s]  that you don't get as much specialization,
+[2750.14s -> 2752.00s]  and that leads to loss of efficiency.
+[2754.18s -> 2757.34s]  And there's another approach that people have done
+[2757.38s -> 2760.74s]  where they sort of multiply the router logits,
+[2760.78s -> 2764.38s]  or sorry, they have a multiplicative perturbation
+[2764.42s -> 2767.76s]  to the router logits with the goal
+[2767.78s -> 2769.36s]  of getting less brittle experts,
+[2769.38s -> 2772.62s]  but this sort of jitter process was kind of removed
+[2772.66s -> 2774.12s]  in some of the later papers
+[2774.16s -> 2776.30s]  because they found it just didn't work as well
+[2776.32s -> 2778.62s]  as some of the heuristic loss-based approaches.
+[2778.66s -> 2781.16s]  And so this wasn't a push that was tried in a couple.
+[2781.20s -> 2783.10s]  This kind of stochastic routing tricks
+[2783.12s -> 2786.70s]  were tried in a couple of the early Google papers,
+[2786.72s -> 2789.24s]  but I think that has generally been abandoned
+[2789.26s -> 2791.64s]  by a lot of the people training these MOEs.
+[2793.20s -> 2795.70s]  Okay, so, yes?
+[2795.74s -> 2799.24s]  For the stochastic, what problem does that solve?
+[2799.28s -> 2800.68s]  Because we're still taking the top dates,
+[2800.72s -> 2803.04s]  and we still can't differentiate afterwards, right?
+[2803.08s -> 2805.18s]  Well, if you think of this, so the question was,
+[2805.20s -> 2807.66s]  we still can't differentiate because we're taking the top K,
+[2807.70s -> 2810.40s]  but if you kind of change your interpretation
+[2810.44s -> 2812.44s]  of the problem a little bit,
+[2812.48s -> 2814.30s]  if you think about a bandit problem, right,
+[2814.34s -> 2815.84s]  it has the same structure as this,
+[2815.88s -> 2817.44s]  where you pull a bandit arm
+[2817.48s -> 2818.94s]  and you don't see any of the other arms,
+[2818.98s -> 2821.92s]  so you can't really allocate your resources efficiently.
+[2821.94s -> 2824.32s]  If you pull some of the other ones at random,
+[2824.36s -> 2825.42s]  now you've got enough data
+[2825.46s -> 2827.28s]  to be able to do some optimization.
+[2827.32s -> 2829.92s]  And so this jittering is very similar in spirit
+[2829.96s -> 2832.16s]  to this kind of like epsilon greedy style
+[2832.20s -> 2834.66s]  exploration thing, where you're randomly pulling
+[2834.68s -> 2836.68s]  some of the other arms with some probability,
+[2836.72s -> 2838.76s]  where the probability itself depends on
+[2838.78s -> 2841.68s]  how confident you are about this routing decision.
+[2841.72s -> 2843.48s]  So, that's kind of the intuition,
+[2843.52s -> 2846.56s]  and then of course, that's gonna give you
+[2846.58s -> 2848.76s]  some way of getting some signal back.
+[2850.00s -> 2850.82s]  Okay.
+[2852.20s -> 2856.26s]  So, the thing that in practice,
+[2856.30s -> 2858.96s]  people have ended up with is,
+[2859.00s -> 2861.70s]  we don't do any of that, we don't do RL,
+[2861.74s -> 2864.14s]  we don't do stochastic exploration,
+[2864.16s -> 2866.72s]  but we rely on really another mechanism
+[2866.76s -> 2868.96s]  to sort of keep things reasonable.
+[2869.00s -> 2870.96s]  So, if we're doing top two routing,
+[2871.00s -> 2873.06s]  technically speaking, we do get some signal
+[2873.10s -> 2874.34s]  in the gradient descent process,
+[2874.36s -> 2876.84s]  because we can compare the top two experts
+[2876.86s -> 2878.50s]  that we did evaluate.
+[2878.54s -> 2881.64s]  And so it's possible to do some optimization,
+[2881.68s -> 2883.44s]  but when we do ignore,
+[2883.48s -> 2886.34s]  if we drop all the other constraints,
+[2886.38s -> 2889.04s]  the big issue that arises is you just end up
+[2889.08s -> 2890.94s]  sort of picking one expert all the time,
+[2890.98s -> 2892.48s]  and that expert is good at everything,
+[2892.52s -> 2893.98s]  and all the other experts are terrible.
+[2894.02s -> 2895.66s]  You end up in this local minimum
+[2895.70s -> 2897.26s]  where you've routed all of your tokens
+[2897.30s -> 2898.96s]  to one expert all the time.
+[2899.00s -> 2901.56s]  So, really the key gain becomes then,
+[2901.60s -> 2903.80s]  how do we get out of that local minimum?
+[2903.84s -> 2907.14s]  And loss balancing, or like balancing losses,
+[2907.18s -> 2909.34s]  is really the key trick to get out of this.
+[2909.38s -> 2911.58s]  And this is kind of important to understand,
+[2911.60s -> 2913.50s]  because this is the loss that mostly
+[2913.54s -> 2916.72s]  everyone actually uses to train the MOEs, right?
+[2916.74s -> 2918.92s]  So, if you were zoning out earlier,
+[2918.94s -> 2920.78s]  you probably should make sure to pay attention
+[2920.82s -> 2922.92s]  to this particular set of equations here.
+[2924.06s -> 2927.76s]  So, this is originally from the switch transformer
+[2927.78s -> 2931.90s]  from Fedecet on 2022, and they add this particular loss
+[2931.92s -> 2934.66s]  where what they're going to do is they're gonna loop
+[2934.70s -> 2936.64s]  all over each of the experts,
+[2936.66s -> 2938.94s]  and they're gonna take, you could think of this
+[2938.96s -> 2940.90s]  as an inner product between the vector F
+[2940.94s -> 2942.48s]  and the vector P.
+[2942.50s -> 2943.64s]  And so what are these vectors?
+[2943.68s -> 2947.14s]  Well, F is for each of the experts,
+[2947.18s -> 2949.14s]  this is the fraction of the tokens
+[2949.18s -> 2950.92s]  that were allocated to expert I.
+[2950.94s -> 2953.52s]  So, you can think of this as kind of a probability vector
+[2954.10s -> 2956.62s]  that's telling me what fraction of my tokens in my batch,
+[2956.66s -> 2959.86s]  or in my whatever the unit is here,
+[2959.90s -> 2962.96s]  did I route to expert I.
+[2963.00s -> 2967.84s]  Now, P of I is the fraction of the router probability
+[2967.88s -> 2969.64s]  that was allocated to expert I.
+[2969.68s -> 2973.84s]  So, the router probability is kind of the original
+[2973.88s -> 2976.58s]  sort of softmaxed routing decision
+[2976.62s -> 2978.52s]  that I was sort of intending to send, right?
+[2978.54s -> 2980.46s]  So, this is kind of measuring P of I
+[2980.48s -> 2983.22s]  is what was sort of the intended probability
+[2983.96s -> 2986.20s]  from the router, and then F of I was,
+[2986.22s -> 2988.42s]  well, was the actual sort of like,
+[2988.46s -> 2993.06s]  was the actual routing decision made by the top K method.
+[2993.10s -> 2996.14s]  And one thing that's kind of interesting to look at here
+[2996.16s -> 2998.80s]  is let's say we take the derivative of that loss
+[2998.84s -> 3000.98s]  with respect to P of I.
+[3001.00s -> 3005.38s]  So, this is a linear function with respect to P of I,
+[3005.42s -> 3009.28s]  and you'll see that the strongest down-weighting action
+[3009.32s -> 3011.48s]  happens on the sort of biggest,
+[3011.48s -> 3013.38s]  experts with the biggest allocations, right?
+[3013.42s -> 3015.72s]  So, it's actually in fact proportional
+[3015.76s -> 3018.28s]  to the amount of tokens that you get.
+[3018.32s -> 3021.12s]  So, you're gonna be pushed downwards
+[3021.16s -> 3024.66s]  sort of more strongly if you got more tokens.
+[3024.70s -> 3027.76s]  And so, this is kind of the basic behavior of this loss,
+[3027.80s -> 3031.66s]  and almost everybody uses this kind of F dot P
+[3031.70s -> 3034.90s]  kind of a trick to try to balance tokens
+[3034.94s -> 3036.18s]  across different units.
+[3036.20s -> 3038.94s]  So, the basic unit that you might wanna balance over
+[3038.98s -> 3040.44s]  initially is batches.
+[3040.44s -> 3043.00s]  You want each batch to get allocated evenly to experts,
+[3043.04s -> 3046.24s]  but you might actually have other kinds
+[3046.28s -> 3048.82s]  of balancing that you might wanna do.
+[3048.84s -> 3051.38s]  And DeepSeq does exactly this kind of thing.
+[3051.42s -> 3053.18s]  I'll talk about all the variants that they've thrown in,
+[3053.22s -> 3056.12s]  but the first thing is per expert balancing per batch.
+[3056.16s -> 3058.42s]  So, each batch, they wanna make sure experts
+[3058.46s -> 3059.76s]  get an even number of tokens.
+[3059.78s -> 3061.92s]  And this is from the DeepSeq paper,
+[3061.96s -> 3064.26s]  and hopefully this looks very familiar to you.
+[3064.30s -> 3068.26s]  This is exactly the same F dot P inner product structure
+[3068.30s -> 3069.66s]  as you saw before.
+[3070.08s -> 3071.46s]  The P of I is defined a little bit differently.
+[3071.48s -> 3072.92s]  That's S of I of P,
+[3072.96s -> 3075.12s]  but that should be familiar from earlier as well.
+[3075.16s -> 3077.70s]  That's the softmax pre-top K.
+[3077.72s -> 3081.54s]  So, hopefully this looks all pretty good to you.
+[3081.56s -> 3082.86s]  The other thing you might want, though,
+[3082.90s -> 3085.20s]  is you might wanna balance across experts.
+[3085.24s -> 3086.50s]  That's all well and good,
+[3086.54s -> 3088.20s]  but you might also want to think
+[3088.24s -> 3090.00s]  about the system's concerns,
+[3090.04s -> 3091.38s]  because you're gonna shard your experts
+[3091.40s -> 3093.04s]  onto different devices,
+[3093.08s -> 3095.78s]  and you might wanna balance per device.
+[3095.82s -> 3097.52s]  And so, you might have another loss
+[3097.54s -> 3099.84s]  that's essentially the same structure,
+[3099.88s -> 3103.58s]  but instead of summing which tokens go to which experts,
+[3103.62s -> 3106.68s]  you might measure which tokens go to which devices.
+[3106.72s -> 3108.28s]  And that's gonna be a different F
+[3108.32s -> 3110.38s]  that's measured over the device groups
+[3110.42s -> 3112.62s]  rather than over each expert.
+[3112.66s -> 3115.02s]  And so, now you can set up a different loss
+[3115.06s -> 3116.82s]  to balance over devices.
+[3116.86s -> 3118.10s]  You optimize this.
+[3118.12s -> 3120.40s]  You're naturally gonna try to learn routing functions
+[3120.44s -> 3124.74s]  that make sure each GPU or each TPU, what have you,
+[3124.76s -> 3126.08s]  have an even number of tokens,
+[3126.10s -> 3127.80s]  to link the even utilization, right?
+[3127.84s -> 3130.94s]  And that would be great from a systems perspective.
+[3130.98s -> 3134.90s]  So, basically everyone does kind of this kind of a thing.
+[3136.68s -> 3140.88s]  And so, DeepSeq v3 actually kind of innovates a little bit.
+[3140.92s -> 3142.28s]  This is kind of cool,
+[3142.32s -> 3143.68s]  and I don't think I've seen this before.
+[3143.72s -> 3146.72s]  It's one of the first things in the MOE world
+[3146.76s -> 3148.96s]  that doesn't actually come from Google, really,
+[3148.98s -> 3151.46s]  which is that they have gotten rid
+[3151.50s -> 3154.46s]  of this per expert balancing term.
+[3154.48s -> 3156.94s]  They've gotten rid of this entirely.
+[3156.98s -> 3158.92s]  And instead, what they now do
+[3158.94s -> 3161.88s]  is they basically take their softmax scores
+[3161.92s -> 3164.66s]  and they add a little fudge factor B of I,
+[3164.68s -> 3166.96s]  where B of I is a little fudge factor score
+[3166.98s -> 3168.36s]  for each expert, right?
+[3168.38s -> 3171.66s]  So, expert I might get up-weighted or down-weighted.
+[3171.70s -> 3174.80s]  So, if an expert isn't getting enough tokens,
+[3174.82s -> 3178.16s]  it's gonna be given a higher B of I,
+[3178.20s -> 3181.40s]  and then that's gonna allow it to grab more tokens.
+[3181.42s -> 3188.02s]  And the way that this works is that they're gonna learn B of I
+[3188.06s -> 3190.52s]  through a really simple online gradient scheme,
+[3190.56s -> 3191.52s]  online learning.
+[3191.56s -> 3194.26s]  And so, they're gonna measure at each batch,
+[3194.30s -> 3195.76s]  what are each of the experts getting?
+[3195.80s -> 3198.46s]  Like, are they getting an even number of tokens?
+[3198.50s -> 3200.14s]  And if they're not getting enough tokens,
+[3200.16s -> 3202.14s]  they add sort of gamma, some learning rate,
+[3202.16s -> 3204.30s]  to B of I, sort of making it higher.
+[3204.34s -> 3206.30s]  If they're getting too many tokens,
+[3206.34s -> 3207.74s]  they're gonna subtract gamma,
+[3207.78s -> 3210.04s]  making that expert slightly less attractive, right?
+[3210.04s -> 3211.82s]  So, they're just learning little offsets
+[3211.86s -> 3213.36s]  for each of the S of I's.
+[3213.38s -> 3215.92s]  And notice here, you're only using the B of I's
+[3215.96s -> 3217.22s]  to make the routing decisions.
+[3217.26s -> 3218.90s]  You're not actually sending it over
+[3218.92s -> 3220.72s]  as part of your gating weights, right?
+[3220.76s -> 3223.36s]  That's a sort of somewhat important thing to do.
+[3223.40s -> 3225.74s]  So, they call this auxiliary loss-free balancing.
+[3225.76s -> 3227.84s]  If you go and read the DeepSeek V3 paper,
+[3227.86s -> 3228.70s]  which all of you should,
+[3228.74s -> 3231.28s]  because it's a really nice paper,
+[3231.30s -> 3233.14s]  they'll make a big deal about how this makes training
+[3233.18s -> 3237.14s]  so stable, so great, so wonderful.
+[3237.18s -> 3238.98s]  And then, of course, you keep reading the section,
+[3238.98s -> 3240.12s]  and they're like, actually,
+[3240.16s -> 3242.32s]  but we decided that for each sequence,
+[3242.36s -> 3243.82s]  maybe we still wanna be balanced,
+[3243.86s -> 3244.92s]  and this doesn't work well enough,
+[3244.96s -> 3247.40s]  so we've added the heuristic loss back.
+[3247.42s -> 3249.10s]  So, they do have something called
+[3249.12s -> 3251.90s]  the complementary sequence-wise auxiliary loss
+[3251.94s -> 3255.16s]  that is basically exactly the auxiliary loss
+[3255.20s -> 3256.68s]  that they decided they needed,
+[3256.70s -> 3257.90s]  because what they wanted to do
+[3257.94s -> 3261.98s]  was to load balance the experts
+[3262.00s -> 3263.64s]  at a per-sequence level
+[3263.68s -> 3265.34s]  rather than a per-batch level.
+[3265.38s -> 3267.48s]  I'm not sure why they do this particular thing
+[3267.52s -> 3271.72s]  rather than any other sort of B of I style trick,
+[3271.76s -> 3275.12s]  but that's just kind of what they do in DeepSeek V3.
+[3275.16s -> 3277.16s]  So, it's not fully auxiliary loss-free
+[3277.20s -> 3279.36s]  as they'd like you to believe.
+[3279.40s -> 3281.96s]  Okay, oh, yes, question.
+[3282.00s -> 3283.86s]  This is a bit of an unfair question,
+[3283.90s -> 3285.64s]  but if we did not have to worry
+[3285.66s -> 3287.50s]  about systems optimizations,
+[3287.54s -> 3289.00s]  do you think the performance of this model
+[3289.04s -> 3290.24s]  would be a lot better,
+[3290.28s -> 3292.54s]  or would it stay roughly the same?
+[3292.58s -> 3294.64s]  If we did not think about systems optimization,
+[3294.68s -> 3296.22s]  would the performance of this model
+[3296.22s -> 3298.06s]  be better or stay the same?
+[3298.08s -> 3300.10s]  When you say this model, what do you mean, DeepSeek V3?
+[3300.12s -> 3303.10s]  Or just in general, these modern MOEs?
+[3303.12s -> 3306.56s]  So, are you saying if we ignore the system's concerns,
+[3307.74s -> 3309.74s]  do we think MOEs are still good?
+[3309.76s -> 3312.50s]  Is that kind of one way of asking that question?
+[3312.54s -> 3315.00s]  Would the performance of downstream class, for example,
+[3315.04s -> 3317.44s]  be better than what we have right now?
+[3317.48s -> 3319.74s]  Yeah, so I think...
+[3319.78s -> 3321.32s]  If I didn't have the balance,
+[3321.34s -> 3325.28s]  I must set it roughly equal to the total survey expert,
+[3325.78s -> 3327.04s]  yeah, yeah, that's right, that's right.
+[3327.08s -> 3329.88s]  Well, I think actually, per expert balancing,
+[3329.92s -> 3332.96s]  this term, right, this is not a systems concern.
+[3332.98s -> 3334.16s]  So you still want to do this,
+[3334.18s -> 3336.92s]  because if you don't do this, what you'll find,
+[3336.96s -> 3338.12s]  and actually there's, you know,
+[3338.16s -> 3339.60s]  I'm gonna keep referring to the old MOE paper,
+[3339.62s -> 3341.20s]  because they have to have so many ablations.
+[3341.22s -> 3342.70s]  They have a really nice ablation
+[3342.72s -> 3344.60s]  where they get rid of exactly this.
+[3344.62s -> 3348.74s]  And what they find is, basically, early on in training,
+[3348.76s -> 3351.00s]  the model just picks like one or two experts,
+[3351.04s -> 3352.44s]  and all the other experts are dead,
+[3352.48s -> 3354.10s]  like the router never sends anything to them.
+[3354.12s -> 3356.50s]  So you're just wasting memory at that point, right?
+[3356.52s -> 3358.90s]  So now you've just lost performance for free.
+[3358.94s -> 3361.24s]  You've effectively gotten a smaller model.
+[3361.26s -> 3362.70s]  And so even if you ignore all the other
+[3362.74s -> 3365.14s]  like device balancing parallelism concerns,
+[3365.18s -> 3366.68s]  you've just gotten a worse model
+[3366.70s -> 3369.94s]  because you didn't properly allocate your experts, right?
+[3369.98s -> 3370.88s]  It's the same way as like,
+[3370.92s -> 3372.38s]  you want to use all your parameters, right?
+[3372.42s -> 3374.54s]  You would like to effectively use your parameters,
+[3374.58s -> 3376.08s]  you want to do expert de-balancing.
+[3376.12s -> 3378.08s]  What does device refer to?
+[3378.12s -> 3378.98s]  Sorry, say, ah.
+[3379.02s -> 3379.92s]  Device.
+[3379.96s -> 3381.76s]  What does device refer to?
+[3381.78s -> 3383.82s]  Yeah, actually, so normally,
+[3384.54s -> 3386.02s]  this would refer to like GPU or TPU.
+[3386.04s -> 3387.68s]  There is a subtlety, I'll talk about this
+[3387.72s -> 3390.06s]  maybe in the very last or second to last slide.
+[3390.08s -> 3392.56s]  There are more sophisticated and cool versions of this
+[3392.58s -> 3393.66s]  where you try to balance things
+[3393.68s -> 3395.68s]  to minimize communication costs as well.
+[3395.72s -> 3398.42s]  And so there's broader notions of device,
+[3398.46s -> 3400.56s]  like one rack or whatever else.
+[3400.60s -> 3402.60s]  But here, it usually refers to like GPU.
+[3403.74s -> 3404.70s]  Yes.
+[3404.74s -> 3407.54s]  Going back to the fact that like
+[3407.56s -> 3411.20s]  hashing has a lot of other things to improve performance,
+[3411.24s -> 3412.60s]  like is there intuition for that?
+[3412.62s -> 3417.32s]  Because that's effectively just like randomly choosing a,
+[3419.40s -> 3421.56s]  like one of the few form of numbers to send it through,
+[3421.60s -> 3424.04s]  right, so why does having multiple copies of that,
+[3424.06s -> 3426.50s]  I guess, each of which get less data,
+[3426.54s -> 3428.70s]  why does that make performance better?
+[3428.74s -> 3429.84s]  Yes, the question was,
+[3429.88s -> 3432.78s]  why does hashing do anything at all?
+[3432.80s -> 3435.78s]  I don't have the really precise intuition for this,
+[3435.80s -> 3437.54s]  but you can make arguments either two ways.
+[3437.58s -> 3439.64s]  One is, even if you're hashing,
+[3439.68s -> 3442.52s]  the same tokens are gonna go to the same,
+[3442.54s -> 3444.34s]  the same kinds of sequences are gonna go
+[3444.38s -> 3447.68s]  to the same expert every time, right?
+[3447.72s -> 3449.44s]  And so each expert will still get
+[3449.48s -> 3451.88s]  some deterministic subset of the inputs,
+[3451.92s -> 3453.78s]  and so there's some specialization that can still occur.
+[3453.82s -> 3457.02s]  It's just non-semantic, or you know, non-learned.
+[3457.06s -> 3458.66s]  And if you're a distribution Zipfian,
+[3458.68s -> 3461.96s]  like the word the might dominate one expert, you know.
+[3462.00s -> 3463.22s]  And so you might still get actually
+[3463.26s -> 3465.26s]  semantic specialization where like one expert
+[3465.30s -> 3467.86s]  is effectively dominated by like very frequent things.
+[3467.90s -> 3470.36s]  But like a random routing function
+[3470.40s -> 3471.76s]  probably wouldn't be a good thing.
+[3472.04s -> 3474.94s]  Like a pure random thing that's not dependent on input.
+[3474.98s -> 3476.88s]  I would bet that that would be really terrible, yes.
+[3476.92s -> 3478.82s]  I have never run or said that,
+[3478.86s -> 3481.58s]  but yes, I think that would be horrible.
+[3481.62s -> 3482.58s]  Good, yes.
+[3482.62s -> 3484.42s]  Yeah, so for a learning LM,
+[3484.46s -> 3487.42s]  like you have many layers, many transformers.
+[3487.46s -> 3488.92s]  I think earlier in the lecture,
+[3488.96s -> 3492.36s]  you mentioned that each expert will get its own GDE.
+[3492.40s -> 3494.26s]  So like if you have like a backing map,
+[3494.30s -> 3496.74s]  like 32 layers, and like 64 experts,
+[3496.76s -> 3498.40s]  that's like a ball of GDEs,
+[3498.44s -> 3500.60s]  or I wonder if like a couple experts
+[3500.60s -> 3503.02s]  are bundled together on like a single GPU.
+[3503.04s -> 3504.28s]  Is that what we need?
+[3504.32s -> 3505.12s]  Yeah, so the question was like,
+[3505.14s -> 3506.48s]  won't you need lots of GPUs
+[3506.52s -> 3508.16s]  if you have lots of layers and lots of experts?
+[3508.18s -> 3512.22s]  Yeah, if you exclusively give a GPU to a single expert,
+[3512.26s -> 3514.76s]  yes, that would be kind of crazy.
+[3514.80s -> 3516.06s]  But you would send a shard thing
+[3516.10s -> 3519.60s]  so that each GPU would hold enough of these units
+[3519.62s -> 3521.70s]  to effectively use memory, right.
+[3521.74s -> 3523.44s]  The name of the game in parallelism is
+[3523.46s -> 3525.04s]  you always want to use up all of your memory
+[3525.06s -> 3526.50s]  because that's one of your resources, right.
+[3526.54s -> 3528.90s]  You don't want to parallelize more than you have to.
+[3529.80s -> 3531.78s]  Cool, okay, excellent.
+[3532.74s -> 3534.58s]  Oh, okay, I did put the ablation in here, yeah.
+[3534.62s -> 3536.02s]  So this is exactly what happens
+[3536.04s -> 3537.32s]  to the question of what happens
+[3537.34s -> 3541.16s]  if you don't do expert balancing loss.
+[3541.18s -> 3543.62s]  I think the great picture to see is this bottom left one.
+[3543.66s -> 3545.62s]  If you don't do load balancing,
+[3545.66s -> 3548.06s]  what are the tokens assigned to which expert?
+[3548.10s -> 3550.02s]  You see the pink and the yellow expert,
+[3550.06s -> 3551.52s]  they just like kind of take over.
+[3551.56s -> 3554.14s]  They take up about 50% of the tokens.
+[3554.16s -> 3555.54s]  All of the other experts are dead.
+[3555.56s -> 3556.86s]  They do nothing, right.
+[3556.90s -> 3559.50s]  And so you've wasted the majority of your experts
+[3559.54s -> 3562.30s]  at this point, six out of eight of your experts.
+[3562.34s -> 3566.44s]  And you've created a two expert MOE unintentionally.
+[3566.48s -> 3571.04s]  And that gives you worse losses seen up on the top,
+[3571.08s -> 3572.88s]  right, the teal lines.
+[3572.92s -> 3574.94s]  Of course, maybe that's still better than the dense model
+[3574.98s -> 3577.68s]  because at least you've got two experts going.
+[3577.72s -> 3579.06s]  But you could have done better, right,
+[3579.08s -> 3580.38s]  counterfactually speaking.
+[3582.66s -> 3586.52s]  Okay, so I won't go quite as deep as I could
+[3586.52s -> 3589.32s]  into the system side because I haven't really started
+[3589.36s -> 3592.70s]  to cover the core systems concepts necessary
+[3592.72s -> 3594.50s]  for you to deeply appreciate a lot
+[3594.52s -> 3595.76s]  of the parallelism concerns,
+[3595.80s -> 3598.86s]  like basically the hierarchy of communication speeds
+[3598.90s -> 3600.30s]  in a data center and so on.
+[3601.24s -> 3603.28s]  But really, as I said before,
+[3603.30s -> 3604.80s]  one thing to keep in mind is just
+[3604.84s -> 3608.44s]  how nicely MOEs can fit into devices.
+[3608.48s -> 3611.58s]  The thing that people say is expert parallel,
+[3611.68s -> 3615.68s]  that involves sending or putting one or a few experts
+[3617.28s -> 3618.68s]  onto each device.
+[3618.72s -> 3622.28s]  And what happens when you are basically processing a token?
+[3622.32s -> 3624.06s]  Well, you would hit the router,
+[3624.08s -> 3628.02s]  and after the router, you now have picked few experts.
+[3628.06s -> 3630.40s]  And so now you would have a collective communication call,
+[3630.42s -> 3632.80s]  like all to all communication dispatch
+[3632.84s -> 3636.10s]  that would send the tokens to the relevant devices,
+[3636.14s -> 3639.10s]  the feed forwards that compute their outputs,
+[3639.12s -> 3642.00s]  and then you would return the tokens
+[3642.02s -> 3643.16s]  to sort of where they belong,
+[3643.20s -> 3646.14s]  or you would combine, I guess, multiple experts.
+[3646.16s -> 3647.24s]  And so you would need another
+[3647.26s -> 3649.14s]  sort of collective communication call.
+[3649.16s -> 3651.34s]  And so if your feed forward computations
+[3651.38s -> 3652.94s]  are sort of big and beefy enough,
+[3652.98s -> 3654.84s]  you can kind of pay for the cost
+[3654.88s -> 3657.24s]  of basically doing this expert parallelism.
+[3658.24s -> 3660.94s]  And one of the thing that's nice about this
+[3660.98s -> 3663.48s]  is that it's another form of parallelism
+[3663.52s -> 3664.58s]  in your toolkit.
+[3664.62s -> 3666.58s]  So you've got, on the right side,
+[3667.30s -> 3669.34s]  data parallelism, model parallelism
+[3669.38s -> 3671.40s]  of two or three different kinds,
+[3671.44s -> 3673.18s]  and then you've got expert parallelism.
+[3673.20s -> 3674.38s]  And you can combine all of them
+[3674.40s -> 3676.84s]  to come up with sort of ways of trading off
+[3676.88s -> 3678.04s]  all the resources you have.
+[3678.08s -> 3679.42s]  So the communication speed,
+[3679.44s -> 3680.72s]  the amount of data that you have,
+[3680.74s -> 3684.32s]  your batch size, and your number of experts
+[3684.36s -> 3685.52s]  and your memory.
+[3685.56s -> 3687.46s]  So I'm not gonna go into too much detail
+[3687.48s -> 3689.96s]  about how specifically this is gonna help,
+[3689.98s -> 3693.00s]  but keep in mind that this gives you another sort of tool
+[3693.02s -> 3694.56s]  in your expert toolkit.
+[3695.54s -> 3699.58s]  Another thing that is also useful
+[3699.62s -> 3702.68s]  is let's say you have multiple experts
+[3702.72s -> 3704.38s]  on a single device.
+[3704.42s -> 3707.62s]  You might hope that because the computations are sparse,
+[3707.66s -> 3711.70s]  like let's say token one, this first token,
+[3711.72s -> 3712.90s]  gets multiplied to expert zero.
+[3712.92s -> 3714.00s]  The second one is expert one,
+[3714.02s -> 3715.50s]  and this third one is expert two.
+[3715.52s -> 3718.26s]  So this is really three matrix multiplies
+[3718.30s -> 3719.90s]  that are small and sparse.
+[3719.94s -> 3722.06s]  And you might hope that modern GPUs
+[3722.50s -> 3726.98s]  can sort of take advantage of these kinds of complex,
+[3727.00s -> 3730.22s]  these kinds of sparse matrix multiplications.
+[3730.24s -> 3731.78s]  And that's exactly right.
+[3731.82s -> 3735.28s]  So if you lay out your sort of experts correctly
+[3735.32s -> 3737.52s]  and the weights are sort of fused in the right way,
+[3737.56s -> 3741.42s]  then modern sort of sparse matrix multiply sort of engines
+[3741.46s -> 3743.26s]  can sort of effectively make sure
+[3743.30s -> 3745.12s]  that you're not wasting any flops
+[3745.16s -> 3747.30s]  in doing this one big matrix multiply.
+[3747.32s -> 3749.66s]  So modern libraries like MegaBlocks
+[3749.70s -> 3752.30s]  can basically take advantage of this device level
+[3752.34s -> 3753.90s]  sort of sparsity support
+[3753.94s -> 3757.24s]  to do multiple expert computations sort of all at once.
+[3757.28s -> 3761.54s]  So this is yet another advantage that you get with MOEs.
+[3763.88s -> 3767.18s]  So one fun side thing,
+[3767.22s -> 3769.36s]  which maybe isn't mysterious to you anymore
+[3769.38s -> 3772.26s]  because you've sort of grown up in the era of GPT-4,
+[3773.12s -> 3776.20s]  but when the GPT-4 API first came out,
+[3776.22s -> 3778.12s]  it was kind of mysterious to me
+[3778.12s -> 3780.50s]  because when you set the temperature to zero,
+[3780.52s -> 3782.16s]  you kind of got different responses
+[3782.20s -> 3785.16s]  even though it's supposed to be deterministic.
+[3785.20s -> 3788.76s]  And lots of people speculated about why would that be.
+[3788.80s -> 3791.90s]  I'm not saying this is the answer to that reason,
+[3791.94s -> 3793.88s]  but there is actually an interesting source
+[3793.90s -> 3795.90s]  of randomness in MOEs.
+[3795.94s -> 3798.14s]  So in MOEs, think about what happens.
+[3798.18s -> 3800.18s]  You're gonna route your tokens to experts,
+[3800.22s -> 3802.92s]  and experts live in different devices.
+[3802.94s -> 3805.48s]  It could be that you have a lot of examples.
+[3805.52s -> 3807.36s]  You're gonna, of course, batch your queries
+[3807.36s -> 3808.70s]  when you're processing them.
+[3808.72s -> 3810.64s]  And so if you've batched your queries,
+[3810.66s -> 3812.94s]  these tokens are gonna get routed into different experts.
+[3812.96s -> 3816.84s]  So imagine you've got this batch to process,
+[3816.86s -> 3818.30s]  and you've got a bunch of experts.
+[3818.34s -> 3820.00s]  But for whatever reason,
+[3820.04s -> 3822.60s]  this batch really loves expert number three.
+[3822.64s -> 3825.04s]  Like all the tokens go to expert number three.
+[3825.08s -> 3826.32s]  So now what happens?
+[3826.34s -> 3828.22s]  Well, the device for expert number three
+[3828.24s -> 3832.28s]  doesn't have enough memory to load all of those tokens.
+[3832.32s -> 3835.52s]  And then what happens is what people call token dropping.
+[3835.56s -> 3837.48s]  This happens at training time as well.
+[3837.52s -> 3839.76s]  You often have what's called a load factor
+[3839.78s -> 3841.82s]  where you're sort of controlling the maximum number
+[3841.86s -> 3843.20s]  of allowed tokens.
+[3843.22s -> 3845.60s]  And if the router just allocates too many tokens
+[3845.62s -> 3848.06s]  to an expert, you just drop those tokens off,
+[3848.10s -> 3851.04s]  either for systems reasons or because you're just worried
+[3851.06s -> 3852.64s]  that that expert is gonna take over,
+[3852.66s -> 3854.40s]  at least in the training time.
+[3854.44s -> 3857.00s]  So now this token has gotten dropped,
+[3857.04s -> 3858.44s]  and it's not gonna get anything at all.
+[3858.48s -> 3860.68s]  Like the MLP is just gonna do a zero computation,
+[3860.70s -> 3862.48s]  and the residual connection is just gonna pass things
+[3862.48s -> 3865.74s]  straightforward, and then you're gonna return an output.
+[3865.78s -> 3867.14s]  And so if your token got dropped,
+[3867.18s -> 3868.32s]  you're gonna get a different result
+[3868.34s -> 3870.02s]  than if your token didn't get dropped.
+[3870.04s -> 3872.82s]  And so based on who else is in your batch,
+[3872.86s -> 3874.96s]  MOEs can induce stochasticity,
+[3874.98s -> 3876.86s]  both at training time and inference time,
+[3876.88s -> 3878.28s]  which is kind of an interesting thing
+[3878.32s -> 3879.76s]  that you don't normally think about
+[3879.80s -> 3882.82s]  because you almost never think about cross-batch effects
+[3882.86s -> 3884.96s]  when doing inference.
+[3886.00s -> 3889.36s]  Okay, so that's kind of the main bits
+[3889.36s -> 3893.16s]  of the main basic components of building the MOE
+[3893.18s -> 3895.06s]  and a fun side thing.
+[3895.08s -> 3896.72s]  If you were to actually go out tomorrow
+[3896.76s -> 3898.72s]  and trying to train an MOE,
+[3898.76s -> 3901.00s]  I think the system side will make you a little bit sad,
+[3901.02s -> 3902.66s]  but the other thing that would make you sad
+[3902.70s -> 3905.10s]  is probably the stability side of things.
+[3906.04s -> 3908.74s]  So MOEs kind of have this property
+[3908.76s -> 3910.74s]  that sometimes they'll just kind of blow up on you
+[3910.78s -> 3912.24s]  if you try to fine-tune them.
+[3912.28s -> 3913.78s]  They're very difficult to fine-tune,
+[3913.80s -> 3916.38s]  and they'll sometimes blow up on you.
+[3916.50s -> 3921.30s]  And so Barrett, Zoff, and others really studied,
+[3921.34s -> 3923.24s]  they had a whole paper on basically
+[3923.28s -> 3925.08s]  trying to make MOEs more stable.
+[3925.10s -> 3928.92s]  And there's a paper, which is the one I'm referencing here,
+[3928.94s -> 3932.08s]  whose entire purpose is to stabilize MOE training.
+[3932.12s -> 3935.32s]  And there's a couple of tricks that I'll mention
+[3935.36s -> 3938.28s]  that I think are relevant and that people do.
+[3938.32s -> 3941.82s]  The first one is if you're doing the router softmax,
+[3941.86s -> 3944.30s]  so this goes back to last lecture about stability, right?
+[3944.32s -> 3945.96s]  Like what did I say about stability?
+[3946.78s -> 3948.68s]  Well, the thing to be afraid of is the softmaxes, right?
+[3948.72s -> 3950.82s]  The softmax is always where you want to be afraid,
+[3950.86s -> 3955.58s]  and so for the MOEs, they do all the computations
+[3955.62s -> 3958.16s]  in float 32 for the router computations,
+[3958.18s -> 3959.32s]  just to be safe, right?
+[3960.36s -> 3964.66s]  And sometimes they also add an auxiliary Z loss.
+[3964.70s -> 3966.90s]  So hopefully you remember that, it was just last lecture.
+[3966.94s -> 3968.66s]  You know you do log of the sum
+[3968.70s -> 3971.54s]  of the exponentiated values in the softmax,
+[3971.56s -> 3973.70s]  and you square that, and you add that as an extra loss.
+[3973.72s -> 3976.78s]  So this is gonna keep the normalizer values near one,
+[3976.82s -> 3978.38s]  which is nice for stability.
+[3978.42s -> 3979.72s]  So this is actually one of the places
+[3979.76s -> 3981.66s]  where Z loss was used earlier
+[3981.68s -> 3985.52s]  before it got sort of more popular for training models.
+[3985.56s -> 3987.46s]  You can kind of see the effects here.
+[3987.50s -> 3990.26s]  If you look at the losses, I think the center,
+[3990.30s -> 3992.66s]  the second plot here is maybe a great one.
+[3992.70s -> 3994.10s]  You know, if you remove the Z loss
+[3994.14s -> 3996.70s]  from your routing function,
+[3996.74s -> 3999.30s]  you see these like giant loss spikes
+[3999.34s -> 4001.74s]  in your validation loss, where the model
+[4001.78s -> 4003.72s]  just kind of goes a little bit crazy
+[4003.76s -> 4006.36s]  for a couple iterations, and then gets kind of pulled back.
+[4006.38s -> 4008.38s]  Of course it like still trains okay,
+[4008.42s -> 4010.10s]  but you are better off having the Z loss
+[4010.12s -> 4011.20s]  than not having a Z loss.
+[4011.22s -> 4013.00s]  There is a pretty noticeable gap
+[4013.02s -> 4015.36s]  in the validation loss by the end here, right?
+[4018.20s -> 4020.54s]  Other things that can happen,
+[4020.56s -> 4023.24s]  people, you know, of course you wanna fine tune your MOE.
+[4023.28s -> 4025.04s]  You'd like to also RLHF your MOE
+[4025.08s -> 4027.50s]  if you're gonna, you know, ship and release it.
+[4027.54s -> 4031.14s]  But this turns out to be kind of problematic.
+[4031.14s -> 4032.72s]  Some of the earlier work, you know,
+[4032.74s -> 4034.58s]  when people were starting to do MOEs,
+[4034.62s -> 4036.98s]  this was back in kind of the BERT and P5 era,
+[4037.02s -> 4039.18s]  so there was a lot of fine tuning going on.
+[4040.38s -> 4042.62s]  And, you know, one of the things that people saw was,
+[4042.66s -> 4044.86s]  you know, actually there's a lot of overfitting
+[4044.90s -> 4047.96s]  that happens if you were kind of doing sparse models.
+[4048.00s -> 4050.20s]  You see this big gap between train and VAL, right?
+[4050.24s -> 4052.54s]  This blue and orange line.
+[4052.56s -> 4054.86s]  Whereas the dense model, this green and red line,
+[4054.90s -> 4056.88s]  has a smaller train test gap.
+[4056.90s -> 4059.54s]  And so there was a lot of worries about overfitting
+[4059.54s -> 4061.64s]  because you have these like gigantic parameter models
+[4061.68s -> 4063.94s]  that you're fine tuning on small data.
+[4063.98s -> 4066.38s]  One of the solutions that was proposed at the time,
+[4066.42s -> 4068.38s]  I don't think this is very popular,
+[4068.42s -> 4072.12s]  as far as I understand, is to architect your MOEs
+[4072.16s -> 4074.40s]  such that not every layer is a MOE layer,
+[4074.42s -> 4076.96s]  but you like, let's say, alternate dense layers
+[4077.00s -> 4078.20s]  and MOE layers.
+[4078.22s -> 4079.80s]  Then you can just fine tune the dense layers,
+[4079.82s -> 4081.44s]  and then that will still be fine, right?
+[4081.46s -> 4083.84s]  That behaves just like a dense model.
+[4083.86s -> 4084.76s]  So that was fine.
+[4084.80s -> 4086.40s]  Another solution,
+[4086.44s -> 4088.94s]  the one that we saw in the DeepSeek MOE paper,
+[4088.94s -> 4090.30s]  is just kind of use a lot of data.
+[4090.34s -> 4091.94s]  Like if overfitting is a problem,
+[4091.98s -> 4094.52s]  you know, we have access to lots and lots of SFT data,
+[4094.54s -> 4096.12s]  just shovel all of those guys in.
+[4096.14s -> 4097.82s]  So in the case of DeepSeek MOE,
+[4097.84s -> 4101.32s]  they use 1.4 million training examples.
+[4101.36s -> 4103.52s]  Then maybe you're not quite as worried
+[4103.56s -> 4105.22s]  about these overfitting concerns.
+[4107.06s -> 4108.36s]  The last thing I'll end with,
+[4108.40s -> 4110.96s]  which is a trick in the toolkit
+[4111.00s -> 4115.04s]  that people have done and seen, is upcycling.
+[4115.06s -> 4118.60s]  And so this idea is to take a dense model,
+[4118.60s -> 4121.86s]  like the one over here, and then you take your MLP
+[4121.90s -> 4124.24s]  and you make a bunch of copies of it,
+[4124.26s -> 4126.20s]  and then you maybe perturb it,
+[4126.24s -> 4128.00s]  and then you have your router
+[4128.04s -> 4129.54s]  that's initialized from scratch,
+[4129.58s -> 4131.40s]  and then you just pretend this is a MOE,
+[4131.44s -> 4133.24s]  and then you train it from that point on, right?
+[4133.28s -> 4136.08s]  You just initialize the MOE from a dense model.
+[4136.12s -> 4139.52s]  And this is a trick that's kind of called upcycling,
+[4139.54s -> 4143.16s]  and people have shown that if you can get it to work,
+[4143.18s -> 4145.68s]  it is a very, very, very cost-effective way
+[4145.72s -> 4146.96s]  of getting a MOE, right?
+[4146.96s -> 4148.82s]  And the MOE is great for inference
+[4148.86s -> 4151.72s]  because not every MLP is gonna be active
+[4151.76s -> 4153.70s]  at inference time, right?
+[4153.72s -> 4155.96s]  So you might effectively get a much larger
+[4156.00s -> 4158.10s]  parameter model without doing the training
+[4158.12s -> 4160.50s]  of a much larger parameter model.
+[4160.54s -> 4163.20s]  And several people have succeeded at this.
+[4163.24s -> 4166.08s]  MiniCPM, which I'll mention again
+[4166.10s -> 4170.38s]  in the scaling law lecture, but this is a Chinese open LLM
+[4170.40s -> 4171.82s]  that basically tried to build
+[4171.84s -> 4174.34s]  really good small language models,
+[4174.38s -> 4176.44s]  and they succeeded at taking a dense model
+[4176.46s -> 4178.06s]  and upcycling it into a MOE,
+[4178.10s -> 4179.60s]  and you can see that their numbers get
+[4179.64s -> 4181.54s]  significantly better in the last two rows, right?
+[4181.56s -> 4183.10s]  So the dense model to the MOE,
+[4183.14s -> 4186.50s]  they get a pretty non-trivial bump in performance.
+[4186.54s -> 4189.28s]  Quen, I mentioned at the start of this lecture,
+[4189.30s -> 4191.34s]  one of their earliest attempts at MOE
+[4191.38s -> 4193.28s]  was taking one of their dense models
+[4193.32s -> 4195.82s]  and then building a upcycled MOE,
+[4195.84s -> 4199.38s]  and they got fairly significant performance gains
+[4199.42s -> 4202.36s]  relative to sort of smaller models at the time.
+[4202.38s -> 4205.02s]  Like they got models on par with their 7B models
+[4205.04s -> 4207.98s]  with a 2.7 billion parameter active model.
+[4211.14s -> 4215.98s]  So to wrap up, I want to sort of walk through
+[4216.02s -> 4219.46s]  the DeepSeq MOE architecture at the very end here.
+[4219.48s -> 4221.96s]  And hopefully this will give you a sense of,
+[4221.98s -> 4223.22s]  the first thing I want to do is I want you
+[4223.26s -> 4226.56s]  to understand the DeepSeq v3 architecture setup
+[4226.60s -> 4228.42s]  and all the changes that they did,
+[4228.46s -> 4230.86s]  because that's an example of modern,
+[4230.90s -> 4233.06s]  high-performance, open-source system.
+[4233.10s -> 4234.66s]  I also want you to just maybe appreciate
+[4235.34s -> 4236.54s]  that architectures don't change that much.
+[4236.58s -> 4239.78s]  DeepSeq v1, or DeepSeq MOE v1,
+[4241.82s -> 4243.38s]  it's not that new.
+[4243.42s -> 4245.78s]  It's like maybe a year and a half or something,
+[4245.82s -> 4249.02s]  maybe two years old, and they basically
+[4249.06s -> 4250.66s]  nailed the architecture at that point.
+[4250.68s -> 4252.76s]  So I want you to see what they changed
+[4252.78s -> 4256.60s]  from the earliest attempt to their big training run.
+[4256.62s -> 4258.80s]  So this is the very first starting point.
+[4258.82s -> 4260.70s]  This is DeepSeq MOE.
+[4260.72s -> 4262.80s]  I'm calling it v1, but actually probably the right way
+[4262.84s -> 4264.56s]  to refer to it is DeepSeq MOE.
+[4264.56s -> 4266.34s]  It's a 16 billion parameter model
+[4266.36s -> 4269.18s]  with 2.8 of those parameters active.
+[4269.20s -> 4271.58s]  And you've seen already this diagram over here.
+[4271.60s -> 4276.58s]  This is the two shared plus 64 fine-grained experts,
+[4278.12s -> 4281.72s]  of which four of them are active at a time.
+[4281.76s -> 4284.26s]  Maybe six of them are active at a time, sorry.
+[4284.28s -> 4286.32s]  And the routing, you've already seen this.
+[4286.36s -> 4288.56s]  I presented this in the middle of the lecture here.
+[4288.60s -> 4290.90s]  This is the very standard TopK routing
+[4290.92s -> 4292.30s]  where the softmax is at the bottom
+[4292.30s -> 4294.30s]  before the TopK selection.
+[4294.34s -> 4296.94s]  And for balancing, at training time,
+[4296.98s -> 4300.22s]  all they do is to add this auxiliary loss balancing term,
+[4300.24s -> 4302.88s]  both the expert and device level balancing terms.
+[4302.92s -> 4305.22s]  So hopefully you remember those from earlier.
+[4305.26s -> 4306.88s]  So that's the v1.
+[4306.92s -> 4310.46s]  And then they saw how sort of effective
+[4310.50s -> 4311.82s]  their MOE model was.
+[4311.86s -> 4314.32s]  So I guess to add some more context,
+[4314.36s -> 4316.86s]  DeepSeq originally had a dense model,
+[4316.90s -> 4318.44s]  and then they had a MOE model.
+[4318.46s -> 4320.90s]  And the MOE model was remarkably good.
+[4320.90s -> 4325.14s]  And so when they went to v2, they went straight to the MOE.
+[4325.18s -> 4328.48s]  And now this is a 236 billion parameter model,
+[4328.52s -> 4331.88s]  of which 21 of those billion parameters are active.
+[4331.92s -> 4333.38s]  So you need a lot of memory,
+[4333.42s -> 4336.26s]  but your flops consumption for inferencing this model
+[4336.28s -> 4337.66s]  is not so bad.
+[4337.68s -> 4340.16s]  Now, the architecture is identical.
+[4340.18s -> 4341.92s]  I copied literally the same figure
+[4341.96s -> 4344.12s]  because the architecture is literally the same,
+[4344.16s -> 4348.64s]  minus changes to the number of experts that are active.
+[4349.64s -> 4353.62s]  And we've got now sort of some new things happening,
+[4353.64s -> 4355.38s]  but not too many new things.
+[4355.42s -> 4357.88s]  So the top case selector is the same.
+[4357.92s -> 4360.28s]  So the equation from before, this previous equation,
+[4360.32s -> 4361.38s]  this is identical.
+[4361.42s -> 4363.82s]  This is still how they do things.
+[4363.86s -> 4366.92s]  But they have this very clever trick that they add on.
+[4366.96s -> 4370.26s]  And this is, I was gonna say at the very beginning,
+[4370.30s -> 4372.36s]  what's the drawback of having fine-grained experts?
+[4372.40s -> 4373.66s]  Why can't I have, I don't know,
+[4373.70s -> 4377.50s]  1024 fine-grained experts or 2046 fine-grained experts?
+[4377.66s -> 4378.90s]  Well, the problem is,
+[4378.94s -> 4381.14s]  when you shard your experts very finely,
+[4381.16s -> 4383.40s]  and you have a lot of active experts,
+[4383.44s -> 4385.24s]  you're gonna have to route to those experts.
+[4385.28s -> 4387.68s]  So your communication costs potentially grow,
+[4387.70s -> 4389.18s]  and if you're very fragmented,
+[4389.20s -> 4391.24s]  you might have to send a lot of tokens
+[4391.28s -> 4393.02s]  to a lot of devices.
+[4393.04s -> 4396.58s]  And so the clever thing they come up with is to say,
+[4396.62s -> 4399.32s]  I'm not just gonna, for each batch,
+[4399.36s -> 4401.32s]  route to the top K experts naively,
+[4401.36s -> 4402.86s]  which might force me to send my tokens
+[4402.88s -> 4404.32s]  to lots of devices.
+[4404.36s -> 4407.06s]  What I'm going to do is I'm gonna first pick
+[4407.06s -> 4408.92s]  top M devices, right?
+[4408.96s -> 4411.56s]  So I'm gonna do my normal scoring calculation,
+[4411.60s -> 4413.52s]  but I'm first gonna sort of subset
+[4413.56s -> 4416.52s]  the set of allowed devices to top M, right?
+[4416.56s -> 4418.10s]  And once I've picked my devices,
+[4418.14s -> 4420.04s]  then I'm gonna pick top K for each token
+[4420.06s -> 4421.46s]  within each device, right?
+[4421.50s -> 4423.36s]  So now I've restricted the devices,
+[4423.40s -> 4425.78s]  this really controls the communication costs,
+[4425.80s -> 4427.90s]  and now this gives you more efficient training
+[4427.94s -> 4430.18s]  when you're scaling up to these gigantic sizes, right?
+[4430.20s -> 4431.64s]  You need to start really engaging
+[4431.68s -> 4433.38s]  with the systems aspect of things
+[4433.42s -> 4436.68s]  when you're training a 236 billion parameter model.
+[4437.54s -> 4439.44s]  The other thing, which reflects the systems concerns
+[4439.48s -> 4441.18s]  that are necessary at this scale,
+[4441.20s -> 4444.48s]  is that they add a communication balancing loss.
+[4444.52s -> 4446.32s]  One way of thinking about things is,
+[4446.34s -> 4448.68s]  for an expert, there's kind of inputs and outputs, right?
+[4448.72s -> 4450.98s]  The inputs are, the token comes in
+[4451.02s -> 4452.36s]  and you route to your expert.
+[4452.38s -> 4454.26s]  And the outputs are, you have to kind of
+[4454.28s -> 4456.16s]  bring the tokens back where they belong, right?
+[4456.18s -> 4457.86s]  So if a batch belongs on this device,
+[4457.90s -> 4460.40s]  it has to go back where the original device was.
+[4460.42s -> 4461.32s]  So we have to think about both
+[4461.36s -> 4462.70s]  the input communication cost
+[4462.72s -> 4464.36s]  and the output communication cost.
+[4464.40s -> 4466.16s]  And so they add a balancing loss
+[4466.18s -> 4468.72s]  to try to balance out the output communication cost as well,
+[4468.74s -> 4470.48s]  not just the sort of input side.
+[4470.52s -> 4472.08s]  So that's a minor note,
+[4472.12s -> 4474.16s]  but you can kind of see their attention to detail
+[4474.18s -> 4475.92s]  on trying to make sure all of the different
+[4475.96s -> 4480.50s]  sort of systems aspects are properly taken care of.
+[4480.52s -> 4485.10s]  And then finally, we kind of get to the big DeepSeek V3.
+[4485.14s -> 4487.16s]  Sorry, that should say V3, not V2 up there.
+[4487.20s -> 4491.74s]  671 billion parameters of which 37 are active.
+[4491.78s -> 4494.74s]  Once again, exactly the same figure,
+[4494.76s -> 4496.86s]  because the MOE architecture itself doesn't change.
+[4496.90s -> 4498.80s]  That's stayed the same since DeepSeek MOE, right?
+[4498.84s -> 4500.76s]  Like if it works, don't change it.
+[4500.80s -> 4502.84s]  They do change a couple things.
+[4502.86s -> 4504.84s]  Maybe they were hearing you all say,
+[4504.86s -> 4506.64s]  why don't you normalize to one?
+[4506.66s -> 4508.50s]  And so they've normalized the gate to one.
+[4508.54s -> 4510.90s]  They've moved kind of the softmax normalizer operation
+[4510.94s -> 4514.28s]  up there, but they're not actually exponentiating
+[4514.30s -> 4516.34s]  sort of the sort of gating decisions.
+[4516.38s -> 4518.24s]  They're actually taking sigmoids,
+[4518.28s -> 4519.54s]  which is a sort of softer,
+[4519.58s -> 4523.98s]  sort of more nicely behaved operation than the softmax.
+[4524.16s -> 4526.00s]  So they've got some changes here,
+[4526.02s -> 4527.50s]  but conceptually this is still the same
+[4527.52s -> 4529.00s]  as the top K routing decision, right?
+[4529.02s -> 4532.40s]  You hopefully see very, very similar things happening.
+[4532.44s -> 4535.00s]  And then in terms of the losses,
+[4535.04s -> 4537.90s]  they've gone to this auxiliary loss-free trick
+[4537.94s -> 4540.44s]  of this B of I being incremented or decremented
+[4540.48s -> 4541.88s]  based on the expert load.
+[4541.90s -> 4545.28s]  And then they have a sequence-wise auxiliary loss.
+[4545.32s -> 4546.72s]  And just to add some context,
+[4546.74s -> 4550.54s]  why would you want to balance different experts
+[4550.58s -> 4552.02s]  on a single sequence?
+[4552.06s -> 4554.22s]  Well, the thing that they're very concerned about
+[4554.26s -> 4556.14s]  is at training time,
+[4556.16s -> 4559.06s]  it's fine to not have a sequence-wise balancing loss.
+[4559.10s -> 4561.04s]  But at inference time, it might be the case
+[4561.06s -> 4564.00s]  that someone sends you very out of distribution sequences
+[4564.04s -> 4566.10s]  and that might overwhelm certain experts, right?
+[4566.14s -> 4567.78s]  So at inference time, you can't control
+[4567.80s -> 4569.12s]  which sequences you get.
+[4569.14s -> 4571.62s]  So you might want sort of stronger balancing
+[4571.64s -> 4573.62s]  that operates at a single sequence level
+[4573.64s -> 4575.68s]  rather than at an overall batch level.
+[4577.56s -> 4580.02s]  Okay, and then in the, oh, sorry, yes.
+[4581.02s -> 4586.02s]  Does B3 still do the top M devices?
+[4586.06s -> 4588.36s]  Like, does it keep the B2 improvement?
+[4588.40s -> 4590.60s]  Yeah, they keep the top M improvement.
+[4590.64s -> 4593.36s]  They do not keep, for example, the communication loss.
+[4593.40s -> 4595.40s]  So they've jettisoned some things,
+[4595.44s -> 4596.78s]  but top M is a, I mean,
+[4596.80s -> 4598.74s]  it seems like a pretty clever idea they keep it.
+[4598.78s -> 4599.60s]  Yeah.
+[4602.14s -> 4604.08s]  Yeah, but it's not like they always add things.
+[4604.12s -> 4606.04s]  They have removed some of the things.
+[4607.78s -> 4609.96s]  And so in the last two or so minutes,
+[4610.02s -> 4612.92s]  of the class, I'm gonna go over the non-MOE parts
+[4612.96s -> 4616.00s]  of DeepSeq V3, because I think we're already at the point
+[4616.02s -> 4617.92s]  where I've explained most of DeepSeq V3.
+[4617.96s -> 4619.56s]  I might as well go through the steps
+[4619.60s -> 4621.80s]  of explaining the rest of DeepSeq V3 at this point,
+[4621.84s -> 4623.90s]  so you all know kind of how that works.
+[4623.94s -> 4627.80s]  So they have a clever sort of optimization
+[4627.84s -> 4629.48s]  for the attention piece called MLA,
+[4629.50s -> 4631.50s]  or multi-head latent attention.
+[4631.54s -> 4634.74s]  And you all actually already know all the ingredients
+[4634.78s -> 4635.94s]  that you need to understand this,
+[4635.98s -> 4637.78s]  because at the end of last lecture,
+[4637.82s -> 4639.94s]  I talked about like GQA and MHA, right?
+[4639.94s -> 4642.94s]  So those are all inference optimizations that you need
+[4642.98s -> 4645.54s]  in order to optimize the size of the KV cache.
+[4645.58s -> 4648.12s]  So the DeepSeq folks take a different pack,
+[4648.14s -> 4650.04s]  or different approach at optimizing this.
+[4650.08s -> 4652.82s]  Instead of reducing the number of heads,
+[4652.84s -> 4654.62s]  they're actually gonna sort of project the heads
+[4654.66s -> 4656.22s]  into a lower dimensional space.
+[4656.26s -> 4658.12s]  So you have your inputs H of T,
+[4658.16s -> 4660.66s]  and instead of sort of generating the Ks and Vs
+[4660.70s -> 4662.42s]  directly from these H of Ts,
+[4662.46s -> 4664.76s]  what I'm going to do is I'm gonna first generate
+[4664.80s -> 4667.06s]  a low dimensional C, you can think of this
+[4667.08s -> 4669.92s]  as like a compressed version of H.
+[4669.96s -> 4673.56s]  And this C is going to be smaller and easier to cache,
+[4673.60s -> 4675.30s]  and I'm just gonna cache these Cs,
+[4675.32s -> 4677.86s]  and whenever I need these Ks and Vs,
+[4677.90s -> 4680.54s]  well, I can sort of up project from this KV,
+[4680.56s -> 4682.20s]  sort of conceptually speaking,
+[4682.24s -> 4685.14s]  and then I can take the inner products with the Qs, right?
+[4685.18s -> 4686.50s]  So you can kind of see how this would be
+[4686.54s -> 4690.24s]  a KV cache savings if I only have to save the C
+[4690.28s -> 4692.64s]  instead of the higher dimensional H of T.
+[4694.22s -> 4695.64s]  And that's exactly the idea.
+[4695.66s -> 4697.00s]  So you take your H of T,
+[4697.04s -> 4699.60s]  you project it into a lower dimensional C,
+[4699.64s -> 4703.30s]  and then you up project this back into the Ks and Vs, right?
+[4703.34s -> 4704.84s]  And if the Cs are small,
+[4704.88s -> 4708.28s]  well, you've compressed the KV cache, that's good.
+[4708.30s -> 4710.98s]  And then, in terms of the computation, right,
+[4711.02s -> 4712.54s]  if you're thinking about flops,
+[4712.58s -> 4714.54s]  well, you might think, well, this is not good
+[4714.58s -> 4717.92s]  because I have to multiply an extra matrix WUK, right?
+[4717.96s -> 4719.56s]  I didn't have this matrix before,
+[4719.58s -> 4722.72s]  does an extra matrix multiply that I have to pay for?
+[4722.76s -> 4724.36s]  But kind of the clever thing here
+[4724.38s -> 4727.48s]  is remember that on the other side of K, right,
+[4727.52s -> 4729.56s]  I'm gonna take K dot Q, right,
+[4729.58s -> 4731.72s]  that Q dot K is gonna be an inner product
+[4731.76s -> 4733.46s]  in the attention operation, right?
+[4733.48s -> 4736.96s]  And Q itself has a projection matrix Q.
+[4737.00s -> 4740.10s]  And so the trick here is you can merge this WUK
+[4740.12s -> 4742.66s]  and this Q matrix together into one matrix.
+[4742.70s -> 4745.20s]  I haven't gotten any extra matrix multiplies,
+[4745.24s -> 4747.34s]  I've just merged this new matrix multiply
+[4747.36s -> 4748.70s]  into my other one, right?
+[4748.74s -> 4752.24s]  This is just associativity, I can just merge the two.
+[4752.26s -> 4753.72s]  They also compress the queries
+[4753.76s -> 4755.42s]  for memory savings during training,
+[4755.46s -> 4758.16s]  but really, that one is not quite as necessary
+[4758.20s -> 4761.86s]  because it doesn't interact at all with the KB cache.
+[4761.90s -> 4764.84s]  I'm only gonna mention this last one in passing
+[4764.86s -> 4766.30s]  because it is a subtlety,
+[4766.34s -> 4769.00s]  but it's kind of a clever subtlety that you realize,
+[4769.04s -> 4771.04s]  which is that this original trick,
+[4771.08s -> 4773.14s]  this sort of thing that I just described at the top,
+[4773.18s -> 4775.54s]  is not compatible with ROPE, right?
+[4775.58s -> 4778.68s]  And the reason is because, you know, the ROPE matrices,
+[4778.72s -> 4781.28s]  you know, basically, you have the Qs and the Ks
+[4781.32s -> 4783.32s]  and you rotate each of those Qs and the Ks
+[4783.36s -> 4786.86s]  by multiplying with a rotation matrix RQ and RK,
+[4786.90s -> 4789.36s]  but if you do that, then these RQs and RKs
+[4789.40s -> 4791.84s]  are in between the query projection
+[4791.86s -> 4794.90s]  and this latent vector up projection matrix.
+[4794.94s -> 4797.48s]  And since I can't reorder these matrix multiplies,
+[4797.50s -> 4799.18s]  you know, ROPE kind of gets in the way.
+[4799.20s -> 4802.44s]  And they still have a solution of basically
+[4802.48s -> 4804.82s]  doing ROPE on non-compressed dimensions.
+[4804.84s -> 4806.12s]  That's kind of a side point,
+[4806.14s -> 4807.52s]  I think it's not quite as important.
+[4807.54s -> 4808.58s]  You can kind of look at the paper
+[4808.62s -> 4810.02s]  if you're super interested.
+[4810.06s -> 4811.02s]  The other thing that they do,
+[4811.06s -> 4812.76s]  and this is the last thing I promise,
+[4812.80s -> 4814.96s]  is that they have a minor change
+[4815.00s -> 4817.54s]  in their loss function called MTP,
+[4817.56s -> 4820.76s]  where they predict multiple tokens in parallel.
+[4820.80s -> 4823.10s]  And so what they can do is normally, right,
+[4823.14s -> 4826.20s]  you have your inputs, you shift them to the left by one,
+[4826.24s -> 4828.14s]  so you're predicting one token in the future,
+[4828.18s -> 4830.32s]  and then your transformer is gonna predict all those tokens.
+[4830.34s -> 4833.42s]  Right, that's your normal transformer loss.
+[4833.44s -> 4835.08s]  But then what you can do
+[4835.12s -> 4837.28s]  is right before you make those predictions,
+[4837.32s -> 4839.32s]  you can take, you know, the hidden state,
+[4839.36s -> 4842.72s]  you can pass it to a very lightweight one-layer transformer,
+[4842.76s -> 4844.96s]  and that model can predict, you know,
+[4845.00s -> 4846.56s]  one token in the future, right?
+[4846.60s -> 4848.76s]  So now the model's not just predicting the next token,
+[4848.80s -> 4851.76s]  it's predicting the two tokens into the future, right?
+[4851.80s -> 4853.96s]  So that hopefully all makes sense.
+[4854.00s -> 4855.50s]  And this is just a small, lightweight model
+[4855.54s -> 4856.54s]  that can do that.
+[4857.68s -> 4860.14s]  You can sort of see the architecture right here.
+[4860.18s -> 4861.82s]  The one thing that is kind of disappointing
+[4861.84s -> 4863.48s]  that I learned as I was sort of researching
+[4863.52s -> 4865.68s]  for this lecture is actually they only do MTP
+[4865.72s -> 4867.24s]  with one token ahead, so even though they have
+[4867.28s -> 4868.88s]  this very complicated diagram
+[4868.88s -> 4871.18s]  of how they could do it for many tokens,
+[4871.22s -> 4873.78s]  turns out it's only done for one token.
+[4873.82s -> 4876.72s]  Okay, so now I'm all done.
+[4876.76s -> 4878.96s]  MOEs are kind of now at the core
+[4878.98s -> 4881.22s]  of how you would build and deploy, you know,
+[4881.26s -> 4883.86s]  a really high-performance, large-scale system.
+[4883.90s -> 4886.26s]  And they take advantage of kind of the sparsity idea
+[4886.30s -> 4890.80s]  that you don't need all of the parameters all the time.
+[4890.84s -> 4893.04s]  And discrete routing is the real big challenge,
+[4893.06s -> 4894.48s]  and this is, I think, one of the big reasons
+[4894.50s -> 4896.30s]  why MOEs didn't immediately catch on.
+[4896.34s -> 4898.04s]  It's very scary to have to try
+[4898.04s -> 4900.78s]  to optimize this top K routing decisions,
+[4900.80s -> 4902.54s]  but heuristics somehow seem to work, right?
+[4902.58s -> 4903.78s]  Like, they just do.
+[4903.80s -> 4906.28s]  And so, there's a lot of empirical evidence now
+[4906.32s -> 4909.58s]  that MOEs, at least for flop-constrained settings,
+[4909.62s -> 4911.94s]  is just a good idea, it's cost-effective,
+[4911.98s -> 4912.78s]  you should do it.
+[4912.82s -> 4915.26s]  So, definitely worth learning.
+[4915.28s -> 4917.76s]  Thanks a lot for listening.

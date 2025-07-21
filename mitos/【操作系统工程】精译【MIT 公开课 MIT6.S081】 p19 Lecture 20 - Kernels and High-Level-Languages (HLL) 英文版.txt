@@ -1,0 +1,2211 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 3.00s]  I don't know, why don't we get started?
+[3.00s -> 6.42s]  If people want to turn on their camera again,
+[6.42s -> 8.08s]  or want me to do that, that'd be great.
+[8.08s -> 12.16s]  Just to create sort of a class atmosphere.
+[12.16s -> 13.68s]  It's the best that we can.
+[13.68s -> 18.40s]  OK, so this is going to talk to you about this paper,
+[18.40s -> 20.80s]  The Benefits and Cost of Writing a Unix Kernel.
+[20.80s -> 24.04s]  I love the language.
+[24.04s -> 26.26s]  This is basically a paper that was partly written
+[26.26s -> 30.58s]  because of SO81, or 828.
+[30.58s -> 34.82s]  And this is a paper that we've written, Robert and I.
+[34.82s -> 37.70s]  And the main person was, the main lead-off
+[37.70s -> 43.46s]  was Cody Cutler, who was a T8 in this class many, many times.
+[43.46s -> 45.30s]  It's always a little bit, I don't really
+[45.30s -> 47.30s]  enjoy actually particularly talking about papers
+[47.30s -> 48.46s]  that we work on ourselves.
+[48.46s -> 52.90s]  But this paper came about, basically, of 881 and 828.
+[52.90s -> 56.14s]  And so I'm going to do some slides this time instead
+[56.18s -> 60.02s]  of actually writing on a whiteboard.
+[60.02s -> 62.34s]  And so really, the source of this paper
+[62.34s -> 65.10s]  is this question, in what language
+[65.10s -> 68.08s]  should you write a kernel?
+[68.08s -> 72.34s]  And this is a question that many of you asked,
+[72.34s -> 76.90s]  or your students in the past, 828 or 828,
+[76.90s -> 78.78s]  asked many, many, many times.
+[78.78s -> 81.70s]  Partly because you have bugs in the operating system,
+[81.70s -> 83.58s]  or you're a kernel, and you're like, well,
+[83.58s -> 85.54s]  if I would have written in this other language,
+[85.74s -> 89.22s]  maybe I would not have had those bugs.
+[89.22s -> 91.62s]  And so this is a question that often comes about.
+[91.62s -> 95.46s]  And it turns out, in the operating system community
+[95.46s -> 98.98s]  at large, this is a hotly debated question,
+[98.98s -> 100.46s]  but not that many facts.
+[100.46s -> 104.26s]  You would actually make any informed discussion.
+[104.26s -> 106.42s]  And what we'll see at the end of this lecture,
+[106.42s -> 109.42s]  or during this lecture, or as you read the paper,
+[109.42s -> 114.82s]  we don't really have a crisp answer to this question.
+[114.86s -> 117.82s]  But this paper contributes a bunch
+[117.82s -> 120.66s]  of data that allows you to have a little bit more
+[120.66s -> 125.46s]  of an in-depth discussion about what is a good programming
+[125.46s -> 127.30s]  language for a kernel.
+[127.30s -> 130.26s]  So that was really the origin of this paper,
+[130.26s -> 141.06s]  and the source of this paper is basically you guys.
+[141.06s -> 145.74s]  So to try to answer this question,
+[145.74s -> 149.10s]  we wrote a new kernel.
+[149.10s -> 152.86s]  And we did it in a language with automatic memory
+[152.86s -> 153.38s]  management.
+[153.38s -> 154.84s]  That means with a garbage collector,
+[154.84s -> 157.26s]  so you don't actually have to call free.
+[157.26s -> 159.66s]  And that was a class of bugs, so that's
+[159.66s -> 161.98s]  one of the properties that a high level language typically
+[161.98s -> 162.74s]  has.
+[162.74s -> 164.42s]  And so we wanted to have, we picked
+[164.42s -> 165.58s]  a language that has that.
+[165.58s -> 169.18s]  And we followed basically the traditional monolithic UNIX
+[169.18s -> 172.50s]  organization so that we could do a fair comparison.
+[172.50s -> 174.94s]  And in fact, some ways you can think about what we built
+[174.94s -> 180.62s]  is something like xv6, much more features
+[180.62s -> 184.30s]  and more high performance.
+[184.30s -> 186.18s]  I mean, as you know, xv6 has all kinds
+[186.18s -> 191.54s]  of quadratic algorithms or linear search type algorithms.
+[191.54s -> 194.02s]  And of course, if you want to achieve high performance,
+[194.02s -> 196.62s]  you can't have those.
+[196.62s -> 199.54s]  So that was the origin of this paper
+[199.54s -> 201.78s]  and the origin of why we built Biscuit,
+[201.78s -> 204.70s]  trying to answer that question or at least shed some light.
+[204.70s -> 206.98s]  So I'm first going to talk a little bit about more
+[206.98s -> 210.86s]  general background, give a lot of questions over email
+[210.86s -> 213.98s]  or trying to get a little bit more context.
+[213.98s -> 217.74s]  And then we'll dive into Biscuit in more detail.
+[217.74s -> 220.10s]  And feel free to jump in with questions
+[220.10s -> 222.54s]  in any particular point of time.
+[222.54s -> 226.06s]  As I said, this paper was motivated by questions
+[226.06s -> 232.06s]  you asked, and so please keep asking questions.
+[232.06s -> 236.94s]  So as you understood, the setting of this paper
+[236.94s -> 239.54s]  is that a lot of kernels are written in C,
+[239.54s -> 242.86s]  and xv6 is written in C, your programming in C.
+[242.86s -> 245.42s]  But most popular kernels that sit on your desktop
+[245.42s -> 250.02s]  or your phone are written in C, Windows, Linux,
+[250.02s -> 253.90s]  and all the various forms of VSDs.
+[254.86s -> 259.14s]  And the reason they are written in C
+[259.14s -> 263.02s]  is that C provides you a lot of control,
+[263.02s -> 265.06s]  as you have seen in the labs.
+[265.06s -> 268.78s]  You have complete control over memory allocation and freeing.
+[268.78s -> 270.62s]  There's almost no implicit code.
+[270.62s -> 273.14s]  You can almost sort of imagine when you're reading the C code
+[273.14s -> 276.46s]  like what the corresponding RISC-V instructions are.
+[276.46s -> 278.02s]  You have direct access memory.
+[278.02s -> 280.38s]  You can read and write the PPE bits
+[280.38s -> 283.98s]  or the registers of devices.
+[283.98s -> 288.02s]  And C itself comes with very few dependencies.
+[288.02s -> 290.50s]  There's no large runtime that you actually have to have
+[290.50s -> 291.86s]  to be able to run a C program.
+[291.86s -> 293.38s]  You can almost run it immediately
+[293.38s -> 295.30s]  on the bare hardware.
+[295.30s -> 297.62s]  And you've seen that when xv6 boots,
+[297.62s -> 299.42s]  there's basically a few lines of assembly,
+[299.42s -> 302.82s]  and then basically you're running C code.
+[302.82s -> 305.90s]  So there are all the good virtues of C,
+[305.90s -> 308.94s]  and one reason that we like C a lot.
+[308.98s -> 311.02s]  But C also has some downsides.
+[312.02s -> 315.58s]  You know, it has been proven over the last sort of decades
+[315.58s -> 318.42s]  that writing secure C code is difficult.
+[318.42s -> 320.10s]  You know, there are types of bugs
+[320.10s -> 325.10s]  that can often be exploited,
+[325.18s -> 326.62s]  whether it is buffer overruns,
+[326.62s -> 328.10s]  which are probably the most well-known one
+[328.10s -> 330.14s]  that you're writing behind the past,
+[331.18s -> 335.18s]  an array bound, or you're writing below your stack,
+[336.18s -> 340.50s]  use-after-free bugs, where you freed some memory,
+[340.50s -> 341.66s]  but it's still in use,
+[342.62s -> 344.14s]  and somebody scribbles on it,
+[344.14s -> 346.62s]  and maybe scribble something bad on it.
+[347.82s -> 351.34s]  And generally, when threads are sharing memory,
+[351.34s -> 353.42s]  it's typically difficult to decide
+[353.42s -> 356.14s]  when actually the memory can be freed.
+[356.14s -> 358.70s]  Some of these bugs don't really show up that,
+[359.86s -> 362.74s]  some of the bugs manifest themselves explicitly in xv6,
+[362.78s -> 367.78s]  some less so, xv6 has very little dynamic memory allocation,
+[368.66s -> 371.78s]  almost everything is pre-allocated right up front.
+[371.78s -> 373.86s]  But buffer overruns and use-after-free bugs
+[373.86s -> 375.74s]  definitely do show up.
+[377.50s -> 382.02s]  And so, in fact, if you look at CVEs,
+[382.02s -> 384.46s]  these are the, there's a website
+[384.46s -> 386.90s]  or there's an organization that keeps sort of control,
+[386.90s -> 389.26s]  that checks and keeps a record
+[389.26s -> 391.66s]  of all sort of the security exploits,
+[391.70s -> 393.14s]  and you investigate that,
+[393.14s -> 395.82s]  you'll find that in 2017, when we were doing this paper,
+[395.82s -> 400.50s]  that there were 40 Linux kernel bugs
+[400.50s -> 404.38s]  that can actually lead to an attacker running,
+[405.58s -> 407.82s]  taking complete control of the machine.
+[407.82s -> 409.34s]  And clearly, those are serious bugs,
+[409.34s -> 412.18s]  and then those bugs came out of buffer overruns
+[412.18s -> 415.10s]  and other type of memory safety bugs.
+[416.74s -> 419.42s]  So, that's sort of too bad,
+[419.42s -> 421.22s]  that if you write code in C,
+[421.66s -> 422.50s]  that actually is hard,
+[422.50s -> 424.58s]  even for people that do this professionally
+[424.58s -> 427.22s]  and to actually get this right.
+[428.30s -> 431.22s]  And of course, I'm sure you've seen this in the lab,
+[431.22s -> 433.78s]  probably, certainly I remember
+[433.78s -> 435.94s]  from some of the Piazza questions,
+[435.94s -> 438.78s]  the number of you run into this use-after-free bugs,
+[438.78s -> 441.54s]  in particular, in the copy-and-write lab,
+[441.54s -> 443.14s]  they showed up a bunch of times.
+[444.70s -> 448.90s]  So, one reason that a high-level image would be attractive
+[448.90s -> 450.98s]  is that a high-level image
+[451.58s -> 452.94s]  provides memory safety.
+[452.94s -> 456.26s]  And so, all these bugs or DCV exploits
+[456.26s -> 457.98s]  that I mentioned on the previous slide,
+[457.98s -> 460.70s]  would just not be possible.
+[462.02s -> 465.14s]  If they happen, they either would result in a panic,
+[465.14s -> 467.62s]  because the runtime would say like,
+[467.62s -> 470.34s]  oh, you're writing past the rate, you can't do that,
+[470.34s -> 474.46s]  or they couldn't manifest itself at all,
+[474.46s -> 475.30s]  because these are the languages
+[475.30s -> 477.66s]  that will allow you to write that kind of code.
+[478.18s -> 481.42s]  So, there are, of course, other benefits
+[481.42s -> 483.42s]  to a high-level language,
+[483.42s -> 488.42s]  which often is also mentioned by students in this class
+[489.10s -> 490.22s]  when they're doing the labs.
+[490.22s -> 491.66s]  In addition to type safety,
+[491.66s -> 494.74s]  there's the automatic memory management of regards collector.
+[494.74s -> 497.14s]  So, freeing is easy, you just don't have to think about it,
+[497.14s -> 500.22s]  developers like to do all the work for you.
+[500.22s -> 503.14s]  It's good for concurrency, it has good abstractions,
+[503.14s -> 505.46s]  whether it's like in Go interfaces
+[505.50s -> 508.02s]  or some other classes or some other form
+[509.70s -> 511.18s]  that forces you or encourage you
+[511.18s -> 512.86s]  to actually write modular code.
+[515.74s -> 518.54s]  The downsides, and you might be wondering, like all this,
+[518.54s -> 521.38s]  there's so many upsides to high-level languages,
+[521.38s -> 524.46s]  why not, why is XP6 not written in,
+[524.46s -> 527.42s]  Java, Go, Python or whatever.
+[527.42s -> 530.18s]  And the reason is, or Linux,
+[530.18s -> 532.78s]  the reason is there's poor performance,
+[532.82s -> 535.82s]  there's a cost to actually a high-level language,
+[535.82s -> 539.02s]  sometimes this is referred to as the high-level language tax.
+[539.98s -> 543.54s]  And these are basically, if you do an array bound,
+[543.54s -> 546.78s]  an array index, you have to check the bounds,
+[546.78s -> 548.34s]  you have to check no pointers,
+[551.14s -> 553.30s]  you have to have more expensive casts,
+[554.18s -> 556.66s]  and guards collection itself is also not free.
+[556.66s -> 558.66s]  There's gonna be some cycles spent,
+[558.66s -> 560.46s]  tracking down which objects are free
+[560.50s -> 562.94s]  and which are allocated, and that's the cost.
+[565.70s -> 567.70s]  So that's sort of from the performance side,
+[567.70s -> 570.26s]  and a lot of the paper focuses on this.
+[570.26s -> 573.70s]  And then in principle, often it's perceived
+[573.70s -> 575.10s]  that there's sort of incompatibilities
+[575.10s -> 576.98s]  with Linux with kernel programming.
+[578.50s -> 580.06s]  No direct memory access,
+[580.06s -> 584.94s]  because the principle could violate type safety.
+[584.94s -> 586.34s]  No handwritten assembly,
+[586.34s -> 588.70s]  and then you need some handwritten assembly in a kernel,
+[588.74s -> 591.02s]  whether it's the context switch between two threads,
+[591.02s -> 593.86s]  or like to get off the ground when the machine boots.
+[600.90s -> 603.02s]  The language may have a particular plan
+[603.02s -> 606.94s]  for a concurrency or parallelism that might not line up
+[606.94s -> 609.50s]  with the plan that the kernel needs
+[609.50s -> 611.10s]  for a concurrency and parallelism.
+[611.10s -> 614.74s]  We've seen, for example, in the scheduling lecture,
+[614.74s -> 618.66s]  you know, one thread passes a lock to another thread,
+[618.66s -> 620.66s]  where there's sort of a couple,
+[620.66s -> 622.42s]  there's patterns of currency management
+[622.42s -> 624.34s]  that are sort of unusual in user programs,
+[624.34s -> 626.82s]  but they do show up in kernels.
+[631.34s -> 634.50s]  So the goal basically of this paper
+[634.50s -> 637.82s]  was to sort of measure the high-level language trade-offs,
+[637.82s -> 639.86s]  explore the total effects of using high-level language
+[639.86s -> 644.46s]  instead of C, both in terms of safety programmability,
+[644.50s -> 646.34s]  but also for performance cost.
+[646.34s -> 647.78s]  And of course, if you'd like to do this,
+[647.78s -> 649.22s]  you know, this kind of an experiment, you know,
+[649.22s -> 651.50s]  you need to do that sort of on a production grade kernel.
+[651.50s -> 653.82s]  You can't do that on XV6 because it's so slow
+[653.82s -> 655.62s]  that basically you probably wouldn't learn anything.
+[655.62s -> 658.42s]  You know, if the kernel's written in slow in C,
+[658.42s -> 660.90s]  you know, you're writing in slow in Go,
+[660.90s -> 662.74s]  you know, it doesn't really tell you much about,
+[662.74s -> 664.34s]  you know, the C versus Go question.
+[664.34s -> 666.78s]  It just says like, well, XV6 is slow.
+[666.78s -> 669.06s]  And so you want to look to do that in a more,
+[669.06s -> 671.86s]  you know, high-performance, you know, oriented kernel,
+[671.90s -> 674.30s]  or the kernel is designed for high performance.
+[676.78s -> 678.86s]  And so, you know, one of the things that are surprising
+[678.86s -> 681.02s]  because like many of you asked this,
+[681.98s -> 683.42s]  or your predecessors asked this,
+[683.42s -> 686.42s]  and you know, you would imagine,
+[686.42s -> 688.74s]  well, this question must be answered in the literature.
+[688.74s -> 691.18s]  And you know, that turns out that actually isn't.
+[691.18s -> 693.38s]  It is, there's quite a number of studies
+[693.38s -> 696.30s]  that look into the question of like,
+[696.30s -> 697.62s]  high-level language trade-offs
+[697.62s -> 699.26s]  in the context of user programs.
+[700.10s -> 702.74s]  And, but you know, as you know,
+[702.74s -> 706.06s]  the kernel is quite a bit different from user programs.
+[706.06s -> 707.38s]  So for example, memory management,
+[707.38s -> 709.54s]  careful memory management is really important.
+[709.54s -> 710.86s]  There's different types of concurrency
+[710.86s -> 712.10s]  and maybe slightly different.
+[712.10s -> 715.50s]  So we wanted to do it in the context of a kernel.
+[715.50s -> 717.14s]  And you know, we couldn't actually really find
+[717.14s -> 720.22s]  any sort of papers that really answer this question.
+[720.22s -> 723.02s]  The closer you could come to is there, you know,
+[723.02s -> 726.66s]  there are many kernels written in high-level language.
+[726.66s -> 728.78s]  You know, there's a long history of doing that,
+[729.22s -> 730.38s]  you know, dating back even to sort of
+[730.38s -> 731.98s]  the early LISP machines.
+[733.22s -> 736.46s]  And you know, but many of the sort of
+[736.46s -> 738.62s]  recent versions of these kernels
+[739.90s -> 742.14s]  are not really written with the idea
+[742.14s -> 746.26s]  of evaluating this high-level language tax question,
+[746.26s -> 748.58s]  but really to explore new OS designs
+[750.42s -> 752.30s]  or new OS architectures.
+[752.30s -> 756.02s]  And so none of them sort of really measure directly,
+[756.02s -> 758.62s]  you know, sort of do a head-to-head comparison
+[759.62s -> 761.82s]  and keep the structure the same
+[761.82s -> 763.58s]  so that you can really focus on this issue
+[763.58s -> 766.70s]  of the language as opposed to some other issues.
+[769.22s -> 770.54s]  And in fact, we used to read,
+[770.54s -> 773.38s]  I don't know, some of these papers actually in the past.
+[778.50s -> 781.02s]  So in terms of one reason,
+[781.02s -> 783.58s]  maybe that, you know, there was not a lot of ton of work
+[783.58s -> 784.42s]  that actually answers,
+[784.42s -> 785.94s]  there were a ton of papers that answered this question
+[786.86s -> 788.46s]  is it actually tricky to do it.
+[789.82s -> 791.70s]  You know, basically if you really do it right,
+[791.70s -> 793.54s]  you know, you want to compare with a production grade
+[793.54s -> 796.70s]  C kernel, that means like something like Linux
+[796.70s -> 798.70s]  or something like Windows, whatever,
+[799.62s -> 802.46s]  but then you have to build a production grade kernel.
+[802.46s -> 805.26s]  And, you know, clearly for a small team
+[805.26s -> 806.66s]  that was very hard to do.
+[808.02s -> 809.14s]  You know, there are lots and lots
+[809.14s -> 811.10s]  of Linux kernel developers.
+[811.10s -> 813.38s]  They make many, many changes,
+[813.38s -> 815.74s]  you know, week by week, day by day.
+[816.50s -> 819.06s]  And so it's just going to be hard to, you know,
+[819.06s -> 821.58s]  to do the same thing and build an equivalent,
+[821.58s -> 822.58s]  you know, type of thing.
+[822.58s -> 826.58s]  So you have to settle for something slightly less
+[826.58s -> 829.42s]  than doing so.
+[830.78s -> 832.30s]  So the best way we could do
+[832.30s -> 833.82s]  or the best way we could come up to do
+[833.82s -> 835.42s]  is, you know, build a high level,
+[835.42s -> 837.02s]  build a kernel in a high level language,
+[837.02s -> 838.58s]  you know, keep most of the important aspects
+[838.58s -> 839.62s]  the same as Linux,
+[840.86s -> 842.82s]  optimize the performance roughly,
+[842.82s -> 844.90s]  optimize the performance until it's roughly similar
+[844.94s -> 846.22s]  to Linux, you know, even though maybe
+[846.22s -> 848.34s]  it's not exactly identical features,
+[848.34s -> 850.42s]  but, you know, gets into the same ballpark
+[850.42s -> 851.94s]  and then, you know, measure the high level
+[851.94s -> 852.94s]  language trade-offs.
+[854.82s -> 856.18s]  And of course, you know, the risk,
+[856.18s -> 857.70s]  you know, this approach is that, you know,
+[857.70s -> 859.26s]  the kernel that we built, you know,
+[859.26s -> 861.10s]  actually is slightly different than Linux.
+[861.10s -> 863.02s]  You know, it's not gonna be exactly like Linux.
+[863.02s -> 864.38s]  And so, you know, you gotta, you know,
+[864.38s -> 865.94s]  there's a, you gotta be very careful
+[865.94s -> 868.18s]  when drawing any conclusions.
+[868.18s -> 869.86s]  And, you know, we'll,
+[869.86s -> 871.78s]  and this is one reason why you can't sort of give
+[871.78s -> 874.38s]  a really crystal clear answer to this question
+[874.82s -> 876.30s]  that basically this paper poses,
+[876.30s -> 877.42s]  but we can hopefully, you know,
+[877.42s -> 879.06s]  get a little bit more deeper insight
+[879.06s -> 881.90s]  than basically, you know, saying all of nothing about it.
+[883.74s -> 886.06s]  Does this make sense so far?
+[886.06s -> 887.86s]  Any questions?
+[887.86s -> 889.42s]  That's sort of the context, you know,
+[889.42s -> 891.58s]  of this paper and, you know,
+[891.58s -> 893.42s]  why we went actually off and did it.
+[895.18s -> 897.70s]  Okay, so if there are no questions,
+[897.70s -> 900.54s]  I'll talk a little bit more about the methodology.
+[900.54s -> 905.54s]  So basically, you know, the sort of setup is, you know,
+[906.58s -> 907.98s]  here's on the left side, you know,
+[907.98s -> 911.38s]  we're have our, this is gonna be, you know, Biscuits.
+[913.06s -> 914.18s]  You know, we're gonna,
+[915.86s -> 916.86s]  in our particular case, you know,
+[916.86s -> 919.90s]  we wrote a British paper, we wrote a kernel in Go.
+[920.74s -> 923.94s]  It provides roughly a similar, you know,
+[923.94s -> 926.02s]  subset of the system calls it Linux provides,
+[926.02s -> 927.54s]  but, you know, the way to,
+[927.54s -> 929.46s]  but they have the same arguments, you know,
+[929.46s -> 931.98s]  the same call extensions.
+[931.98s -> 934.34s]  And we run basically the same applications
+[934.34s -> 935.86s]  on top of that interface.
+[935.86s -> 938.18s]  So, you know, one of the applications is NGX,
+[938.18s -> 939.90s]  which is the web server.
+[941.62s -> 942.98s]  And so the idea is that, you know,
+[942.98s -> 947.98s]  we run the same application, both on Biscuit and Linux.
+[948.38s -> 950.22s]  You know, the application will generate
+[950.22s -> 954.30s]  the same system call trace with exactly the same arguments
+[954.30s -> 956.94s]  and both Biscuit and Linux, you know,
+[956.94s -> 959.22s]  perform, you know, all the necessary operations
+[959.98s -> 961.82s]  that are invoked by those system calls.
+[961.82s -> 964.34s]  And then we can sort of, you know, look at, you know,
+[964.34s -> 966.38s]  the differences basically between, you know,
+[966.38s -> 968.22s]  the high level language kernel and Linux
+[968.22s -> 971.06s]  and sort of talk about like, you know,
+[971.06s -> 973.06s]  what are the trade offs?
+[973.06s -> 975.86s]  So that's sort of the core of the methodology.
+[975.86s -> 976.90s]  And again, you know,
+[976.90s -> 978.66s]  because Linux and Biscuit are not gonna be
+[978.66s -> 980.86s]  exactly identical, you know,
+[980.86s -> 983.02s]  there's gonna be some differences,
+[983.02s -> 984.82s]  but, you know, we, you know,
+[984.82s -> 987.58s]  we spend a lot of time in Biscuit trying to, you know,
+[987.58s -> 990.38s]  make the comparison as fair as possible, you know.
+[992.14s -> 994.94s]  Or as fair as possible as we could think of making it.
+[996.30s -> 998.78s]  So a lot of, you know, you ask this question,
+[998.78s -> 1000.62s]  which high level language you use, you know,
+[1000.62s -> 1005.10s]  for this kind of work on, you know, we pick Go.
+[1005.10s -> 1006.54s]  And for a couple of reasons,
+[1007.62s -> 1009.38s]  it is a statically compiled language.
+[1009.38s -> 1013.62s]  So unlike Python, there's no interpreter.
+[1013.62s -> 1015.54s]  And the reason that we'd like, you know,
+[1015.58s -> 1017.50s]  is that compiled because we have basically compiled
+[1017.50s -> 1018.90s]  some actually high performance code.
+[1018.90s -> 1021.54s]  And in fact, the particular Go compiler is pretty good.
+[1022.98s -> 1023.82s]  So amazingly, you know,
+[1023.82s -> 1025.54s]  it's sort of a high performance language.
+[1025.54s -> 1026.38s]  Furthermore, you know,
+[1026.38s -> 1028.50s]  the Go designer is actually intended
+[1028.50s -> 1030.26s]  for systems programming, you know,
+[1030.26s -> 1031.86s]  kernels are form assisted programming.
+[1031.86s -> 1033.86s]  So that seems a good match.
+[1033.86s -> 1035.26s]  And for example, you know,
+[1035.26s -> 1038.54s]  aspect of why it's good for system programming,
+[1038.54s -> 1042.46s]  it's actually easy to call assembly or other foreign code.
+[1042.46s -> 1044.30s]  It has good support for concurrency,
+[1044.46s -> 1045.70s]  you know, quite flexible.
+[1046.66s -> 1048.34s]  And then another reason that we wanted to use it then,
+[1048.34s -> 1049.86s]  because it has a garbage collector.
+[1049.86s -> 1051.02s]  So like throughout, you know,
+[1051.02s -> 1052.06s]  one of the things that you think about
+[1052.06s -> 1052.90s]  a high level language,
+[1052.90s -> 1054.50s]  and one of the virtues of a high level language
+[1054.50s -> 1056.62s]  is that you don't have to do memory management.
+[1056.62s -> 1059.30s]  And then garbage collector is typically in a central role
+[1059.30s -> 1060.14s]  in the,
+[1063.26s -> 1064.10s]  provides a central role
+[1064.10s -> 1065.74s]  in that sort of management story.
+[1068.02s -> 1070.58s]  By the time we started this paper
+[1070.58s -> 1072.06s]  or we started this project,
+[1072.94s -> 1074.86s]  Rust was not very popular
+[1074.86s -> 1076.98s]  or Rust was actually not very stable and mature
+[1076.98s -> 1078.22s]  at that point that you actually could write
+[1078.22s -> 1079.54s]  a real kernel in it.
+[1080.58s -> 1081.58s]  In retrospect, you know,
+[1081.58s -> 1083.26s]  now, you know, we will do it again,
+[1083.26s -> 1085.66s]  you know, you may write it in Rust
+[1085.66s -> 1088.22s]  because it also designs persistence programming.
+[1089.14s -> 1091.66s]  It has a small runtime,
+[1091.66s -> 1092.90s]  it produces good code.
+[1094.70s -> 1097.06s]  Although one thing that actually, you know,
+[1097.06s -> 1098.42s]  might have may still make it very interesting
+[1098.42s -> 1100.06s]  to go for Go is that,
+[1100.30s -> 1102.34s]  Rust source takes the starting assumption
+[1102.34s -> 1107.18s]  that if you want a high performance systems programs,
+[1107.18s -> 1109.86s]  then you can't do that with a garbage collector.
+[1109.86s -> 1113.54s]  And in fact, the Rust type system is set up
+[1113.54s -> 1114.70s]  in a very clever way
+[1114.70s -> 1116.42s]  and then very interesting way.
+[1116.42s -> 1119.18s]  So that actually garbage collector is not necessary.
+[1119.18s -> 1120.26s]  And in some ways,
+[1120.26s -> 1122.46s]  we really were interested in just answering this question,
+[1122.46s -> 1124.14s]  like, what's the cost of garbage collection
+[1124.14s -> 1125.22s]  in a high level language,
+[1125.22s -> 1127.10s]  you know, on kernel programming,
+[1127.10s -> 1129.82s]  and it's really impossible to use
+[1130.58s -> 1131.86s]  or what is that cost?
+[1131.86s -> 1132.70s]  And in some ways,
+[1132.70s -> 1134.18s]  you know, sort of rough sidestep that question
+[1134.18s -> 1135.30s]  and just like, you know,
+[1135.30s -> 1136.62s]  use a language without garbage collection,
+[1136.62s -> 1138.86s]  we have to think about this particular cost.
+[1141.06s -> 1141.94s]  Any questions about this
+[1141.94s -> 1146.30s]  in terms of the programming language we decided to use?
+[1150.38s -> 1153.14s]  Lots of email questions related to this topic, so.
+[1154.02s -> 1155.78s]  Yes, this is a theoretical question
+[1155.78s -> 1158.62s]  that maybe doesn't have an immediate answer,
+[1158.62s -> 1163.14s]  but if the Linux kernel were to be written in Rust,
+[1163.14s -> 1167.42s]  not go and like optimized in the same capacity,
+[1167.42s -> 1170.46s]  would it be able to achieve higher performance?
+[1171.70s -> 1174.66s]  Then the Chrome kernel-
+[1174.66s -> 1178.46s]  Then C, like a Linux C kernel?
+[1179.82s -> 1181.82s]  I doubt it would be, okay,
+[1181.82s -> 1183.50s]  hard to, you know, just speculation, correct?
+[1183.50s -> 1186.30s]  Because we haven't done this experiment.
+[1186.34s -> 1187.18s]  My sense is, you know,
+[1187.18s -> 1190.22s]  it would be not higher performance than C,
+[1190.22s -> 1192.82s]  but, you know, probably roughly the same ballpark.
+[1194.14s -> 1196.06s]  Because C is so low level,
+[1196.06s -> 1197.82s]  you can assume that whatever you would do in Rust,
+[1197.82s -> 1199.38s]  you could also have done in C.
+[1203.98s -> 1205.14s]  Does that make sense?
+[1206.26s -> 1207.22s]  Yes, thank you.
+[1210.30s -> 1214.18s]  Okay, so let's move on then,
+[1215.10s -> 1216.94s]  unless there are any other further questions about this.
+[1216.94s -> 1218.74s]  And again, you know, feel free to interrupt
+[1218.74s -> 1222.18s]  and, you know, this is a bit of a discussion-based lecture
+[1222.18s -> 1224.10s]  and so, you know,
+[1224.10s -> 1225.90s]  it was intended to sort of stimulate
+[1225.90s -> 1227.86s]  intellectual interest and so, you know,
+[1227.86s -> 1230.70s]  jump in if you have anything to think about this topic.
+[1234.02s -> 1235.34s]  So actually before, you know,
+[1235.34s -> 1237.74s]  maybe a question I wanna ask,
+[1237.74s -> 1239.54s]  maybe I'll come back to that at the end of the lecture,
+[1239.54s -> 1241.30s]  closer to the end of the lecture.
+[1242.30s -> 1245.54s]  Partly, you know, the whole reason
+[1245.54s -> 1246.66s]  we wanna use a high level language
+[1246.66s -> 1248.38s]  is to avoid certain classic bugs.
+[1248.38s -> 1250.66s]  And one of the questions you should ask yourself,
+[1250.66s -> 1254.10s]  were there bugs, you know, in the labs that you had
+[1254.10s -> 1255.34s]  that would have been avoided
+[1255.34s -> 1257.10s]  if you had a high level language?
+[1258.34s -> 1260.38s]  You know, so, you know, think back, you know,
+[1260.38s -> 1262.50s]  I'm sure you can come up with some bugs
+[1262.50s -> 1264.30s]  that, you know, you're costing a lot of time
+[1264.30s -> 1266.10s]  and a lot of pain
+[1266.10s -> 1268.22s]  and you could ask yourself for those kinds of bugs,
+[1268.26s -> 1273.26s]  you know, if the xv6 were written in the labs,
+[1273.30s -> 1275.94s]  would it be done in another high level programming language
+[1275.94s -> 1278.06s]  would have life, you know, would be a lot easier.
+[1278.06s -> 1279.66s]  Would you have had a lot more spare time
+[1279.66s -> 1280.62s]  to do other things?
+[1281.86s -> 1283.74s]  So let's keep that question in your head
+[1283.74s -> 1284.86s]  and, you know,
+[1284.86s -> 1288.06s]  we'll hopefully return to that at the end of the lecture.
+[1288.06s -> 1290.58s]  But if you have opinions right away, that's fine too.
+[1291.54s -> 1294.34s]  Okay, so let me talk a little bit about Biscuit
+[1295.22s -> 1298.82s]  and, you know, how it sort of works
+[1298.82s -> 1299.94s]  and sort of the surprises
+[1299.94s -> 1302.46s]  or the things that we ran into while building Biscuit,
+[1302.46s -> 1303.90s]  you know, things that we anticipated
+[1303.90s -> 1306.18s]  and some things that we actually did not anticipate.
+[1307.50s -> 1309.22s]  So the user programs, you know,
+[1309.22s -> 1312.02s]  there's a classic kernel, monolithic kernel
+[1312.02s -> 1314.50s]  in the same way that Linux or xv6 is.
+[1314.50s -> 1317.70s]  And so there's user space and there's kernel space.
+[1317.70s -> 1320.46s]  User space programs are, you know, whatever,
+[1320.46s -> 1322.34s]  you know, it's your compiler, GCC,
+[1322.34s -> 1323.86s]  or in our dispute paper,
+[1324.34s -> 1325.78s]  you know, it's mostly a web server
+[1325.78s -> 1328.82s]  and some other benchmarks.
+[1328.82s -> 1331.94s]  And the user programs are actually all written in C,
+[1331.94s -> 1333.78s]  although it could be principle in any language,
+[1333.78s -> 1336.54s]  you know, but since they are just the benchmark,
+[1336.54s -> 1338.14s]  we took C versions
+[1338.14s -> 1340.42s]  and most of the programs are multi-threaded.
+[1340.42s -> 1342.78s]  So unlike in xv6,
+[1342.78s -> 1346.22s]  where basically there's one thread per user program,
+[1346.22s -> 1348.98s]  in Biscuit actually you support multiple
+[1348.98s -> 1350.06s]  user-level threads.
+[1350.98s -> 1353.98s]  And for basically for every user-level thread,
+[1353.98s -> 1358.54s]  there's a corresponding kernel thread in the kernel.
+[1358.54s -> 1360.94s]  And these kernel threads are actually implemented
+[1360.94s -> 1364.30s]  by Go itself and Go calls these Go routines.
+[1367.10s -> 1368.38s]  But you can think about Go routines
+[1368.38s -> 1370.06s]  just as ordinary threads, you know,
+[1370.06s -> 1373.38s]  in the same way that xv6 has and the kernel has threads.
+[1376.70s -> 1378.42s]  The Go routines are sort of similar.
+[1378.46s -> 1381.46s]  The main difference in it correctly is that in xv6,
+[1381.46s -> 1383.74s]  the threads are implemented by the kernel itself.
+[1383.74s -> 1384.70s]  And in this case, you know,
+[1384.70s -> 1386.70s]  the Go runtime basically provides them.
+[1386.70s -> 1388.98s]  So the Go runtime schedules them,
+[1388.98s -> 1390.94s]  Go runtime has support for like things
+[1390.94s -> 1392.90s]  like sleep or wake up or condition variables.
+[1392.90s -> 1394.34s]  There's slightly different sleep or wake up,
+[1394.34s -> 1396.18s]  but there are some condition variable
+[1396.18s -> 1397.94s]  synchronization mechanism.
+[1397.94s -> 1399.22s]  And there's a whole bunch of other, you know,
+[1399.22s -> 1400.54s]  things primitives in the Go runtime
+[1400.54s -> 1402.90s]  and just provide it by the Go language itself
+[1402.90s -> 1404.58s]  and have not be implemented, you know,
+[1404.58s -> 1405.42s]  by Biscuit itself,
+[1405.42s -> 1407.38s]  we just get them from the Go runtime.
+[1408.66s -> 1412.74s]  The Go runtime itself runs directly on the bare hardware.
+[1415.58s -> 1420.26s]  And I'll talk a little bit about that more in the lecture,
+[1420.26s -> 1422.30s]  but until you think about this as the machine boots,
+[1422.30s -> 1423.58s]  you know, the first thing it actually boots
+[1423.58s -> 1424.50s]  is the Go runtime.
+[1424.50s -> 1427.14s]  And that causes a little bit of complications
+[1427.14s -> 1429.74s]  because Go runtime normally runs in user space
+[1429.74s -> 1432.26s]  as a user level program and assumes that the kernel,
+[1432.26s -> 1433.86s]  there's a kernel there for where they can ask
+[1433.86s -> 1435.02s]  some services, for example,
+[1435.06s -> 1438.38s]  it needs to allocate memory for its heap.
+[1439.26s -> 1440.86s]  And so there's a little bit of,
+[1440.86s -> 1441.90s]  I'll talk a little bit about that.
+[1441.90s -> 1443.70s]  There's a little bit of shim code
+[1443.70s -> 1447.42s]  that Biscuit has to basically trick,
+[1447.42s -> 1449.34s]  you know, the Go runtime into believing
+[1449.34s -> 1451.06s]  that it runs on top of the operating system,
+[1451.06s -> 1453.34s]  even though it's running on the bare hardware
+[1453.34s -> 1454.90s]  and basically get it to boot.
+[1455.94s -> 1457.50s]  And then the kernel itself, you know,
+[1457.50s -> 1460.02s]  it's very similar, you just think xv6,
+[1460.02s -> 1461.38s]  I think there's a good model,
+[1461.38s -> 1463.58s]  except, you know, it's a little bit more elaborate
+[1463.58s -> 1464.94s]  and more high performance.
+[1464.94s -> 1466.54s]  It has a broken memory system, you know,
+[1466.54s -> 1468.26s]  that for example, implements a map, you know,
+[1468.26s -> 1470.34s]  the lap that you're doing this week, you know,
+[1470.34s -> 1471.18s]  it has a file system,
+[1471.18s -> 1474.06s]  except there's more high-performance file system.
+[1474.06s -> 1475.62s]  It has a couple of drivers, you know,
+[1475.62s -> 1477.86s]  it has a disk driver, it has a network driver,
+[1477.86s -> 1479.32s]  it has a network stack.
+[1480.66s -> 1481.86s]  So a little bit more complete.
+[1481.86s -> 1483.90s]  And the way you can see that is,
+[1483.90s -> 1486.06s]  yeah, it's like 58 system calls, you know,
+[1486.06s -> 1488.58s]  and like, I can't remember how much xv6 has,
+[1488.58s -> 1490.58s]  but it's probably in the order of 1819
+[1490.58s -> 1492.42s]  or something like that.
+[1492.42s -> 1495.86s]  And the total number of lines of code is 28,000.
+[1495.86s -> 1499.78s]  And your xv6 is like, not in the, I think below 10,000.
+[1499.78s -> 1501.62s]  So, you know, there's more features.
+[1503.74s -> 1506.34s]  Any questions about sort of this high-level overview?
+[1507.66s -> 1508.50s]  Oh, sorry.
+[1508.50s -> 1510.78s]  I wanted to ask about the interface.
+[1510.78s -> 1513.98s]  So the interface is just like in xv6, right?
+[1513.98s -> 1516.42s]  So like the processes,
+[1516.42s -> 1520.22s]  they have to put something in some register
+[1520.22s -> 1524.50s]  and then they call the e-call or whatever it is.
+[1524.50s -> 1525.34s]  Yeah, yeah, yeah.
+[1525.34s -> 1526.16s]  I'll talk a little bit more about this,
+[1526.16s -> 1527.46s]  but it's exactly the same.
+[1527.46s -> 1528.70s]  There's no difference.
+[1528.70s -> 1529.54s]  Okay, I see.
+[1529.54s -> 1530.36s]  Thank you.
+[1532.30s -> 1533.74s]  So some of the features, you know,
+[1533.74s -> 1534.98s]  already mentioned them a little bit,
+[1534.98s -> 1537.26s]  that they may be worth talking about.
+[1537.26s -> 1539.02s]  So it's a multi-core,
+[1539.02s -> 1541.22s]  go with good support for concurrency.
+[1541.22s -> 1543.50s]  And so, you know, the biscuit is multi-core.
+[1543.50s -> 1547.58s]  In the same way that xv6 sort of has limited support
+[1547.58s -> 1549.50s]  for multi-core, in biscuit,
+[1549.66s -> 1551.82s]  we have a little bit more fine-grained synchronization
+[1551.82s -> 1554.86s]  or coordination than actually in xv6.
+[1554.86s -> 1557.24s]  It has threads, you know, user-level threads,
+[1558.46s -> 1561.10s]  backed up by kernel threads,
+[1561.10s -> 1563.10s]  which xv6 doesn't have.
+[1563.10s -> 1564.26s]  And there's a journal file system
+[1564.26s -> 1565.26s]  of much higher performance.
+[1565.26s -> 1566.10s]  You know, like think, you know,
+[1566.10s -> 1568.86s]  you recall the ext3 paper.
+[1568.86s -> 1569.70s]  It's sort of like, you know,
+[1569.70s -> 1572.48s]  the ext3 journaling file system.
+[1573.74s -> 1575.10s]  It has, you know, quite, you know,
+[1575.10s -> 1577.06s]  reasonable sophisticated memory system,
+[1577.06s -> 1579.14s]  you know, using VMAs.
+[1579.74s -> 1582.42s]  And, you know, it can support mmap and all that stuff.
+[1582.42s -> 1584.62s]  It has a complete TCP stack, you know,
+[1584.62s -> 1586.62s]  good enough to actually talk to other,
+[1586.62s -> 1588.74s]  you know, network servers across the internet.
+[1588.74s -> 1592.34s]  And it has two drivers with high-performance drivers.
+[1592.34s -> 1594.74s]  So like a 10 gigabit NIC.
+[1594.74s -> 1595.56s]  In the next lab,
+[1595.56s -> 1597.10s]  you're gonna actually implement a little driver
+[1597.10s -> 1599.42s]  for a very, very simple NIC.
+[1599.42s -> 1601.06s]  This is a much more high-performance
+[1601.06s -> 1602.98s]  and sophisticated driver.
+[1602.98s -> 1605.22s]  And a pretty sophisticated disk driver, you know,
+[1605.22s -> 1609.42s]  more sophisticated than the boot IO disk driver
+[1609.42s -> 1610.78s]  that you've sort of seen
+[1610.78s -> 1615.36s]  or you might've looked at in the labs.
+[1626.82s -> 1629.64s]  So in terms of the user programs,
+[1629.64s -> 1630.48s]  as I mentioned before,
+[1630.48s -> 1633.00s]  every user program runs with its own page table.
+[1633.86s -> 1636.08s]  User kernel memory is isolated by hardware.
+[1636.08s -> 1638.80s]  So there's a user kernel bit basically.
+[1639.92s -> 1644.36s]  And every user thread has a corresponding kernel thread.
+[1644.36s -> 1645.20s]  So that for example,
+[1645.20s -> 1647.04s]  when a user thread makes a system call,
+[1647.04s -> 1648.08s]  it will continue running
+[1648.08s -> 1650.92s]  on the corresponding kernel thread.
+[1650.92s -> 1652.22s]  And if the system code blocks,
+[1652.22s -> 1654.24s]  then another user thread in the same address space
+[1654.24s -> 1655.28s]  and the user address space
+[1655.28s -> 1657.48s]  might actually be scheduled by the kernel.
+[1658.64s -> 1659.68s]  And as I mentioned earlier,
+[1659.68s -> 1663.04s]  kernel threads are provided by the Go runtime.
+[1663.04s -> 1665.24s]  And so they're just Go routines.
+[1665.24s -> 1666.08s]  So you're right,
+[1666.08s -> 1670.32s]  if you've ever written a user-level application in Go
+[1670.32s -> 1675.24s]  and you use the Go call to create a thread,
+[1675.24s -> 1677.04s]  those Go routines are the ones
+[1677.04s -> 1679.36s]  that were actually being used by the biscuit kernel.
+[1681.64s -> 1682.90s]  So talking about system calls,
+[1682.90s -> 1685.84s]  you know, in this question that was just asked.
+[1686.80s -> 1689.32s]  So it works exactly as roughly, you know,
+[1689.84s -> 1691.66s]  as in xv6, you know,
+[1691.66s -> 1694.48s]  the user thread puts an arguments in the registers
+[1694.48s -> 1696.92s]  using a little library, you know,
+[1696.92s -> 1700.56s]  that provides a system call interface.
+[1700.56s -> 1703.16s]  Then the user threads execute a sys enter call.
+[1703.16s -> 1706.64s]  You know, this biscuit runs on an x86 processor,
+[1706.64s -> 1708.12s]  not on the RISC processor.
+[1708.12s -> 1709.36s]  So the assembly instructions
+[1709.36s -> 1711.52s]  for actually entering your system kernel
+[1711.52s -> 1714.68s]  are slightly different than on the RISC-V.
+[1715.52s -> 1719.40s]  But, you know, it's roughly similar to the RISC-V
+[1719.40s -> 1723.04s]  and then the control passes through the kernel thread
+[1723.04s -> 1725.50s]  that was running that user thread.
+[1725.50s -> 1727.84s]  And then the kernel thread executes the system call
+[1727.84s -> 1730.40s]  and then returns using sys exit.
+[1730.40s -> 1731.88s]  So roughly similar thing, you know,
+[1731.88s -> 1733.40s]  it's a trap frame that's being built
+[1733.40s -> 1734.84s]  and all that kind of stuff.
+[1737.08s -> 1737.92s]  Okay.
+[1740.20s -> 1743.32s]  Any questions so far before I dive into sort of
+[1743.64s -> 1744.76s]  more sort of, you know,
+[1744.76s -> 1747.44s]  things that were unexpected or expected,
+[1747.44s -> 1748.96s]  but were a little bit more challenging than,
+[1748.96s -> 1753.08s]  or different than things that would go in xv6.
+[1753.08s -> 1754.76s]  I have a question.
+[1754.76s -> 1759.76s]  I guess, I think Go wants you to use channels
+[1760.36s -> 1764.52s]  more than mutual locks, I guess.
+[1764.52s -> 1768.20s]  So would you like, would there be like,
+[1768.20s -> 1770.32s]  would the design of some things in xv6
+[1770.32s -> 1772.56s]  be like used as channels
+[1772.56s -> 1774.72s]  instead of holding a lock for something?
+[1774.72s -> 1777.20s]  Yeah, that's a great, great question.
+[1777.20s -> 1780.18s]  So we, I'll come back to it a little bit at the end,
+[1780.18s -> 1782.88s]  further down and we have some slides about like,
+[1782.88s -> 1785.12s]  what features of Go did we use in biscuit?
+[1786.04s -> 1788.32s]  But, you know, in the end actually,
+[1788.32s -> 1790.52s]  we didn't end up using channels that much.
+[1790.52s -> 1793.40s]  We mostly used locks and condition variables.
+[1793.40s -> 1796.10s]  So in some sense, closer to like the way xv6 looks,
+[1796.10s -> 1800.00s]  then actually you would do it with channels.
+[1800.52s -> 1802.84s]  We did experiment actually with designs of the file system
+[1802.84s -> 1805.44s]  that were much more channel heavy,
+[1807.00s -> 1808.60s]  but it didn't work out that great.
+[1808.60s -> 1809.72s]  We got that performance.
+[1809.72s -> 1813.92s]  And so we switched back to sort of more similar style
+[1813.92s -> 1817.04s]  of synchronization as xv6 does, or Linux uses.
+[1820.90s -> 1823.88s]  Okay, so there were a couple of sort of little puzzles
+[1823.88s -> 1827.48s]  or implementation challenges as we went through.
+[1827.48s -> 1831.08s]  One, we got to get the runtime to work on the bare metal.
+[1831.08s -> 1834.16s]  And, you know, required, we wanted to make a portion
+[1834.16s -> 1835.96s]  like zero modifications to the runtime
+[1835.96s -> 1837.96s]  or as little as possible so that, you know,
+[1837.96s -> 1839.94s]  Go coming out with a new version of the runtime,
+[1839.94s -> 1841.36s]  we could just use it.
+[1841.36s -> 1844.68s]  And in fact, you know, prove the years, you know,
+[1844.68s -> 1847.68s]  that we worked on this, where the coding worked on this,
+[1847.68s -> 1850.78s]  we upgraded the runtime many, you know, number of times.
+[1851.84s -> 1853.08s]  And that turned out to be a good thing.
+[1853.08s -> 1855.04s]  And that turned out to be not too difficult,
+[1855.04s -> 1857.88s]  actually to get it to work on the bare metal.
+[1857.88s -> 1861.34s]  You know, Go in general is designed pretty carefully
+[1861.34s -> 1864.04s]  to sort of be mostly OS agnostic
+[1864.04s -> 1865.08s]  because they want to be able to run
+[1865.08s -> 1866.24s]  in the many operating systems.
+[1866.24s -> 1869.24s]  So it doesn't rely on a ton of OS features.
+[1869.24s -> 1871.00s]  And we basically emulated the features
+[1871.00s -> 1872.96s]  that actually needed it.
+[1872.96s -> 1874.68s]  And mostly, you know, those were the features
+[1874.68s -> 1876.46s]  that actually just get off the,
+[1876.46s -> 1878.00s]  go run them to get started.
+[1878.00s -> 1880.00s]  And once it started, it runs happily.
+[1881.00s -> 1886.00s]  We have sort of arranged the Go routine
+[1886.56s -> 1887.80s]  around different applications.
+[1887.80s -> 1891.64s]  You know, normally in Go program, correct?
+[1891.64s -> 1893.68s]  There's all one single application
+[1893.68s -> 1895.40s]  and here now we're using Go routines
+[1895.40s -> 1899.46s]  to actually run different user applications.
+[1901.24s -> 1902.60s]  But, you know, these user applications
+[1902.60s -> 1904.60s]  have to run with different page tables.
+[1905.56s -> 1908.36s]  And the little, you know, wrinkle here is that,
+[1909.16s -> 1912.40s]  we don't control or Biscuit doesn't control the scheduler
+[1912.40s -> 1914.76s]  because we're using the Go runtime unmodified.
+[1914.76s -> 1916.82s]  So we're using the Go runtime scheduler.
+[1916.82s -> 1920.36s]  And so when the scheduler, we can't switch page tables.
+[1920.36s -> 1923.56s]  And so what the xv6, basically what the Biscuit does
+[1923.56s -> 1925.08s]  is very similar to xv6.
+[1925.08s -> 1926.60s]  It actually switches page tables
+[1926.60s -> 1929.32s]  versus when it changes from current to user space
+[1929.32s -> 1930.62s]  or the other way around.
+[1932.06s -> 1934.64s]  So when an entry and exit of the kernel,
+[1934.64s -> 1936.44s]  you know, we switch page tables.
+[1936.44s -> 1938.48s]  And that means like in xv6,
+[1938.48s -> 1941.56s]  and then when you need to copy data from user space
+[1941.56s -> 1943.40s]  to kernel space or the other way around,
+[1943.40s -> 1945.60s]  you have to do that sort of using those copy in
+[1945.60s -> 1947.88s]  and copy out functions that we also have in xv6.
+[1947.88s -> 1950.48s]  So basically you do the page table walk in software.
+[1952.80s -> 1955.92s]  Another sort of challenge or a little challenge
+[1955.92s -> 1957.80s]  was the device interrupts.
+[1957.80s -> 1960.96s]  And like Go normally runs in user mode, you know,
+[1960.96s -> 1964.72s]  doesn't really get interrupts from the hardware.
+[1964.84s -> 1966.60s]  We're using it on the bare metal.
+[1966.60s -> 1968.20s]  And so we're not gonna get interrupts,
+[1968.20s -> 1970.96s]  time clock interrupts, interrupts from the network driver,
+[1970.96s -> 1973.56s]  interrupts from the disk driver, et cetera,
+[1973.56s -> 1975.06s]  from the view art.
+[1976.00s -> 1977.24s]  And so we need to deal with that.
+[1977.24s -> 1981.24s]  And there's really also no notion in Go, you know,
+[1981.24s -> 1983.24s]  for sort of, you know, switching off interrupts,
+[1983.24s -> 1985.12s]  like while holding a lock, you know,
+[1985.12s -> 1988.08s]  because it just doesn't show up in user applications.
+[1988.08s -> 1989.52s]  And so we have to be a little bit careful
+[1989.52s -> 1993.44s]  with how to actually write a device interrupt.
+[1993.44s -> 1996.64s]  And basically the way we did it is we do almost nothing
+[1996.64s -> 1997.96s]  in the device interrupt.
+[1997.96s -> 1999.32s]  We don't take any locks out.
+[1999.32s -> 2002.34s]  Basically we don't allocate any memory.
+[2002.34s -> 2004.64s]  The only thing we do is basically sending a flag
+[2004.64s -> 2006.52s]  somewhere that there was an interrupt
+[2006.52s -> 2009.66s]  and then wake up a really functional Go routine
+[2009.66s -> 2011.52s]  to actually deal with the interrupt.
+[2014.12s -> 2015.52s]  And that Go routine, of course, you know,
+[2015.52s -> 2018.44s]  can use all the Go features that it wants.
+[2018.44s -> 2019.88s]  Because it doesn't run in the context
+[2019.88s -> 2020.72s]  of an interrupt handler,
+[2020.92s -> 2023.32s]  it runs in the context of a normal Go routine.
+[2024.56s -> 2026.64s]  Then one thing that surprised us,
+[2026.64s -> 2027.96s]  was a bit more of a surprise.
+[2027.96s -> 2029.32s]  You know, the first three things
+[2029.32s -> 2031.80s]  we completely anticipated that we would have to deal with
+[2031.80s -> 2033.44s]  when building Biscuit,
+[2033.44s -> 2036.56s]  the hardest one that actually surprised us
+[2037.64s -> 2039.36s]  and we learned a lot about
+[2039.36s -> 2042.04s]  was this puzzle of heap exhaustion.
+[2042.04s -> 2043.72s]  So I'm gonna talk mostly for a little while
+[2043.72s -> 2045.80s]  about heap exhaustion and you know, what it is,
+[2045.80s -> 2047.44s]  you know, how it comes about and you know,
+[2047.44s -> 2048.26s]  how we solved it.
+[2048.26s -> 2050.24s]  But maybe before diving into that,
+[2050.80s -> 2052.00s]  any questions so far?
+[2058.16s -> 2059.58s]  So crystal clear.
+[2063.76s -> 2065.88s]  Okay, so let's talk a little bit about heap exhaustion.
+[2065.88s -> 2067.80s]  I'm not gonna go with full depth as in the paper,
+[2067.80s -> 2069.20s]  but at least to give you the flavor
+[2069.20s -> 2070.92s]  of like what the problem is.
+[2070.92s -> 2071.76s]  Okay.
+[2080.08s -> 2082.52s]  So in the heap exhaustion, you know,
+[2082.52s -> 2085.62s]  let's say the blue box here is the kernel again.
+[2088.60s -> 2091.14s]  And you know, the kernel has a heap
+[2091.14s -> 2093.68s]  from which it allocates dynamically memory.
+[2093.68s -> 2095.56s]  In xe6, we don't have such a heap
+[2095.56s -> 2097.54s]  because we don't have a memory allocator in the kernel.
+[2097.54s -> 2098.80s]  Everything is statically allocated,
+[2098.80s -> 2101.08s]  but any other kernel will have a heap
+[2101.08s -> 2104.74s]  so that, you know, you can call malloc and free
+[2104.74s -> 2105.58s]  in the kernel.
+[2107.28s -> 2109.28s]  And you know, the things that actually get allocated
+[2109.28s -> 2111.80s]  on the heap are for example, you know,
+[2111.80s -> 2114.76s]  socket objects or file descriptor objects
+[2114.76s -> 2117.80s]  or process objects, you know, like struct proc,
+[2117.80s -> 2119.66s]  you know, struct fde, all the structures
+[2119.66s -> 2122.96s]  that we basically statically allocated in xe6.
+[2122.96s -> 2125.52s]  Normal kernels, they dynamically allocate them.
+[2125.52s -> 2127.20s]  So when you open the new file descriptor,
+[2127.44s -> 2128.92s]  it will be a file descriptor object, you know,
+[2128.92s -> 2130.08s]  allocated in the heap.
+[2131.40s -> 2133.28s]  And so, and then the problem is like, you know,
+[2133.28s -> 2134.88s]  if you're running many applications, you know,
+[2134.88s -> 2136.44s]  they might open many file descriptors,
+[2136.44s -> 2137.92s]  may have many sockets
+[2137.92s -> 2140.68s]  and they sort of start filling the heap basically slowly.
+[2140.68s -> 2143.64s]  And so, and then the issue is that at some point,
+[2143.64s -> 2144.96s]  like the heap is full, you know,
+[2144.96s -> 2148.48s]  there's no space anymore for allocating a new object.
+[2148.48s -> 2151.12s]  So when an application asks, for example,
+[2151.12s -> 2153.32s]  opens a new file descriptor and there's like no,
+[2153.32s -> 2155.76s]  you know, a new processor, like there's new fork
+[2155.80s -> 2157.76s]  and the kernel wants to allocate this struct proc
+[2157.76s -> 2160.32s]  in the heap, usually like there's no space anymore.
+[2161.80s -> 2162.92s]  And what do you do then?
+[2162.92s -> 2165.48s]  You know, what is the, you know,
+[2165.48s -> 2168.00s]  how do you deal with that particular case?
+[2168.00s -> 2169.04s]  And this is typically, you know,
+[2169.04s -> 2171.00s]  this is maybe in common cases,
+[2171.00s -> 2173.16s]  doesn't show up that often,
+[2173.16s -> 2174.92s]  but like if you're pushing the machine hard,
+[2174.92s -> 2175.76s]  you may have, you know,
+[2175.76s -> 2177.24s]  a couple of heavy consumer processes
+[2177.24s -> 2178.64s]  or run user local processes,
+[2178.64s -> 2180.94s]  you might end in this situation where basically,
+[2180.94s -> 2183.48s]  you know, all the available memory is just in use
+[2183.48s -> 2186.28s]  and your heap is just full.
+[2186.28s -> 2189.24s]  And no processor is calling me free yet, you know,
+[2189.24s -> 2191.56s]  because they're all running and trying to allocate more,
+[2191.56s -> 2194.16s]  you know, resources for their particular jobs.
+[2199.60s -> 2201.24s]  And so all kernels face this problem
+[2201.24s -> 2204.24s]  when it's like a C kernel or a biscuit or anything
+[2204.24s -> 2207.68s]  and any kernel must have solved this particular problem.
+[2207.68s -> 2209.76s]  The reason that they sort of showed up for us
+[2209.76s -> 2214.76s]  as a serious issue in biscuit was because in many kernels,
+[2220.12s -> 2222.80s]  you can return an error on a malloc
+[2222.80s -> 2224.56s]  and in fact, actually six does that correctly
+[2224.56s -> 2225.40s]  once in a while.
+[2225.40s -> 2227.08s]  But, you know, in the go runtime,
+[2227.08s -> 2230.32s]  when you call new to allocate a go object,
+[2230.32s -> 2232.12s]  there's no error condition, you know,
+[2232.12s -> 2236.00s]  new succeeds and so there's no way to fail it.
+[2236.00s -> 2237.92s]  So let's talk a little bit about, you know,
+[2237.92s -> 2240.28s]  possible ways to solve this problem.
+[2241.92s -> 2244.64s]  The, you know, we've seen it actually
+[2244.64s -> 2245.88s]  in actually six once in a while,
+[2245.88s -> 2248.06s]  like if you remember the B cache,
+[2249.00s -> 2253.44s]  if actually six can't find a new block,
+[2253.44s -> 2255.16s]  you know, to a free block to use,
+[2255.16s -> 2257.28s]  you know, for restoring a disk block in
+[2257.28s -> 2259.48s]  and actually sometimes you just panics.
+[2259.48s -> 2264.04s]  Now this clearly is a completely undesirable solution
+[2264.04s -> 2265.32s]  and it's not a real solution.
+[2265.32s -> 2267.72s]  So like why we call it the straw man solution.
+[2268.92s -> 2271.98s]  The other sort of straw man solution is to,
+[2271.98s -> 2273.88s]  when you call, let's say you allocate
+[2273.88s -> 2275.08s]  a new piece of memory, you know,
+[2275.08s -> 2278.92s]  you go to call alloc or new to actually allocate it.
+[2278.92s -> 2279.96s]  You could actually, you know,
+[2279.96s -> 2282.00s]  wait for memory in the allocator.
+[2282.00s -> 2283.68s]  I'm gonna be one proposal to do it.
+[2283.68s -> 2286.48s]  It turns out not to be a good proposal.
+[2286.48s -> 2288.40s]  And the reason it is not a good proposal
+[2288.40s -> 2290.60s]  is that you may deadlock, you know,
+[2290.60s -> 2292.76s]  assume the following scenario, you're holding some,
+[2292.76s -> 2295.16s]  let's say the kernel has one big kernel lock,
+[2296.00s -> 2297.20s]  and you call malloc, you know,
+[2297.20s -> 2299.96s]  you're weighed into the memory allocator,
+[2299.96s -> 2302.12s]  then basically no other process can run.
+[2303.04s -> 2304.84s]  And you would have a sort of a deadlock type,
+[2304.84s -> 2306.96s]  and your next process that would actually try to run,
+[2306.96s -> 2309.08s]  for example, the threesome memory,
+[2309.08s -> 2311.72s]  you know, couldn't run and actually deadlock.
+[2311.72s -> 2314.04s]  Of course, this is if you have a big kernel lock,
+[2314.04s -> 2315.52s]  that is an obvious problem, you know,
+[2315.52s -> 2318.76s]  but even if you have a very small, you know,
+[2318.76s -> 2319.84s]  fine grained locking,
+[2319.84s -> 2322.38s]  it is easy to run in a situation where basically
+[2322.38s -> 2324.32s]  the person or the process that's waiting
+[2324.32s -> 2327.16s]  in the allocator is holding some lock
+[2327.16s -> 2330.00s]  that somebody else needs to actually free the memory.
+[2330.00s -> 2331.40s]  And that can get you basically
+[2331.40s -> 2332.76s]  in this deadlock situation.
+[2334.84s -> 2337.40s]  And so we're gonna start with free,
+[2337.40s -> 2340.00s]  is to basically fail,
+[2340.00s -> 2342.52s]  or when you, there's no memory anymore,
+[2342.52s -> 2344.36s]  alloc just returns like a null pointer,
+[2344.36s -> 2345.68s]  you check with the null pointer,
+[2345.68s -> 2347.32s]  it's a null pointer, you fail,
+[2347.32s -> 2348.60s]  and you sort of bail out.
+[2349.76s -> 2351.24s]  But bailing out is actually not
+[2351.24s -> 2353.24s]  that sort of straightforward.
+[2353.68s -> 2357.18s]  The process might actually have allocated memory already,
+[2357.18s -> 2358.82s]  you need to get rid of that.
+[2358.82s -> 2361.04s]  You may have done some partial disk operations,
+[2361.04s -> 2362.64s]  like for example, if you do a multi-step,
+[2362.64s -> 2363.64s]  you know, positive operation,
+[2363.64s -> 2364.68s]  maybe you have done some of it,
+[2364.68s -> 2367.36s]  but not all of it, you have to bail out of that.
+[2367.36s -> 2369.68s]  And so it turns out to actually get very hard,
+[2369.68s -> 2371.28s]  it's very hard to get it right.
+[2372.52s -> 2375.16s]  And sort of interesting, you know,
+[2375.16s -> 2377.98s]  when digging into this and trying to think about
+[2377.98s -> 2379.40s]  like how to solve this problem,
+[2379.40s -> 2380.72s]  you know, Linux sort of uses,
+[2380.72s -> 2382.52s]  you know, both of these solutions,
+[2383.36s -> 2386.88s]  and above actually have trouble or problems.
+[2386.88s -> 2389.36s]  And indeed, you know, kernel developers
+[2389.36s -> 2391.68s]  actually have difficulty to actually get this all straight
+[2391.68s -> 2393.44s]  if you're very interested in this,
+[2393.44s -> 2396.28s]  and we want to see some interesting discussion about this.
+[2396.28s -> 2398.52s]  Google for too small to fail,
+[2398.52s -> 2399.84s]  and then, you know, the little article
+[2399.84s -> 2401.84s]  that talks about some of these complications,
+[2401.84s -> 2406.16s]  you know, of freeing memory or waiting in the allocator,
+[2406.16s -> 2408.86s]  and the problem that can cause.
+[2409.92s -> 2412.38s]  Now it turns out for us, you know,
+[2412.70s -> 2414.34s]  strong and true would be sort of the solution
+[2414.34s -> 2415.26s]  that you can imagine doing,
+[2415.26s -> 2416.86s]  but then for us, it just as mentioned earlier,
+[2416.86s -> 2418.70s]  it's just if a biscuit was not possible
+[2418.70s -> 2421.42s]  because new just cannot return,
+[2421.42s -> 2423.70s]  cannot fail, it just always succeeds.
+[2423.70s -> 2426.54s]  So we got a range in some way that just cannot happen.
+[2428.38s -> 2429.78s]  Plus, neither of these two solutions
+[2429.78s -> 2430.80s]  actually particularly ideal,
+[2430.80s -> 2432.46s]  so we wanted to come up with something
+[2432.46s -> 2434.38s]  that was potentially better.
+[2435.90s -> 2438.26s]  Any questions so far about the setup
+[2438.26s -> 2440.42s]  around heap exhaustion before I talk about like,
+[2440.42s -> 2442.50s]  obviously, we'll have the way biscuit does it.
+[2447.56s -> 2449.06s]  Does this problem make sense?
+[2458.06s -> 2460.14s]  I will interpret the silence as yes,
+[2460.14s -> 2461.30s]  and then keep going,
+[2461.30s -> 2463.14s]  but feel free to interrupt anytime.
+[2465.94s -> 2468.02s]  Okay, so what is the biscuit solution?
+[2468.86s -> 2470.62s]  You know, at a high level,
+[2470.62s -> 2473.22s]  the biscuit solution is like almost straightforward.
+[2474.26s -> 2475.10s]  What biscuit does,
+[2475.10s -> 2476.46s]  like when you execute a system call,
+[2476.46s -> 2478.86s]  like say read or fork,
+[2480.30s -> 2482.88s]  before jumping actually into the fork system call,
+[2482.88s -> 2485.02s]  like right at the beginning of the fork system call,
+[2485.02s -> 2487.26s]  if you will, like in the system called dispatcher
+[2487.26s -> 2489.38s]  in xv6, then first thing it does,
+[2489.38s -> 2490.74s]  actually it calls reserve,
+[2491.78s -> 2493.98s]  and basically reserves enough memory
+[2494.88s -> 2496.94s]  to be able to execute the system call.
+[2497.82s -> 2499.60s]  So there's reserve free memory,
+[2501.10s -> 2503.38s]  enough that whatever amount of memory
+[2503.38s -> 2505.46s]  that actually the system call needs,
+[2505.46s -> 2507.06s]  the reservation will be big enough
+[2507.06s -> 2509.54s]  that actually it will succeed.
+[2509.54s -> 2512.10s]  So once the system call goes off
+[2512.10s -> 2514.68s]  and actually successful in reserving memory,
+[2514.68s -> 2516.54s]  it will actually run all the way through,
+[2516.54s -> 2518.18s]  and we will never with the problem
+[2518.18s -> 2521.22s]  that there won't be enough memory or heap exhaustion.
+[2522.46s -> 2524.30s]  And if there's not enough memory
+[2524.30s -> 2525.96s]  at the point you wanna do the reservation,
+[2525.96s -> 2527.76s]  then basically it just waits here.
+[2529.36s -> 2531.00s]  But at the beginning of the system call,
+[2531.00s -> 2532.76s]  the system call doesn't hold any locks,
+[2532.76s -> 2534.16s]  it doesn't hold any resources yet.
+[2534.16s -> 2535.88s]  So it actually is perfectly fine,
+[2535.88s -> 2540.38s]  it waits there, so there's no risk of deadlock.
+[2541.36s -> 2543.16s]  And while it's waiting,
+[2543.16s -> 2546.16s]  it can of course, doing, it can call,
+[2546.16s -> 2549.44s]  the kernel can actually evict caches,
+[2549.44s -> 2553.04s]  try to reduce the, basically make free up heap space,
+[2553.04s -> 2557.52s]  maybe as you've seen, maybe kill a process
+[2557.52s -> 2560.22s]  that to force memory to actually be freed.
+[2561.34s -> 2563.12s]  And then once memory is available
+[2563.12s -> 2566.14s]  and the kernel decides, well, I can meet the reservation,
+[2566.14s -> 2568.64s]  then it will let the system call basically goes off
+[2568.64s -> 2570.64s]  and runs and basically executes
+[2570.64s -> 2572.04s]  whatever needs to be done.
+[2572.04s -> 2573.32s]  And then at the very end,
+[2573.32s -> 2574.16s]  when the system call is done,
+[2574.16s -> 2575.48s]  it's just like, okay, I'm done,
+[2575.48s -> 2576.96s]  and all the memory that was reserved
+[2576.96s -> 2579.12s]  basically goes back to the pool
+[2579.12s -> 2581.58s]  available for subsequent system calls.
+[2582.58s -> 2584.94s]  And so there's a couple of nice properties
+[2584.94s -> 2586.90s]  about this particular solutions.
+[2586.90s -> 2589.34s]  There's no checks necessary in the kernel itself, right?
+[2589.34s -> 2590.90s]  Like you never have to check,
+[2590.90s -> 2593.74s]  whether the memory allocation can fail,
+[2593.74s -> 2595.10s]  which is particularly in our case,
+[2595.10s -> 2597.74s]  good because they can fail.
+[2597.74s -> 2600.22s]  There's no error handling code and necessary at all.
+[2600.22s -> 2601.50s]  And there's no risk for deadlock
+[2601.50s -> 2603.62s]  because you're avoiding in the very beginning
+[2603.62s -> 2606.18s]  without when you actually hold no locks.
+[2606.18s -> 2608.38s]  Of course, there's all wonderful,
+[2608.38s -> 2610.78s]  well, the only thing is like how the,
+[2610.82s -> 2611.70s]  there's a challenge, of course,
+[2611.70s -> 2613.02s]  how do you do the reservation?
+[2613.02s -> 2614.12s]  How do you compute,
+[2615.10s -> 2620.10s]  how much memory a system call might need to execute it?
+[2622.78s -> 2624.54s]  And so that was sort of a puzzle.
+[2626.92s -> 2631.66s]  And it's important that the amount you reserve,
+[2631.66s -> 2633.50s]  one you could do is like you can reserve
+[2633.50s -> 2634.92s]  like half a memory or something like that,
+[2634.92s -> 2636.78s]  like some ridiculous amount of memory
+[2636.78s -> 2637.82s]  for every system call.
+[2637.82s -> 2639.74s]  But that means you limit the number of system calls
+[2639.74s -> 2640.94s]  you can execute concurrently.
+[2640.94s -> 2643.10s]  So you wanna sort of do a pretty good job
+[2643.10s -> 2646.32s]  at actually computing a bound of the amount of memory
+[2646.32s -> 2649.16s]  that the system call might need.
+[2651.02s -> 2656.02s]  So the way we ended up doing this
+[2657.22s -> 2660.50s]  and turned out like sort of the high level language
+[2660.50s -> 2661.90s]  helped us here,
+[2661.90s -> 2663.28s]  turned out like Go is actually pretty easy
+[2663.28s -> 2664.54s]  to aesthetically analyze.
+[2664.54s -> 2669.14s]  In fact, the Go runtime and Go infrastructure ecosystem
+[2669.54s -> 2673.34s]  comes with a whole bunch of packages to analyze Go code.
+[2673.34s -> 2676.50s]  And we use those packages basically to compute
+[2677.62s -> 2682.06s]  the amount of memory that the system call needs.
+[2682.06s -> 2683.22s]  So you can think about the system,
+[2683.22s -> 2686.30s]  let's say like you have the read system call, right?
+[2686.30s -> 2688.98s]  You know, we can look at the call graph
+[2688.98s -> 2690.98s]  of the system call, calls the function F,
+[2690.98s -> 2692.82s]  calls the function G, calls the function H
+[2692.82s -> 2693.66s]  or blah, blah, blah.
+[2693.66s -> 2695.10s]  It might continue with the whole bunch
+[2695.10s -> 2696.94s]  and then at the end of the system call
+[2696.94s -> 2698.20s]  sort of unwinds the stack again
+[2698.28s -> 2701.68s]  and then it goes back to the, and returns to user space.
+[2701.68s -> 2704.60s]  And basically what we can do is like allocate
+[2704.60s -> 2707.28s]  or figure out like what the maximum depth
+[2708.56s -> 2713.56s]  of this call graph is at any particular time.
+[2715.24s -> 2717.24s]  And then basically for that maximum depth,
+[2717.24s -> 2719.28s]  computing how much light memory
+[2719.28s -> 2720.88s]  each of these functions needs.
+[2720.88s -> 2723.32s]  So like if this function calls a new,
+[2723.32s -> 2725.00s]  that all allocates a memory.
+[2725.00s -> 2727.00s]  We know what kind of objects there are.
+[2727.00s -> 2728.04s]  It's a high level language.
+[2728.92s -> 2729.88s]  So we can compute what the size of that object is
+[2729.88s -> 2731.32s]  and we can just add them up
+[2731.32s -> 2732.72s]  and it gives us some number S
+[2732.72s -> 2734.32s]  that says like the total amount of memory
+[2734.32s -> 2735.72s]  or the maximum amount of memory
+[2735.72s -> 2736.72s]  that it can be used live
+[2736.72s -> 2741.42s]  at any particular point in time for that call graph.
+[2742.48s -> 2744.52s]  And the reason is, you know, it's slightly tricky.
+[2744.52s -> 2745.68s]  It's not as simple as this
+[2745.68s -> 2747.72s]  because for example, a function H
+[2747.72s -> 2749.92s]  you know, might allocate some memory
+[2749.92s -> 2752.60s]  and then pass it back, you know, to G.
+[2752.60s -> 2756.56s]  And so, you know, H finishes and, but you know,
+[2756.60s -> 2758.76s]  G actually, you know, it gets the memory
+[2758.76s -> 2760.36s]  that H is allocated.
+[2760.36s -> 2763.56s]  And this is called escaping or the memory escapes
+[2763.56s -> 2767.52s]  from, you know, from H to G.
+[2767.52s -> 2768.68s]  And it turns out like, you know,
+[2768.68s -> 2770.20s]  there are standard algorithms
+[2770.20s -> 2771.92s]  for doing the sort of this escape analysis
+[2771.92s -> 2775.20s]  to see determine which variables escape to the callers.
+[2775.20s -> 2776.80s]  And in that case, you know,
+[2776.80s -> 2778.76s]  basically whatever memory was allocated by H
+[2778.76s -> 2779.80s]  and that is still alive.
+[2779.80s -> 2782.24s]  We have to add it, you know, to whatever G is.
+[2783.08s -> 2785.12s]  So, you know, it has to be added into S.
+[2786.08s -> 2787.72s]  A quick question about this.
+[2788.60s -> 2791.90s]  So let's assume we're in some function,
+[2791.90s -> 2793.84s]  like depending on different workloads
+[2793.84s -> 2795.92s]  that the function is expected to have,
+[2795.92s -> 2799.56s]  there might be different memories, memory amounts allocated.
+[2799.56s -> 2801.76s]  So what, is there like a worst case
+[2801.76s -> 2803.74s]  what memory allocation process?
+[2803.74s -> 2804.58s]  Yeah, that's basically it.
+[2804.58s -> 2806.12s]  It's sort of conservative scheme, correct?
+[2806.12s -> 2810.22s]  Meaning, you know, we compute the tool
+[2810.22s -> 2814.24s]  computes basically the worst possible depth
+[2814.24s -> 2815.40s]  of function calls.
+[2816.70s -> 2819.14s]  And, you know, for that worst case,
+[2819.14s -> 2822.32s]  it analyzes how much memory that reach system call
+[2822.32s -> 2823.76s]  might need, you know, in practice,
+[2823.76s -> 2826.64s]  it might need, the system might need a lot less,
+[2826.64s -> 2829.32s]  but, you know, for, you know, to be conservative,
+[2829.32s -> 2831.04s]  you know, we have to allocate the worst,
+[2831.04s -> 2832.44s]  we plan for the worst case.
+[2833.80s -> 2837.16s]  So it comes to a couple of important points here
+[2837.16s -> 2839.68s]  because, you know, some system calls,
+[2839.68s -> 2840.92s]  for example, executed for loop
+[2840.92s -> 2843.80s]  that's dependent on our argument to the system call.
+[2844.32s -> 2845.84s]  And so you can't actually statically figure out
+[2845.84s -> 2847.12s]  what the bound is.
+[2847.12s -> 2848.60s]  And so a number of cases, you know,
+[2848.60s -> 2850.88s]  we annotated the code to say like,
+[2850.88s -> 2853.34s]  well, this is the maximum bounds of this loop.
+[2853.34s -> 2855.28s]  And you can assume it's no more than that.
+[2855.28s -> 2858.12s]  And, you know, use that to actually compute this number S.
+[2859.64s -> 2861.36s]  Similarly, you know, for example,
+[2861.36s -> 2863.44s]  if you have a recursive function, you know,
+[2863.44s -> 2865.48s]  who knows how deep the recursion is, right?
+[2865.48s -> 2868.52s]  And that might also be dependent on a dynamic variable
+[2868.52s -> 2870.36s]  or an argument through system call.
+[2870.36s -> 2872.48s]  And in fact, you know, we, you know,
+[2872.48s -> 2874.24s]  we treat biscuit in some places
+[2874.24s -> 2877.24s]  to basically avoid recursive function calls.
+[2877.24s -> 2879.76s]  So there actually was possible to do this, you know,
+[2879.76s -> 2881.88s]  to do this kind of analysis.
+[2881.88s -> 2883.64s]  So this kind of analysis is not for free.
+[2883.64s -> 2885.04s]  It's not completely automatic.
+[2885.04s -> 2886.72s]  You know, it takes a couple of days of work,
+[2886.72s -> 2888.36s]  you know, for, in this case, you know,
+[2888.36s -> 2890.24s]  Cody to go through, you know,
+[2890.24s -> 2895.24s]  look at all these loops and, and, and annotate.
+[2896.52s -> 2897.68s]  You know, there are a couple of other sort of
+[2897.68s -> 2899.66s]  go specific issues that you have to deal with,
+[2899.66s -> 2902.08s]  slices, you know, they might double in size
+[2902.64s -> 2904.72s]  if you add an element to the slice.
+[2904.72s -> 2907.88s]  And so we, we annotate the slices with some maximum
+[2907.88s -> 2910.80s]  capacity, but it's all sort of doable.
+[2910.80s -> 2914.24s]  So a couple of days work and, you know, using this tool,
+[2914.24s -> 2915.68s]  then you can sort of get a number out
+[2915.68s -> 2918.12s]  that is reasonable good in terms of, you know,
+[2918.12s -> 2922.48s]  computing and maximum amount of memory
+[2922.48s -> 2924.28s]  that a particular system call needs.
+[2925.36s -> 2927.08s]  And so this is basically how, you know,
+[2927.08s -> 2930.12s]  we basically biscuit solves this particular problem.
+[2933.08s -> 2933.92s]  Oh, sorry.
+[2933.92s -> 2937.08s]  What else are people using this tool for?
+[2937.08s -> 2939.40s]  Like they're not, they're not building a kernel.
+[2939.40s -> 2940.72s]  What are they using it for?
+[2940.72s -> 2943.08s]  Well, for the static analysis packages.
+[2943.08s -> 2943.92s]  Yeah.
+[2943.92s -> 2945.40s]  The Go compiler internally uses it
+[2945.40s -> 2947.60s]  for all kinds of optimizations, you know,
+[2947.60s -> 2952.60s]  to and do static analysis on the Go code
+[2953.28s -> 2955.32s]  to figure out like the best way to compile,
+[2955.32s -> 2957.40s]  for the best way to compile it.
+[2957.40s -> 2958.24s]  I see, I see.
+[2958.24s -> 2960.40s]  Okay, thank you.
+[2960.40s -> 2961.96s]  So this is one of the cool things about it.
+[2962.80s -> 2963.64s]  You know, just as a package, you know,
+[2963.64s -> 2964.48s]  that the compiler happens to use, you know,
+[2964.48s -> 2965.64s]  but we could use it too.
+[2967.44s -> 2968.36s]  You'll see later on.
+[2968.36s -> 2970.80s]  And we also use it for a couple of other features.
+[2972.56s -> 2974.12s]  It's very convenient to have.
+[2976.92s -> 2977.76s]  Okay.
+[2979.76s -> 2982.48s]  Okay, in terms of the implementation, you know,
+[2982.48s -> 2985.80s]  biscuit was basically very similar to other kernels
+[2985.80s -> 2987.84s]  who are like, you know, in xv6, except, you know,
+[2987.84s -> 2991.76s]  more high performance, you know,
+[2992.60s -> 2995.12s]  we adopted many of the optimizations or cleverness
+[2995.12s -> 2997.24s]  that the Linux kernel has, you know,
+[2997.24s -> 2998.20s]  at least for the system calls
+[2998.20s -> 3000.32s]  that we were trying to implement.
+[3000.32s -> 3002.88s]  You know, we use large pages for kernel text
+[3002.88s -> 3005.04s]  to avoid, you know, TOB costs.
+[3006.04s -> 3008.68s]  We have first CPU NIC transmit queues
+[3008.68s -> 3013.24s]  so to avoid synchronization between cores.
+[3013.24s -> 3015.16s]  We have an RCU.
+[3015.16s -> 3017.28s]  We'll talk a little bit more about the directory cache,
+[3017.28s -> 3019.16s]  but this is basically lock-free
+[3019.16s -> 3021.92s]  or read lock-free directory cache.
+[3021.92s -> 3022.84s]  At the end of the semester,
+[3022.84s -> 3024.40s]  we'll talk about RCU in more detail,
+[3024.40s -> 3026.48s]  but, you know, biscuit has to do.
+[3028.88s -> 3032.36s]  You know, sort of the usual type of optimization
+[3032.36s -> 3034.28s]  that actually you need to get done
+[3034.28s -> 3035.80s]  to get high performance.
+[3035.80s -> 3038.40s]  And the main lesson I think we learned
+[3038.40s -> 3041.00s]  is that Go was not standing in the way
+[3041.00s -> 3043.28s]  of implementing these optimizations.
+[3043.28s -> 3045.96s]  So, you know, this optimization could be
+[3045.96s -> 3047.92s]  that were implemented in C and Linux, you know,
+[3047.92s -> 3050.52s]  we basically implemented the same optimization,
+[3050.52s -> 3052.04s]  but never implemented the bingo.
+[3052.04s -> 3055.92s]  And so the language itself is not a hurdle or a problem.
+[3055.92s -> 3057.52s]  In fact, you know, it's completely conducive
+[3057.52s -> 3059.72s]  to actually implementing these optimizations.
+[3060.68s -> 3062.72s]  There was a lot of work to implement these optimizations,
+[3062.72s -> 3065.36s]  but, you know, that was irrespective of the language.
+[3068.96s -> 3072.04s]  Okay, so that brings me sort of to the evaluation,
+[3072.04s -> 3073.80s]  which is really what the, you know,
+[3073.80s -> 3075.12s]  motivation of the whole paper was,
+[3075.12s -> 3078.64s]  which is like trying to get a handle on the benefits
+[3078.64s -> 3080.52s]  and the costs of high-level language.
+[3080.52s -> 3083.80s]  So basically the evaluation is sort of split in two parts,
+[3083.80s -> 3084.92s]  first talking about the benefits
+[3084.92s -> 3086.68s]  and then talking about the costs.
+[3088.52s -> 3092.60s]  So three questions, you know, first of all, you know,
+[3092.60s -> 3094.88s]  there's a question like, didn't we cheat, you know,
+[3094.88s -> 3096.76s]  maybe we avoided all the expensive high-level
+[3096.76s -> 3099.44s]  language features that Go offers.
+[3101.52s -> 3102.36s]  Second question, of course,
+[3102.36s -> 3104.24s]  does the high-level language simplify the biscuit code
+[3104.28s -> 3107.28s]  and would it prevent some of these exploits that, you know,
+[3107.28s -> 3109.60s]  I mentioned early on in the lecture.
+[3110.52s -> 3114.20s]  So first, just back to the high-level language features,
+[3114.20s -> 3116.88s]  we just wanted to see whether we were sort of similar
+[3116.88s -> 3118.48s]  in terms of other big Go projects,
+[3118.48s -> 3120.12s]  in terms of language features, so that, you know,
+[3120.12s -> 3120.96s]  we could say like, oh,
+[3120.96s -> 3124.08s]  the kernel seems to be doing sort of roughly the same,
+[3124.08s -> 3125.56s]  taking advantage of the same features
+[3125.56s -> 3127.00s]  in sort of similar ways.
+[3127.00s -> 3129.52s]  So we use actually the same static analysis tool
+[3129.52s -> 3132.32s]  or package to basically analyze a whole bunch of
+[3133.00s -> 3136.64s]  two big pieces of Go shoppers that are in GitHub,
+[3136.64s -> 3138.28s]  you know, there are millions of lines of code.
+[3138.28s -> 3139.92s]  One is, you know, the Go runtime itself
+[3139.92s -> 3143.68s]  and all its packages and the system called Moby.
+[3143.68s -> 3146.84s]  And then we just basically plot it for sort of
+[3146.84s -> 3148.24s]  no more high-level language features,
+[3148.24s -> 3150.48s]  how many times they were used per a thousand lines.
+[3150.48s -> 3154.08s]  So this graph shows that our user on the X axis
+[3154.08s -> 3155.84s]  are the language features, you know,
+[3155.84s -> 3158.72s]  basically allocations correspond to calling new.
+[3158.72s -> 3160.52s]  And so this corresponds to memory
+[3160.56s -> 3162.52s]  that it will be dynamically allocated
+[3162.52s -> 3164.44s]  by the garbage collector, you know,
+[3164.44s -> 3166.36s]  NAPs are like hash tables, you know,
+[3166.36s -> 3168.40s]  slices or dynamic arrays, you know,
+[3168.40s -> 3170.12s]  here's the channels synchronization.
+[3170.12s -> 3172.40s]  As you can see, we use them very literally,
+[3172.40s -> 3174.60s]  but so does the Go runtime and Moby.
+[3176.32s -> 3178.40s]  Clearly the feature that we liked most
+[3178.40s -> 3180.48s]  was multifunction return.
+[3180.48s -> 3184.68s]  So being able to return multiple values, you know,
+[3184.68s -> 3188.44s]  we use closures, we didn't use finalizer,
+[3188.44s -> 3190.20s]  use defer a little bit, you know,
+[3190.80s -> 3192.48s]  there's a bunch of Go routines that we do create.
+[3192.48s -> 3195.80s]  We use interfaces, you know, type assertions
+[3195.80s -> 3197.88s]  to convert from one type to another
+[3199.52s -> 3203.40s]  in a type-safe manner and importing many packages.
+[3203.40s -> 3206.32s]  So the kernel itself is built out of many packages
+[3206.32s -> 3208.96s]  and not like sort of one big single program.
+[3208.96s -> 3211.08s]  So if you look at this, you know, some features,
+[3211.08s -> 3213.28s]  you know, this could use as less than Go,
+[3213.28s -> 3215.24s]  like a Moby and sometimes, you know,
+[3215.24s -> 3217.60s]  this loses some features more or roughly in the,
+[3218.28s -> 3222.72s]  you know, not in any sort of distinctly different way.
+[3223.72s -> 3226.00s]  So the main pollution from this is, you know,
+[3226.00s -> 3228.00s]  basically it uses the high level features
+[3228.00s -> 3230.56s]  that actually Go offers and doesn't sidestep them
+[3233.16s -> 3234.68s]  to basically get good forms.
+[3236.12s -> 3236.96s]  Okay.
+[3238.00s -> 3239.96s]  I have a question.
+[3239.96s -> 3240.80s]  Yeah.
+[3240.80s -> 3244.56s]  How did you, how were you able to count all of this?
+[3244.56s -> 3247.48s]  Did you use the static analysis tool?
+[3248.36s -> 3250.36s]  Yeah, I basically used the static package,
+[3250.36s -> 3252.48s]  static analysis package, and then wrote a little program
+[3252.48s -> 3254.00s]  that uses the static analysis packages
+[3254.00s -> 3255.84s]  to go over every statement in these programs
+[3255.84s -> 3258.96s]  and look at what kind of type of statement it is.
+[3258.96s -> 3261.44s]  And then, or you get the argument
+[3261.44s -> 3263.08s]  to see how the arguments are being used
+[3263.08s -> 3265.04s]  and that gives you a sense about how
+[3266.96s -> 3268.84s]  that allows you to count these features.
+[3269.68s -> 3270.52s]  Okay.
+[3276.68s -> 3277.52s]  Okay.
+[3277.52s -> 3280.32s]  So the next thing is a little bit subjective.
+[3281.28s -> 3283.72s]  The high level and simplified biscuit code,
+[3286.04s -> 3288.04s]  I think in general, it did.
+[3288.04s -> 3291.04s]  And I won't argue with one or two examples explicitly,
+[3291.04s -> 3295.24s]  but not having the GC allocation is actually very nice.
+[3295.24s -> 3296.44s]  And maybe I can make the point,
+[3296.48s -> 3299.32s]  like if you think about XV6 or like you do an exit
+[3299.32s -> 3300.28s]  on a point of exit,
+[3300.28s -> 3302.32s]  there's a lot of data structures that need to be freed
+[3302.32s -> 3304.28s]  or they can be returned to the kernel.
+[3305.20s -> 3308.40s]  And so that later process can use.
+[3308.40s -> 3310.16s]  Using the garbage collector is really easy.
+[3310.16s -> 3312.04s]  The garbage collector takes care of all of it.
+[3312.04s -> 3313.84s]  You don't really have to do much.
+[3313.84s -> 3315.84s]  So if you allocate free and address space,
+[3315.84s -> 3318.24s]  the VMAs that correspond to that bit of address space
+[3318.24s -> 3321.76s]  will be automatically freed by the garbage collector too.
+[3321.76s -> 3325.36s]  So just not as simple as you mentioned early,
+[3325.40s -> 3327.36s]  the multi-return values were really nice
+[3327.36s -> 3330.08s]  in terms of programming style, closures were nice.
+[3330.08s -> 3331.08s]  Maps were great.
+[3332.08s -> 3336.64s]  You don't have to, many places, XV6 for example,
+[3336.64s -> 3339.60s]  looks up something in a linear fashion,
+[3339.60s -> 3341.16s]  but if you have hash tables or maps
+[3341.16s -> 3343.68s]  as a first-class object or abstraction in programming language
+[3343.68s -> 3344.92s]  you would never do that, right?
+[3344.92s -> 3348.84s]  You just use a map and the runtime will take care
+[3348.84s -> 3351.20s]  of doing everything efficiently.
+[3351.20s -> 3354.52s]  So in fact, I think qualitatively it feels,
+[3354.52s -> 3358.40s]  you get simpler code, but that's clearly qualitatively.
+[3358.40s -> 3360.36s]  Just to give a little bit more of a concrete example
+[3360.36s -> 3363.04s]  where it really, where sort of a high-level language
+[3363.04s -> 3365.16s]  of particular garbage collector shines
+[3365.16s -> 3368.28s]  is when there's a lot of concurrency between,
+[3368.28s -> 3369.12s]  when there's concurrency to be frets
+[3369.12s -> 3371.96s]  and the frets have to share a particular shared data item.
+[3373.12s -> 3377.20s]  And super gentle to use this sort of simplest case
+[3377.20s -> 3378.68s]  where you can boil down this question too.
+[3378.68s -> 3381.48s]  Let's say you allocate some dynamically
+[3381.48s -> 3383.36s]  an object like a buffer.
+[3384.32s -> 3387.36s]  You fork a thread and that process that buffer
+[3387.36s -> 3389.80s]  and there's another thread that also process that buffer
+[3389.80s -> 3391.56s]  and does something to this buffer.
+[3391.56s -> 3392.88s]  And when both frets are done,
+[3392.88s -> 3394.28s]  the buffer needs to be freaked.
+[3394.28s -> 3399.28s]  It can be used for later linear kernel operations.
+[3399.32s -> 3401.44s]  And the question is like, who should do this?
+[3401.44s -> 3402.40s]  Who's in charge?
+[3403.52s -> 3407.52s]  And there's a little bit difficult to coordinate in C
+[3409.08s -> 3411.16s]  because you have to have some way of deciding
+[3411.16s -> 3413.32s]  that actually the buffer is actually not being used.
+[3414.16s -> 3415.84s]  If you use a garbage collector, there's nothing to decide.
+[3415.84s -> 3419.36s]  Basically both frets run when they're done with the buffer,
+[3419.36s -> 3421.44s]  no frets is pointing to that buffer anymore.
+[3421.44s -> 3423.40s]  The garbage collector will trace
+[3423.40s -> 3426.64s]  starting from the threat stacks and will never,
+[3426.64s -> 3429.00s]  and will not account a buffer in any of the frets stacks
+[3429.00s -> 3431.16s]  and therefore the garbage collector will free
+[3431.16s -> 3432.96s]  the memory at some point later.
+[3432.96s -> 3435.04s]  And so in a garbage collector language
+[3435.04s -> 3437.52s]  you just don't have to think about this problem at all.
+[3439.12s -> 3442.44s]  So one way you could try to solve this problem
+[3442.44s -> 3444.96s]  in programming language like C,
+[3444.96s -> 3447.56s]  you could maybe put reference counts on the objects.
+[3447.56s -> 3450.12s]  The reference counts of course have to be protected
+[3450.12s -> 3453.08s]  by locks perhaps or by some atomic operations.
+[3453.08s -> 3454.92s]  And then when the reference count reaches zero,
+[3454.92s -> 3457.64s]  then you can dereference it.
+[3459.76s -> 3461.92s]  And it turns out locks and reference counts
+[3461.92s -> 3463.28s]  are actually slightly expensive.
+[3463.28s -> 3467.48s]  If you want a high performance concurrency
+[3467.48s -> 3469.20s]  and scale up to a large number of cores
+[3469.20s -> 3471.16s]  and then that actually can be a bottleneck.
+[3471.16s -> 3473.48s]  And we'll see that later in a couple of weeks
+[3473.48s -> 3475.32s]  we'll read a paper that actually talks
+[3475.32s -> 3477.08s]  about this very explicitly.
+[3477.08s -> 3480.16s]  And so people tend to, if you wanna do a high performance
+[3480.16s -> 3483.56s]  and get good parallelism, people tend to avoid them.
+[3483.56s -> 3485.16s]  And in fact, in particular,
+[3485.16s -> 3486.64s]  the scenario that we tried to avoid them
+[3486.64s -> 3489.16s]  is like in read lock, you would like to make
+[3489.16s -> 3491.28s]  at least reading sort of lock free.
+[3491.28s -> 3493.28s]  So you don't have to pay the cost.
+[3493.28s -> 3494.80s]  And so for example, here's a code fragment
+[3494.80s -> 3497.96s]  that would do that or here we have a get function
+[3497.96s -> 3500.92s]  that basically reads the head of a queue
+[3501.52s -> 3504.56s]  and returns whatever is at the head of the queue.
+[3504.56s -> 3507.00s]  And does it basically in a lock free manner.
+[3507.00s -> 3510.48s]  It uses an atomic load to actually read the head
+[3510.48s -> 3512.68s]  but it doesn't actually take a lock out.
+[3512.68s -> 3514.84s]  Then the writer does take locks out.
+[3514.84s -> 3519.40s]  So this is like lock free, but the writer is not lock free
+[3520.40s -> 3523.04s]  and this is a very common style in the Linux kernel.
+[3523.04s -> 3526.16s]  And so the writer actually takes out the lock,
+[3526.16s -> 3529.80s]  whatever looks at the head, maybe just the pop function
+[3529.80s -> 3532.08s]  pops up the head from the queue.
+[3532.08s -> 3535.04s]  And then, in principle, you could reuse it
+[3535.04s -> 3538.00s]  and then unlocks when you can free the head.
+[3538.00s -> 3543.00s]  Now, again, you see it as a little bit difficult
+[3543.56s -> 3545.36s]  when do you actually free the head?
+[3545.36s -> 3546.60s]  Because it could be the case
+[3546.60s -> 3549.40s]  that some other concurrent thread that just before
+[3549.40s -> 3551.32s]  you did this atomic store,
+[3551.32s -> 3552.76s]  this guy actually came through
+[3552.76s -> 3555.32s]  and basically got a pointer to that particular object.
+[3555.32s -> 3557.80s]  So once you're done with this atomic store,
+[3557.80s -> 3559.40s]  you can't actually free the pointer
+[3560.00s -> 3561.44s]  because it could be another thread
+[3561.44s -> 3562.64s]  actually has to pointer to it.
+[3562.64s -> 3563.96s]  And if you free it right here,
+[3563.96s -> 3567.04s]  you could actually have a use after free buck.
+[3567.04s -> 3571.68s]  And so we'll see in a couple of lectures,
+[3573.28s -> 3576.08s]  the Linux kernel has a very clever solution for this,
+[3576.08s -> 3578.56s]  which is called read copy update or RCU.
+[3578.56s -> 3581.96s]  And basically what it does is it defers freeing of memory
+[3581.96s -> 3584.24s]  until it really knows it's safe.
+[3584.24s -> 3585.76s]  And it has a very clever scheme
+[3585.76s -> 3587.92s]  to actually decide how to when it's safe.
+[3587.92s -> 3590.60s]  But that scheme does come with all kinds of restrictions
+[3590.60s -> 3594.12s]  and programmers actually have to obey some set of rules
+[3594.12s -> 3597.52s]  that you must follow for sort of RCU critical sections
+[3597.52s -> 3599.20s]  as they're called.
+[3599.20s -> 3603.12s]  For example, you can't go to sleep
+[3603.12s -> 3606.12s]  in an RCU critical section or schedule.
+[3606.12s -> 3609.12s]  And so it turns out the Linux kernel
+[3609.12s -> 3611.08s]  uses these extremely successful,
+[3611.08s -> 3614.52s]  bit error prone and requires careful program
+[3614.52s -> 3616.00s]  to get it right.
+[3616.00s -> 3618.64s]  And in the case of the garbage collector language,
+[3618.64s -> 3621.68s]  like, go, this is again, it's like a non-issue
+[3621.68s -> 3623.84s]  because the garbage collector will actually determine
+[3623.84s -> 3625.48s]  when actually something is not in use anymore
+[3625.48s -> 3627.36s]  and then only then free it.
+[3627.36s -> 3628.64s]  And so there's nothing really,
+[3628.64s -> 3630.96s]  there's no restrictions on the programmer,
+[3630.96s -> 3633.16s]  just taken care of by the garbage collector.
+[3635.16s -> 3638.00s]  So that's sort of an example of where sort of
+[3638.00s -> 3641.92s]  more maybe quantitatively or more explicit,
+[3641.92s -> 3643.00s]  you can see sort of the advantage
+[3643.00s -> 3645.12s]  of the garbage collector language.
+[3645.16s -> 3646.68s]  Okay, in terms of the CVEs,
+[3646.68s -> 3648.48s]  I sort of mentioned this already,
+[3648.48s -> 3650.04s]  we went through all these CVEs
+[3650.04s -> 3652.56s]  and sort of inspected them manually
+[3652.56s -> 3653.72s]  and then tried to decide
+[3653.72s -> 3656.08s]  whether it actually go with the fixed problem.
+[3656.08s -> 3658.92s]  And for 11 of them, we couldn't figure out,
+[3658.92s -> 3662.80s]  we looked at the fix, the patch that addresses the CVE.
+[3662.80s -> 3664.96s]  We couldn't really figure out like what their outcome
+[3664.96s -> 3668.88s]  and go with or how it would manifest or how we change it.
+[3668.88s -> 3670.20s]  We could see how we implemented the fix,
+[3670.20s -> 3671.60s]  but we couldn't decide whether it actually go
+[3671.60s -> 3673.32s]  with avoided the problem or not.
+[3674.32s -> 3676.64s]  There were a number of logic bugs in the CVEs.
+[3676.64s -> 3677.92s]  And so presumably,
+[3677.92s -> 3679.92s]  go you would make the same logic bug as in C
+[3679.92s -> 3682.92s]  and the outcome would be the same.
+[3682.92s -> 3686.40s]  But then there were about 40 memory safety bugs,
+[3686.40s -> 3689.08s]  usually after three or double threes or out of bounds.
+[3689.08s -> 3692.00s]  And in eight of those, you just disappear
+[3692.00s -> 3693.80s]  because the garbage collector takes care of them
+[3693.80s -> 3696.60s]  as I described in the last couple of slides.
+[3696.60s -> 3698.00s]  And then for the two cases,
+[3698.00s -> 3699.88s]  we go with a generated panic
+[3699.88s -> 3700.72s]  because you, for example,
+[3700.72s -> 3702.60s]  would go outside of an array bound.
+[3703.92s -> 3706.00s]  And of course, panic is not good,
+[3706.00s -> 3707.16s]  the kernel crashes,
+[3707.16s -> 3710.00s]  but it's probably better than a security exploit.
+[3710.00s -> 3712.12s]  And so, yeah, so in 40 cases,
+[3712.12s -> 3714.36s]  basically the high level language helped us.
+[3719.04s -> 3722.16s]  Okay, so that's the quality of the benefits.
+[3722.16s -> 3724.16s]  So now I wanna talk a little bit about
+[3725.96s -> 3730.12s]  the performance cost, the high level language tax.
+[3730.12s -> 3730.96s]  But before doing that,
+[3730.96s -> 3732.92s]  let me ask if there's any more questions.
+[3733.32s -> 3738.32s]  Okay, I'm gonna go through them.
+[3742.56s -> 3745.72s]  I'm not sure we'll make it through all six
+[3745.72s -> 3747.04s]  because I wanna reserve a couple of minutes,
+[3747.04s -> 3748.44s]  at least at the end to come back
+[3748.44s -> 3751.80s]  to the starting point of the lecture, the base question.
+[3755.40s -> 3757.32s]  So to set up in terms of experiments,
+[3759.88s -> 3761.88s]  this runs on raw hardware.
+[3761.88s -> 3764.24s]  So these experiments are on little physical machines,
+[3764.24s -> 3765.60s]  not on top of QEMU.
+[3766.80s -> 3771.08s]  It's a four core, 2.8 gigahertz Intel processor,
+[3771.08s -> 3772.44s]  16 gigabytes of RAM,
+[3772.44s -> 3773.68s]  but HyperFET's disabled.
+[3773.68s -> 3775.68s]  We use free applications, a web server,
+[3775.68s -> 3778.40s]  a key value store, and a mail server benchmark.
+[3778.40s -> 3780.84s]  And all of these applications stress
+[3780.84s -> 3782.16s]  the kernel intensively.
+[3782.16s -> 3784.92s]  And so they execute system calls
+[3784.92s -> 3788.24s]  and the kernel must do a lot of work.
+[3788.24s -> 3789.96s]  And you can see that because most of the time
+[3790.00s -> 3792.40s]  the connection in these applications is spent in the kernel.
+[3794.16s -> 3796.20s]  So first question is like, is Linux even,
+[3796.20s -> 3798.24s]  or is Biscuit even in the neighborhood
+[3798.24s -> 3801.48s]  of production call the kernel
+[3801.48s -> 3803.88s]  or industrial quality kernel?
+[3803.88s -> 3805.80s]  And so what we did, we compared the apps
+[3805.80s -> 3807.20s]  through Biscuit and Linux.
+[3808.52s -> 3810.92s]  For Linux, we used 4.9 Linux
+[3810.92s -> 3811.96s]  as a little bit out of date now,
+[3811.96s -> 3813.04s]  because the papers, of course,
+[3813.04s -> 3815.60s]  are a couple of years old again.
+[3815.60s -> 3816.68s]  But of course, when we in Linux,
+[3816.68s -> 3818.32s]  we had to disable all kinds of features
+[3818.32s -> 3821.52s]  that Biscuit uses or doesn't provide.
+[3821.52s -> 3824.60s]  I mean, so like page table isolation, repoline,
+[3824.60s -> 3826.80s]  all kinds of long list of features
+[3826.80s -> 3828.68s]  that Biscuit doesn't provide,
+[3828.68s -> 3830.36s]  nor xv6 provides.
+[3830.36s -> 3831.60s]  And we disabled them in Linux
+[3831.60s -> 3834.04s]  to make the comparison as fair as possible.
+[3834.04s -> 3835.20s]  And of course, there's some features
+[3835.20s -> 3836.28s]  that are hard to disable
+[3836.28s -> 3839.04s]  and we're not able to disable those.
+[3839.04s -> 3842.04s]  But we tried to get as close as possible.
+[3842.04s -> 3844.88s]  And then we measured basically the throughput.
+[3844.88s -> 3846.48s]  And as you can see,
+[3847.08s -> 3850.56s]  Biscuit is almost always slower,
+[3850.56s -> 3852.00s]  was always slower than Linux.
+[3853.56s -> 3855.72s]  On Mailbench, it's about whatever,
+[3855.72s -> 3858.64s]  10% on NGX, a little bit more.
+[3858.64s -> 3861.12s]  Redis is a little bit of 10, 15%.
+[3861.12s -> 3862.28s]  But you should just use these numbers
+[3862.28s -> 3863.76s]  that are very grain and salt, right?
+[3863.76s -> 3866.36s]  Because they're not identical
+[3867.60s -> 3870.00s]  and it's not an apples to apples comparison.
+[3870.00s -> 3872.80s]  But they're like two sort of first order.
+[3872.80s -> 3874.84s]  They're roughly in the same ballpark, at least.
+[3874.88s -> 3877.72s]  They're not like 2x, 3x, 4x, or 10x off.
+[3877.72s -> 3880.56s]  And so, maybe it is worthwhile
+[3880.56s -> 3883.24s]  to actually be able to do an actual,
+[3883.24s -> 3885.04s]  to draw some conclusion out of it.
+[3890.92s -> 3892.84s]  So then we sort of looked at like,
+[3892.84s -> 3894.64s]  we looked basically profiled the code
+[3894.64s -> 3897.60s]  and tried to bucket the cycles
+[3897.60s -> 3898.84s]  that were spent by the code.
+[3898.84s -> 3900.80s]  And particularly we're looking at like,
+[3900.80s -> 3903.12s]  now which cycles were actually in the garbage collector,
+[3903.16s -> 3906.68s]  which cycles were actually in the prologue of function calls
+[3906.68s -> 3910.36s]  and the prologue actually in Go does a bunch of work
+[3910.36s -> 3912.48s]  to ensure that the stack is large enough
+[3912.48s -> 3914.08s]  so you don't run up the stack.
+[3915.08s -> 3916.20s]  Write barriers cycles,
+[3916.20s -> 3919.92s]  this is actually when in garbage collection mode,
+[3919.92s -> 3922.60s]  the garbage collector turns on write barriers
+[3924.16s -> 3928.08s]  to basically track pointers between different spaces.
+[3929.04s -> 3930.84s]  And the safety cycles,
+[3930.84s -> 3933.04s]  which are safety cycles are the cycle spent
+[3933.04s -> 3938.04s]  on rebound checks and things like that
+[3938.44s -> 3939.60s]  and no pointer checks.
+[3941.64s -> 3944.56s]  And so if you look at these applications,
+[3944.56s -> 3946.24s]  here are the numbers.
+[3946.24s -> 3948.16s]  So 3% of the execution time
+[3948.16s -> 3951.00s]  was actually spent in sort of GC cycles.
+[3951.00s -> 3953.92s]  And I'll talk a little bit about why that's low.
+[3955.44s -> 3957.08s]  But it is the case that the garbage collector
+[3957.08s -> 3959.36s]  was running while running these applications.
+[3959.36s -> 3961.72s]  So it's not the case that we measured the applications.
+[3961.72s -> 3963.76s]  We give it so much memory that it just could run
+[3963.76s -> 3967.24s]  without actually running the garbage collector.
+[3968.08s -> 3969.88s]  Surprisingly, actually the prologue cycles
+[3969.88s -> 3971.56s]  turn out to be the highest.
+[3971.56s -> 3973.76s]  And this is basically the way the scheme
+[3973.76s -> 3976.08s]  that we're using that time for checking
+[3976.08s -> 3978.36s]  whether the kernel stack or the stack of the thread
+[3978.36s -> 3981.08s]  needed to do or go routine needed to be grown or not.
+[3981.08s -> 3982.40s]  And this is something that actually,
+[3982.40s -> 3984.32s]  the Go designers at that point
+[3984.32s -> 3987.40s]  didn't have thought that it's probably easy to get lower.
+[3987.40s -> 3988.88s]  Very little time actually in the barriers
+[3989.28s -> 3992.88s]  so two to 3% in the safety cycles.
+[3994.64s -> 3997.24s]  And so in some sense, this is good news,
+[3997.24s -> 4001.36s]  not a, the tax is not gigantic.
+[4001.36s -> 4003.36s]  Of course, this number could be much higher
+[4003.36s -> 4005.12s]  because this is completely dependent
+[4005.12s -> 4008.52s]  on how many, how big the heap is
+[4008.52s -> 4011.32s]  or how big the number of live objects is
+[4011.32s -> 4013.08s]  because the garbage collector will have to trace
+[4013.08s -> 4014.92s]  all the live objects to actually determine
+[4014.92s -> 4016.76s]  which objects are not live.
+[4016.76s -> 4019.80s]  And so if there's a lot of live objects,
+[4019.80s -> 4021.88s]  the garbage collector will have to trace more objects.
+[4021.88s -> 4023.52s]  And so this is completely sort of linear
+[4023.52s -> 4026.52s]  with the number of live objects.
+[4026.52s -> 4028.88s]  So we did some other experiments,
+[4028.88s -> 4030.40s]  zoom ahead a little bit,
+[4030.40s -> 4033.16s]  where we basically allocated a ton of live data,
+[4033.16s -> 4034.88s]  like a 2 million IMV notes,
+[4034.88s -> 4037.00s]  think about this as 2 million iNotes
+[4037.00s -> 4039.76s]  and then freed the amount of sort of headroom
+[4039.76s -> 4041.56s]  or like change the amount of headroom
+[4041.56s -> 4044.60s]  that the garbage collector has for free memory
+[4044.60s -> 4048.40s]  and then impact and then measure the cost.
+[4048.40s -> 4050.04s]  So this is the table here
+[4050.04s -> 4052.72s]  where we have like 16 to 40 megabytes of live data.
+[4052.72s -> 4055.80s]  And then there's, we run it with different memory sizes.
+[4055.80s -> 4059.20s]  And so one says, okay, there are 320 megabytes of data.
+[4059.20s -> 4061.32s]  So the ratio of live to free is two.
+[4061.32s -> 4063.04s]  And you see that in that case,
+[4064.32s -> 4066.08s]  Go doesn't do it a great invitation
+[4066.08s -> 4067.72s]  with series overhead for garbage collector
+[4067.72s -> 4070.00s]  because the garbage collector needs to run a lot
+[4070.00s -> 4072.16s]  because it doesn't have much headroom.
+[4072.16s -> 4075.88s]  But basically if the free memory is about twice
+[4075.88s -> 4077.00s]  and you combine enough memory,
+[4077.00s -> 4079.52s]  the free memory is twice that of the live memory,
+[4079.52s -> 4081.36s]  then the garbage collection overhead
+[4081.36s -> 4085.08s]  is not actually that crazy, like in the 9% range.
+[4085.08s -> 4087.04s]  So basically to keep the GC overhead
+[4087.04s -> 4090.40s]  like sort of roughly on a team around below 10%,
+[4090.40s -> 4092.64s]  you need about three times the heap size
+[4093.80s -> 4095.24s]  in terms of physical memory.
+[4099.08s -> 4100.36s]  Any questions about this?
+[4102.92s -> 4106.76s]  I had a question about the write barriers.
+[4106.76s -> 4108.16s]  What are those?
+[4108.16s -> 4113.16s]  Do you, is it like you set some permissions?
+[4113.32s -> 4117.00s]  Okay, so I don't know if you remember the lecture
+[4117.00s -> 4120.72s]  from a little while ago, the kind of paper
+[4120.72s -> 4123.84s]  where we talked about the to and from spaces
+[4123.84s -> 4126.48s]  and the garbage collector runs,
+[4126.48s -> 4128.96s]  then you have to check whether the pointer
+[4128.96s -> 4130.08s]  is in the from space, right?
+[4130.08s -> 4132.96s]  Because it's in the from space, you have to copy it.
+[4132.96s -> 4136.04s]  And basically the write barriers are very similar.
+[4137.00s -> 4138.40s]  And this is the same sort of type idea
+[4138.40s -> 4140.64s]  where you need to check every pointer
+[4140.64s -> 4143.64s]  to see if actually it actually points in space
+[4143.64s -> 4146.56s]  that actually you need to garbage collect.
+[4146.56s -> 4148.00s]  And that's a write barrier.
+[4150.88s -> 4155.64s]  Sorry, so like the free memory, what is it exactly?
+[4155.64s -> 4158.88s]  Like how does it work that the live is more than free?
+[4158.92s -> 4162.92s]  Oh, okay, so you buy some amount of memory
+[4162.92s -> 4164.64s]  and live memory is actually a memory
+[4164.64s -> 4166.32s]  that was used by these vnodes.
+[4166.32s -> 4168.12s]  And then there was another few in a 20 megabyte
+[4168.12s -> 4169.68s]  that was just free.
+[4169.68s -> 4172.96s]  And so when this application allocated more vnodes,
+[4172.96s -> 4174.72s]  they first came out of the free memory
+[4174.72s -> 4176.12s]  until the free memory is full of code
+[4176.12s -> 4179.52s]  and concurrently the garbage collector was running.
+[4179.52s -> 4183.24s]  And so we run it in like free configuration
+[4183.24s -> 4184.64s]  and in one configuration basically
+[4184.64s -> 4186.08s]  the amount of free memory is twice
+[4186.08s -> 4188.44s]  as the sort of the life memory.
+[4189.28s -> 4190.44s]  And so that means that the garbage collector
+[4190.44s -> 4193.68s]  has a lot of sort of headroom to do sort of concurrently
+[4193.68s -> 4195.88s]  while running with the application.
+[4195.88s -> 4198.00s]  And if there's a lot of headroom,
+[4198.00s -> 4199.08s]  in this case we're at free memory,
+[4199.08s -> 4202.44s]  then the garbage collection overheads are not that high.
+[4202.44s -> 4206.68s]  So they're around 10% instead of 34%.
+[4206.68s -> 4208.40s]  Okay, I see, I see, thank you.
+[4208.40s -> 4210.52s]  You think about it as like there's a little bit of slack
+[4210.52s -> 4213.60s]  sort of for the garbage collector to do its work.
+[4213.60s -> 4216.72s]  Right, I thought that it's like total 320
+[4216.72s -> 4217.56s]  and I was confused.
+[4217.60s -> 4220.24s]  No, no, the total is 320 plus 640
+[4220.24s -> 4223.84s]  and the last line is 640 plus 1280.
+[4223.84s -> 4225.40s]  Okay, thank you.
+[4229.72s -> 4231.04s]  I'm just gonna skip this.
+[4232.68s -> 4235.60s]  Actually, let me talk a little bit of pauses.
+[4235.60s -> 4237.96s]  This is the go garbage collector
+[4237.96s -> 4239.24s]  is a concurrent garbage collector
+[4239.24s -> 4242.16s]  and the short pauses stops the world
+[4242.16s -> 4244.56s]  for a very short period of time
+[4244.56s -> 4245.96s]  basically to enable write barriers
+[4246.00s -> 4249.04s]  and then basically the application keep on running
+[4249.04s -> 4250.88s]  while the garbage collector does its work.
+[4250.88s -> 4253.56s]  And it's incremental as like the one
+[4253.56s -> 4255.00s]  that we discussed a couple of weeks ago
+[4255.00s -> 4257.44s]  where basically every call to new
+[4257.44s -> 4259.96s]  does a little bit of garbage selection work.
+[4259.96s -> 4260.92s]  And so every time that you do
+[4260.92s -> 4262.16s]  a little bit of garbage collection work,
+[4262.16s -> 4265.28s]  there's some delay that's being caused, right?
+[4265.28s -> 4266.48s]  And so we measured,
+[4268.84s -> 4269.84s]  we took one application
+[4269.84s -> 4272.72s]  and looked at the sort of the maximum pause time.
+[4272.72s -> 4275.24s]  So the maximum time that an application could be stopped
+[4275.40s -> 4278.32s]  because the garbage collector likes to do some work.
+[4278.32s -> 4280.24s]  And now it turned out to be,
+[4280.24s -> 4284.80s]  the next single pause was 150 microseconds.
+[4284.80s -> 4286.44s]  That's in the case of the web server
+[4286.44s -> 4287.84s]  that was using the TCP stack
+[4287.84s -> 4291.24s]  and basically a large part of the TCP connection table
+[4291.24s -> 4294.28s]  needed to be marked before continuing
+[4294.28s -> 4296.12s]  and that took 150 microseconds.
+[4297.20s -> 4298.92s]  The maximum total pause time
+[4298.92s -> 4303.08s]  for a single NGX HTTP request
+[4303.12s -> 4305.56s]  is the sum of a number of single pauses
+[4305.56s -> 4307.36s]  and the maximum pause time in total
+[4307.36s -> 4311.12s]  for a single request was 582 microseconds.
+[4311.12s -> 4314.24s]  So basically when the request comes into the machine
+[4314.24s -> 4318.60s]  during, there was a total delay of 582 microseconds
+[4318.60s -> 4320.24s]  to actually execute that request.
+[4322.16s -> 4325.56s]  And that just happened very, very seldom.
+[4325.56s -> 4327.76s]  Only 0.3% of the requested times
+[4327.76s -> 4330.84s]  actually had a delay of more than 100 microseconds.
+[4331.84s -> 4335.00s]  And so, that's not good if you're trying to achieve
+[4335.00s -> 4340.00s]  like an SLA or where basically the longest
+[4340.64s -> 4344.04s]  the time the request takes is small.
+[4344.96s -> 4347.76s]  But if you look at Google papers
+[4347.76s -> 4349.00s]  about like in the tailed scale,
+[4349.00s -> 4351.64s]  like how long the longest request takes,
+[4352.60s -> 4353.84s]  they're talking about the new order
+[4353.84s -> 4356.96s]  of tens of milliseconds or milliseconds to 10 milliseconds.
+[4357.00s -> 4360.84s]  And so, probably the programs that,
+[4360.84s -> 4363.04s]  these particular programs that actually have a pause time
+[4363.04s -> 4366.20s]  with maximum time to pause time of 582 microseconds
+[4366.20s -> 4368.44s]  is sort of within the budget.
+[4368.44s -> 4370.52s]  It's not ideal, but it's not crazy.
+[4370.52s -> 4373.28s]  And so, that basically says that they're actually the,
+[4374.28s -> 4375.56s]  really what this basically says
+[4375.56s -> 4378.68s]  that the Go designer did actually a terribly good job
+[4378.68s -> 4381.16s]  of actually implementing their garbage collector
+[4381.16s -> 4383.32s]  or impressively good job.
+[4383.32s -> 4385.20s]  And this is one of the things that we've noticed
+[4385.20s -> 4386.16s]  while doing this project,
+[4386.20s -> 4388.56s]  like every time we upgraded the Go runtime
+[4388.56s -> 4389.60s]  and the next runtime,
+[4389.60s -> 4390.96s]  it came with a better garbage collector
+[4390.96s -> 4393.20s]  and actually these numbers got better and better.
+[4397.00s -> 4399.04s]  Okay, one more sort of technical detail
+[4399.04s -> 4402.04s]  that I wanna go over.
+[4402.04s -> 4404.24s]  So far, like the first comparison
+[4404.24s -> 4406.08s]  between Linux and Biscuit,
+[4406.08s -> 4407.60s]  it's not really fair because Biscuit
+[4407.60s -> 4412.00s]  and Linux implement slightly different futures.
+[4412.00s -> 4413.32s]  And we did one more experiment
+[4413.36s -> 4416.56s]  where we basically tried to code up two kernel paths,
+[4416.56s -> 4419.88s]  completely identical, both in Linux
+[4419.88s -> 4423.00s]  and in C and in Go.
+[4423.00s -> 4426.36s]  And so we looked at the code path
+[4426.36s -> 4428.56s]  and sort of verify that basically,
+[4428.56s -> 4430.32s]  it implements exactly the same thing.
+[4430.32s -> 4432.24s]  And we looked at the assembly instructions
+[4432.24s -> 4434.84s]  to really see what the differences are.
+[4434.84s -> 4436.16s]  There are gonna be some differences
+[4436.16s -> 4439.00s]  because Go is gonna pay you safety checks.
+[4439.00s -> 4441.76s]  But look, just in terms of basic operation
+[4441.76s -> 4442.92s]  that at least the code paths
+[4442.92s -> 4445.36s]  are actually identical in terms of functionality.
+[4446.52s -> 4449.32s]  And we did that for two code paths.
+[4449.32s -> 4450.16s]  This is difficult to do.
+[4450.16s -> 4453.60s]  It was a painstaking job that we did for two
+[4453.60s -> 4455.52s]  or Cody did actually for two.
+[4455.52s -> 4456.88s]  And then we compared them.
+[4457.76s -> 4459.44s]  And so here's the results from one of them.
+[4459.44s -> 4461.32s]  This is a pipe ping pong,
+[4461.32s -> 4464.36s]  sort of test, you ping pong your byte across the pipe.
+[4464.36s -> 4466.52s]  And we just looked at the code path through the kernel
+[4466.52s -> 4468.96s]  to actually get that byte from one end to the pipe
+[4468.96s -> 4470.56s]  to the other end to the pipe.
+[4471.84s -> 4475.96s]  And the total amount of code in Go
+[4475.96s -> 4478.16s]  is like this is 1.5 thousand lines code
+[4478.16s -> 4481.60s]  in C it's 1.8 thousand lines code.
+[4481.60s -> 4483.20s]  And there's no allocation, no GC.
+[4483.20s -> 4485.92s]  So those things are just different.
+[4485.92s -> 4487.68s]  We also looked at the runtime
+[4487.68s -> 4489.24s]  like where's the most time spent
+[4489.24s -> 4490.76s]  and in both code paths,
+[4490.76s -> 4493.44s]  the same top 10 instructions showed up.
+[4493.44s -> 4494.84s]  So we sort of have some confidence
+[4494.84s -> 4497.52s]  that the code paths really are closer
+[4497.52s -> 4500.48s]  you can get to make them similar.
+[4500.52s -> 4501.92s]  And then we're looking at basically
+[4501.92s -> 4503.76s]  the amount of operations you can do per second.
+[4503.76s -> 4505.96s]  And as you see here,
+[4505.96s -> 4508.36s]  basically the Go is a little bit slower
+[4508.36s -> 4511.16s]  than the C implementation.
+[4511.16s -> 4515.44s]  And the ratio is about 1.5, 15% slower.
+[4515.44s -> 4518.60s]  And that's sort of if you look
+[4518.60s -> 4520.52s]  at the prologue of safety checks,
+[4520.52s -> 4521.36s]  these are all the instructions
+[4521.36s -> 4523.48s]  that the C code does not have to execute.
+[4523.48s -> 4525.60s]  They turn out to be sort of 16% more
+[4527.36s -> 4528.56s]  assembly instructions.
+[4528.56s -> 4532.28s]  And so that sort of roughly sort of makes sense.
+[4532.28s -> 4535.60s]  So the main conclusion is Go is slower,
+[4535.60s -> 4538.80s]  but pretty competitive, not ridiculously slower.
+[4539.76s -> 4541.84s]  And that seems in line with the early results
+[4541.84s -> 4543.24s]  of where we did this Linux
+[4543.24s -> 4544.84s]  to biscuit comparisons directly.
+[4546.96s -> 4550.80s]  Okay, so let me zoom a little bit further.
+[4550.80s -> 4552.96s]  Let me skip this because I wanna talk a little bit
+[4552.96s -> 4555.24s]  about this sort of the question
+[4555.24s -> 4556.56s]  that we asked in the beginning,
+[4556.56s -> 4558.12s]  where there should one use a high level M
+[4558.64s -> 4559.96s]  for a new kernel.
+[4559.96s -> 4563.68s]  And maybe like instead of answering some thoughts
+[4563.68s -> 4565.08s]  about this either on this slide,
+[4565.08s -> 4566.48s]  there were some collusion that we draw
+[4566.48s -> 4568.52s]  and it's not a crisp conclusion,
+[4568.52s -> 4569.96s]  some considerations.
+[4569.96s -> 4571.08s]  So maybe to take a step back,
+[4571.08s -> 4572.60s]  so if I ask yourself the question,
+[4572.60s -> 4575.48s]  like, what would you have preferred?
+[4575.48s -> 4577.52s]  Would you have preferred to write XG6
+[4577.52s -> 4578.60s]  in the labs you can see,
+[4578.60s -> 4580.80s]  or would you prefer to use a high level limit,
+[4580.80s -> 4582.84s]  for example, like Go?
+[4582.84s -> 4585.40s]  And particularly the answer to this question,
+[4585.40s -> 4587.36s]  what kind of bugs would you have avoided?
+[4587.40s -> 4590.04s]  And maybe you have to have some time
+[4590.04s -> 4592.92s]  during this lecture to think about like what bugs you had.
+[4592.92s -> 4596.00s]  And I would love to hear what your experience,
+[4597.32s -> 4600.72s]  how you think switching to a high level language
+[4600.72s -> 4602.48s]  would have changed your experience.
+[4604.24s -> 4607.00s]  Or if you have any thoughts on this question at all.
+[4610.36s -> 4614.12s]  So let me pause you for a little bit
+[4614.12s -> 4616.76s]  so you can think about this and maybe chime in.
+[4618.24s -> 4621.28s]  I have had a couple of times when I did the thing
+[4621.28s -> 4623.68s]  where I create an object in a function
+[4623.68s -> 4626.00s]  and then I return a pointer to it
+[4626.00s -> 4627.96s]  and then I do stuff with a pointer
+[4627.96s -> 4630.56s]  and then I realize that the object is gone.
+[4630.56s -> 4632.00s]  Yeah, so this is a classic example
+[4632.00s -> 4634.84s]  of a sort of use after free case, correct?
+[4636.96s -> 4640.04s]  Yeah, the second time I realized it faster
+[4640.04s -> 4641.72s]  than the first time.
+[4641.72s -> 4642.56s]  That's definitely true.
+[4642.56s -> 4643.92s]  I'm sure when you've seen a couple of times
+[4643.92s -> 4646.08s]  in those bugs, you get better at them.
+[4646.08s -> 4648.80s]  Any other thoughts on this,
+[4648.80s -> 4650.80s]  on the experiences that people have had?
+[4652.32s -> 4653.68s]  Think about your worst bugs,
+[4654.96s -> 4656.68s]  the bugs that took the most time.
+[4657.92s -> 4660.32s]  Would a high level language, what if it helped?
+[4662.40s -> 4663.88s]  I think it definitely,
+[4663.88s -> 4666.04s]  like some of the bugs were absolutely terrible
+[4666.04s -> 4667.96s]  to deal with, but at the same time,
+[4667.96s -> 4670.04s]  like in this context,
+[4670.04s -> 4672.32s]  I definitely appreciated having to work
+[4672.32s -> 4674.48s]  with such a low level language as C
+[4674.48s -> 4677.48s]  because it helped me to really gain a very,
+[4677.48s -> 4680.48s]  like a deep understanding of what's actually going on
+[4680.48s -> 4681.76s]  inside the operating system,
+[4681.76s -> 4683.32s]  like how it's working with memory.
+[4683.32s -> 4685.68s]  Like it's definitely refreshing
+[4685.68s -> 4688.68s]  to like not have all of that abstracted away
+[4688.68s -> 4691.28s]  and to actually see exactly what's going on.
+[4694.68s -> 4695.52s]  Yeah, that makes a lot of sense.
+[4695.52s -> 4698.36s]  Any other people who have opinions on this?
+[4699.52s -> 4703.40s]  I think I also made a lot of bugs
+[4703.40s -> 4708.40s]  in which I was writing after the end of a string
+[4710.48s -> 4711.88s]  or something like that,
+[4711.88s -> 4715.72s]  but then I wasn't getting any useful feedback about it.
+[4715.72s -> 4718.00s]  And then very strange things happened
+[4718.00s -> 4719.60s]  that I couldn't explain.
+[4721.04s -> 4722.44s]  So yeah.
+[4722.44s -> 4724.00s]  That just showed up in lab one
+[4725.28s -> 4727.00s]  where there was a bunch of strange operations,
+[4727.00s -> 4730.52s]  like when you're parsing directories and things like that.
+[4730.52s -> 4732.60s]  It showed up in multiple labs.
+[4732.64s -> 4734.16s]  Okay, okay.
+[4734.16s -> 4735.80s]  No, I'm not surprised.
+[4735.80s -> 4736.96s]  Okay, that's a great example.
+[4736.96s -> 4738.88s]  Like, you know, it's very nice
+[4738.88s -> 4740.72s]  to actually have real string objects.
+[4743.04s -> 4746.64s]  One thing on my end is that I found myself lacking
+[4746.64s -> 4748.80s]  whenever I needed something like a map.
+[4748.80s -> 4750.92s]  And it just, I cringed every time
+[4750.92s -> 4753.88s]  I needed to do a for loop over something and then find.
+[4754.96s -> 4757.08s]  However, I will say like coming from
+[4757.08s -> 4759.88s]  a high level programming background,
+[4759.88s -> 4762.84s]  this was my first real exposure to something like C.
+[4762.84s -> 4764.32s]  So going off of a Noah's point,
+[4764.32s -> 4767.20s]  it kind of helped me to understand really what it means
+[4767.20s -> 4769.36s]  that like this code that I'm writing
+[4769.36s -> 4770.96s]  is actually running on the CPU
+[4770.96s -> 4774.08s]  and everything is from the perspective of the CPU.
+[4774.08s -> 4774.92s]  Yeah.
+[4775.84s -> 4776.68s]  Any other
+[4781.04s -> 4781.88s]  thoughts?
+[4785.72s -> 4787.84s]  Oh, I actually remember it was specifically
+[4787.84s -> 4791.92s]  the difference between safe string copy
+[4791.92s -> 4793.96s]  or just string copy.
+[4793.96s -> 4797.96s]  One of them was putting, was using the null terminator.
+[4797.96s -> 4799.60s]  And that was, yeah.
+[4801.12s -> 4803.60s]  Yup, yeah, the common C bug.
+[4803.60s -> 4806.16s]  Well, so, you know, first of all, you know,
+[4806.16s -> 4807.48s]  thanks for the input.
+[4807.48s -> 4811.16s]  Of course, we're not going to change xv6 to go
+[4811.16s -> 4813.08s]  or any high level exactly for the reasons that,
+[4813.08s -> 4815.08s]  you know, I think a number of you like Noah
+[4815.12s -> 4816.64s]  I mean, you're actually mentioned
+[4817.88s -> 4819.32s]  the go still hides too much.
+[4819.32s -> 4820.84s]  And there in this particular class,
+[4820.84s -> 4822.60s]  the whole purpose is really trying to understand
+[4822.60s -> 4824.56s]  everything sort of between the CPU
+[4824.56s -> 4827.40s]  and the system called interface.
+[4827.40s -> 4829.00s]  And so for example, you know, go of course,
+[4829.00s -> 4830.04s]  you know, hides threads.
+[4830.04s -> 4832.52s]  And, you know, we don't want to hide that.
+[4832.52s -> 4833.68s]  We want to explain to you actually
+[4833.68s -> 4835.20s]  how threads are implemented.
+[4835.20s -> 4839.40s]  And so we do not want to hide this from you.
+[4839.40s -> 4841.00s]  So certainly future years, you know,
+[4841.00s -> 4844.68s]  of xv6 or this class, we'll keep on using C.
+[4845.60s -> 4846.84s]  But like if you implement a new kernel
+[4846.84s -> 4849.24s]  and, you know, the goal is not, you know,
+[4850.28s -> 4852.80s]  educating your students about kernels,
+[4852.80s -> 4853.96s]  but, you know, the goal is to write
+[4853.96s -> 4857.28s]  like a sort of a safe, you know, high performance kernel.
+[4857.28s -> 4858.36s]  You know, there's sort of, you know,
+[4858.36s -> 4860.12s]  some things you conclude from the study
+[4860.12s -> 4861.84s]  that we've done, right?
+[4861.84s -> 4865.96s]  You know, if memory or if performance is really paramount,
+[4865.96s -> 4868.48s]  you know, you can't like sacrifice 50%,
+[4868.48s -> 4869.96s]  then you should probably use C.
+[4869.96s -> 4871.80s]  If you really want to minimize memory use,
+[4871.80s -> 4874.32s]  you probably should use C too.
+[4874.40s -> 4876.20s]  If safety is important or security is important,
+[4876.20s -> 4878.72s]  then probably the high level language is the way to go.
+[4878.72s -> 4880.20s]  And probably in many cases,
+[4880.20s -> 4881.36s]  performance is merely important
+[4881.36s -> 4884.04s]  as opposed to absolute, you know, paramount.
+[4884.04s -> 4885.20s]  And in many cases, I think, you know,
+[4885.20s -> 4886.52s]  I'm using high level languages
+[4886.52s -> 4889.32s]  are perfectly reasonable thing to do for kernel.
+[4889.32s -> 4890.60s]  Probably one thing I've learned
+[4890.60s -> 4893.28s]  or probably, you know, Cody, Robert and I
+[4893.28s -> 4895.04s]  learned from this whole project is like,
+[4895.04s -> 4897.20s]  whatever, programming language is a programming language
+[4897.20s -> 4898.96s]  and you can use it to build kernels.
+[4898.96s -> 4900.76s]  You can build the user applications.
+[4900.76s -> 4903.72s]  There's not really standing anything in the way.
+[4904.32s -> 4909.32s]  Okay, you know, I think it's time to wrap up,
+[4909.32s -> 4911.88s]  but you know, if you have any more questions,
+[4911.88s -> 4913.72s]  you know, free for you to hang around
+[4913.72s -> 4917.00s]  and ask them if you have to go somewhere else.
+[4917.00s -> 4919.92s]  You know, good luck with finishing the M-eb lab.
+[4919.92s -> 4922.52s]  And for those of you who are leaving campus
+[4922.52s -> 4924.72s]  for Thanksgiving, safe travels,
+[4924.72s -> 4927.48s]  and hope to see you after Thanksgiving
+[4927.48s -> 4929.52s]  in Monday's lecture after Thanksgiving.
+[4934.32s -> 4935.16s]  Thank you.
+[4936.44s -> 4937.28s]  Thank you.
+[4939.40s -> 4941.92s]  I was curious, how did you implement it?
+[4941.92s -> 4944.60s]  Like you said, you were doing that just on the hardware.
+[4944.60s -> 4948.04s]  So like, when you start out, how do you start out?
+[4949.16s -> 4951.76s]  You know, there's basically a little bit of shim code
+[4951.76s -> 4953.92s]  that sets up enough of the hardware
+[4953.92s -> 4956.48s]  so that when Biscuit, you know, asks for,
+[4956.48s -> 4960.44s]  or when the go run-time asks for memory for the heap,
+[4960.44s -> 4962.12s]  that we can actually respond.
+[4963.12s -> 4967.48s]  And that was one of the main things that actually
+[4967.48s -> 4969.44s]  the go run-time actually relies on.
+[4970.60s -> 4971.80s]  Right, I guess I was like,
+[4971.80s -> 4976.16s]  you said that you then use a virtual machine for that.
+[4976.16s -> 4977.00s]  So-
+[4977.00s -> 4977.84s]  Oh, yeah, we did, of course.
+[4977.84s -> 4980.08s]  You know, most of the development was on QEMU.
+[4980.08s -> 4983.24s]  And of course, again,
+[4983.24s -> 4985.60s]  we actually have to get it running on the raw hardware.
+[4985.60s -> 4987.40s]  That also costs us a bunch of problems, you know,
+[4987.40s -> 4988.64s]  because the bootloaders are different.
+[4988.64s -> 4989.52s]  You know, there's a bunch of boot code
+[4989.52s -> 4990.36s]  that you actually need to write
+[4990.40s -> 4993.64s]  if you don't have to write, if you run it on QEMU
+[4993.64s -> 4994.48s]  and that kind of stuff.
+[4994.48s -> 4996.72s]  But most of the development is all done on QEMU.
+[4996.72s -> 4997.96s]  In fact, you know, if you want to,
+[4997.96s -> 5000.76s]  I can show you running Biscuit on QEMU
+[5000.76s -> 5002.32s]  and it looks very similar to xv6.
+[5002.32s -> 5003.76s]  You know, the only thing it does is like,
+[5003.76s -> 5006.44s]  shows your prompt, there's no window system,
+[5006.44s -> 5007.44s]  nothing like that.
+[5008.92s -> 5010.12s]  Okay, I see.
+[5010.12s -> 5012.40s]  So like what happens if you make a mistake
+[5012.40s -> 5013.80s]  in the boot code?
+[5014.96s -> 5015.80s]  It doesn't boot.
+[5015.80s -> 5017.52s]  You know, basically nothing happens.
+[5017.52s -> 5018.84s]  It's completely nothing.
+[5019.60s -> 5021.56s]  How do you know?
+[5021.56s -> 5026.00s]  Ah, you will know because, you know, okay.
+[5026.00s -> 5027.12s]  What will happen is, of course,
+[5027.12s -> 5028.12s]  you don't see a print statement.
+[5028.12s -> 5030.44s]  Like in xv6, the first thing we print is like,
+[5030.44s -> 5034.60s]  you know, xv6 hello or something, or xv6 is booting.
+[5034.60s -> 5036.32s]  You won't see anything like that.
+[5036.32s -> 5038.16s]  And so you will see nothing.
+[5038.16s -> 5041.20s]  And then, you know, you will have to track down
+[5041.20s -> 5043.60s]  and guess, you know, what the problem might be.
+[5044.72s -> 5047.72s]  Okay, so you do it by looking?
+[5047.76s -> 5049.04s]  Ah, okay, just a little bit.
+[5049.04s -> 5051.52s]  You can write synchronously to the UART.
+[5051.52s -> 5052.92s]  You know, you can put like, you know,
+[5052.92s -> 5055.40s]  stupid characters and you see,
+[5055.40s -> 5056.84s]  put them in random places in the code
+[5056.84s -> 5058.48s]  and hope that you see something.
+[5060.56s -> 5061.40s]  This is interesting.
+[5061.40s -> 5062.24s]  Thank you.
+[5063.08s -> 5066.20s]  I wanted to ask when you,
+[5066.20s -> 5069.12s]  so I know like you implemented the Go,
+[5069.12s -> 5072.68s]  some of the calls that the Go runtime would make
+[5072.68s -> 5073.84s]  that you cannot make
+[5073.84s -> 5076.92s]  because you're implementing the kernel itself.
+[5076.96s -> 5077.88s]  Is there any, like,
+[5077.88s -> 5080.60s]  did you just implement just all of that in assembly?
+[5080.60s -> 5083.24s]  Or did you say, okay, like some of this,
+[5083.24s -> 5084.32s]  we can still do in Go,
+[5084.32s -> 5086.56s]  like we can bring Go a bit closer
+[5086.56s -> 5088.88s]  and then do assembly only what's necessary?
+[5088.88s -> 5091.48s]  Or did you just say like, once the Go runtime ends,
+[5091.48s -> 5092.92s]  like that's assembly?
+[5095.00s -> 5097.60s]  That's where the 1500 lines of assembly came from
+[5098.84s -> 5100.28s]  in Biscuit.
+[5100.28s -> 5102.60s]  You know, that is basically the code to sort of,
+[5102.60s -> 5103.64s]  you know, get everything ready
+[5103.64s -> 5105.84s]  to be actually able to run the Go runtime.
+[5107.64s -> 5109.12s]  Now some of that we could have implemented in C,
+[5109.12s -> 5109.96s]  but we didn't want to do that
+[5109.96s -> 5111.28s]  because we didn't want to use any C.
+[5111.28s -> 5112.96s]  So we were in assembly.
+[5112.96s -> 5115.00s]  And many of it actually required assembly
+[5115.00s -> 5117.48s]  because it's in the booting part.
+[5117.48s -> 5120.00s]  Right, but I guess some of the part that's not the,
+[5120.00s -> 5121.40s]  so I'm, you know,
+[5121.40s -> 5122.76s]  I know that some just,
+[5122.76s -> 5125.48s]  you cannot avoid some boot code in assembly,
+[5125.48s -> 5127.08s]  but could you,
+[5127.08s -> 5129.48s]  could you have transformed some of the assembly to Go,
+[5129.48s -> 5131.36s]  or did you go to the absolute last?
+[5131.36s -> 5132.20s]  We did.
+[5132.20s -> 5133.32s]  I wrote a whole bunch of Go
+[5133.32s -> 5137.20s]  that basically runs very early on.
+[5138.20s -> 5140.20s]  And, you know, some of the Go goes quite careful.
+[5140.20s -> 5142.52s]  You know, it doesn't do any memory allocations.
+[5145.92s -> 5146.76s]  That makes sense.
+[5146.76s -> 5148.60s]  We tried to write as much as possible as well.
+[5148.60s -> 5151.08s]  I can't, like, I have to look at the code exactly,
+[5151.08s -> 5154.04s]  you know, to be able to answer your question specifically.
+[5154.04s -> 5156.16s]  You can look at the Git repo,
+[5156.16s -> 5158.44s]  but, you know, the, yeah,
+[5158.44s -> 5160.40s]  then we tried to write everything in Go.
+[5160.40s -> 5165.40s]  And then one like kind of unrelated small question I had.
+[5166.96s -> 5169.04s]  What does Go do with its Go routines
+[5169.04s -> 5171.80s]  that makes it possible to run like hundreds of thousands
+[5171.80s -> 5173.16s]  of them?
+[5173.16s -> 5176.68s]  Cause you cannot just spin up 100,000 P threads, right?
+[5177.64s -> 5178.88s]  Yeah, it depends.
+[5180.28s -> 5183.04s]  Okay, so I know it's a lot longer answer.
+[5183.04s -> 5184.36s]  The main issue is that, you know,
+[5184.36s -> 5186.44s]  you need to allocate to stack
+[5186.44s -> 5190.60s]  and the Go runtime actually allocates stacks incrementally
+[5190.60s -> 5192.24s]  and so grows them dynamically.
+[5192.24s -> 5196.20s]  As you run your Go routine,
+[5196.20s -> 5198.20s]  this is where this protocol code is for.
+[5198.20s -> 5199.24s]  When you make a function call,
+[5199.24s -> 5200.68s]  you'll see if there's enough space
+[5200.68s -> 5203.08s]  to actually make the function call.
+[5203.08s -> 5206.56s]  And if not, it will grow the stack dynamically for you.
+[5206.56s -> 5209.56s]  And often in P threads implementations,
+[5210.84s -> 5214.44s]  allocating threads a little bit more heavyweight
+[5214.48s -> 5218.52s]  because actually for example, Linux,
+[5218.52s -> 5220.68s]  you know, basically the corresponding kernel thread
+[5220.68s -> 5222.80s]  is actually allocated to,
+[5222.80s -> 5225.16s]  and they tend to be more heavyweight then.
+[5227.96s -> 5229.24s]  I see.
+[5229.24s -> 5232.24s]  Is the scheduling of all the Go routines
+[5232.24s -> 5234.12s]  done completely in user space
+[5234.12s -> 5237.56s]  or does it help itself with some kernel stuff?
+[5237.56s -> 5240.12s]  It is mostly done in user space.
+[5245.12s -> 5248.08s]  So the Go runtime allocates a bunch of kernel threats.
+[5249.44s -> 5251.88s]  You know, they call them, I think, M threats.
+[5251.88s -> 5255.16s]  And on top of that, it implements the Go routines.
+[5256.48s -> 5259.56s]  Oh, so it has like a couple kernel threads
+[5259.56s -> 5261.36s]  that it shares to all Go routines
+[5261.36s -> 5263.00s]  based on which one's running?
+[5263.00s -> 5264.04s]  Yes.
+[5264.04s -> 5266.68s]  Oh, that makes a lot of sense, yeah.
+[5266.68s -> 5270.84s]  Is there like any C, C++ equivalent?
+[5270.84s -> 5273.28s]  Like could you do something like that
+[5273.32s -> 5275.48s]  to save some memory?
+[5275.48s -> 5276.52s]  Yeah, people have done, you know,
+[5276.52s -> 5278.12s]  implemented like high performance,
+[5278.12s -> 5281.40s]  you know, C libraries or a thread libraries
+[5281.40s -> 5283.92s]  that way you can create like thousands of familiar threads
+[5283.92s -> 5287.28s]  or millions of threads, you know, to similar style.
+[5293.28s -> 5295.48s]  Okay, you guys have a good break.
+[5295.48s -> 5296.32s]  Have a good nap.
+[5296.32s -> 5297.24s]  You too.
+[5297.24s -> 5298.24s]  See you next week.
+[5298.24s -> 5299.16s]  Oh, two weeks.
+[5299.16s -> 5300.00s]  You too.
+[5300.00s -> 5300.84s]  Thanks.
+[5302.56s -> 5304.12s]  Oh, sorry.
+[5305.80s -> 5306.64s]  Oh, go ahead.
+[5309.16s -> 5310.64s]  Okay, sorry.
+[5310.64s -> 5313.72s]  So I had a maybe basic question about the shims
+[5313.72s -> 5315.84s]  and I guess I think also maybe
+[5315.84s -> 5318.64s]  because I'm just not familiar with kind of specifically
+[5318.64s -> 5321.04s]  what like a runtime is.
+[5321.04s -> 5324.04s]  And I guess like my confusion comes from the fact that like
+[5324.04s -> 5327.64s]  from a mental model of how like XB6 and C works
+[5327.68s -> 5331.00s]  is that C compiles, C is a compiled language.
+[5331.00s -> 5333.84s]  And so it goes directly to assembly or machine code.
+[5334.80s -> 5337.36s]  And so it kind of just runs on the CPU.
+[5337.36s -> 5341.52s]  And so I guess like there is no need for a shim
+[5341.52s -> 5343.56s]  for like an XB6 OS.
+[5344.56s -> 5345.68s]  But I guess my understanding is
+[5345.68s -> 5347.32s]  go is also a compiled language.
+[5347.32s -> 5349.36s]  So it also goes to like assembly.
+[5349.36s -> 5352.48s]  So why is there a need for like a shim in this case?
+[5352.48s -> 5354.04s]  Like why is, is there maybe,
+[5354.04s -> 5356.60s]  is there a shim for like XB6 or, you know,
+[5356.60s -> 5358.00s]  what is different here and like,
+[5358.00s -> 5362.24s]  why are there things that can't just be done on the CPU?
+[5362.24s -> 5364.48s]  Yeah, yeah, yeah, great question.
+[5364.48s -> 5366.40s]  So I think the answer to your question is that
+[5366.40s -> 5369.68s]  the go runtime provides all kinds of features
+[5369.68s -> 5371.96s]  that like, you know, you don't have, right?
+[5371.96s -> 5375.40s]  In running, when you're running C and XB6.
+[5375.40s -> 5377.40s]  So the go runtime provides threats.
+[5377.40s -> 5378.92s]  Go runtime provides scheduler.
+[5378.92s -> 5382.48s]  The go runtime, you know, before it's hash tables.
+[5382.48s -> 5384.56s]  The go runtime provides a garbage collector
+[5384.56s -> 5386.28s]  that actually needs to run at runtime, right?
+[5386.88s -> 5389.00s]  And there's no garbage collector in XB6.
+[5389.00s -> 5391.36s]  And we implement the threats.
+[5391.36s -> 5394.12s]  And for example, to support the garbage collector,
+[5394.12s -> 5396.24s]  it needs a heap, you know, for it to allocate memory
+[5396.24s -> 5398.40s]  from and so it's like ask the operating system,
+[5398.40s -> 5400.32s]  underlying operating system, you know, please give me,
+[5400.32s -> 5402.84s]  you know, some memory so I can use it as a heap.
+[5402.84s -> 5406.20s]  And basically the shim layer implements exactly
+[5406.20s -> 5409.28s]  so that kind of functionality that the go runtime
+[5409.28s -> 5412.48s]  needs to do its job at runtime.
+[5416.28s -> 5421.28s]  Yeah, I guess I have, it slightly makes sense.
+[5428.20s -> 5430.20s]  I guess like a follow-up question is,
+[5432.24s -> 5434.24s]  maybe this is a dumb question, but like,
+[5435.76s -> 5439.12s]  like, can't we just compile the runtime down
+[5439.12s -> 5441.40s]  to machine code or?
+[5441.40s -> 5443.24s]  The runtime is compiled to run.
+[5443.24s -> 5444.32s]  Okay.
+[5444.32s -> 5445.72s]  So like, you know, the runtime itself
+[5446.20s -> 5447.04s]  is also compiled, but it's like,
+[5447.04s -> 5449.12s]  so part of the program that needs to run always
+[5449.12s -> 5452.36s]  when you're running go code, it has to be there.
+[5452.36s -> 5454.28s]  Like even like C has a small runtime.
+[5454.28s -> 5455.60s]  You know, if you think about like, you know,
+[5455.60s -> 5458.36s]  we have like print F is part of the C runtime
+[5458.36s -> 5461.72s]  or like string operations are part of the C runtime, right?
+[5461.72s -> 5463.24s]  And then they're compiled too, but you know,
+[5463.24s -> 5464.96s]  there's a bunch of like small number of functions
+[5464.96s -> 5468.32s]  that the C runtime has, but the runtime is so small
+[5468.32s -> 5470.36s]  compared to like the go runtime that, you know,
+[5470.36s -> 5472.44s]  has to support many, many more features
+[5472.44s -> 5473.88s]  because you know, the programs,
+[5473.88s -> 5475.44s]  the go programs rely on that.
+[5476.64s -> 5477.72s]  I see, I see.
+[5477.72s -> 5479.96s]  And I guess like the last question would maybe be is like,
+[5479.96s -> 5482.64s]  is it, it kind of sounds like that in this case,
+[5482.64s -> 5486.12s]  to go runtime or like actually the shim in this case
+[5486.12s -> 5488.76s]  is almost taking on some of the functionality
+[5488.76s -> 5490.88s]  that would normally, like, it's almost like,
+[5490.88s -> 5493.52s]  it's like a mini, it's almost kind of like,
+[5493.52s -> 5496.04s]  it's like a, like a mini OS layer,
+[5496.04s -> 5498.20s]  like in terms that it's just like another layer
+[5498.20s -> 5501.16s]  that's performing some low level system functionality
+[5501.16s -> 5502.40s]  instead of like reasonable.
+[5502.40s -> 5503.60s]  Yeah.
+[5503.60s -> 5505.24s]  You can only think like maybe, you know,
+[5505.24s -> 5507.56s]  one way to think about is XVC also has a very,
+[5507.56s -> 5509.00s]  very minimal shim, you know,
+[5509.00s -> 5510.52s]  maybe like when it boots, correct?
+[5510.52s -> 5512.64s]  The first thing it does is actually allocates some stack
+[5512.64s -> 5516.36s]  so that you can actually call the C main function.
+[5516.36s -> 5517.48s]  And you can think about that,
+[5517.48s -> 5518.72s]  that little fragment of code,
+[5518.72s -> 5519.84s]  which is only a couple of statements
+[5519.84s -> 5521.80s]  and it's the shim layer for XVC.
+[5522.88s -> 5524.00s]  And once, you know,
+[5524.00s -> 5525.48s]  you're through that couple of instructions,
+[5525.48s -> 5527.88s]  you're actually in C code and everything is fine.
+[5527.88s -> 5531.12s]  And you know, the shim layer for the go runtime
+[5531.16s -> 5533.00s]  is slightly bigger because there's a bunch of more features
+[5533.00s -> 5534.72s]  that need to be set up before the go runtime
+[5534.72s -> 5536.28s]  can actually happily execute.
+[5538.20s -> 5539.72s]  Okay. Yeah, that's helpful.
+[5539.72s -> 5540.88s]  That makes sense.
+[5540.88s -> 5542.24s]  Cool.
+[5542.24s -> 5543.08s]  Thank you.
+[5543.08s -> 5544.56s]  You're welcome.
+[5544.56s -> 5545.56s]  Happy Thanksgiving.
+[5545.56s -> 5546.40s]  Yeah, you too.
+[5547.44s -> 5550.60s]  Oh, I had a question about the ping pong program
+[5550.60s -> 5551.80s]  that I forgot to ask.
+[5551.80s -> 5554.52s]  So I remember we also did a ping pong program
+[5554.52s -> 5559.08s]  in one of the labs and it was not a hundred,
+[5559.12s -> 5561.92s]  oh, I'm sorry, a thousand lines of code.
+[5561.92s -> 5563.48s]  Why is-
+[5563.48s -> 5565.24s]  Ah, because like lab one,
+[5565.24s -> 5566.92s]  I think, you know, are you referring to lab one
+[5566.92s -> 5570.00s]  where you do the ping pong of a byte across a pipe?
+[5570.00s -> 5570.84s]  Yeah.
+[5570.84s -> 5573.72s]  Okay, so that's the user side of the benchmark.
+[5573.72s -> 5576.64s]  The kernel side, correct, is the other side of it.
+[5576.64s -> 5578.36s]  And basically, you know,
+[5578.36s -> 5580.36s]  what we did is implement the kernel paths
+[5580.36s -> 5581.40s]  in identical manner.
+[5583.68s -> 5584.52s]  Okay.
+[5584.52s -> 5585.36s]  So like, you know,
+[5585.36s -> 5587.44s]  you're actually executing the start of the system call
+[5587.52s -> 5589.92s]  where you're saving variables in the stack frame,
+[5589.92s -> 5592.24s]  you know, calling into looking up the pipe,
+[5592.24s -> 5595.00s]  you know, then running maybe the scheduler
+[5595.00s -> 5597.56s]  to wake up, you know, the receiver
+[5597.56s -> 5600.56s]  and that whole code path, you know, on the kernel side,
+[5601.52s -> 5604.84s]  we tried to implement it identically in C and in Go.
+[5604.84s -> 5605.80s]  Okay.
+[5605.80s -> 5607.24s]  But the benchmark is basically the same
+[5607.24s -> 5610.24s]  as your benchmark that you implemented actually in lab one,
+[5610.24s -> 5612.40s]  the user level side of it.
+[5612.40s -> 5613.24s]  Right, right.
+[5613.24s -> 5614.20s]  Okay, that makes sense.
+[5614.20s -> 5617.28s]  So does that mean that like,
+[5618.00s -> 5619.44s]  I mean, I think that if you do that in xv6,
+[5619.44s -> 5622.84s]  it would be significantly less than a thousand lines
+[5622.84s -> 5625.84s]  of code if you like take all the kernel code that is-
+[5625.84s -> 5627.80s]  Well, so this is a thousand lines
+[5627.80s -> 5630.44s]  of over assembly instructions, correct?
+[5630.44s -> 5632.56s]  So, you know, I don't know,
+[5632.56s -> 5634.04s]  I will have to look at it, but you know,
+[5634.04s -> 5636.40s]  you're gonna use the trap frame codes,
+[5636.40s -> 5638.28s]  your statistical dispatch,
+[5638.28s -> 5643.28s]  going to the FD layer, correct, the file descriptors,
+[5643.68s -> 5647.04s]  then a little bit of pipe code,
+[5647.80s -> 5650.24s]  then some copying and copy out,
+[5650.24s -> 5652.04s]  then the scheduler,
+[5652.04s -> 5653.96s]  and then basically all bailing,
+[5653.96s -> 5656.00s]  and then bailing out again or returning.
+[5656.88s -> 5658.40s]  Yeah, okay.
+[5658.40s -> 5659.24s]  That makes sense.
+[5659.24s -> 5660.76s]  There is a, you know,
+[5660.76s -> 5661.88s]  I don't know how the top of my head
+[5661.88s -> 5663.04s]  how much lines of code that is,
+[5663.04s -> 5663.88s]  but you know, there's-
+[5663.88s -> 5665.72s]  Right, yeah, yeah.

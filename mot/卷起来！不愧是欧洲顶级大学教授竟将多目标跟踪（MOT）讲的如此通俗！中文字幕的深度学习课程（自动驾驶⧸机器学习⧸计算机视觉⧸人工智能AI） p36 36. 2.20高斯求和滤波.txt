@@ -1,0 +1,88 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 9.00s]  Both the nearest neighbor and the probabilistic data association algorithm approximate the posterior using a single Gaussian density.
+[9.00s -> 16.00s]  In complicated scenarios, this is often a crude approximation that leads to poor performance.
+[16.00s -> 23.00s]  We can obtain better approximations by maintaining a Gaussian mixture with a limited number of components.
+[23.00s -> 28.00s]  We generally refer to such algorithms as Gaussian sum filters.
+[28.00s -> 35.00s]  In the next videos, we introduce ideas and theory for single object Gaussian sum filtering.
+[35.00s -> 45.00s]  The basic idea behind Gaussian sum filtering is to approximate the posterior using a Gaussian mixture with more than one component in order to obtain a better approximation.
+[45.00s -> 57.00s]  In many cases, the posterior contains a very large number of components or hypotheses, but the posterior may still be dominated by a small number of these hypotheses.
+[57.00s -> 63.00s]  And we can then approximate the posterior accurately by pruning all the insignificant components.
+[63.00s -> 69.00s]  In the figure to the right, the exact posterior in black contains 108 components.
+[69.00s -> 76.00s]  The orange curve marked with crosses illustrates the output from a Gaussian sum filter with 5 components.
+[76.00s -> 86.00s]  As you can see, with only 5 components, we obtain an approximation which is much more accurate than what we would obtain using nearest neighbor or probabilistic data association.
+[86.00s -> 99.00s]  It should be noted though that the illustrated Gaussian sum filter caps the number of components to 5 at all times and that it therefore introduces approximations also before time 5.
+[99.00s -> 103.00s]  We will describe this strategy in more detail shortly.
+[103.00s -> 112.00s]  To give you an idea about what the recursions might look like, we assume that we end every recursion with a Gaussian mixture with a number of different components.
+[112.00s -> 119.00s]  Every component has a weight w and a Gaussian density pk given k with super index h.
+[119.00s -> 132.00s]  We assume that the hypotheses or components are numbered from 1 to calligraphic capital H and at time k minus 1, the capital H has a sub index k minus 1.
+[132.00s -> 152.00s]  We can then perform prediction and update on this Gaussian mixture and for every hypothesis at time k minus 1, we obtain mk plus 1 new hypotheses giving us hk minus 1 times mk plus 1 components in the posterior at time k.
+[152.00s -> 161.00s]  As before, we use this symbol breathe to denote the posterior at time k before we introduce the new approximations.
+[161.00s -> 170.00s]  If both gk and pk are linear in Gaussian and we have a constant probability of detection, p breathe is a Gaussian mixture.
+[170.00s -> 177.00s]  To obtain a tractable algorithm, we need to limit the number of components in the posterior to a reasonable level.
+[177.00s -> 185.00s]  The main question that we are facing is therefore how we can approximate this Gaussian mixture as a Gaussian mixture with fewer components.
+[185.00s -> 190.00s]  We will describe three simple techniques to reduce the number of hypotheses.
+[191.00s -> 199.00s]  The first strategy is to select the threshold gamma and remove all hypotheses whose weights are smaller than gamma.
+[199.00s -> 214.00s]  For instance, if gamma is 0.01 and that we have a Gaussian mixture with three components where the second has a weight 0.005, we would conclude that the second hypothesis is insignificant and remove it from the mixture.
+[214.00s -> 223.00s]  After pruning, we then obtain a new density, here denoted as p with an acute accent above it, that only contains two components.
+[223.00s -> 228.00s]  Note that the weights in p acute are normalized to ensure that they sum to one.
+[228.00s -> 238.00s]  When we speak about a Gaussian mixture with two components, I normally just think about it like this, where we have two Gaussian densities with different weights, means and covariances.
+[238.00s -> 253.00s]  However, right now we have two hypotheses numbered 1 and 3, and according to what we stated on the previous slide, we want the hypotheses to have numbers from 1 to capital H, where capital H would be 2 in this case.
+[253.00s -> 265.00s]  At the end of the pruning step, we therefore introduce new variables, in this case with the numbers 1 and 2, that we use to store the weights, means and covariances of the remaining components in the mixture.
+[266.00s -> 269.00s]  Let us look at what an algorithm that does this might look like.
+[269.00s -> 275.00s]  We start with a threshold gamma and a Gaussian mixture with capital H components.
+[275.00s -> 281.00s]  The output from the algorithm should be a new Gaussian mixture, normally with fewer components.
+[281.00s -> 289.00s]  The first thing that we can do is to find the indices of all the weights that are larger than gamma and store these indices in a list int.
+[289.00s -> 293.00s]  These are the indices of the hypotheses that we intend to keep.
+[293.00s -> 300.00s]  We can then compute the normalization factor for the weights by summing up the weights of all the hypotheses that we intend to keep.
+[300.00s -> 311.00s]  Finally, we can go through the hypotheses in the list int and store the parameters for those hypotheses in the new variables w-acute, x-acute and p-acute.
+[311.00s -> 315.00s]  Another technique to reduce the number of components is merging.
+[316.00s -> 323.00s]  We have already seen how the PDA filter merges all components in a mixture and replaces it with a single Gaussian density.
+[323.00s -> 327.00s]  We will now study how we can merge some components in the mixture.
+[327.00s -> 332.00s]  In this example, p1 and p2 are two Gaussian densities that are similar.
+[332.00s -> 342.00s]  An example of this is illustrated in the figure, where we have a Gaussian mixture p of x in black and p1 and p2 have similar mean and variances.
+[342.00s -> 345.00s]  Whereas the mean of p3 is quite different.
+[345.00s -> 351.00s]  It may then be tempting to approximate p1 and p2 using a single Gaussian density.
+[351.00s -> 360.00s]  However, it's not trivial to use the techniques from PDA filtering to do this, since these densities only make up part of the density p of x.
+[360.00s -> 364.00s]  But there is a nice trick that enables us to do this.
+[364.00s -> 371.00s]  The density that we are looking at is w1 p1 plus w2 p2 plus w3 p3.
+[371.00s -> 375.00s]  Where we would like to replace the first two components with one.
+[375.00s -> 383.00s]  To do this, it is helpful to introduce a notation w12 for the total weight of the first two components.
+[383.00s -> 384.00s]  Here is the trick.
+[384.00s -> 392.00s]  We can now write the first two terms as w12 times the two terms divided by w12.
+[393.00s -> 403.00s]  Inside the parentheses, p1 then has a weight w1 divided by w12, and p2 has a weight w2 divided by w12.
+[403.00s -> 409.00s]  Since these two weights sum to one, we actually have a density inside the parentheses.
+[409.00s -> 416.00s]  Now, since the density within the parentheses is a Gaussian mixture, where p1 and p2 are similar.
+[416.00s -> 423.00s]  We should be able to approximate that density fairly accurately using the techniques from the PDA videos.
+[423.00s -> 432.00s]  I have illustrated the density p12 of x in the figure, and you can see that it is some kind of trade-off between p1 of x and p2 of x.
+[432.00s -> 440.00s]  We now obtain an approximation to the Gaussian mixture, where we have replaced the first two components with a single component.
+[440.00s -> 452.00s]  The approximation p-acute is illustrated using a green curve marked with squares, and at least in this example, that density is very similar to the original mixture in black.
+[452.00s -> 461.00s]  The key to obtaining this approximation was to normalize the weights of the components that we wanted to merge, such that they became a PDF.
+[461.00s -> 469.00s]  We could then approximate them as a Gaussian density with the same mean and covariance, which can be done using the equations from the PDA filter.
+[469.00s -> 476.00s]  Describing a general Gaussian sum filtering algorithm that performs merging is beyond the scope of this video,
+[476.00s -> 483.00s]  but I hope that you have at least understood some of the principles and ideas behind merging in this context.
+[483.00s -> 494.00s]  Both of the strategies that we have presented so far are reasonable, but they may not always lead to a tractable algorithm, since we may still be left with too many hypotheses.
+[494.00s -> 503.00s]  A pragmatic way to fix this problem is to prune away the most unlikely hypotheses until we are left with n-max hypotheses,
+[503.00s -> 509.00s]  where n-max is the maximum number of hypotheses that we think that we can manage.
+[509.00s -> 516.00s]  Hopefully, the above description is enough to understand the idea, but it may also be helpful to look at the algorithm in more detail.
+[516.00s -> 524.00s]  The input to the pruning algorithm described here is n-max and a Gaussian mixture with more than n-max components.
+[524.00s -> 529.00s]  If we have fewer than n-max components, we don't need to use the algorithm.
+[529.00s -> 534.00s]  The output from the algorithm is another Gaussian mixture with precisely n-max components.
+[534.00s -> 541.00s]  Using MATLAB notation, we can use the command sort and ask it to sort the weights in descending order.
+[541.00s -> 552.00s]  Note that the part that we are looking for is a list, here called ind, that contains the indices of the components, sorted such that the index of the largest weight comes first,
+[552.00s -> 556.00s]  followed by the index of the second largest weight, and so on.
+[556.00s -> 565.00s]  Given this list, it is easy to identify the n-max components with the highest weight, since those are the n-max first elements in the list.
+[565.00s -> 574.00s]  As a next step, we can compute the normalization factor needed to ensure that the weights sum to 1 after pruning the less probable components.
+[574.00s -> 578.00s]  We do that by summing up the weights of the components that we intend to keep.
+[578.00s -> 590.00s]  Finally, we go through the n-max first hypothesis in the list ind and store the parameters for those hypotheses in the new variables w-acute, x-acute, and p-acute,
+[590.00s -> 595.00s]  where the weights are also divided by c to ensure that they become normalized.
+[595.00s -> 604.00s]  By the way, if you want, you can instead ignore computing z and normalize the weights w-acute afterwards, since this will give the same result.
+[604.00s -> 611.00s]  To obtain a tractable Gaussian sum filter, we need to limit the number of components in our approximation to the posterior.
+[611.00s -> 617.00s]  We have presented three techniques to reduce the number of components in this mixture.
+[617.00s -> 620.00s]  These techniques can be combined in different ways.
+[620.00s -> 631.00s]  The easiest way to obtain a tractable algorithm is probably to directly cap the number of hypotheses in the mixture, and prune all hypotheses but the n-max best ones.
+[631.00s -> 638.00s]  You may obtain slightly better performance, for instance by first removing components with small weights.
+[638.00s -> 641.00s]  This may reduce the computational complexity.
+[641.00s -> 650.00s]  And then go through the hypotheses and merge similar components before you finally cap the number of hypotheses to n-max.
+[650.00s -> 660.00s]  Importantly, once we are done reducing the number of components in the Gaussian mixture, we obtain what we refer to as the posterior in the Gaussian sum filter.
+[660.00s -> 670.00s]  We use wk hk and p k given k hk to denote the weights and densities in the posterior mixture according to the filter.

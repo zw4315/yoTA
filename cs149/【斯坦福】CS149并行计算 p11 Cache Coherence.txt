@@ -1,0 +1,1381 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.44s]  All right.
+[5.44s -> 7.64s]  So the main event today is we're going
+[7.64s -> 9.28s]  to discuss cache coherence.
+[9.28s -> 12.32s]  But before we get into cache coherence,
+[12.32s -> 15.84s]  let's finish up our discussion of Spark.
+[15.84s -> 21.76s]  You notice that instead of me teaching on Thursday,
+[21.76s -> 22.46s]  Kayvon did.
+[22.46s -> 24.08s]  And that's because originally we
+[24.08s -> 27.48s]  thought that based on when the programming and science
+[28.00s -> 34.28s]  that you would need to know about optimizing DNN code on the GPU.
+[34.28s -> 38.60s]  But given that we've delayed the program assignment three
+[38.60s -> 41.18s]  and so four is delayed, it turned out
+[41.18s -> 45.16s]  that we didn't quite need the order of lectures.
+[45.16s -> 51.42s]  And so things are a little not as smooth as we might like.
+[51.42s -> 54.62s]  But nonetheless, you guys can context switch, right?
+[54.62s -> 55.12s]  All right.
+[55.12s -> 57.56s]  So back to Spark, right?
+[57.56s -> 59.08s]  So when we left off, we were talking
+[59.08s -> 66.32s]  about how to design a system for doing distributed
+[66.32s -> 68.68s]  computing on a cluster.
+[68.68s -> 70.84s]  Remember, the characteristics of a cluster, of course,
+[70.84s -> 75.40s]  is you've got separate nodes or servers that
+[75.40s -> 76.62s]  are connected by a network.
+[76.62s -> 79.96s]  And each of the servers is running its own operating system
+[79.96s -> 83.76s]  and has its own independent memory system, right?
+[83.76s -> 87.20s]  And the way that we communicate is by using message passing
+[87.20s -> 89.92s]  as opposed to shared memory, OK?
+[89.92s -> 93.00s]  So the idea of in-memory fault-tolerant distributed
+[93.00s -> 95.72s]  computing, the goals of Spark are what if you
+[95.72s -> 98.00s]  have an application that makes lots
+[98.00s -> 100.14s]  of use of intermediate data, right?
+[100.14s -> 104.18s]  So we know that we can make it fault-tolerant by using
+[104.18s -> 107.68s]  the MapReduce system.
+[107.68s -> 109.04s]  So what were the characteristics?
+[109.04s -> 112.28s]  How did we keep fault tolerance in the MapReduce system?
+[114.76s -> 116.80s]  Where did we put the intermediate data?
+[122.24s -> 122.74s]  Yeah.
+[122.74s -> 124.40s]  On the hard drive, right?
+[124.40s -> 127.52s]  On the distributed file system, the HDFS system,
+[127.52s -> 131.72s]  which we know is fault-tolerant because it's replicated.
+[131.72s -> 134.88s]  But the problem, as we saw by looking at the system,
+[134.88s -> 137.52s]  it's slow, especially compared to the memory.
+[137.52s -> 142.80s]  It's 100x slower than the memory.
+[142.84s -> 147.16s]  And so the question is, if we want an application that
+[147.16s -> 148.92s]  makes lots of use of intermediate data,
+[148.92s -> 156.36s]  such as a iterative algorithm or a query where you've
+[156.36s -> 161.04s]  got the data that you want to continuously make ad-hoc
+[161.04s -> 164.44s]  queries to, then the MapReduce system
+[164.44s -> 166.36s]  is actually pretty inefficient, right?
+[166.36s -> 168.80s]  So how can we make something that's much more efficient,
+[168.80s -> 174.32s]  but still keep quality that we want in the distributed system
+[174.32s -> 177.40s]  as something that is still fault-tolerant, right?
+[177.40s -> 179.72s]  And so the key abstraction we said
+[179.72s -> 181.96s]  was the resilient distributed data set,
+[181.96s -> 184.40s]  which was this read-only ordered collection of records,
+[184.40s -> 184.88s]  right?
+[184.88s -> 190.24s]  So essentially, the sequence and the way that we get RDDs
+[190.24s -> 196.20s]  is we start with some data on the disk, on the HDFS,
+[196.20s -> 199.16s]  and then we apply transformations to it, right?
+[199.16s -> 203.56s]  So we can extract the lines from the text file
+[203.56s -> 205.20s]  and get an RDD called lines.
+[205.20s -> 207.56s]  We can filter, which is another transformation
+[207.56s -> 209.08s]  to get mobile views.
+[209.08s -> 211.64s]  And we can filter again to get Safari views.
+[211.64s -> 214.64s]  And then finally, we can create a count from that,
+[214.64s -> 216.36s]  which is not a transformation.
+[216.36s -> 219.68s]  And so of course, the result is a single scaler
+[219.68s -> 222.44s]  instead of an RDD, all right?
+[222.44s -> 226.08s]  And so we were looking at sort of how we implement RDDs.
+[226.96s -> 229.72s]  The problem was is if you didn't do things efficiently,
+[229.72s -> 232.72s]  you could end up with huge amounts of memory
+[232.72s -> 235.20s]  for the intermediate data.
+[235.20s -> 238.00s]  And so of course, this course is all
+[238.00s -> 241.04s]  about improving parallel performance.
+[241.04s -> 243.32s]  And we said that parallel performance comes from you
+[243.32s -> 245.36s]  got to have lots of parallelism, lots of things
+[245.36s -> 247.20s]  to do at the same time, but you also
+[247.20s -> 249.16s]  have to optimize for locality, right?
+[249.16s -> 252.72s]  We've talked about a couple of mechanisms
+[252.72s -> 254.40s]  for optimizing for locality.
+[254.40s -> 260.96s]  And you just saw these used in the last lecture.
+[260.96s -> 264.64s]  One was the idea of fusion, loop fusion, right?
+[264.64s -> 266.24s]  And here, of course, we're trying
+[266.24s -> 274.04s]  to minimize the need for external memory access.
+[274.04s -> 278.60s]  And we're trying to improve or increase arithmetic intensity.
+[278.60s -> 282.68s]  And as an example, we saw that here in this example.
+[282.72s -> 288.80s]  And you saw it in doing attention, right?
+[288.80s -> 291.12s]  So Kayvon talked about flash attention.
+[291.12s -> 293.40s]  And that's essentially a combination
+[293.40s -> 296.24s]  of fusion and tiling, right?
+[296.24s -> 301.40s]  And so tiling was the other locality optimization mechanism
+[301.40s -> 302.76s]  that we talked about.
+[302.76s -> 304.32s]  And we said that essentially in order
+[304.32s -> 307.24s]  to get these sorts of transformations,
+[307.24s -> 312.20s]  you have to understand the application
+[312.24s -> 315.36s]  because you potentially have to globally restructure things.
+[315.36s -> 321.88s]  And so the nice thing about the SPARC implementation
+[321.88s -> 327.16s]  is that you have the ability to do fusion with RDDs
+[327.16s -> 331.04s]  since you've got a set of bulk operations,
+[331.04s -> 333.08s]  these transformations on RDDs.
+[333.08s -> 335.92s]  And the runtime system, the SPARC runtime system,
+[335.92s -> 341.56s]  can look at what is happening and optimize these things.
+[341.60s -> 347.00s]  So in this example, we've got these transformations
+[347.00s -> 352.28s]  to create lines, lower mobile views, and then finally
+[352.28s -> 354.28s]  an action to create how many.
+[354.28s -> 356.32s]  And what you'd like to do, of course,
+[356.32s -> 361.80s]  is implement it in a fused manner such as this in which
+[361.80s -> 366.56s]  you just fetch one line from the file system
+[366.56s -> 369.44s]  and then everything else is kept in memory.
+[369.48s -> 372.72s]  And you only do it a line at a time, right?
+[372.72s -> 378.40s]  And so this is ideally what you'd want to create.
+[378.40s -> 382.68s]  And the SPARC runtime system will do this for you.
+[382.68s -> 387.36s]  And it does it when it can analyze the transformations
+[387.36s -> 390.68s]  and determine that you have narrow dependencies, right?
+[390.68s -> 396.04s]  And in narrow dependencies, one RDD only
+[396.92s -> 400.00s]  the partition of what one RDD only
+[400.00s -> 404.84s]  depends on a single previous partition, right?
+[404.84s -> 413.96s]  For instance, the lower partition zero
+[413.96s -> 417.04s]  only depends on the lines partition zero.
+[417.04s -> 419.08s]  And the mobile views partition zero
+[419.08s -> 422.68s]  only depends on the lower partition zero, right?
+[422.68s -> 427.88s]  So you can imagine then that the runtime system can fuse all
+[427.88s -> 429.84s]  of these transformations such that you
+[429.84s -> 438.12s]  don't have any extra memory accesses or external memory
+[438.12s -> 439.16s]  access.
+[439.16s -> 442.64s]  So there's no communications between nodes of the cluster.
+[442.64s -> 447.40s]  And so everything can be fully optimized and run
+[447.40s -> 449.96s]  very efficiently.
+[449.96s -> 454.36s]  So the problem is that you can have transformations
+[454.36s -> 456.72s]  that have wide dependencies, right?
+[456.72s -> 459.76s]  And which would require communication
+[459.76s -> 462.56s]  between the different nodes in the system.
+[462.56s -> 465.36s]  So an example would be group by key, right?
+[465.36s -> 478.36s]  Where in order to determine the group by partition zero
+[478.36s -> 481.12s]  for RDDB, you would have to communicate
+[481.12s -> 483.80s]  with all the other nodes in the system
+[483.80s -> 487.04s]  to get the data from the different partitions,
+[487.04s -> 490.12s]  from partition one, partition two, and partition three,
+[490.12s -> 491.52s]  for example, right?
+[491.52s -> 493.88s]  So in this case, of course, you
+[493.88s -> 498.12s]  can't do the fusion within a single node.
+[498.12s -> 500.72s]  And so this is something that would
+[500.72s -> 502.48s]  have a lot of communication, right?
+[502.48s -> 504.44s]  So the question is, in what cases
+[504.44s -> 509.96s]  can you optimize operations like group by key?
+[509.96s -> 513.04s]  So look at this example in which
+[513.04s -> 515.52s]  we are trying to do a join, right?
+[515.52s -> 517.88s]  So you're going to join by key.
+[517.88s -> 526.52s]  And depending on how the RDDA and RDDB, which
+[526.52s -> 531.28s]  you're trying to join to create RDDC,
+[531.28s -> 538.16s]  if you didn't know anything about the RDDA and RDDB,
+[538.16s -> 541.28s]  then clearly you would have to communicate
+[541.28s -> 544.84s]  across all the nodes in the cluster
+[544.84s -> 549.88s]  in order to compute RDDC, OK?
+[549.88s -> 553.32s]  So in what cases might you be able to get away
+[553.32s -> 558.40s]  without communicating if you're trying to do a join,
+[558.40s -> 559.00s]  for example?
+[562.24s -> 564.56s]  So as shown here, you have to communicate.
+[564.56s -> 568.36s]  But could you imagine a situation where
+[568.36s -> 571.68s]  you didn't have to communicate?
+[571.68s -> 573.84s]  Yeah?
+[573.84s -> 578.48s]  Like, a specific key would be only in partition zero
+[578.48s -> 581.32s]  of RDDA and only in partition zero of RDDB
+[581.32s -> 582.64s]  and not in the other partition.
+[582.64s -> 583.52s]  Exactly.
+[583.52s -> 588.48s]  So that's the situation which you, if you had,
+[588.56s -> 592.56s]  if you partitioned, if you RDDA and RDDB such
+[592.56s -> 600.28s]  that the common keys only existed in a single partition,
+[600.28s -> 604.40s]  then you would have narrow dependencies, OK?
+[604.40s -> 609.60s]  So that is shown in the second example here.
+[609.60s -> 614.00s]  So essentially RDDA and RDDB have the same hash partition,
+[614.00s -> 614.52s]  right?
+[614.52s -> 620.16s]  And so that's shown in this example, this code here.
+[620.16s -> 625.28s]  So you have an explicit hash partitioner, right?
+[625.28s -> 627.64s]  And you've named it partitioner.
+[627.64s -> 635.36s]  And you use it to partition mobile views.
+[635.36s -> 640.12s]  And you use it to partition client info, right?
+[640.96s -> 645.96s]  So when you do the join then, the runtime system says,
+[645.96s -> 652.80s]  hey, these two RDDs are being partitioned using the same hash
+[652.80s -> 656.56s]  partition, partitioner, right?
+[656.56s -> 658.60s]  So it can detect that these are equal.
+[658.60s -> 660.68s]  And it will determine that there are only
+[660.68s -> 662.88s]  narrow dependencies.
+[662.88s -> 668.72s]  And then it will make sure that you can do fusion,
+[668.72s -> 670.28s]  right?
+[670.28s -> 672.44s]  Everybody follow that?
+[672.44s -> 674.32s]  Any questions?
+[674.32s -> 675.48s]  Yeah.
+[675.48s -> 678.16s]  There might still be an imbalance of keys, right?
+[678.16s -> 680.88s]  Like one RDD has only a few keys.
+[680.88s -> 684.60s]  And the other one has a lot of keys with the same key.
+[684.60s -> 685.56s]  Right, right.
+[685.56s -> 688.60s]  So there is this question of load balance.
+[688.60s -> 693.44s]  But to a first order, probably load balance
+[693.44s -> 696.36s]  is less of a problem compared to communication.
+[699.72s -> 702.04s]  So that's a good point.
+[702.04s -> 709.20s]  All right, so now we have a way of sort of scheduling
+[709.20s -> 713.44s]  the computation for locality to improve performance
+[713.44s -> 715.44s]  and reduce the amount of memory required.
+[715.44s -> 717.44s]  Now let's talk about fault tolerance, right?
+[717.44s -> 722.28s]  So we said the whole goal of the Spark system
+[722.28s -> 724.44s]  was to give you high performance in memory
+[724.44s -> 727.40s]  computation with fault tolerance, right?
+[727.48s -> 729.92s]  So then the question is sort of how do you
+[729.92s -> 732.28s]  maintain the fault tolerance?
+[732.28s -> 734.96s]  So remember this idea of lineage, right?
+[734.96s -> 738.00s]  So you've got these transformations,
+[738.00s -> 744.20s]  which are these bulk deterministic operations
+[744.20s -> 745.92s]  on RDDs, right?
+[745.92s -> 750.70s]  And so the lineage then, or the set of transformations
+[750.70s -> 757.12s]  that you apply starting with the data load
+[757.12s -> 761.08s]  from the distributed file system
+[761.08s -> 764.12s]  is the set of transformation.
+[764.12s -> 767.12s]  It gives you a log of the operations
+[767.12s -> 771.22s]  you need to perform to get to any particular RDD, right?
+[771.22s -> 776.12s]  So you know that if you want to get to timestamps,
+[776.12s -> 782.98s]  you first load from the HDFS, do the filter,
+[782.98s -> 785.00s]  do another filter, and then the map.
+[785.00s -> 788.16s]  And so this list of transformations
+[788.16s -> 792.24s]  then is known as the lineage, right?
+[792.24s -> 794.32s]  So you've got a lineage of essentially a log
+[794.32s -> 801.44s]  of transformations that can be used to recreate any RDD,
+[801.44s -> 802.10s]  right?
+[802.10s -> 807.64s]  And we know what property did we say that RDDs had, right?
+[807.64s -> 809.36s]  They're read only.
+[809.36s -> 812.88s]  And transformations are functional, right?
+[813.16s -> 815.92s]  They do not mutate their inputs, right?
+[815.92s -> 821.08s]  So we know that it's always possible, given an RDD,
+[821.08s -> 830.16s]  to recreate it from the hard disk, from the persistent data
+[830.16s -> 832.56s]  that we know will never go away in the system
+[832.56s -> 836.32s]  because it's replicated across all the nodes in the system.
+[836.32s -> 837.76s]  Question?
+[837.76s -> 840.40s]  So if we're only always, we're
+[840.40s -> 843.92s]  not storing the intermediates, we're just storing the log
+[843.92s -> 845.20s]  of that, right?
+[845.20s -> 849.24s]  So when do we actually, I guess,
+[849.24s -> 850.76s]  materialize all this data?
+[850.76s -> 853.04s]  Is it just we can do all the computation, and then
+[853.04s -> 856.92s]  at the end, we store whatever checkpoint system?
+[856.92s -> 859.04s]  So why do you want to materialize data?
+[859.04s -> 860.48s]  Because?
+[860.48s -> 862.06s]  Because at some point, we need it, right?
+[862.06s -> 862.56s]  Yeah, yeah.
+[862.56s -> 868.88s]  So at some point, in this case, what does the user want?
+[868.88s -> 869.96s]  Timestamps, probably.
+[870.72s -> 876.64s]  Does the user necessarily care about the intermediate data?
+[876.64s -> 879.00s]  So you just try to fuse as much as you can.
+[879.00s -> 881.40s]  Right, you'll get to fuse as much as you can
+[881.40s -> 885.68s]  and not keep intermediate data that the user hasn't asked for.
+[885.68s -> 887.44s]  If the user asks for it, yes, then you've
+[887.44s -> 888.60s]  got to provide for them.
+[888.60s -> 890.88s]  But if the user doesn't ask for it, it's intermediate,
+[890.88s -> 894.40s]  and it could potentially go away.
+[894.40s -> 896.68s]  The only issue is what happens
+[896.68s -> 898.64s]  if you lose the intermediate data before you
+[898.64s -> 901.68s]  create the final result that the user wanted?
+[901.68s -> 903.68s]  Right?
+[903.68s -> 907.12s]  OK, so what happens in this situation where,
+[907.12s -> 909.96s]  oh, we're not done with the computation,
+[909.96s -> 913.36s]  but there's a node that crashes.
+[913.36s -> 915.24s]  So this is the example here.
+[915.24s -> 918.28s]  So we've got a set of transformations
+[918.28s -> 921.20s]  that give us a lineage that allows
+[921.20s -> 925.28s]  us to recreate any of the RDDs that we have in our
+[925.28s -> 926.60s]  computation.
+[926.68s -> 935.88s]  And in the middle of computing the timestamps, node one crashes.
+[935.88s -> 942.64s]  So it crashes, and we lose the partition two and partition
+[942.64s -> 946.16s]  three of timestamps and mobile views.
+[946.16s -> 949.96s]  So now what do we do?
+[949.96s -> 950.72s]  Yeah?
+[950.72s -> 954.56s]  Just kind of like LFS, you just rerun the log.
+[954.56s -> 955.40s]  We run the log.
+[955.80s -> 957.04s]  So we run the log.
+[957.04s -> 959.72s]  We assume that the data exists somewhere else because it's
+[959.72s -> 962.92s]  replicated in the HDFS.
+[962.92s -> 965.32s]  And we have a log of operations
+[965.32s -> 967.24s]  which is fairly coarse-grained.
+[967.24s -> 971.28s]  So it's not a huge number of things
+[971.28s -> 973.68s]  that we have to remember.
+[973.68s -> 979.72s]  And we reapply the log in order
+[979.72s -> 989.32s]  to create the partitions two and three of timestamps.
+[989.32s -> 1003.20s]  And so we recreate that from the partitions of mobile views.
+[1003.20s -> 1007.08s]  And while we start with lines, we get to mobile views,
+[1007.08s -> 1009.48s]  chrome views, and then we recreate timestamps.
+[1009.48s -> 1010.68s]  OK?
+[1010.68s -> 1013.80s]  So that's the way that we recover from a crash.
+[1013.80s -> 1014.80s]  Question?
+[1014.80s -> 1018.84s]  The question is, where did the log and lineage runs in stores?
+[1018.84s -> 1020.68s]  Is it stored on the master node?
+[1020.68s -> 1023.28s]  Yeah, the master node is keeping track of the lineage.
+[1023.28s -> 1025.24s]  We assume that's one of the nodes
+[1025.24s -> 1029.44s]  and that it's not likely to fail or it may be replicated.
+[1029.44s -> 1036.12s]  One more question is, do you see these kind of like
+[1036.16s -> 1037.96s]  core languages in the new space?
+[1037.96s -> 1040.44s]  Yeah, it's just a log of the other transformations.
+[1040.44s -> 1043.92s]  So is it like, if you wanted to write functions on your own
+[1043.92s -> 1047.00s]  kind of data, if you wanted to do completely
+[1047.00s -> 1049.32s]  possible functions, how do you do that?
+[1049.32s -> 1052.24s]  Well, remember, you've got to live within the Spark world,
+[1052.24s -> 1056.20s]  which means you have to do transformations on RDDs, which
+[1056.20s -> 1057.20s]  are functional, right?
+[1057.20s -> 1059.16s]  So if you do things that are non-functional
+[1059.16s -> 1060.88s]  and start mutating your input,
+[1060.88s -> 1063.08s]  then you've broken the Spark abstraction
+[1063.08s -> 1065.04s]  and things won't work, right?
+[1065.44s -> 1068.40s]  So if I have, let's say, like, just a function that takes me.
+[1068.40s -> 1070.44s]  Or use the algorithm, there's not going to be anything.
+[1070.44s -> 1073.16s]  But you've got a set.
+[1073.16s -> 1075.84s]  Your data type is RDDs.
+[1075.84s -> 1078.04s]  The set of things you can do are transformations.
+[1078.04s -> 1082.04s]  If you go outside that abstraction,
+[1082.04s -> 1083.48s]  you've broken things.
+[1083.48s -> 1087.68s]  And in Spark, it says, hey, you're on your own, right?
+[1090.84s -> 1092.48s]  Other questions?
+[1092.48s -> 1094.92s]  All right, so we have a way
+[1094.92s -> 1097.24s]  of recovering from crashes.
+[1097.24s -> 1100.72s]  And we get the nice thing about Spark,
+[1100.72s -> 1103.36s]  of course, is that you get to use memory.
+[1103.36s -> 1105.36s]  And you get the performance benefits of memory.
+[1105.36s -> 1107.80s]  But you don't lose fault tolerance,
+[1107.80s -> 1110.92s]  which is critical if you're doing a data processing.
+[1110.92s -> 1112.92s]  So how much performance improvement do you get?
+[1112.92s -> 1117.28s]  Well, this is the Spark paper
+[1117.28s -> 1124.00s]  when it came out 2012 or something like that.
+[1124.00s -> 1125.72s]  They compared it to Hadoop.
+[1125.72s -> 1127.64s]  And Hadoop is always a good whipping boy
+[1127.64s -> 1130.04s]  because it's so slow, right?
+[1130.04s -> 1132.88s]  And so in Hadoop, this is the case.
+[1132.88s -> 1134.36s]  They're doing logistic regression,
+[1134.36s -> 1138.84s]  which is a very simple ML operation.
+[1138.84s -> 1140.84s]  And k-means, which you're very familiar with,
+[1140.84s -> 1143.40s]  because, of course, you've played with that.
+[1143.40s -> 1149.60s]  And so we see that Hadoop, the first iteration
+[1149.60s -> 1151.08s]  is 80 seconds.
+[1151.08s -> 1153.96s]  And subsequent iterations don't get much faster.
+[1153.96s -> 1157.96s]  And of course, each iteration requires an HDFS read
+[1157.96s -> 1160.52s]  and an HDFS write.
+[1160.52s -> 1166.40s]  The Hadoop binary memory basically
+[1166.40s -> 1171.96s]  keeps a binary memory copy instead of a text copy.
+[1171.96s -> 1174.84s]  And so it's slightly faster on the second iteration,
+[1174.84s -> 1177.72s]  but still has to access the disk.
+[1177.72s -> 1181.16s]  And then Spark only has to do the HDFS read,
+[1181.16s -> 1182.04s]  doesn't do the write.
+[1182.04s -> 1184.48s]  Just writes straight to memory.
+[1184.48s -> 1187.00s]  And so subsequent iterations are much faster.
+[1187.00s -> 1192.72s]  So Spark is significantly faster, orders of magnitude
+[1192.72s -> 1195.12s]  at least one, maybe two, compared
+[1195.12s -> 1200.64s]  to using the disk, which is consistent with the performance
+[1200.64s -> 1209.24s]  delta we saw in the bandwidth between the storage
+[1209.28s -> 1215.36s]  system and memory, DRAM and STFS.
+[1215.36s -> 1219.80s]  OK, so we also see k-means give you the same sort
+[1219.80s -> 1221.76s]  of performance benefit.
+[1221.76s -> 1224.72s]  But as I said, Hadoop is easy to beat
+[1224.72s -> 1230.40s]  because it is kind of using the file system so intensively.
+[1230.40s -> 1237.68s]  But Spark has gotten a huge amount of traction
+[1237.68s -> 1240.08s]  in the data processing world.
+[1240.08s -> 1243.20s]  So it enables you to compose a bunch
+[1243.20s -> 1245.88s]  of different domain-specific frameworks
+[1245.88s -> 1251.80s]  together with this underlying RDD Spark implementation,
+[1251.80s -> 1254.60s]  which works pretty well.
+[1254.60s -> 1260.60s]  And so you can combine the transformations with SQL.
+[1260.60s -> 1263.96s]  So you can do database processing.
+[1264.00s -> 1271.80s]  There's a Spark MLlib, which has a bunch of machine learning
+[1271.80s -> 1275.20s]  operations, a library to do machine learning based
+[1275.20s -> 1276.36s]  on the Spark abstractions.
+[1276.36s -> 1285.32s]  So of course, you can use distributed clusters
+[1285.32s -> 1288.92s]  and get all the benefits of the Spark system
+[1288.92s -> 1290.64s]  while doing machine learning.
+[1290.68s -> 1293.88s]  And there's also Spark GraphX, which
+[1293.88s -> 1301.60s]  adds graph operations to the Spark ecosystem.
+[1301.60s -> 1305.64s]  And in the previous versions of this class,
+[1305.64s -> 1314.84s]  you did graph analytics breadth-first search.
+[1314.84s -> 1316.84s]  Right?
+[1316.84s -> 1317.60s]  Do you make use?
+[1317.60s -> 1319.12s]  You don't do it this quarter.
+[1319.12s -> 1321.04s]  There's no breadth-first search, right?
+[1321.04s -> 1321.56s]  Right, yeah.
+[1321.56s -> 1325.08s]  In previous iterations, you had to do graph analytics
+[1325.08s -> 1325.72s]  operations.
+[1325.72s -> 1328.28s]  And so you might have been more familiar with the sorts
+[1328.28s -> 1330.72s]  of things that are in GraphX.
+[1330.72s -> 1334.12s]  All right, so in summary then, Spark
+[1334.12s -> 1337.80s]  introduces this idea of the RDD as its key abstraction.
+[1337.80s -> 1343.84s]  And the observation is that using HDFS as a place
+[1343.84s -> 1345.50s]  to put intermediate data when you're
+[1345.50s -> 1349.22s]  trying to do these iterative kinds of computations
+[1349.22s -> 1355.58s]  or when you're trying to continuously modify or query
+[1355.58s -> 1360.06s]  a particular set of data to do data analytics
+[1360.06s -> 1363.22s]  sorts of operations, the HDFS does not
+[1363.22s -> 1365.94s]  work as a good place to store intermediate data.
+[1365.94s -> 1370.82s]  And so RDDs are a much better idea.
+[1370.82s -> 1374.78s]  And they can be used as a mechanism
+[1374.78s -> 1379.26s]  for creating fault tolerance, because you've
+[1379.26s -> 1381.70s]  got these transformations, which
+[1381.70s -> 1386.42s]  are these bulk deterministic functional operations on RDDs.
+[1386.42s -> 1389.38s]  And they can give you a log that you can replay
+[1389.38s -> 1390.94s]  whenever there's a failure.
+[1390.94s -> 1393.54s]  And you can make sure that you can both get high
+[1393.54s -> 1396.90s]  performance and fault tolerance.
+[1396.90s -> 1397.70s]  OK?
+[1397.70s -> 1400.94s]  And as we saw, Spark can be extended
+[1400.94s -> 1404.10s]  beyond the set of things that we showed
+[1404.10s -> 1406.44s]  in terms of transformations and actions
+[1406.44s -> 1411.54s]  to do all sorts of things like graph analysis and database
+[1411.54s -> 1413.10s]  operations.
+[1413.10s -> 1417.06s]  So one thing to be aware of is that scale out
+[1417.06s -> 1418.34s]  is not the whole story.
+[1418.34s -> 1420.62s]  So scale out was invented because people
+[1420.62s -> 1424.62s]  wanted to be able to analyze data that would not
+[1424.66s -> 1429.10s]  fit in the memory of a single server.
+[1429.10s -> 1429.82s]  Right?
+[1429.82s -> 1433.70s]  So how much memory can you put on a single server today?
+[1433.70s -> 1437.22s]  Somebody give me a number?
+[1437.22s -> 1440.32s]  Typically, what might you see in a large server?
+[1440.32s -> 1442.14s]  How much memory?
+[1442.14s -> 1443.42s]  Gigabytes?
+[1443.42s -> 1445.38s]  Gigabytes?
+[1445.38s -> 1446.46s]  Terabytes, right?
+[1446.46s -> 1449.58s]  So maybe one half to two terabytes of main memory
+[1449.58s -> 1450.58s]  on a big server.
+[1450.58s -> 1451.16s]  Right?
+[1451.16s -> 1456.72s]  So there are a lot of studies showing how Spark could be used,
+[1456.72s -> 1460.04s]  but the data sizes weren't really big enough, right?
+[1460.04s -> 1464.32s]  5.7 gigabytes for this Twitter graph,
+[1464.32s -> 1470.40s]  and 14.72 gigabytes for this synthetic graph.
+[1470.40s -> 1475.52s]  And so if you can fit your data in memory,
+[1475.52s -> 1479.92s]  then you don't want to use the distributed system
+[1479.92s -> 1481.88s]  to operate on it because you're going
+[1481.88s -> 1483.76s]  to have a lot of overheads.
+[1483.76s -> 1486.84s]  And so that's what this table is showing.
+[1486.84s -> 1490.60s]  It's showing that for 20 iterations of page rank
+[1490.60s -> 1493.76s]  on these graphs, which fit in memory,
+[1493.76s -> 1500.68s]  you can run Spark on 128 cores,
+[1500.68s -> 1507.20s]  and you're still two times slower
+[1507.20s -> 1511.04s]  than running on a single thread.
+[1511.04s -> 1517.60s]  So clearly, if the size of your data
+[1517.60s -> 1520.92s]  does not demand using a distributed system,
+[1520.92s -> 1523.88s]  then clearly you don't want to use it, right?
+[1523.88s -> 1529.56s]  And so there's a researcher called
+[1529.56s -> 1535.08s]  Frank MacCure who kind of really took aim
+[1535.08s -> 1536.64s]  at the distributed systems people.
+[1536.68s -> 1537.68s]  He has this quote, right?
+[1537.68s -> 1541.60s]  He says, you know, published work on big data systems
+[1541.60s -> 1545.00s]  has fetishized scalability over everything else.
+[1545.00s -> 1547.32s]  And basically, he says, they've been
+[1547.32s -> 1550.96s]  creating all these overheads and then coming up
+[1550.96s -> 1555.04s]  with mechanisms to reduce the overheads, which
+[1555.04s -> 1558.28s]  they have created, right?
+[1558.28s -> 1565.18s]  So he's arguing for a let's look at performance as the metric
+[1565.22s -> 1567.34s]  instead of just scalability.
+[1567.34s -> 1569.58s]  So it's an important point, but the point
+[1569.58s -> 1572.26s]  is that you don't want to use these distributed
+[1572.26s -> 1576.14s]  systems if the size of your data doesn't call for it.
+[1576.14s -> 1578.82s]  So if you've got hundreds of terabytes of data,
+[1578.82s -> 1581.46s]  then the only way that you're going to be able to process it
+[1581.46s -> 1583.62s]  is by using a distributed system.
+[1583.62s -> 1588.42s]  But if you just have less than a terabyte of data,
+[1588.42s -> 1592.02s]  then a single system is going to be much more efficient.
+[1592.02s -> 1594.18s]  So keep that in mind.
+[1594.26s -> 1596.98s]  Any questions?
+[1596.98s -> 1598.06s]  Yeah?
+[1598.06s -> 1600.90s]  What's the definition of scale out?
+[1600.90s -> 1604.26s]  Scale out is, as we've been describing,
+[1604.26s -> 1607.78s]  where you've got individual servers connected by a network,
+[1607.78s -> 1608.28s]  right?
+[1608.28s -> 1613.02s]  So there's sort of two dimensions to scale.
+[1613.02s -> 1617.98s]  People say scale out is when you are connecting nodes
+[1617.98s -> 1621.14s]  together by a network, and scale up
+[1621.18s -> 1624.70s]  is when you are connecting multi-cores together
+[1624.70s -> 1626.38s]  in a shared memory system.
+[1626.38s -> 1630.34s]  So until now, we've been, well, until the discussion of Spark,
+[1630.34s -> 1633.70s]  we've been basically talking about scale up,
+[1633.70s -> 1636.50s]  where we are thinking about how
+[1636.50s -> 1640.86s]  to program multiple cores that are sharing a memory.
+[1640.86s -> 1643.42s]  So if you share a memory, it's scale up.
+[1643.42s -> 1645.98s]  If you are not sharing memory, it's scale out.
+[1648.86s -> 1650.82s]  All right.
+[1650.90s -> 1659.26s]  So now let's change our topic to the main topic of today,
+[1659.26s -> 1663.38s]  which is cache coherence, which is a very important topic
+[1663.38s -> 1668.58s]  because it both has performance ramifications
+[1668.58s -> 1672.34s]  and it has correctness ramifications.
+[1672.34s -> 1676.22s]  And it's important from the point of view of software
+[1676.22s -> 1680.50s]  developers because you need to think about how you write
+[1680.50s -> 1684.54s]  your programs in the face of cache coherence.
+[1684.54s -> 1688.18s]  So how many people here have heard of cache coherence?
+[1688.18s -> 1689.30s]  Oh, good.
+[1689.30s -> 1693.70s]  How many people here know about cache coherence protocols?
+[1693.70s -> 1695.10s]  OK, good.
+[1695.10s -> 1697.62s]  All right, well, then you can help me teach this class.
+[1697.62s -> 1701.38s]  All right, so cache coherence.
+[1701.38s -> 1703.98s]  So if you look at a modern processor
+[1703.98s -> 1706.26s]  like the ones in your myth machine,
+[1706.26s -> 1712.26s]  you'll see that a large fraction of the chip is cache.
+[1712.26s -> 1714.34s]  30% or more is cache.
+[1714.34s -> 1718.26s]  And we've talked about the importance of caches
+[1718.26s -> 1722.02s]  and locality in getting performance because, of course,
+[1722.02s -> 1726.58s]  if you have to go outside the chip
+[1726.58s -> 1728.82s]  to access the data that you need,
+[1728.82s -> 1735.34s]  it's going to take you hundreds or maybe on very modern chips,
+[1735.34s -> 1737.58s]  several hundred cycles.
+[1737.58s -> 1744.58s]  And if the CPU is stalled while this is happening, then,
+[1744.58s -> 1747.86s]  of course, there's a lot of time that you waste
+[1747.86s -> 1749.90s]  and your performance is not going to be that good.
+[1749.90s -> 1754.06s]  All right, so let's return to, I think,
+[1754.06s -> 1757.14s]  Kaylon's first or second lecture, which
+[1757.14s -> 1759.90s]  is on this cache example.
+[1759.90s -> 1765.50s]  And so we're looking at an array of 16 values in memory.
+[1765.50s -> 1770.54s]  And we said that we were going to divide the memory
+[1770.54s -> 1773.74s]  addresses into cache lines.
+[1773.74s -> 1778.58s]  So cache lines are multiple bytes or multiple words
+[1778.58s -> 1784.38s]  that are contiguous or consecutive addresses in memory.
+[1784.38s -> 1789.46s]  And lots of reasons that you want to have cache lines.
+[1789.46s -> 1792.98s]  But one of them, we said, what was one of the reasons
+[1792.98s -> 1795.82s]  that you wanted cache lines?
+[1795.82s -> 1796.46s]  Yeah.
+[1796.46s -> 1797.46s]  Spatial locality.
+[1797.46s -> 1798.98s]  So exploit spatial locality.
+[1798.98s -> 1801.46s]  That's one of the reasons you want cache lines.
+[1801.46s -> 1802.46s]  OK.
+[1802.46s -> 1804.14s]  The other reason you want cache lines
+[1804.14s -> 1807.58s]  is it helps you do the implementation of cache
+[1807.58s -> 1809.94s]  coherency more efficiently.
+[1809.94s -> 1814.30s]  And it makes use of the data pods within the memory system
+[1814.30s -> 1816.78s]  because you move whole cache lines
+[1816.78s -> 1818.70s]  and moving things in bulk is more
+[1818.74s -> 1822.06s]  efficient than moving things one at a time.
+[1822.06s -> 1824.54s]  All right, so we talked about, we
+[1824.54s -> 1826.46s]  defined what was a cold miss.
+[1829.42s -> 1830.18s]  It's a cold miss.
+[1830.18s -> 1831.38s]  Somebody in the back.
+[1831.38s -> 1832.30s]  Yeah.
+[1832.30s -> 1834.76s]  When it's for the first time, you haven't loaded anything.
+[1834.76s -> 1837.82s]  The first time that you access an address,
+[1837.82s -> 1839.82s]  it cannot be in the cache.
+[1839.82s -> 1840.62s]  Right?
+[1840.62s -> 1842.26s]  So the cache is said to be cold as far
+[1842.26s -> 1844.58s]  as that address is concerned.
+[1844.58s -> 1845.78s]  So it's a cold miss.
+[1845.78s -> 1846.28s]  All right.
+[1846.32s -> 1854.24s]  So then we get access four and we get another cache miss.
+[1854.24s -> 1856.68s]  We talked about spatial locality.
+[1856.68s -> 1860.72s]  So what was on the topic of spatial locality?
+[1860.72s -> 1865.68s]  You know, architects think about hardware mechanisms
+[1865.68s -> 1869.04s]  to exploit program behavior.
+[1869.04s -> 1871.44s]  So what kind of program behavior
+[1871.44s -> 1874.56s]  leads to spatial locality?
+[1874.56s -> 1875.06s]  Yeah.
+[1875.06s -> 1876.00s]  Sequential locality.
+[1876.24s -> 1877.76s]  Sequential access.
+[1877.76s -> 1878.24s]  Where?
+[1885.92s -> 1886.44s]  Exactly.
+[1886.44s -> 1888.44s]  So that's sequential access.
+[1888.44s -> 1892.24s]  Where's the other place that you see spatial locality?
+[1892.24s -> 1893.52s]  Yeah.
+[1893.52s -> 1895.16s]  In the instruction access stream.
+[1895.16s -> 1897.56s]  So both in data and instruction,
+[1897.56s -> 1900.72s]  you're going to see spatial locality
+[1901.68s -> 1907.32s]  and it's exploited by having a cache line.
+[1907.32s -> 1907.80s]  OK.
+[1907.80s -> 1909.96s]  So we said cold miss.
+[1909.96s -> 1914.68s]  Then temporal locality is the other type of locality.
+[1914.68s -> 1920.58s]  Where might this exhibit itself in program behavior?
+[1920.58s -> 1921.36s]  Temporal locality.
+[1921.36s -> 1921.92s]  Yeah.
+[1921.92s -> 1924.04s]  The counter variable on the access level.
+[1924.04s -> 1926.96s]  Yeah, the counter variable that you keep accessing.
+[1927.04s -> 1933.76s]  Maybe stack accesses when you're doing a recursive function.
+[1933.76s -> 1934.60s]  Right?
+[1934.60s -> 1939.84s]  So repeated access to the same address is temporal locality.
+[1939.84s -> 1940.64s]  OK?
+[1940.64s -> 1944.88s]  So we said that we had cold misses
+[1944.88s -> 1950.64s]  and then at some point in this cache,
+[1950.64s -> 1956.60s]  we needed to replace something because we
+[1956.64s -> 1961.52s]  had run out of places in our cache.
+[1961.52s -> 1964.36s]  And I think this was mislabeled a conflict miss,
+[1964.36s -> 1967.32s]  but it was actually called a capacity miss.
+[1967.32s -> 1968.36s]  Right?
+[1968.36s -> 1975.96s]  If we had a bigger cache, we could contain three or four
+[1975.96s -> 1979.32s]  cache lines, but we can only have two cache lines
+[1979.32s -> 1983.56s]  and so we have to replace one and we have a capacity miss.
+[1983.56s -> 1984.96s]  Right?
+[1985.00s -> 1990.76s]  So we have two types of misses, cold misses and capacity misses.
+[1990.76s -> 1991.88s]  OK?
+[1991.88s -> 1996.52s]  And now let's talk about a third type of miss.
+[1996.52s -> 2002.24s]  There's a miss model that was created by a researcher named
+[2002.24s -> 2005.72s]  Mark Hill and it's called the three C's model.
+[2005.72s -> 2006.24s]  Right?
+[2006.24s -> 2009.76s]  So you've heard about cold, you've heard about capacity,
+[2009.76s -> 2012.32s]  now let's talk about the last, which is conflict.
+[2012.32s -> 2013.00s]  OK?
+[2013.00s -> 2015.84s]  So in order to talk about conflict,
+[2015.84s -> 2024.12s]  let me introduce roughly the design of the Intel Skylake
+[2024.12s -> 2027.44s]  chip, which is the chip in the myth machines.
+[2027.44s -> 2028.12s]  OK?
+[2028.12s -> 2031.64s]  So it's got three levels of cache.
+[2031.64s -> 2038.84s]  L1 data cache, which is 32 kilobytes in size.
+[2038.84s -> 2046.52s]  An L2 cache, which is per core, so four cores.
+[2046.52s -> 2048.40s]  The data cache is private per core,
+[2048.40s -> 2051.60s]  the L2 cache is private per core.
+[2051.60s -> 2054.04s]  And then there's a ring interconnect,
+[2054.04s -> 2059.00s]  which is, as you might expect, is a ring that connects
+[2059.00s -> 2062.96s]  all of the different L2 caches together
+[2062.96s -> 2067.76s]  and they connect to a shared L3 cache, which
+[2067.80s -> 2071.32s]  is eight megabytes in size.
+[2071.32s -> 2071.80s]  OK.
+[2071.80s -> 2076.84s]  So what do we mean by a conflict miss?
+[2076.84s -> 2080.12s]  Well, it turns out that in order
+[2080.12s -> 2085.76s]  to simplify how you find things in caches,
+[2085.76s -> 2090.16s]  you limit the number of places that any line could go.
+[2090.16s -> 2092.20s]  This is called associativity.
+[2092.20s -> 2099.72s]  So the L1 cache here in the Skylake chip
+[2099.72s -> 2101.44s]  is eight-way set associative.
+[2101.44s -> 2103.96s]  And that basically says that I only
+[2103.96s -> 2112.64s]  need to look in eight places for any particular line.
+[2112.64s -> 2113.52s]  OK?
+[2113.52s -> 2122.84s]  So in this case, our line size is 64 bytes.
+[2122.84s -> 2127.36s]  So if I have a 64-byte line size,
+[2127.36s -> 2132.96s]  a favorite thing to do is cache arithmetic,
+[2132.96s -> 2138.08s]  which says, OK, if I've got 64 bytes in my cache line,
+[2138.12s -> 2142.08s]  how many lines do I have in my 32-kilobyte cache?
+[2149.84s -> 2151.92s]  512, right?
+[2151.92s -> 2153.88s]  512 lines.
+[2153.88s -> 2161.28s]  OK, so if I have 512 lines in my cache,
+[2161.28s -> 2167.64s]  then a fully general way of finding lines in my cache,
+[2167.68s -> 2172.84s]  I would have to look in 512 places at the same time.
+[2172.84s -> 2173.36s]  OK?
+[2173.36s -> 2175.40s]  This is expensive, OK?
+[2175.40s -> 2177.00s]  And so to make it less expensive,
+[2177.00s -> 2181.24s]  I'm going to limit it to eight places.
+[2181.24s -> 2185.16s]  However, the difference between having a cache where
+[2185.16s -> 2189.48s]  I can look in 512 places versus eight places
+[2189.48s -> 2192.36s]  is going to lead to more misses.
+[2192.36s -> 2195.84s]  These misses are called conflict misses, right?
+[2195.84s -> 2197.80s]  So conflict misses are the extra misses
+[2197.80s -> 2201.48s]  you get because your cache is not what
+[2201.48s -> 2205.28s]  is called fully set associative, which means, you know,
+[2205.28s -> 2208.28s]  a line could go anywhere in the cache, right?
+[2208.28s -> 2210.40s]  And this eight-way set associative cache
+[2210.40s -> 2214.40s]  can only go into one of eight places, OK?
+[2214.40s -> 2217.92s]  So now you know about cold capacity and conflict.
+[2217.92s -> 2218.44s]  OK?
+[2218.44s -> 2218.92s]  Yeah?
+[2218.92s -> 2220.88s]  Does it say that you're only going to restore
+[2220.88s -> 2222.16s]  these lines with the cache?
+[2222.16s -> 2222.72s]  No, no.
+[2222.72s -> 2225.06s]  It's just saying that there's only eight places
+[2225.10s -> 2227.86s]  that any particular address could go, right?
+[2227.86s -> 2230.18s]  So I don't have to look all over the cache.
+[2230.18s -> 2232.38s]  I only have to look in eight places.
+[2232.38s -> 2234.90s]  Turns out it's cheaper to look in eight places
+[2234.90s -> 2237.18s]  than 512 places.
+[2237.18s -> 2237.98s]  OK?
+[2237.98s -> 2239.02s]  That's the intuition.
+[2239.02s -> 2241.10s]  We could go into details, but that's the intuition.
+[2241.10s -> 2241.62s]  Yeah?
+[2241.62s -> 2244.10s]  Yeah, so if you have, like, this eight-way set associative,
+[2244.10s -> 2245.98s]  does that mean, like, it's, like, eight buckets?
+[2245.98s -> 2247.06s]  Yeah, eight buckets.
+[2247.06s -> 2248.34s]  That's a good way to think about it.
+[2248.34s -> 2248.84s]  Yeah.
+[2248.84s -> 2250.34s]  Does that mean that, like, would it
+[2250.34s -> 2252.86s]  be rare for it to get to, like, 100% new position?
+[2252.86s -> 2254.38s]  If that's the case?
+[2254.42s -> 2257.26s]  You mean some of those buckets could be underutilized?
+[2257.26s -> 2257.76s]  Yeah.
+[2257.76s -> 2258.78s]  Yeah, potentially.
+[2258.78s -> 2260.90s]  Yeah, yeah, but usually not.
+[2260.90s -> 2261.74s]  Yeah, yeah.
+[2261.74s -> 2263.86s]  One question is that, like, so basically,
+[2263.86s -> 2266.58s]  you're saying that the cache itself is, like, kind of free,
+[2266.58s -> 2268.94s]  like, you're kind of branching out, and you have to,
+[2268.94s -> 2271.18s]  it's like, it's like, it's not, like,
+[2271.18s -> 2272.50s]  There's eight buckets.
+[2272.50s -> 2275.34s]  You know, there are eight buckets.
+[2275.34s -> 2277.02s]  And basically, you look at the address
+[2277.02s -> 2279.10s]  and say which bucket you're going to go in, right?
+[2279.10s -> 2281.30s]  So when you have larger and larger caches,
+[2281.30s -> 2284.22s]  do you have, like, multiple levels of these buckets?
+[2284.38s -> 2287.78s]  No, no, no, no.
+[2287.78s -> 2290.94s]  You're still going to do it.
+[2290.94s -> 2294.02s]  You're still going to look and have a way of,
+[2294.02s -> 2297.50s]  usually, you just have one level of set associativity,
+[2297.50s -> 2298.02s]  right?
+[2298.02s -> 2300.62s]  You don't have multiple levels, right?
+[2300.62s -> 2306.62s]  Unless you've got another level of cache, yeah.
+[2306.62s -> 2308.78s]  This is kind of weird, actually,
+[2308.78s -> 2311.98s]  because what you'd expect is as you get bigger,
+[2311.98s -> 2314.94s]  the set associativity should increase,
+[2314.94s -> 2319.54s]  but it starts with eight, goes to four, and then goes to 16.
+[2319.54s -> 2320.66s]  It's kind of strange.
+[2320.66s -> 2323.06s]  Don't know why the designers did it that way,
+[2323.06s -> 2325.82s]  but that's not what you would typically teach.
+[2325.82s -> 2327.74s]  You'd say, hey, as you get bigger,
+[2327.74s -> 2330.98s]  you get more set associative, right?
+[2330.98s -> 2334.66s]  Because you're trying to, because remember,
+[2334.66s -> 2341.54s]  higher set associativity means lower conflict misrate, right?
+[2341.58s -> 2344.90s]  Because as you increase the set associativity,
+[2344.90s -> 2346.86s]  you're going to decrease the misrate.
+[2349.54s -> 2353.66s]  All right, so let's talk about cache design.
+[2353.66s -> 2359.38s]  So you've got a line in the cache.
+[2359.38s -> 2362.74s]  There are two pieces to the line.
+[2362.74s -> 2369.74s]  One is the data that is going to be contained in the cache,
+[2369.74s -> 2373.02s]  and the rest is the metadata, right,
+[2373.02s -> 2378.50s]  which basically tells you about the context of the cache line,
+[2378.50s -> 2379.34s]  right?
+[2379.34s -> 2383.74s]  So a key part of the metadata is
+[2383.74s -> 2390.26s]  the tag, which is essentially the address of the data,
+[2390.26s -> 2391.18s]  right?
+[2391.18s -> 2394.06s]  So you've got this data from memory,
+[2394.14s -> 2403.22s]  and you need to know which memory line is in the cache,
+[2403.22s -> 2404.22s]  right?
+[2404.22s -> 2408.74s]  So the tag is going to tell you that, right?
+[2408.74s -> 2412.78s]  And then there's a dirty bit, which tells you
+[2412.78s -> 2418.84s]  about whether the data in the cache
+[2418.84s -> 2421.86s]  has been modified or not.
+[2421.90s -> 2423.50s]  And so in this example, we are going
+[2423.50s -> 2429.10s]  to write 1 to integer x, which exists
+[2429.10s -> 2438.14s]  at the address shown there, hex 1, 2, 3, 4, 5, 6, 0, 4.
+[2438.14s -> 2446.46s]  And the 4 indicates that it's the fourth element in that's
+[2446.46s -> 2450.58s]  the address of the byte in the line, OK?
+[2450.58s -> 2456.94s]  So reading from caches is fairly straightforward.
+[2456.94s -> 2459.22s]  Writing is a little more complicated,
+[2459.22s -> 2462.06s]  because writing is always a little more complicated.
+[2462.06s -> 2466.82s]  So there's two types of writing.
+[2466.82s -> 2468.26s]  Can anybody tell me the difference
+[2468.26s -> 2471.74s]  between a write-back cache and a write-through cache?
+[2471.74s -> 2473.50s]  Yeah?
+[2473.62s -> 2477.58s]  Is the write-through cache only write-back to the main memory?
+[2477.58s -> 2478.94s]  And to the write-back cache, you
+[2478.94s -> 2480.46s]  only update the write-through cache
+[2480.46s -> 2492.98s]  and then push forward the
+[2492.98s -> 2496.70s]  and write-back says, we only write to the cache.
+[2496.70s -> 2500.98s]  And later, the data is actually written to main memory.
+[2500.98s -> 2504.74s]  Because after all, you want to write to main memory.
+[2504.74s -> 2506.10s]  That's the whole goal, right?
+[2506.10s -> 2510.26s]  The cache is just this intermediate storage buffer.
+[2510.26s -> 2515.22s]  What about write-allocate versus no-write-allocate?
+[2515.22s -> 2516.90s]  Anybody know what that is?
+[2516.90s -> 2518.10s]  Yeah?
+[2518.10s -> 2521.74s]  If you write-allocate, like, when you write to the cache,
+[2521.74s -> 2524.54s]  first you do it to the cache, and then you write to it.
+[2524.54s -> 2526.38s]  Write-allocate to go to the cache,
+[2526.38s -> 2528.26s]  and then you should do that.
+[2528.38s -> 2533.74s]  So the question is, what happens when I write to the cache
+[2533.74s -> 2538.30s]  and the line that I want is not there?
+[2538.30s -> 2542.42s]  Do I allocate?
+[2542.42s -> 2546.14s]  Do I actually fetch the rest of the line
+[2546.14s -> 2548.62s]  and write into the cache?
+[2548.62s -> 2551.42s]  Or do I just write directly to main memory?
+[2551.42s -> 2552.74s]  OK.
+[2552.74s -> 2556.58s]  So with that in mind, let's look at an example
+[2556.58s -> 2559.66s]  where write-allocate, write-back,
+[2559.66s -> 2565.22s]  cache on a write-miss, and I'm going to write to one
+[2565.22s -> 2567.46s]  to the address x.
+[2567.46s -> 2569.70s]  So what happens?
+[2569.70s -> 2571.70s]  So the processor performs a write,
+[2571.70s -> 2573.86s]  but it misses in the cache.
+[2573.86s -> 2576.14s]  The cache selects a location.
+[2576.14s -> 2578.62s]  If there's a dirty line currently in the location,
+[2578.62s -> 2583.10s]  then, of course, what does the dirty bit indicate
+[2583.10s -> 2587.34s]  about the data in the cache line?
+[2587.34s -> 2587.86s]  Yeah?
+[2587.86s -> 2589.06s]  It's different than what's in memory.
+[2589.06s -> 2590.70s]  It's different than what's in memory.
+[2590.70s -> 2594.26s]  It may be the only place that this data exists
+[2594.26s -> 2595.50s]  in the memory system.
+[2595.50s -> 2596.82s]  Should we lose it?
+[2596.82s -> 2598.54s]  No, we should not lose it.
+[2598.54s -> 2600.54s]  And to make sure we don't lose it,
+[2600.54s -> 2602.74s]  we indicate that it's dirty.
+[2602.74s -> 2605.14s]  And then when we replace the line,
+[2605.14s -> 2608.18s]  we know that we can't just drop it on the floor,
+[2608.18s -> 2611.06s]  that we need to write that data back to main memory.
+[2611.06s -> 2612.94s]  And so that's what we do.
+[2612.94s -> 2617.30s]  And then since this is write allocate,
+[2617.30s -> 2621.74s]  we need to allocate the line.
+[2621.74s -> 2624.58s]  We need to go get the data from the main memory.
+[2624.58s -> 2627.34s]  But we know that the data in the main memory
+[2627.34s -> 2628.46s]  is not up to date.
+[2628.46s -> 2633.02s]  So of course, once we bring that data into the cache,
+[2633.02s -> 2641.74s]  we then write the data, in this case, one.
+[2641.74s -> 2649.18s]  And then we set the dirty bit to one.
+[2649.18s -> 2652.50s]  Any questions?
+[2652.50s -> 2653.30s]  Yeah?
+[2653.30s -> 2657.50s]  Can you just explain again the write back versus write through?
+[2657.50s -> 2659.22s]  Yes, write back versus write through.
+[2659.22s -> 2664.90s]  So write back is this example, right?
+[2664.90s -> 2672.74s]  Where we had a miss in the cache, and we,
+[2672.74s -> 2677.58s]  so write back versus write through,
+[2677.58s -> 2678.82s]  I was thinking allocate.
+[2678.82s -> 2680.86s]  So write back versus write through.
+[2680.86s -> 2684.94s]  So write back says, I'm going to write into the cache
+[2684.94s -> 2688.10s]  and set the dirty bit, right?
+[2688.10s -> 2690.22s]  And then later, that data is going
+[2690.22s -> 2692.58s]  to be written to memory when the line is replaced.
+[2692.58s -> 2693.82s]  That's write back.
+[2694.14s -> 2697.06s]  Write through says, when I write into the cache,
+[2697.06s -> 2699.06s]  I also write to memory.
+[2699.06s -> 2703.34s]  And so that means I don't need a dirty bit, right?
+[2703.34s -> 2705.42s]  Because I know memory is up to date at that point.
+[2710.58s -> 2713.22s]  All right.
+[2713.22s -> 2715.50s]  So the shared memory abstraction, right?
+[2715.50s -> 2717.42s]  We said that essentially what we're going to do
+[2717.42s -> 2721.14s]  is we're going to share, we're going to communicate,
+[2721.14s -> 2722.06s]  and yeah, question?
+[2722.06s -> 2725.74s]  I had a few questions.
+[2725.74s -> 2728.54s]  Just what was step four again?
+[2728.54s -> 2731.42s]  Hold cache line, especially if it's open.
+[2731.42s -> 2734.18s]  So remember, it's allocate.
+[2734.18s -> 2737.90s]  So allocate means that we want to, on a miss,
+[2737.90s -> 2741.94s]  we are going to allocate a line in the cache.
+[2741.94s -> 2745.34s]  So of course, we only have 32 bits of data
+[2745.34s -> 2748.18s]  that we're writing from the processor.
+[2748.22s -> 2753.70s]  So what about the other words or bytes in the cache line?
+[2753.70s -> 2755.46s]  Those have to be updated.
+[2755.46s -> 2757.46s]  Those have to be valid, right?
+[2757.46s -> 2761.54s]  So we have to go and get the data from main memory.
+[2761.54s -> 2764.06s]  Essentially, you perform the read, right?
+[2764.06s -> 2767.10s]  As if you were doing a read miss.
+[2767.10s -> 2772.02s]  So you get the full context of the cache line,
+[2772.02s -> 2779.62s]  and then you update the particular word that's
+[2779.62s -> 2782.66s]  being written by the store.
+[2787.66s -> 2790.26s]  To report the update, and it freezes the load
+[2790.26s -> 2792.74s]  into the cache?
+[2792.74s -> 2795.22s]  Yeah.
+[2795.22s -> 2797.58s]  Oh.
+[2797.58s -> 2798.66s]  Loads line from memory.
+[2798.66s -> 2800.46s]  Oh, yeah.
+[2800.46s -> 2804.70s]  It seems a little redundant.
+[2804.70s -> 2806.22s]  Yeah.
+[2806.22s -> 2806.98s]  What do you mean?
+[2806.98s -> 2809.62s]  What did you say?
+[2809.62s -> 2813.18s]  So loads line from memory.
+[2813.18s -> 2814.98s]  Yeah, OK.
+[2814.98s -> 2817.54s]  So maybe we do this to make it right.
+[2820.86s -> 2821.50s]  Is that better?
+[2824.46s -> 2825.30s]  One last question.
+[2825.30s -> 2826.46s]  What was the tag again?
+[2826.46s -> 2827.94s]  Sorry, I just missed the.
+[2827.94s -> 2829.06s]  What was this tag?
+[2829.06s -> 2829.70s]  Yes.
+[2829.70s -> 2836.74s]  So tag essentially is the address of x goes in here.
+[2836.74s -> 2839.50s]  Address.
+[2839.50s -> 2840.30s]  Right?
+[2840.30s -> 2844.26s]  So remember, how do you know what's in the cache?
+[2844.26s -> 2845.74s]  Right?
+[2845.74s -> 2851.18s]  It's not, it can't have all the contents of memory, right?
+[2851.18s -> 2854.30s]  So you need to tag the cache lines
+[2854.30s -> 2860.70s]  and to tell the system what data is in the cache, right?
+[2860.70s -> 2861.22s]  Yeah.
+[2861.22s -> 2863.26s]  Is there anything other than the dirty system
+[2863.26s -> 2863.98s]  that lines data?
+[2863.98s -> 2864.78s]  Yeah.
+[2864.78s -> 2866.66s]  We'll get to that.
+[2866.66s -> 2869.86s]  That's the topic of the rest of the lecture.
+[2869.86s -> 2873.26s]  Is the tag the address of x or the address of the cache
+[2873.26s -> 2875.22s]  lines in x is in it?
+[2875.22s -> 2876.10s]  What do you mean?
+[2878.86s -> 2881.62s]  No, it's the address of the memory.
+[2881.62s -> 2882.78s]  Right.
+[2882.86s -> 2887.42s]  The address of the cache is kind of unimportant, right?
+[2887.42s -> 2889.02s]  It's an array.
+[2889.02s -> 2894.34s]  But the way to really think about caches
+[2894.34s -> 2899.22s]  is they're content addressable arrays, right?
+[2899.22s -> 2904.94s]  And the contents that you're after is the tag, right?
+[2904.94s -> 2907.86s]  You're saying, given an address that
+[2907.86s -> 2910.58s]  gets generated from the processor,
+[2910.58s -> 2914.22s]  does the cache contain it, right?
+[2914.22s -> 2917.26s]  So essentially, the action that's going to happen
+[2917.26s -> 2918.90s]  is I'm going to take the address that
+[2918.90s -> 2920.68s]  was generated from the processor,
+[2920.68s -> 2923.22s]  and I'm going to compare it across all
+[2923.22s -> 2926.18s]  of the tags in my cache, right?
+[2926.18s -> 2932.18s]  And if any of them match, or typically one, not more than
+[2932.18s -> 2936.38s]  one, then I'm going to say, hey, I've got a hit, right?
+[2936.38s -> 2939.34s]  So do I really care about the particular address
+[2939.62s -> 2943.26s]  of the location in the cache?
+[2943.26s -> 2944.26s]  Not really, right?
+[2944.26s -> 2949.86s]  I only care that it has a tag for the data that I'm after.
+[2949.86s -> 2950.38s]  Yeah?
+[2950.38s -> 2952.82s]  So if you address memory that's
+[2952.82s -> 2954.86s]  right adjacent to the one in the tag,
+[2954.86s -> 2957.66s]  that might still be in the cache line, right?
+[2957.66s -> 2959.66s]  Because it's a continuous bit of memory.
+[2959.66s -> 2960.50s]  Yeah, yeah, yeah.
+[2960.50s -> 2965.30s]  So I've kind of glossed over a bit
+[2965.30s -> 2968.42s]  in that this is not the address of x.
+[2968.42s -> 2973.38s]  It's the address of the cache line, right?
+[2973.38s -> 2975.54s]  Because if it were the address of x,
+[2975.54s -> 2980.38s]  then how would I be able to exploit spatial locality?
+[2980.38s -> 2990.76s]  So every address that falls into this cache line
+[2990.76s -> 2993.74s]  is going to be represented by the tag, right?
+[2993.74s -> 2999.14s]  And you basically just drop off bits
+[2999.14s -> 3002.34s]  from the address in order to get the address that
+[3002.34s -> 3003.46s]  actually goes in there.
+[3003.46s -> 3004.38s]  Yeah?
+[3004.38s -> 3007.50s]  So isn't that sort of sort of just going back
+[3007.50s -> 3011.54s]  to the source of the data, like particular section
+[3011.54s -> 3014.54s]  of that is possible in particular, like, OK.
+[3014.54s -> 3017.06s]  I said, we could go into details here.
+[3017.06s -> 3019.82s]  But believe me, they're not necessary.
+[3019.82s -> 3021.06s]  We can talk about it later.
+[3021.06s -> 3021.70s]  Yes.
+[3021.74s -> 3024.78s]  There's this whole set of things that you
+[3024.78s -> 3027.18s]  have to do to actually get the data, right,
+[3027.18s -> 3029.38s]  and actually do a cache lookup.
+[3029.38s -> 3031.22s]  And that has to do with set associativity.
+[3031.22s -> 3039.18s]  But as I've explained it here, we won't go into the details.
+[3039.18s -> 3043.78s]  But the thing to remember is that higher set associativity
+[3043.78s -> 3047.10s]  will give you lower miss rates.
+[3047.10s -> 3051.02s]  And the higher the set associativity,
+[3051.06s -> 3055.70s]  the more difficult it is to do the lookup.
+[3055.70s -> 3056.74s]  All right, good.
+[3056.74s -> 3064.74s]  So we said, essentially, that shared memory programming,
+[3064.74s -> 3067.82s]  thread-based programming, is we're going to share addresses.
+[3067.82s -> 3073.86s]  We're going to make sure that we access the data when we
+[3073.86s -> 3077.22s]  want to properly using synchronization.
+[3077.22s -> 3081.74s]  And now we want to talk about how
+[3081.74s -> 3086.74s]  we expect the shared memory multiprocessor to behave.
+[3086.74s -> 3090.90s]  So we're going to read and write to shared variables
+[3090.90s -> 3096.22s]  by the processor is going to issue loads and stores.
+[3096.22s -> 3101.94s]  And so if I said, hey, here are a bunch of processes.
+[3101.94s -> 3107.98s]  They communicate over some interconnect to memory.
+[3107.98s -> 3111.82s]  How do you expect these processes to behave, right?
+[3111.82s -> 3115.94s]  And your intuitive answer would be something like, well,
+[3115.94s -> 3122.22s]  if I store a value to a variable x,
+[3122.22s -> 3127.94s]  and I then, on one processor, and I load that value
+[3127.94s -> 3132.22s]  from another processor, I should get the last value that
+[3132.22s -> 3135.86s]  was stored to that variable, OK?
+[3135.86s -> 3137.86s]  And so that's kind of intuitively
+[3137.86s -> 3143.70s]  what you'd expect a shared memory multiprocessor the way
+[3143.70s -> 3145.70s]  you'd expect it to behave, OK?
+[3145.70s -> 3149.54s]  So the problem is that once you introduce caches
+[3149.54s -> 3155.26s]  into the system, now you have more than one place
+[3155.30s -> 3163.62s]  that the data or the addresses in the memory system can be,
+[3163.62s -> 3165.10s]  right?
+[3165.10s -> 3172.06s]  So and if you have any particular memory location,
+[3172.06s -> 3174.54s]  you can now get into trouble, right?
+[3174.54s -> 3178.50s]  So in this example, we've got these processes
+[3178.50s -> 3181.90s]  with their individual private caches,
+[3181.90s -> 3184.78s]  and they're connected via an interconnect
+[3184.82s -> 3186.42s]  to the main memory.
+[3186.42s -> 3189.78s]  And we have a variable foo, which
+[3189.78s -> 3193.70s]  is stored at address x, right?
+[3193.70s -> 3201.34s]  And so let's track how the processes access this variable
+[3201.34s -> 3204.62s]  or the variable foo at address x.
+[3204.62s -> 3210.22s]  So processor one loads x, and it gets a cache mix.
+[3210.22s -> 3213.30s]  And so it goes to memory and gets the value.
+[3213.30s -> 3218.10s]  And so now there's zero in processor one's cache, right?
+[3218.10s -> 3223.58s]  So abbreviation of cache is, of course, dollar sign, OK?
+[3223.58s -> 3227.18s]  And then processor two does the same thing,
+[3227.18s -> 3231.34s]  also gets a cache miss, and gets the value zero, OK?
+[3231.34s -> 3238.30s]  Now processor one does a store to x, says, hey, cache hit.
+[3238.30s -> 3239.30s]  I'm going to update.
+[3239.30s -> 3240.66s]  It's a write back cache.
+[3240.66s -> 3248.22s]  I'm going to update my value of x to one, OK?
+[3248.22s -> 3253.02s]  Then processor three does a load of x,
+[3253.02s -> 3256.94s]  and it gets a cache miss, goes to memory.
+[3256.94s -> 3264.22s]  It also has a value of zero, OK?
+[3264.26s -> 3270.94s]  Now processor three does a store of x,
+[3270.94s -> 3273.62s]  and it says, hey, cache hit.
+[3273.62s -> 3276.62s]  And now the value is two.
+[3276.62s -> 3282.42s]  And processor two does a load of x,
+[3282.42s -> 3283.90s]  and then gets the value of zero,
+[3283.90s -> 3286.78s]  because it's got it in its cache.
+[3286.78s -> 3288.66s]  And it's a cache hit.
+[3288.66s -> 3292.78s]  And then processor one does a load of y.
+[3292.82s -> 3297.02s]  Let's suppose we only have a single entry in our cache,
+[3297.02s -> 3298.78s]  so we have a capacity miss.
+[3298.78s -> 3311.30s]  And so it gets replaced, right?
+[3311.30s -> 3317.18s]  And so the value that it had goes back to memory, OK?
+[3317.18s -> 3320.52s]  So now we have, in our memory system,
+[3320.52s -> 3323.44s]  the value of x in memory is one.
+[3323.44s -> 3327.20s]  The value of x in processor three's cache is two.
+[3327.20s -> 3331.14s]  The value of x in processor two's cache is zero.
+[3331.14s -> 3338.20s]  And processor one does not have the address x in the cache.
+[3338.20s -> 3341.80s]  This looks like a disaster, right?
+[3344.56s -> 3349.88s]  OK, so this is not a memory system that we could use.
+[3349.92s -> 3352.84s]  And so the question is, could we fix this problem by using locks?
+[3356.44s -> 3359.60s]  No, no, we can't fix it by using locks,
+[3359.60s -> 3365.00s]  because fundamentally, the problem is inherent to the fact
+[3365.00s -> 3370.24s]  that we've got multiple places in the system that
+[3370.24s -> 3374.88s]  have addresses that correspond to memory,
+[3374.88s -> 3377.08s]  and we have multiple places in the system that
+[3377.08s -> 3379.40s]  are changing those addresses.
+[3379.88s -> 3383.20s]  Multiple processes changing their private copies
+[3383.20s -> 3387.12s]  of the addresses in the memory system.
+[3387.12s -> 3391.32s]  OK, so how do we fix this problem?
+[3391.32s -> 3396.08s]  So we have a memory coherence problem.
+[3396.08s -> 3400.44s]  As I said, what you want, intuitively,
+[3400.44s -> 3402.44s]  is that reading the value and address x
+[3402.44s -> 3406.56s]  should return the last value written by x.
+[3406.60s -> 3413.04s]  But because we've got the main memory being replicated
+[3413.04s -> 3415.32s]  by local storage and processor caches,
+[3415.32s -> 3420.80s]  and then we have updates to these local copies sharing
+[3420.80s -> 3425.00s]  the same address space, we get incoherence.
+[3425.00s -> 3425.80s]  OK?
+[3425.80s -> 3436.40s]  So you can get incoherence even on a single CPU
+[3437.24s -> 3441.72s]  whenever you have a situation where
+[3441.72s -> 3447.04s]  you have multiple places that you can read or write from.
+[3447.04s -> 3456.32s]  So for example, in the case of an I-O card,
+[3456.32s -> 3460.96s]  if the I-O network card delivers data
+[3461.00s -> 3467.76s]  into a message buffer using direct memory access,
+[3467.76s -> 3472.56s]  it could happen that the addresses in the message buffer
+[3472.56s -> 3474.60s]  are also in the cache.
+[3474.60s -> 3478.68s]  They could be stale in the cache, right?
+[3478.68s -> 3481.92s]  So stale because they've been updated in memory,
+[3481.92s -> 3487.48s]  and those updates have not been reflected in the cache.
+[3487.48s -> 3490.72s]  So this happens rarely enough that you
+[3490.72s -> 3494.04s]  could probably fix it using software mechanisms, right?
+[3494.04s -> 3501.80s]  So the software could flush all of the entries in the cache
+[3501.80s -> 3504.56s]  corresponding to the addresses in the message buffer,
+[3504.56s -> 3505.72s]  for example.
+[3505.72s -> 3506.20s]  OK?
+[3506.20s -> 3508.48s]  So you could solve it with software,
+[3508.48s -> 3513.68s]  and this might be a reasonably performance solution given
+[3513.68s -> 3517.00s]  the frequency of occurrence of I-O.
+[3517.00s -> 3523.28s]  But if I'm actively sharing memory with multiple processors,
+[3523.28s -> 3526.04s]  doing things with software is not really a solution.
+[3529.36s -> 3530.92s]  So the question then is, we talked
+[3530.92s -> 3533.52s]  about this intuitive notion that I
+[3533.52s -> 3536.76s]  should get the lost value of any address that
+[3536.76s -> 3540.00s]  was written by some other processor in the system.
+[3540.00s -> 3544.60s]  So the problem is, what exactly does lost mean, right?
+[3544.64s -> 3550.68s]  So what if two processors write at the same time?
+[3550.68s -> 3557.60s]  Who should be the last?
+[3557.60s -> 3560.76s]  What if a write from processor one
+[3560.76s -> 3564.56s]  is closely followed by a read of processor two,
+[3564.56s -> 3568.44s]  such that it doesn't have time to get that value?
+[3568.44s -> 3572.24s]  How do we make sure that this situation works correctly?
+[3572.24s -> 3575.44s]  So in a sequential program, lost is
+[3575.44s -> 3578.32s]  determined by program order, right?
+[3578.32s -> 3580.20s]  And so this is also the way that we
+[3580.20s -> 3582.40s]  want to think about the ordering
+[3582.40s -> 3586.12s]  in a thread of a parallel program, OK?
+[3586.12s -> 3592.24s]  And now we need to think about how these threads values,
+[3592.24s -> 3596.62s]  these thread updates are going to be interleaved, right?
+[3596.62s -> 3599.28s]  So the way to think about coherence
+[3599.28s -> 3601.96s]  is, coherence, remember, is just
+[3601.96s -> 3606.40s]  talking about a single memory location, or maybe
+[3606.40s -> 3608.20s]  a single cache line.
+[3608.20s -> 3611.48s]  So for any single memory location,
+[3611.48s -> 3616.08s]  we want to serialize accesses to that location,
+[3616.08s -> 3623.84s]  such that for any write, in this case,
+[3623.84s -> 3629.64s]  P0 writing value five, if in the serialization,
+[3629.64s -> 3633.28s]  the P1 reading comes off to the right,
+[3633.28s -> 3635.36s]  then it should get the value five.
+[3635.36s -> 3637.80s]  And P2 comes off to that right,
+[3637.80s -> 3641.08s]  so it should get the value five, and so on.
+[3641.08s -> 3643.80s]  All subsequent read should get the value five
+[3643.80s -> 3649.16s]  until P1 does a write of 25, and then all subsequent read
+[3649.16s -> 3652.08s]  should get the value 25.
+[3652.12s -> 3655.72s]  So you have to be able to serialize access
+[3655.72s -> 3662.32s]  to a particular address, such that you can, you know,
+[3662.32s -> 3668.12s]  and the notion is that the reads and writes should,
+[3668.12s -> 3673.28s]  for any particular thread, should occur in the order
+[3673.28s -> 3678.24s]  issued by the processor, OK?
+[3678.24s -> 3681.32s]  And then the value that you read
+[3681.36s -> 3685.80s]  is given by the last write in the serial order.
+[3685.80s -> 3687.92s]  Does that all make sense?
+[3687.92s -> 3692.24s]  OK, so that's kind of what behavior
+[3692.24s -> 3693.56s]  that we'd like to see.
+[3693.56s -> 3695.68s]  And the question then is, you know,
+[3695.68s -> 3699.92s]  how do we get the serial order,
+[3699.92s -> 3703.16s]  and how do we make sure that you get the right values
+[3703.16s -> 3705.08s]  from reads to writes, right?
+[3705.12s -> 3711.20s]  So one way to provide coherence is
+[3711.20s -> 3714.08s]  to think about it in terms of invariance.
+[3714.08s -> 3718.72s]  So what invariance do I want my system to hold, right?
+[3718.72s -> 3723.08s]  And so there are two invariants that are important.
+[3723.08s -> 3729.04s]  So for any address x or any cache line address x,
+[3729.04s -> 3732.96s]  we want to have a single writer multiple reader
+[3732.96s -> 3734.20s]  invariant.
+[3734.20s -> 3737.80s]  So this means at any point in time,
+[3737.80s -> 3742.56s]  you are in a read-write epoch where
+[3742.56s -> 3745.96s]  there's only one processor that can change
+[3745.96s -> 3749.72s]  the state of that cache line, OK?
+[3749.72s -> 3753.24s]  So read-write epoch, only one processor
+[3753.24s -> 3756.52s]  can change the state of the cache line.
+[3756.52s -> 3759.72s]  Or you're in a read-only epoch
+[3759.76s -> 3764.24s]  where any number of processors can read that cache line, OK?
+[3764.24s -> 3770.04s]  So single writer, multiple reader, OK?
+[3770.04s -> 3771.36s]  That's the first invariant.
+[3771.36s -> 3775.24s]  The second invariant is called the data value invariant.
+[3775.24s -> 3780.92s]  And this just makes sure that the value that
+[3780.92s -> 3785.44s]  was written in the last read-write epoch
+[3785.44s -> 3791.16s]  is what every subsequent reader will see, OK?
+[3791.16s -> 3797.20s]  So in this example, address x, we have a read-write epoch.
+[3797.20s -> 3802.42s]  P0 writes to address x.
+[3802.42s -> 3805.76s]  And then the following read-only epoch,
+[3805.76s -> 3810.56s]  the value that was written by P0
+[3810.56s -> 3817.72s]  is the value that is seen in the read-only epoch, right?
+[3817.72s -> 3821.44s]  And then we have a read-write epoch
+[3821.44s -> 3824.92s]  where only P1 can write.
+[3824.92s -> 3829.32s]  And then the value that is written by P1,
+[3829.32s -> 3831.40s]  or the last value written by P1,
+[3831.40s -> 3835.68s]  is the one that is seen in the read-only epoch following
+[3835.68s -> 3837.48s]  the read-write epoch.
+[3837.48s -> 3838.16s]  Yeah?
+[3838.32s -> 3841.24s]  Does that mean you have to employ some sort of flush
+[3841.24s -> 3843.68s]  more switching between reading and read-write?
+[3843.68s -> 3844.76s]  Yeah.
+[3844.76s -> 3847.48s]  Well, we will switch.
+[3847.48s -> 3849.24s]  We could flush.
+[3849.24s -> 3853.16s]  But there may be slightly more efficient ways of doing things.
+[3853.16s -> 3855.20s]  But there has to be a mechanism
+[3855.20s -> 3860.32s]  of switching between read-write epochs and read-only epochs.
+[3860.32s -> 3862.60s]  So that part of the U-intuition
+[3862.60s -> 3865.64s]  is exactly right.
+[3865.64s -> 3866.52s]  Yeah?
+[3867.52s -> 3874.64s]  You just talked a bit about locks and cache-adherency,
+[3874.64s -> 3875.16s]  right?
+[3875.16s -> 3878.72s]  It feels like if you have multiple processors accessing
+[3878.72s -> 3883.12s]  the same, or writing to the same address in memory,
+[3883.12s -> 3886.44s]  you should anyways be having some kind of locking mechanism,
+[3886.44s -> 3886.92s]  right?
+[3886.92s -> 3888.76s]  Yeah.
+[3888.76s -> 3890.84s]  I guess I'm having trouble visualizing
+[3890.84s -> 3895.04s]  why this is still a problem if when you're
+[3895.28s -> 3896.80s]  describing some kind of writes.
+[3896.80s -> 3902.28s]  Well, it is possible for me to say,
+[3902.28s -> 3905.92s]  you can write, and he can write, and you can write,
+[3905.92s -> 3908.00s]  and you can't all do it at the same time.
+[3908.00s -> 3910.72s]  But you could still have an incoherent system
+[3910.72s -> 3912.68s]  in that he could write to his own cache,
+[3912.68s -> 3914.36s]  and you could write to your own cache,
+[3914.36s -> 3917.24s]  and she could write it to their own cache.
+[3917.24s -> 3919.84s]  And you still have an incoherent system
+[3919.84s -> 3924.48s]  even though it was synchronized, right?
+[3925.04s -> 3928.60s]  So the two issues are independent, right?
+[3928.60s -> 3931.92s]  One is a function of the fact that you've
+[3931.92s -> 3935.68s]  got two multiple places that the data can exist.
+[3935.68s -> 3941.68s]  And that is kind of inherent in a cache-based multiprocessor
+[3941.68s -> 3944.76s]  system in which you are caching shared data, right?
+[3944.76s -> 3947.92s]  So you can imagine a system that did not cache shared data,
+[3947.92s -> 3950.84s]  and you wouldn't have a cache coherence problem.
+[3950.84s -> 3954.16s]  What problem would you have?
+[3954.16s -> 3954.68s]  Yeah?
+[3954.68s -> 3956.20s]  Every memory reference would have to go to memory.
+[3956.20s -> 3957.56s]  A performance problem, right?
+[3957.56s -> 3959.32s]  You have a performance problem, but you wouldn't
+[3959.32s -> 3960.76s]  have a cache coherence problem.
+[3960.76s -> 3966.44s]  But yeah, so every shared memory reference
+[3966.44s -> 3970.16s]  would have to go to memory, right?
+[3970.16s -> 3975.32s]  And maybe say, oh, I would design a very careful system
+[3975.32s -> 3977.28s]  to minimize the amount of shared data,
+[3977.28s -> 3981.24s]  but this is not a useful system, right?
+[3984.56s -> 3990.92s]  OK, all right, so how can you implement coherence?
+[3990.92s -> 3993.44s]  Well, there are some software-based solutions
+[3993.44s -> 3995.84s]  you could try and do things on the granularity
+[3995.84s -> 3998.00s]  of virtual memory pages and make
+[3998.00s -> 4001.88s]  use of the operating system, but that would be slow, right?
+[4001.88s -> 4004.04s]  It'd be slow, and you'd also have a problem
+[4004.04s -> 4006.36s]  that we're going to talk about later,
+[4006.36s -> 4008.60s]  which is called false sharing.
+[4008.60s -> 4010.60s]  So what you want is a fine-grained,
+[4010.60s -> 4014.52s]  hardware-based solution based on cache lines.
+[4014.52s -> 4016.76s]  And so we're going to talk about two different ways
+[4016.76s -> 4019.88s]  of doing cache coherence or fixing the cache coherence
+[4019.88s -> 4022.24s]  problem or implementing cache coherence.
+[4022.24s -> 4023.88s]  One is called snooping, which
+[4023.88s -> 4027.76s]  is a classic way of implementing cache coherence.
+[4027.76s -> 4032.52s]  And then the one that is used most often today
+[4032.52s -> 4038.12s]  in most systems is a directory-based system, OK?
+[4038.16s -> 4040.68s]  But we're going to start with snooping,
+[4040.68s -> 4045.44s]  since I think it's slightly more interesting and easier
+[4045.44s -> 4046.36s]  to understand.
+[4046.36s -> 4053.08s]  OK, all right, so we have a, you know,
+[4053.08s -> 4056.12s]  one way of dealing with cache coherence
+[4056.12s -> 4063.56s]  is kind of back to not having separate caches,
+[4063.56s -> 4066.80s]  having a single shared cache, OK?
+[4067.80s -> 4070.44s]  And so what would be the problem of a single shared cache?
+[4073.12s -> 4074.32s]  Yeah?
+[4074.32s -> 4075.28s]  Performance, right?
+[4075.28s -> 4077.64s]  So you have a bandwidth bottleneck,
+[4077.64s -> 4082.80s]  because all of these processes are trying to hit the same cache
+[4082.80s -> 4086.08s]  and you've got a limited number of bandwidth
+[4086.08s -> 4087.12s]  you can gather cache.
+[4087.12s -> 4090.88s]  And so you might be able to do it for a couple processes,
+[4090.88s -> 4093.24s]  but if you wanted to scale a number of processes,
+[4093.28s -> 4095.96s]  you would quickly run out of bandwidth
+[4095.96s -> 4100.20s]  or that that cache would be extremely expensive.
+[4100.20s -> 4106.68s]  The other issue is that what if the cache contains data
+[4106.68s -> 4109.00s]  that is not being shared?
+[4109.00s -> 4112.92s]  Then you can imagine one processor, you know,
+[4112.92s -> 4118.28s]  conflicting or having capacity misses
+[4118.28s -> 4120.88s]  caused by another processor, OK?
+[4120.88s -> 4127.16s]  So this is called interference or destructive interference.
+[4127.16s -> 4130.60s]  But you can also have constructive interference.
+[4130.60s -> 4133.60s]  So imagine you had a for all loop like this
+[4133.60s -> 4138.88s]  in which you had the iterations interleaved
+[4138.88s -> 4140.88s]  across the processes, right?
+[4140.88s -> 4143.96s]  So in this code, you can imagine
+[4143.96s -> 4154.00s]  that iteration I would fetch the data associated
+[4154.00s -> 4156.32s]  with the following iterations.
+[4156.32s -> 4160.88s]  Assume that you didn't have, you
+[4160.88s -> 4166.88s]  had cache lines that were small, say one word,
+[4166.88s -> 4170.36s]  just for the sake of argument.
+[4170.44s -> 4176.16s]  So you can have constructive interference in addition
+[4176.16s -> 4179.20s]  to destructive interference, OK?
+[4179.20s -> 4185.00s]  So shared caches don't really work that well for level one
+[4185.00s -> 4188.84s]  caches, but you can use them for level two caches.
+[4188.84s -> 4192.20s]  So this is a processor I designed many years ago
+[4192.20s -> 4194.48s]  called the Sun Niagara 2.
+[4194.48s -> 4200.20s]  And it had a shared cache, a shared second level cache.
+[4201.16s -> 4203.84s]  The way that you provided enough bandwidth
+[4203.84s -> 4206.96s]  to that shared cache was by having a crossbar.
+[4206.96s -> 4210.28s]  And a crossbar is kind of an all to all network that
+[4210.28s -> 4212.12s]  provides you a lot of bandwidth.
+[4212.12s -> 4215.80s]  But it takes up a fair amount of the area on the chip
+[4215.80s -> 4218.88s]  and it doesn't scale, right?
+[4218.88s -> 4221.04s]  In this case, you'd get to eight cores.
+[4221.04s -> 4223.08s]  But if you wanted to go to more cores,
+[4223.08s -> 4225.52s]  then you'd have to come up with a different mechanism
+[4225.52s -> 4230.60s]  because crossbars are quadratic in the amount of wires
+[4230.60s -> 4234.92s]  you need, right, because it's all to all.
+[4234.92s -> 4239.44s]  All right, so let's talk about snooping cache coherence
+[4239.44s -> 4244.84s]  schemes in the time that we have left.
+[4244.84s -> 4248.74s]  And we will, of course, not finish it today,
+[4248.74s -> 4253.56s]  but we'll come back to it on Thursday.
+[4253.56s -> 4256.56s]  So the idea is that you've got a processor
+[4256.56s -> 4259.76s]  with its individual cache.
+[4259.76s -> 4265.60s]  And the caches of all the processes
+[4265.60s -> 4268.80s]  are connected by an interconnect, which is just
+[4268.80s -> 4273.76s]  this set of wires or a way of communicating
+[4273.76s -> 4278.80s]  between the processors and the processors and memory, OK?
+[4278.80s -> 4285.24s]  So the processor issues loads and stores to the cache, right?
+[4285.24s -> 4292.84s]  And then the cache receives coherence messages
+[4292.84s -> 4297.08s]  from the interconnect associated with other actions
+[4297.08s -> 4300.72s]  that other processes are making, OK?
+[4300.72s -> 4305.36s]  So a very simple coherence mechanism
+[4305.36s -> 4308.56s]  would be a write-through mechanism, right,
+[4308.56s -> 4314.88s]  where upon a write, the cache controller broadcasts
+[4314.88s -> 4317.96s]  an invalidation message, right, which says, hey,
+[4317.96s -> 4321.60s]  I'm writing address x.
+[4321.60s -> 4325.30s]  If you have address x in your cache, get rid of it.
+[4325.30s -> 4326.88s]  Invalidate it, right?
+[4326.88s -> 4330.62s]  So then we're sure that nobody else in the system,
+[4330.62s -> 4334.40s]  no other cache in the system, has that address, OK?
+[4334.40s -> 4342.20s]  So what is the problem of the write-through cache mechanism?
+[4342.20s -> 4344.16s]  Yeah?
+[4344.16s -> 4345.60s]  All the other processors, do they
+[4345.60s -> 4347.92s]  have to keep kind of like pulling the interconnect?
+[4347.92s -> 4349.68s]  Yeah, so assume that the cache is
+[4349.68s -> 4351.64s]  responsible for that, right?
+[4351.64s -> 4353.96s]  So the cache kind of decouples the processor
+[4353.96s -> 4355.12s]  from the interconnect.
+[4355.12s -> 4358.36s]  So the cache is always looking at the interconnect saying,
+[4358.36s -> 4363.44s]  hey, is there an invalidation message on the interconnect?
+[4363.48s -> 4365.72s]  If so, let me check my cache.
+[4365.72s -> 4367.52s]  Do I have that address?
+[4367.52s -> 4368.24s]  Yes.
+[4368.24s -> 4369.00s]  Invalidate it.
+[4369.00s -> 4369.48s]  No.
+[4369.48s -> 4370.00s]  Ignore it.
+[4372.68s -> 4373.20s]  Yeah.
+[4373.20s -> 4374.04s]  What's the problem?
+[4377.88s -> 4383.72s]  Broadcast the validation for the same address at the same time.
+[4383.72s -> 4386.16s]  Well, somebody has to win, right?
+[4386.16s -> 4388.64s]  So assume that this interconnect only
+[4388.64s -> 4392.96s]  allows one message at a time, and there's a winner, right?
+[4394.44s -> 4398.96s]  So the problem with this write is the write-through cache,
+[4398.96s -> 4399.48s]  right?
+[4399.48s -> 4402.92s]  It says every write that the processor makes
+[4402.92s -> 4406.40s]  has to appear on the interconnect.
+[4406.40s -> 4408.36s]  Again, we're going to run out of bandwidth.
+[4408.36s -> 4410.20s]  So this is a low-performance solution.
+[4413.40s -> 4418.76s]  So what we want then is how do we do coherence
+[4418.76s -> 4422.60s]  with write-back caches, OK?
+[4422.64s -> 4425.76s]  So first of all, we're going to change this interconnect
+[4425.76s -> 4427.48s]  to a bus, OK?
+[4427.48s -> 4431.28s]  So a bus has two very nice properties.
+[4431.28s -> 4432.72s]  Does anybody know what they are?
+[4439.72s -> 4440.24s]  Yeah?
+[4440.24s -> 4441.64s]  They're really wide.
+[4441.64s -> 4442.56s]  They're wide?
+[4442.56s -> 4445.32s]  Because they have lots of bandwidth?
+[4445.32s -> 4447.04s]  But from the point of coherence,
+[4447.04s -> 4449.56s]  what properties do buses have?
+[4449.56s -> 4451.96s]  They're not a lot to remember, I just said.
+[4451.96s -> 4452.48s]  Right.
+[4453.36s -> 4456.48s]  There's only one transaction at a time.
+[4456.48s -> 4458.36s]  So somebody asked about that, right?
+[4458.36s -> 4462.00s]  So a bus, by definition, one transaction at a time.
+[4462.00s -> 4465.64s]  Not true for a ring, not true for an arbitrary network,
+[4465.64s -> 4468.88s]  but true for a bus.
+[4468.88s -> 4471.44s]  One transaction at a time.
+[4471.44s -> 4475.80s]  So what does that mean?
+[4475.80s -> 4477.40s]  When somebody says one at a time,
+[4477.40s -> 4481.60s]  what's the first thing that comes to your mind?
+[4481.60s -> 4483.44s]  Serialization, right?
+[4483.44s -> 4487.76s]  So the buses act as a serialization point, OK?
+[4487.76s -> 4490.00s]  What's the other benefit of a bus?
+[4493.16s -> 4495.60s]  Kind of like the air in this room.
+[4501.52s -> 4503.96s]  It's a broadcast medium, right?
+[4503.96s -> 4509.00s]  One processor says something and everybody else hears it.
+[4509.00s -> 4509.48s]  All right?
+[4509.48s -> 4521.28s]  So two properties of a bus, we have
+[4521.28s -> 4524.52s]  broadcast and serialization, OK?
+[4524.52s -> 4530.20s]  So what we want, then, in our write back cash
+[4530.20s -> 4534.40s]  is we want to make sure that whenever a processor is writing
+[4534.40s -> 4539.36s]  a value, that it is the only processor in the system
+[4539.40s -> 4543.76s]  that is actually allowed to write, OK?
+[4543.76s -> 4547.60s]  And so one way of doing that is
+[4547.60s -> 4553.20s]  by indicating exclusive ownership of the cash line.
+[4553.20s -> 4556.72s]  And let's assume that exclusive ownership is indicated
+[4556.72s -> 4559.76s]  by having the dirty bits set, right?
+[4559.76s -> 4562.12s]  So what we need to ensure, though,
+[4562.12s -> 4564.32s]  is that only one cash in the system
+[4564.32s -> 4568.44s]  can ever have its dirty bits set at any time, right?
+[4568.44s -> 4570.92s]  Otherwise, we're going to violate
+[4570.92s -> 4574.48s]  that invariant that says, hey, there's
+[4574.48s -> 4578.04s]  only one processor in the read-write epoch.
+[4578.04s -> 4580.28s]  So we only have one.
+[4580.28s -> 4585.24s]  OK, so we need a way of enforcing only one, right?
+[4585.24s -> 4588.52s]  And the way of enforcing only one processor at a time
+[4588.52s -> 4592.12s]  is in the read-write epoch is called a cash coherence
+[4592.12s -> 4593.48s]  protocol.
+[4593.48s -> 4597.20s]  So it maintains the cash coherent invariance.
+[4597.20s -> 4605.00s]  It assumes that there's some hardware logic that's
+[4605.00s -> 4609.36s]  going to look at loads and stores made
+[4609.36s -> 4612.68s]  by the local processor and messages
+[4612.68s -> 4617.76s]  from other caches on the bus, OK?
+[4617.76s -> 4622.44s]  So in an invalidation-based write back protocol, which
+[4622.44s -> 4625.44s]  is what we're going to describe,
+[4625.44s -> 4627.44s]  there's a set of key ideas.
+[4627.44s -> 4629.96s]  Somebody asked about what other state
+[4629.96s -> 4632.60s]  is in the metadata for the cache line.
+[4632.60s -> 4637.64s]  Well, you need some cache coherency state, right?
+[4637.64s -> 4640.68s]  And the idea is that you're going
+[4640.68s -> 4643.00s]  to have some cache coherency state,
+[4643.00s -> 4648.32s]  and you're going to be able to allow only one
+[4648.32s -> 4653.00s]  processor to be in a certain state at any one time.
+[4653.00s -> 4660.68s]  And you need to be able to tell the other processors to not
+[4660.68s -> 4662.80s]  be in that state, OK?
+[4662.80s -> 4665.00s]  So let me see.
+[4665.00s -> 4668.60s]  We have time to just introduce the idea, right?
+[4668.60s -> 4671.08s]  So we talked about dirty bit, and we
+[4671.08s -> 4674.32s]  talked about the fact that we need some cache coherency line
+[4674.32s -> 4675.76s]  state.
+[4675.76s -> 4680.84s]  Let's talk about a protocol, cache coherency protocol,
+[4680.88s -> 4686.84s]  for a write back invalidate-based cache, right?
+[4686.84s -> 4691.08s]  So key toss of the protocol, ensuring
+[4691.08s -> 4696.00s]  that one processor can get exclusive access for a write,
+[4696.00s -> 4701.00s]  and locating the most recent copy of the cache line
+[4701.00s -> 4707.20s]  based on the cache line's data on a cache miss, OK?
+[4707.20s -> 4714.28s]  So in the MSI protocol, there are three states, modified,
+[4714.28s -> 4718.16s]  shared, and invalid, hence the name.
+[4718.16s -> 4723.40s]  And in invalid is the same as the cache line is not there.
+[4723.40s -> 4729.72s]  Shared is this state where multiple processors can only
+[4729.72s -> 4732.24s]  read the line, so read only.
+[4732.24s -> 4738.20s]  And modified, the line is valid in only one cache,
+[4738.20s -> 4740.32s]  or it's in what we've been calling
+[4740.32s -> 4744.20s]  the dirty or exclusive state, OK?
+[4744.20s -> 4748.52s]  So invalid, the cache line is not there.
+[4748.52s -> 4750.76s]  Shared, read only.
+[4750.76s -> 4756.08s]  Modified, valid in exactly one cache, all right?
+[4756.08s -> 4760.96s]  So we have two processor operations, processor read
+[4761.00s -> 4766.64s]  and processor write, free coherence,
+[4766.64s -> 4767.84s]  bus transactions, right?
+[4767.84s -> 4770.64s]  So these come from the bus.
+[4770.64s -> 4773.48s]  So these come from the processor, processor read
+[4773.48s -> 4774.64s]  and processor write.
+[4774.64s -> 4780.08s]  And then bus read, bus read exclusive, bus write back
+[4780.08s -> 4782.24s]  come from the bus.
+[4782.24s -> 4785.60s]  And these are caused by actions of other processes.
+[4785.60s -> 4790.88s]  So bus read means, hey, give me a copy of the cache line
+[4790.88s -> 4793.64s]  because I want to read it.
+[4793.64s -> 4797.44s]  Bus read exclusive says, give me a copy of the cache line
+[4797.44s -> 4799.28s]  because I want to write it.
+[4799.28s -> 4801.52s]  So first of all, before I can write it,
+[4801.52s -> 4804.04s]  I need the whole cache line, but I'm going to write it.
+[4804.04s -> 4806.52s]  And then bus write back says, hey,
+[4806.52s -> 4810.96s]  this is a cache line that was dirty in my cache
+[4810.96s -> 4813.96s]  that I'm writing back to memory, OK?
+[4813.96s -> 4816.36s]  So keep this in mind.
+[4816.36s -> 4819.68s]  We're going to continue with the story on Thursday
+[4819.68s -> 4822.44s]  and talk about how exactly we maintain
+[4822.44s -> 4828.64s]  coherence using these three states and these actions.

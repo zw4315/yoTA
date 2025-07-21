@@ -1,0 +1,302 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.96s]  All right, welcome to lecture 18 of CS285. In today's lecture we're going to
+[6.96s -> 11.40s]  do something a little different than usual. Instead of covering any new
+[11.40s -> 14.56s]  reinforcement learning algorithms, we're actually going to talk about
+[14.56s -> 19.08s]  variational inference and generative models. This is a little bit of a break
+[19.08s -> 22.60s]  from our usual material because we won't cover any reinforcement learning
+[22.60s -> 26.72s]  algorithms today, but I wanted to have an entire lecture on variational
+[26.72s -> 30.72s]  inference in this class because the concepts of variational inference come
+[30.72s -> 34.52s]  up again and again in a variety of reinforcement learning topics, including
+[34.52s -> 38.00s]  model-based reinforcement learning, inverse reinforcement learning,
+[38.00s -> 43.28s]  exploration, and others. And more generally, variational inference has a
+[43.28s -> 47.24s]  very deep connection to reinforcement learning and learning-based control, and
+[47.24s -> 53.04s]  we'll learn about this next week. So in today's lecture we're going to talk
+[53.04s -> 56.84s]  about probabilistic latent variable models, what they are and what they're
+[56.84s -> 61.36s]  for. We'll talk about how variational inference can allow us to tractably
+[61.36s -> 66.24s]  approximate training of probabilistic latent variable models, and then we'll
+[66.24s -> 69.80s]  talk about something called amortized variational inference, which is a very
+[69.80s -> 74.20s]  useful and powerful tool to utilize variational inference together with
+[74.20s -> 78.16s]  function approximators like deep neural networks. And then we'll conclude
+[78.28s -> 83.08s]  with a discussion of some example models that we could train with amortized
+[83.08s -> 88.60s]  VI, including variational autoencoders and various sequence-level models that
+[88.60s -> 93.92s]  are useful in model-based RL. So the goals for today's lecture will be to
+[93.92s -> 98.08s]  understand latent variable models in deep learning and understand how to use
+[98.08s -> 104.36s]  amortized variational inference in order to train them. All right, so let's start
+[104.40s -> 108.68s]  with a very basic kind of overview. Those of you that are already familiar
+[108.68s -> 112.52s]  with this material may want to skip ahead, but I wanted to make sure to
+[112.52s -> 115.72s]  start at the very beginning to make sure that everyone is kind of at the
+[115.72s -> 120.20s]  same level in terms of notation, terminology, and so forth. So what is a
+[120.20s -> 125.20s]  probabilistic model? A probabilistic model is a very general term for a
+[125.20s -> 129.64s]  model that represents a probability distribution. So if you have some
+[129.72s -> 136.52s]  random variable X, then P of X can be represented by a probabilistic model.
+[136.52s -> 139.48s]  Take a moment to think about the kind of probabilistic models that we've
+[139.48s -> 142.52s]  already encountered in this course. What are some examples that we've
+[142.52s -> 147.44s]  already seen? So if you just have a random variable X and you want to
+[147.44s -> 153.20s]  model P of X, maybe you have some data, so those orange dots represent Xs
+[153.20s -> 157.04s]  that you've actually observed. Modeling P of X means fitting some distribution
+[157.04s -> 161.00s]  to them. For instance, you might fit a multivariate normal distribution to
+[161.00s -> 165.92s]  try to represent this data. Now, probabilistic models could also be
+[165.92s -> 169.88s]  conditional models. So for instance, you could have a model P of Y given X.
+[169.88s -> 173.56s]  In this case, maybe you don't care about modeling the distribution over X,
+[173.56s -> 179.16s]  but you care about modeling the conditional distribution over Y given X.
+[179.16s -> 183.72s]  So if you have some inputs X on the X-axis and some outputs Y on the Y-
+[183.80s -> 187.88s]  axis, you might fit a conditional Gaussian model, a model that represents
+[187.88s -> 192.12s]  Y as, in this case, a linear function of X with some additive Gaussian
+[192.12s -> 196.36s]  noise. Now, we've definitely seen models like this before. Take a
+[196.36s -> 200.28s]  moment to think back to when in this class we've seen conditional
+[200.28s -> 205.64s]  probabilistic models. So one example of this, of course, is
+[205.64s -> 209.08s]  policies. Policies are conditional probabilistic models. They give us a
+[209.08s -> 216.92s]  conditional distribution over A given S. All right, so now the
+[216.92s -> 219.48s]  main topic of today's lecture is actually going to be something
+[219.48s -> 223.56s]  called latent variable models. Latent variable models are a particular
+[223.56s -> 228.68s]  type of probabilistic model. Formally, a latent variable model
+[228.68s -> 232.60s]  is just a model where there are some variables other than the
+[232.60s -> 237.72s]  variables that are the evidence or the query. So in P of X, there
+[237.72s -> 241.16s]  is no evidence and the query is X. In P of Y given X, the
+[241.16s -> 245.32s]  evidence is X and the query is Y. If you have a latent
+[245.32s -> 249.00s]  variable model, that means that there are some other variables
+[249.00s -> 252.92s]  in the model that are neither the evidence nor the query,
+[252.92s -> 256.12s]  and therefore need to get integrated out in order to evaluate the
+[256.12s -> 261.32s]  probability that you want. A very classic example of a latent
+[261.32s -> 265.48s]  variable model that people use to represent P of X is a mixture
+[265.48s -> 271.24s]  model. So in this picture, we have data that is organized to
+[271.24s -> 274.52s]  three very clear clusters. Now a priori, we're not told what
+[274.52s -> 277.72s]  these clusters are, so the clusters here are color-coded,
+[277.72s -> 280.36s]  but the data is not actually color-coded. The data is just
+[280.36s -> 284.04s]  a collection of points, and you want to represent
+[284.04s -> 288.28s]  a distribution that accurately fits that data.
+[288.28s -> 292.04s]  Now here, it turns out to be very convenient to represent this
+[292.12s -> 295.64s]  distribution with a mixture model consisting of three
+[295.64s -> 301.80s]  multivariate normals. This is a type of latent variable model.
+[301.80s -> 305.96s]  Take a moment to think about what the latent variable here is.
+[306.60s -> 311.48s]  So in this case, the latent variable is actually a categorical
+[311.48s -> 315.88s]  discrete variable that can take on one of three values
+[315.88s -> 319.24s]  corresponding to the three cluster identities,
+[319.24s -> 322.76s]  and we can represent this latent variable model as a sum
+[322.76s -> 326.52s]  over all the possible values of the latent variable
+[326.52s -> 330.76s]  of the conditional distribution over the variable that we're modeling, which is X,
+[330.76s -> 335.48s]  given the latent variable Z times the probability of that Z.
+[335.48s -> 339.80s]  So here, P of X is given by sum over Z of P of X given Z
+[339.80s -> 344.36s]  times P of Z. Z is a categorical variable that takes on one of three
+[344.36s -> 347.32s]  values corresponding to the identity of the
+[347.32s -> 350.92s]  cluster, and X is a two-dimensional continuous variable
+[350.92s -> 354.84s]  corresponding to the actual location of a point.
+[356.52s -> 359.88s]  We can do the same exact thing for conditional models. We could say that P
+[359.88s -> 363.40s]  of Y given X is given by a sum over our latent
+[363.40s -> 368.44s]  variable Z of P of Y given X comma Z times P of Z.
+[368.44s -> 371.32s]  Now there are other ways to create this decomposition. You could, for
+[371.32s -> 374.36s]  example, say that P of Z also depends on X, so you could have
+[374.36s -> 378.28s]  P of Y given X comma Z times P of Z given X.
+[378.28s -> 381.88s]  You could even have the conditional or Y not depend on X, so you could have
+[381.88s -> 386.92s]  P of Y given Z times P of Z given X. Those are all valid decompositions, and
+[386.92s -> 392.68s]  that's a design choice that you make. If we want to stick with a discrete
+[392.68s -> 396.36s]  categorical variable Z, one example of a model like this
+[396.36s -> 400.92s]  that we've actually already seen before is the mixed true density network,
+[400.92s -> 404.04s]  which is the model that we discussed when we talked about
+[404.04s -> 407.48s]  imitation learning and how we might want to do multimodal
+[407.48s -> 410.92s]  imitation learning in order to deal with multimodal situations like driving
+[410.92s -> 414.52s]  around the tree. So back in the second lecture of the
+[414.52s -> 417.48s]  course, we learned about how we could have neural networks
+[417.48s -> 422.52s]  that output distributions represented by mixtures of Gauss zoons.
+[422.52s -> 427.08s]  So the neural network outputs multiple mu's and sigma's, one for each mixture
+[427.08s -> 430.68s]  element, and multiple w's.
+[430.84s -> 435.80s]  Okay, let's say the input to the network is X, and the output is Y,
+[435.80s -> 440.84s]  and the latent variable again is the identity of the cluster.
+[440.84s -> 445.96s]  Take a moment to think about what the probabilistic model corresponding to
+[445.96s -> 448.92s]  this picture on the right side of the slide actually is.
+[448.92s -> 453.72s]  So it's representing P of Y given X as the sum over Z
+[453.72s -> 459.88s]  of P of Y given something times P of Z given something.
+[459.88s -> 462.60s]  What is the sum?
+[464.76s -> 468.12s]  Well, in this case our neural network is actually outputting
+[468.12s -> 471.40s]  the means and and provariances of the Gauss zoons,
+[471.40s -> 476.76s]  and is also outputting the w's, the probabilities of each mixture element.
+[476.76s -> 479.88s]  So in fact, this model is given by a sum over Z
+[479.88s -> 485.72s]  of P of Y given X comma Z times P of Z given X. So it's actually a
+[485.72s -> 487.56s]  little different than the equation I've written here,
+[487.56s -> 492.04s]  but here in the picture right there, the
+[492.04s -> 497.64s]  P of Z actually depends on X. So it's a design choice that we make.
+[498.36s -> 502.44s]  All right, so in general, if you have a latent variable model,
+[502.44s -> 506.92s]  you could think about it like this. You have some complicated distribution
+[506.92s -> 510.20s]  over X represented by this picture. So P of X
+[510.20s -> 513.40s]  is some complicated thing.
+[513.56s -> 519.16s]  You have some prior over Z, P of Z. Typically we would choose this prior to
+[519.16s -> 523.48s]  be a simpler distribution. Maybe it's a,
+[523.48s -> 526.92s]  maybe Z is categorical, so P of Z is a discrete distribution,
+[526.92s -> 530.68s]  or maybe Z is continuous, but P of Z is some very simple class of
+[530.68s -> 535.80s]  distributions, like a Gaussian distribution.
+[536.60s -> 540.12s]  And then we might represent the mapping from Z to X,
+[540.12s -> 545.16s]  the P of X given Z, as some simple conditional distribution.
+[545.16s -> 548.60s]  So P of X given Z maybe could be a neural network
+[548.60s -> 552.44s]  where the mean is given by a neural net function of Z
+[552.44s -> 556.28s]  and the variance is given by a neural net function of Z.
+[556.28s -> 559.88s]  Now those functions might be very complicated, but the actual distribution
+[559.88s -> 563.48s]  X given Z could be very simple. It could be, for example,
+[563.48s -> 567.24s]  a Gaussian, a normal distribution. So P of Z
+[567.32s -> 572.52s]  is a simple distribution. P of X given Z is also a simple distribution.
+[572.52s -> 575.32s]  The parameters of that simple distribution might be complicated, but
+[575.32s -> 578.60s]  the distribution is simple. For example,
+[578.60s -> 581.64s]  something that can be parameterized explicitly.
+[581.64s -> 585.16s]  This is a very important point to understand, especially what I mean by the
+[585.16s -> 589.80s]  word simple here. P of X is not simple because it is very
+[589.80s -> 593.08s]  hard to find a single parameterization like a
+[593.08s -> 595.24s]  Gaussian distribution or a beta distribution
+[595.24s -> 599.80s]  that perfectly captures P of X. P of Z is simple because
+[599.80s -> 603.40s]  a simple distribution like a Gaussian captures it perfectly.
+[603.40s -> 609.48s]  P of X given Z is also simple because you could represent it with a
+[609.48s -> 612.28s]  Gaussian distribution, although the parameters of that
+[612.28s -> 615.96s]  Gaussian distribution might be very complex.
+[616.12s -> 619.80s]  Now, of course, I'm using Gaussian distributions as an example here. These
+[619.80s -> 622.84s]  could be different kinds of distributions, different parameterizations that could
+[622.84s -> 628.44s]  be discrete or continuous, so this is just an example.
+[628.68s -> 632.20s]  But in general, P of X would be given by
+[632.20s -> 637.08s]  some sum or integral over all possible values of Z of P of X given Z
+[637.08s -> 642.44s]  times P of Z. So what's going on here is that both P of Z and P of X
+[642.44s -> 645.96s]  given Z are simple, but their product when you integrate
+[645.96s -> 649.72s]  out Z could be some very complex distribution.
+[649.72s -> 653.08s]  And this is a very powerful idea because it allows us to represent
+[653.08s -> 657.08s]  complicated distributions as products of simple distributions that we can learn
+[657.08s -> 659.96s]  in parameter trials.
+[660.12s -> 664.36s]  All right, so we have two easy distributions, multiply them and
+[664.36s -> 668.60s]  integrate out Z. The same exact thing can happen in the
+[668.60s -> 672.04s]  conditional case. So in the example I had before,
+[672.04s -> 676.60s]  conditional latent variable models for multimodal policies,
+[676.60s -> 680.36s]  you could have a Gaussian mixture on the output,
+[680.36s -> 684.20s]  or more generally you could have some latent variable, let's call it Z,
+[684.20s -> 687.48s]  that serves as an additional input into the
+[687.48s -> 692.76s]  model, and you have some prior P of Z, and you have your conditional P of Y
+[692.76s -> 697.32s]  given X comma Z, and the same exact logic as on the
+[697.32s -> 701.40s]  previous slide would apply. So P of Z would be simple, P of Y given X
+[701.40s -> 705.32s]  comma Z would be simple, but the result of integrating out Z,
+[705.40s -> 710.36s]  meaning the resulting distribution P of Y given X, could be extremely complex.
+[710.36s -> 713.56s]  Another case where these kinds of things come up is model-based
+[713.56s -> 716.60s]  reinforcement learning. So you could have latent variable models
+[716.60s -> 719.88s]  in model-based reinforcement learning. We already saw an example of this
+[719.88s -> 723.56s]  when we talked about model-based RL with images.
+[723.56s -> 727.32s]  So we saw these examples of latent state models where you observe
+[727.32s -> 731.56s]  images O and you want to learn a latent state X
+[731.56s -> 737.32s]  that depends on actions U, and here we actually have a more complex
+[737.32s -> 741.88s]  latent space, so we have our observation distribution P of O given X,
+[741.88s -> 747.72s]  and our prior P of X actually models the dynamics, it actually models
+[747.72s -> 753.16s]  P of X t plus one given X t and P of X one, so the prior X is
+[753.16s -> 756.92s]  much more structured and more complex. The latent space for these models has
+[756.92s -> 759.48s]  structure, and we'll revisit this at the end of
+[759.48s -> 763.48s]  the lecture, so if this part is not entirely clear, don't worry about that,
+[763.48s -> 767.96s]  we'll come back to it. Alright, so now we've learned about what
+[767.96s -> 770.36s]  latent variable models are, what they're for,
+[770.36s -> 775.32s]  why we want to have them. We'll see latent variable models in other places,
+[775.32s -> 779.88s]  so next week we'll also talk about how we can use reinforcement learning
+[779.88s -> 783.40s]  together with variational inference to actually model human behavior.
+[783.40s -> 786.76s]  So instead of saying given a reward function, what is the optimal way to
+[786.76s -> 789.40s]  act, you can instead say given date of a
+[789.40s -> 792.68s]  person doing something, can we sort of reverse engineer what
+[792.68s -> 796.44s]  the person is trying to do, can we infer their objective function, infer
+[796.44s -> 799.24s]  something about their thought processes, and this is
+[799.24s -> 802.28s]  common both in imitation learning domains
+[802.28s -> 807.88s]  and also in the study of human behavior in neuroscience and motor control.
+[807.88s -> 811.96s]  We also see latent variable models and generative models in exploration,
+[811.96s -> 815.24s]  so when we talked about exploration, we actually briefly alluded to this,
+[815.24s -> 818.36s]  we discussed how we can use variational inference techniques for
+[818.36s -> 820.68s]  things like information gain calculations
+[820.68s -> 824.60s]  and how we use generative models and density models to assign pseudo counts
+[824.60s -> 829.16s]  and count-based bonuses. So these kinds of generative models and
+[829.16s -> 832.36s]  latent variable models come up all the time in the study of
+[832.36s -> 835.16s]  reinforcement learning. By the way, when I use the term
+[835.16s -> 838.28s]  generative model just to clarify the terminology a little bit,
+[838.28s -> 841.32s]  a generative model is a model that generates
+[841.32s -> 845.40s]  x, so p of x is a generative model. A latent variable model is a model that
+[845.40s -> 848.28s]  has latent variables. Not all generative models are latent
+[848.28s -> 851.96s]  variable models and not all latent variable models are generative models.
+[851.96s -> 856.36s]  However, usually it is much much easier to represent generative models as
+[856.36s -> 859.24s]  latent variable models because a generative model typically
+[859.24s -> 863.08s]  needs to represent a very complex probability distribution
+[863.08s -> 866.44s]  and it is much much easier to represent a complex probability
+[866.44s -> 869.40s]  distribution as a product of multiple simple
+[869.40s -> 873.56s]  probability distributions. So for that reason, while generative models do not
+[873.56s -> 877.20s]  need to be latent variable models, oftentimes it's very convenient when we
+[877.20s -> 881.80s]  have a complex generative model to model it as a latent variable model.
+[881.80s -> 886.88s]  Alright, so now let's let's get to the meat of the lecture. Let's talk
+[886.88s -> 891.36s]  about how it is that we can train latent variable models and why this is
+[891.36s -> 897.44s]  difficult. So let's say we have our model p theta of x. So theta here
+[897.48s -> 903.24s]  represents the parameters of the model. And we have data, x1, x2, x3, etc. with
+[903.24s -> 909.12s]  root xn. When we want to fit the data, what we typically want is a maximum
+[909.12s -> 913.24s]  likelihood fit. So the most natural generative modeling objective is to set
+[913.24s -> 917.28s]  theta to be the argmax of 1 over n times the sum over all of your data
+[917.28s -> 922.08s]  points of log p theta xi. So if you find theta that maximizes the log
+[922.08s -> 925.04s]  probability of all of your data points, you will have found what is called a
+[925.08s -> 929.24s]  maximum likelihood fit, which in some sense is kind of the best model you
+[929.24s -> 936.60s]  could have for your data. And your p of x is given by the integral over z of p
+[936.60s -> 943.20s]  of x given z times p of z. So if I substitute this equation for p of x
+[943.20s -> 949.28s]  into the maximum likelihood fit, I get this training objective. Now of course
+[949.28s -> 953.12s]  the first thing that you might notice that this training objective is quite
+[953.16s -> 957.76s]  difficult to calculate. If z is a continuous variable, calculating this
+[957.76s -> 960.92s]  integral every time you want to take a gradient step gets to be pretty
+[960.92s -> 965.64s]  intractable. So we can't really do this directly. In some very simple cases
+[965.64s -> 968.92s]  we could, for example if we have a Gaussian mixture model, we can actually
+[968.92s -> 972.88s]  sum over all the mixture elements. It turns out that algorithm is still not
+[972.88s -> 976.52s]  very good because it ends up having very poor numerical properties. So even
+[976.52s -> 979.68s]  in cases where we can estimate this integral, we oftentimes don't want to
+[980.00s -> 984.60s]  because the resulting optimization landscape is very nasty. But with
+[984.60s -> 987.52s]  continuous variables, we might not even have that choice. We might not
+[987.52s -> 990.16s]  be able to estimate that integral accurately, even if we wanted to.
+[991.84s -> 996.00s]  Alright, so how can we estimate the log likelihood and the gradient of
+[996.00s -> 999.44s]  that log likelihood in a tractable way? That's really the key to
+[999.44s -> 1005.20s]  training these latent variable models. Well, one alternative is to use an
+[1005.20s -> 1009.20s]  objective called the expected log likelihood. I'm going to just state
+[1009.20s -> 1012.76s]  the objective here. I'm not going to justify it, but when we talk about
+[1012.76s -> 1016.32s]  variational inference later, we'll see why this objective is reasonable. So
+[1016.32s -> 1019.12s]  for now, just kind of take it at face value. This is the objective
+[1019.12s -> 1022.68s]  we're going to use, but later on we'll see the justification for why
+[1022.68s -> 1026.84s]  this objective is a principal choice. So the expected log likelihood
+[1026.88s -> 1031.04s]  intuitively amounts to sort of guessing what the latent variable
+[1031.04s -> 1035.24s]  models are. So you could think of the latent variables as basically
+[1035.24s -> 1039.08s]  being partial observations of the data. So the data really consists of x
+[1039.48s -> 1043.68s]  and z's, but you observe the x's but not the z's. So what you could do is you
+[1043.68s -> 1047.12s]  could essentially guess what the z's were. You could say, well, given
+[1047.12s -> 1049.60s]  that the data point is over here, it probably belongs to this
+[1049.60s -> 1054.84s]  cluster. And then construct a kind of fake label that says this xi
+[1054.84s -> 1060.12s]  actually has this value of z. And then do maximum likelihood on
+[1060.12s -> 1065.20s]  that value of x and z. Now, of course, in reality, you don't
+[1065.20s -> 1068.72s]  know the z that goes with a particular xi exactly, but you might
+[1068.72s -> 1071.68s]  have a distribution over it. So instead of just taking the one
+[1071.68s -> 1074.20s]  value of z that is the most likely, you would take the entire
+[1074.20s -> 1077.60s]  distribution over z's and average the likelihood weighted
+[1077.60s -> 1080.52s]  by the probability of that z. And that's what gives us the
+[1080.52s -> 1085.04s]  expected log likelihood calculation. So the objective
+[1085.04s -> 1087.52s]  we're going to use is the sum over all of our data points
+[1087.64s -> 1092.72s]  of the expectation over z given xi of the log p theta xi
+[1092.72s -> 1097.48s]  comma z. So the intuition is you guess the most likely z
+[1097.48s -> 1100.80s]  given xi and pretend it's the right one. Although, of course,
+[1100.80s -> 1103.48s]  in reality, you don't actually guess just one z, you actually
+[1103.48s -> 1106.48s]  sum over all the z's weighted by their probability of being
+[1106.48s -> 1111.16s]  the right one. So there are many possible values of z's
+[1111.16s -> 1117.24s]  who use the distribution p of z given xi. All right, so
+[1117.24s -> 1121.00s]  first of all, why is the subjective more tractable? Well,
+[1121.00s -> 1126.12s]  because expected values can be estimated with samples, right?
+[1126.60s -> 1129.52s]  So that expected value, if you want to get an unbiased
+[1129.52s -> 1131.04s]  estimate of the expected value, you don't need to
+[1131.04s -> 1133.80s]  actually consider all z's, you can simply sample from
+[1133.80s -> 1137.84s]  the posterior p of z given xi, and then average together
+[1137.84s -> 1141.04s]  the log probabilities of those samples. You can do that
+[1141.04s -> 1143.76s]  trick on the previous slide. You can't do that trick if
+[1143.76s -> 1147.96s]  you have the log of the integral, because the log of an
+[1147.96s -> 1151.60s]  integral or sum doesn't decompose linearly. But the
+[1151.60s -> 1155.56s]  sum does, so you can estimate it with samples. So the
+[1155.56s -> 1158.28s]  tractable algorithm for estimating this, just like we
+[1158.28s -> 1161.72s]  saw with policy gradient, is just sample from z given xi
+[1161.80s -> 1164.24s]  and average together the log probabilities, and you can
+[1164.24s -> 1168.88s]  do, of course, the same thing for the gradient. So if
+[1168.88s -> 1173.00s]  you can get this posterior p of z given xi, then you
+[1173.00s -> 1175.88s]  can calculate the expected log likelihood in a tractable
+[1175.88s -> 1179.52s]  way and calculate its gradient in a tractable way. But
+[1179.52s -> 1182.08s]  then the big challenge becomes, how do we calculate
+[1182.12s -> 1185.04s]  p of z given xi? If we could just calculate that
+[1185.04s -> 1187.92s]  quantity, then we could estimate the expected log
+[1187.92s -> 1190.52s]  likelihood. So this is going to be the topic for the
+[1190.52s -> 1195.48s]  next part of the lecture. So when you want to estimate
+[1195.48s -> 1198.08s]  p of z given xi, what you're really saying is, given
+[1198.08s -> 1201.80s]  some point in x, map it back to distribution over z's,
+[1201.88s -> 1205.04s]  which might be some fairly complex distribution, and then
+[1205.08s -> 1207.28s]  calculate the expected log likelihood under that
+[1207.28s -> 1210.04s]  distribution. Alright, so that's what we're going to
+[1210.04s -> 1211.84s]  talk about in the next part of the lecture.

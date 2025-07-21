@@ -1,0 +1,365 @@
+# Detected language: en (p=1.00)
+
+[0.96s -> 3.92s]  All right, today we're going to talk about RL with sequence models.
+[5.44s -> 9.76s]  Let's start with a discussion of what happens when we go beyond regular MDPs.
+[9.76s -> 16.16s]  So in the beginning of the course, we saw that beyond fully observed MDPs, we can start
+[16.16s -> 20.08s]  thinking about partially observed MDPs where we only get limited observations of the
+[20.08s -> 23.12s]  environment, and that's going to get us started thinking about sequence models in RL.
+[24.16s -> 29.20s]  So the trouble with observations is that unlike the Markovian states that we've been using
+[29.20s -> 33.04s]  in, for example, most of our value-based or model-based algorithms, the observations don't
+[33.04s -> 38.48s]  obey the Markov property, which means that simply from observing the current observation,
+[38.48s -> 42.16s]  you don't necessarily have enough information to infer the full state of the environment,
+[42.16s -> 45.52s]  which means that previous observations can actually give you more information.
+[45.52s -> 48.96s]  In contrast with states, that is never the case. If you observe the current state,
+[48.96s -> 53.52s]  also knowing the previous states never gives you more information for predicting the future
+[53.52s -> 56.48s]  because the current state de-separates the future from the past.
+[57.44s -> 65.76s]  So when you're operating on partial observations, the state is not known, and actually in most cases,
+[65.76s -> 68.88s]  you don't even have a representation of the state, so not only do you not know what the
+[68.88s -> 71.92s]  current state is, you don't even know what sort of the data type of the state is.
+[73.28s -> 76.80s]  So to recap something that we discussed at the beginning of the course with partial
+[76.80s -> 81.92s]  observability, let's say that the environment is this cheetah chasing this gazelle,
+[82.72s -> 87.92s]  but your observation is an image of the scene. Now underlying that observation is some true state,
+[87.92s -> 92.32s]  let's say the position and momentum and the body configuration of the animals.
+[93.52s -> 97.84s]  Now that state fully describes the configuration of the system in the sense that if you know the
+[97.84s -> 101.20s]  current state, that tells you everything that you need to predict the future. It doesn't mean the
+[101.20s -> 105.04s]  future is deterministic, it could be the future is still stochastic, it just means that
+[105.04s -> 109.04s]  previous states won't help you in predicting that future if you already have the current state.
+[109.60s -> 114.32s]  But if you have only observations, then the observations could be partial, maybe there's
+[114.32s -> 118.40s]  like a car driving in front of the cheetah so you can't see it. The state hasn't really changed,
+[118.40s -> 121.52s]  but the observation now doesn't contain enough information to infer the current state.
+[121.52s -> 124.48s]  If you look at the previous observation, you might get more information.
+[126.08s -> 129.84s]  Now the trouble is that most real-world problems are like this, so a lot of the algorithms
+[129.84s -> 133.20s]  we discussed kind of assume that you have a full state, not all of them, and we'll get to that
+[133.20s -> 138.32s]  in a second, but most real-world problems don't actually give you a full state, and
+[139.20s -> 143.20s]  in reality, in the real world, it's really kind of degrees of partial observability in the sense
+[143.20s -> 147.60s]  that all problems are really partially observed and that you never are really given the full,
+[147.60s -> 152.16s]  you know, configuration of the system, but sometimes the partial observability is so minor
+[152.16s -> 155.68s]  that in effect you can just pretend that the observation is a state and everything would work
+[155.68s -> 160.00s]  out fine. So Atari games, for example, are like this, where in a lot of Atari games, even though
+[160.00s -> 164.00s]  they are technically partially observed because the state of the system is like the the RAM of
+[164.00s -> 169.20s]  the Atari emulator, in reality, the image contains almost all that information, but in some cases
+[169.20s -> 172.72s]  they are very partially observed. For example, if you're driving a car, you might have another
+[172.72s -> 179.04s]  vehicle in your blind spot. For example, for this red car, you might not see the blue car or
+[179.04s -> 183.28s]  the trunk, but they're very relevant to its future state, so these are situations where
+[183.28s -> 188.88s]  partial observability really matters. If you're playing a video game with first-person observations,
+[188.88s -> 192.32s]  there might be a lot in the video game that is very relevant, maybe things you've seen in
+[192.32s -> 196.24s]  the past that are very important to remember in order to play the game effectively,
+[196.24s -> 200.88s]  but that you can't see in the current observation. Another example of a setting where
+[200.88s -> 204.96s]  partial observability is extremely important is interaction with other agents. If you have a
+[204.96s -> 210.00s]  robot that is supposed to interact with humans, the mental state of the human is actually
+[210.00s -> 213.92s]  the unobserved part of the state, so you might observe what they say or do, but you don't
+[213.92s -> 218.48s]  necessarily get to observe what is in their mind, what is their desire, what is their preference,
+[218.48s -> 221.68s]  what they want to get out of the interaction, and that's a very complicated instance of
+[221.68s -> 226.56s]  partial observability. Another example of partial observability is dialogue.
+[227.28s -> 233.92s]  If your observations are textual strings, they could be for human interaction, it could also
+[233.92s -> 238.00s]  be that you're interacting with, let's say, a text-based game or something, or even a tool
+[238.00s -> 242.72s]  like a Linux terminal. In that case, the history of the interaction really matters, and just the
+[242.72s -> 247.36s]  current phrase, like the last word that you saw, doesn't really convey all that much information
+[247.44s -> 250.56s]  by itself. So these are all examples of partially observed settings.
+[252.24s -> 255.68s]  Now, partially observed MDPs can be really, really weird.
+[258.08s -> 261.84s]  We can make them less weird with a little simplification, but if we just approach them
+[261.84s -> 266.08s]  naively, there are a lot of things that happen in partially observed MDPs that simply
+[266.08s -> 271.28s]  cannot happen in fully observed MDPs. One example is information gathering actions. So,
+[272.00s -> 276.64s]  under partial observability, it can be optimal to do things that don't actually lead to
+[276.64s -> 281.76s]  higher rewards by themselves, but give you more information about where the rewarding
+[281.76s -> 287.28s]  things might be. For example, if you're traversing a maze, if you just treat it as a fully observed
+[287.28s -> 292.80s]  task, maybe your state is the position in the maze, and you just have to run RL on this maze
+[292.80s -> 298.00s]  until you solve this one maze, then everything is perfectly fine, and the optimal action is
+[298.00s -> 304.00s]  always to move towards the exit. But imagine that you are trying to solve a distribution of
+[304.00s -> 308.08s]  mazes, so you're trying to get a single policy that can solve any maze. Now, this is a partially
+[308.08s -> 311.84s]  observed problem if you don't get to see the entire maze right from the start, if you just
+[311.84s -> 318.08s]  get, let's say, a first-person view, because now the unobserved state is the configuration of
+[318.08s -> 322.32s]  the maze that you're in. So in that situation, it might actually be optimal to peak over the
+[322.32s -> 328.64s]  top of the maze and try to observe where all the intersections are, even though that
+[328.64s -> 332.16s]  information gathering action by itself doesn't actually get you closer to the exit.
+[332.16s -> 337.44s]  So information gathering actions are something that emerges in optimal policies and MDPs that
+[337.44s -> 343.36s]  never emerges in fully observed MDPs. Another kind of weird property is that
+[343.36s -> 352.32s]  partially observed MDPs can lead to stochastic optimal policies, whereas in fully observed MDPs,
+[352.32s -> 356.88s]  there always exists a deterministic policy that is optimal. It doesn't mean that all the
+[356.88s -> 360.72s]  all optimal policies are deterministic, there could be an equally good policy that is stochastic,
+[361.52s -> 365.60s]  but in fully observed MDPs, you will never get into a situation where only stochastic policies
+[365.60s -> 368.96s]  are optimal, whereas in partially observed MDPs, that's actually possible.
+[370.72s -> 376.96s]  Here's a really simple example. Let's say that you have a three-state MDP where you can
+[376.96s -> 382.56s]  be in state a, b, or c. The reward is always in the middle, so state b has a reward of plus one,
+[383.36s -> 389.68s]  and your probability of starting in each state is 0.5 in state a and 0.5 in state c, so
+[389.68s -> 394.48s]  you're 50% likely to start on the left and on the right. And let's say that now you
+[394.48s -> 399.12s]  make this partially observed, where your observation contains no information. So
+[399.12s -> 402.48s]  essentially in a partially observed MDP of this sort, since you get no observation at all,
+[402.48s -> 406.88s]  you basically just have to commit to an action either left or right, and a deterministic policy
+[406.88s -> 411.28s]  would have to choose to either always go left or always go right. Now if it chooses to
+[411.28s -> 415.84s]  always go left, then if it starts in state c, it'll eventually arrive at the good state b.
+[415.84s -> 418.08s]  If it starts in state a, it'll never arrive at state b.
+[419.12s -> 422.88s]  If it commits to always going right, then if it starts in state a, it'll get the reward,
+[422.88s -> 427.12s]  but not if it starts in state c. And since the deterministic policy here would have to be
+[427.12s -> 430.64s]  a function of the observation and the observation has no information, the only choice for
+[430.64s -> 433.76s]  deterministic policy is to commit to always going left or always going right.
+[434.72s -> 438.72s]  But if you have a policy that goes left or right with 50-50 probability, then whether it
+[438.72s -> 442.72s]  starts in a or c, it'll eventually get to b. So this is an example where a stochastic
+[442.72s -> 445.76s]  policy is actually better than any deterministic policy.
+[448.48s -> 456.08s]  Okay, now at this point we could ask, which of the RL algorithms that we learned about before
+[456.08s -> 460.96s]  can actually handle partial observability correctly? Now we have to be really careful
+[460.96s -> 464.00s]  with this question, because what does it mean to handle it correctly?
+[466.40s -> 470.16s]  So we'll get to that in a second, but first let's go over the different methods,
+[470.80s -> 477.04s]  and then we'll discuss this. So I'll discuss three methods, three classic methods really.
+[477.04s -> 481.36s]  Policy gradients, the first one that we discussed, which constructs an estimator of the
+[481.36s -> 485.52s]  policy gradient using some kind of advantage estimate, using this familiar grad log pi
+[485.52s -> 490.88s]  formula that we saw before. So could we in policy gradient simply replace the state with
+[490.88s -> 495.28s]  the observation, just feed in the observation, the policy, and just use exactly the same
+[495.28s -> 500.80s]  gradient estimator? That's a good question. Value-based methods, could we
+[502.48s -> 508.24s]  simply take, let's say, the Q-learning equation and simply replace s with o? Is that a valid
+[508.24s -> 513.44s]  thing to do? And model-based RL methods, let's say the simplest kind of model-based RL method
+[513.44s -> 518.40s]  where we train a model that predicts the next state, given the current state in action,
+[518.40s -> 521.84s]  and then plan through that model, can we simply replace s with o in this case?
+[521.84s -> 528.72s]  And of course, this is a little bit of a trick question because before we can even begin answering
+[528.72s -> 533.28s]  this for each of these three methods, we have to understand what does handle actually mean?
+[533.28s -> 536.00s]  What does it mean to handle partial observability correctly?
+[537.76s -> 541.68s]  Now take a moment to think about this. What would you want out of the method like this? Like
+[541.68s -> 545.36s]  let's say that it was valid to simply replace the state of the observation, what would you
+[545.36s -> 548.88s]  hope to get out of the method that works correctly versus what could go wrong with a method
+[548.88s -> 550.08s]  that does not work correctly?
+[554.32s -> 558.72s]  So in all of these cases, we're going to be trying to get a policy
+[558.72s -> 561.92s]  that looks at an observation rather than a state and produces an action.
+[563.92s -> 569.60s]  And what we would hope to get, if the method is working properly, is the best policy that is
+[569.60s -> 576.32s]  possible given that we only get to see the current observation. So in the example with the
+[576.32s -> 580.00s]  three states, that best policy would be one that goes left or right with 50 probability,
+[582.08s -> 588.72s]  and this is the best reactive policy. Now of course you can't get, you can do a lot better
+[588.72s -> 591.84s]  if you get a policy that is not reactive, if you get a policy that has memory.
+[592.40s -> 596.32s]  But for now we're just asking the question, can we get the best possible policy under
+[596.32s -> 600.08s]  the representational constraints we're under, meaning that under the constraint the policy
+[600.08s -> 604.64s]  only gets to look at the current observation. So it's the best policy in the class of
+[604.64s -> 608.72s]  memoryless reactive policies. We can't hope to do better than that unless we actually
+[608.72s -> 613.12s]  change the policy class. For now we're not changing the policy class, we're just changing,
+[613.12s -> 617.12s]  we're just varying the algorithm and trying to replace the states with observations directly. So
+[617.12s -> 621.52s]  handle means find the best policy in the class of memoryless policies.
+[625.28s -> 633.12s]  Okay, so for this notion of handle, take a moment to think about whether we would get the best
+[633.12s -> 638.32s]  policy in the class of memoryless policies with naively replacing states with observations
+[638.32s -> 641.68s]  for policy gradients, value-based methods, and model-based RL.
+[646.80s -> 649.76s]  Well, let's start our conversation by talking about policy gradients.
+[650.88s -> 655.52s]  So it's very tempting to just say, well, if we want a policy that takes in the observation
+[655.52s -> 661.36s]  and outputs the action, let's use the same grad log pi equation and just naively swap out
+[661.36s -> 668.48s]  s for o. Is this correct? Well, interestingly enough, our derivation of the policy gradient,
+[669.36s -> 673.84s]  going back to the beginning of the course, never actually assumed the Markov property.
+[674.56s -> 681.28s]  It assumed that the distribution factorizes, meaning that the chain rule of probability can
+[681.28s -> 685.60s]  be applied, but that's always true. It didn't actually assume that the state that was going to
+[685.60s -> 690.00s]  the policy de-separates the future from the past. So it's actually totally okay to use
+[690.40s -> 696.56s]  this grad log pi equation. However, the advantage estimator takes a little bit of care, because
+[696.56s -> 700.48s]  there are multiple ways to estimate the advantage in policy gradients, and some of them can get us
+[700.48s -> 707.04s]  in trouble, whereas others are totally fine to use. So the key point is that the advantage
+[707.04s -> 713.04s]  is a function of the state s, t. The advantage is not necessarily a function of the observation o, t.
+[713.12s -> 721.60s]  So the advantage is not dependent on s, t minus one, but if you don't have the state, then you
+[721.60s -> 726.80s]  might get in trouble. So that's why it's totally okay to use r, t plus the next value minus the
+[726.80s -> 731.28s]  current value as your advantage estimator with some function approximator for v, because
+[732.00s -> 736.56s]  when you're training a function approximator for v as a function of state, you're basically
+[736.56s -> 741.28s]  leveraging the property that every time you see the state s, you're going to expect to get the
+[741.28s -> 746.40s]  same value regardless of how you got to the state s. So that's why v-hat only needs to be a function
+[746.40s -> 751.28s]  of the present state. It doesn't need to take past states into account because of the Markov
+[751.28s -> 755.12s]  property. The Markov property tells us the value is only going to be a function of the current state,
+[755.12s -> 760.16s]  not dependent on how you got to that state. But of course that's not true for observations,
+[760.16s -> 766.40s]  so you can't simply swap out the argument to v-hat and replace s, t with o, t. So it's not okay
+[766.40s -> 771.36s]  to train v-hat of o, t, because the value depends on, might depend on past observations,
+[772.24s -> 774.32s]  because the current statement depends on past observations.
+[776.24s -> 781.52s]  So what this means is that if you're going to use policy gradients, if you use the regular
+[781.52s -> 787.84s]  Monte Carlo estimate, if you just simply plug in the sum of rewards, that is okay, because that
+[787.84s -> 793.44s]  derivation did not actually use the Markov property. But if you try to put in a value function
+[793.44s -> 798.48s]  estimator, that is no longer okay, because that value function estimator for the advantage function
+[799.92s -> 805.84s]  is not a function of the observations. It's a function of the state, and the state depends
+[805.84s -> 814.08s]  on past observations. So this type of estimator is not okay. Now, as a pop quiz, something that
+[814.08s -> 819.44s]  I might suggest that you all think about for a second is, we learned before we started talking
+[819.44s -> 823.60s]  about value function estimators and baselines and all that, we learned that we could simply
+[823.60s -> 830.32s]  take those rewards that multiply the grad log pi and use that causality trick to multiply grad
+[830.32s -> 836.80s]  log pi with the sum of rewards from t to the end rather than from 1 to the end. So is it okay
+[836.80s -> 841.84s]  to use this causality trick when you have partial observability? Take a moment to think about this.
+[841.84s -> 851.68s]  Okay, so I'll give away the answer. The answer is that this is actually totally fine, because
+[851.68s -> 856.08s]  the causality trick did not use the Markov property either, it simply used the property
+[856.08s -> 860.16s]  that the future doesn't influence the past. Now the future doesn't influence the past even if
+[860.16s -> 863.68s]  you're acting under partial observability, so this is actually okay to do, and in fact it's
+[863.68s -> 868.96s]  possible to prove it by showing that the expected value of grad log pi multiplying the rewards
+[868.96s -> 873.84s]  from past time steps actually averages out to 0 just like it does with states. What is not
+[873.84s -> 878.88s]  okay to do is use v-hat as the advantage estimator. You might also consider whether it's
+[878.88s -> 883.92s]  okay to use v-hat as a function of observations as a baseline. That's also an interesting question.
+[884.88s -> 889.20s]  It turns out that that is actually also okay for the kind of simple reason that we could
+[889.20s -> 894.00s]  use anything we want as a baseline and the estimator is still unbiased. It could be that
+[894.00s -> 898.40s]  using a value function that only depends on the observation as a baseline might not reduce
+[898.40s -> 901.52s]  variance as much as we would like, but it's always unbiased simply because all baselines
+[901.52s -> 907.28s]  are unbiased regardless of what they are. Okay, so that's policy gradients. The short version of
+[907.28s -> 910.88s]  policy gradients is they are okay to use, but you have to be careful with that advantage
+[910.88s -> 916.64s]  estimator. What about value-based methods? Can you simply take, for example, the Q-learning
+[916.64s -> 921.76s]  update rule and naively replace states with observations? Would that actually give you the
+[921.76s -> 929.92s]  best memoryless policy? Well, the answer here follows the same logic as on the previous slide.
+[929.92s -> 934.64s]  For the same reason that it was not okay to make the value function a function of only the
+[934.64s -> 939.20s]  observation, that same thing makes it not okay to make the Q-function a function of only the
+[939.20s -> 944.64s]  observation. Basically, Q-learning relies on the assumption that every time you visit the state
+[944.64s -> 948.64s]  s, regardless of how you got there, your value is going to be the same for all the different
+[948.64s -> 953.84s]  actions, which is absolutely true when you have Markovian states, but it is not true for
+[953.84s -> 958.16s]  observations because if you observe a given observation O, your value for different actions
+[958.16s -> 961.84s]  might depend on the previous observations, so it might depend on how you got there,
+[961.84s -> 964.48s]  and that actually makes this Q-learning rule invalid.
+[967.12s -> 970.96s]  So value-based methods do not work without the Markov property. You simply cannot naively
+[970.96s -> 976.24s]  substitute the observation in place of the state. Of course, if the observation is essentially
+[976.24s -> 980.32s]  a Markovian state like it is in most Atari games, this can be close enough and the results
+[980.32s -> 984.80s]  might be fine, but in general, the more partial observability you have, the worse this will work,
+[984.80s -> 990.32s]  and a very obvious way to see this would be to note that the way you extract a policy from the
+[990.32s -> 995.68s]  Q-function is to take the action with the largest value. That will always be a deterministic
+[995.68s -> 1000.64s]  policy, but we saw before that POMDPs can sometimes have stochastic optimal policies.
+[1000.64s -> 1005.76s]  Since Q-learning never yielded a stochastic policy, there's absolutely no way that it could
+[1005.76s -> 1009.92s]  yield the optimal policy, for example, in that three-state MDP where stochastic strategy was
+[1009.92s -> 1015.20s]  more optimal. Okay, what about model-based RL methods?
+[1018.64s -> 1023.76s]  Could we simply substitute O in place of S in our predictive model and then get the correct
+[1023.76s -> 1030.00s]  answer? It turns out the answer is very much no, and here's an example to illustrate why this
+[1030.00s -> 1034.40s]  is such a bad idea. Let's say that we have the following environment. We have two doors,
+[1035.12s -> 1041.68s]  and we start off in a state where we're going to approach one of these two doors, and we're
+[1041.68s -> 1044.48s]  going to try that door, and if it's locked, what we should do is we should try the other.
+[1045.28s -> 1050.24s]  And which door is locked or unlocked is going to be random, so part of the state is which
+[1050.24s -> 1053.76s]  door is locked or unlocked. You don't get to observe that state, you just see that you're in
+[1053.76s -> 1056.96s]  front of the left door or in front of the right door, so it's a partially observed problem.
+[1056.96s -> 1064.16s]  You don't observe the state of which door is locked or not until you try it. Now, there is an
+[1064.16s -> 1070.00s]  optimal strategy here, even a memoryless strategy, which is that if you're in front of a door,
+[1070.00s -> 1075.68s]  you should try it first and then move on to the next one, or if you have to be memoryless and
+[1075.68s -> 1078.88s]  you're not allowed to remember if you tried the door, just randomly decide whether to switch to
+[1078.88s -> 1083.12s]  a different door or try the lock, just like in a three-state example. So there is a way to
+[1083.12s -> 1086.88s]  actually solve this, even if you don't get to remember what you did before, nor do you get
+[1086.88s -> 1092.40s]  to remember, nor do you get to observe whether the door is locked or not. So let's say that
+[1092.40s -> 1096.08s]  you have an observation for being at the left door, an observation for being at the right door,
+[1096.08s -> 1101.04s]  an observation for when you pass through the door, and then you want to train the model.
+[1101.60s -> 1104.88s]  So the model is going to be predicting what's the probability that you get to the
+[1104.88s -> 1108.80s]  past observation, the one where you passed the door, given that your current observation
+[1108.80s -> 1113.20s]  is the left door and your action is to open. And let's say that on every episode,
+[1113.20s -> 1117.92s]  each door is 50% chance, so 50% chance that the left is unlocked, 50% chance that the
+[1117.92s -> 1122.48s]  right is unlocked, and they're exclusive, so you always just flip a coin and unlock either
+[1122.48s -> 1127.12s]  the left or the right door. So in half the episodes you'll pass and half the episodes
+[1127.12s -> 1130.64s]  you won't pass. So that means that if you try to actually estimate these probabilities,
+[1130.64s -> 1134.72s]  if you try to train the model, you'll get a probability of 0.5. But what's the,
+[1134.72s -> 1141.04s]  what's a good strategy if the probability of unlocking the door is 0.5? Well, if you have a
+[1141.04s -> 1144.96s]  50% probability to open the door each time you try, which is what this model is actually trying
+[1145.04s -> 1149.20s]  to represent, then you could just get through the door by trying repeatedly,
+[1149.20s -> 1151.76s]  if it's 50% each time independently, if you just keep trying the door,
+[1151.76s -> 1155.04s]  eventually you'll get through it. But that's of course not how the world works.
+[1155.04s -> 1158.24s]  If you tried the left door and it didn't unlock, it's because the door is locked.
+[1158.24s -> 1162.72s]  No matter how many times you try it, it'll remain locked. But this Markovian model
+[1162.72s -> 1166.88s]  simply cannot represent that. It cannot represent the fact that if you tried the door before,
+[1166.88s -> 1171.92s]  it'll not unlock if you try it again, because the probability of O' is only a function
+[1171.92s -> 1176.48s]  of the current observation and the current action that you're taking. It is not dependent
+[1176.48s -> 1181.60s]  on previous actions in this model. So this Markovian model simply cannot be used with
+[1181.60s -> 1185.52s]  non-Markovian observations, because it will lead to these ridiculous conclusions that if you
+[1185.52s -> 1190.24s]  keep trying the locked door, eventually it will unlock. The problem is that the model simply,
+[1190.24s -> 1193.28s]  the structure of the model simply does not match the structure of the environment.
+[1196.72s -> 1200.24s]  In reality, the probability that you'll pass is actually 0 if the door didn't open before,
+[1200.24s -> 1203.76s]  but you can't represent it with this model, because the model doesn't take in past observations
+[1203.76s -> 1211.20s]  and actions as input. Okay, now so far we talked about memoryless fallacies,
+[1211.20s -> 1214.80s]  but of course that's a pretty artificial restriction. Especially the door example
+[1214.80s -> 1219.28s]  hopefully illustrates this. In reality, if you try the door, you'll remember that you tried
+[1219.28s -> 1222.80s]  it before and that it did not unlock, so you'll know to do something different in the future.
+[1222.80s -> 1227.20s]  So of course in practice, if we want to get good solutions to partially observe Markov decision
+[1227.28s -> 1233.36s]  processes, we really should employ non-Markovian policies that get observation histories as input.
+[1237.52s -> 1241.20s]  And there are a few ways that we could approach this. One simple way to approach this is to use
+[1241.20s -> 1246.88s]  what is called a state space model. So with state space models, what we're essentially doing is
+[1246.88s -> 1252.40s]  we are learning a Markovian state space given only observations. And we saw this before when
+[1252.40s -> 1257.68s]  we talked about variational inference. So if we train, for example, a sequence via e
+[1257.68s -> 1261.92s]  where the observables are sequences of observations and the hidden states are sequences
+[1261.92s -> 1268.48s]  of latent states where we have dynamics of latent space with maybe a zero mean unit variance
+[1268.48s -> 1272.88s]  prior on the initial state and some learned transition probability, which is Markovian,
+[1272.88s -> 1276.72s]  and an observation probability that models the distribution of an observation given the current
+[1276.72s -> 1282.00s]  hidden state and an encoder to encode a history of observations into the current hidden state.
+[1282.00s -> 1286.00s]  Then these z's will actually represent a Markovian state of the environment and this can actually
+[1286.00s -> 1290.88s]  work quite well. So if you can learn the sequence via e, just like we discussed in the variational
+[1290.88s -> 1293.76s]  inference lecture, if you don't remember how this works, go back to the variational inference
+[1293.76s -> 1298.80s]  lecture and recap that. If you can learn this, then you can actually directly substitute z
+[1298.80s -> 1303.60s]  in place of s. So you can't do the s thing because you don't have state, you can't do the
+[1303.60s -> 1308.48s]  observation thing because that's incorrect, but you can do it with z's as the state input
+[1308.48s -> 1312.48s]  into the Q function. That's actually valid because we train disease to obey the Markov property
+[1312.48s -> 1319.12s]  because they have Markovian dynamics. Now why might this by itself not be a good enough
+[1319.12s -> 1323.92s]  solution to all POMDPs? So this is correct, it's valid, but why might it not be good enough?
+[1326.64s -> 1330.56s]  Well the reason it's not good enough is because in some cases actually training this
+[1330.56s -> 1336.80s]  predictive model is very hard and in fact in many cases it's not necessary to be able to fully
+[1336.80s -> 1342.56s]  predict all observations in order to run RL. So if you could predict all observations, for example
+[1342.56s -> 1345.92s]  as in the papers that we discussed in the variational inference lecture where you directly
+[1345.92s -> 1350.00s]  predict the images of these MuJoCo environments, then you can actually use the underlying
+[1350.00s -> 1354.24s]  hidden states as Markovian state spaces, but this is a harder problem potentially
+[1354.24s -> 1357.92s]  than solving the RL problem, like actually generating these images, generating all those pixels
+[1357.92s -> 1362.48s]  might be more difficult than recovering the optimal policy. So maybe we don't need good
+[1362.48s -> 1371.36s]  predictions to get high rewards. Here's what we could do. What we could do instead is we can observe
+[1371.36s -> 1376.08s]  that the state space model when it runs inference actually uses a history of observations
+[1376.08s -> 1381.84s]  to infer z. So the encoder takes all the previous observations and figures out a distribution
+[1381.84s -> 1386.72s]  over the current z, that's how the sequence VE worked. Well if we're going to take a history
+[1386.72s -> 1393.60s]  of observations, what if we just take note that the zt is a function of an observation history?
+[1393.60s -> 1398.88s]  So it can contain more information in the observation history. So if we use the observation
+[1398.88s -> 1404.08s]  history itself as our state representation, it'll contain just as much information as the zt that
+[1404.08s -> 1408.48s]  we're inferring from the sequence VEs. So what if we just define our state that way? What if
+[1408.48s -> 1414.64s]  we say that our state st is just all the observations o1 through ot? If it was good enough
+[1414.64s -> 1419.60s]  before it infers zt from o1 through ot, that means that o1 through ot contains all the information
+[1419.60s -> 1423.68s]  we need to get a Markovian state, which means that it should be a Markovian state itself.
+[1424.24s -> 1429.36s]  So does that work? And does that work basically amounts to asking does a history
+[1429.36s -> 1435.28s]  obey the Markov property? So the Markov property just says that the state st plus 1 is
+[1435.28s -> 1440.00s]  conditionally independent of state st minus 1 given the current state st. And now the current
+[1440.00s -> 1445.28s]  state st is all the observations up to t. The previous state st minus 1 is all the observations
+[1445.28s -> 1452.00s]  up to t minus 1. And what this shows us is that the previous observations
+[1453.12s -> 1459.12s]  tell us nothing that we can't infer from st itself, right? Because st contains st minus 1
+[1459.12s -> 1464.48s]  inside of it. The observations o1 through ot minus 1 are contained inside the sequence o1 through ot,
+[1464.48s -> 1468.48s]  which means that if you already know st, which means you know o1 through ot,
+[1469.20s -> 1472.80s]  finding out st minus 1, meaning finding out all the previous observations, doesn't tell you anything
+[1472.80s -> 1476.80s]  new because that sequence already contains all those previous observations. And that's basically
+[1476.80s -> 1484.00s]  the argument for why history states do obey the Markov property, meaning that the sequence of
+[1484.00s -> 1489.12s]  observations up to time t de-separates the sequence of observations up to time t plus 1
+[1489.12s -> 1493.60s]  from the sequence of observations up to time t minus 1. Because the sequence up to t minus
+[1493.60s -> 1500.56s]  1 is contained inside the sequence up to t, which means that if we apply Q-learning on these history
+[1500.56s -> 1505.68s]  states, meaning that our Q-function is a function of all the observations o1 through ot, this
+[1505.68s -> 1512.32s]  actually will work. So of course we need to design model architectures that can utilize
+[1512.32s -> 1517.04s]  these history states. So how do we represent a Q-function that takes an entire history of
+[1517.04s -> 1521.68s]  observations? Well, if we have a conventional Q-function like the ones you have for homework
+[1521.68s -> 1527.28s]  3 for DQN, which take in a single image, you could simply concatenate a whole bunch of images
+[1527.28s -> 1531.60s]  and feed them into the Q-function. This is actually not as terrible of an idea as it seems.
+[1532.48s -> 1536.48s]  Now you can only use a fixed short history of observations. Let's say you're going to use
+[1536.48s -> 1541.20s]  four observations as input. That is not the full history of observations, but it might in some
+[1541.20s -> 1545.60s]  cases be good enough heuristically, in the sense that if the previous four observations tell
+[1545.60s -> 1548.32s]  you most of what you need to know, it might be Markovian enough to work.
+[1548.32s -> 1556.24s]  But is this bad? Well, it is kind of bad sometimes, because you could get pathological settings like
+[1556.24s -> 1560.24s]  that maze example where you observe the maze, you have to remember the whole maze after you
+[1560.24s -> 1563.68s]  peeked over the top, and then remember it for the entire episode. In that case, a short history
+[1563.68s -> 1567.76s]  won't do, you really need to remember everything. So in the most general case, we need to use a
+[1567.76s -> 1573.04s]  sequence model that can take in a variable-length history of observations as part of our Q-function
+[1573.04s -> 1577.76s]  and then upload the Q-values at the end. And this can be done with any sequence model like
+[1577.76s -> 1583.60s]  an RNN, an LSTM, or a transformer, in which case our Q-function, our policy, or our dynamics model
+[1583.60s -> 1588.08s]  has to be represented with an RNN, LSTM, or transformer. And that's a perfectly reasonable
+[1588.08s -> 1591.92s]  thing to do, and you can train it in kind of directly the obvious way, the same way you train
+[1591.92s -> 1596.32s]  sequence models anywhere else. Now there is a little bit of a practical detail that we need
+[1596.32s -> 1603.68s]  to keep in mind with this. The practical detail has to do with computational efficiency.
+[1603.68s -> 1608.72s]  So let's just work through an example of a deep Q-learning algorithm with histories.
+[1608.72s -> 1613.92s]  Regular Q-learning would collect a transition, add it to the replay buffer, sample a batch from the
+[1613.92s -> 1618.72s]  replay buffer, update the Q-function on this batch, and then repeat. If you want to use history
+[1618.72s -> 1624.96s]  states, what you would do is you would collect the transition, which now is a tuple OTAT OT plus one,
+[1624.96s -> 1629.60s]  you would create the history for the time step t and t plus one by concatenating all the
+[1629.60s -> 1634.24s]  previous observations, and then add these histories to your buffer. And then you would sample a batch
+[1634.24s -> 1639.12s]  of history action next history, and then update the Q-function on this batch. This works, this is
+[1639.12s -> 1644.72s]  a valid way to do RL with history states. But it's super expensive, because now essentially
+[1644.72s -> 1649.76s]  the amount of information you're storing is going to scale as horizon squared, because
+[1649.76s -> 1654.48s]  for every horizon you have, let's say your horizon is capital T, you have capital T
+[1654.48s -> 1658.32s]  time steps, and each one of those has capital T observations inside of it. So this is very
+[1658.32s -> 1663.28s]  expensive, you get quadratic blow-up in memory cost. It's still correct, it's just computational
+[1663.28s -> 1670.08s]  and memory expensive. So one of the things you could do, let's say that you're using an RNN or
+[1670.08s -> 1675.68s]  LSTM, where the neural network for Q inside of it has some hidden state that is used to read in
+[1675.68s -> 1680.96s]  these observations. Well what you could do is you could store the RNN states themselves.
+[1681.76s -> 1688.16s]  So instead of actually storing entire histories, you could say, well the observations O1 and O2
+[1688.16s -> 1694.88s]  are fully summarized by the hidden state of the RNN H2, and the observations O1, O2, O3 are fully
+[1694.88s -> 1700.40s]  summarized by the RNN state H3. So what you could do is you could just reuse the RNN hidden state.
+[1700.40s -> 1704.88s]  Essentially every time you load up a history, you don't load up an entire sequence, you load
+[1704.88s -> 1709.04s]  it up starting from some intermediate point, and then you actually store the RNN hidden state
+[1709.04s -> 1713.52s]  at that point. And you can do this with RNNs and LSTMs. I won't go into great detail about
+[1713.52s -> 1719.20s]  this method. Its basic idea is to essentially use RNN states as though they were Markovian states
+[1719.20s -> 1723.20s]  of the system, which they are, except for a little caveat, which is that the RNN states
+[1723.20s -> 1727.44s]  change as the RNN itself is updated. If you want to learn more about this, check out the
+[1727.44s -> 1731.52s]  paper Recurrent Experience Replay in distributed reinforcement learning. You can use this trick
+[1731.52s -> 1735.20s]  with RNNs and LSTMs, and it works very well for getting very long histories. It actually gets
+[1735.20s -> 1739.76s]  really great performance, for example on Atari games. It's not clear how to do this with
+[1739.76s -> 1744.24s]  transformers, because transformers don't have a single hidden Markovian state, so to my knowledge
+[1744.24s -> 1747.60s]  no one has figured out how to do this with transformers, but for RNNs and LSTMs this is a
+[1747.60s -> 1750.96s]  very effective strategy. So I encourage you to check it out if you want some practical details.
+[1751.92s -> 1756.24s]  So to recap, POMDPs are weird. There are settings, there are things that happen with
+[1756.24s -> 1760.48s]  POMDPs that never happen with MDPs, like stochastic policies and information gathering actions.
+[1761.52s -> 1766.80s]  Some methods just work in the sense that they recover the optimal memoryless strategy,
+[1766.80s -> 1770.00s]  but the most efficient ones, like value-based methods, don't, because they require using
+[1770.00s -> 1774.48s]  value functions. And even those that do work, they still get memoryless policies, which might not be
+[1774.48s -> 1779.60s]  as good as the best policy with memory. We could learn a Markovian state space with models,
+[1779.60s -> 1784.08s]  like sequence VAEs, and that is a valid thing to do. We could also just use history states,
+[1784.08s -> 1787.68s]  which just means using a sequence model to read and observation histories, and that can be an
+[1787.68s -> 1791.20s]  efficient way to do things, except you need to use sequence models then to represent your value
+[1791.20s -> 1793.20s]  functions policies and models.

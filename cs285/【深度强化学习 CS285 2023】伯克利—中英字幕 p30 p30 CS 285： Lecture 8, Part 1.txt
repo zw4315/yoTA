@@ -1,0 +1,179 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.00s]  All right, in today's lecture we're going to continue our discussion of value-based
+[5.00s -> 9.44s]  methods from last time, and we'll discuss some practical deep reinforcement
+[9.44s -> 13.52s]  learning algorithms that can utilize Q functions. So even though we learned
+[13.52s -> 18.12s]  that the value-based methods in general are not guaranteed to converge,
+[18.12s -> 21.52s]  in practice we can actually get some very powerful and very useful
+[21.52s -> 26.00s]  reinforcement learning algorithms out of them, and that's what we'll talk about today.
+[26.00s -> 32.12s]  So first, to recap from last time, we discussed how we could derive a general
+[32.12s -> 35.64s]  class of value-based methods which we called fitted Q duration algorithms,
+[35.64s -> 39.52s]  which do not require knowledge of the transition probabilities and do not
+[39.52s -> 45.56s]  require us to explicitly represent a policy. So in this class of methods
+[45.56s -> 49.80s]  there are basically three steps. Step one, we collect a data set using some
+[49.80s -> 53.68s]  policy, and we learn that these are off-policy algorithms, which means that
+[53.68s -> 57.76s]  they can collect their data sets using a wide range of different policies, they
+[57.76s -> 61.96s]  can aggregate data from previous iterations, and they can use various
+[61.96s -> 67.88s]  exploration rules like epsilon-rede and Boltzmann exploration. Then in step
+[67.88s -> 72.16s]  two, for each transition in our data set, and when I say transition I mean
+[72.16s -> 78.04s]  sI, aI, sI' and rI, two poles, for each transition we calculate what we
+[78.04s -> 82.84s]  call the target, which I'm denoting as yI, which is equal to the current reward
+[82.88s -> 87.76s]  plus gamma times the max over the actions at the next time step. And we
+[87.76s -> 92.20s]  learned that this max is what allows us to make this algorithm off-policy, so
+[92.20s -> 96.12s]  the max basically accounts for the fact that you are implicitly computing
+[96.12s -> 102.04s]  a greedy argmax policy using your current Q function Q phi, and then
+[102.04s -> 107.00s]  evaluating the value of that argmax policy by plugging it into Q phi. So of
+[107.00s -> 110.92s]  course the value of the argmax is simply the max. So that gets us our
+[110.92s -> 118.08s]  targets yI, and then in step three we update our function approximator for Q,
+[118.08s -> 122.86s]  which is parametrized by phi, by finding the argmin parameters, the
+[122.86s -> 127.00s]  parameters that minimize the difference between the output of Q phi
+[127.00s -> 131.96s]  and the targets yI that we just computed. Step two and three can in
+[131.96s -> 136.74s]  general be repeated some number of times before we collect more data. So this is
+[136.78s -> 140.82s]  the general recipe for the fit-of-Q iteration algorithm, which has a number of
+[140.82s -> 144.74s]  choices that we can make. We can choose how many transitions to collect in step
+[144.74s -> 150.22s]  one, we can choose how many gradient steps to take in step three when we
+[150.22s -> 154.26s]  optimize phi, and we can choose how many times to alternate between steps
+[154.26s -> 159.94s]  two and step three before we collect more data. If we choose each of these
+[159.94s -> 164.26s]  hyperparameters to be one, meaning one step of data collection, one
+[164.26s -> 169.98s]  gradient step, and only do step two and three once before collecting more data,
+[169.98s -> 175.58s]  then we get what's called the online Q-learning algorithm, which here I've
+[175.58s -> 179.26s]  called online Q-duration. This is really Q-learning, so if you hear someone say
+[179.26s -> 184.38s]  Q-learning, they really mean this method. Step one, take one action aI and
+[184.38s -> 191.38s]  observe the resulting transition sI aI sI prime rI. Step two, calculate the
+[191.42s -> 197.82s]  target value yI for that transition. Step three, perform one gradient step on
+[197.82s -> 203.02s]  the difference between the output of the Q-function and the value that you
+[203.02s -> 209.06s]  just calculated. And of course, as usual, this algorithm fits into our anatomy of
+[209.06s -> 214.06s]  our reinforcement learning method. The orange box is step one, the green box
+[214.06s -> 219.70s]  is where we fit our Q-function, and the blue box here is somewhat
+[219.70s -> 225.90s]  degenerate. It just involves choosing the action to be the argmax of the Q.
+[225.90s -> 230.46s]  Alright, so what are some things that are problematic about this general
+[230.46s -> 235.42s]  procedure? We learned about a few things last time. For instance, we
+[235.42s -> 239.58s]  learned that the update in step three, even though it looks like a gradient
+[239.58s -> 242.92s]  update, it looks like it's applying the chain rule, it's not actually the
+[242.92s -> 246.38s]  gradient of any well-defined objective. So Q-learning is not gradient
+[246.38s -> 251.22s]  descent. If you are to substitute in the equation for yI, you would see that Q
+[251.22s -> 257.42s]  phi shows up in two places, but there is no gradient through the second term,
+[257.42s -> 263.14s]  so this is not properly applying the chain rule. We could properly apply the
+[263.14s -> 266.14s]  chain rule, and then we get a class of methods called residual gradient
+[266.14s -> 270.46s]  algorithms. Unfortunately, such algorithms tend to work very poorly in practice
+[270.54s -> 276.82s]  because of very severe numerical ill-conditioning problems. There's another
+[276.82s -> 281.98s]  problem with the online Q-learning algorithm, which is that when you sample
+[281.98s -> 287.50s]  one transition at a time, sequential transitions are highly correlated, so the
+[287.50s -> 291.54s]  state I see at time step t is likely to be quite similar to the state
+[291.54s -> 295.62s]  that I see at time step t plus 1, which means that when I take gradient
+[295.62s -> 299.78s]  steps on those samples in step 3, I'm taking gradient steps on highly
+[299.82s -> 305.34s]  correlated transitions. This violates commonly held assumptions for stochastic
+[305.34s -> 308.46s]  gradient methods, and it has a pretty intuitive reason to not work very well,
+[308.46s -> 314.58s]  which we'll discuss next before presenting a solution. All right, so let's
+[314.58s -> 317.76s]  talk about the correlation problem. So here I've just simplified the
+[317.76s -> 322.10s]  algorithm. I've just plugged in the equation for the target value right
+[322.10s -> 325.26s]  into the gradient update, so there's only two steps instead of three, but
+[325.50s -> 331.10s]  it's the same exact procedure. So states that you see one right after the
+[331.10s -> 334.02s]  other are going to be strongly correlated, meaning that the state at
+[334.02s -> 338.14s]  time t plus 1, it's probably similar to the state at time step t, but even if
+[338.14s -> 342.94s]  it's not similar, it probably has a very close relationship to it. And your
+[342.94s -> 346.54s]  target values are always changing, so even though your optimization procedure
+[346.54s -> 351.10s]  looks like supervised regression, in a sense it's kind of chasing its own
+[351.10s -> 354.46s]  tail. It's trying to catch up to itself and then changing out from
+[354.50s -> 360.66s]  under itself, and the gradient doesn't account for this change. So the reason
+[360.66s -> 363.78s]  this might be a problem is if you imagine that this is your trajectory, and
+[363.78s -> 368.22s]  you get a few transitions, you'll kind of locally overfit to these transitions,
+[368.22s -> 371.26s]  because you're seeing very similar transitions right after the
+[371.26s -> 374.54s]  other. And then you get some other transitions, and then you overfit a
+[374.54s -> 377.46s]  little bit to those, and then you see some others, and you overfit to those, and
+[377.46s -> 381.54s]  so on and so on. And then when you start a new trajectory, your function
+[381.54s -> 384.90s]  approximator will have been left off at the point where it had overfitted to the
+[384.90s -> 389.38s]  end of the previous one, and will again be bad. So if it had seen all the
+[389.38s -> 392.86s]  transitions all at once, it might have actually fitted all of them
+[392.86s -> 396.98s]  accurately, but because it's seeing this very local, highly correlated window
+[396.98s -> 401.58s]  at a time, it has just enough time to overfit to each window, and not
+[401.58s -> 408.50s]  enough broader context to accurately fit the whole function. Now we could
+[408.54s -> 412.82s]  borrow the same idea that we had in actor-critic. When we talked about actor-
+[412.82s -> 416.50s]  critic algorithms, we actually discussed a solution to the same exact
+[416.50s -> 420.34s]  problem when we discussed online actor- critic, and the particular solution we
+[420.34s -> 425.06s]  discussed was to parallelize. It was to have multiple workers that each
+[425.06s -> 430.68s]  collect a different transition, S A S' R, collect a batch consisting of
+[430.68s -> 435.18s]  samples from all of these workers, update on that batch, and repeat. And
+[435.22s -> 441.34s]  this procedure can, in principle, address the problem with sequential states being
+[441.34s -> 446.30s]  highly correlated. The sequential states are still correlated, but now you get a
+[446.30s -> 449.94s]  batch of different transitions from different workers, and across workers
+[449.94s -> 454.74s]  they are hopefully not correlated. So it doesn't solve the problem fully, but it
+[454.74s -> 460.90s]  can mitigate it. And of course, just like we learned about an actor-critic, you
+[460.90s -> 464.10s]  could have an asynchronous version of this recipe where the individual
+[464.10s -> 468.90s]  workers don't wait for a synchronization point for an update to the parameters, but
+[468.90s -> 472.82s]  instead query a parameter server for the latest parameters and then proceed at
+[472.82s -> 477.54s]  their own pace. In fact, with Q-learning, this recipe should, in theory, work even
+[477.54s -> 480.86s]  better, because in Q-learning you don't even need the workers to use the
+[480.86s -> 484.78s]  latest policy. So the fact that you might have a slightly older policy that
+[484.78s -> 488.42s]  is being executed on some of the workers is, in theory, not a major
+[488.54s -> 495.02s]  problem. However, there is another solution to the correlated samples problem that
+[495.02s -> 499.06s]  tends to be quite easy to use and works very well in practice, and that's
+[499.06s -> 502.86s]  to use something called a replay buffer. Replay buffers are a fairly old
+[502.86s -> 506.62s]  idea in reinforcement learning. They were introduced way back in the 1990s,
+[506.62s -> 513.98s]  and here's how they work. So let's think back to the full-fitted
+[513.98s -> 518.18s]  Q-iteration algorithm. In the full-fitted Q-iteration algorithm, we
+[518.18s -> 522.46s]  would collect a data set of transitions using whatever policy we wanted, and then
+[522.46s -> 527.22s]  we would make multiple updates on that data set of transitions. So we
+[527.22s -> 532.90s]  would label all the transitions with target values, then we might make a
+[532.90s -> 536.26s]  large number of gradient steps progressing onto those target values,
+[536.26s -> 541.10s]  and then we might even go back and compute new target values before we even
+[541.10s -> 544.14s]  collect more data. So we might go back and forth between step two and step
+[544.14s -> 548.94s]  three, k times, and if k is larger than one, we might do quite a bit of learning
+[548.94s -> 555.78s]  on the same set of transitions. So the online Q-learning algorithm is simply
+[555.78s -> 559.74s]  the special case of this when k is set to one, and we take one gradient
+[559.74s -> 565.54s]  step in step three. And of course, any policy for collection will work so
+[565.54s -> 570.42s]  long as it has broad support. In fact, we could even omit step one altogether.
+[570.42s -> 575.78s]  So we could just load data from the buffer, so we can basically have a bunch
+[575.78s -> 579.62s]  of stored data loaded from a buffer in step two, and then iterate on step three.
+[579.62s -> 585.50s]  So this gives us this view of Q-learning or fitted Q-iteration as a
+[585.50s -> 588.98s]  kind of data-driven method where we just have a big bucket of transitions.
+[588.98s -> 592.54s]  We don't really care so much where these transitions came from, so long as
+[592.54s -> 595.62s]  they cover the space of all possibilities pretty well, and we're
+[595.62s -> 600.06s]  just going to crank away taking more and more updates on those transitions,
+[600.10s -> 605.94s]  alternating between computing target values, and regressing onto those target values.
+[605.94s -> 610.86s]  So we could still take one gradient step in step three if we want, and then
+[610.86s -> 614.62s]  we get something that looks a lot like online Q-learning, only without the
+[614.62s -> 617.78s]  data collection. So if we take one gradient step, then we're basically just
+[617.78s -> 621.76s]  alternating between computing target values for our transitions and taking
+[621.76s -> 629.98s]  gradient step for our transitions. So this gives us this modified version of
+[629.98s -> 634.42s]  the Q-learning algorithm with a replay buffer. In step one, instead of actually
+[634.42s -> 639.66s]  taking steps in the real world, we simply sample a batch, multiple
+[639.66s -> 644.02s]  transitions, siai, siprime, ri, from our buffer, which I'm going to
+[644.02s -> 649.42s]  call b. And then in step two, we sum up our gradient over all of the
+[649.42s -> 652.90s]  entries in that batch. So each time around the loop, we might sample a
+[652.90s -> 656.86s]  different batch, but we sample it i.i.d., independently and identically
+[656.86s -> 660.34s]  distributed from our buffer, which means that our samples are no longer
+[660.34s -> 664.34s]  correlated. And then the only question I have to answer is where do we get our
+[664.34s -> 669.18s]  buffer? So we have multiple samples in the batch, so we have a low variance
+[669.18s -> 672.54s]  gradient, and our samples are no longer correlated, which satisfy the
+[672.54s -> 676.34s]  assumption of stochastic gradient methods. We still unfortunately don't
+[676.34s -> 679.30s]  have a real gradient, because we're not computing the derivative through this
+[679.30s -> 684.78s]  second term, but at least the samples are not correlated. So where will the
+[684.78s -> 689.10s]  data come from? Well, what we need to do is we need to periodically feed the
+[689.10s -> 693.58s]  replay buffer, because initially our policy will be very bad, and maybe our
+[693.58s -> 697.66s]  initial very bad policy just won't visit all the interesting regions of
+[697.66s -> 702.10s]  the space. So we still want to occasionally feed the replay buffer by
+[702.10s -> 706.22s]  using our latest policy, maybe with some epsilon greedy exploration, to
+[706.22s -> 711.82s]  collect some better data, some data that achieves better coverage. So then the
+[711.86s -> 716.22s]  diagram you could think of might look like this. We have our buffer of
+[716.22s -> 719.78s]  transitions, we're cranking away on this buffer doing our off-policy Q
+[719.78s -> 723.58s]  learning, and then periodically we deploy some policy back into the world,
+[723.58s -> 728.94s]  for example the greedy policy with epsilon greedy exploration, to collect a
+[728.94s -> 732.78s]  little bit more data and bring back some more transitions to add back to
+[732.78s -> 736.38s]  our buffer. And that will refresh our buffer with behavior that hopefully gets
+[736.38s -> 743.62s]  better coverage. All right, so putting it all together, we can devise a full kind
+[743.62s -> 749.02s]  of Q learning recipe with replay buffers. Step one, collect a data set of
+[749.02s -> 753.50s]  transitions using some policy, maybe initially it's just a random policy,
+[753.50s -> 757.38s]  later on it will be the argmax policy with epsilon greedy
+[757.38s -> 763.90s]  exploration, and add this data to your buffer B. So that's this part. Step two,
+[763.94s -> 770.66s]  sample a batch from B, and then do some learning on that batch by summing over
+[770.66s -> 775.34s]  the batch this Q learning pseudo-gradient. So we're going to
+[775.34s -> 779.30s]  calculate target values for every entry in the batch, and then we're going to do
+[779.30s -> 783.18s]  the current Q value minus the target value times the derivative, and then
+[783.18s -> 786.62s]  we'll sum it over the whole batch. Since we sum over the whole batch, we
+[786.62s -> 790.38s]  get a lower variance gradient, it has more than one sample, and since we sample
+[790.38s -> 794.66s]  the batch IID from our buffer, our samples are going to be de-correlated, so
+[794.66s -> 801.34s]  long as our buffer is big enough. And we can repeat this process K times. K
+[801.34s -> 805.26s]  equals 1 is very common, but larger K can be more efficient. So if you repeat
+[805.26s -> 810.34s]  this K equals 1 times, and then go out and collect more data, then you get a
+[810.34s -> 816.50s]  fairly classic kind of deep Q learning algorithm with replay buffers.

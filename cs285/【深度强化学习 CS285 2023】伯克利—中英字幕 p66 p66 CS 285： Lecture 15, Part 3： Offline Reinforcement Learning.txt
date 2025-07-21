@@ -1,0 +1,288 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 9.00s]  The second class of classic batch RL methods that I want to cover are methods that use linear fitted value functions.
+[9.00s -> 16.00s]  Now, these days we typically don't use linear fitted value functions, we would usually use deep neural nets to fit our value functions.
+[16.00s -> 27.00s]  But it's still pretty valuable to understand how these methods work, because a lot of the analysis tools that we might use to try to understand deep RL methods could be based on linear function approximation.
+[27.00s -> 37.00s]  And also because some of these techniques, basically in the linear case, they will give us closed form solutions that look like solutions to least squares problems.
+[37.00s -> 42.00s]  And these closed form solutions can give us a hint for how to develop more effective deep RL methods in the future.
+[42.00s -> 52.00s]  So, since this is a graduate class and the point is to really give you guys an in-depth view of reinforcement learning, I want to go over the linear fitted value function methods.
+[53.00s -> 65.00s]  These are kind of the first class of value-based methods for batch RL, and although the ideas that we'll talk about for practical, modern, deep offline RL methods are quite distinct from these,
+[65.00s -> 71.00s]  I think they still give us good perspective and a good toolkit that we might use in the future, especially if you're interested in algorithms development.
+[71.00s -> 79.00s]  So, I'll just be upfront about it and say that if you want to use offline RL methods today, probably you wouldn't use the things that I'm going to talk about next,
+[79.00s -> 84.00s]  but if you want to develop new algorithms or do theoretical analysis, understanding this stuff can be really helpful.
+[84.00s -> 91.00s]  Okay, so offline value estimation. How have people thought about it before?
+[91.00s -> 101.00s]  Well, classically, people have thought about the problem of offline value function estimation as extending existing ideas for approximate dynamic programming and Q-learning to the offline setting,
+[101.00s -> 107.00s]  and deriving tractable solutions with simple function approximators like linear function approximators.
+[107.00s -> 118.00s]  How are people thinking about it now? Well, these days, mostly research in this area deals with deriving approximate solutions with highly expressive function approximators like neural nets,
+[118.00s -> 122.00s]  and the primary challenge in this case turns out to be distributional shift.
+[122.00s -> 127.00s]  So there's a little bit of a disconnect, because the more classic work doesn't really deal with distributional shift.
+[127.00s -> 132.00s]  The reason it doesn't deal with it is because they're assuming that your function approximator is pretty simple,
+[132.00s -> 138.00s]  you're given a good set of features, and the effects, the bad effects of distributional shift are not too bad.
+[138.00s -> 144.00s]  Whereas with deep nets, the bad effects of distributional shift are very large, because the deep nets are so much more powerful.
+[144.00s -> 149.00s]  So the thing that makes these methods work better is also the thing that exacerbates the distributional shift challenge.
+[149.00s -> 155.00s]  So what that means is that the techniques I'll talk about next do not address distributional shift in any meaningful way.
+[155.00s -> 161.00s]  They rather just directly address the problem of how do you estimate the value function from batch data.
+[161.00s -> 168.00s]  And that means that if you apply those techniques with deep nets, they won't work for the reasons that I talked about in the first part of the lecture.
+[172.00s -> 182.00s]  So I'll discuss these older methods next for completeness, and then in the Wednesday lecture, in lecture 16, we'll talk about modern techniques.
+[183.00s -> 188.00s]  Okay, so let's do a little warm-up. Let's do a little warm-up and talk about linear models.
+[188.00s -> 194.00s]  This might seem like a little bit of a digression, but I'll actually connect it back to value-based methods shortly.
+[194.00s -> 203.00s]  So let's say that you have a feature matrix. So this feature matrix, its dimensionality is s by k,
+[203.00s -> 211.00s]  where the cardinality of s is the number of states, so we're talking about a discrete state MDP, and k is the number of features.
+[212.00s -> 218.00s]  So you can think of it as a vector-valued function, capital 5s, where for every state s, it gives you a k-dimensional feature.
+[218.00s -> 230.00s]  But you can also think of it as a matrix with k columns, and each column has an entry for that feature for that corresponding state.
+[230.00s -> 238.00s]  So if you want to read off the feature vector for state 1, you would just take the first row and you would transpose it.
+[239.00s -> 246.00s]  Okay, so that's a feature matrix. So this feature matrix fully defines features at all the states in your MDP.
+[246.00s -> 254.00s]  And don't worry so much about the number of states being finite. This can be extended to infinite states using samples, so that's not really a problem.
+[255.00s -> 260.00s]  Okay, can we do offline model-based RL in the feature space?
+[260.00s -> 265.00s]  So what do we need to do model-based RL? Well, we need to estimate the reward in terms of our features,
+[265.00s -> 272.00s]  and we need to estimate the transitions in terms of our features. And then we need to recover the value function, and then we use that to improve the policy.
+[273.00s -> 283.00s]  So we're going to do everything with linear function approximation, which means that we're going to assume that it's generally okay to represent your reward as a linear function of the features.
+[283.00s -> 291.00s]  So there's some weight vector WR, and if you just multiply phi by WR, that'll be an approximation of the true reward.
+[291.00s -> 298.00s]  Now remember, phi is a matrix that has a number of rows equal to the number of states.
+[298.00s -> 304.00s]  R, the reward, is a vector whose length is the number of states.
+[304.00s -> 310.00s]  WR is a weight vector with a number of entries equal to the number of features.
+[311.00s -> 318.00s]  So you would multiply every column in phi by its corresponding weight in WR and sum them together, and that should give you an estimate of the reward.
+[318.00s -> 326.00s]  So WR looks like this, and if you imagine transposing that WR and multiplying that into the feature matrix,
+[326.00s -> 330.00s]  and then summing that up, you'll get a vector of length equal to the cardinality of S,
+[330.00s -> 336.00s]  and you want to solve some least-square system to get this thing to be as close to R as possible.
+[336.00s -> 341.00s]  So here's the least-square solution. This is just from basic introductory statistics.
+[341.00s -> 344.00s]  If you write down the normal equations, this is what you get.
+[344.00s -> 352.00s]  So this is the least-square solution for WR, phi transpose phi inverse, times phi transpose, times the vector of rewards.
+[354.00s -> 360.00s]  This is not a clever equation, this is literally just the standard normal equations for least squares.
+[363.00s -> 370.00s]  And for now, we're just assuming that we have access to a vector of the rewards for all states, or state action tuples in general,
+[371.00s -> 374.00s]  but we'll talk about the sample-based setting soon.
+[375.00s -> 378.00s]  The other thing we need is we need a transition model.
+[378.00s -> 385.00s]  So a transition model describes how the features right now become the features tomorrow.
+[385.00s -> 392.00s]  So just like we can turn phi into R by multiplying it by some weights WR,
+[392.00s -> 399.00s]  we can turn phi into future phi by multiplying it by some transition probabilities P phi.
+[399.00s -> 401.00s]  Now this is a little bit more subtle.
+[402.00s -> 408.00s]  So P phi, well first let's talk about what we're targeting. What are we trying to approximate?
+[408.00s -> 413.00s]  We're trying to approximate the effect on phi of the real transition matrix.
+[413.00s -> 417.00s]  So there's some real transition matrix, which is S by S,
+[417.00s -> 422.00s]  and that real transition matrix describes which states go to which other states.
+[423.00s -> 428.00s]  Now, the transition matrix on states depends on the policy, which is why I have it written as P superscript pi.
+[429.00s -> 432.00s]  So different policies induce different state transitions.
+[433.00s -> 437.00s]  So it's a policy-specific thing. Everything here is policy-specific.
+[437.00s -> 443.00s]  So essentially we're doing policy evaluation, and then we'll do policy improvement in alternating phases.
+[443.00s -> 450.00s]  So the true transitions are obtained by taking the state-to-state transition matrix and multiplying it by phi,
+[451.00s -> 459.00s]  because if you multiply the matrix phi by P phi, then you will get the features of the next states,
+[459.00s -> 461.00s]  the next states for your current policy.
+[462.00s -> 468.00s]  And what you want to find is a matrix P phi that, when you multiply phi by it,
+[468.00s -> 470.00s]  will approximate this as closely as possible.
+[471.00s -> 475.00s]  So P phi is, you can think of it as a feature space transition matrix.
+[475.00s -> 478.00s]  It's going to be K by K, and this is really important.
+[478.00s -> 480.00s]  It's really important that P phi is K by K,
+[480.00s -> 485.00s]  because essentially what you're doing is you're embedding your original MDP into this feature space.
+[485.00s -> 490.00s]  And, you know, typically K would be much smaller than the cardinality of S.
+[491.00s -> 497.00s]  So you can think of P phi phi as a K by K matrix, just like WR was a K by 1 vector.
+[498.00s -> 502.00s]  So WR, when multiplied into phi, gave you a vector of rewards.
+[502.00s -> 509.00s]  P phi, when multiplied into phi, will give you a matrix of features at the next timestamp.
+[512.00s -> 514.00s]  And all of this is for a fixed policy pi.
+[515.00s -> 519.00s]  Now, if you're wondering how you solve for P phi, it's the same normal equations as before.
+[519.00s -> 523.00s]  So the same least squares formula can be applied to solve for P phi.
+[523.00s -> 527.00s]  It's just our targets now, instead of being R, are P phi phi.
+[527.00s -> 530.00s]  So P phi phi is what we want this to be equal to.
+[530.00s -> 532.00s]  Same exact normal equations.
+[532.00s -> 536.00s]  The fact that they're matrix value doesn't actually change anything, so exactly the same logic applies.
+[536.00s -> 541.00s]  So we have a least square solution to WR, and a least square solution to P phi.
+[545.00s -> 548.00s]  So, we've got our reward model, and we've got our transition model.
+[549.00s -> 552.00s]  And now we're going to try to estimate our value function.
+[553.00s -> 557.00s]  Now, let's say that our value function is also linear in phi.
+[558.00s -> 565.00s]  That means that the value function, V pi phi, can be written as the same matrix phi multiplied by WV.
+[565.00s -> 567.00s]  WV is just some vector of weights.
+[567.00s -> 570.00s]  Just like WR is a vector of weights, WV is some vector of weights.
+[575.00s -> 577.00s]  By the way, here's a little aside.
+[577.00s -> 582.00s]  This doesn't have anything to do with linear function approximation, but it's a useful formula to know.
+[582.00s -> 589.00s]  If we want to solve for V pi in terms of P pi and R, there's actually a really neat solution.
+[589.00s -> 593.00s]  So we can write our Bellman equation in vector form.
+[593.00s -> 598.00s]  You can probably think back to our theoretical analysis of Q-learning from before.
+[598.00s -> 603.00s]  The same exact idea, you can write everything in terms of vectors and matrices.
+[603.00s -> 609.00s]  So the vector-valued version of the Bellman equation is that V pi is equal to R plus gamma P pi times V pi.
+[610.00s -> 612.00s]  And this is not policy improvement, this is not doing the math.
+[612.00s -> 616.00s]  This is just evaluating the value function for a particular policy pi.
+[617.00s -> 622.00s]  And now, some of you might have noticed that this is actually a linear equation.
+[622.00s -> 624.00s]  V pi is a vector.
+[624.00s -> 627.00s]  By the way, what's the dimensionality of V pi?
+[628.00s -> 632.00s]  Well, the dimensionality of V pi is the same as the dimensionality of R, which means it's S by one.
+[633.00s -> 636.00s]  The dimensionality of P pi is S by S, so everything works out.
+[636.00s -> 643.00s]  So we have S linear equations, we have S unknowns, the S entries in V pi, so we can actually solve them.
+[644.00s -> 651.00s]  So we can subtract gamma P pi V pi from both sides, and we get identity minus gamma P pi times V pi is equal to R.
+[652.00s -> 660.00s]  So then you just invert that matrix and you get V pi is equal to the identity minus gamma P pi inverse times R.
+[661.00s -> 667.00s]  It's not entirely trivial to show, but it is actually true that I minus gamma P pi is always invertible,
+[668.00s -> 671.00s]  which means that the solution always exists, and it's always unique.
+[672.00s -> 677.00s]  So that's pretty cool, you can recover the value function as a solution to a system of linear equations.
+[679.00s -> 682.00s]  Now, you can apply the same idea in feature space.
+[683.00s -> 687.00s]  So in feature space, you can write down a feature space Bellman equation,
+[687.00s -> 693.00s]  and by the same logic, you get WV is equal to I minus gamma P pi inverse WR.
+[694.00s -> 700.00s]  So you replace R with WR, we replace P pi by P pi, and all the same stuff works out.
+[703.00s -> 705.00s]  But then we could say, hang on a minute.
+[706.00s -> 712.00s]  So we spent all this time describing models, describing how you can fit the reward, how you can fit the transitions,
+[713.00s -> 715.00s]  and now we just did a very model-free thing.
+[715.00s -> 717.00s]  Do we even need the model?
+[718.00s -> 726.00s]  Well, let's see what happens when we actually substitute in the equations that we derived on the previous slide for WR and P pi.
+[727.00s -> 732.00s]  So we have these equations for WR that we obtained by basically applying least squares,
+[733.00s -> 736.00s]  and we have an equation for P pi that we obtained by doing least squares.
+[737.00s -> 742.00s]  So let's substitute them into this equation for WV, and we get kind of a monster.
+[742.00s -> 747.00s]  So I didn't do anything clever, I just literally copy and pasted that equation.
+[748.00s -> 752.00s]  But after a bit of algebra, you can actually simplify this a little bit.
+[753.00s -> 757.00s]  So there's nothing clever about this algebra, I'm not going to bore you by going through it,
+[758.00s -> 762.00s]  but I just applied a little bit of algebraic simplification, I get this formula for WV.
+[763.00s -> 766.00s]  And this is called least squares temporal difference.
+[767.00s -> 772.00s]  So if someone says I'm doing LSTD, least squares temporal difference learning, this is the formula they're referring to.
+[773.00s -> 780.00s]  It's a formula that relates a transition matrix for a particular policy P pi and a reward vector R,
+[781.00s -> 786.00s]  as well as the future matrices phi, to the corresponding weights on the value function for pi.
+[787.00s -> 791.00s]  So this is actually a fairly famous formula in classic reinforcement learning,
+[792.00s -> 795.00s]  and it is the least squares temporal difference formula, or the LSTD formula.
+[796.00s -> 800.00s]  Okay, now let's talk about doing all of this with samples.
+[801.00s -> 805.00s]  By the way, just to recap a little bit what we just did,
+[806.00s -> 809.00s]  essentially we took this journey through the world of model-based RL,
+[810.00s -> 815.00s]  and arrived at actually a model-free formula for solving for the value function with linear features.
+[816.00s -> 821.00s]  But this model-free formula has a few issues, because it requires us to know P pi and it requires us to know R.
+[822.00s -> 824.00s]  So what we're going to do next is we're going to replace this all with samples,
+[824.00s -> 829.00s]  because once we replace it with samples, we'll get a fully model-free way to solve for the weights
+[830.00s -> 836.00s]  on the approximation to V pi, without requiring knowledge of P pi or R.
+[837.00s -> 842.00s]  So our samples, just like before, consist of a bunch of transitions,
+[843.00s -> 846.00s]  so that's our offline data set of transitions, S, A, R, S prime.
+[847.00s -> 850.00s]  And what we're going to do is we're going to replace,
+[850.00s -> 855.00s]  notice how we just replaced the number of rows in our matrix phi by the number of samples.
+[856.00s -> 859.00s]  So before we had one row for every state, now we have one row for every sample.
+[863.00s -> 870.00s]  And we're going to replace P pi phi with the features at the next time step.
+[873.00s -> 877.00s]  Right, because we don't know what P pi is, but we do know what S prime is,
+[877.00s -> 885.00s]  so we can just evaluate the feature function at S prime and we can get what we call capital phi prime.
+[886.00s -> 888.00s]  And we can just substitute that in there.
+[889.00s -> 894.00s]  And similarly, we can replace our reward vector, which had one entry for every state,
+[895.00s -> 897.00s]  with a reward vector that had one entry for every sample.
+[898.00s -> 900.00s]  So we just rewrite everything in terms of samples.
+[901.00s -> 903.00s]  And it turns out that everything still works exactly the same way.
+[903.00s -> 910.00s]  This is sometimes, this trick of replacing the set of states with a set of samples
+[911.00s -> 912.00s]  is sometimes referred to as the empirical MDP,
+[913.00s -> 915.00s]  because it's the MDP that is induced by our empirical samples.
+[916.00s -> 919.00s]  Everything works exactly the same way, only now we're going to have some sampling error.
+[920.00s -> 927.00s]  So we can just use this to get a sample-wise estimate with the same exact equation.
+[928.00s -> 931.00s]  So now let's turn this into a complete algorithm.
+[931.00s -> 935.00s]  So before we said that we're going to estimate the reward, estimate the transitions,
+[936.00s -> 938.00s]  recover the value function, and then improve the policy,
+[939.00s -> 942.00s]  but now we're going to do step one, two, and three, just with this LSTT equation.
+[943.00s -> 945.00s]  So instead of estimating the reward and estimating the transitions explicitly,
+[946.00s -> 948.00s]  we're just going to directly estimate the value function using our samples,
+[949.00s -> 950.00s]  and then improve the policy.
+[951.00s -> 956.00s]  So the typical policy improvement step would be to recover your policy as the greedy policy
+[957.00s -> 960.00s]  under your value function, and then repeat the process of estimating the value function.
+[961.00s -> 967.00s]  The way you can estimate your value function is by using those LSTT equations.
+[968.00s -> 972.00s]  But the problem is that this actually requires samples from pi.
+[973.00s -> 975.00s]  Notice that we said this is p pi.
+[976.00s -> 978.00s]  So that's actually a little bit of a problem.
+[979.00s -> 982.00s]  So we can use all that stuff on the previous slide
+[983.00s -> 985.00s]  to estimate the value function of the policy that collected the data,
+[986.00s -> 989.00s]  but we can't actually use it to estimate the value function for some other policy,
+[989.00s -> 992.00s]  because we need p pi, and p pi actually depends on pi.
+[993.00s -> 995.00s]  But we're trying to evaluate some other policy that we're learning,
+[996.00s -> 997.00s]  not the one that collected the data.
+[998.00s -> 1001.00s]  So what we're going to do is exactly the same thing that we did
+[1002.00s -> 1003.00s]  when we talked about value iteration versus Q iteration.
+[1004.00s -> 1007.00s]  Instead of estimating the value function, we're going to estimate the Q function.
+[1008.00s -> 1010.00s]  So this trick is not going to work for offline RL for value functions,
+[1011.00s -> 1012.00s]  but it will work for Q functions.
+[1013.00s -> 1017.00s]  And that's what gives us least squares policy iteration, or LSPI,
+[1017.00s -> 1022.00s]  which is an actual offline RL method that we can do with just previously collected data.
+[1023.00s -> 1026.00s]  And the main idea is to basically replace LSTD, least squares temporal difference,
+[1027.00s -> 1030.00s]  with what we can call LSTDQ, which is just LSTD for Q functions.
+[1031.00s -> 1036.00s]  So now, instead of having a feature matrix for a feature for every state,
+[1037.00s -> 1038.00s]  we have state action features.
+[1039.00s -> 1043.00s]  So the number of rows in the full version, the non-sample based version,
+[1044.00s -> 1046.00s]  is S times A, and we probably have more features
+[1047.00s -> 1048.00s]  if we need different features for different actions.
+[1049.00s -> 1050.00s]  There are a few ways of doing it.
+[1051.00s -> 1052.00s]  If you have a small discrete action set,
+[1053.00s -> 1055.00s]  you could simply have A different copies of your features,
+[1056.00s -> 1057.00s]  one for every possible action.
+[1058.00s -> 1062.00s]  So everything else actually stays exactly the same.
+[1063.00s -> 1065.00s]  So you can still derive the same WQ.
+[1066.00s -> 1068.00s]  Again, I won't go through the massive algebra to do this,
+[1069.00s -> 1071.00s]  but it's exactly the same as it was before.
+[1072.00s -> 1073.00s]  So you have the same LSTD equations,
+[1074.00s -> 1076.00s]  but now you use state action features for everything
+[1077.00s -> 1078.00s]  that you get in the rewards.
+[1079.00s -> 1080.00s]  And you can do the same sample-based substitution,
+[1081.00s -> 1082.00s]  so you have your data set of state actions,
+[1083.00s -> 1084.00s]  rewards, and next states.
+[1085.00s -> 1088.00s]  You can compute the reward as a big vector
+[1089.00s -> 1090.00s]  for an entry for every sample.
+[1091.00s -> 1093.00s]  You can still compute phi prime,
+[1094.00s -> 1095.00s]  but notice now there's a little subtlety.
+[1096.00s -> 1098.00s]  Phi prime is the next feature that you get
+[1099.00s -> 1101.00s]  from taking the action in the data set,
+[1102.00s -> 1103.00s]  but then because we're featurizing states and actions,
+[1104.00s -> 1106.00s]  we give it the next state in the data set, S prime,
+[1107.00s -> 1108.00s]  which is the action that the policy
+[1109.00s -> 1110.00s]  would have taken at S prime.
+[1111.00s -> 1112.00s]  Now, we don't have to actually evaluate
+[1113.00s -> 1114.00s]  the following state.
+[1115.00s -> 1116.00s]  We don't have to know what the dynamics
+[1117.00s -> 1118.00s]  will do for pi of S prime.
+[1119.00s -> 1120.00s]  We do need to featurize the action from the policy.
+[1121.00s -> 1122.00s]  And this is very similar to the principle
+[1123.00s -> 1124.00s]  that we had in Q iterations.
+[1125.00s -> 1126.00s]  So we're going to featurize S prime
+[1127.00s -> 1128.00s]  and pi of S prime, and that'll give us phi prime.
+[1129.00s -> 1130.00s]  So a very important property here
+[1131.00s -> 1134.00s]  is that phi doesn't change as the policy changes,
+[1135.00s -> 1136.00s]  but phi prime does change.
+[1137.00s -> 1138.00s]  At the same time, we always featurize the same S prime,
+[1139.00s -> 1140.00s]  the one we have in the data set,
+[1141.00s -> 1142.00s]  but a different action,
+[1143.00s -> 1144.00s]  because that action depends on our policy pi.
+[1145.00s -> 1146.00s]  So phi prime is actually the only thing in here
+[1147.00s -> 1148.00s]  that depends on pi.
+[1149.00s -> 1150.00s]  So you would encode the action pi,
+[1151.00s -> 1153.00s]  not the action in the data.
+[1154.00s -> 1156.00s]  So then LSPI proceeds like this.
+[1157.00s -> 1158.00s]  Compute WQ for your current policy,
+[1159.00s -> 1160.00s]  let's call it pi K,
+[1161.00s -> 1162.00s]  and then compute a new policy pi K plus one,
+[1163.00s -> 1165.00s]  which is greedy with respect to WQ, right?
+[1165.00s -> 1167.00s]  Because with WQ, you can get a full Q function,
+[1168.00s -> 1170.00s]  and therefore you can compute a full policy.
+[1171.00s -> 1172.00s]  And then you set your phi prime
+[1173.00s -> 1175.00s]  to be the new phi prime feature matrix
+[1176.00s -> 1179.00s]  that you would get with this new policy pi K plus one.
+[1180.00s -> 1181.00s]  Okay?
+[1182.00s -> 1183.00s]  So this is now a complete algorithm
+[1184.00s -> 1185.00s]  for doing offline RL.
+[1186.00s -> 1189.00s]  You would actually evaluate this WQ
+[1190.00s -> 1192.00s]  by just computing the right-hand side of this equation,
+[1193.00s -> 1194.00s]  recover pi K plus one,
+[1195.00s -> 1196.00s]  and then set the phi prime
+[1197.00s -> 1198.00s]  to be the corresponding feature matrix.
+[1199.00s -> 1201.00s]  All right, so what's the problem with all this?
+[1202.00s -> 1205.00s]  Well, the issue with actually doing all this in practice
+[1206.00s -> 1208.00s]  is the distributional shift problem that we had before.
+[1209.00s -> 1210.00s]  So this linear approach,
+[1211.00s -> 1213.00s]  you know, you can, of course,
+[1214.00s -> 1215.00s]  re-derive this for nonlinear systems
+[1216.00s -> 1217.00s]  and do some kind of iterative thing,
+[1218.00s -> 1221.00s]  but it doesn't address the distributional shift problem.
+[1222.00s -> 1223.00s]  It doesn't address the distributional shift problem
+[1223.00s -> 1226.00s]  because it's just doing empirical risk minimization
+[1229.00s -> 1232.00s]  at some level via least squares on your training set.
+[1233.00s -> 1234.00s]  And that means that all those issues
+[1235.00s -> 1236.00s]  that we talked about before,
+[1237.00s -> 1238.00s]  where you're essentially doing
+[1239.00s -> 1241.00s]  this adversarial example discovery
+[1242.00s -> 1244.00s]  by maximizing your policy would still afflict you.
+[1245.00s -> 1246.00s]  Where does it afflict you?
+[1247.00s -> 1249.00s]  Well, it afflicts you in step two,
+[1250.00s -> 1251.00s]  where you take the argmax.
+[1251.00s -> 1256.00s]  So, in general, all approximate dynamic programming methods,
+[1257.00s -> 1258.00s]  fitted value iteration, queue iteration, et cetera,
+[1259.00s -> 1260.00s]  they'll all suffer from this action distributional shift,
+[1261.00s -> 1262.00s]  and we have to fix it.
+[1263.00s -> 1264.00s]  So it's good to understand these linear methods
+[1265.00s -> 1266.00s]  because they provide a useful tool for analysis,
+[1267.00s -> 1268.00s]  they provide good perspective on how we arrived
+[1269.00s -> 1270.00s]  at the techniques that we have today,
+[1271.00s -> 1272.00s]  but they don't by themselves really give us
+[1273.00s -> 1274.00s]  a great tool for doing offline RL
+[1275.00s -> 1276.00s]  in the deep RL setting in practice.
+[1277.00s -> 1278.00s]  And how to do that properly
+[1279.00s -> 1280.00s]  is what we'll cover in the next lecture.

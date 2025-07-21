@@ -1,0 +1,115 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.50s]  Okay, next I'm going to talk about gradient-based meta-reinforcement learning.
+[6.50s -> 11.48s]  Let's kind of rewind a little bit and think back to what we discussed before about pre-training
+[11.48s -> 12.72s]  and fine-tuning.
+[12.72s -> 20.38s]  So a very standard way to use pre-training in regular supervised learning is to simply
+[20.38s -> 25.86s]  learn some representations and then fine-tune from those representations for a new task.
+[25.86s -> 30.30s]  So a particular question we could ask is, is pre-training and fine-tuning really just
+[30.30s -> 33.04s]  a type of meta-learning in some way?
+[33.04s -> 36.46s]  And if that's so, can we make this actually precise?
+[36.46s -> 40.18s]  Can we actually meta-train in such a way that pre-training and fine-tuning works well?
+[40.18s -> 42.54s]  And that's basically the idea behind gradient-based meta-learning.
+[42.54s -> 46.78s]  Essentially, if we have better features, then we can do faster learning of a new
+[46.78s -> 52.90s]  task, and we can actually optimize our features so that learning of the new task is faster.
+[52.90s -> 57.46s]  So here's how we could fit this into the framework of meta-learning that we've developed
+[57.46s -> 58.78s]  so far.
+[58.78s -> 63.60s]  So this is that view of meta-learning, meta-reinforced learning from before, where
+[63.60s -> 69.66s]  you are meta-training f-theta so that f-theta produces phi's that lead to high reward
+[69.66s -> 72.50s]  on the meta-training tasks.
+[72.50s -> 79.38s]  And in order for this to work, f-theta needs to be able to use the experience seen so
+[79.38s -> 83.74s]  far in the MDP-MI to produce this phi-i.
+[83.74s -> 86.60s]  So what if f-theta is itself an RL algorithm?
+[86.60s -> 89.16s]  So it's not some kind of RNN that just reads in all the experience.
+[89.16s -> 93.66s]  It's actually like a reinforcement learning algorithm, like a policy gradient algorithm.
+[93.66s -> 98.50s]  And the parameterization of f-theta is really just the initial parameters of the policy
+[98.50s -> 101.42s]  that is fed into it.
+[101.42s -> 106.90s]  So standard RL would take the objective of what's called J-theta, and maybe we'll do
+[106.90s -> 108.70s]  standard RL with policy gradient.
+[108.70s -> 117.50s]  So it will take the current task, compute the gradient of J with respect to the parameters,
+[117.50s -> 119.86s]  and then update the parameters.
+[119.86s -> 122.14s]  So let's say that f-theta does the same thing.
+[122.14s -> 127.80s]  f-theta takes the parameters theta and adds to them the gradient of J-i, the objective
+[127.80s -> 131.86s]  for the MDP-MI, evaluated at theta.
+[131.86s -> 132.86s]  So that's f-theta.
+[132.86s -> 135.18s]  This is the definition of f-theta, this equation.
+[135.34s -> 137.86s]  You could extend this, of course, to several gradient steps, but for now let's just say
+[137.86s -> 139.02s]  one gradient step, okay?
+[139.02s -> 142.54s]  So f-theta updates the parameters theta with one gradient step.
+[142.54s -> 150.14s]  Can we find a theta so that this achieves high reward on all the meta-training tasks?
+[150.14s -> 160.58s]  Now keep in mind that computing the gradient of J-i-theta requires interacting with MDP-MI.
+[160.58s -> 163.74s]  It turns out that we can actually do this optimization, and this is called model-agnostic
+[163.78s -> 165.50s]  meta-learning.
+[165.50s -> 169.24s]  So model-agnostic meta-learning is basically just a kind of meta-learning where f-theta
+[169.24s -> 173.70s]  has this funny parameterization that matches the structure of a reinforcement learning algorithm.
+[173.70s -> 176.42s]  Or if you're doing supervised learning, it matches the structure of a supervised
+[176.42s -> 181.02s]  learning algorithm, basically a gradient update.
+[181.02s -> 184.62s]  So let's think about this visually in pictures.
+[184.62s -> 187.74s]  So let's say that you have your neural network that reads in the state and outputs
+[187.74s -> 188.74s]  the action.
+[188.74s -> 192.26s]  Let's just think about policy gradient for now to keep it simple.
+[192.26s -> 195.98s]  And instead of training on a single task and updating with policy gradient on that, we
+[195.98s -> 197.66s]  would have a variety of different tasks.
+[197.66s -> 202.02s]  So maybe for each task, this ant needs to run in a different direction.
+[202.02s -> 209.26s]  And then for every task, we will update the policy parameters theta with the gradient
+[209.26s -> 215.38s]  of the task theta evaluated at theta plus the gradient of the task theta.
+[215.38s -> 219.86s]  So we're essentially trying to optimize theta so that applying a gradient step on this
+[219.86s -> 225.70s]  task increases the reward on this task as much as possible.
+[225.70s -> 228.06s]  So it's a kind of a second-order thing.
+[228.06s -> 234.78s]  Find the theta so that applying a gradient step increases the reward maximally.
+[234.78s -> 237.18s]  And if you do this for one gradient step, you can kind of visually think of it like
+[237.18s -> 241.46s]  this, that you have your space of parameters theta and you're finding a point in that space
+[241.46s -> 246.50s]  where the optimal solution for each task, theta 1 star, theta 2 star, theta 3 star,
+[246.50s -> 250.02s]  et cetera, et cetera, et cetera, is one gradient step away.
+[250.02s -> 251.66s]  Now, of course, you don't have to do one gradient step.
+[251.66s -> 253.26s]  You can do multiple gradient steps.
+[253.26s -> 257.38s]  And it's a little bit more cumbersome to write out the algebra, but it's quite doable.
+[257.38s -> 262.10s]  The calculation requires second derivatives, which is a little tricky to implement for
+[262.10s -> 263.66s]  policy gradients, but it's quite possible.
+[263.66s -> 268.38s]  So I'll have some references at the end that have the math, and I don't want to bombard
+[268.38s -> 272.38s]  you with a wall of math for this, but it's quite possible to do that calculation.
+[272.38s -> 276.26s]  And this is basically the idea.
+[276.26s -> 279.86s]  But let's unpack a little bit what this method does.
+[279.86s -> 283.98s]  And we'll unpack it using the same tools for studying meta-learning that we discussed before.
+[283.98s -> 287.86s]  So supervised learning maps x to y.
+[287.86s -> 293.70s]  Supervised meta-learning maps detrain in x to y, where x is a test point.
+[293.70s -> 296.74s]  Model-agnostic meta-learning, at least in the supervised setting, can also be viewed
+[296.74s -> 302.24s]  as a function of detrain in x, except that the function has a special structure.
+[302.24s -> 307.68s]  So fmamm will apply to detrain in x is just f theta prime of x, where theta prime
+[307.68s -> 315.08s]  is obtained by taking a gradient step.
+[315.08s -> 320.96s]  So what this makes clear is that this is really just another computation graph.
+[320.96s -> 326.10s]  It's just another architecture for this function f.
+[326.10s -> 329.44s]  Even though it has gradient descent inside of it, you can just think of that gradient
+[329.44s -> 332.04s]  descent as part of the neural network.
+[332.04s -> 335.44s]  And you can implement it with automatic differentiation packages.
+[335.44s -> 337.14s]  For policy gradients, it's a little bit more complicated.
+[337.14s -> 340.56s]  For policy gradients, you do need to be careful, because computing second derivatives
+[340.56s -> 344.96s]  of policy gradients requires some care, and regular autodiff like TensorFlow and PyTorch
+[344.96s -> 346.60s]  won't do it for you.
+[346.60s -> 350.88s]  But for supervised learning, it's pretty straightforward.
+[350.88s -> 355.20s]  You could also ask, though, why do we want to do this, then, if it's just another architecture?
+[355.20s -> 357.60s]  And the reason that you might want to do this is that it does carry a favorable
+[357.60s -> 362.68s]  inductive bias, in the sense that insofar as gradient-based methods like policy gradients
+[362.68s -> 366.68s]  are good learning algorithms, you would expect this to lead to good adaptation procedures.
+[366.68s -> 370.48s]  And in fact, in practice, one of the things that people tend to find with model-agnostic
+[370.48s -> 374.74s]  meta-learning is that you can take many more gradient steps at meta-test time than
+[374.74s -> 376.04s]  you actually meta-trained for.
+[376.04s -> 378.76s]  So the network tends to generalize and allow you to take more gradient steps, which is
+[378.76s -> 384.28s]  not something that you can do with an RNN-based meta-learner, because with an RNN or a transformer,
+[384.28s -> 387.04s]  it just reads it in the training set, produces some answer, and that's it.
+[387.84s -> 391.88s]  There's no notion of training it for longer on the test task, because the learning process
+[391.88s -> 393.72s]  there is just a forward pass of the network.
+[396.72s -> 399.48s]  So to give you a little bit of intuition for what model-agnostic meta-learning does
+[399.48s -> 405.72s]  in practice, let's say that we have this task, which is to, distribution of tasks,
+[405.72s -> 409.48s]  which is for the ant to run either forward or backward or left or right.
+[409.48s -> 413.10s]  If we visualize the policy for the meta-trained parameters, so these are the parameters
+[413.14s -> 420.02s]  before an adaptation, we'll see that the ant runs in place, but if we then give it one
+[420.02s -> 423.86s]  gradient step with a reward for going forward, it'll go forward, and if we give it one gradient
+[423.86s -> 427.54s]  step with a reward for going backward, then it will happily go backward.
+[430.26s -> 434.46s]  So if you want to read more about gradient-based meta-learning, these are papers that describe
+[434.46s -> 437.38s]  various policy gradient estimators.
+[437.38s -> 442.50s]  These are papers that talk about improving exploration with model-agnostic meta-learning,
+[442.54s -> 446.02s]  and these are a few papers that describe hybrid algorithms that are not necessarily
+[446.02s -> 451.54s]  gradient-based, but have a similar kind of structure where they optimize for initializations
+[451.54s -> 454.02s]  such that some other optimizer can make good progress.
+[454.02s -> 456.66s]  So these are good references to check out if you want to learn more about this topic.

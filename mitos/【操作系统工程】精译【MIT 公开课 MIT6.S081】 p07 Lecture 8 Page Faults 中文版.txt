@@ -1,0 +1,796 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 12.00s]  Okay, a quick sound check. Can everybody hear me?
+[12.00s -> 13.00s]  Yep.
+[13.00s -> 23.00s]  Okay, good. Well anyway, let's get going. Good afternoon, or good evening, or good
+[23.00s -> 29.14s]  morning, or good night, wherever you are. Today's lecture is going to be about page
+[29.14s -> 42.14s]  faults. In particular, we're going to plan is to cover or implement, you know,
+[42.14s -> 61.14s]  implement a number of virtual memory features using page faults. And the features that we're
+[61.14s -> 67.14s]  going to be looking at are lazy allocation, which is the topic of the next lab.
+[67.14s -> 83.14s]  You know, we're going to look at the demand, copy the right fork, demand paging, and memory
+[83.14s -> 93.14s]  map files, or mmap. And almost, you know, in sort of a series operating system actually
+[93.14s -> 98.14s]  implements all these features. If you look inside Linux, you'll see all these features
+[98.14s -> 105.14s]  actually are implemented. In xv6, as it stands, none of them are implemented. And in fact,
+[105.14s -> 110.14s]  what a page fault does in xv6, if a page fault happens in user interface, it basically
+[110.14s -> 115.14s]  kills the process. I mean, nothing interesting. And so in this lecture, we're going to explore
+[115.14s -> 119.14s]  what interesting things you could do in the page fault headwork to actually implement
+[119.14s -> 124.14s]  these three features. So this lecture is a little bit less walking through code and
+[124.14s -> 129.14s]  understanding existing code, a little bit more design level in the sense that we don't
+[129.14s -> 134.14s]  even have code to look at. Another thing that is important to mention is that lazy
+[134.14s -> 139.14s]  allocation is the topic of the next lab. Hopefully it will push out today. And copy
+[139.14s -> 145.14s]  and write fork is going to be a topic of one of the labs. And mmap is going to
+[145.14s -> 150.14s]  be another topic of one of the subsequent labs. So this is going to be one of the
+[150.14s -> 153.14s]  interesting parts of an operating system. We're going to be spending quite a bit of
+[153.14s -> 160.14s]  time on it in the labs. Now, you know, before diving into details,
+[160.14s -> 167.14s]  it is probably helpful to take a little bit of a step back. And so you can think
+[167.14s -> 172.14s]  about virtual memory having two major benefits.
+[178.14s -> 183.14s]  One is isolation. So isolation in the sense that
+[183.14s -> 188.14s]  virtual memory allows the operating system to give every application its own address space. And so
+[188.14s -> 193.14s]  it's impossible for one application to muck or by accident or maliciously
+[193.14s -> 198.14s]  to modify another application address space. It also provides isolation between user
+[198.14s -> 204.14s]  and kernel address spaces we talked about quite a bit. And as you've seen in the page table lab.
+[204.14s -> 209.14s]  But sort of another view or another benefit of virtual memory,
+[209.14s -> 214.14s]  you know, alluded to a couple of times earlier, is that it provides a level
+[214.14s -> 219.14s]  of interaction.
+[223.14s -> 228.14s]  The processor instructions can all use virtual addresses, but the kernel
+[228.14s -> 234.14s]  gets to sort of define the mapping of virtual addresses to physical addresses.
+[234.14s -> 240.14s]  And that allows all kinds of interesting
+[240.14s -> 246.14s]  features like the ones that we're going to be talking about in this lecture.
+[246.14s -> 251.14s]  The second.
+[253.14s -> 258.14s]  And the
+[258.14s -> 263.14s]  kernel controls this particular mapping
+[263.14s -> 268.14s]  from virtual to physical address space. And most so far an exercise that mapping
+[268.14s -> 273.14s]  has to be quite boring. In fact, in the kernel, it's mostly direct mapping.
+[273.14s -> 278.14s]  And there are a couple of sort of interesting things that we do with x86 kernel dust with this mapping.
+[278.14s -> 283.14s]  One, as we've seen, is the trampoline page. It allows the kernel
+[283.14s -> 288.14s]  to map one page into many address spaces. Another interesting case that we've seen
+[288.14s -> 293.14s]  is the GART page to protect the stack
+[293.14s -> 298.14s]  both in the kernel and in the kernel space, both in the user space and in the kernel space.
+[298.14s -> 303.14s]  But if you sort of think about it so far, that mapping has been relatively static.
+[303.14s -> 308.14s]  We set it up once, you know, maybe per user, the kernel
+[308.14s -> 313.14s]  page table mapping, we set up once in the beginning and for processes once at fork.
+[313.14s -> 318.14s]  And there sort of the kernel doesn't really do anything else with this mapping.
+[318.14s -> 323.14s]  And what page fault gives us is actually to make this mapping dynamic.
+[323.14s -> 328.14s]  So using page faults,
+[328.14s -> 333.14s]  we can change, or the kernel can change the mapping.
+[341.14s -> 346.14s]  So dynamically on the fly. And this turns out to be an extremely
+[346.14s -> 351.14s]  powerful mechanism. So if you can combine page tables
+[351.14s -> 356.14s]  and page faults, you have an enormous,
+[356.14s -> 361.14s]  the kernel has an enormous amount of flexibility. And the flexibility comes down because you can just change
+[361.14s -> 366.14s]  this level of direction on the fly. And so
+[366.14s -> 371.14s]  what we're going to be doing is basically looking at all kinds of usages of
+[371.14s -> 376.14s]  this dynamic remapping or dynamic changing of the page tables
+[376.14s -> 381.14s]  that gives us interesting features.
+[381.14s -> 386.14s]  So the first thing we may want to think about is a little bit is what information is needed.
+[386.14s -> 391.14s]  So here the page fault happens.
+[391.14s -> 396.14s]  And the kernel wants to respond to this page fault
+[396.14s -> 401.14s]  and what information does it need to actually be able to respond.
+[401.14s -> 406.14s]  Obviously we'd like to have the virtual
+[406.14s -> 411.14s]  address of the virtual address
+[411.14s -> 416.14s]  of defaulting
+[416.14s -> 421.14s]  or the cost of page fault.
+[421.14s -> 426.14s]  What we want to say is the defaulting
+[426.14s -> 431.14s]  virtual address.
+[431.14s -> 436.14s]  And you've seen presumably some of these panic calls in your page fault lab.
+[436.14s -> 441.14s]  And the kernel actually has access to them. In fact, it prints them out when actually a page fault
+[441.14s -> 446.14s]  happens. And it happens to be sitting in the st
+[446.14s -> 451.14s]  file register.
+[451.14s -> 456.14s]  So when a user application causes a page fault,
+[456.14s -> 461.14s]  the page fault basically invokes the same track machinery that Robert
+[461.14s -> 466.14s]  discussed in the last lecture. It's almost completely identical. But in the case of a page
+[466.14s -> 471.14s]  fault, it also will put the defaulting address into that st val
+[471.14s -> 476.14s]  register. So that is one thing that we probably want to know.
+[476.14s -> 481.14s]  The second thing that we probably want to know is the type of default.
+[487.14s -> 492.14s]  Because there may be in terms of we may want to respond differently
+[492.14s -> 497.14s]  in terms of to a page fault due to a load instruction or
+[497.14s -> 502.14s]  a page fault due to a store instruction or a page fault due to like a jump instruction.
+[503.14s -> 508.14s]  And so, in fact, you know, if you look in the RISC-V documentation,
+[510.14s -> 515.14s]  here's the RISC-V documentation in here in the s cause register that
+[515.14s -> 520.14s]  was mentioned in the TRAF lecture. There are a number of
+[523.14s -> 528.14s]  causes that actually related to page faults. So if you look at
+[528.14s -> 533.14s]  number 13 is a load page fault, number 15 is a store page
+[533.14s -> 538.14s]  fault, and then number 12 is an instruction page fault. So these are the
+[538.14s -> 543.14s]  in the s cause register and we get that information.
+[544.14s -> 549.14s]  And so there's three different types, you know, the read, write and
+[549.14s -> 554.14s]  instruction. And just like going back, you know, the
+[554.14s -> 559.14s]  one s cause that actually was caused by the
+[559.14s -> 564.14s]  ECAL instruction to do actually a kernel transfer is number eight.
+[564.14s -> 569.14s]  So that's the one that we saw in the TRAF lecture that we spent a lot of time thinking about in the TRAF lecture.
+[569.14s -> 574.14s]  But basically all the other page faults or exceptions use the same
+[574.14s -> 579.14s]  mechanism to transfer from user space to kernel space
+[579.14s -> 584.14s]  and once in the kernel space, in the case of the page fault, you know, the s t value
+[584.14s -> 589.14s]  register set, the s cause register set. Then the third thing that
+[589.14s -> 594.14s]  we probably want to know is the instruction
+[594.14s -> 599.14s]  or the address, the virtual address of the instruction
+[601.14s -> 606.14s]  that caused the page fault.
+[610.14s -> 615.14s]  And, you know, anybody remember where, you know, from the TRAF lecture, where that
+[615.14s -> 620.14s]  instruction is or where that address is?
+[620.14s -> 625.14s]  Anybody? Is it Cepsi? Yeah, exactly.
+[625.14s -> 630.14s]  And there was this register SEPC, the supervised exception
+[630.14s -> 635.14s]  program counter. There is where it is. And where is that saved?
+[635.14s -> 640.14s]  As part of the TRAF handling code.
+[640.14s -> 645.14s]  In the TRAF frame? Yeah, it ends up in the TRAF frame. There's a TRAF frame EPC
+[645.14s -> 650.14s]  actually has the exception program counter. So we
+[650.14s -> 655.14s]  sort of think about the hardware mechanism and what xv6 does, we have three pieces of information that are probably
+[655.14s -> 660.14s]  extremely valuable to us when we get actually page fault, namely the address of cost default,
+[660.14s -> 665.14s]  the type of default, and the exception program counter. Like where did it happen
+[665.14s -> 670.14s]  to use the space? And the reason that we care a lot about the exception program counter is because
+[670.14s -> 675.14s]  when we probably want to repair, you know, in the handler, we're going to repair the page table
+[675.14s -> 680.14s]  and then we're going to basically restart the same instruction. And, you know, hopefully after repairing
+[680.14s -> 685.14s]  the page fault or repairing the page tables, that instruction can just run without any trouble.
+[685.14s -> 690.14s]  And so it's important that we can resume the instruction that actually that we
+[690.14s -> 694.14s]  caused the fault.
+[694.14s -> 698.14s]  Does that all make sense?
+[698.14s -> 703.14s]  OK, so now I'm going to look at the basic mechanism
+[703.14s -> 708.14s]  and the basic information that the race five is actually giving us. And I want to look at
+[708.14s -> 713.14s]  a basically go through a list of
+[713.14s -> 718.14s]  features that will help us understand actually how we can
+[718.14s -> 723.14s]  use the page fault handler to repair the
+[723.14s -> 728.14s]  page table and do interesting things. And so the first thing I want to look at is
+[728.14s -> 732.14s]  allocation.
+[732.14s -> 737.14s]  And in particular, Sbreak.
+[738.14s -> 743.14s]  So Sbreak is the system call
+[743.14s -> 748.14s]  that xv6 provides that allows an application to basically
+[748.14s -> 753.14s]  grow its heap. So when the application starts,
+[753.14s -> 758.14s]  Sbreak points here at the bottom of the
+[758.14s -> 763.14s]  heap, at the top of the stack. And in fact, it's the same place where
+[763.14s -> 768.14s]  xv6 basically points to. And so when Sbreak is called, for example,
+[768.14s -> 773.14s]  Sbreak is called like one, two, three, four, five, the number of pages that you want to allocate
+[773.14s -> 778.14s]  the Sbreak system call basically bumps up this boundary
+[782.14s -> 787.14s]  to something there. And so what that means is that
+[787.14s -> 792.14s]  when the Sbreak actually happens or the Sbreak system call is called, the kernel will allocate
+[792.14s -> 797.14s]  some physical memory, map it into the address space of the
+[797.14s -> 802.14s]  user application, zero the memory, and then basically return it from the system call.
+[802.14s -> 807.14s]  And the application can
+[807.14s -> 812.14s]  grow that physical memory that it needs or it might want
+[812.14s -> 817.14s]  by just calling multiple times to Sbreak. The application will also decrease
+[817.14s -> 822.14s]  or shrink in its address space by calling Sbreak with a negative number.
+[822.14s -> 827.14s]  But I want to focus on the case where we're growing the address space. And in
+[827.14s -> 832.14s]  xv6 as it is, the Sbreak is
+[832.14s -> 837.14s]  eager, what I'm going to call eager allocation.
+[839.14s -> 844.14s]  Mainly as soon as the Sbreak is
+[844.14s -> 849.14s]  called, the kernel will immediately allocate the physical memory that the application
+[849.14s -> 854.14s]  is asking for. And it turns out that in practice it's actually hard for applications
+[854.14s -> 859.14s]  to predict how much memory they need. So
+[859.14s -> 864.14s]  typically applications
+[864.14s -> 869.14s]  tend to over ask.
+[870.14s -> 875.14s]  So they ask a lot more than they really need.
+[875.14s -> 880.14s]  And often that means that basically the address space
+[880.14s -> 885.14s]  will grow quite a bit, even with memory that's actually never used by the application.
+[885.14s -> 890.14s]  You might think like, oh, that's stupid. How could that happen? Well, you know, we think about like if you write an
+[890.14s -> 895.14s]  application program and a typical application program, maybe it reads some
+[895.14s -> 900.14s]  input or has a matrix that it uses for some computation.
+[900.14s -> 905.14s]  And often the application writer sort of plans for the worst case. It
+[905.14s -> 910.14s]  allocates memory for the biggest matrix that the application might never ever need. But in the
+[910.14s -> 915.14s]  common case, the application may need compute with a much smaller input or a much smaller
+[915.14s -> 920.14s]  matrix. And so it's quite common, in fact, for application
+[920.14s -> 925.14s]  programmers, and probably if you think about your own application, you've written to actually over ask
+[925.14s -> 930.14s]  and actually under use. And we'd like to, in principle,
+[930.14s -> 935.14s]  not a big problem, but using actually virtual memory and page fault handlers,
+[935.14s -> 940.14s]  we can actually totally respond to that in sort of an
+[940.14s -> 945.14s]  intelligent manner and by basically doing lazy
+[945.14s -> 947.14s]  allocation.
+[954.14s -> 959.14s]  And then the basic idea is very simple. At Sbreak,
+[962.14s -> 967.14s]  we're basically going to do almost nothing. The only thing that we need to know, remember, is, of course, that we did grow the address space.
+[967.14s -> 972.14s]  So the only thing we really what we're going to be doing is actually bumping up p size.
+[973.14s -> 978.14s]  You know, whatever with the number, you know, set p size to
+[978.14s -> 983.14s]  whatever the new size plus, you know, n. And where n is the amount of memory that's allocated.
+[983.14s -> 988.14s]  And then, you know, so we don't allocate, the kernel doesn't allocate any physical memory at a particular
+[988.14s -> 992.14s]  point in time, it doesn't zero, there's absolutely nothing.
+[992.14s -> 999.14s]  Then at some point, the application will use or might use that memory correctly, if it is actually one of the pieces of memory that it really needs.
+[1000.14s -> 1005.14s]  And that will cause a page fault because we didn't map
+[1006.14s -> 1011.14s]  that memory actually into the page map yet. And so if we do reference
+[1011.14s -> 1016.14s]  a virtual address, you know, above this p size, but below p size plus n,
+[1017.14s -> 1023.14s]  what we'd like to be happening is that, you know, the kernel will allocate a page and restart the instruction.
+[1023.14s -> 1028.14s]  So if we get a page fault and we see that the virtual address is
+[1028.14s -> 1034.14s]  bigger than p size, it's below p size,
+[1037.14s -> 1042.14s]  then we know that this must be a virtual address and I guess above this tag.
+[1044.14s -> 1050.14s]  We know that this is an address that actually comes out of the heap, but for which the kernel hasn't allocated
+[1050.14s -> 1056.14s]  any physical memory yet. And so the response to this page fault
+[1056.14s -> 1062.14s]  could be reasonable straightforward. In the page fault panel itself, we can allocate a page,
+[1062.14s -> 1068.14s]  using kalloc, allocate one page, zero to page,
+[1071.14s -> 1076.14s]  map the page into the page table, so updating the page tables,
+[1078.14s -> 1082.14s]  and then basically restart the instruction.
+[1082.14s -> 1088.14s]  So, for example, a load instruction or store instruction that wrote or was trying to read from that
+[1089.14s -> 1093.14s]  not allocated piece of memory that actually the process has.
+[1094.14s -> 1100.14s]  Now, after we mapped in this physical page, the restarting instructions should just work.
+[1100.14s -> 1102.14s]  Anir, go ahead.
+[1103.14s -> 1109.14s]  Right. So I was wondering, in the case where we're doing eager allocation
+[1110.14s -> 1116.14s]  and there comes a point where a process consumes so much memory that it actually exhausts the physical memory resource,
+[1117.14s -> 1121.14s]  if we don't do eager allocation, we do lazy instead,
+[1122.14s -> 1126.14s]  at what point would the application know that there's no physical memory?
+[1127.14s -> 1133.14s]  That's a great question. Basically, it almost looks through the application, there's this illusion of
+[1133.14s -> 1139.14s]  unlimited physical amount of memory. At some point, of course, it might use so much,
+[1140.14s -> 1144.14s]  that basically, okay, so we use all physical memory, and so if then it touches one more page,
+[1145.14s -> 1147.14s]  which there's no physical memory present at that particular point in time,
+[1148.14s -> 1150.14s]  then there's a couple actions that the kernel can take.
+[1151.14s -> 1153.14s]  And I'll talk about the more sophisticated ones later.
+[1154.14s -> 1161.14s]  What you're going to be doing in the lazy lab is the memory is up and there's no more free memory,
+[1161.14s -> 1166.14s]  you return an error, or actually you kill the process in that particular case.
+[1168.14s -> 1171.14s]  And so because you're out of memory, so there's nothing the kernel can do,
+[1172.14s -> 1174.14s]  and at that point, you return or kill the process.
+[1176.14s -> 1179.14s]  That's what you're going to do in the lazy lab. We'll see you later in this lecture.
+[1180.14s -> 1181.14s]  You could be more sophisticated than that.
+[1183.14s -> 1187.14s]  And I think this generally brings up a topic that is if we have a collection of processes
+[1187.14s -> 1191.14s]  running on an operating system, there is a limited amount of physical memory,
+[1192.14s -> 1195.14s]  and that limited physical memory must be shared in some way between the applications.
+[1196.14s -> 1200.14s]  And so I'll talk a little bit much more about it in 10-20 minutes.
+[1203.14s -> 1206.14s]  Okay, there's a question in the chat.
+[1207.14s -> 1214.14s]  Why is the condition virtual address, virtual addresses don't necessarily start at zero?
+[1215.14s -> 1219.14s]  Okay, this is a question about this particular check here.
+[1221.14s -> 1233.14s]  So remember, we have our stack here, and we have our data here, and we have our text and user process,
+[1234.14s -> 1238.14s]  and basically we bumped up p-size to something bigger.
+[1238.14s -> 1246.14s]  We have the allocated memory here yet, so this memory has not been physically allocated yet.
+[1247.14s -> 1253.14s]  So this checks if the address falls below p-size, and it actually is a valid address in the user address space.
+[1254.14s -> 1256.14s]  If it were above p-size, presumably that's a programming error,
+[1257.14s -> 1262.14s]  and the program or user application is starting to dereference a memory that actually doesn't have.
+[1263.14s -> 1264.14s]  Hopefully that answered the question.
+[1264.14s -> 1267.14s]  Yeah, thank you.
+[1268.14s -> 1277.14s]  Okay, good. So to get a little bit of a feel for what it actually means in this lazy allocation,
+[1278.14s -> 1285.14s]  and that's probably the only sort of programming or code things that we're going to be doing today,
+[1286.14s -> 1292.14s]  is let's try to sort of sketch out or look actually how it would look in code.
+[1293.14s -> 1302.14s]  And you'll see that it will be surprisingly easy, and furthermore, it's probably a big help for the lazy lab.
+[1303.14s -> 1306.14s]  So hopefully that will help you get going pretty straightforwardly.
+[1307.14s -> 1314.14s]  And it allows us also to look at a couple pagefalls.
+[1316.14s -> 1319.14s]  I had a question actually regarding a point that I made in chat.
+[1319.14s -> 1321.14s]  Why do we actually need to kill the application?
+[1322.14s -> 1326.14s]  Couldn't the operating system just return a narrative that you are out of memory trying to do something else?
+[1327.14s -> 1329.14s]  Let's postpone that question to a little bit later.
+[1330.14s -> 1336.14s]  In the pagefalls, we're going to just kill the process, but we could be more sophisticated in the pixel lab.
+[1337.14s -> 1339.14s]  Real kernels are more sophisticated.
+[1340.14s -> 1343.14s]  Okay, although in the end, they might still kill it.
+[1344.14s -> 1347.14s]  There's no more memory whatsoever to be done. There's basically no choice.
+[1348.14s -> 1352.14s]  Okay, so the first thing we're going to do, we're going to modify.
+[1353.14s -> 1358.14s]  So you remember that SysProc actually grows the address space of the application, allocates memory and all that kind of stuff.
+[1359.14s -> 1360.14s]  We're just not going to do that.
+[1361.14s -> 1367.14s]  We're just going to set p-size to p-size plus n.
+[1368.14s -> 1371.14s]  So let's assume that we're only growing and not worry about shrinking for now.
+[1372.14s -> 1373.14s]  And that is what we're going to be doing.
+[1373.14s -> 1380.14s]  So this grows the virtual address space by n, and that's all we're going to be doing.
+[1381.14s -> 1385.14s]  Let's see if I can make no programming mistakes. I did make a programming mistake.
+[1386.14s -> 1391.14s]  I guess I don't have proc key here, so I'll hold my proc.
+[1391.14s -> 1402.14s]  Good, so the program just runs, or at least we boot.
+[1403.14s -> 1407.14s]  I think if we do like echo hi, we're going to get actually a paid fault.
+[1408.14s -> 1417.14s]  And the reason that we get a paid fault is because the shell who's going to fork echo and the child's going to exec echo,
+[1418.14s -> 1419.14s]  the shell actually allocates some memory.
+[1419.14s -> 1423.14s]  And so the shell calls S break and things are not looking good.
+[1424.14s -> 1428.14s]  But it's sort of interesting to look at the information here.
+[1429.14s -> 1435.14s]  So here it prints out the S cost register, the value in S cost, and we see it's 15.
+[1436.14s -> 1438.14s]  Anybody remember what 15 is?
+[1442.14s -> 1447.14s]  From that table that you showed me a little while ago, that actually is the write or store paid fault.
+[1447.14s -> 1454.14s]  We see that it's process free, that's probably the shell, and we actually see the exception program counter.
+[1455.14s -> 1460.14s]  It's 12a4, and we see the address, the virtual address in which we fault, which is 4008.
+[1461.14s -> 1466.14s]  And so let's look at the, you know, we can look at the assembly of the shell.
+[1467.14s -> 1471.14s]  The make file is nice of us, nice enough for us to actually generate that.
+[1471.14s -> 1476.14s]  And we can look at the address 12a4.
+[1477.14s -> 1485.14s]  And, you know, we see indeed, you know, there's a store instruction, and it looks like that's where we're faulting.
+[1486.14s -> 1496.14s]  So if we scroll back a little bit and look at this assembly here, you know, we see that actually this is in part of the implementation of malloc.
+[1497.14s -> 1500.14s]  So that seems totally reasonable, correct? Here's the malloc implementation.
+[1501.14s -> 1507.14s]  Not surprising that we, presumably, we used S break to get some memory for implementing the user malloc.
+[1508.14s -> 1515.14s]  And we're basically initializing a free list of using the memory that we just gotten from the kernel.
+[1516.14s -> 1522.14s]  And this line 12a4, presumably writes, you know, I guess it writes something in size.
+[1522.14s -> 1527.14s]  And we're writing to memory that actually has to be allocated.
+[1528.14s -> 1536.14s]  Another reason that we can see that the memory is probably not allocated is the shell actually has four pages of text and data.
+[1537.14s -> 1543.14s]  And we're basically sitting just above the fourth page and the fifth page. In fact, we're sitting eight bytes above it.
+[1544.14s -> 1545.14s]  That sort of makes sense.
+[1546.14s -> 1548.14s]  We look at the instruction again, where it's 12a4.
+[1550.14s -> 1559.14s]  You see here that basically probably 0 holds 4,000 and 8 is the additional offset that we're actually dereferencing.
+[1560.14s -> 1561.14s]  So that's the default.
+[1562.14s -> 1570.14s]  And now what we like to do is do something slightly more sophisticated than we're currently doing.
+[1571.14s -> 1574.14s]  And so let's go to proc trap.c.
+[1582.14s -> 1586.14s]  And look at user trap. This happens in user trap.
+[1590.14s -> 1594.14s]  User trap is a function that we, that Robert discussed a week ago.
+[1595.14s -> 1599.14s]  And it just goes through the different causes and performs some action.
+[1600.14s -> 1606.14s]  A little bit here, this line is S classes 8, and that's the point where we're going to do the process system calls.
+[1607.14s -> 1612.14s]  Then there's a line that checks whether it was any devising erupt and processes inside of the devising erupt.
+[1613.14s -> 1618.14s]  And if there's none of those to happen, then basically we get this trap and the process is being killed.
+[1619.14s -> 1626.14s]  And basically what we need to do is, you know, we need to add some code here that checks for another case.
+[1626.14s -> 1644.14s]  Basically, I guess the case that we want to look at is if RS clause is 15, we want to do something else.
+[1647.14s -> 1648.14s]  Does that make sense?
+[1649.14s -> 1651.14s]  So what do we want to do here?
+[1657.14s -> 1661.14s]  What is sort of the plan for attack, you know, for these couple lines of code?
+[1666.14s -> 1678.14s]  We want to check if P size is more than the virtual address, not in ST val, perhaps?
+[1679.14s -> 1681.14s]  Yeah, go ahead.
+[1681.14s -> 1689.14s]  Oh, and this is the case then, do something like UVM malloc, I think?
+[1690.14s -> 1691.14s]  That's one way we could do it.
+[1692.14s -> 1698.14s]  So I'm going to cut some corners just for a demo and presumably in the lab itself, you will need to do a little bit more work.
+[1699.14s -> 1704.14s]  But basically, here's the sort of I think the second code that we need.
+[1705.14s -> 1709.14s]  So let's see where I was.
+[1709.14s -> 1711.14s]  Here's a trap.
+[1713.14s -> 1715.14s]  Let me just kind of paste it into it.
+[1716.14s -> 1717.14s]  And then we can look at it.
+[1718.14s -> 1720.14s]  You know, here's a print statement for debugging.
+[1720.14s -> 1725.14s]  And basically what I'm going to do in this handler, I'm going to allocate a physical page.
+[1726.14s -> 1731.14s]  If there's no physical page, meaning we're out of memory, we're going to kill the process for now.
+[1732.14s -> 1734.14s]  If there is a physical page, we'll zero the page.
+[1735.14s -> 1742.14s]  And then we just map the page at the appropriate address in the address space of the user.
+[1743.14s -> 1746.14s]  And in particular, we map it on the rounded down virtual address.
+[1747.14s -> 1749.14s]  So the faulting address is 4008 here.
+[1750.14s -> 1753.14s]  And so that's eight bytes into the fifth page.
+[1754.14s -> 1758.14s]  And we want to map that physical page at the bottom of the virtual page, so at 4000.
+[1759.14s -> 1762.14s]  So we round it down to 4000, and then we map 4000 to this physical page.
+[1763.14s -> 1768.14s]  And then, of course, we have to set the usual permission bits, you know, the U bit, the read and write.
+[1769.14s -> 1770.14s]  Does that make sense?
+[1774.14s -> 1775.14s]  I guess I can get rid of this line.
+[1778.14s -> 1780.14s]  So let's see, let's try it out.
+[1785.14s -> 1787.14s]  And I guess I made some mistakes.
+[1787.14s -> 1793.14s]  I think that on the else, you don't have an opening bracket at the bottom.
+[1794.14s -> 1795.14s]  Oh, yeah.
+[1797.14s -> 1801.14s]  No, I do have it. Do I need one more? Oh, yeah.
+[1805.14s -> 1809.14s]  Oh, sorry. I meant on the else right here, you don't have an opening bracket, right?
+[1810.14s -> 1814.14s]  Like when it says else print of user trap, unexpected cause.
+[1815.14s -> 1816.14s]  Thank you.
+[1817.14s -> 1819.14s]  Hopefully it will allow a lot.
+[1822.14s -> 1824.14s]  Excellent. So echo hi.
+[1825.14s -> 1829.14s]  Now, of course, we're going to be optimistic and we hope that works. I'll tell you it won't work.
+[1830.14s -> 1833.14s]  But we did get two page faults, right? We got a page fault at 4008.
+[1834.14s -> 1836.14s]  You know, primarily processed in because we got another page fault.
+[1837.14s -> 1842.14s]  And so the only problem that we've left is there's a UVM app complaining that
+[1847.14s -> 1852.14s]  there are some page we're trying to unmap is actually not mapped.
+[1853.14s -> 1854.14s]  And what could that be?
+[1858.14s -> 1860.14s]  Why would you think even we get this panic?
+[1863.14s -> 1864.14s]  Anybody?
+[1869.14s -> 1872.14s]  What memory is being mapped here? Most likely.
+[1877.14s -> 1880.14s]  The one that was lazily allocated and not actually allocated.
+[1881.14s -> 1885.14s]  Yeah, exactly. You know, the memory that was lazily allocated, but actually hasn't been used yet.
+[1886.14s -> 1888.14s]  Right. And so there is no physical page for that particular memory.
+[1889.14s -> 1895.14s]  And so this case, when the PT is zero, you know, there's no mapping yet.
+[1896.14s -> 1899.14s]  That's not really a panic. You know, this is actually what we expected could happen.
+[1900.14s -> 1903.14s]  Right. And in fact, for the page, we don't have to do anything.
+[1903.14s -> 1906.14s]  We can just continue and go to the next page.
+[1908.14s -> 1909.14s]  Does that make sense?
+[1910.14s -> 1911.14s]  So let's do that.
+[1913.14s -> 1917.14s]  Now let's do echo hi and boom, we got two page faults and but hi works.
+[1918.14s -> 1926.14s]  And so we're basically going to have sort of a very basic minimal lazy allocation scheme working.
+[1929.14s -> 1930.14s]  Any questions about this?
+[1930.14s -> 1935.14s]  Sorry, I didn't really follow why you could just continue. Could you explain that again?
+[1936.14s -> 1945.14s]  Yeah. So the the bug indicated that we had over trying to free page that actually is not mapped.
+[1946.14s -> 1957.14s]  And you know, how could that happen? Well, the only reason that could happen is because sbreak moved off p size, but never used the application never used that memory.
+[1958.14s -> 1962.14s]  And so it actually has no mapping yet because it was actually not allocated.
+[1963.14s -> 1967.14s]  Right. Because we're lazily allocating. We're only allocating physical memory for those pages when we need it.
+[1968.14s -> 1970.14s]  If we didn't need it, then there will be no mapping.
+[1971.14s -> 1978.14s]  And so it's totally reasonable that there actually is going to be a case where there's no mapping for a virtual address because it actually hasn't allocated yet.
+[1979.14s -> 1981.14s]  And for that case, we just have to do nothing.
+[1982.14s -> 1988.14s]  You can't free the page. There is no free page. And so the best thing is to continue and just go to the next page in the loop.
+[1989.14s -> 1991.14s]  Okay, that makes sense. Thank you.
+[1992.14s -> 1997.14s]  Yeah, we didn't know to continue, but basically, you know, just kept going, then we would actually free the page.
+[1998.14s -> 2002.14s]  We can't do it, there's no page. That's why the continuous there.
+[2003.14s -> 2004.14s]  Makes sense.
+[2005.14s -> 2014.14s]  Another question. In UVM on map, I assume the panic that was there, was there for a reason.
+[2015.14s -> 2021.14s]  So a more correct, more reasonable implementation is to have two versions, and we would use the one that doesn't panic.
+[2022.14s -> 2031.14s]  Yeah. Why would the UVM panic there? Well, there was basically an invariant that used to be true for unmodified xv6.
+[2031.14s -> 2036.14s]  Unmodified xv6 should never have a case where there's user memory that was not mapped.
+[2037.14s -> 2042.14s]  And so therefore the panic goes up. We now changed the design of xv6, and so we have the just.
+[2043.14s -> 2050.14s]  And this invariant is just no longer true. So we got to remove the panic because that invariant is just not true.
+[2052.14s -> 2055.14s]  Legitimately not true anymore.
+[2056.14s -> 2057.14s]  I see. Thanks.
+[2059.14s -> 2060.14s]  Does that make sense?
+[2061.14s -> 2064.14s]  So a couple of comments.
+[2065.14s -> 2073.14s]  This will hopefully help a lot with the next lab. In fact, this is like one of the free components of the labs, of the next lab.
+[2074.14s -> 2083.14s]  So this is one of the first things you have to do. And hopefully this will save you some time, maybe make up for all the pain that you went through in the page fault lab.
+[2084.14s -> 2086.14s]  But clearly it's not enough.
+[2086.14s -> 2092.14s]  So what things are, we made these changes, but what things are still probably broken?
+[2096.14s -> 2103.14s]  That one already was mentioned. I actually didn't do it to check whether actually the virtual address was below key size, which we probably should do.
+[2104.14s -> 2106.14s]  Any other things that might be broken?
+[2113.14s -> 2114.14s]  Anybody?
+[2116.14s -> 2127.14s]  The number of bytes to grow the process by in sbreak is an int and not an unsigned int, so negative numbers could be used.
+[2128.14s -> 2134.14s]  Yeah, so negative numbers could be used, and that means shrinking the address space. So if we shrink the address space, we also have to be a little bit careful.
+[2135.14s -> 2141.14s]  So it turns out there's a whole bunch of, as usual in an operating system, there are a whole bunch of different cases, right, where in which
+[2142.14s -> 2149.14s]  we're going to be looking at this particular page table entry. And for all those different cases, we might actually have to modify xj6 slightly.
+[2150.14s -> 2156.14s]  And that's exactly what basically the lab is about, is doing a good enough job that basically you can pass user tests.
+[2157.14s -> 2160.14s]  And user tests will stress a whole bunch of other cases that you will need to deal with.
+[2163.14s -> 2164.14s]  Okay.
+[2167.14s -> 2168.14s]  Any questions so far?
+[2172.14s -> 2185.14s]  Okay, let me, in that case, I want to talk about a bunch of other usages or cool things you can do once you have page faults and page tables and you update them dynamically.
+[2186.14s -> 2201.14s]  Another one that is almost trivial, but, you know, commonly used is what's called zero fill, zero fill on demand.
+[2207.14s -> 2212.14s]  It turns out that in operating systems, you know, there are many null pages.
+[2213.14s -> 2222.14s]  And so, for example, if you look at the address space and user space, you know, xj6 is not advanced.
+[2223.14s -> 2229.14s]  But like if you look at the layout of a binary, you know, there's some text that's what's called the data segment.
+[2230.14s -> 2233.14s]  And there is typically also what's something that's called the BHS segment.
+[2233.14s -> 2242.14s]  And so when the compiler produces the binary, you know, basically fills in these three segments.
+[2243.14s -> 2248.14s]  The text is, you know, the instructions, you know, the data is basically global variables that actually have a value that is not zero.
+[2249.14s -> 2251.14s]  So an initialized data.
+[2251.14s -> 2265.14s]  And BHS is basically a description that says, well, there's a whole bunch of variables and it lists basically their sizes and they all should be zero.
+[2266.14s -> 2278.14s]  And the reason that they're basically not listed out, you know, or the memory is not right there in the file is because, you know, that'll save a lot of, you know, for example, if you declare a big matrix in C on the top of the file, it's a global variable.
+[2278.14s -> 2281.14s]  And it's automatically going to distribute all zeros.
+[2282.14s -> 2289.14s]  Why allocate all that space in the file? Just like note that basically, you know, for this particular variable, you know, the contents should be zero.
+[2290.14s -> 2298.14s]  And then basically on exec, on a normal operating system on exec, you know, we'll look at these three segments.
+[2299.14s -> 2302.14s]  And that's the usual thing that xv6 does, you know, for text and data.
+[2302.14s -> 2309.14s]  But they're from BSS, you know, it will allocate, you know, memory to hold the BSS and basically stick zeros in there.
+[2310.14s -> 2322.14s]  So we'll allocate an address space, fix the data in there, and then, you know, basically, you know, the equivalent of the BSS, you know, all the global variables that are basically zero.
+[2323.14s -> 2324.14s]  And that may be many, many pages.
+[2327.14s -> 2329.14s]  And all those pages basically have to have the content zero.
+[2330.14s -> 2337.14s]  So that's the virtual address space. And so a typical trick, you know, to do is to say, like, wow, I got so many pages that need to have zero.
+[2338.14s -> 2344.14s]  What I'm going to do in physical memory, this is the virtual address space, and it's the physical address, you know, memory.
+[2345.14s -> 2355.14s]  What I'm going to really do is, I'm just going to allocate one zero page to fill the zeros and basically map all the other pages to that one page.
+[2359.14s -> 2364.14s]  You know, saving myself, you know, lots, you know, lots of physical memory, at least at startup.
+[2365.14s -> 2375.14s]  And of course, I was mapping it has to be a little bit care, dominant care. We can't market, you know, we cannot allow writes to it, right, because everybody's relying on the fact that it actually stays zero.
+[2376.14s -> 2377.14s]  So we just map it read only.
+[2378.14s -> 2388.14s]  And then at some point, when an application starts writing to one of the, you know, the basically starts to does a loader and store to one of the pages that actually are part of the BES.
+[2389.14s -> 2395.14s]  So, because we want to, you know, want to store one or two or very confident in there. Now we're going to get a page fault.
+[2401.14s -> 2403.14s]  And so what should we do on the page fault?
+[2404.14s -> 2405.14s]  In this particular case?
+[2409.14s -> 2410.14s]  Anybody?
+[2418.14s -> 2419.14s]  Go ahead.
+[2420.14s -> 2422.14s]  Anybody? What should we do on the page fault here?
+[2423.14s -> 2430.14s]  I think we should make a new page and write zeros there and rerun the instruction.
+[2431.14s -> 2432.14s]  Yeah, exactly.
+[2433.14s -> 2438.14s]  So let's let's assume this were my drawing that actually the store instruction happened to the one at the top.
+[2439.14s -> 2443.14s]  And what we really want to do basically is allocate a new physical page, a new page in memory, you know, calloc.
+[2444.14s -> 2446.14s]  Put zeros in there because that's what we're expecting.
+[2447.14s -> 2452.14s]  And then we can change the top mapping for the one for this particular, for this guy.
+[2454.14s -> 2455.14s]  Let me assume that this is this one.
+[2456.14s -> 2462.14s]  We can change this mapping, you know, to be read-write and pointed to the new page.
+[2463.14s -> 2469.14s]  And then, you know, basically show a copy.
+[2470.14s -> 2472.14s]  Let's update the key.
+[2475.14s -> 2476.14s]  And then restart the structure.
+[2484.14s -> 2485.14s]  And that's it.
+[2486.14s -> 2488.14s]  Why is this ineffective?
+[2489.14s -> 2491.14s]  Why do we think this is actually a good optimization?
+[2494.14s -> 2496.14s]  Why do operating systems do it?
+[2504.14s -> 2505.14s]  Anybody?
+[2507.14s -> 2508.14s]  You don't need it.
+[2509.14s -> 2510.14s]  Go ahead.
+[2512.14s -> 2515.14s]  You don't need to use as much memory as the user requests.
+[2516.14s -> 2519.14s]  So it's just better to build it when you need it.
+[2519.14s -> 2520.14s]  Yeah.
+[2520.14s -> 2522.14s]  It's similar to the lazy allocation.
+[2523.14s -> 2530.14s]  Basically, if the program say allocated a huge array, you know, for the worst possible input, it's a global array.
+[2531.14s -> 2534.14s]  It all has to be zeros, but maybe the only fraction is being used.
+[2535.14s -> 2536.14s]  What's the second advantage?
+[2544.14s -> 2546.14s]  Second advantage is you have to do less work in exec.
+[2546.14s -> 2551.14s]  And so the program may start quicker and get basically better interactive performance.
+[2552.14s -> 2553.14s]  You don't really have to allocate memory.
+[2554.14s -> 2555.14s]  You don't really have to zero memory.
+[2556.14s -> 2559.14s]  You only have to allocate to zero one page and the rest is, you know, like you're just mapping the page tables.
+[2560.14s -> 2561.14s]  You just have to write the PTA search.
+[2562.14s -> 2563.14s]  Does that make sense?
+[2564.14s -> 2567.14s]  But aren't updates all right?
+[2569.14s -> 2574.14s]  So they will become slower because every time a page fold will occur and...
+[2574.14s -> 2576.14s]  Yeah, so, you know, there's absolutely a good point.
+[2577.14s -> 2580.14s]  So we're basically postponed some of the cost later, right?
+[2581.14s -> 2583.14s]  At the point that we do the page fold.
+[2584.14s -> 2588.14s]  And, you know, we're partially relying or hoping that maybe not all the pages are being used.
+[2589.14s -> 2598.14s]  But like, for example, if the page is 496, 4,096 bytes, you know, basically we're going to take one page fold for 4,096 zeros.
+[2599.14s -> 2601.14s]  So there's some imitation there.
+[2602.14s -> 2604.14s]  But it's a great point.
+[2605.14s -> 2608.14s]  Certainly we have added the cost of the page fold.
+[2609.14s -> 2610.14s]  How much is the cost of the page fold?
+[2611.14s -> 2612.14s]  How should we think about that?
+[2613.14s -> 2617.14s]  Is it comparable to a store instruction or is it much more expensive?
+[2624.14s -> 2625.14s]  More expensive, right?
+[2626.14s -> 2627.14s]  Yeah, why?
+[2628.14s -> 2633.14s]  Well, a store will just, like, need to require...
+[2634.14s -> 2640.14s]  It will take some time to get through to RAM, but the fault will have to go to the kernel.
+[2641.14s -> 2648.14s]  Yeah, so in fact, how many store instructions were there even in the trap handling code that Robert shared with you last week?
+[2649.14s -> 2652.14s]  Or actually that you're doing currently in the trap lab?
+[2652.14s -> 2655.14s]  Well, at least, like, a hundred.
+[2656.14s -> 2659.14s]  Yeah, at least a hundred, just to save and restore registers.
+[2660.14s -> 2661.14s]  So there's quite a bit.
+[2662.14s -> 2665.14s]  And so there's both the overhead of transferring from user space to kernel space as well.
+[2666.14s -> 2670.14s]  Actually, all the instructions are being executed to save and restore state.
+[2671.14s -> 2673.14s]  So the page fold is definitely not free.
+[2674.14s -> 2676.14s]  So the question that was asked earlier is a very good question.
+[2676.14s -> 2684.14s]  Okay, so let's look at some more optimizations that one can do.
+[2685.14s -> 2689.14s]  These ones are sort of reasonable boring or maybe reasonable straightforward.
+[2690.14s -> 2696.14s]  And we're going to hopefully get a little bit more, a couple more exciting ones.
+[2697.14s -> 2699.14s]  Let's see what is the next one I wanted to do.
+[2700.14s -> 2703.14s]  Next one is a very common one.
+[2703.14s -> 2705.14s]  Many operating systems implement it.
+[2706.14s -> 2710.14s]  And in fact, it will also be one of the topics in one of the labs.
+[2711.14s -> 2713.14s]  So let's do the next one.
+[2714.14s -> 2719.14s]  And that is copy on write fork.
+[2722.14s -> 2726.14s]  Or something called cow fork.
+[2726.14s -> 2736.14s]  And, you know, the observation is pretty straightforward.
+[2737.14s -> 2739.14s]  In fact, we made this observation a couple times in lecture.
+[2740.14s -> 2748.14s]  But when, let's say, you know, the shell that we were in fact shot in a second ago,
+[2749.14s -> 2752.14s]  the shell runs and processes a command.
+[2753.14s -> 2755.14s]  It actually does a fork to create a child.
+[2756.14s -> 2759.14s]  And so the fork, you know, basically takes a copy of the shell.
+[2760.14s -> 2762.14s]  And so we got a parent and we got a child.
+[2763.14s -> 2765.14s]  And then the child, almost one of the first things it does is an exec.
+[2766.14s -> 2767.14s]  And they execute a couple of instructions.
+[2768.14s -> 2771.14s]  And then it actually execs, for example, to run echo.
+[2772.14s -> 2780.14s]  And as we now know, in the last lab, you know, the fork creates a complete duplicate of the shell address space.
+[2781.14s -> 2783.14s]  And then exec, the first thing it basically does, you know,
+[2783.14s -> 2787.14s]  throws that away and then replaces it with an address space, you know, containing echo.
+[2788.14s -> 2791.14s]  And so it seems slightly wasteful, right?
+[2792.14s -> 2795.14s]  So here, let's say we have our parent virtual address space.
+[2796.14s -> 2799.14s]  And then here we have a child.
+[2801.14s -> 2805.14s]  And what we're actually doing in here is physical memory.
+[2808.14s -> 2811.14s]  And in the normal case, in xv6 or in unmodified xv6,
+[2811.14s -> 2817.14s]  you know, there's a bunch of like, there were four pages we saw that the shell has, one, two, three, four.
+[2818.14s -> 2825.14s]  And, you know, when we start, when a fork runs, it basically gets a duplicate of those four pages,
+[2826.14s -> 2832.14s]  one, two, three, four, and copies all the content, you know, from those pages, the parent into the child.
+[2833.14s -> 2838.14s]  And, you know, then as soon as the exec happens, basically we're going to free these pages
+[2838.14s -> 2842.14s]  and allocate new pages that actually have the content of echo in it.
+[2843.14s -> 2849.14s]  So a good optimization, one that actually tends to be very effective for this particular sequence,
+[2850.14s -> 2856.14s]  is that, you know, if we, if the parent has these four mappings, you know, in its address space,
+[2857.14s -> 2862.14s]  you know, going from whatever to zero goes here, the first one goes there, whatever.
+[2863.14s -> 2868.14s]  Instead, you know, when we create the child address space, instead of creating copying and allocating new physical memory,
+[2869.14s -> 2875.14s]  what we can do is just share the physical pages that the parent actually already has allocated.
+[2876.14s -> 2882.14s]  And so we can just set the PTEs with child, you know, through the same, pointing to the same physical pages as in the parent.
+[2884.14s -> 2888.14s]  And we're going to be a little bit careful again, right, because if the child wants to modify one of these pages,
+[2888.14s -> 2894.14s]  that update should not be visible to the parent because we want strong isolation between the parent and the child.
+[2895.14s -> 2896.14s]  So we need to be a little bit more careful.
+[2897.14s -> 2904.14s]  And so to be a little bit more careful, then what we can do is just map those pages, both in the child and in the parent, read only.
+[2908.14s -> 2914.14s]  And then, of course, we're going to get a page fault at some point because the parent is going to run or the child is going to run.
+[2914.14s -> 2924.14s]  And maybe, you know, the child or the parent will do a store instruction to maybe save the data to some global variable somewhere.
+[2925.14s -> 2931.14s]  And at that point, you know, that will cause a page fault because, you know, we're writing to a page that is mapped read only, we get a page fault.
+[2932.14s -> 2935.14s]  And so what do we need to do? Well, we need to make a copy of the page.
+[2938.14s -> 2942.14s]  So let's assume that it's the child that actually does the store instruction.
+[2942.14s -> 2944.14s]  So we allocate a new page.
+[2946.14s -> 2952.14s]  We copy the content of the page that were faulted on into this new page.
+[2953.14s -> 2955.14s]  We map that page into the child.
+[2956.14s -> 2961.14s]  And this time we can map it read write because it's now a private page only visible in the child's address space.
+[2962.14s -> 2967.14s]  And in fact, the page that we actually faulted on, we can also now map read write into the parent.
+[2968.14s -> 2974.14s]  And so we copy the page, map it, and restart the instruction.
+[2979.14s -> 2989.14s]  And restart the instruction really means, you know, doing user read the same way that we returned to user space in last week's lecture.
+[2991.14s -> 2993.14s]  Does this make sense? Any questions about this comment?
+[2994.14s -> 3004.14s]  I'm sorry. When you say we mapped the parent's virtual address to be also read write, how do we find it out?
+[3005.14s -> 3007.14s]  Is it the same as the child's?
+[3008.14s -> 3013.14s]  Because the address space of the child is a duplicate of the parent's address space.
+[3014.14s -> 3018.14s]  So if we fault a particular virtual address, since the address spaces are equal,
+[3018.14s -> 3023.14s]  you know, the same virtual address both in the parent's address space and in the child's address space.
+[3026.14s -> 3028.14s]  Makes sense. Thank you.
+[3031.14s -> 3033.14s]  Another question.
+[3034.14s -> 3040.14s]  For, let's say, like some parentless process, maybe like the first one that launches,
+[3041.14s -> 3047.14s]  does it use its pages, does it set just read permissions?
+[3048.14s -> 3053.14s]  Or does it start off with read write, and when it forks, it modifies?
+[3054.14s -> 3058.14s]  Okay, it's up to you. In fact, this is also one lap.
+[3059.14s -> 3063.14s]  You're going to implement copy and write after the lazy lap.
+[3064.14s -> 3067.14s]  And, you know, you have some freedom. The easy thing to do is just also map it read only.
+[3068.14s -> 3073.14s]  You will get a page fault, and then you'll do whatever you normally also would do in the copy and write.
+[3074.14s -> 3076.14s]  So you can use the same mechanism in both cases.
+[3078.14s -> 3083.14s]  There's no reason to actually specialize or do something separate for the first process.
+[3085.14s -> 3087.14s]  Okay, thanks.
+[3088.14s -> 3090.14s]  So, I also have a question.
+[3091.14s -> 3097.14s]  Given that we like kind of copy whole tables, sorry, whole pages around pretty often,
+[3098.14s -> 3104.14s]  does any like memory hardware implement like a specific instruction?
+[3104.14s -> 3112.14s]  Because basically memory hardware will usually just have like some data lines to say read me or store this memory.
+[3113.14s -> 3117.14s]  But we have like, oh, copy page A to page B.
+[3118.14s -> 3123.14s]  Yeah, there's x86, for example, has hardware instructions for copying ranges memory.
+[3124.14s -> 3126.14s]  You know, RISC-V doesn't.
+[3128.14s -> 3132.14s]  But of course, you know, in a very high performance implementation,
+[3133.14s -> 3140.14s]  all these recent writes will be pipelined, and hopefully run at the speed of the memory bandwidth.
+[3143.14s -> 3150.14s]  Note that actually, you know, in principle, we might be lucky and we're saving correct on loads and stores or copies.
+[3151.14s -> 3153.14s]  Because in this particular picture, I made only one copy.
+[3154.14s -> 3157.14s]  And in the unmodified case, we would have copied all four pages.
+[3157.14s -> 3163.14s]  And so hopefully, you know, this is just like strictly better, both in terms of memory consumption and in terms of performance.
+[3164.14s -> 3166.14s]  You know, four will just be faster.
+[3169.14s -> 3170.14s]  I have a quick question.
+[3171.14s -> 3179.14s]  When the page fault occurs, and we see that it was essentially like we were trying to write to a read-only address,
+[3180.14s -> 3185.14s]  how does the kernel tell, like this is a situation where it's copy on write fork,
+[3185.14s -> 3193.14s]  versus just a situation where the memory it was trying to write was marked as read-only for some like legitimate reason other than copy on write fork?
+[3194.14s -> 3201.14s]  Is it just kind of an invariant that if it's user memory, then it will be mapped read-write unless it was the result of copy on write?
+[3202.14s -> 3206.14s]  Yeah, it is an invariant that needs to be maintained in the kernel.
+[3207.14s -> 3210.14s]  And the kernel must recognize in some way that this is a copy on write page, if you will.
+[3210.14s -> 3218.14s]  And so I'm very glad you asked the question, because it turns out, you know, the RISC-V hardware, almost all page table hardware actually has support for this.
+[3219.14s -> 3227.14s]  And we didn't mention that earlier, but here's our, you know, our usual, you know, whatever two-level or multi-level page table.
+[3228.14s -> 3229.14s]  Here's our PTE.
+[3231.14s -> 3239.14s]  And if you look in the PTE, you know, I talked about the bits, you know, one, zero through seven, but not about these two bits, RSW.
+[3241.14s -> 3245.14s]  And they are reserved for supervisor software.
+[3246.14s -> 3252.14s]  So the supervisor software, this is the kernel, can use these bits at its own free will.
+[3253.14s -> 3259.14s]  And so one thing one could do is like, say, decide that bit A basically means this is a copy on write page or a copy on write fault.
+[3260.14s -> 3269.14s]  And so when the kernel programs, you know, these page tables for copy on write, you know, it can just put on the PTEs, you know, for these particular pages.
+[3271.14s -> 3281.14s]  The bits, you know, set the bit copy on write so that when the page fault happens, and we see that the copy on write bit is set, then we just go off and do this.
+[3282.14s -> 3283.14s]  And otherwise we do something else.
+[3285.14s -> 3287.14s]  For example, maybe it's a lazy allocation.
+[3289.14s -> 3290.14s]  Does that make sense?
+[3292.14s -> 3293.14s]  Thank you.
+[3293.14s -> 3301.14s]  And in fact, in the lab, you know, one of the things you will be doing is probably use that bit, you know, set a copy on write bit in the PTE.
+[3303.14s -> 3322.14s]  There's one more wrangle that will show up in the copy on write lab is that there's some, currently in xv6, basically a physical page more or less only belongs to one process, with the exception of the trampoline page, which is a trampoline page we never free, so that is not really a particular big issue.
+[3323.14s -> 3331.14s]  But for these pages, you know, now we have multiple processes or multiple address spaces pointing to the same physical address.
+[3332.14s -> 3341.14s]  So, for example, if the parent exits right away, we got a little bit careful, correct? Because can we free that page immediately if the parent exits?
+[3346.14s -> 3350.14s]  Maybe not, because there may be multiple children processes.
+[3350.14s -> 3358.14s]  Yeah, there might be a child using that page. And so if the kernel would free that page, then, you know, we're going to be in trouble.
+[3358.14s -> 3364.14s]  Because basically, if you look at k free, k free actually writes all kinds of ones on a free page.
+[3364.14s -> 3368.14s]  And so then the child runs with that page and all kinds of bizarre things are going to happen.
+[3369.14s -> 3371.14s]  So what should the rule be now for freeing?
+[3371.14s -> 3383.14s]  Free if you don't have children, I guess?
+[3384.14s -> 3395.14s]  Yeah, maybe a better way or a more general version of that statement is to say, well, what we really need to do is we need to refcount every physical page.
+[3396.14s -> 3403.14s]  And when we free the page, we decrease the refcount by one. And if the refcount reaches zero, then actually we can free the page.
+[3404.14s -> 3412.14s]  And so you will have to introduce some additional data structure or meta information in the copyright lab to actually do that refcounting.
+[3415.14s -> 3420.14s]  Where can we store this? Because if we have to refcount every single page, that could be a lot.
+[3421.14s -> 3425.14s]  Yeah, well, for every physical page in memory, we will have to do a refcount.
+[3426.14s -> 3436.14s]  You can get away with a little bit less, but we're in the, for simplicity of the lab, we're going to use for every one physical, for every 4,096 bytes, we need to contain the reference count.
+[3439.14s -> 3447.14s]  Can we write that down in those other two free bits and say that no more than four?
+[3447.14s -> 3458.14s]  Not unreasonable, but you know, if you report multiple times, that'd be too bad, right?
+[3459.14s -> 3463.14s]  After three or four times, you can't do the optimization anymore.
+[3467.14s -> 3469.14s]  Well, yeah, there's some freedom here.
+[3470.14s -> 3484.14s]  Also, do you really need to use that bit to specify if it's a copy on right? Because the kernel could also maintain some information about the processes that share.
+[3485.14s -> 3493.14s]  Yeah, yeah, you could. You could do many things, some other meta information along with the process address space to say basically, well, virtual addresses between this and that are text addresses.
+[3494.14s -> 3497.14s]  So we have a page fault there and it must be copyright or something.
+[3497.14s -> 3507.14s]  And in fact, one of the later labs, you know, you will certainly extend the meta information that xv6 maintains exactly for that reason.
+[3508.14s -> 3512.14s]  There's a bit of freedom here when you start implementing these labs.
+[3515.14s -> 3517.14s]  Any further questions about this?
+[3527.14s -> 3545.14s]  Okay, then let's go through the next one. This is something that's called demand paging.
+[3547.14s -> 3550.14s]  Another very popular one in most operating systems implemented.
+[3551.14s -> 3556.14s]  And so this goes back basically to exec.
+[3559.14s -> 3578.14s]  So currently in unmodified xv6, xv6 actually loads the text segment and the data segment profile and maps it in eagerly in basically into the page table.
+[3581.14s -> 3589.14s]  And basically the same observation that we made for lazy and zero field is that, well, what we could do is like, why do it eagerly?
+[3590.14s -> 3597.14s]  Why not just wait a little while until to see if actually the application really needs those particular set of instructions.
+[3597.14s -> 3606.14s]  The binary might be very big and instead of actually loading it all in from disk, which tends to be expensive operation,
+[3607.14s -> 3614.14s]  maybe the data segment is much bigger than the typical use case requires, we don't really have to do that.
+[3614.14s -> 3625.14s]  And so instead of on exec, instead of actually, we allocate the virtual address space, we'll allocate the address space for the text and the data.
+[3626.14s -> 3630.14s]  That's it in the file. But in the PTEs, we're going to not map them at all.
+[3631.14s -> 3636.14s]  We're just going to keep in the PTE for one of these pages, we're just going to not set the valid date.
+[3636.14s -> 3638.14s]  So the valid date is zero.
+[3639.14s -> 3643.14s]  And of course, you know, when are we going to get our first page fault?
+[3645.14s -> 3651.14s]  If we do this in exec and let's say we modify xv6 to do this, when will our first page fault happen?
+[3655.14s -> 3658.14s]  What's the first instruction that is being run for user address?
+[3660.14s -> 3662.14s]  Or user program?
+[3662.14s -> 3666.14s]  Where does a user program start?
+[3667.14s -> 3671.14s]  Is it loading the initial code in UVM in it?
+[3672.14s -> 3679.14s]  Yeah, okay. We were just skipped that piece, right? That's the whole point of like modifying exec and not call to the UVM in it.
+[3684.14s -> 3690.14s]  So most of the, you know, when we actually remember from Fort Red or something like that, you know, the place where an application starts is exactly address zero.
+[3690.14s -> 3697.14s]  So my picture is a little bit misleading here, but here's text, here's zero, and it goes up to some number.
+[3698.14s -> 3705.14s]  And basically the first instruction, whatever sits here, that's the first instruction that we're going to actually, that address, that's the first instruction we're going to get a page fault on.
+[3706.14s -> 3709.14s]  Because we have not loaded it.
+[3709.14s -> 3719.14s]  So what to do on the page fault?
+[3723.14s -> 3730.14s]  Well, what we're going to do in the page fault is basically we'll note that this is one of these on demand pages.
+[3731.14s -> 3739.14s]  You have to remember somewhere earlier that, you know, this corresponds to some, this corresponds to some file.
+[3741.14s -> 3754.14s]  And then what we're going to do in the page fault handler is read, you know, that block or page from file into memory.
+[3754.14s -> 3766.14s]  Map that memory into the page table and restart the instruction.
+[3772.14s -> 3774.14s]  And then we're off and running.
+[3774.14s -> 3787.14s]  Right. And so we're going to get, you know, in the worst case, if the user program uses all of its text, uses all of the data, then we're going to get a page fault for every page, you know, in the program.
+[3788.14s -> 3796.14s]  But, you know, if we get lucky and the program doesn't use all of its data segment or doesn't use all of its text segment, then, you know, we might save some memory.
+[3796.14s -> 3802.14s]  And we shouldn't we make exec, you know, perform much quicker and be a little bit more interactive.
+[3802.14s -> 3804.14s]  As soon as the program starts, boom, it's running.
+[3804.14s -> 3808.14s]  We hardly have to do any work in exec.
+[3809.14s -> 3812.14s]  Does that make sense?
+[3817.14s -> 3823.14s]  OK, so then there's a sort of a slight extension to demand paging.
+[3827.14s -> 3830.14s]  So this is the second part of demand paging.
+[3832.14s -> 3834.14s]  Yeah, sorry.
+[3834.14s -> 3836.14s]  Right, there's more.
+[3840.14s -> 3842.14s]  Part two, demand paging.
+[3842.14s -> 3846.14s]  This principle, there's a little bit of a problem here that we haven't really discussed.
+[3846.14s -> 3857.14s]  It might be the case, you know, maybe the file that we're actually reading or the text and data segment are even bigger than what actually is in physical memory or multiple applications started with demand paging.
+[3857.14s -> 3863.14s]  Maybe there's some of their binaries is basically bigger than they're actually in physical memory.
+[3864.14s -> 3873.14s]  And so the typical thing, you know, what if you go down this demand paging route is to actually if you run out of memory.
+[3873.14s -> 3877.14s]  So if caliber returns zero, it's out of memory.
+[3880.14s -> 3891.14s]  So, for example, you know, your demand page, you get a page fault at some page that needs to be paged in from the file system.
+[3891.14s -> 3894.14s]  But you don't have any more free pages. You need to do something.
+[3894.14s -> 3902.14s]  And so the typical and this comes back to an earlier question, for example, the same is true for Glazy or, you know, what to do if you run out of memory.
+[3902.14s -> 3909.14s]  So if you run out of memory, one option that you clearly have is to evict a page.
+[3914.14s -> 3919.14s]  You can, for example, instead of you can evict a page and write it to the file back.
+[3919.14s -> 3926.14s]  So, for example, if it's a data page that got modified, you know, you can write it back through the file system.
+[3926.14s -> 3938.14s]  And then once you evict the page, then you have a new free page and you can put the use that use the new just free page.
+[3942.14s -> 3948.14s]  To satisfy the fault that you had and then basically restart the instruction again.
+[3948.14s -> 3964.14s]  And again, restart the instruction is a little bit more complicated because the whole machinery to basically do user read and start and transfer back to user space, etc.
+[3966.14s -> 3969.14s]  And so this is a typical operating system will do this.
+[3969.14s -> 3973.14s]  And of course, the key question is like, what page to evict?
+[3975.14s -> 3976.14s]  Which one to choose?
+[3978.14s -> 3980.14s]  So what are what are some candidates?
+[3981.14s -> 3984.14s]  What would be your reasonable policy for choosing a page to evict?
+[3986.14s -> 3987.14s]  Least recently used?
+[3987.14s -> 3993.14s]  Yeah. So this is the most commonly used strategy, least recently used.
+[3999.14s -> 4001.14s]  Or LRU.
+[4002.14s -> 4008.14s]  And that is the page that's typically is thrown out.
+[4009.14s -> 4020.14s]  There's a couple sort of twists that typically are small optimizations that do if you have to pick the page and you have a choice between a dirty page and a non dirty page.
+[4020.14s -> 4027.14s]  Dirty page is a page where there was a store to and non dirty page is a store page that basically only has been read, but not written to.
+[4027.14s -> 4030.14s]  Which one would you prefer to evict first?
+[4032.14s -> 4036.14s]  A dirty one because you would have to write the dirty one at some point anyway.
+[4037.14s -> 4038.14s]  Yeah.
+[4039.14s -> 4041.14s]  So say again, actually double check there.
+[4043.14s -> 4047.14s]  I said dirty because dirty pages would need to be written to memory at some point.
+[4048.14s -> 4049.14s]  Yeah, that's true.
+[4051.14s -> 4053.14s]  But then or maybe now you have to write it twice.
+[4053.14s -> 4055.14s]  You know, once you write it, maybe it's modified later again.
+[4057.14s -> 4058.14s]  And so actually typically with an operating system.
+[4058.14s -> 4059.14s]  Oh I see.
+[4059.14s -> 4060.14s]  Okay.
+[4060.14s -> 4061.14s]  The operating system is exactly the opposite.
+[4062.14s -> 4067.14s]  They choose a page that actually has not been written or is not dirty because you don't have to do anything.
+[4067.14s -> 4068.14s]  You can just reuse it.
+[4068.14s -> 4070.14s]  You can just take a market.
+[4071.14s -> 4076.14s]  If it was present in page table one, your market there is non valid and then you're done.
+[4077.14s -> 4080.14s]  And then you can reuse that page in another page table.
+[4081.14s -> 4087.14s]  So the preference is to take pages that have been non dirty ones first.
+[4089.14s -> 4093.14s]  Can I just ask for a clarification on the dirty pages?
+[4094.14s -> 4103.14s]  So I know like in a cache when we have memory and then we say, okay, a line is dirty because it hasn't been written to memory.
+[4104.14s -> 4105.14s]  But what about a page in memory?
+[4106.14s -> 4107.14s]  Like what does it correspond to?
+[4108.14s -> 4109.14s]  Like how is it dirty? Where does it have to be written back to?
+[4110.14s -> 4111.14s]  It just exists in memory, right?
+[4112.14s -> 4113.14s]  Isn't that the whole thing?
+[4114.14s -> 4115.14s]  Like it doesn't exist anywhere else really.
+[4116.14s -> 4117.14s]  So when can it be dirty?
+[4117.14s -> 4122.14s]  Yeah. Okay. So for example, if it's a demand page file page, actually we'll talk about it in a second.
+[4123.14s -> 4126.14s]  Like in the next, maybe you have prefetched a little bit too much.
+[4127.14s -> 4136.14s]  But if you're with memory map files where you map a file into memory and then do restore to it, then you would dirty that page.
+[4137.14s -> 4143.14s]  Okay. So that only applies when like a page actually responds not just to some memory, but also to a file or something else.
+[4144.14s -> 4145.14s]  Exactly.
+[4145.14s -> 4146.14s]  Okay. That makes sense.
+[4147.14s -> 4153.14s]  Okay. So just to, you know, just to make one more, two more points related to this.
+[4154.14s -> 4164.14s]  If you look at this, the PGEs again, so we saw this RSW bit, you'll notice there actually is a bit seven, that is the dirty bit.
+[4165.14s -> 4170.14s]  So when the paging hardware, when the hardware ever writes to a page, it watches at the dirty bits.
+[4171.14s -> 4175.14s]  So the operating system later can see, ah, this actually page can easily see this page that it's actually written to.
+[4175.14s -> 4182.14s]  And similarly, there is an A bit that stands for access.
+[4183.14s -> 4189.14s]  And so whenever a page is either written or written, either read or written, the access bit will be set.
+[4190.14s -> 4193.14s]  And why is that useful to know?
+[4202.14s -> 4204.14s]  In what way could that help the kernel?
+[4205.14s -> 4210.14s]  Well, the ones that haven't been accessed, you can, you can evict, right?
+[4211.14s -> 4222.14s]  Yeah. Another way of saying that if you want to implement these recently used, if you find a page that basically hasn't been accessed in some period of time, you know, it actually hasn't been recently used.
+[4223.14s -> 4229.14s]  So it actually is a candidate for eviction, while the pages that have the access bit set are not really candidates for eviction.
+[4230.14s -> 4237.14s]  So the A bit is typically used, or the access bit is typically used to actually implement this LRU strategy.
+[4240.14s -> 4249.14s]  Okay, but would you have to reset the accessed bits to not accessed every once in a while?
+[4250.14s -> 4252.14s]  Yeah, exactly. That's exactly what the typical operating system will do.
+[4253.14s -> 4256.14s]  And if they don't do it, maybe for all memory, they sweep from memory.
+[4256.14s -> 4261.14s]  That's a little, you know, there's some famous algorithm for this called the clock algorithm that is like one way of doing it.
+[4266.14s -> 4269.14s]  Sorry, why would you need to set it? Why would you need to reset it?
+[4270.14s -> 4281.14s]  Well, if you want to know whether a page is recently used, and you make a periodic decision, then say maybe every 100 milliseconds or whatever every seconds, you know, you clear the access bit.
+[4281.14s -> 4286.14s]  If it then gets accessed in the next hundred milliseconds, you know it was used in the last hundred milliseconds.
+[4287.14s -> 4292.14s]  And the pages that don't have the access bits that were not used in the last hundred milliseconds.
+[4293.14s -> 4303.14s]  And so then you can keep counters with like how intentionally they're used and what is the, and throw out the really, it's basically the stepping stone to be able to sort of statisticate the LRU implementation.
+[4303.14s -> 4323.14s]  Okay. I want to talk about one more just to, and then it's the last one, actually, that you also will be implementing in one of the labs, and that is memory map files.
+[4333.14s -> 4340.14s]  And the idea is that, you know, here we have our address space.
+[4341.14s -> 4351.14s]  Well, what we really want to do is basically be able to load a whole file or parts of the file into the address space so that we can just manipulate, you know, the content of the file using load and store instructions.
+[4351.14s -> 4357.14s]  Instead of read, you know, else you can write.
+[4358.14s -> 4366.14s]  And to be able to support that, you know, a typical operating system where most modern operating systems could call, find a system called Nmap.
+[4367.14s -> 4379.14s]  And basically Nmap takes a virtual address or picks a virtual address, length, protection, some flags, which I'm going to talk about.
+[4379.14s -> 4383.14s]  And then a file descriptor of an open file and an offset.
+[4384.14s -> 4389.14s]  And basically what this says is like, you should, you know, map, you know, this file descriptor.
+[4390.14s -> 4401.14s]  If this is addressed, you know, the virtual address, you know, the file descriptor starting from offset, you know, in the file F, you know, map that in at the address, at the virtual address VA.
+[4402.14s -> 4405.14s]  And do that, we have some protection, like read, write, etc.
+[4406.14s -> 4419.14s]  So let's say it's a read write, then, you know, the kernel, when, the way the kernel implements Nmap is, you know, if it does it eagerly, which is like most systems don't do it eagerly,
+[4420.14s -> 4434.14s]  you know, it will basically copy, read all the bytes, you know, starting from offset, laying bytes starting from offset into memory, sets up the PGEs to point to the physical memory for where the blocks are located.
+[4435.14s -> 4444.14s]  And then basically from then on, the application can use load and store instructions to actually modify the file.
+[4445.14s -> 4457.14s]  And then maybe when we're all done, there's typically a corresponding Nmap call that, Nmap length, that allows the application to say like, okay, I'm done with this particular file.
+[4458.14s -> 4461.14s]  And at the point of Nmap, we need to write back the dirty blocks.
+[4466.14s -> 4473.14s]  And we can easily figure out which blocks are dirty, because they have the D bit set in the PGE.
+[4474.14s -> 4483.14s]  Now, of course, in any memory, sophisticated memory implementation, this is all done lazily, you know, you just don't map the file immediately.
+[4484.14s -> 4490.14s]  You just keep a record somewhere on the site saying like, well, you know, this PGE, you know, really belongs to this particular file descriptor.
+[4490.14s -> 4498.14s]  So there's some information maintained on the site, which is typically called, in a structure called the VMA, or the virtual memory area.
+[4503.14s -> 4513.14s]  For example, for this file F, that would be one VMA, and in a VMA, we record the file descriptor, the offset, etc, where the actual content of that memory should live.
+[4513.14s -> 4524.14s]  And so when we get a page fault for a particular address that sits in this, you know, VMA, then we can go off and the kernel can read it from disk and bring it into memory.
+[4526.14s -> 4533.14s]  And in response to an earlier question, this is like one of the reasons that this dirty bit is important, because at Nmap, you have to write back the dirty blocks.
+[4536.14s -> 4537.14s]  Does this make sense?
+[4539.14s -> 4540.14s]  I have a quick question.
+[4541.14s -> 4542.14s]  Yeah.
+[4543.14s -> 4554.14s]  Maybe this is a more general issue, but could it ever be an issue of say multiple processes are memory mapping the same file on secondary storage, and then they like synchronization issues?
+[4555.14s -> 4563.14s]  Good question. So what is the semantics in Unix in general? Like what happens if multiple processes are read or write to the same file using read or write system calls?
+[4574.14s -> 4576.14s]  Does Unix guarantee anything?
+[4578.14s -> 4579.14s]  Well, it's undefined.
+[4580.14s -> 4594.14s]  Yeah. The reason writes will show up in some order, or the writes will show up in some order. So if two processes write to the same block of a file, you know, either the first process writes go or the second process writes go. One of the two.
+[4594.14s -> 4597.14s]  And so here's basically the same thing. You know, we don't really have to guarantee anything.
+[4598.14s -> 4612.14s]  If you want to do a more sophisticated Unix operating system support file walking, where you can walk files, and then you can properly synchronize. But by default, there's no synchronization or no synchronization at this level.
+[4617.14s -> 4618.14s]  That make sense?
+[4620.14s -> 4622.14s]  I'm sorry, what is length? And what is flags?
+[4623.14s -> 4644.14s]  Oh, flags. Length is the length of the area you want to map the number of bytes. Prod is read write x. Flags, you know, you'll see that when you do the unmap thing, this has to do with whether the area is mapped private or shared. If it's mapped shared, then it can be shared among multiple processes.
+[4650.14s -> 4651.14s]  Any further questions about this?
+[4652.14s -> 4663.14s]  If some other process modifies the file in disk, that means that this will not be reflected here, right?
+[4664.14s -> 4669.14s]  That's correct. Unless I think if it's mapped shared, then you're supposed to reflect those changes.
+[4670.14s -> 4673.14s]  Right, but then they would be using the same file descriptor, right?
+[4673.14s -> 4682.14s]  I'm hazy on the exact, you know, semantics of nmap when things are shared and what exactly happens here.
+[4683.14s -> 4698.14s]  Okay, so I guess in like the idiomatic case, yeah, in the shared, they would have to reflect it. But if a process just like actually opened the same file name completely separately, I think it could be unsynced, even if it's shared.
+[4699.14s -> 4700.14s]  That's correct.
+[4703.14s -> 4712.14s]  Okay, so this is after the file system WAP, you actually do memory backed files.
+[4713.14s -> 4721.14s]  And that will be our last virtual memory sort of WAP, unless you decide at the end to do more virtual memory features or exercises, whatever you want to do.
+[4722.14s -> 4728.14s]  Anyway, so the main choice, to basically conclude this lecture, the summary.
+[4728.14s -> 4736.14s]  You know, we have looked in the past in great detail exactly, you know, how page tables work.
+[4737.14s -> 4746.14s]  We've done a couple laps, one lap with page tables. We've looked a lot at like how traps work and, you know, page faults.
+[4746.14s -> 4760.14s]  And it turns out, you know, if you combine the two, you can implement very powerful and elegant virtual memory features.
+[4761.14s -> 4767.14s]  We went through a whole list of them, mostly focusing on the ones that are actually going to be implementing in future laps.
+[4767.14s -> 4777.14s]  But, you know, this is only a subset or a sample of the ones that, you know, some operating systems implement, the typical operating systems implement all the ones that actually discussed today.
+[4778.14s -> 4783.14s]  You look at Linux, and there's all of them, and many more interesting other tricks.
+[4784.14s -> 4792.14s]  But this hopefully gives you a good sense, you know, of how the power of virtual memory, once you dynamically can change the page tables in the page fault headlight.
+[4793.14s -> 4801.14s]  I think this is exactly at 25, so maybe there's a good point to stop. But if you have any questions, feel free to ask them.
+[4802.14s -> 4813.14s]  And if not, wish you good luck finishing the traps lap. And I hope it's not as painful as the, or not as hard as the page table lap.
+[4813.14s -> 4832.14s]  Sorry, I had another question. When you map, in the previous slide, when you map the whole file, or like when you put it into memory, and it turns out to be longer than length, then what happens?
+[4833.14s -> 4835.14s]  So if the file doesn't fit in the virtual address space?
+[4835.14s -> 4842.14s]  Oh, I guess it was, so like length is how much of the file we want?
+[4843.14s -> 4850.14s]  Yes, you know, so length is just like we want to map like 10 bytes out of the file descriptor, starting at offset off.
+[4851.14s -> 4856.14s]  Oh, okay. Okay, I see. So if the file is longer, then we're not gonna put all of it into memory.
+[4857.14s -> 4858.14s]  Yeah, you know, exactly.
+[4859.14s -> 4860.14s]  Okay, I see. Thank you.
+[4860.14s -> 4861.14s]  Thank you.
+[4864.14s -> 4865.14s]  Thank you.
+[4865.14s -> 4869.14s]  I've got a question about evicting pages.
+[4870.14s -> 4880.14s]  So we talked about it under like the man page in part two, but is that like a general procedure we would use in any of these techniques if we discover that we're out of physical memory?
+[4880.14s -> 4891.14s]  Yeah, as is the common mechanism, like so even in lazy allocation, we run at the point where there's no memory available anymore to allocate to the page.
+[4892.14s -> 4897.14s]  And, you know, we support demand paging, or whatever, we use evicts, you know, some page, you know, typically using LRU.
+[4898.14s -> 4899.14s]  Okay.
+[4900.14s -> 4907.14s]  One way to think about it is that in steady state, the operating system basically runs with all memory in use, at any time.
+[4907.14s -> 4917.14s]  And we want to use all memory. And so when we start something new, you know, we have to make some room and, you know, LRU is basically the way to do it.
+[4918.14s -> 4920.14s]  Okay. Makes sense. Thank you.

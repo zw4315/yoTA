@@ -1,0 +1,160 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.00s]  This video digs into the details of actually what a DNS query response
+[4.00s -> 7.00s]  series looks like. So, assumes that you know what resource
+[7.00s -> 11.00s]  records are and what their structure is, and the high level view of this idea of
+[11.00s -> 16.00s]  a client issuing a recursive query, which is then non-recursively issued to
+[16.00s -> 20.00s]  other servers in the network. And by details, I mean that at this
+[20.00s -> 25.00s]  high level, there's this idea that I issue a recursive query, and then this
+[25.00s -> 31.00s]  results in Resolver issuing a series of non-recursive queries to give me my final
+[31.00s -> 35.00s]  answer of what the address record at Stanford.edu is.
+[35.00s -> 39.00s]  But what are the, what are the actual contents of these queries, and what are
+[39.00s -> 43.00s]  the actual contents of the responses, and what is the information that each of
+[43.00s -> 47.00s]  these servers has to know? So this matter, this is really
+[47.00s -> 51.00s]  important when you're actually setting up a name system, you're actually setting
+[51.00s -> 55.00s]  up a domain, and you need to configure name servers in networks that you'll be
+[55.00s -> 59.00s]  able to actually ask questions if people are able to access your machines
+[59.00s -> 63.00s]  and your names. So the big challenge, one of the big
+[63.00s -> 67.00s]  challenges comes from this concept of traversing zones.
+[67.00s -> 71.00s]  So at some point, my name server has a root cache file, so this just gives some
+[71.00s -> 75.00s]  IP addresses of root servers. And this is the bootstrapping process.
+[75.00s -> 79.00s]  If I just have those IP addresses, then from there, I can get TLD, TLD name
+[79.00s -> 82.00s]  server addresses. From there, I can get domain name server
+[82.00s -> 86.00s]  addresses and subdomains, etc. So, at a high level, it sort of makes
+[86.00s -> 90.00s]  sense, oh, I ask about Edu, I ask about Stanford, but there turned out to
+[90.00s -> 96.00s]  be a couple of tricks. So, think about an NS record.
+[96.00s -> 101.00s]  So if we recall, a name server record, if I ask for what the name server is of
+[101.00s -> 106.00s]  a domain, a name server record contains a host name.
+[106.00s -> 112.00s]  So, for example, if I ask, what is the name server of stanford.edu, the answer
+[112.00s -> 117.00s]  is a host name. So here, let's dig for the name server
+[117.00s -> 125.00s]  of stanford.edu. And the answer is, we get four answers,
+[125.00s -> 130.00s]  these host names, avalon.stanford.edu, argus.stanford.edu,
+[130.00s -> 135.00s]  adelante.stanford.edu, and erathea.stanford.edu.
+[135.00s -> 138.00s]  But the problem is, these are all names in Stanford.
+[138.00s -> 144.00s]  How can we get the address of these name servers unless we know the IP address
+[144.00s -> 149.00s]  of these name servers? These are the servers we would ask
+[149.00s -> 153.00s]  for what those names are. So, there's this chicken and egg
+[153.00s -> 156.00s]  problem. How do we get started, given that
+[156.00s -> 161.00s]  we're being given host names? And so, the solution to this in the
+[161.00s -> 166.00s]  name system, or the domain name system, is something called a glue record.
+[166.00s -> 171.00s]  And what this is, is that when, say, Stanford goes to the edu servers and
+[171.00s -> 176.00s]  says, hey, these are the name servers for Stanford.
+[176.00s -> 180.00s]  It gives them not only NS records specifying the names of the servers, but
+[180.00s -> 184.00s]  also associated A records. And these are called glue records
+[184.00s -> 189.00s]  because it means that the edu servers are going to serve up address records, A
+[189.00s -> 193.00s]  records for stanford.edu. Only for the name servers of
+[193.00s -> 196.00s]  stanford.edu. But nonetheless, they're serving A
+[196.00s -> 200.00s]  records for stanford.edu, right? And so, if you go back to this
+[200.00s -> 204.00s]  example, right? You can see that on one hand, I'm
+[204.00s -> 208.00s]  asking, what are the name servers of stanford.edu?
+[208.00s -> 213.00s]  But the additional section then also gives me address records for them.
+[213.00s -> 218.00s]  And these address records are stored within the edu name servers.
+[218.00s -> 221.00s]  So let me just walk through an example of this.
+[221.00s -> 226.00s]  So what I'm going to do is I'm going to look up www.scs.stanford.edu, assuming
+[226.00s -> 229.00s]  that there's no cache. So I'm going to explicitly walk
+[229.00s -> 232.00s]  through this series of queries that would be issued.
+[232.00s -> 236.00s]  And the way I'm going to do that is with this no rec option, which means do
+[236.00s -> 243.00s]  not ask a recursive query. And so, as the first step, let's dig
+[243.00s -> 253.00s]  through the query. So this is going to, I'm going to
+[253.00s -> 259.00s]  contact one of the root servers, so the A root servers and say, hey, who do I
+[259.00s -> 263.00s]  talk to for edu? Because it's non-recursive.
+[263.00s -> 269.00s]  And I get a response which says, here are some of the servers to use.
+[270.00s -> 272.00s]  So let's say here's the, the A edu server.
+[272.00s -> 275.00s]  So these are the name servers that you can use.
+[282.00s -> 285.00s]  Great. So I'm going to use the A edu server.
+[285.00s -> 289.00s]  I'm going to say, hey, whom should I ask about stanford.edu?
+[292.00s -> 296.00s]  And it's going to tell me to ask argus.stanford.edu.
+[297.00s -> 302.00s]  As you can see, it's also giving me the A records, the A record for argus.
+[302.00s -> 304.00s]  So I actually have an IP address to ask.
+[313.00s -> 319.00s]  Then I'm going to ask argus, hey, whom would I ask about www.scs.stanford?
+[319.00s -> 324.00s]  And argus is going to answer, oh, you should ask ms1.fs.net.
+[324.00s -> 329.00s]  And or you can also ask mission.scs.stanford.edu.
+[329.00s -> 334.00s]  Oh, and here's the address record for mission.scs.stanford.edu.
+[334.00s -> 339.00s]  And so in its response, I now know the IP address to contact, and I can put
+[339.00s -> 347.00s]  that record into my cache. And so if I then do mission.scs.stanford.edu,
+[347.00s -> 353.00s]  I'm going to get the A record. And in fact, that's what mission.stanford.edu,
+[353.00s -> 358.00s]  .scs.stanford.edu gives me, is the A record for www.scs.stanford.edu.
+[358.00s -> 363.00s]  It's time to load 3600, an IP address of 17166.3.9.
+[363.00s -> 367.00s]  So one record that we saw briefly, besides an A record, an NS record,
+[367.00s -> 370.00s]  is something called the CNAME record, or canonical name.
+[370.00s -> 376.00s]  What the canonical name record tells you in DNS is that a name is an alias.
+[376.00s -> 380.00s]  So as you saw before, if you dig www.stanford.edu,
+[380.00s -> 384.00s]  you'll see that that's actually an alias for another name.
+[384.00s -> 391.00s]  Say www-v6.stanford.edu. And so if there's a CNAME record for a name,
+[391.00s -> 394.00s]  there can't be any other records for the name.
+[394.00s -> 396.00s]  It's telling you, oh, this is just a pointer.
+[396.00s -> 400.00s]  And so often what'll happen is that if you ask a query about a canonical name,
+[400.00s -> 403.00s]  it'll tell you, oh, for a, sorry, an alias name.
+[403.00s -> 406.00s]  It'll tell you, oh, this is an alias for this canonical name,
+[406.00s -> 409.00s]  and then here are the records you want for the canonical name.
+[409.00s -> 414.00s]  So if you dig www.stanford.edu, it'll tell you the canonical name is this
+[414.00s -> 417.00s]  other name. Oh, and here's the A record for that
+[417.00s -> 420.00s]  other name. Another kind of DNS record, and this
+[420.00s -> 423.00s]  one is really valuable is, well, they're all really valuable,
+[423.00s -> 426.00s]  is what's called an MX record. It's a mail exchange record.
+[426.00s -> 430.00s]  And it tells you what's the mail server for a domain.
+[430.00s -> 435.00s]  So for example, there's no host scs.stanford.edu.
+[435.00s -> 440.00s]  You can't ping it, try. But you can send email to scs.stanford.edu.
+[440.00s -> 442.00s]  People have email addresses at that domain.
+[442.00s -> 447.00s]  And so what this is, is that there's an MX record for scs.stanford.edu that
+[447.00s -> 452.00s]  says, oh, if you want to send mail to this domain, this is the server you
+[452.00s -> 455.00s]  should talk to. And furthermore, an MX record causes
+[455.00s -> 459.00s]  A record processing. So if I say, hey, what's the MX
+[459.00s -> 462.00s]  record? Then it'll say, oh, this is the,
+[462.00s -> 467.00s]  the name of the server for mail, and here's the A record for that server.
+[467.00s -> 473.00s]  So for example, let's dig mx.scs.stanford.edu.
+[476.00s -> 480.00s]  There we go. And we'll see, okay, answer section.
+[480.00s -> 486.00s]  The MX record for scs.stanford.edu, the TTL 3600, it's Internet, is
+[486.00s -> 491.00s]  market4.scs.stanford.edu. Furthermore, the address record for
+[491.00s -> 497.00s]  market4.scs.stanford.edu is 171.66.3.10. And this ten is a preference value to
+[497.00s -> 502.00s]  tell you if there's maybe different servers that you want which one is best.
+[502.00s -> 508.00s]  So there we can request the MX record. So this starts to get a little funny.
+[508.00s -> 513.00s]  So what happens if the mail server name doesn't have an A record?
+[513.00s -> 527.00s]  So, let's try digging this bad MX. So, let's do dig mx badmx.scs.tanford.edu.
+[527.00s -> 536.00s]  And it's gonna say, well, badmx is cs144.scs.stanford.edu, but now we
+[536.00s -> 542.00s]  don't have an A record for that. But this is weird.
+[542.00s -> 547.00s]  Why don't we have an A record for cs144.scs.stanford.edu?
+[547.00s -> 553.00s]  That's a valid host name. But for some reason, the name server's not able to
+[553.00s -> 561.00s]  give us an A record. So if we look up, let's just dig cs144.scs.stanford.edu.
+[561.00s -> 568.00s]  If we look up here, it turns out that cs144.stanford.edu is a C name for
+[568.00s -> 573.00s]  www.cs.stanford.edu. So it's actually an alias for this.
+[573.00s -> 577.00s]  And this is where you get one of these interesting edge cases in protocols, these
+[577.00s -> 580.00s]  things where the way it's designed turns out there's some implications which
+[580.00s -> 583.00s]  maybe you didn't foresee, which actually, I mean, kind of a, maybe a good idea.
+[583.00s -> 587.00s]  The point is that your MX record isn't something which people are looking at.
+[587.00s -> 591.00s]  It's something which just machines use. So you shouldn't have, be pointing
+[591.00s -> 595.00s]  it at aliases. If you're pointing it at aliases, then you're forcing
+[595.00s -> 599.00s]  another level of indirection in the DNS hierarchy, which isn't helpful given that
+[599.00s -> 603.00s]  it's just machines, it's not people. So recall, when you look up an MX
+[603.00s -> 607.00s]  record, you'll also get processing for the associated A records.
+[607.00s -> 613.00s]  But CS144 does not have an A record. It has a C name record.
+[613.00s -> 616.00s]  And the fact that it has a C name record means it cannot have any other
+[616.00s -> 619.00s]  record. And so there's this approach where if
+[619.00s -> 624.00s]  you point your MX record at an alias, it forces people to do another look up,
+[624.00s -> 628.00s]  and so there's, it's sort of this way to create a negative incentive for you to do
+[628.00s -> 631.00s]  that. And so here's this interaction between
+[631.00s -> 635.00s]  these two different kinds of records, the way that they're processed which is a way
+[635.00s -> 638.00s]  to kind of construct this system to be more efficient.
+[638.00s -> 643.00s]  So in addition to A records, quad A records, NS records, MX records, and C
+[643.00s -> 646.00s]  name records, there are all kinds of other records.
+[646.00s -> 651.00s]  There are sort of authority records which give you information about the actual
+[651.00s -> 655.00s]  caching of DNS information. There's something called a text record,
+[655.00s -> 659.00s]  which is a way to put arbitrary text, so you can associate arbitrary text with a
+[659.00s -> 662.00s]  name. This is a great way for extensions.
+[662.00s -> 666.00s]  People have explored all kinds of new services using text records.
+[666.00s -> 669.00s]  It allows you to play with something in the operating, in the working internet
+[669.00s -> 672.00s]  and then maybe transition to a new kind of specific record.
+[672.00s -> 677.00s]  There are also things called pointer records which do the reverse mapping.
+[677.00s -> 681.00s]  You look up a pointer record for an address and it will give you a name if
+[681.00s -> 685.00s]  one exists or if it knows of it. And then, as we've seen before, there
+[685.00s -> 689.00s]  are what are called quad A records or IPv6 address records.
+[689.00s -> 692.00s]  They have full 128 bit IPv6 addresses in them.
+[692.00s -> 696.00s]  And so those are sort of the nitty gritty details of DNS, the information
+[696.00s -> 700.00s]  that's cached, how you use glue records to stitch together zones, and
+[700.00s -> 704.00s]  some of the different kinds of records that you have besides just simple NS and
+[704.00s -> 705.00s]  A records.
+[707.00s -> 712.00s]  .
+[712.00s -> 717.00s]  .
+[717.00s -> 722.00s]  .
+[722.00s -> 727.00s]  .
+[727.00s -> 732.00s]  .

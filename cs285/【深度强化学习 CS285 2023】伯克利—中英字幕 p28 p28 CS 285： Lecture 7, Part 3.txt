@@ -1,0 +1,126 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.44s]  Alright, in the next portion of today's lecture, we're going to discuss how this
+[5.44s -> 9.64s]  generic form of fit-a-queue iteration that we covered can be instantiated as
+[9.64s -> 14.84s]  different kinds of practical deep reinforcement learning algorithms. So
+[14.84s -> 18.96s]  first, let's talk a little bit more about what it means for fit-a-queue
+[18.96s -> 23.60s]  iteration to be an off-policy algorithm. So just to remind everybody,
+[23.60s -> 29.52s]  off-policy means that you do not need samples from the latest policy in
+[29.56s -> 33.60s]  order to keep running your RL algorithm. Typically what that means is that you can
+[33.60s -> 39.44s]  take many gradient steps on the same set of samples or reuse samples from previous
+[39.44s -> 43.08s]  iterations. So you don't have to throw out your old samples, you can keep using them,
+[43.08s -> 49.36s]  which in practice gives you more data to train on. So intuitively, the main
+[49.36s -> 52.68s]  reason that fit-a-queue iteration allows us to get away with using
+[52.68s -> 57.60s]  off-policy data is that the one place where the policy is actually used
+[57.60s -> 63.44s]  is actually utilizing the Q function rather than stepping through the simulator. So as our policy
+[63.44s -> 71.08s]  changes, what really changes is this max. Remember, the way that we got this max was by
+[71.08s -> 75.96s]  taking the argmax, which is our policy, the policy in an argmax policy, and then plugging
+[75.96s -> 82.96s]  it back into the Q value to get the actual value for the policy. So inside of that max,
+[83.08s -> 88.44s]  you can kind of unpack it and pretend that it's actually Q phi of s i prime comma argmax
+[88.44s -> 96.20s]  of Q phi, and that argmax is basically our policy. So this is the only place where the
+[96.20s -> 101.48s]  policy shows up, and conveniently enough, it shows up as an argument to the Q function,
+[101.48s -> 106.04s]  which means that as our policy changes, as our action a i prime changes, we do not need to
+[106.04s -> 110.88s]  generate new rollouts. You can almost think of this as a kind of model. The Q function allows
+[110.92s -> 115.20s]  you to sort of simulate what kind of values you would get if you were to take different actions,
+[115.20s -> 122.92s]  and then, of course, you take the best action if you want to most improve your behavior. So this
+[122.92s -> 128.96s]  max approximates the value of pi prime, our greedy policy, at s i prime, and that's why
+[128.96s -> 133.12s]  we don't need new samples. We're basically using our Q function to simulate the value of new
+[133.12s -> 144.08s]  actions. So given a state and an action, the transition is actually independent of pi, right?
+[144.08s -> 149.68s]  If s i and a i are fixed, no matter how much we change pi, s i prime is not going to change,
+[149.68s -> 156.88s]  because pi only influences a i, and here a i is fixed. So one way that you can think of
+[156.88s -> 161.48s]  fit-a-q iteration kind of structurally is that you have this big bucket of different
+[161.48s -> 166.08s]  transitions, and what you'll do is you'll back up the values along each of those transitions,
+[166.08s -> 170.72s]  and each of those backups will improve your Q value. But you don't actually really care
+[170.72s -> 173.88s]  so much about which specific transitions they are, so long as they kind of cover the
+[173.88s -> 178.28s]  space of all possible transitions quite well. So you could imagine that you have this data
+[178.28s -> 182.80s]  set of transitions, and you're just plugging away on this data set, running fit-a-q iteration,
+[182.80s -> 190.12s]  improving your Q function each time you go around the loop. Now, what exactly is it that
+[190.12s -> 196.32s]  fit-a-q iteration is optimizing? Well, this step, the step where you take the max, improves your
+[196.32s -> 203.76s]  policy, right? So in the tabular case, this would literally be your policy improvement,
+[203.76s -> 212.76s]  and your step three is minimizing the error of fit. So if you had a tabular update, you would
+[212.76s -> 216.96s]  just directly write those y i's into your table, but since you have a neural network, you have to
+[216.96s -> 221.24s]  perform some optimization to minimize an error against those y i's, and you might not drive
+[221.24s -> 229.16s]  the error perfectly to zero. So you could think of fit-a-q iteration as optimizing an error, the
+[229.16s -> 235.04s]  error being the Bellman error, the difference between Q phi s a and those target values y,
+[235.04s -> 240.80s]  and that is kind of the closest to an actual optimization objective, but of course that error
+[240.80s -> 245.32s]  itself doesn't really reflect the goodness of your policy. It's just the accuracy with which
+[245.32s -> 253.36s]  you're able to copy your target values. If the error is zero, then you know that Q phi s a is
+[253.36s -> 262.44s]  equal to R s a plus gamma max a prime Q phi s prime a prime, and this is an optimal Q function
+[262.44s -> 266.80s]  corresponding to the optimal policy pi prime, where the policy is recovered by the argmax rule.
+[266.80s -> 276.76s]  So this is, this you can show maximizes reward, but if the error is not zero, then you can't really
+[276.76s -> 282.40s]  say much about the performance of this policy. So what we know about fit-a-q iteration is, in the
+[282.40s -> 288.20s]  tabular case, your error will be zero, which means that you'll recover Q star. If your error is
+[288.20s -> 295.84s]  not zero, then most guarantees are lost when we leave the tabular case. All right, now let's
+[295.88s -> 301.36s]  discuss a few special cases of fit-a-q iteration, which correspond to very popular algorithms in the
+[301.36s -> 306.56s]  literature. So, so far the generic form of fit-a-q learning that we talked about has these three
+[306.56s -> 311.96s]  steps. Collect the data set, evaluate your target values, train your neural network parameters to
+[311.96s -> 316.08s]  fit those target values, and then alternate these two steps k times, and then after k times,
+[316.08s -> 323.64s]  go out and collect more data. You can instantiate a special case of this algorithm with
+[323.64s -> 327.68s]  particular choices for those hyperparameters, which actually corresponds to an online algorithm.
+[327.68s -> 335.24s]  So in the online algorithm, in step one, you take exactly one action ai and observe one
+[335.24s -> 343.20s]  transition si, ai, si prime, ri. Then in step two, you compute one target value for that
+[343.20s -> 347.40s]  transition that you just took. Very much analogous to how you calculate the advantage value in
+[347.40s -> 351.96s]  actor-critic, in online actor-critic, for the one transition you just took. And then in
+[352.00s -> 358.48s]  step three, you take one gradient descent step on the error between your q values and the
+[358.48s -> 363.00s]  target value that you just computed. So the equation that I have here, it looks a little
+[363.00s -> 368.34s]  complicated, but I basically just applied the chain rule of probability to that objective inside
+[368.34s -> 375.04s]  the arg min in step three. So applying chain rule, you get dq d phi at si ai times the error
+[375.08s -> 382.20s]  q phi si ai minus yi, and the error in those parentheses that q si ai minus yi is sometimes
+[382.20s -> 390.52s]  referred to as the temporal difference error. So this is the basic online Q learning algorithm,
+[390.52s -> 395.48s]  also sometimes called Watkins Q-learning. This is kind of the classic Q-learning algorithm that
+[395.48s -> 401.88s]  we learn about in textbooks. And it is an on-policy algorithm, so you do not have to take
+[401.92s -> 411.60s]  the action ai using your latest greedy policy. So what policy should you use? So your final policy
+[411.60s -> 416.92s]  will be the greedy policy. If Q-learning converges and has error zero, then we know that the greedy
+[416.92s -> 423.48s]  policy is the optimal policy. But while learning is progressing, using the greedy policy may not
+[423.48s -> 429.20s]  be such a good idea. Here's a question for you to think about. Why might we not want to use
+[429.64s -> 435.88s]  the greedy policy, the argmax policy, in step one while running online Q-learning or online
+[435.88s -> 445.24s]  Q-duration? Take a moment to think about this question. So part of why we might not want to
+[445.24s -> 452.84s]  do this is that this argmax policy is deterministic, and if our initial Q function is
+[452.84s -> 459.12s]  quite bad, it's not going to be random but it's going to be arbitrary, then it will essentially
+[459.12s -> 464.36s]  commit our argmax policy to take the same action every time it enters a particular state.
+[464.36s -> 469.04s]  And if that action is not a very good action, we might be stuck taking that bad action
+[469.04s -> 474.52s]  essentially in perpetuity, and we might never discover that better actions exist. So in
+[474.52s -> 480.64s]  practice, when we run fitted Q-duration or Q-learning algorithms, it's highly desirable to modify
+[480.72s -> 485.84s]  the policy that we use in step one to not just be the argmax policy but to inject some additional
+[485.84s -> 490.92s]  randomness to produce better exploration. And there are a number of choices that we make in
+[490.92s -> 501.36s]  practice to facilitate this. So one common choice is called epsilon greedy. This is one of the
+[501.36s -> 506.16s]  simplest exploration rules that we can use with discrete actions, and it's something that you
+[506.16s -> 513.80s]  will all implement in homework 3. Epsilon greedy simply says that with probability 1 minus epsilon,
+[513.80s -> 519.68s]  you will take the greedy action, and then with probability epsilon, you will take one of the
+[519.68s -> 525.48s]  other actions uniformly at random. So the probability of every action is 1 minus epsilon
+[525.48s -> 530.00s]  if it's the argmax, and then epsilon divided by the number of actions minus 1 otherwise.
+[530.00s -> 537.52s]  This is called epsilon greedy. Why might this be a good idea? Well, if we choose epsilon to be
+[537.52s -> 542.12s]  some small number, it means that most of the time we take the action that we think is best,
+[542.12s -> 548.16s]  and that's usually a good idea because if we've got it right, then we'll go to some good region
+[548.16s -> 553.80s]  and collect some good data. But we always have a small but not zero probability of taking some
+[553.80s -> 559.52s]  other action which will ensure that if our Q-function is bad, eventually we'll just randomly do
+[559.56s -> 564.68s]  something better. It's a very simple exploration rule, and it's very commonly used in practice. A
+[564.68s -> 569.44s]  very common practical choice is to actually vary the value of epsilon over the course of
+[569.44s -> 573.88s]  training, and that makes a lot of sense because you expect your Q-function to be pretty bad
+[573.88s -> 578.24s]  initially, and at that point you might want to use a larger epsilon, and then as learning
+[578.24s -> 585.48s]  progresses, your Q-function gets better, and then you can reduce epsilon. Another
+[585.52s -> 590.56s]  exploration rule that you could use is to select your actions in proportion to some
+[590.56s -> 595.72s]  positive transformation of your Q-values, and a particularly popular positive transformation
+[595.72s -> 601.76s]  is exponentiation. So if you take actions in proportion to the exponential of your Q-values,
+[601.76s -> 608.44s]  what will happen is that the best actions will be the most frequent. Actions that are almost
+[608.44s -> 612.84s]  as good as the best action will also be taken quite frequently because they'll have similarly
+[612.88s -> 618.36s]  high probabilities, but if some action has an extremely low Q-value, then it will almost never
+[618.36s -> 624.84s]  be taken. In some cases, this kind of exploration rule can be preferred over epsilon greedy because
+[624.84s -> 631.44s]  with epsilon greedy, the action that happens to be the max gets much higher probability,
+[631.44s -> 635.20s]  and if there are two actions that are about equally good, the second best one has a much
+[635.20s -> 639.96s]  lower probability, whereas with this exponentiation rule, if you really have two equally good
+[639.96s -> 644.56s]  actions, you'll take them about an equal number of times. The second reason it might be better
+[644.56s -> 647.56s]  is if you have a really bad action and you've already learned that it's just a really bad
+[647.56s -> 651.96s]  action, you probably don't want to waste your time exploring it, whereas epsilon greedy won't
+[651.96s -> 656.64s]  make use of that. So this is sometimes also called the Boltzmann exploration rule,
+[656.64s -> 663.84s]  also the softmax exploration rule. We'll discuss more sophisticated ways to do
+[663.84s -> 667.68s]  exploration in much more detail in another lecture in the second half of the course,
+[667.80s -> 672.88s]  but these simple rules are hopefully going to be enough to implement basic versions of
+[672.88s -> 679.60s]  Q-iteration and Q-learning algorithms. All right, so to review what we've covered so far,
+[679.60s -> 684.88s]  we've discussed value-based methods which don't learn a policy explicitly but just learn
+[684.88s -> 690.00s]  a value function or Q function. We've discussed how if you have a value function, you can recover
+[690.00s -> 696.00s]  a policy by using the argmax, and how we can devise this fitted Q-iteration method which
+[696.00s -> 699.68s]  does not require knowing the transition dynamics, so it's a true model-free method,
+[699.68s -> 705.88s]  and we can instantiate it in various ways as a batch mode off-policy method or an online Q-learning
+[705.88s -> 710.36s]  method depending on the choice of those hyperparameters, the number of steps we take
+[710.36s -> 712.92s]  to gather data, the number of gradient updates, and so on.

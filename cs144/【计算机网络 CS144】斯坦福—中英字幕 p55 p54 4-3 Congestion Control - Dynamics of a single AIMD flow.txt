@@ -1,0 +1,236 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.60s]  In the last video, I told you how we can use the Additive Increase Multiplicative Decrease
+[5.60s -> 11.60s]  method to modulate the size of the TCP sliding window, and therefore control the number
+[11.60s -> 14.96s]  of bytes that are outstanding in the network.
+[14.96s -> 20.00s]  If we want to increase the number of bytes that are outstanding, we might contribute
+[20.00s -> 21.42s]  to more congestion.
+[21.42s -> 24.92s]  If there is congestion and we want to reduce it, then we might reduce the number
+[24.92s -> 29.00s]  of outstanding bytes, in other words, reduce the window size.
+[29.00s -> 34.84s]  So using this window size modulation, we can vary the number of outstanding bytes and therefore
+[34.84s -> 38.52s]  affect or control the amount of congestion in the network.
+[38.52s -> 43.72s]  Notice this is being done by the end host only, without any explicit support from the
+[43.72s -> 45.56s]  network.
+[45.56s -> 51.48s]  In order to understand how AIMD works, and then later how TCP congestion control works,
+[51.48s -> 57.24s]  we're going to start by looking in some detail at how AIMD works with a single flow.
+[57.24s -> 60.96s]  If we can understand how it works with a single flow, then we have a chance of understanding
+[60.96s -> 65.40s]  how it works in a more complicated network with many many flows through a router at
+[65.40s -> 68.96s]  the same time.
+[68.96s -> 72.58s]  So we saw before, AIMD works as follows.
+[72.58s -> 78.36s]  Each time a packet is received OK, we increase the window by 1 over W. Therefore, once we've
+[78.36s -> 84.16s]  received the whole window's worth of packets, the window size will be increased by 1.
+[84.16s -> 90.40s]  Every time a packet is dropped, we're going to decrease the window size multiplicatively.
+[90.40s -> 93.16s]  We're going to reduce it by a factor of 2.
+[93.16s -> 97.04s]  And this is the dynamics that we saw before.
+[97.04s -> 102.88s]  Now let's look at an animation of the AIMD process working in practice.
+[102.88s -> 110.72s]  We're going to take a good look at this animation of a single AIMD flow over a single
+[110.72s -> 112.48s]  bottleneck link.
+[113.48s -> 117.80s]  Let me explain what's going on with the figure.
+[117.80s -> 123.36s]  The congestion window size, W, is shown on the graph down here, varying as a function
+[123.36s -> 124.64s]  of time.
+[124.64s -> 128.80s]  So this is Cwind, the congestion window.
+[128.80s -> 131.92s]  And this is the same as the value here at the source.
+[131.92s -> 138.24s]  So this is the source, this is the destination, and this is the router in between.
+[138.24s -> 141.52s]  The router has a buffer, and it's going to buffer packets that are waiting to go
+[141.56s -> 143.48s]  on to the egress link.
+[143.48s -> 148.76s]  The egress link is this one here, and this is the bottleneck link between the source
+[148.76s -> 151.72s]  and the destination.
+[151.72s -> 155.56s]  This link here on the left is running faster than the link on the right, which
+[155.56s -> 159.92s]  is why every now and again there's a buildup of packets in this buffer, because they're
+[159.92s -> 162.74s]  arriving faster than they are departing.
+[162.74s -> 166.20s]  The reason that the packets look littler on the left than they do on the right is
+[166.20s -> 170.16s]  just supposed to represent the fact that the link on the left is running faster than
+[170.20s -> 174.16s]  the one on the right, in other words, at a higher data rate, and so the packetization
+[174.16s -> 180.88s]  delay is shorter, and so the packets appear a little bit shorter on the left.
+[180.88s -> 185.36s]  So packets are going to flow from the source to the destination, they're the blue ones.
+[185.36s -> 190.16s]  And then for each packet there is an acknowledgement coming back to the source, that's what
+[190.16s -> 192.48s]  the red ones are at the top.
+[192.48s -> 198.52s]  And you can see that the arrival of the acknowledgements is clocking the transmission
+[198.56s -> 200.48s]  of the next packet.
+[200.48s -> 204.40s]  So we often say that an algorithm like this is self-clocking, and we'll see later that
+[204.40s -> 207.32s]  TCP is self-clocking.
+[207.32s -> 210.88s]  The packets are triggered by an acknowledgement coming back.
+[210.88s -> 214.40s]  Okay, now that I've explained this, I'm going to restart it so that we can look
+[214.40s -> 215.92s]  at some of the dynamics.
+[215.92s -> 221.52s]  I'm actually going to give you our URL to this same animation so you can play around
+[221.52s -> 224.16s]  with this on your own time.
+[224.16s -> 237.32s]  So starting again, we can see that the window size here is telling us how many packets there
+[237.32s -> 239.40s]  can be outstanding in the network.
+[239.40s -> 243.88s]  And I like to think of it as that there's a kind of a bag that is representing the
+[243.88s -> 248.24s]  network as a whole, and we're trying to figure out how big that bag is.
+[248.24s -> 253.12s]  How many packets can we put into that bag before they overflow and drop on the floor?
+[253.12s -> 256.68s]  And I find this a useful way to think about AIMD.
+[256.68s -> 261.12s]  So we're basically trying to figure out where those packets can be and how many there
+[261.12s -> 264.00s]  can be in the link.
+[264.00s -> 267.84s]  And really there's only a couple of, two or three different places that they can be.
+[267.84s -> 274.00s]  First of all, the packets can be on this link here, on this fixed capacity pipe.
+[274.00s -> 278.58s]  There are a certain number of packets that we could fit onto that pipe.
+[278.58s -> 282.28s]  There are a certain number that we could put here, and there are a certain number that
+[282.32s -> 285.48s]  are represented by the acknowledgments coming in the opposite direction.
+[285.48s -> 287.08s]  So all of those are fixed.
+[287.08s -> 293.08s]  The only variable portion is how many that we have currently got in the buffer in the
+[293.08s -> 294.08s]  middle.
+[294.08s -> 295.64s]  So it's like a concertina.
+[295.64s -> 299.88s]  There's this concertina that, to start with, that concertina is closed.
+[299.88s -> 302.18s]  And we're putting the packets into the network.
+[302.18s -> 306.82s]  And then as we fill up the links, after the links are full, the only place they
+[306.82s -> 309.28s]  can go is into the buffer.
+[309.28s -> 310.96s]  And the buffer will absorb.
+[310.96s -> 315.86s]  For every extra window, every extra time that we open the window, we are essentially
+[315.86s -> 319.20s]  putting an extra packet into that packet buffer.
+[319.20s -> 323.36s]  So initially when the window is at its minimum value, all the links are full, but
+[323.36s -> 325.16s]  the buffer is empty.
+[325.16s -> 331.32s]  If we increase the window by size one, the links are full, so it can't be placed into
+[331.32s -> 332.32s]  the link.
+[332.32s -> 334.84s]  The only place that it can be placed is into the buffer.
+[334.84s -> 337.00s]  So the buffer will increase by one.
+[337.00s -> 341.16s]  If we then increase the window by one again, it'll go into the buffer.
+[341.16s -> 343.84s]  Increase it by one again, it'll go into the buffer.
+[343.84s -> 346.24s]  Eventually the buffer overflows.
+[346.24s -> 347.50s]  We drop a packet.
+[347.50s -> 354.40s]  And then the AIMD rules are that we drop the outstanding window size by half.
+[354.40s -> 356.74s]  Eventually the buffer will go empty again.
+[356.74s -> 358.42s]  And then we start again.
+[358.42s -> 362.84s]  So really, all we're doing by changing the window size is modulating the occupancy
+[362.84s -> 365.44s]  of the buffer at the bottleneck.
+[365.44s -> 370.28s]  If we look here on the simulation, we can see that happening.
+[370.28s -> 375.92s]  So right now the window size is 9, so that we will see at any instant there are 9 packets
+[375.92s -> 378.92s]  and acknowledgements outstanding in the network.
+[378.92s -> 383.56s]  But because the links are full, this outgoing link here is full, our bottleneck link is
+[383.56s -> 389.48s]  full, the only place that those packets can go, once we increase the window size,
+[389.48s -> 390.48s]  is here.
+[390.48s -> 391.60s]  So we've filled it up.
+[391.60s -> 394.58s]  Any additional ones are inside the buffer.
+[394.70s -> 398.46s]  And every now and again you'll see that we've received a full window's worth, and
+[398.46s -> 403.22s]  then we increase the window size by one.
+[403.22s -> 404.98s]  It's currently at 13.
+[404.98s -> 407.04s]  In a moment it'll increase to 14.
+[407.04s -> 412.66s]  And every time we increase the window size, the buffer will have one more packet in it.
+[412.66s -> 418.98s]  And down here you can see that every time we receive a full window's worth, it will
+[418.98s -> 421.56s]  actually go up by one.
+[421.56s -> 425.96s]  And therefore that's how the window is going to evolve over time.
+[425.96s -> 429.28s]  So we're almost getting to the point where the buffer is full.
+[429.28s -> 432.80s]  We've got to a point where the window is 16.
+[432.80s -> 438.24s]  And at the moment, the rate at which packets are coming in is exactly matching the rate
+[438.24s -> 440.46s]  at which they're going out.
+[440.46s -> 444.18s]  In a moment, we're going to actually put one extra packet into the network, and you
+[444.18s -> 445.60s]  see it got dropped.
+[445.60s -> 449.06s]  And the knowledge of that drop is propagating through the network.
+[449.06s -> 451.22s]  It will now go onto the outgoing link.
+[451.22s -> 455.38s]  It will come back actually through the absence of an acknowledgement, but that doesn't matter.
+[455.38s -> 457.84s]  And so therefore the window size will be halved.
+[457.84s -> 459.98s]  That's what's going on over here.
+[459.98s -> 465.06s]  The buffer will drain, because we're only allowed to have half as many outstanding
+[465.06s -> 466.82s]  packets in the network.
+[466.82s -> 468.98s]  Therefore we stop sending.
+[468.98s -> 473.02s]  The buffer drained, because it drains at the full rate.
+[473.02s -> 477.10s]  And then we start the whole process off again.
+[477.10s -> 481.78s]  The first thing I want you to notice is that the outgoing link is kept busy all the
+[481.78s -> 483.94s]  time, 100% of the time.
+[483.94s -> 489.14s]  Even though this window process is concertina-ing, it's going full up and then full down
+[489.14s -> 490.14s]  when we have a drop.
+[490.14s -> 491.86s]  Full up and then full down.
+[491.86s -> 496.50s]  So even though this window is going through this sawtooth motion, the egress, the bottleneck
+[496.50s -> 500.68s]  link in the network, is staying busy all the time.
+[500.68s -> 505.34s]  In other words, the rate at which packets are being sent is staying constant.
+[505.42s -> 510.02s]  And this is a really important property of AIMD, particularly with a single link.
+[510.02s -> 514.74s]  It's not really adjusting the rate, it's actually affecting the number of packets that
+[514.74s -> 517.42s]  can be outstanding in the network.
+[517.42s -> 520.90s]  And this subtle distinction will become very important in a moment when I tell you a little
+[520.90s -> 524.58s]  bit more about the dynamics of AIMD.
+[524.58s -> 528.10s]  And then it'll help us understand what's going on when there are multiple flows in
+[528.10s -> 528.60s]  the network.
+[536.34s -> 540.70s]  To increase our understanding of what's going on, let's look at the dynamics of that single
+[540.70s -> 541.70s]  flow.
+[541.70s -> 547.42s]  This is from a simulation in a well-known network simulator called NS of a single TCP
+[547.42s -> 549.66s]  flow over a bottleneck link.
+[549.66s -> 554.66s]  The graph at the top here is telling us the evolution of the congestion window, or
+[554.66s -> 556.10s]  CWIN, like we had before.
+[556.10s -> 557.34s]  That's the red one.
+[557.34s -> 561.34s]  The green one is the RTT, the round trip time.
+[561.34s -> 564.10s]  This red line here is the utilization of the bottleneck link.
+[564.10s -> 567.58s]  In other words, how busy is that bottleneck link kept?
+[567.58s -> 570.10s]  And down here is the occupancy of the buffer.
+[570.10s -> 571.10s]  And we can see that evolving.
+[571.10s -> 578.28s]  So it's very similar to the simulation that we just saw, the animation that we just saw.
+[578.28s -> 585.46s]  So notice that the congestion window is moving in this beautiful sawtooth.
+[585.46s -> 591.54s]  But because every time we put one more packet into the network, we increase the occupancy
+[591.54s -> 596.22s]  of the buffer, so every time we increase W, the only place that that extra packet can
+[596.22s -> 597.58s]  go is in the buffer.
+[597.58s -> 602.40s]  So it's going to move in perfect lockstep with CWIN.
+[602.40s -> 605.98s]  But because we're increasing the occupancy of the buffer, we're increasing the delay
+[605.98s -> 609.30s]  that packets experience as they go through the network.
+[609.30s -> 615.26s]  So therefore, the RTT, the round trip time, is also going and following the same, exactly
+[615.26s -> 617.68s]  the same shape.
+[618.36s -> 627.80s]  So CWIND and the RTT actually follow the same shape.
+[627.80s -> 633.16s]  The consequence of this is that the sending rate for a single flow, which we can define
+[633.16s -> 641.32s]  to be the number of bytes that we send in one window, divided by the round trip
+[642.32s -> 649.28s]  Because the round trip time is varying with the window size, W over RTT is actually going
+[649.28s -> 651.00s]  to be a constant.
+[651.00s -> 654.46s]  This is actually going to be a constant.
+[654.46s -> 655.46s]  Why is that?
+[655.46s -> 659.88s]  The reason that it's constant is because W and RTT are moving in lockstep.
+[659.88s -> 662.40s]  They're essentially the same.
+[662.40s -> 664.12s]  And we saw that in the animation.
+[664.12s -> 667.28s]  The egress link was kept busy at all times.
+[667.28s -> 669.44s]  So we're not really modulating the rate.
+[669.44s -> 672.96s]  In fact, we don't want to modulate the rate when everything is constant and we've only
+[672.96s -> 674.18s]  got a single flow.
+[674.18s -> 676.92s]  We want to keep the outgoing link busy.
+[676.92s -> 681.22s]  All that the window is doing is probing to see how big the bag is, how many more
+[681.22s -> 685.12s]  bytes we can put into the network without it overflowing.
+[685.12s -> 689.64s]  And it's constantly probing and changing that window size, just in case the conditions
+[689.64s -> 694.68s]  change and the capacity increases, and therefore there's more room in the bag to put more
+[694.68s -> 698.08s]  packets.
+[698.08s -> 704.60s]  Just to belabor the point a little, the window size is going to move like this.
+[704.60s -> 711.32s]  RTT will move like this in lockstep, and so this rate is a constant.
+[711.32s -> 716.00s]  From this, we can also make another observation, and that is how big should the buffer be
+[716.00s -> 720.00s]  so that the whole system will behave correctly.
+[720.00s -> 724.44s]  We saw last time that the buffer occupancy was moving in lockstep with a window size
+[724.44s -> 725.96s]  process.
+[725.96s -> 729.68s]  This picture down here is essentially the same as our animation, our bottleneck link over
+[729.68s -> 735.72s]  here, our link here with a faster rate, the router buffer between A and B.
+[735.72s -> 742.70s]  So if we were to look at that again in our simulation and look at the behavior,
+[742.70s -> 746.68s]  the graphs on the left are the same as the ones we saw before.
+[746.68s -> 753.24s]  And in this case, the buffer occupancy equals RTT times C. In other words, it's just enough
+[753.24s -> 762.98s]  to hold the enough packets that will fit into the round trip when the buffer is empty.
+[762.98s -> 766.40s]  If we were to make the buffer a little bit smaller, and that's what we're doing
+[766.40s -> 774.44s]  here, so the buffer is smaller, then what happens is that the buffer, after there's
+[774.44s -> 781.80s]  been a drop, which is taking place here, when the window size decreases and is halved
+[781.80s -> 788.60s]  according to the AMD rules, the buffer will fall because we have fewer outstanding bytes
+[788.60s -> 796.00s]  in the network, therefore the source will stop sending packets, the buffer will drain,
+[796.00s -> 801.16s]  but it's draining and empty for some period, so if the router buffer is empty, it means
+[801.16s -> 806.48s]  the egress link, our bottleneck link, our precious resource, is actually not being used,
+[806.48s -> 811.70s]  and so the utilization will drop from 100% during that time.
+[811.70s -> 815.98s]  So if we want to prevent this from happening, and have 100% at all times, we need to make
+[815.98s -> 818.46s]  sure that this doesn't happen.
+[818.46s -> 821.54s]  Therefore we need to make sure that the buffer never goes empty, and we need a behavior
+[821.54s -> 826.26s]  like this, from which we need a buffer of RTT times C.
+[826.26s -> 832.70s]  Now why it's specifically RTT times C, you'll see in a problem set a little bit later.
+[832.70s -> 838.18s]  But the basic intuition is that the buffer occupancy, the size of the buffer, must,
+[838.18s -> 842.22s]  from the peak to the trough, must be the same as the distance from the peak to the
+[842.22s -> 847.46s]  trough here, to be able to ride out the time when the window size is halved, and we have
+[847.46s -> 850.82s]  fewer outstanding packets placed into the network.
+[850.82s -> 855.50s]  And that distance there turns out to be RTT times C, and we'll see that later in
+[855.50s -> 859.18s]  a problem set.
+[859.18s -> 862.30s]  Let's summarize what we've learned for a single flow.
+[862.30s -> 867.86s]  The window is going to expand and contract according to AIMD, the Additive Increase Multiplicative
+[867.86s -> 873.94s]  Decrease, which is going to modulate the size of the TCP sliding window in order to determine
+[873.94s -> 876.74s]  how many outstanding bytes there can be in the network.
+[876.74s -> 881.98s]  Essentially we're probing how many bytes that the pipe can hold from end to end.
+[881.98s -> 885.62s]  And we're constantly going to be probing by changing the size of that window.
+[885.62s -> 889.54s]  We're going to carefully increase it, see how much space there is.
+[889.54s -> 892.82s]  If we find that we overfill it, we're going to drop back down again, and then we're
+[892.82s -> 897.22s]  going to keep trying to probe it to see if there's more capacity that's available.
+[897.22s -> 901.34s]  So we're going to tentatively, additively increase, and then if we find that we've
+[901.34s -> 905.74s]  gone into trouble, we're going to very quickly, in a very responsive way, drop back
+[905.74s -> 909.98s]  down again to be able to reduce the number of outstanding bytes in the network as quickly
+[909.98s -> 911.62s]  as we can.
+[911.62s -> 916.82s]  So the sawtooth is actually the stable operating point of TCP.
+[916.82s -> 920.36s]  There's nothing out of control just because it's oscillating.
+[920.36s -> 925.66s]  It's exactly the behavior that we want under a stable operating condition.
+[925.66s -> 930.26s]  And the sending rate is in fact constant, so long as we have enough buffers in the
+[930.26s -> 932.38s]  network, which is RTT times C.
+[932.38s -> 935.54s]  So these are all the observations for a single flow.
+[935.54s -> 938.82s]  In the next video we're going to see how things are a little bit different when
+[938.82s -> 940.38s]  we have many flows in the network.

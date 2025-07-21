@@ -1,0 +1,1635 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 10.70s]  So this is a good lecture to make sure you're sitting by someone you like to talk to, because
+[10.70s -> 15.96s]  you know whenever locks get involved, there could be some heads get started exploding
+[15.96s -> 18.04s]  a little bit and thinking about all through the cases.
+[18.04s -> 21.34s]  So we're going to work through some of those examples a little bit.
+[21.34s -> 29.20s]  But to get started, let's just make sure we're all on the same page with a few terms.
+[29.20s -> 33.28s]  And those terms are deadlock, livelock, and starvation.
+[33.28s -> 38.04s]  So I just want to go through those, because these are all issues that can occur when you
+[38.04s -> 41.12s]  have synchronization problems in your program.
+[41.12s -> 44.12s]  So I want to make sure I give some examples of these so we're clear on the terminology
+[44.12s -> 47.88s]  and then we'll use that terminology later in the lecture.
+[47.88s -> 53.12s]  So deadlock, and it's a term that I've heard people, those of you in the audience,
+[53.12s -> 54.56s]  have said earlier in class.
+[54.56s -> 56.96s]  So it might be intuitive what it might mean.
+[56.96s -> 59.80s]  So here's an example that I drew up.
+[59.80s -> 66.52s]  This is an intersection, and I've got four cars on the intersection, and my claim is
+[66.52s -> 70.12s]  that none of the cars can make progress.
+[70.12s -> 73.92s]  So do you agree with the claim?
+[73.92s -> 85.92s]  And so if cars are not allowed to back up, what does every car need in order to make progress?
+[85.96s -> 88.96s]  It kind of needs the road in front of it to be clear, right?
+[88.96s -> 94.32s]  So this yellow car needs the road in front of it to be clear, but that part of the road
+[94.32s -> 101.04s]  is not clear because it is held or it's occupied by the green car.
+[101.04s -> 105.48s]  So why doesn't the yellow car just wait for the green car to get out of the way?
+[105.48s -> 110.20s]  Well, the green car can't make progress because it depends on a resource, a part of
+[110.20s -> 113.92s]  the road that's held by the next yellow car, and so on and so on.
+[113.92s -> 119.96s]  So notice what the conditions are here for this form of deadlock.
+[119.96s -> 127.16s]  Everybody needs to have a resource that they can't get, and the idea is that you don't
+[127.16s -> 131.24s]  relinquish that resource until you get everything that you need to make progress.
+[131.24s -> 136.88s]  So in this case, the yellow car is kind of holding onto or occupying this territory,
+[136.88s -> 140.40s]  but it needs this territory, and it's not going to let go of this until it finishes
+[140.40s -> 141.40s]  its job.
+[141.88s -> 145.36s]  And then finally, the problem is that we have a circular set of dependencies.
+[145.36s -> 147.96s]  I can't go because I'm waiting on you.
+[147.96s -> 150.44s]  You can't go because you're waiting on someone else.
+[150.44s -> 153.96s]  They can't go because they're waiting on me.
+[153.96s -> 159.64s]  And so you need all of these conditions to hold in order for there to be deadlock.
+[159.64s -> 167.28s]  So for example, here's a photo that I took of a deadlock situation in real life,
+[167.28s -> 170.12s]  which is very similar to the cartoon that I put.
+[170.12s -> 175.28s]  Here's a bus, and the bus made a little bit wider turn than it should have.
+[175.28s -> 180.24s]  Or you could argue that this car probably ignored a little something on the road that
+[180.24s -> 185.16s]  says please don't pass this line because buses need to turn here.
+[185.16s -> 190.20s]  And all of a sudden, the bus can't make progress because that car is there.
+[190.20s -> 193.14s]  The car can't make progress because the bus is there.
+[193.14s -> 195.52s]  And why is it the case actually that we get deadlock?
+[195.52s -> 202.16s]  We need to be in a situation where we can't relinquish resources.
+[202.16s -> 206.04s]  So relinquishing the resource here would be what?
+[206.04s -> 207.24s]  Would be backing up, right?
+[207.24s -> 210.94s]  And you can't see it from my photo, but neither of these folks can back up because
+[210.94s -> 213.36s]  everybody's kind of filled in behind them.
+[213.36s -> 217.84s]  So ultimately, it certainly isn't actual deadlock because otherwise, if it was real
+[217.84s -> 220.16s]  deadlock, the road would still look like this.
+[220.16s -> 223.52s]  So eventually, people start backing up, but you have effective deadlock.
+[224.28s -> 232.32s]  Here are a few more examples of deadlock for our more nature-loving folks.
+[232.32s -> 237.60s]  And so make sure you can convince yourself why these are deadlock.
+[237.60s -> 241.32s]  Nobody is willing to relinquish a resource because they don't trust
+[241.32s -> 243.64s]  the other party.
+[243.64s -> 246.36s]  And since that's the case, no progress is being made.
+[249.56s -> 251.88s]  Now, of course, the reason why I'm telling you all this
+[251.92s -> 255.32s]  is because this can obviously happen in computing systems.
+[255.32s -> 260.36s]  Like a simple example might be, imagine we had thread A and thread B.
+[260.36s -> 266.36s]  And thread A pulls data out of some work queue and puts results in some
+[266.36s -> 268.48s]  output work queue.
+[268.48s -> 272.44s]  And thread B is supposed to pull data out of this work queue and put the data
+[272.44s -> 274.72s]  back in the one on the top.
+[274.72s -> 277.36s]  So you might be in the case, well, thread A says, well, I'm not going to
+[277.36s -> 280.84s]  pull any new work because I have nowhere to put my output.
+[280.84s -> 284.04s]  So thread A doesn't drain its input.
+[284.04s -> 287.44s]  And it's waiting on B, but B can't make any progress because there's nowhere
+[287.44s -> 290.28s]  for B to put its output.
+[290.28s -> 291.64s]  That's an example.
+[291.64s -> 295.64s]  And the example of deadlock that we hit earlier in class was when we were
+[295.64s -> 296.96s]  talking about message passing.
+[296.96s -> 300.12s]  Remember, I said, oh, there's this subtle bug in our original message
+[300.12s -> 305.12s]  passing code where we said everybody was going to send and wait for their
+[305.12s -> 306.88s]  message to be received.
+[306.88s -> 309.88s]  And then they would turn around and receive.
+[309.92s -> 312.04s]  And so that was an example of deadlock as well.
+[312.04s -> 315.32s]  Everybody was blocked on, essentially, the same call.
+[315.32s -> 319.28s]  And as I alluded to earlier, you need these four conditions for deadlock to
+[319.28s -> 320.84s]  actually occur.
+[320.84s -> 325.56s]  We need to have resources that can only be held by one party at a time.
+[325.56s -> 326.96s]  That's the mutual exclusion.
+[326.96s -> 329.52s]  Only one car can exist in this part of the road.
+[329.52s -> 335.14s]  Or only one thread has data in its input queue.
+[335.14s -> 339.44s]  This input queue is exclusively for this thread.
+[339.44s -> 342.12s]  You have to have a situation where you can't back up.
+[342.12s -> 346.80s]  So once you kind of start this process and you acquire the part of the road
+[346.80s -> 350.92s]  that you're in, we're assuming that you can't back up or relinquish those
+[350.92s -> 353.40s]  resources to free things for other people.
+[353.40s -> 356.96s]  The only way you can free up resources is to keep going and complete
+[356.96s -> 360.04s]  things, complete jobs.
+[360.04s -> 366.00s]  Last is two and three are kind of similar in that there's no preemption,
+[366.00s -> 369.68s]  like if you actually can take the thread off the processor and relinquish the
+[369.68s -> 373.68s]  resources, that's kind of basically relinquishing resources.
+[373.68s -> 376.80s]  And then the most important one is this fourth one, which is the circular
+[376.80s -> 378.64s]  set of dependencies.
+[378.64s -> 382.32s]  I'm waiting on you while you're waiting on me.
+[382.32s -> 387.08s]  And since, you know, because if there wasn't a circular set of dependencies,
+[387.08s -> 388.08s]  what would happen here?
+[388.08s -> 390.64s]  How would this resolve itself?
+[390.64s -> 395.80s]  Imagine that there are only three cars in the intersection, not four.
+[395.80s -> 396.80s]  There are only three cars.
+[396.80s -> 398.52s]  Someone would make progress, right?
+[398.52s -> 402.24s]  And as soon as they finish their task, getting through the intersection,
+[402.24s -> 405.44s]  they would relinquish resources for someone else, and then someone else
+[405.44s -> 410.40s]  can go, and so on, and so on.
+[410.40s -> 412.20s]  Okay, so that's deadlock.
+[412.20s -> 416.48s]  In deadlock, nobody is making progress.
+[416.48s -> 417.48s]  Nobody's doing anything.
+[417.48s -> 419.92s]  No progress is getting made.
+[419.92s -> 423.50s]  It's a little bit different than the situation of live lock.
+[423.50s -> 428.24s]  So in live lock, that's a situation where you're constantly doing things,
+[428.24s -> 430.94s]  but no real progress is being made.
+[430.94s -> 434.86s]  So for example, imagine that we have these cars in this intersection,
+[434.86s -> 437.90s]  and they did have the ability to back up.
+[437.90s -> 441.34s]  And so every car saw that they had sort of reached this sort of impasse
+[441.34s -> 445.70s]  where nobody can make progress, and imagine everybody backs up.
+[445.70s -> 447.86s]  And then everybody's like, oh, the intersection is free.
+[447.86s -> 450.06s]  I'm going to go.
+[450.06s -> 452.86s]  And they back up, and so on, and so on.
+[452.86s -> 454.62s]  So this is a situation of live lock.
+[454.62s -> 458.32s]  So it's called live lock because everybody's making progress.
+[458.32s -> 460.54s]  You see operations happening left and right.
+[460.54s -> 463.78s]  If you had system logs, you'd be like, yeah, stuff's happening.
+[463.78s -> 467.46s]  But then you'd be like, but nothing real is happening.
+[467.46s -> 470.02s]  So this is another problem that we can get into.
+[470.02s -> 475.66s]  What's the most common day-to-day example of live lock that you run into?
+[475.66s -> 477.02s]  What's that?
+[477.02s -> 481.78s]  I thought I heard a murmur.
+[481.78s -> 486.50s]  What happens all the time when you kind of walk up to a door,
+[486.50s -> 489.02s]  and somebody else is like, you go, you go, you go?
+[489.02s -> 492.18s]  That was like the most common social live lock that definitely happens.
+[492.18s -> 495.02s]  Or you're walking, and both of you walk to the same direction,
+[495.02s -> 498.10s]  and then you both walk the other direction to let somebody go by.
+[498.10s -> 500.86s]  Those are all examples of real life live lock.
+[500.86s -> 502.02s]  OK, so we have live lock.
+[502.02s -> 505.86s]  And yeah, so live lock is a state where we are actually doing stuff,
+[505.86s -> 509.26s]  but nothing is all that interesting.
+[509.26s -> 511.76s]  And then last, there's the condition of starvation.
+[511.76s -> 514.64s]  And so here's another road example.
+[514.64s -> 517.36s]  Imagine that there was a yield sign here.
+[517.36s -> 521.36s]  So the yellow cars on the horizontal road had a yield sign
+[521.36s -> 524.90s]  and had to yield to traffic on the main vertical road.
+[524.90s -> 528.72s]  So if this is a busy time of the day,
+[528.72s -> 531.72s]  and the green cars are just a steady stream of green cars,
+[531.72s -> 533.68s]  they're going to make progress.
+[533.68s -> 535.56s]  We're going to get a lot of stuff done.
+[535.56s -> 538.76s]  But certain operations, such as yellow cars going,
+[538.76s -> 540.88s]  are going to get completely starved out.
+[540.88s -> 542.88s]  Because if they have to yield to the green cars,
+[542.88s -> 545.40s]  and the green cars never have a hole in the traffic,
+[545.40s -> 548.32s]  you're just going to be sitting there all the time.
+[548.32s -> 551.56s]  For those of you that go over to the beach very often,
+[551.56s -> 556.00s]  it's like trying to get on Highway 1 on a weekend
+[556.00s -> 557.60s]  when you're stuck in Half Moon Bay,
+[557.60s -> 559.52s]  and you're trying to turn onto Highway 1,
+[559.52s -> 562.20s]  and you just never get on the road.
+[562.20s -> 566.92s]  So it may look like if you're debugging this thing, to you
+[566.92s -> 569.32s]  it might look like, oh shoot, maybe I have deadlock because I'm not
+[569.32s -> 572.04s]  seeing any yellow cars do anything.
+[572.04s -> 575.20s]  But actually, we are completing useful transactions.
+[575.20s -> 577.00s]  We are letting the green cars go.
+[577.00s -> 578.48s]  So those are just three things to keep in mind
+[578.48s -> 579.68s]  throughout the lecture.
+[579.68s -> 582.00s]  Deadlock, livelock, starvation, all things
+[582.00s -> 585.28s]  that we can kind of mess up.
+[585.28s -> 587.02s]  So before I start talking about locks,
+[587.02s -> 589.80s]  I think this is going to be a good time to review
+[589.80s -> 594.52s]  this diagram that Kumail put out in front of you
+[594.52s -> 595.80s]  last Thursday, I think.
+[595.80s -> 596.76s]  Yeah, last Thursday.
+[596.80s -> 600.48s]  So that was the first time we talked about cash coherence.
+[600.48s -> 604.36s]  And so before we get into thinking about how locks are
+[604.36s -> 606.32s]  implemented, I want to make sure,
+[606.32s -> 608.48s]  because you've only seen this once, technically,
+[608.48s -> 610.02s]  and this is like the first, you're
+[610.02s -> 612.10s]  doing homeworks on this now, that people
+[612.10s -> 616.00s]  have a little bit of an idea about what's going on here.
+[616.00s -> 618.96s]  So first of all, if you had to describe
+[618.96s -> 623.12s]  the purpose of cash coherence, why did we talk about that
+[623.12s -> 624.80s]  last week at all?
+[624.84s -> 628.52s]  What's the problem that cash coherence solves?
+[628.52s -> 629.12s]  Yes, sir?
+[629.12s -> 631.28s]  We don't need to go all the way back to the rate
+[631.28s -> 634.32s]  to deal with cash coherence.
+[634.32s -> 635.16s]  Oh, OK.
+[635.16s -> 635.80s]  Well, yeah, OK.
+[635.80s -> 638.84s]  So it solves the problem of we want caches.
+[638.84s -> 639.72s]  Yes.
+[639.72s -> 645.12s]  And if you have multiple caches, they are copies of data.
+[645.12s -> 648.64s]  And whenever you have copies of data and you have rights,
+[648.64s -> 650.32s]  you've got a real problem of you've
+[650.32s -> 652.76s]  got to keep those copies up to date.
+[652.76s -> 655.68s]  That's the problem that cash coherence largely solves.
+[655.68s -> 656.52s]  Good.
+[656.52s -> 661.24s]  And I guess if you had to, maybe building on that,
+[661.24s -> 664.56s]  if we had to say, what is the general strategy
+[664.56s -> 668.00s]  that these cash coherence protocols that Kumei talked
+[668.00s -> 672.64s]  about, if you had to give a high level, what are they
+[672.64s -> 674.28s]  all, what's the main idea of them?
+[674.28s -> 675.96s]  Or what are some of the key principles?
+[675.96s -> 677.38s]  What does this diagram even mean?
+[677.38s -> 677.88s]  Yeah?
+[677.88s -> 680.64s]  It was like the multiple view that's being incorporated.
+[680.64s -> 681.16s]  OK.
+[681.40s -> 684.12s]  So one version of this is saying,
+[684.12s -> 688.68s]  if you make copies of something and you write to it,
+[688.68s -> 693.08s]  you have a problem keeping those copies in sync.
+[693.08s -> 694.92s]  Don't allow there to be copies
+[694.92s -> 697.08s]  if you're writing to something.
+[697.08s -> 700.64s]  So then the first name of the game is the minute you write to something,
+[700.64s -> 704.52s]  all other copies are going to have to disappear so that there's not
+[704.52s -> 709.56s]  a problem where you cannot access data that might be stale.
+[709.56s -> 712.08s]  And how did that get insured?
+[714.92s -> 717.88s]  In other words, what is this diagram actually doing?
+[717.88s -> 722.28s]  Well, so I guess it's like when you go to the file screen
+[722.28s -> 724.08s]  and it's all the other ones going down,
+[724.08s -> 726.04s]  then it's like, OK, this is what we're about.
+[726.04s -> 726.56s]  OK.
+[726.56s -> 727.32s]  So good.
+[727.32s -> 730.92s]  And so I'll repeat that in a second for people remote.
+[730.92s -> 734.32s]  But the first idea that I want you to think about
+[734.32s -> 738.88s]  is that this cash coherency diagram, it's a policy.
+[738.88s -> 741.64s]  It's a rules of the game that all the caches
+[741.64s -> 744.44s]  have to be agreeing to.
+[744.44s -> 746.44s]  So this is the state machine.
+[746.44s -> 751.56s]  This is the logic that every cache executes individually
+[751.56s -> 756.96s]  on their own to ensure that coherence is met.
+[756.96s -> 759.00s]  And one of the biggest parts of coherence
+[759.00s -> 762.52s]  is to make sure that when one person is writing to the data,
+[762.52s -> 763.68s]  nobody else is.
+[763.68s -> 765.08s]  Nobody else has data.
+[765.08s -> 767.56s]  So the way I want you to think about this is,
+[768.00s -> 771.12s]  and Kubernetes gave you one of these examples before,
+[771.12s -> 774.84s]  is I want you to think about a sequence of memory operations
+[774.84s -> 779.56s]  performed by different processors or different caches.
+[779.56s -> 782.88s]  And then I want you to think about what would I do
+[782.88s -> 787.44s]  if I'm cache 0 in this situation?
+[787.44s -> 791.80s]  And what would I do if I'm cache 1 in this situation?
+[791.80s -> 793.36s]  So just to start, let's just say
+[793.36s -> 797.08s]  that the first cache loads a variable
+[797.08s -> 799.64s]  or loads an address.
+[799.64s -> 804.00s]  And what that cache does is, well, talk to me about it.
+[804.00s -> 805.12s]  What does that cache do?
+[805.12s -> 807.20s]  What does this text on the slide actually mean?
+[807.20s -> 810.72s]  There's like issue bus read, load line x in s state,
+[810.72s -> 811.60s]  observe bus read.
+[811.60s -> 812.72s]  But what does that mean?
+[815.60s -> 816.64s]  We have two caches.
+[816.64s -> 819.80s]  And let's just say I'm cache 0.
+[819.80s -> 823.16s]  And I want to read from this address.
+[823.16s -> 824.44s]  So what do I have to do?
+[824.44s -> 827.84s]  Yeah, I was just going to say, so what
+[827.84s -> 830.84s]  cache here is doing is it's broadcasting the fact
+[830.84s -> 833.16s]  that it is reading this particular memory
+[833.16s -> 834.96s]  address to all the other caches
+[834.96s -> 839.60s]  so that if the other caches also have that line inside
+[839.60s -> 842.12s]  them, then they can kind of follow the protocol
+[842.12s -> 843.56s]  and transition accordingly.
+[843.56s -> 845.88s]  So it creates the cache load.
+[845.88s -> 848.48s]  Good, so just keep in mind, the name of the game
+[848.48s -> 852.12s]  is that all of these caches are working together.
+[852.16s -> 856.32s]  And whenever the state of my cache changes,
+[856.32s -> 859.24s]  I have to tell all the other caches about it
+[859.24s -> 861.28s]  because they're making decisions based
+[861.28s -> 863.68s]  on knowledge of what I'm doing.
+[863.68s -> 867.12s]  So in this case, if I load address x,
+[867.12s -> 869.52s]  I have to shout out to all the other caches and say,
+[869.52s -> 873.84s]  hey, by the way, I'm about to have a copy of this,
+[873.84s -> 875.56s]  which basically is saying if you ever
+[875.56s -> 879.36s]  get around to writing to it, you got to let me know.
+[879.36s -> 881.84s]  So that's me as cache 0 shouting out,
+[881.84s -> 884.52s]  I'm loading line x, and now what
+[884.52s -> 886.48s]  allows me to load it into the s state?
+[891.60s -> 893.80s]  Still consistent with memory.
+[893.80s -> 896.24s]  It's still consistent with memory, yes.
+[896.24s -> 898.22s]  Yeah, so basically, first of all,
+[898.22s -> 900.76s]  I'm loading it essentially with a permissions
+[900.76s -> 905.50s]  to say that I promise I'm only going to read from it.
+[905.50s -> 908.60s]  And that means that other caches know what?
+[908.60s -> 917.56s]  That if I'm only going to read from it,
+[917.56s -> 918.96s]  they can also read from it.
+[918.96s -> 919.52s]  Exactly.
+[919.52s -> 923.06s]  So that's what I did.
+[923.06s -> 926.92s]  And notice that cache 1 did nothing at that point.
+[926.92s -> 927.68s]  Why is that?
+[931.68s -> 935.04s]  Yeah, like I yelled out, hey, I've got the line containing x
+[935.04s -> 937.00s]  and the other cache is sitting over here saying
+[937.04s -> 939.80s]  it's not in my cache, I could care less, right?
+[939.80s -> 941.28s]  Exactly.
+[941.28s -> 945.68s]  OK, and so then I loaded, yeah, I loaded to it again.
+[945.68s -> 947.44s]  I read the value again.
+[947.44s -> 948.20s]  And what happens?
+[951.84s -> 953.48s]  Absolutely nothing.
+[953.48s -> 955.24s]  Why does absolutely nothing happen?
+[960.44s -> 963.92s]  Yeah, why do I not have to tell anybody about this?
+[963.92s -> 964.44s]  It's a hit.
+[964.44s -> 965.94s]  My cache state did not change.
+[965.94s -> 969.66s]  They already know what my cache state is exactly, right?
+[969.66s -> 972.82s]  So now let's say I want to write to the thing.
+[972.82s -> 975.38s]  What do I have to do?
+[975.38s -> 977.38s]  It should be exclusive.
+[977.38s -> 981.70s]  I have to yell out that I'm about to write to it.
+[981.70s -> 985.70s]  And what does everybody else have to do?
+[985.70s -> 987.62s]  Yeah, and now in this case, the other folks
+[987.62s -> 989.66s]  don't care because they don't have it, right?
+[989.66s -> 994.78s]  So in this case, it doesn't do anything.
+[994.78s -> 999.18s]  And now if I want to write to it again, again, same thing.
+[999.18s -> 1001.66s]  If I write to, oh, and this, OK,
+[1001.66s -> 1005.62s]  so now the other processor wants to write to it.
+[1005.62s -> 1008.94s]  What is the other processor going to do?
+[1008.94s -> 1011.34s]  So it's going to shout out, hey, I need to write.
+[1011.34s -> 1013.90s]  And what do I do?
+[1013.90s -> 1016.10s]  So first of all, I can't keep my copy.
+[1016.10s -> 1018.38s]  And in this case, since I have written to the value,
+[1018.38s -> 1020.74s]  I better put the most recent value back out of memory,
+[1020.74s -> 1021.22s]  right?
+[1021.22s -> 1022.94s]  So I'm going to flush my, I'm going
+[1022.98s -> 1024.42s]  to put the data back out of memory
+[1024.42s -> 1027.74s]  so the other processor gets the latest value.
+[1027.74s -> 1029.06s]  And then I got to drop.
+[1029.06s -> 1032.50s]  Because why don't I just keep it in a shared state?
+[1032.50s -> 1034.62s]  Because it's going to be stale, right?
+[1034.62s -> 1036.16s]  Because the other person's going to write to it.
+[1036.16s -> 1037.30s]  Exactly.
+[1037.30s -> 1040.74s]  So now if another load by the other party
+[1040.74s -> 1043.50s]  doesn't matter to me because I don't have the value,
+[1043.50s -> 1046.70s]  if I want to bring it back and read it,
+[1046.70s -> 1049.02s]  I'm going to say, hey, I want to read this value now.
+[1049.02s -> 1051.34s]  The other processor is going to flush it out to memory.
+[1051.74s -> 1054.98s]  Then what are they going to do about their cache?
+[1054.98s -> 1057.82s]  They could keep it in shared because they're like, well,
+[1057.82s -> 1060.90s]  I can't write to it anymore because there are copies around.
+[1060.90s -> 1063.38s]  But I'll keep it around because if I want to read from
+[1063.38s -> 1066.34s]  it, I don't want to actually take that cache mess.
+[1066.34s -> 1069.82s]  And so I'll let this, we won't go into the rest of us,
+[1069.82s -> 1072.02s]  but these are the things that you definitely
+[1072.02s -> 1073.98s]  need to be able to walk through and step
+[1073.98s -> 1074.94s]  through in your head.
+[1074.94s -> 1075.82s]  You did one last week.
+[1075.82s -> 1077.78s]  I think there's one on the homework assignment
+[1077.78s -> 1078.94s]  and stuff like that.
+[1078.94s -> 1079.62s]  OK.
+[1079.62s -> 1085.90s]  So with that in mind, now let's think about implementing a lock.
+[1085.90s -> 1087.50s]  And I'm going to give you, because you're
+[1087.50s -> 1092.86s]  used to using a bunch of locks, but we haven't actually
+[1092.86s -> 1095.22s]  talked about the underlying details very much.
+[1095.22s -> 1096.14s]  So what I'm going to do is I'm
+[1096.14s -> 1097.76s]  going to give you an instruction that's
+[1097.76s -> 1101.62s]  not a load or a store, but actually a little bit of both.
+[1101.62s -> 1103.86s]  It's a load compare store.
+[1103.86s -> 1106.14s]  So imagine that you have a machine instruction.
+[1106.14s -> 1108.74s]  And just to keep it simple, I'm going to call it test and set.
+[1108.94s -> 1113.06s]  But in practice, these types of machine instructions
+[1113.06s -> 1113.90s]  are very different.
+[1113.90s -> 1115.58s]  They might be compare exchange or load
+[1115.58s -> 1117.10s]  link store conditional.
+[1117.10s -> 1120.38s]  But imagine you have this instruction called test and set
+[1120.38s -> 1123.82s]  which takes the value or reads a value from memory
+[1123.82s -> 1125.58s]  at a designated address.
+[1125.58s -> 1131.74s]  And if the memory's address is 0, it sets it to 1.
+[1131.74s -> 1132.70s]  That's all it does.
+[1132.70s -> 1134.74s]  It loads it and sets it to 1.
+[1134.74s -> 1142.76s]  OK, now let's think about how I might
+[1142.76s -> 1145.82s]  use this to implement a lock.
+[1145.82s -> 1151.70s]  So here's my simple assembly code for implementing a lock.
+[1151.70s -> 1153.54s]  Here's unlock.
+[1153.54s -> 1155.80s]  Let's start with unlock, actually.
+[1155.80s -> 1157.22s]  So imagine you had a variable that
+[1157.22s -> 1162.06s]  was 1 if someone had the lock and 0 otherwise.
+[1162.06s -> 1164.38s]  If you're the thread that has the lock,
+[1164.50s -> 1169.34s]  how might you unlock the lock?
+[1169.34s -> 1171.70s]  Just write 0.
+[1171.70s -> 1172.38s]  Makes sense?
+[1172.38s -> 1173.54s]  OK.
+[1173.54s -> 1179.54s]  And here, what is the lock procedure?
+[1179.54s -> 1181.46s]  The lock procedure is try and execute
+[1181.46s -> 1186.18s]  one of these test and sets, which says if,
+[1186.18s -> 1189.82s]  and it's storing the value of loaded from memory
+[1189.82s -> 1192.62s]  here into this register.
+[1192.66s -> 1194.90s]  So I'm going to read the value from memory.
+[1194.90s -> 1202.18s]  And if it's 0, I'm going to set it to 1 all in one step.
+[1202.18s -> 1205.66s]  This is one instruction, one atomic instruction.
+[1205.66s -> 1211.70s]  And if the value I read from memory is 0,
+[1211.70s -> 1214.86s]  what can I conclude?
+[1214.86s -> 1216.26s]  I have the lock.
+[1216.26s -> 1218.90s]  If the value that I read from memory is 1,
+[1218.90s -> 1220.70s]  what can I conclude?
+[1220.70s -> 1222.22s]  I don't have the lock, and I actually
+[1222.22s -> 1226.10s]  am going to branch, if not 0, back up and try again.
+[1226.10s -> 1231.34s]  So basically, I'm saying, while the value in memory is 1,
+[1231.34s -> 1233.62s]  keep trying this test and set thing.
+[1233.62s -> 1236.38s]  If you ever see it to be 0, by the time
+[1236.38s -> 1239.18s]  you're checking to see, oh, was I
+[1239.18s -> 1240.42s]  the person that set it to 1?
+[1240.42s -> 1244.14s]  If you're the person that set it to 1, you have the lock.
+[1244.14s -> 1245.74s]  And then the minute you unlock,
+[1245.74s -> 1249.78s]  presumably some other thread can come in and now
+[1249.82s -> 1253.06s]  succeed with one of their test and sets.
+[1253.06s -> 1255.72s]  Now, for example, if you were running on an Intel chip,
+[1255.72s -> 1257.10s]  you wouldn't have test and set.
+[1257.10s -> 1259.26s]  You might have something like compare-exchange,
+[1259.26s -> 1261.78s]  just a little bit more elaborate form of things.
+[1261.78s -> 1263.86s]  And offline, I think it'd be kind of fun
+[1263.86s -> 1266.06s]  to study this to say basically, hey,
+[1266.06s -> 1268.46s]  can you confirm that essentially this
+[1268.46s -> 1273.40s]  is a lock with compare-exchange, which
+[1273.40s -> 1276.58s]  basically is using some x86 flag registers and things
+[1276.58s -> 1277.10s]  like that.
+[1277.22s -> 1280.74s]  Basically the same thing.
+[1280.74s -> 1283.42s]  Now, here's why I spent some time talking about or reminding
+[1283.42s -> 1285.10s]  you about coherence.
+[1285.10s -> 1289.18s]  Imagine that we have three processors or three threads,
+[1289.18s -> 1292.06s]  and they're all trying to get this lock.
+[1292.06s -> 1294.78s]  So remember, what they're doing is they're saying,
+[1294.78s -> 1297.50s]  while test and set fails, keep trying.
+[1297.50s -> 1299.26s]  And as soon as test and set succeeds,
+[1299.26s -> 1302.50s]  I know I have the lock, so I can do my critical section
+[1302.50s -> 1304.06s]  kind of thing.
+[1304.06s -> 1306.42s]  So let's think about what happens.
+[1306.42s -> 1310.66s]  So processor 0, let's just say that processor 0
+[1310.66s -> 1315.30s]  is the processor that first tries to get the lock.
+[1315.30s -> 1318.38s]  That test and set, I'd like you to think about as a write.
+[1318.38s -> 1320.46s]  At least from the coherence protocol perspective,
+[1320.46s -> 1323.74s]  it's a write, because it's modifying the variable.
+[1323.74s -> 1327.74s]  So since it's a write, processor 1, in this case,
+[1327.74s -> 1331.00s]  is going to try to execute its test and set.
+[1331.00s -> 1335.14s]  That test and set is going to cause an invalidation,
+[1335.14s -> 1336.70s]  because that's a write operation.
+[1336.70s -> 1338.70s]  Even if it fails, it's a write, because it's
+[1338.70s -> 1341.34s]  an atomic operation that may write.
+[1341.34s -> 1344.90s]  OK, so at this point, if that test and set succeeds,
+[1344.90s -> 1347.44s]  I think you would agree with me that processor 1 is holding
+[1347.44s -> 1350.06s]  the lock.
+[1350.06s -> 1352.22s]  So let's think about what happens at the same time.
+[1352.22s -> 1355.90s]  So processor 2, at some point in the future,
+[1355.90s -> 1358.02s]  tries to obtain the lock.
+[1358.02s -> 1362.50s]  And what is processor 2 going to do to try and get the lock?
+[1362.50s -> 1365.38s]  It's going to execute that test and set instruction.
+[1365.38s -> 1367.14s]  What's going to happen to the cache line?
+[1370.50s -> 1374.22s]  Processor 1 and 3 will have to invalidate.
+[1374.22s -> 1377.74s]  And the cache line containing the lock variable
+[1377.74s -> 1383.74s]  is going to move over to processor 2.
+[1383.74s -> 1386.38s]  So keep in mind what just happened.
+[1386.38s -> 1390.22s]  A lock is just a variable that has a value.
+[1390.22s -> 1393.82s]  That variable is just in the address space.
+[1393.82s -> 1395.38s]  It's cached.
+[1395.38s -> 1399.74s]  And so even though processor 1 has the lock,
+[1399.74s -> 1405.62s]  processor 2 has a valid cache line containing the variable
+[1405.62s -> 1407.18s]  that the lock is.
+[1407.18s -> 1411.46s]  So having the lock and having the cache line
+[1411.46s -> 1413.38s]  are two different things.
+[1413.38s -> 1415.36s]  So there's nothing stopping from processor 3
+[1415.36s -> 1417.86s]  from coming in and trying to get the lock at this point,
+[1417.86s -> 1418.78s]  right?
+[1418.80s -> 1421.22s]  So that cache line's actually just going to bounce over there
+[1421.22s -> 1423.02s]  to processor 3.
+[1423.02s -> 1425.92s]  And then all these tests and sets by processor 2 and 3
+[1425.92s -> 1427.74s]  are failing, right?
+[1427.74s -> 1429.34s]  Because they can't get the lock,
+[1429.34s -> 1431.42s]  which means the cache line is just doing this.
+[1433.90s -> 1436.18s]  Does that make sense?
+[1436.18s -> 1440.66s]  Now, what happens when processor 1
+[1440.66s -> 1441.86s]  wants to unlock the lock?
+[1445.18s -> 1446.86s]  It's got to issue a bus read x.
+[1446.86s -> 1449.74s]  It's got to invalidate everybody else.
+[1449.74s -> 1452.02s]  It gets the line in exclusive mode.
+[1460.42s -> 1463.66s]  It does the right to set it to 0.
+[1463.66s -> 1465.38s]  And then one of those tests and sets
+[1465.38s -> 1468.78s]  on one of the other processors, let's just say processor 2,
+[1468.78s -> 1470.02s]  succeeds.
+[1470.02s -> 1473.50s]  And now processor 2 has the lock.
+[1473.50s -> 1475.10s]  So think about what's going on here
+[1475.10s -> 1479.22s]  is I'm a core, I have a lock, I'm in my critical section
+[1479.22s -> 1482.42s]  trying to do this thing so I can release the lock.
+[1482.42s -> 1485.28s]  And first of all, there's all this bus traffic
+[1485.28s -> 1487.90s]  flurrying around between all the other processors
+[1487.90s -> 1489.98s]  as they spin.
+[1489.98s -> 1491.78s]  And second of all, actually, I have
+[1491.78s -> 1495.18s]  to take a cache miss to get out of the lock, which
+[1495.18s -> 1497.18s]  kind of stinks, too, because that's
+[1497.18s -> 1499.74s]  time that other folks are not doing what they need to do.
+[1499.74s -> 1500.50s]  Yes?
+[1500.50s -> 1502.50s]  When is the test and set in the line
+[1502.50s -> 1505.10s]  going to be able to unlock the lock?
+[1505.10s -> 1507.70s]  Well, the test and set is an atomic instruction.
+[1507.70s -> 1510.12s]  So there's a couple of ways I can answer that question.
+[1510.12s -> 1514.46s]  One is the instruction may or may not update the line,
+[1514.46s -> 1517.02s]  but you need to have write access
+[1517.02s -> 1519.58s]  if it's going to go through.
+[1519.58s -> 1525.34s]  So there's no way you could implement it as a atomic.
+[1525.34s -> 1529.22s]  Or I guess if you implemented it as a,
+[1529.26s -> 1533.06s]  let me give a bus transaction to read the value,
+[1533.06s -> 1534.98s]  and then another bus transaction
+[1534.98s -> 1538.26s]  to upgrade or get write permission,
+[1538.26s -> 1540.30s]  you're issuing two bus transactions.
+[1540.30s -> 1544.18s]  So by definition, it's not atomic.
+[1544.18s -> 1546.70s]  And at x86, there's actually a lock prefix
+[1546.70s -> 1550.10s]  on a number of instructions.
+[1550.10s -> 1552.10s]  And that lock prefix basically does that.
+[1552.10s -> 1553.50s]  It says, sure, under the hood,
+[1553.50s -> 1556.42s]  this will be implemented as multiple transactions,
+[1556.42s -> 1558.18s]  but they've got a lock flag on them,
+[1558.18s -> 1560.50s]  meaning that we're not going to allow any transactions
+[1560.50s -> 1563.78s]  in between to the same thing or something like that.
+[1563.78s -> 1567.38s]  So you can just effectively think about it as atomic,
+[1567.38s -> 1572.38s]  independent of what the implementation's going to be.
+[1573.46s -> 1575.12s]  So I already alluded to this,
+[1575.12s -> 1577.22s]  but I want you to be absolutely clear here
+[1577.22s -> 1579.34s]  that on the previous slide,
+[1579.34s -> 1580.98s]  what is the duration of time
+[1580.98s -> 1583.62s]  that the thread running on P1 had the lock?
+[1585.28s -> 1586.68s]  It was the entire slide.
+[1587.60s -> 1589.08s]  What was the duration of time
+[1589.08s -> 1592.04s]  where P1's cache contained a valid copy
+[1592.04s -> 1595.08s]  of the line containing the lock variable?
+[1595.08s -> 1597.88s]  Was only for a second at the time of lock
+[1597.88s -> 1600.80s]  and for a split second at the time of unlock.
+[1600.80s -> 1602.64s]  It's kind of interesting, right?
+[1602.64s -> 1605.82s]  And so like a simple lock like this has some properties
+[1605.82s -> 1609.08s]  that if we added more and more threads,
+[1609.08s -> 1610.40s]  more and more processors
+[1610.40s -> 1612.56s]  that are trying to actually grab this line,
+[1613.40s -> 1616.78s]  it might take an increasing amount of time
+[1616.78s -> 1618.92s]  for the core with the lock
+[1618.92s -> 1623.56s]  to actually be able to grab it in the right state again.
+[1623.56s -> 1625.52s]  And you actually see that in this graph
+[1625.52s -> 1628.12s]  where this graph is just kind of like
+[1628.12s -> 1631.90s]  the cost per lock unlock,
+[1631.90s -> 1634.10s]  which is actually going up
+[1634.10s -> 1637.48s]  as a function of the number of processors in the system.
+[1637.48s -> 1639.48s]  Because basically like in order for me
+[1639.48s -> 1642.32s]  to get the cache line in the writable state,
+[1642.92s -> 1644.00s]  I'm fighting, I'm contending
+[1644.00s -> 1646.04s]  with increasingly large number of processors,
+[1646.04s -> 1649.30s]  it might take me longer to get that exclusive access
+[1649.30s -> 1652.76s]  and might take me longer to literally unlock the lock.
+[1652.76s -> 1654.44s]  And so every unlock unlock period
+[1654.44s -> 1658.74s]  actually starts getting big and gets higher, okay?
+[1658.74s -> 1660.00s]  So now you might say, oh wow,
+[1660.00s -> 1661.44s]  it sounds like we could do a whole lecture
+[1661.44s -> 1664.12s]  on how to efficiently implement locks,
+[1664.12s -> 1665.44s]  which we're not gonna do.
+[1665.44s -> 1667.56s]  But you can think about some of the properties
+[1667.56s -> 1669.04s]  you'd like to have in your locks.
+[1669.04s -> 1671.96s]  Like you'd like it to be fast,
+[1672.48s -> 1673.56s]  like low latency, like when you call lock,
+[1673.56s -> 1674.88s]  you don't have to wait for very long,
+[1674.88s -> 1677.36s]  or you call unlock, you don't wait very long.
+[1677.36s -> 1679.68s]  You'd like your lock implementations
+[1679.68s -> 1682.34s]  to not basically DLS your system
+[1682.34s -> 1684.48s]  by generating a bunch of interconnect traffic
+[1684.48s -> 1687.12s]  while everybody's waiting, everybody's spinning.
+[1688.06s -> 1691.32s]  You might like it to scale to large numbers of cores.
+[1691.32s -> 1694.04s]  You actually might like it to be fair.
+[1694.04s -> 1698.68s]  There was nothing about that previous implementation here
+[1698.68s -> 1700.68s]  that guaranteed that all the processors
+[1700.68s -> 1701.92s]  would ever get the lock, right?
+[1702.88s -> 1704.56s]  Like maybe processor one and processor two
+[1704.56s -> 1706.64s]  just keep getting it, and there's nothing to ensure
+[1706.64s -> 1709.18s]  that processor three actually would
+[1709.18s -> 1710.76s]  in this implementation.
+[1710.76s -> 1712.68s]  So implementing locks efficiently
+[1712.68s -> 1716.18s]  can actually become a pretty interesting thing.
+[1716.18s -> 1718.84s]  So let me just give you a few small refinements.
+[1718.84s -> 1720.94s]  So here's a different lock
+[1720.94s -> 1723.48s]  that has the same test and set instruction.
+[1723.48s -> 1725.38s]  So now I'm just writing in C code
+[1725.38s -> 1726.96s]  to make it a little bit clearer.
+[1726.96s -> 1728.40s]  Test and set does the same thing.
+[1728.40s -> 1732.24s]  If the lock is, it returns the value in memory,
+[1732.24s -> 1733.88s]  and if the value in memory is zero,
+[1733.88s -> 1735.92s]  it atomically sets it to one.
+[1735.92s -> 1736.82s]  So this,
+[1740.76s -> 1743.94s]  sort of this if test and set is zero,
+[1743.94s -> 1746.04s]  well that means I executed a test and set
+[1746.04s -> 1747.92s]  and the return value is zero.
+[1747.92s -> 1750.30s]  So I now know the value in memory is what?
+[1752.24s -> 1754.92s]  One, and I also know that I have the lock
+[1754.92s -> 1757.56s]  because it was zero when I started the test and set.
+[1757.60s -> 1759.96s]  I know it's one when I ended it,
+[1759.96s -> 1762.20s]  and I know that I executed the test and set
+[1762.20s -> 1763.80s]  when nobody else had the lock,
+[1763.80s -> 1766.28s]  which means I have the lock.
+[1766.28s -> 1767.66s]  Okay, so that's what this is.
+[1767.66s -> 1770.00s]  If test and set return zero,
+[1770.00s -> 1771.96s]  return, which means I have the lock.
+[1772.82s -> 1774.36s]  But what's this thing doing?
+[1774.36s -> 1776.42s]  Why do I have like while while here?
+[1779.24s -> 1782.08s]  This is correct, like there's not a bug in this code.
+[1782.08s -> 1783.92s]  This is correct code.
+[1783.92s -> 1785.62s]  But can you kind of back engineer
+[1785.62s -> 1787.12s]  what I'm trying to accomplish?
+[1787.56s -> 1788.40s]  Yeah?
+[1790.76s -> 1795.60s]  Yes, test and set will try to get the access to the...
+[1795.60s -> 1798.32s]  Right, so this called a test and set
+[1798.32s -> 1803.32s]  is a read exclusive, or a request to write to the value.
+[1804.16s -> 1807.16s]  What is this while the value of lock is zero doing?
+[1808.58s -> 1809.76s]  It's just saying, oh, just keep checking
+[1809.76s -> 1813.08s]  to see if it's zero, because if it's not zero,
+[1813.08s -> 1815.44s]  why should I even bother doing a test and set?
+[1817.72s -> 1819.32s]  So what's the implication of this?
+[1819.32s -> 1820.84s]  So what happens here is,
+[1820.84s -> 1823.96s]  while the lock is taken by someone else,
+[1823.96s -> 1828.44s]  I am gonna spin on reading to see if it's still locked.
+[1828.44s -> 1830.40s]  If it ever becomes unlocked,
+[1830.40s -> 1833.68s]  I'm gonna try and jump in there and do my test and set.
+[1833.68s -> 1835.24s]  If I fail, I'm gonna go back
+[1835.24s -> 1838.32s]  to waiting until it's unlocked again.
+[1838.32s -> 1841.18s]  Why might this be a better idea?
+[1842.24s -> 1843.44s]  Yeah, finish this up.
+[1844.04s -> 1848.72s]  So I'm turning a bunch of writes into a read,
+[1848.72s -> 1850.48s]  or into a bunch of reads.
+[1850.48s -> 1851.80s]  So let's go back to my diagram,
+[1851.80s -> 1853.88s]  let's think about what happens.
+[1853.88s -> 1857.28s]  Same thing as before, P1 grabs the lock,
+[1857.28s -> 1860.88s]  P1 doesn't write a test and set to get the lock.
+[1862.24s -> 1865.04s]  All other processors are spinning on,
+[1865.04s -> 1867.72s]  is the value still zero?
+[1867.72s -> 1870.92s]  If I'm reading over and over and over again,
+[1870.92s -> 1873.84s]  all the other processors are just holding that line
+[1873.84s -> 1874.80s]  in what state?
+[1876.48s -> 1878.34s]  S state, yeah, the shared state,
+[1878.34s -> 1881.30s]  which means they're just taking a bunch of cache hits.
+[1881.30s -> 1883.40s]  So for the duration of the critical section,
+[1883.40s -> 1886.24s]  they're spinning, they're doing work,
+[1886.24s -> 1889.00s]  but that work is not creating global traffic
+[1889.00s -> 1890.36s]  out to everybody else.
+[1893.24s -> 1895.92s]  Processor one still has to take a cache miss
+[1895.92s -> 1898.32s]  to get the line back in the what state?
+[1899.16s -> 1901.36s]  To release the lock,
+[1901.36s -> 1904.84s]  processor one definitely has to take a cache miss.
+[1904.84s -> 1907.50s]  It's a cache miss to get exclusive access again.
+[1907.50s -> 1911.02s]  That's where the right to set the value to zero occurs,
+[1911.02s -> 1913.48s]  and then everybody else all of a sudden
+[1913.48s -> 1916.20s]  invalidates their line, because they had to,
+[1916.20s -> 1918.80s]  their next read back into the shared state
+[1918.80s -> 1921.26s]  finds that the value is zero,
+[1922.16s -> 1924.04s]  and then they all jump in
+[1924.04s -> 1927.10s]  and try and actually do a write.
+[1927.10s -> 1928.62s]  So you're gonna get a flurry of,
+[1928.62s -> 1929.94s]  if you have P processors,
+[1929.94s -> 1931.58s]  you're gonna get P minus one writes,
+[1931.58s -> 1932.42s]  or if you count this one,
+[1932.42s -> 1936.66s]  it's O of P writes on every lock release.
+[1936.66s -> 1939.30s]  But during the critical section, you get no writes.
+[1941.24s -> 1942.70s]  So this is kinda nice, right?
+[1942.70s -> 1945.46s]  It also helps in that while I'm in the critical section,
+[1945.46s -> 1948.34s]  I would love to have an uncontended bus,
+[1948.34s -> 1949.74s]  because maybe I'm doing reads and writes
+[1949.74s -> 1950.62s]  to other variables,
+[1950.62s -> 1952.58s]  and I don't wanna wait on an interconnect.
+[1952.58s -> 1955.12s]  So everything calms down during the critical section.
+[1955.16s -> 1958.10s]  At the end, there's this feeding frenzy,
+[1958.10s -> 1960.46s]  where everybody says, oh, I think I can get it.
+[1960.46s -> 1962.68s]  And that's actually where you take
+[1962.68s -> 1964.94s]  P different write invalidations.
+[1966.90s -> 1970.20s]  So we're pretty good,
+[1970.20s -> 1972.16s]  we really, we like what we did here, right?
+[1972.16s -> 1975.10s]  Like we got rid of this continuous flurry of traffic
+[1975.10s -> 1977.40s]  whenever we're in the critical section.
+[1977.40s -> 1979.24s]  I'm still doing it with one integer.
+[1980.24s -> 1982.30s]  My lock variable is just one integer.
+[1983.30s -> 1985.86s]  I haven't tried at all to make things fair.
+[1985.86s -> 1988.90s]  There's no guarantee that anybody's gonna win.
+[1988.90s -> 1991.86s]  And I slowed things down just a little bit,
+[1991.86s -> 1993.78s]  because now when the lock gets released,
+[1993.78s -> 1994.70s]  you have to do two things.
+[1994.70s -> 1996.54s]  You have to do a read and then a write,
+[1996.54s -> 1997.90s]  or read and then a test and set,
+[1997.90s -> 1999.70s]  and not just a test and set.
+[1999.70s -> 2000.94s]  But I'm not too worried about
+[2000.94s -> 2003.56s]  that extra instruction of latency, to be honest.
+[2004.66s -> 2005.90s]  Just to give you one more design,
+[2005.90s -> 2007.58s]  here's a different thing that echoes
+[2007.58s -> 2009.06s]  how it might work if you go,
+[2009.06s -> 2010.26s]  if you're gonna go get a sandwich
+[2010.26s -> 2011.56s]  or you go into the deli counter.
+[2011.72s -> 2013.20s]  How does that work in real life, right?
+[2013.20s -> 2014.88s]  Like you show up at the counter,
+[2014.88s -> 2017.84s]  and how do you know when your turn is?
+[2017.84s -> 2019.60s]  You take a ticket, right?
+[2019.60s -> 2023.24s]  And so the butcher or whoever's,
+[2023.24s -> 2025.92s]  you know, the deli person or the sandwich maker
+[2025.92s -> 2027.24s]  is like, okay, when they finish a job,
+[2027.24s -> 2030.76s]  they increment the current pointer, okay?
+[2030.76s -> 2032.44s]  And so that's what's gonna happen here.
+[2032.44s -> 2035.40s]  So now I have a lock that's not a single variable,
+[2035.40s -> 2036.80s]  but actually two integers,
+[2036.80s -> 2038.64s]  where let's ignore wraparound for now,
+[2038.64s -> 2040.04s]  just to keep it simple.
+[2040.08s -> 2044.78s]  And I have an integer for now serving,
+[2044.78s -> 2047.06s]  which is, you know,
+[2047.06s -> 2051.16s]  where the thread that has the lock
+[2051.16s -> 2054.56s]  is the thread that has the ticket matching now serving.
+[2054.56s -> 2056.40s]  And then we have next ticket,
+[2056.40s -> 2058.72s]  which is when a thread wants the lock,
+[2058.72s -> 2060.76s]  it walks up to the counter and says,
+[2060.76s -> 2063.64s]  can you give me a ticket, a unique ticket ID, okay?
+[2063.64s -> 2065.28s]  So let's look at lock.
+[2065.28s -> 2067.76s]  It's my ticket,
+[2067.76s -> 2069.40s]  my local ticket is going to be
+[2069.40s -> 2071.76s]  an atomic increment of next ticket.
+[2071.76s -> 2074.76s]  It's just like, give me the next available ticket.
+[2074.76s -> 2078.80s]  And then I spin while my ticket is not now serving.
+[2080.12s -> 2084.56s]  And that is largely a bunch of reads.
+[2086.64s -> 2088.60s]  And now releasing the lock,
+[2089.60s -> 2091.58s]  when the lock is released,
+[2091.58s -> 2094.44s]  the thread with the lock just increments now serving.
+[2094.44s -> 2097.30s]  So it has to get exclusive access to now serving.
+[2098.16s -> 2100.36s]  And does a write, doesn't update.
+[2100.36s -> 2102.44s]  But now look what happens.
+[2102.44s -> 2104.08s]  If you have a lot of waiting threads,
+[2104.08s -> 2107.12s]  it's not like everybody tries to get the lock now.
+[2107.12s -> 2109.40s]  Only one thread is gonna try and write.
+[2110.64s -> 2112.28s]  And actually it doesn't even need to write at all,
+[2112.28s -> 2114.00s]  it just needs to do a comparison.
+[2114.90s -> 2118.86s]  So now a lock release is actually only one write,
+[2118.86s -> 2119.70s]  this write.
+[2121.00s -> 2124.84s]  And the thread that acquires the lock
+[2124.84s -> 2127.08s]  actually doesn't have to do a write at all.
+[2128.60s -> 2130.48s]  It only has to do a write
+[2130.48s -> 2132.94s]  when it sort of enters the waiting queue.
+[2133.80s -> 2134.96s]  So it's just another example
+[2134.96s -> 2139.40s]  of ways you can actually reduce contention.
+[2139.40s -> 2141.40s]  And in this one, actually, this is fair.
+[2142.32s -> 2144.16s]  Because you get in line
+[2144.16s -> 2145.38s]  and the first person in line
+[2145.38s -> 2147.92s]  is gonna be, you're gonna be served in FIFO order.
+[2149.56s -> 2150.58s]  So it's pretty cool.
+[2150.58s -> 2155.58s]  I don't need an atomic operation to acquire the lock.
+[2155.78s -> 2158.56s]  I need an atomic operation to start waiting,
+[2158.56s -> 2160.82s]  but I don't need an acquire, an atomic operation
+[2160.82s -> 2163.26s]  at the point where I get the lock.
+[2163.26s -> 2164.08s]  So it's pretty cool.
+[2164.08s -> 2165.86s]  There's only one write per lock release.
+[2168.16s -> 2171.78s]  Now what it did do is it required your hardware
+[2171.78s -> 2174.30s]  to provide something a little bit more sophisticated
+[2174.30s -> 2175.22s]  than test and set.
+[2176.58s -> 2178.50s]  Has to, the hardware had to provide
+[2178.50s -> 2182.26s]  an atomic integer operation, atomic add in this case.
+[2182.26s -> 2183.70s]  So now you're asking a little bit more
+[2183.70s -> 2184.86s]  of your hardware here.
+[2186.42s -> 2191.42s]  So here's a list of a bunch of atomic operations
+[2191.90s -> 2194.22s]  that you might find on any platform these days.
+[2194.22s -> 2196.80s]  Here are atomic operations that I took
+[2196.80s -> 2200.78s]  from the CUDA built in library, CUDA standard library.
+[2200.78s -> 2202.70s]  So if you're running anything on NVIDIA GPUs,
+[2202.70s -> 2204.82s]  you have all of these atomic operations
+[2204.82s -> 2206.22s]  at your disposal.
+[2206.22s -> 2209.62s]  So like a atomic increment, which is just what we had,
+[2209.62s -> 2213.42s]  is it takes the value pointed to here at this address
+[2213.42s -> 2215.82s]  and increments it by this value.
+[2215.82s -> 2217.62s]  So that's a read, modify, write.
+[2217.62s -> 2219.10s]  It's like read the value from memory,
+[2219.10s -> 2221.30s]  update its contents, write it.
+[2221.30s -> 2224.20s]  All in hardware guarantees that that's atomic
+[2224.20s -> 2226.04s]  with respect to all CUDA threads.
+[2227.02s -> 2228.94s]  And I'd like to call special attention
+[2228.94s -> 2231.66s]  to this atomic compare and swap.
+[2231.66s -> 2236.10s]  So CAS is compare and swap.
+[2236.10s -> 2239.94s]  So this is the logic of atomic compare and swap.
+[2239.94s -> 2243.38s]  Now keep in mind that even though I'm writing it here
+[2244.30s -> 2246.42s]  in the C code, this is an instruction.
+[2246.42s -> 2247.94s]  This is what the instruction does.
+[2247.94s -> 2252.06s]  So it's not like there are locks inside of this
+[2252.06s -> 2252.90s]  or something like that.
+[2252.90s -> 2255.92s]  So the hardware is providing some mechanism
+[2255.92s -> 2256.76s]  where this can be.
+[2256.76s -> 2260.18s]  And what it does is it takes a pointer to an address.
+[2260.18s -> 2263.92s]  It takes a comparison value and a new value.
+[2263.92s -> 2266.90s]  And it says if the value in the address
+[2266.90s -> 2269.42s]  is the same as the comparison value.
+[2270.46s -> 2271.58s]  So the value out of memory,
+[2271.58s -> 2274.36s]  if it's equal to compare,
+[2274.36s -> 2277.36s]  please write this new value in,
+[2277.36s -> 2279.52s]  otherwise leave it unchanged.
+[2282.02s -> 2284.58s]  And I wrote it here in this syntax
+[2284.58s -> 2286.14s]  to kind of give you a sense that like
+[2286.14s -> 2288.70s]  basically a write is essentially happening
+[2288.70s -> 2291.38s]  regardless of whether or not it's unchanged though.
+[2291.38s -> 2293.50s]  So I'm setting the value and address
+[2293.50s -> 2296.82s]  to either its previous value or this new updated value.
+[2298.62s -> 2300.62s]  So given this,
+[2301.82s -> 2305.88s]  what if I asked you to implement something like atomic min?
+[2308.54s -> 2310.38s]  This is something that's a common question
+[2310.38s -> 2312.74s]  that I might ask on a homework assignment.
+[2312.74s -> 2314.04s]  I don't think I did this year actually,
+[2314.04s -> 2315.66s]  but this is a good one to study.
+[2315.66s -> 2318.60s]  So atomic compare and swap just says
+[2318.60s -> 2319.94s]  grab a value from memory.
+[2319.94s -> 2322.62s]  If it equals this value called compare,
+[2322.62s -> 2325.86s]  please update the value in memory to val,
+[2325.86s -> 2326.82s]  else do nothing.
+[2327.74s -> 2329.12s]  What if I said I don't want this,
+[2329.12s -> 2330.30s]  I want something much more useful
+[2330.30s -> 2332.40s]  like I want you to read a value from memory,
+[2332.40s -> 2335.42s]  I want you to compute the min of this value
+[2335.42s -> 2336.64s]  and some other value,
+[2336.64s -> 2339.40s]  and I want you to write the new min back out to memory.
+[2339.40s -> 2340.24s]  Yeah.
+[2343.14s -> 2348.14s]  Old is greater, close, close.
+[2348.34s -> 2351.58s]  What do I wanna know in any atomic operation?
+[2351.58s -> 2354.82s]  What I wanna know is that no other thread
+[2354.82s -> 2358.82s]  has set the min lower than what I,
+[2358.82s -> 2360.46s]  so let's just say that the current value
+[2360.46s -> 2362.26s]  of min in memory is 100,
+[2363.34s -> 2365.02s]  and I'm coming in with 90.
+[2366.12s -> 2368.24s]  So if there was nothing else on the system,
+[2368.24s -> 2371.20s]  my answer should update the minimum to 90, right?
+[2372.16s -> 2375.12s]  But what if after I read 100 from memory,
+[2376.26s -> 2378.72s]  but before I wrote 90 back out,
+[2378.72s -> 2382.40s]  some other thread had the value 80
+[2382.40s -> 2384.74s]  and updated memory to have 80,
+[2385.66s -> 2388.20s]  and I come in and write 90,
+[2388.20s -> 2391.12s]  I've messed things up, right?
+[2391.12s -> 2394.10s]  So I know that my operation can succeed
+[2394.10s -> 2398.92s]  if I can guarantee that no one else has come in
+[2398.92s -> 2401.42s]  while I was trying to do this min operation.
+[2402.56s -> 2404.88s]  And how do I know if nobody else has come in?
+[2408.48s -> 2410.84s]  I can, but we're not gonna use any locks here.
+[2411.92s -> 2414.46s]  I don't really care if nobody else has sort of come in,
+[2414.46s -> 2417.80s]  I only care if the min has changed.
+[2418.28s -> 2420.64s]  And that's actually the only thing that matters to me, right?
+[2420.64s -> 2424.00s]  So if I read the value from memory,
+[2424.00s -> 2425.68s]  compare it with my min,
+[2426.66s -> 2430.12s]  and then go, oh, if my min's lower, I'm gonna write it.
+[2430.12s -> 2432.48s]  I'm gonna write my value,
+[2432.48s -> 2434.20s]  but I only want that to happen
+[2434.20s -> 2436.52s]  if the value in memory is the same
+[2437.44s -> 2440.64s]  as what it was when I got this whole thing started
+[2440.64s -> 2442.48s]  and hasn't changed, right?
+[2442.48s -> 2445.56s]  That's exactly what compare and swap is gonna do for me.
+[2445.56s -> 2446.38s]  So let's take a look at this.
+[2446.38s -> 2447.70s]  So I'm gonna do an atomic min
+[2447.70s -> 2450.02s]  as I read the current value out in memory,
+[2450.02s -> 2452.06s]  I'm gonna call that old.
+[2452.06s -> 2455.30s]  Then I look to see, okay, is my value, in this case, x,
+[2455.30s -> 2457.00s]  is it smaller than old?
+[2458.08s -> 2459.94s]  I'm gonna put that here.
+[2459.94s -> 2462.10s]  And then I'm gonna say, okay,
+[2462.10s -> 2464.30s]  I want to update the value in memory
+[2465.20s -> 2467.40s]  if nobody else has changed anything.
+[2468.54s -> 2470.58s]  So I'm gonna do an atomic compare and swap
+[2470.58s -> 2472.38s]  on the memory address,
+[2472.38s -> 2475.30s]  and I wanna make sure that the address in memory
+[2475.30s -> 2476.86s]  is still old,
+[2476.86s -> 2480.74s]  and if it is, please update it with new, okay?
+[2480.74s -> 2483.74s]  And compare and swap always returns old,
+[2483.74s -> 2486.62s]  and so that's how you know if you succeeded.
+[2486.62s -> 2490.30s]  So compare and swap always returns the value in memory.
+[2490.30s -> 2493.02s]  So if the value in memory equals old,
+[2493.02s -> 2497.78s]  I know now that the value, I've updated it to new.
+[2497.78s -> 2501.72s]  If the value in memory is not old, try again.
+[2501.72s -> 2502.56s]  Okay?
+[2505.00s -> 2505.84s]  Yeah?
+[2506.84s -> 2508.78s]  It feels like this question of,
+[2508.78s -> 2511.28s]  because a different processor,
+[2511.28s -> 2512.88s]  like, already linked to this address,
+[2512.88s -> 2517.04s]  is also being kept track of via the cache states, right?
+[2517.04s -> 2521.68s]  Like, if the cache state was invalid,
+[2521.68s -> 2523.60s]  then that's, you know,
+[2523.60s -> 2527.12s]  a different one might have been in a lot of fun states.
+[2527.12s -> 2528.36s]  Like, do we just not have that?
+[2528.36s -> 2529.56s]  It's a great question.
+[2529.56s -> 2531.48s]  Okay, so let me answer it in two ways.
+[2532.08s -> 2534.32s]  First of all, the game that we are playing right now
+[2534.32s -> 2535.96s]  is the only primitive you have access to
+[2535.96s -> 2537.36s]  is compare and swap.
+[2537.36s -> 2538.56s]  So in that game,
+[2538.56s -> 2541.64s]  you don't know anything about the state of the cache.
+[2541.64s -> 2544.90s]  But what you're saying is that if I had the cache line,
+[2546.00s -> 2547.74s]  and for some reason I lost it,
+[2549.10s -> 2552.88s]  then some other operation has intervened.
+[2552.88s -> 2555.04s]  Now, to be honest, in the cache coherence protocol,
+[2555.04s -> 2557.16s]  that operation could have been a read,
+[2557.16s -> 2559.28s]  which would not have modified this at all.
+[2559.28s -> 2561.52s]  Well, let's just say I knew it was a write.
+[2561.52s -> 2563.88s]  Like, let's say I invalidated my line
+[2563.88s -> 2565.58s]  instead of dropping it to the shared state
+[2565.58s -> 2567.12s]  or something like that.
+[2567.12s -> 2569.56s]  If you had some way to get access to that,
+[2569.56s -> 2572.82s]  then you could provide me some alternative solutions, right?
+[2572.82s -> 2576.64s]  And there is, in your practice problems,
+[2576.64s -> 2577.96s]  the non-required practice problems,
+[2577.96s -> 2579.80s]  there's an instruction, a pair of instructions
+[2579.80s -> 2582.28s]  called load link store conditional.
+[2582.28s -> 2584.44s]  And that's kind of what those instructions do.
+[2584.44s -> 2588.80s]  Load link says load a value from memory at an address.
+[2589.32s -> 2592.96s]  Store conditional says store a value to that address
+[2592.96s -> 2596.08s]  provided that it hasn't been touched by any other processor
+[2596.08s -> 2598.32s]  since the last load linked.
+[2598.32s -> 2601.30s]  Those two implementations can ride
+[2601.30s -> 2603.06s]  the coherence protocol really easily.
+[2603.06s -> 2605.30s]  And in fact, there's a practice problem
+[2605.30s -> 2606.38s]  that I think I gave you, which says,
+[2606.38s -> 2608.04s]  imagine you have MSI coherence,
+[2608.04s -> 2610.64s]  how would you implement load link store conditional?
+[2612.28s -> 2613.60s]  So load link store conditional,
+[2613.60s -> 2614.70s]  I believe even to this day,
+[2614.70s -> 2616.88s]  are kind of the preferred primitives on ARM.
+[2616.92s -> 2617.76s]  Yeah.
+[2617.76s -> 2618.58s]  Yeah.
+[2618.58s -> 2619.48s]  On most of the risk out there.
+[2619.48s -> 2620.92s]  Yeah, I mean, I'm not sure if they,
+[2620.92s -> 2622.92s]  because they didn't have cache coherence before.
+[2622.92s -> 2625.00s]  So lately, I mean, now they probably leveraged
+[2625.00s -> 2626.80s]  the cache coherence protocol to implement them.
+[2626.80s -> 2629.40s]  But before they probably just had some processor state
+[2629.40s -> 2630.24s]  or something, right?
+[2630.24s -> 2632.48s]  Where they, they probably.
+[2632.48s -> 2634.64s]  Right, you know, you have caches and risk.
+[2634.64s -> 2636.12s]  Yeah.
+[2636.12s -> 2636.96s]  Cool, cool, cool, yeah.
+[2636.96s -> 2638.48s]  Because I remember reading the instruction manuals
+[2638.48s -> 2639.32s]  like a couple of years ago.
+[2639.32s -> 2641.00s]  It was like, you can have up to this many outstanding
+[2641.00s -> 2643.24s]  load link store conditionals or something like that.
+[2643.24s -> 2645.00s]  So on like some tiny processors,
+[2645.00s -> 2646.76s]  there's probably still some table or something
+[2647.60s -> 2648.42s]  that's like, yeah, okay.
+[2648.42s -> 2649.26s]  Yep, exactly.
+[2649.26s -> 2653.08s]  So what you're proposing is a very common operation on ARM.
+[2653.08s -> 2656.08s]  And so it's exposed to you via load link store conditional.
+[2659.64s -> 2661.10s]  Here's another great exercise,
+[2661.10s -> 2663.62s]  and I'm actually gonna leave this one to you.
+[2663.62s -> 2667.36s]  Which is, given atomic CAS, build a lock.
+[2667.36s -> 2669.22s]  And remember, how do we build a lock?
+[2669.22s -> 2670.20s]  We build a lock to say,
+[2670.20s -> 2672.88s]  if the value in memory is zero, make it one.
+[2673.78s -> 2676.32s]  And so that should be a pretty obvious thing to do.
+[2676.84s -> 2677.68s]  Yeah.
+[2677.68s -> 2678.52s]  The last slide.
+[2678.52s -> 2680.56s]  If we had an order, like,
+[2680.56s -> 2685.56s]  it would be 100, and then 80 updates are gonna be checked.
+[2686.36s -> 2689.56s]  What if it was like 100, then 80, and then 90?
+[2689.56s -> 2691.56s]  I mean, that seems like...
+[2693.04s -> 2695.28s]  Yeah, so imagine I'm trying to,
+[2695.28s -> 2698.04s]  I have the value 90, and you have the value 80.
+[2698.04s -> 2700.36s]  Okay, and the current min is 100.
+[2700.36s -> 2703.22s]  Okay, so let's say I read 100 from memory.
+[2704.22s -> 2706.50s]  And I'm going, oh, 90 is less than 100,
+[2706.50s -> 2708.32s]  I should probably write 90.
+[2708.32s -> 2711.28s]  Before I get around to writing 90, you come in.
+[2712.18s -> 2713.86s]  You say 80 is less than 100,
+[2713.86s -> 2715.86s]  and you beat me to it, you write 80.
+[2717.04s -> 2719.72s]  Now imagine if you look at, that's weird.
+[2721.10s -> 2724.30s]  Now imagine that I go ahead and write my 90,
+[2724.30s -> 2727.66s]  we're incorrect, like the code is broken now.
+[2727.66s -> 2730.66s]  So I need to know, like, I've read a value,
+[2730.66s -> 2732.94s]  I've done some comparisons or whatever,
+[2733.52s -> 2735.30s]  and then when I do my write, I have to say,
+[2735.30s -> 2737.70s]  I only want this write to occur
+[2737.70s -> 2740.18s]  if the value is still 100,
+[2740.18s -> 2743.62s]  because my value, the value 90 that I'm writing in there
+[2743.62s -> 2747.94s]  is the correct answer provided that it started at 100.
+[2747.94s -> 2750.50s]  But if you've come in and changed that value,
+[2750.50s -> 2755.30s]  my, in this case, my atomic cast is going to fail,
+[2755.30s -> 2758.70s]  because the value in memory is not old, it's not 100.
+[2758.70s -> 2761.90s]  So when atomic cast returns to me,
+[2761.90s -> 2764.78s]  it returns to me 80.
+[2764.78s -> 2767.42s]  I go, whoa, 80 is not equal to 100,
+[2767.42s -> 2770.78s]  therefore my atomic cast must have failed.
+[2770.78s -> 2772.14s]  I need to try again.
+[2772.14s -> 2774.50s]  So I go load the value from memory again,
+[2774.50s -> 2776.26s]  I now observe 80.
+[2776.26s -> 2777.76s]  I compute a new min, and I go,
+[2777.76s -> 2780.46s]  oh, my 90 is bigger than your 80,
+[2780.46s -> 2784.22s]  so it should just stay 80, and then I try again.
+[2784.22s -> 2789.22s]  And then it would just go to you, and then it would see
+[2789.58s -> 2790.42s]  the update.
+[2790.42s -> 2791.26s]  Okay.
+[2791.26s -> 2792.10s]  Yep.
+[2792.10s -> 2793.26s]  Isn't this inefficient?
+[2793.26s -> 2795.42s]  So let's say you have the value of 90,
+[2795.42s -> 2797.50s]  and the current value is 80.
+[2797.50s -> 2798.94s]  Why in the world should we even go
+[2798.94s -> 2800.70s]  and try to write this new thing?
+[2800.70s -> 2802.78s]  Well, I could make my program better,
+[2802.78s -> 2805.02s]  which is if the new min is not the same
+[2805.02s -> 2806.90s]  as the other one, just bail, yes.
+[2806.90s -> 2807.98s]  Yeah, yeah, yeah.
+[2807.98s -> 2810.10s]  Yeah, I could definitely make my program more efficient.
+[2810.10s -> 2811.74s]  And that would be similar in spirit
+[2811.74s -> 2813.70s]  to like this test and test and set lock, right?
+[2814.02s -> 2814.90s]  Yeah, exactly.
+[2814.90s -> 2816.66s]  Yeah, you could do that.
+[2816.66s -> 2819.48s]  So the point here is if you have an atomic CAS,
+[2821.04s -> 2822.98s]  you should be able to easily implement
+[2822.98s -> 2824.34s]  everything on this slide.
+[2826.90s -> 2827.74s]  Right?
+[2827.74s -> 2831.26s]  And moreover, you should be able to implement
+[2833.02s -> 2834.50s]  lock and unlock, too, right?
+[2834.50s -> 2837.30s]  Because lock and unlock are just like atomic,
+[2837.30s -> 2838.80s]  if it's zero, set it to one, right?
+[2838.80s -> 2841.94s]  And so the implementation of lock looks just like this.
+[2842.62s -> 2843.46s]  Right?
+[2843.46s -> 2845.66s]  And if you wanna be a little bit more clever,
+[2845.66s -> 2848.22s]  the implementation of the test and test and set lock
+[2848.22s -> 2852.54s]  from before looks a little bit like that, right?
+[2852.54s -> 2855.50s]  So on an exam or on future homeworks,
+[2855.50s -> 2858.64s]  I will assume that you're familiar with compare and swap.
+[2858.64s -> 2861.72s]  Now, we'll always give you the definition,
+[2861.72s -> 2863.82s]  but it's a very common exercise to say
+[2863.82s -> 2864.98s]  given compare and swap,
+[2864.98s -> 2867.34s]  can you create an atomic primitive
+[2867.34s -> 2870.66s]  of some customized nature given that, okay?
+[2870.66s -> 2871.86s]  And we already talked actually
+[2871.86s -> 2874.00s]  about load-link store conditional
+[2874.00s -> 2875.98s]  as another pair of atomic instructions.
+[2875.98s -> 2878.86s]  So some systems give you atomic CAS,
+[2878.86s -> 2880.82s]  a lot of most systems actually give you
+[2880.82s -> 2882.38s]  load-link store conditional,
+[2882.38s -> 2884.38s]  and everything gets built up from that.
+[2886.66s -> 2888.30s]  So just a few other things,
+[2888.30s -> 2889.76s]  like for example, in some of your assignments,
+[2889.76s -> 2892.06s]  you've used atomic in C++.
+[2892.06s -> 2894.74s]  You might be wondering a little bit about what that means
+[2894.74s -> 2899.22s]  is just keep in mind that if you wrap,
+[2899.22s -> 2900.86s]  at least in modern C++,
+[2900.86s -> 2902.96s]  if you wrap a variable in atomic,
+[2904.44s -> 2908.58s]  the operations on that variable are assured to be atomic.
+[2908.58s -> 2910.34s]  So one way to do that would be,
+[2910.34s -> 2913.90s]  let's say if we had I++ automatically increment I,
+[2913.90s -> 2915.86s]  the implementation of atomic increment
+[2915.86s -> 2920.36s]  could be lock I plus plus unlock I, to be valid.
+[2921.34s -> 2923.76s]  But you can believe that most implementations
+[2923.76s -> 2927.34s]  say for certain operations on certain variable types,
+[2927.34s -> 2929.44s]  if there was an efficient hardware solution,
+[2929.44s -> 2930.70s]  it would in fact use it.
+[2930.70s -> 2934.46s]  So if there was an atomic increment in the system,
+[2934.46s -> 2937.30s]  I plus plus on an atomic type event
+[2937.30s -> 2938.28s]  would actually translate
+[2938.28s -> 2940.22s]  into an atomic increment instruction.
+[2941.22s -> 2944.26s]  For more expensive stuff,
+[2944.26s -> 2946.62s]  it might actually be implemented under the hood as a lock,
+[2946.62s -> 2949.10s]  and actually any variable of type atomic,
+[2949.10s -> 2952.26s]  you can actually query, is it lock free?
+[2952.26s -> 2953.34s]  And it'll tell you a little bit
+[2953.34s -> 2956.14s]  about how it's implementing that atomic operation.
+[2956.14s -> 2957.86s]  So it's kind of fun.
+[2957.86s -> 2959.04s]  The other thing that it does,
+[2959.04s -> 2962.50s]  and that we're not talking in too much about,
+[2962.50s -> 2967.50s]  is when you use these atomic variables,
+[2968.22s -> 2971.54s]  or like locks, you have to be really careful
+[2971.54s -> 2974.02s]  about relaxed consistency.
+[2974.02s -> 2976.36s]  Like if you were implementing these things.
+[2976.36s -> 2981.36s]  Imagine you had this lock implementation from right here.
+[2982.04s -> 2987.04s]  And your code called unlock,
+[2987.24s -> 2991.04s]  which is just write zero to this address,
+[2991.04s -> 2994.16s]  and let's say that there was an operation
+[2994.16s -> 2995.64s]  up above this which would have been
+[2995.64s -> 2998.14s]  in the critical section, right?
+[2998.14s -> 3001.12s]  Imagine if due to relaxed ordering,
+[3001.12s -> 3002.90s]  those operations got reordered.
+[3002.90s -> 3005.80s]  So another processor saw the unlock
+[3005.80s -> 3009.58s]  and then saw the write to a value in the critical section.
+[3009.58s -> 3010.72s]  That would be very bad.
+[3010.92s -> 3012.92s]  Your lock would essentially be useless.
+[3012.92s -> 3015.24s]  So I'm writing these implementations
+[3015.24s -> 3020.24s]  assuming we have a sequentially consistent memory system.
+[3020.76s -> 3025.24s]  A real implementation of lock on a relaxed memory system
+[3025.24s -> 3027.64s]  would actually have a memory fence here
+[3027.64s -> 3030.76s]  to make sure that everything that came after that lock,
+[3030.76s -> 3033.24s]  or before that lock for example,
+[3033.24s -> 3036.12s]  was not reordered with respect to other processors.
+[3036.12s -> 3037.42s]  So I do want to point that out.
+[3037.94s -> 3041.74s]  You will encounter relaxed memory consistency
+[3041.74s -> 3044.84s]  if you are in a job, like a driver or a less lighter,
+[3044.84s -> 3048.22s]  where your job is to implement synchronization primitives.
+[3049.06s -> 3052.46s]  If you are just using synchronization primitives,
+[3052.46s -> 3054.44s]  you always assume that those primitives
+[3054.44s -> 3058.20s]  have properly inserted the memory fences
+[3058.20s -> 3061.52s]  to give you the strict ordering that you actually expect.
+[3062.56s -> 3066.58s]  And I think that's about all I'm gonna say,
+[3066.58s -> 3067.46s]  really, on this.
+[3067.46s -> 3070.06s]  So one of the reasons why you use atomic int
+[3070.06s -> 3072.40s]  is not just to have atomic operations,
+[3072.40s -> 3074.40s]  but to make sure the compiler implements
+[3074.40s -> 3077.58s]  those fences around there so you do not get
+[3077.58s -> 3081.36s]  unexpected relaxed memory consistency issues.
+[3082.50s -> 3083.52s]  Okay?
+[3083.52s -> 3084.38s]  All right.
+[3084.38s -> 3087.58s]  So that was just like half a lecture just on,
+[3087.58s -> 3088.86s]  it's kind of interesting.
+[3089.86s -> 3091.06s]  Kind of interesting to see what happens
+[3091.06s -> 3092.38s]  when you call a lock or unlock
+[3092.38s -> 3094.72s]  and there's a lot of complexity there.
+[3095.10s -> 3096.96s]  If you get it wrong, the speed of these locks
+[3096.96s -> 3098.36s]  can be very, very different.
+[3100.24s -> 3101.08s]  Any questions?
+[3102.08s -> 3104.28s]  And the cache coherence and memory consistency
+[3104.28s -> 3105.84s]  are front and center, actually,
+[3105.84s -> 3108.04s]  in the different implementations, for sure.
+[3108.92s -> 3109.76s]  Yeah.
+[3109.76s -> 3110.60s]  I guess besides the three different ways
+[3110.60s -> 3113.66s]  to implement the lock, which one is most common?
+[3113.66s -> 3116.12s]  Well, there's also a bunch of other ways
+[3116.12s -> 3117.82s]  to implement the lock that I didn't talk about,
+[3117.82s -> 3118.96s]  but they almost certainly tell you
+[3118.96s -> 3120.66s]  in an operating system.
+[3120.66s -> 3123.16s]  So all of my locks are what you would consider
+[3123.16s -> 3124.02s]  to be spin locks.
+[3124.58s -> 3126.98s]  The processor is still just spinning.
+[3126.98s -> 3130.08s]  There's also the idea of actually sleep the thread.
+[3130.08s -> 3131.36s]  Like literally sleep the thread,
+[3131.36s -> 3133.48s]  pull it off the execution context.
+[3133.48s -> 3136.14s]  My understanding, if you look at most lock implementations
+[3136.14s -> 3140.46s]  the way, well, there's a difference between mutexes
+[3140.46s -> 3142.84s]  and spin locks sometimes in these libraries.
+[3142.84s -> 3145.26s]  So a spin lock will do something like this.
+[3145.26s -> 3148.98s]  Most sort of heavyweight locks will actually probably spin
+[3148.98s -> 3151.50s]  a few times to try and get the lock
+[3151.50s -> 3153.90s]  and if you can't get it after a few spins,
+[3154.66s -> 3156.02s]  then it does the heavier weight systems calls
+[3156.02s -> 3157.62s]  to pull you off the processor.
+[3158.68s -> 3161.46s]  I know pthreads was implemented that way.
+[3161.46s -> 3162.82s]  It doesn't, like if you try and get the lock,
+[3162.82s -> 3164.64s]  the first time if you fail to get the lock,
+[3164.64s -> 3165.96s]  it's not like they sleep you immediately.
+[3165.96s -> 3167.26s]  They're like, okay, maybe it'll be available
+[3167.26s -> 3168.10s]  in a split second.
+[3168.10s -> 3171.16s]  So try a few times and if you fail a couple times,
+[3171.16s -> 3172.56s]  then it'll take you off.
+[3173.78s -> 3177.06s]  Okay, so let's talk actually about using these things,
+[3177.06s -> 3178.60s]  which is equally complex,
+[3178.60s -> 3179.92s]  but a completely different topic.
+[3179.92s -> 3183.34s]  So now I want you to assume that you have locks, okay?
+[3184.78s -> 3186.94s]  And here's a linked list.
+[3186.94s -> 3189.82s]  So take a look at this and just confirm to yourself,
+[3189.82s -> 3191.62s]  maybe even, you know, like,
+[3191.62s -> 3194.70s]  and there's gonna be a lot of code coming up
+[3194.70s -> 3195.82s]  that this is in fact,
+[3195.82s -> 3199.82s]  your run of the mill job interview linked list,
+[3199.82s -> 3202.30s]  which has insert and delete.
+[3202.30s -> 3204.50s]  I'm not even handling the edge cases
+[3204.50s -> 3206.00s]  of inserting the front of the list
+[3206.00s -> 3209.04s]  just to keep the slide simple.
+[3209.04s -> 3212.18s]  We have a node which has a value and a next pointer,
+[3212.18s -> 3216.44s]  and this is insertion and deletion into a sorted linked list.
+[3216.44s -> 3220.66s]  So your operation on insert will be create the new node
+[3220.66s -> 3222.70s]  and then walk forward into the list
+[3222.70s -> 3226.88s]  until you find the first node that is bigger than me
+[3226.88s -> 3231.88s]  and I need to insert myself right before, yeah.
+[3232.22s -> 3235.18s]  So the current list item is current
+[3235.18s -> 3240.18s]  and if the current value is greater
+[3242.48s -> 3247.44s]  than the value that I'm trying to insert,
+[3247.44s -> 3252.44s]  then we quit and we move.
+[3252.44s -> 3255.22s]  Yeah, we keep walking forward and then we break.
+[3255.22s -> 3260.18s]  And then if so, the new nodes next is the current,
+[3260.18s -> 3264.10s]  the previous nodes next is me.
+[3264.10s -> 3265.84s]  So in other words, I'm walking forward
+[3265.84s -> 3269.00s]  until I find a value in the list that's bigger than me,
+[3269.00s -> 3270.84s]  previous points at me,
+[3270.84s -> 3274.60s]  my next points at the node I just found, okay.
+[3276.28s -> 3278.26s]  So what I want you to think about a little bit now,
+[3278.26s -> 3280.12s]  this is maybe like everybody's sitting around
+[3280.12s -> 3281.28s]  staring at me, this is where I'd like you
+[3281.28s -> 3283.04s]  to talk to yourself a little bit.
+[3283.04s -> 3285.88s]  I'd like you to tell me what could go wrong
+[3287.26s -> 3289.48s]  if I run this in a multi-threaded setting.
+[3289.48s -> 3292.04s]  There are no locks on the code right now.
+[3292.04s -> 3293.68s]  So think about what could happen
+[3293.68s -> 3296.52s]  if you're deleting two nodes at the same time,
+[3296.52s -> 3297.36s]  think about what could happen
+[3297.36s -> 3300.28s]  if you insert two nodes at the same time.
+[3300.28s -> 3301.92s]  Just think about all the possibilities
+[3301.92s -> 3303.60s]  of what could happen here.
+[3303.60s -> 3307.48s]  So I'll give everybody about 90 seconds or so to do that.
+[3307.48s -> 3309.68s]  Like, is there a way you could lose nodes?
+[3309.68s -> 3312.82s]  Is there a way you could lose the rest of the list?
+[3312.82s -> 3313.86s]  Things like that.
+[3314.84s -> 3315.68s]  Go for it.
+[3319.22s -> 3320.56s]  And yeah, feel free to talk about it
+[3320.56s -> 3322.36s]  with your neighbors, of course, yeah.
+[3322.36s -> 3327.36s]  All right, should we talk about it a little bit?
+[3327.88s -> 3329.64s]  I see some people still puzzling over things,
+[3329.64s -> 3331.24s]  which actually is pretty,
+[3331.24s -> 3334.82s]  if you're not still puzzling over things, I'm impressed.
+[3334.82s -> 3336.48s]  Even with something as simple as a linked list,
+[3336.48s -> 3337.48s]  this can get kind of hard.
+[3337.48s -> 3340.00s]  So let's go maybe look through some visual examples
+[3340.00s -> 3341.20s]  that might help everybody here.
+[3341.20s -> 3345.46s]  So let's consider double insertion for now.
+[3346.80s -> 3348.40s]  So let's say that I have this list,
+[3348.40s -> 3350.98s]  three, five, 10, 11, 18.
+[3350.98s -> 3354.54s]  And let's say that I wanna attempt to insert six and seven.
+[3354.54s -> 3355.78s]  So I wanna kind of insert right next
+[3355.78s -> 3357.60s]  to each other in the list.
+[3357.60s -> 3359.06s]  So what's gonna happen,
+[3359.06s -> 3361.34s]  like what's the right answer for thread one?
+[3362.26s -> 3364.38s]  Well, thread one is gonna walk forward,
+[3364.38s -> 3368.04s]  find this point in the list where the six should go.
+[3368.04s -> 3369.74s]  And if there were no other threads involved,
+[3369.74s -> 3371.14s]  previous should point to six
+[3371.14s -> 3373.14s]  and six should point to current.
+[3373.14s -> 3374.10s]  No problem at all.
+[3374.98s -> 3377.18s]  We get something that looks a little bit,
+[3377.18s -> 3380.70s]  a little bit like this, patch it right in, okay?
+[3381.30s -> 3383.74s]  Now, let's think about what thread two would do.
+[3383.74s -> 3386.38s]  Like thread two would basically wanna do the same thing.
+[3386.38s -> 3389.42s]  Five should point to seven, seven should point to 10.
+[3391.98s -> 3396.34s]  Now what's gonna happen when both of those
+[3396.34s -> 3398.38s]  are going on at the same time?
+[3402.50s -> 3403.32s]  Yeah.
+[3403.32s -> 3405.06s]  I think you might get like a double loop
+[3405.06s -> 3407.06s]  and then like seven, both.
+[3407.06s -> 3409.32s]  Well, let's say thread one just says,
+[3409.32s -> 3411.18s]  okay, five is gonna point to six
+[3411.18s -> 3412.72s]  and six is gonna point to 10.
+[3413.88s -> 3416.98s]  And then if thread two comes in later,
+[3416.98s -> 3420.24s]  later, five is gonna point to seven
+[3421.24s -> 3423.04s]  and seven is gonna point to what?
+[3423.88s -> 3425.20s]  10.
+[3425.20s -> 3426.92s]  And what just happened?
+[3426.92s -> 3428.18s]  We just lost an insert.
+[3429.16s -> 3430.68s]  And if it goes in the other order,
+[3430.68s -> 3431.60s]  that could happen too.
+[3431.60s -> 3434.20s]  So it kind of depends on which one we wanna say wins,
+[3434.20s -> 3438.52s]  but assuming thread one updates previous next
+[3438.56s -> 3440.80s]  before thread two,
+[3440.80s -> 3442.94s]  then thread two is gonna end up winning.
+[3444.04s -> 3445.42s]  So I just lost an insert.
+[3447.60s -> 3449.16s]  Let's think about another case.
+[3449.16s -> 3451.60s]  How about one insert and one delete?
+[3451.60s -> 3454.34s]  So let's say thread two is trying to delete 10.
+[3454.34s -> 3456.08s]  So thread two is like, oh, okay,
+[3456.08s -> 3457.32s]  I wanna get rid of 10.
+[3457.32s -> 3460.40s]  So five needs to point to 11.
+[3462.92s -> 3466.52s]  But that's kind of interesting
+[3466.52s -> 3470.20s]  because five, according to thread one,
+[3470.20s -> 3472.28s]  is pointing to six,
+[3472.28s -> 3474.20s]  which is pointing to 10,
+[3474.20s -> 3475.82s]  which is deleted
+[3475.82s -> 3479.10s]  and might no longer have a valid next pointer at all.
+[3479.10s -> 3481.80s]  And now all of a sudden I've lost the rest of my list.
+[3483.46s -> 3485.40s]  So, and then we could do some similar things
+[3485.40s -> 3487.12s]  with simultaneous deletes.
+[3487.12s -> 3488.92s]  Simultaneous deletes, you might get a double delete.
+[3488.92s -> 3490.04s]  You might actually delete memory
+[3490.04s -> 3492.28s]  that's already been deleted.
+[3492.28s -> 3494.80s]  So if I go back to this code
+[3494.80s -> 3498.12s]  and I said, in the spirit of do the simplest possible thing
+[3498.12s -> 3500.54s]  to make this correct,
+[3500.54s -> 3501.44s]  what would you do?
+[3503.28s -> 3504.12s]  Yeah, look.
+[3506.34s -> 3508.44s]  Can you tell me where you put the locks?
+[3511.96s -> 3512.88s]  Okay, so what you're gonna do
+[3512.88s -> 3514.60s]  is you're gonna put one at the beginning of insert
+[3514.60s -> 3516.50s]  and one at the end of insert.
+[3516.50s -> 3518.20s]  And then, is that it?
+[3519.30s -> 3521.00s]  One more at the beginning of delete,
+[3521.00s -> 3522.56s]  the end of delete.
+[3522.56s -> 3523.86s]  Why is everybody laughing?
+[3525.68s -> 3526.52s]  Is it good?
+[3528.44s -> 3529.64s]  It works, are you sure?
+[3531.22s -> 3532.54s]  Are you sure it works?
+[3534.56s -> 3535.40s]  Look closer.
+[3536.68s -> 3539.42s]  Even the simplest core screen locking is busted.
+[3542.56s -> 3543.98s]  Well, yeah, yeah, yeah, we're assuming it's the same lock.
+[3543.98s -> 3545.76s]  Yeah, yeah, that works.
+[3545.76s -> 3546.60s]  Look closer.
+[3551.76s -> 3552.76s]  I claim deadlock.
+[3554.80s -> 3555.64s]  Okay.
+[3562.64s -> 3566.22s]  Now, of course, if you used one of these unique locks
+[3566.22s -> 3568.72s]  in C++ that automatically unlocked
+[3568.72s -> 3571.08s]  when it went out of scope, you'd be fine.
+[3571.08s -> 3572.52s]  But this is just a little example
+[3572.52s -> 3576.40s]  of even something as simple as throw your locks globally
+[3576.40s -> 3578.44s]  around everything with multiple exit points
+[3578.44s -> 3582.32s]  from a function can kind of get you, okay?
+[3582.32s -> 3585.36s]  So, you know, if I had to jump forward,
+[3585.36s -> 3586.62s]  you know, like if I had to be careful,
+[3586.62s -> 3588.46s]  it would look a little bit like this, right?
+[3588.46s -> 3591.24s]  Exactly, yeah, it was the same sphere of your solution.
+[3591.24s -> 3592.76s]  Okay.
+[3592.76s -> 3594.14s]  So what's good and what's bad about this?
+[3594.14s -> 3596.28s]  What's good is clearly that it's correct now.
+[3596.28s -> 3597.12s]  What's bad?
+[3599.12s -> 3601.32s]  And the entire access to the data structure
+[3601.32s -> 3602.86s]  is serialized at this point.
+[3603.96s -> 3605.44s]  And that's gonna be trouble.
+[3605.44s -> 3608.56s]  Why even spawn these threads in the first place, right?
+[3608.56s -> 3610.84s]  Good, okay, so that's not, you know,
+[3610.84s -> 3613.12s]  you may limit parallel application performance
+[3613.12s -> 3614.40s]  and while most of your performance
+[3614.40s -> 3615.48s]  was in the data structure,
+[3615.48s -> 3617.32s]  it's gonna definitely limit your action.
+[3617.32s -> 3620.14s]  You may not care if most of your,
+[3622.06s -> 3623.66s]  I don't know what's going on today.
+[3625.68s -> 3627.84s]  Okay, so what I'd like you to think about,
+[3627.84s -> 3629.00s]  you don't need to see the slides for this,
+[3629.00s -> 3631.44s]  I'll bring it back up in a second as soon as I,
+[3631.44s -> 3633.84s]  is how would you do better?
+[3633.84s -> 3635.48s]  So talk that over for a second.
+[3636.44s -> 3638.26s]  So clearly different parts of this data structure
+[3638.26s -> 3640.84s]  can be edited at different times.
+[3648.22s -> 3651.46s]  Okay, so just for the sake of making sure
+[3651.46s -> 3652.76s]  we get through everything,
+[3653.98s -> 3657.34s]  I'm not surprised people are still puzzling over this.
+[3657.34s -> 3658.90s]  I should probably give you at least five minutes
+[3658.90s -> 3660.66s]  to try and figure something like this out.
+[3660.66s -> 3661.90s]  By the way, on an exam one year,
+[3661.90s -> 3665.74s]  I decided to do this for a rotating binary search tree
+[3665.74s -> 3666.58s]  and it was hard.
+[3667.02s -> 3669.54s]  I promise I won't.
+[3669.54s -> 3671.06s]  What's the gist of some of the stuff
+[3671.06s -> 3672.22s]  that you're coming up with?
+[3672.22s -> 3675.30s]  So first of all, I think it should be clear
+[3675.30s -> 3678.14s]  that I should be able to do some insertion
+[3678.14s -> 3680.94s]  or deletion here while another thread
+[3680.94s -> 3682.46s]  is working on the other part of the list.
+[3682.46s -> 3685.16s]  Like the data structure should definitely afford that.
+[3686.36s -> 3687.34s]  What are you thinking about
+[3687.34s -> 3689.94s]  and how you might accomplish this?
+[3689.94s -> 3691.42s]  Yeah.
+[3691.42s -> 3694.54s]  Probably like a lock on a per node basis,
+[3694.54s -> 3696.90s]  so then you can just add a lock like a node structure.
+[3696.90s -> 3699.78s]  Okay, so let's throw a lock in every node now,
+[3699.78s -> 3702.12s]  so there's no total list lock anymore.
+[3702.12s -> 3703.82s]  There's a lock per node.
+[3703.82s -> 3706.84s]  That's a, okay, so that's a reasonable start.
+[3706.84s -> 3708.14s]  And now the question is,
+[3708.14s -> 3710.60s]  what's the order that you would take those locks
+[3710.60s -> 3713.22s]  to make sure that things were okay?
+[3713.22s -> 3715.78s]  Like let me give you a starting example.
+[3715.78s -> 3719.30s]  One example would be, I'm gonna take a lock on three,
+[3719.30s -> 3721.22s]  and then I'm gonna release the lock on three
+[3721.22s -> 3722.90s]  and put a lock on five.
+[3722.90s -> 3724.74s]  And then I'm gonna release the lock on five
+[3724.74s -> 3726.66s]  and put a lock on 10.
+[3726.66s -> 3728.26s]  That's one example.
+[3728.26s -> 3730.50s]  Another one would be, I'm gonna lock three,
+[3730.50s -> 3731.90s]  and then I'm gonna lock five,
+[3731.90s -> 3734.84s]  and then I'm gonna lock 10 holding all of these locks.
+[3734.84s -> 3735.82s]  And then I'm gonna do my thing,
+[3735.82s -> 3737.10s]  and then I'm gonna release the locks.
+[3737.10s -> 3738.34s]  So like how did you,
+[3738.34s -> 3740.74s]  did anybody start discussing like a policy
+[3740.74s -> 3743.54s]  for how you might maintain as much concurrency
+[3743.54s -> 3746.44s]  as you possibly could, but also still gotta be correct?
+[3747.54s -> 3749.66s]  So what's like, what about my simple example?
+[3749.66s -> 3750.78s]  Let's take a lock on three,
+[3750.78s -> 3752.80s]  let's release it, and then let's lock five.
+[3753.68s -> 3755.52s]  And then let's release it, and let's lock 10.
+[3758.08s -> 3758.90s]  Yeah?
+[3758.90s -> 3763.88s]  Okay, so like if I lock three,
+[3763.88s -> 3765.72s]  if I release the lock on three
+[3765.72s -> 3768.04s]  and I don't have any locks,
+[3768.04s -> 3769.44s]  that's the moment where I know nothing
+[3769.44s -> 3771.20s]  about the data structure anymore, right?
+[3771.20s -> 3773.36s]  Like that means that by the time I go to five,
+[3773.36s -> 3775.88s]  it might be gone, right?
+[3775.88s -> 3779.18s]  So there can't be a situation where we have no locks.
+[3779.18s -> 3781.72s]  Otherwise like that's definitely gonna be trouble.
+[3783.48s -> 3785.56s]  It means that only you can update,
+[3785.56s -> 3788.60s]  so it's like you are responsible for that link.
+[3788.60s -> 3791.80s]  So if I'm holding the lock on three, what do I know?
+[3794.84s -> 3798.14s]  Nobody else has the lock on three, so that's true.
+[3798.14s -> 3802.04s]  How can we use that information to have guarantees?
+[3802.04s -> 3807.04s]  So if we lock three and then we lock five and three,
+[3813.24s -> 3814.60s]  well, we certainly know that nobody
+[3814.60s -> 3817.84s]  has got locks on three or five, okay?
+[3817.84s -> 3821.70s]  And then we also know that nobody has locks on five and 10.
+[3825.00s -> 3825.96s]  That's helpful.
+[3827.42s -> 3828.26s]  Yeah?
+[3828.42s -> 3830.50s]  Like lock the notes before and after,
+[3830.50s -> 3833.38s]  like when you look at it, it could be like that part.
+[3833.38s -> 3835.02s]  So there should be some notion of,
+[3835.02s -> 3836.66s]  I only need to keep the locks
+[3836.66s -> 3840.06s]  on the blast radius in some sense, right?
+[3840.06s -> 3842.38s]  Like I only need to keep the locks
+[3842.38s -> 3845.68s]  on things that if someone else modified,
+[3845.68s -> 3848.66s]  it would cause me a problem, right?
+[3848.66s -> 3852.74s]  And so the real question is how many locks is that here?
+[3852.74s -> 3855.18s]  So one way, and this diagram,
+[3855.18s -> 3859.14s]  this gentleman on American Ninja Warrior,
+[3859.14s -> 3862.38s]  he's on the overhead bars, right?
+[3862.38s -> 3864.96s]  And so this idea that like if we ever lock
+[3864.96s -> 3869.06s]  and then unlock and then lock again, that is deadly.
+[3869.06s -> 3870.24s]  That's like basically what happens
+[3870.24s -> 3873.90s]  if he's never holding on to at least one bar, right?
+[3873.90s -> 3875.10s]  Gravity takes over, right?
+[3875.10s -> 3877.22s]  It's not gonna work, right?
+[3877.22s -> 3878.94s]  But he's doing this thing where he's making sure
+[3878.94s -> 3881.38s]  he's holding on to at least one bar at a time.
+[3881.38s -> 3883.70s]  And the question that we have now is like,
+[3883.70s -> 3887.26s]  how many locks do we really need?
+[3887.26s -> 3890.22s]  So here's a scheme where that embodies
+[3890.22s -> 3892.46s]  this hand over hand locking idea
+[3892.46s -> 3894.04s]  where I'm inspired by what you're saying.
+[3894.04s -> 3895.66s]  I'm gonna take the lock on three
+[3895.66s -> 3897.26s]  and then I'm gonna take the lock on five
+[3897.26s -> 3900.78s]  before I release that lock on three.
+[3903.34s -> 3904.54s]  And then what do I do?
+[3904.54s -> 3906.46s]  Oh yeah, I'm deleting 11 here.
+[3906.46s -> 3908.54s]  So I need to keep going, right?
+[3908.54s -> 3910.22s]  So I need to take that lock on 10,
+[3910.22s -> 3912.90s]  release it, take that lock on 11.
+[3912.90s -> 3915.18s]  Okay, and at this point,
+[3915.18s -> 3918.94s]  these are my thread zeros previous pointer
+[3918.94s -> 3921.40s]  and current pointer in the link list traversal.
+[3922.98s -> 3927.98s]  So should I release the lock on 10 and then delete 11?
+[3930.46s -> 3933.62s]  No, what's the motivation behind that?
+[3939.26s -> 3942.50s]  So if I, so why can't I,
+[3943.02s -> 3945.22s]  I'm only deleting 11, so why do I care about 10?
+[3947.06s -> 3951.58s]  So I need to modify 10, right?
+[3951.58s -> 3954.08s]  And so since I'm gonna be modifying 10,
+[3954.08s -> 3955.38s]  what am I worried about?
+[3957.50s -> 3958.86s]  That next pointer of 10,
+[3958.86s -> 3960.18s]  well really what am I worried about
+[3960.18s -> 3962.30s]  some other thread doing?
+[3962.30s -> 3964.02s]  Another thread could delete 10?
+[3964.02s -> 3966.02s]  What if another thread inserts after 10?
+[3967.70s -> 3969.82s]  Yeah, so to delete,
+[3969.82s -> 3972.86s]  I wanna make sure I always have a lock
+[3972.86s -> 3977.30s]  on current and previous, okay?
+[3978.14s -> 3979.90s]  And so let's say if thread one comes in
+[3979.90s -> 3982.94s]  and wants to delete 10, why are we protected?
+[3985.04s -> 3987.82s]  Because if the rule to delete is I have to have a lock
+[3987.82s -> 3990.66s]  on the thing to delete and the previous one,
+[3990.66s -> 3995.62s]  I know that nobody is deleting the previous one, why?
+[3996.46s -> 4001.46s]  Why can't thread one get in there?
+[4002.06s -> 4005.10s]  Because I have the lock, okay.
+[4005.10s -> 4009.46s]  So why am I not worried about someone deleting 18?
+[4011.14s -> 4013.24s]  Why don't I do the one in front of me?
+[4015.66s -> 4018.74s]  So if I have a lock on 11, nobody can be deleting 18.
+[4020.66s -> 4024.32s]  Okay, so why am I not, well now let's think about
+[4024.32s -> 4028.20s]  insert, if I have the lock on 11,
+[4028.20s -> 4032.30s]  how do I know that nobody's inserting after 11?
+[4034.26s -> 4035.92s]  Because I'm gonna have a lock on 11.
+[4035.92s -> 4038.80s]  How do I know that nobody's inserting after 18?
+[4040.72s -> 4044.00s]  I don't, but I don't care, because it won't impact me.
+[4045.28s -> 4049.84s]  So this hand over hand, one, two, one, two, one, two,
+[4049.84s -> 4052.88s]  always keeping a lock on previous and current
+[4052.88s -> 4055.26s]  is actually gonna work out here, yes.
+[4055.26s -> 4057.40s]  With the way like insert was set up,
+[4057.40s -> 4060.00s]  if you had, I don't know, thread two come in
+[4060.00s -> 4062.92s]  and start after thread zero and thread one in this case,
+[4062.92s -> 4065.12s]  would it be simply blocked and like,
+[4065.12s -> 4067.36s]  this operation was to insert after 18,
+[4067.36s -> 4069.00s]  but it started after these two operations
+[4069.00s -> 4070.12s]  would it still have to wait?
+[4070.12s -> 4071.80s]  That's correct, so that's a nice,
+[4071.80s -> 4076.80s]  so this is not necessarily a maximum concurrency, right?
+[4078.52s -> 4080.64s]  Because I have a thread two coming in,
+[4080.64s -> 4082.56s]  let's say this is like way down the list, right?
+[4083.20s -> 4084.04s]  Or actually let's say it's a really long list
+[4084.04s -> 4085.72s]  and this is happening at the beginning.
+[4085.72s -> 4088.12s]  Thread two, T2, which is not on the slide,
+[4088.12s -> 4090.68s]  it's not gonna be able to get past these
+[4090.68s -> 4092.52s]  and get ahead even if it's gonna operate
+[4092.52s -> 4093.92s]  way over here on the list.
+[4093.92s -> 4095.56s]  And why do we have to make sure
+[4095.56s -> 4097.56s]  that it cannot pass things up?
+[4099.36s -> 4101.06s]  Because while it's traversing,
+[4102.70s -> 4106.08s]  these T1 or T0 better not be deleting those nodes
+[4106.08s -> 4108.84s]  that it's traversing or inserting actually in places,
+[4108.84s -> 4110.60s]  right, because we can lose the list
+[4110.60s -> 4111.68s]  with inserts and stuff.
+[4111.68s -> 4114.72s]  So yes, like a linked list is a very sequential
+[4114.72s -> 4116.28s]  data structure in some ways,
+[4116.28s -> 4118.80s]  and unlike some other data structures,
+[4118.80s -> 4120.96s]  you don't have as much concurrency in it.
+[4122.28s -> 4127.04s]  Now, if we had a guarantee that T1 and T0
+[4127.04s -> 4130.14s]  were not writing to this portion of the array,
+[4130.14s -> 4131.36s]  then we could think about it,
+[4131.36s -> 4133.20s]  like we could think about a different lock type
+[4133.20s -> 4135.12s]  that was like allowed multiple readers
+[4135.12s -> 4136.40s]  or something like that.
+[4136.40s -> 4138.32s]  But we have not discussed that here
+[4138.32s -> 4140.56s]  in this class today, okay?
+[4140.56s -> 4143.60s]  All right, so here's the hand-over-hand locking solution
+[4143.60s -> 4148.08s]  for this program.
+[4148.08s -> 4150.52s]  There's actually a few kind of tricky invariants
+[4150.52s -> 4153.50s]  in that like what, I actually had to take a,
+[4153.50s -> 4155.36s]  there's actually a lock on the list
+[4155.36s -> 4156.96s]  as well as a lock on the node.
+[4157.88s -> 4159.44s]  The point being is remember our invariant
+[4159.44s -> 4160.72s]  is I need the lock on current
+[4160.72s -> 4162.54s]  and I need the lock on previous.
+[4162.54s -> 4165.28s]  If you're deleting the first node,
+[4165.28s -> 4168.28s]  you either need a dummy previous
+[4168.28s -> 4170.42s]  or you need like an extra lock somewhere else.
+[4171.14s -> 4172.50s]  So this code is correct.
+[4172.50s -> 4174.10s]  There's actually ways to make it
+[4174.10s -> 4175.76s]  slightly more performant
+[4175.76s -> 4178.50s]  where you more aggressively unlock things
+[4178.50s -> 4180.18s]  and I'll leave that to the class
+[4180.18s -> 4182.54s]  to sort out on the discussion board.
+[4182.54s -> 4185.42s]  Okay, so this is a good,
+[4185.42s -> 4187.30s]  just different things that you might come up with,
+[4187.30s -> 4191.38s]  like incorrect, you actually could end up deadlocking.
+[4191.38s -> 4193.26s]  It's hard to deadlock a little bit in a linked list
+[4193.26s -> 4194.90s]  because it's kind of one-directional,
+[4194.90s -> 4197.14s]  but and then there's like the cost.
+[4197.14s -> 4199.58s]  Like now imagine, like remember your cost of a linked list
+[4199.58s -> 4201.54s]  was like just chasing a pointer.
+[4201.54s -> 4204.18s]  Now you're taking a lock on every step.
+[4204.18s -> 4207.18s]  That's gonna slow things down big time, right?
+[4207.18s -> 4209.42s]  So it may be the case that that big course lock
+[4209.42s -> 4210.54s]  might actually be better,
+[4210.54s -> 4213.14s]  like limit concurrency, but get done quick.
+[4214.02s -> 4214.86s]  So who knows?
+[4214.86s -> 4216.46s]  You'd have to perform its profile.
+[4216.46s -> 4218.66s]  If it turned out that taking a lock on every step
+[4218.66s -> 4219.74s]  to the list was too much,
+[4219.74s -> 4221.54s]  what are some ways that you might sort of,
+[4221.54s -> 4223.62s]  what's a middle ground between a lock on everything
+[4223.62s -> 4226.14s]  and a lock on every node?
+[4227.14s -> 4229.42s]  Yeah, you could like say,
+[4229.42s -> 4232.30s]  I'm gonna take a lock for every five or 10 nodes
+[4232.30s -> 4233.82s]  or something like that.
+[4233.82s -> 4234.94s]  Yep, exactly.
+[4234.94s -> 4235.78s]  So you can plan.
+[4235.78s -> 4239.02s]  So on your own time, a very good exercise
+[4239.02s -> 4241.58s]  would be let's just go with a standard binary tree
+[4244.02s -> 4247.78s]  and a binary search tree and try and figure out,
+[4247.78s -> 4250.22s]  try and write the code yourself
+[4250.22s -> 4252.74s]  of insert and delete on a binary tree.
+[4252.74s -> 4254.58s]  No rotations or anything like that.
+[4256.98s -> 4259.46s]  Okay, so I wanna hint at one more thing
+[4259.46s -> 4262.66s]  that is not gonna be on your midterm,
+[4262.66s -> 4265.82s]  but we'll bring it back for the final a little bit,
+[4265.82s -> 4269.38s]  is how to make concurrent data structures
+[4269.38s -> 4272.50s]  that are thread safe, but don't use locks.
+[4272.50s -> 4275.38s]  And you've already seen one example of it in class.
+[4275.38s -> 4279.06s]  Atomic Min, I think you said just use locks, right?
+[4279.06s -> 4281.02s]  And I was like, well, no, you can't use locks.
+[4281.02s -> 4283.82s]  That compare and swap implementation is an example
+[4284.38s -> 4289.38s]  of a primitive that is safe, but does not use locks, right?
+[4289.94s -> 4292.74s]  And the main idea was to say,
+[4292.74s -> 4297.54s]  I'm going to basically speculatively go forward
+[4297.54s -> 4299.78s]  with whatever operation I'm supposed to do.
+[4299.78s -> 4300.70s]  And at the last second,
+[4300.70s -> 4303.22s]  I'm gonna check to see if something's changed.
+[4303.22s -> 4304.06s]  And if something's changed,
+[4304.06s -> 4306.38s]  I'm gonna start all over again, right?
+[4306.38s -> 4307.62s]  And that's different from locks.
+[4307.62s -> 4311.30s]  Locks say, when I enter, nobody else can go.
+[4311.30s -> 4314.42s]  In this lock-free way of thinking,
+[4314.42s -> 4316.86s]  your idea is to say, everybody goes,
+[4316.86s -> 4319.02s]  but everybody can check at the last second
+[4319.02s -> 4320.98s]  to see if things are safe.
+[4320.98s -> 4323.42s]  And if things are safe, they do their right.
+[4323.42s -> 4326.14s]  If they don't, they sort of abort and try again.
+[4326.14s -> 4329.46s]  That's the big idea of lock-free, okay?
+[4329.46s -> 4332.78s]  So, and one of the reasons why people are so,
+[4335.26s -> 4339.06s]  lock-free is, people talk about it,
+[4339.06s -> 4341.30s]  I think a little bit more than necessary,
+[4341.30s -> 4343.66s]  but like all of your concurrent collections in Java
+[4343.66s -> 4346.06s]  are lock-free implementations, for example.
+[4346.06s -> 4349.94s]  And I want you to think about a case that in our class,
+[4349.94s -> 4352.90s]  most of the code you write is your application runs,
+[4352.90s -> 4354.58s]  is the only thing running on the machine.
+[4354.58s -> 4357.38s]  You're using parallelism to run really fast.
+[4357.38s -> 4359.18s]  Imagine you're writing some big database
+[4359.18s -> 4361.42s]  or some web server and there's hundreds of thousands
+[4361.42s -> 4362.74s]  of threads or something like that.
+[4362.74s -> 4365.54s]  Concurrent threading is being used to hide latency
+[4365.54s -> 4367.38s]  of network traffic or something like that,
+[4368.02s -> 4369.86s]  not necessarily parallelism.
+[4369.86s -> 4373.14s]  Imagine you take a lock as a thread
+[4373.14s -> 4376.78s]  and then you get swapped out by the OS.
+[4376.78s -> 4378.90s]  You get context switched out.
+[4378.90s -> 4382.22s]  All of the runnable threads are sitting there spinning
+[4382.22s -> 4385.58s]  or trying to get a lock and the thread
+[4385.58s -> 4387.50s]  that has the lock just got swapped out
+[4387.50s -> 4389.38s]  in its critical section.
+[4389.38s -> 4390.86s]  Those are the types of examples
+[4390.86s -> 4393.70s]  that really motivated lock-free data structures.
+[4393.70s -> 4395.54s]  Because, just because you have the lock,
+[4395.54s -> 4397.50s]  if you are not doing anything,
+[4397.50s -> 4398.74s]  somebody else should be able to come in
+[4398.74s -> 4400.38s]  and do their thing, right?
+[4400.38s -> 4401.26s]  And so that's the difference
+[4401.26s -> 4403.54s]  between blocking and non-blocking.
+[4403.54s -> 4406.58s]  Everything that I've shown you in this lecture so far
+[4407.58s -> 4410.58s]  has been, except for the atomic cast stuff,
+[4410.58s -> 4412.02s]  has been blocking.
+[4412.02s -> 4414.98s]  Meaning that if you can't get the lock, you just stop.
+[4414.98s -> 4416.38s]  And now everything I'm gonna talk about
+[4416.38s -> 4419.26s]  is you just run forward and hope for the best, right?
+[4419.26s -> 4422.18s]  And that's what lock-free algorithms are called.
+[4422.18s -> 4424.30s]  So let me give you just one simple example
+[4424.38s -> 4427.02s]  before we, here's a cue.
+[4427.02s -> 4428.30s]  This is very much like a cue
+[4428.30s -> 4431.46s]  that you would write at a Microsoft interview again.
+[4431.46s -> 4432.90s]  This is like a big,
+[4432.90s -> 4436.02s]  and so I'm implementing a cue as an array
+[4436.02s -> 4437.98s]  and as you push, you increment head,
+[4437.98s -> 4439.34s]  as you pop, you increment,
+[4439.34s -> 4441.26s]  or as you push, you increment tail,
+[4441.26s -> 4443.98s]  as you pop, you increment head, okay?
+[4443.98s -> 4447.44s]  And imagine you're doing it with just two threads.
+[4448.30s -> 4453.06s]  The pusher thread is just incrementing the tail.
+[4453.06s -> 4456.78s]  The popper thread is just incrementing the head.
+[4457.82s -> 4459.30s]  So you don't have two threads
+[4459.30s -> 4461.62s]  ever accessing the same variables.
+[4461.62s -> 4466.62s]  And this code is thread-safe with the two threads, okay?
+[4466.98s -> 4469.18s]  And I'll stop there, I don't wanna hold you any later,
+[4469.18s -> 4472.82s]  but in the slides, what you'll find is you'll find,
+[4472.82s -> 4475.78s]  I gave an example of how to do that with allocation,
+[4475.78s -> 4478.74s]  with like a cue that's implemented as a linked list.
+[4479.58s -> 4482.86s]  And I give you an example of a stack.
+[4482.86s -> 4486.10s]  So the idea of a lock-free stack is you try and pop,
+[4486.10s -> 4487.98s]  you do all this stuff to pop,
+[4487.98s -> 4489.30s]  and again, at the last second,
+[4489.30s -> 4491.42s]  you check to see has anybody else popped.
+[4491.42s -> 4492.92s]  And if nobody else has popped,
+[4492.92s -> 4495.66s]  which you can detect with compare and swap,
+[4495.66s -> 4497.14s]  you just go ahead.
+[4497.14s -> 4498.70s]  And the nice thing is that if you're in the middle
+[4498.70s -> 4501.30s]  of a pop and you get swapped out,
+[4501.30s -> 4502.78s]  then all the other threads come in
+[4502.78s -> 4504.56s]  and they just do their pops.
+[4504.56s -> 4505.94s]  And when you get swapped back in
+[4505.94s -> 4508.70s]  and you complete your operation,
+[4508.70s -> 4510.94s]  you will detect that the world has changed
+[4510.94s -> 4512.14s]  and you just try again.
+[4512.90s -> 4514.50s]  So these lock-free data structures
+[4514.50s -> 4518.42s]  are designed for highly concurrent situations
+[4518.42s -> 4519.74s]  when there's a bunch of different threads
+[4519.74s -> 4522.22s]  and tasks on the same machine
+[4522.22s -> 4524.52s]  to try and get around some of the problems
+[4524.52s -> 4527.38s]  that can occur in a blocking situation
+[4527.38s -> 4528.98s]  where you have mutual exclusion.
+[4529.88s -> 4531.50s]  So I just wanted you to know a little bit about them.
+[4531.50s -> 4532.50s]  We're not gonna talk about them
+[4532.50s -> 4534.14s]  too much more in the class
+[4534.14s -> 4536.30s]  until we get to the modern day version
+[4536.30s -> 4538.74s]  of all of this, which is transactional memory.
+[4539.58s -> 4540.60s]  Okay, I'll let you all go.
+[4540.60s -> 4542.14s]  Sorry for going a little bit over.

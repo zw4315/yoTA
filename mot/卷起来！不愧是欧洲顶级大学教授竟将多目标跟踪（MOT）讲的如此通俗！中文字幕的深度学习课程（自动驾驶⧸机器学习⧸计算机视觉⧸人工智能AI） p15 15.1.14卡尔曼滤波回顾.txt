@@ -1,0 +1,78 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 8.50s]  Welcome! In this video, we're going to review the Kalman filter, which is one of the most commonly applied filters in multiple object tracking.
+[8.50s -> 16.50s]  We're going to talk about the prediction and the update, and we're also going to study an example of what happens in the prediction and in the update.
+[16.50s -> 22.50s]  Let's start by considering Bayesian filtering with the Chapman-Kolmogorov prediction and the Bayes update again.
+[23.00s -> 32.00s]  This recursion does not have a closed-form solution in general. However, there is an important exception to this general rule, a special case,
+[32.00s -> 39.00s]  and that is when the models that we use are linear and have additive Gaussian noise, and the initial prior is also Gaussian.
+[39.00s -> 45.00s]  In this case, a closed-form solution to Bayesian filtering is given by the Kalman filter.
+[45.00s -> 56.50s]  In fact, if all the noise is Gaussian and the models are linear, the Kalman filter is the so-called MMSE estimator, or the Minimum Mean Squared Error estimator.
+[56.50s -> 63.00s]  Before we review the update and the prediction in the Kalman filter, let's first review the basic models that are used.
+[63.00s -> 69.50s]  We have a Gaussian transition density that has a motion model f and a process noise covariance q.
+[69.50s -> 76.00s]  We have a measurement likelihood that is also Gaussian with a measurement model h and a measurement covariance r.
+[76.00s -> 83.00s]  And in the Kalman filter, the initial density is Gaussian with mean vector x bar and covariance p.
+[83.00s -> 93.00s]  And the posterior density then at time k given measurements up to and including time tau is Gaussian with mean vector x bar and covariance p.
+[93.00s -> 103.00s]  And the subscript indices here are used to denote that these are the mean vector and the covariance at time k given measurements up to and including time tau.
+[103.00s -> 108.00s]  Now, let's have a look at the Kalman filter, the prediction, the updates, and the likelihood.
+[108.00s -> 122.00s]  In the prediction, we use the motion model f to predict the mean value, and the motion model also reshapes the covariance matrix and process noise covariance q is added, meaning that the uncertainty is increased.
+[122.00s -> 128.00s]  In the update, we start by computing a predicted measurement set bar using the measurement model h.
+[128.00s -> 134.00s]  Using this predicted measurement, we can compute an innovation, here denoted epsilon.
+[134.00s -> 142.00s]  It's called innovation because it describes the new information in the measurement set that was not captured in the predicted measurement.
+[142.00s -> 154.00s]  We use the measurement model h and the measurement noise covariance r to compute an innovation covariance s, and the innovation covariance is then used to compute the Kalman gain k.
+[154.00s -> 161.00s]  The updated mean vector is a weighted average of the predicted mean vector and the innovation times the Kalman gain.
+[161.00s -> 165.00s]  And the updated covariance matrix decreases the uncertainty.
+[165.00s -> 170.00s]  The uncertainty decreases because we are gaining new information from the measurement.
+[170.00s -> 182.00s]  Lastly, the predicted likelihood is a Gaussian PDF evaluated at the measurement set with a mean value given by the predicted measurement and the covariance given by the innovation covariance.
+[182.00s -> 186.00s]  So the Kalman filter assumes linear models with Gaussian noise.
+[186.00s -> 195.00s]  However, in multiple object tracking, it is quite common that the motion model or the measurement model or both of them have to be nonlinear.
+[195.00s -> 200.00s]  In this case, it's possible to use nonlinear Kalman filters instead.
+[200.00s -> 214.00s]  For example, the extended Kalman filter, which is based on the linearization of the nonlinear models, or so-called sigma point Kalman filters, such as the unscented Kalman filter or the cubature Kalman filter.
+[214.00s -> 229.00s]  The sigma point filters build on sampling, and if the models are highly nonlinear, or if we have very complicated noise processes, then nonlinear Kalman filter might not be sufficient.
+[229.00s -> 232.00s]  If that is the case, we can instead use particle filters.
+[232.00s -> 240.00s]  However, in many tracking applications, either the Kalman filter or one of its nonlinear variants is sufficient.
+[240.00s -> 243.00s]  So let's illustrate the Kalman filter with an example.
+[243.00s -> 247.00s]  So we have a scenario where we have a state with two states.
+[247.00s -> 249.00s]  We have position and velocity.
+[249.00s -> 253.00s]  This means that the state vector x has two elements.
+[253.00s -> 256.00s]  The first is the position, the second is velocity.
+[256.00s -> 264.00s]  We use a constant velocity model with sampling time t equal to one, and the motion model is given by this matrix here.
+[264.00s -> 268.00s]  The process noise has mean value zero and variance 0.5.
+[268.00s -> 276.00s]  The measurement model is a linear model that measures the position with some noise that has mean value zero and variance one.
+[276.00s -> 281.00s]  And let's also assume that we have an initial density that is Gaussian.
+[281.00s -> 291.00s]  It has a mean vector with position one and velocity two, and a position variance of 0.3 and a velocity variance of one.
+[291.00s -> 297.00s]  So we can visualize the initial density and one cycle of prediction and update of the Kalman filter.
+[297.00s -> 302.00s]  Here we have the mean position equal to one and velocity equal to two.
+[302.00s -> 307.00s]  So the ellipsis shown is two standard deviations for the covariance matrix.
+[307.00s -> 314.00s]  And on the left and below, you can also see the marginal densities for the position and the velocity.
+[314.00s -> 319.00s]  In the prediction step, we use the motion model to predict the mean.
+[319.00s -> 326.00s]  We had an initial position of one meter and an initial velocity value of two meters per second.
+[326.00s -> 337.00s]  So the sampling time is one second, and that means that the predicted position is one meter plus one second times the velocity, which is two meters per second.
+[337.00s -> 342.00s]  And therefore, we get a predicted position equal to three meters.
+[342.00s -> 348.00s]  Since we're using a constant velocity motion model, the predicted velocity remains the same.
+[348.00s -> 353.00s]  So the predicted velocity mean is, of course, two meters per second.
+[353.00s -> 357.00s]  You can also see that the prediction covariance matrix has grown in size.
+[357.00s -> 361.00s]  The position and the velocity are more uncertain than they were before.
+[361.00s -> 368.00s]  This is because the motion model includes the process noise, and therefore it adds uncertainty.
+[368.00s -> 374.00s]  Another important thing that we can see from the covariance ellipse is that it is skewed.
+[374.00s -> 380.00s]  This is due to the fact that the prediction introduces a correlation between the position and the velocity.
+[380.00s -> 389.00s]  We know that the position is directly affected by the velocity in the prediction, and this shows up in the covariance matrix as a positive correlation.
+[389.00s -> 392.00s]  At time one, we measure the position.
+[392.00s -> 399.00s]  So suppose that we get a measurement value of six, here represented by the black line in the figure.
+[399.00s -> 407.00s]  After we have used this measurement in the Kalman update, we get this updated density shown by the dotted figure.
+[407.00s -> 415.00s]  We predicted the position to be three meters, and then we measured it with noise to a value of six meters.
+[415.00s -> 420.00s]  The updated position value should then fall somewhere in between these two values.
+[420.00s -> 425.00s]  And in this example, the updated position is about 4.75.
+[425.00s -> 428.00s]  We can also see that we have updated the velocity.
+[428.00s -> 434.00s]  It's no longer equal to two, instead it has been updated to a value of about 3.5.
+[434.00s -> 442.00s]  So despite the fact that we only measure position and not velocity, we still get an update of the velocity.
+[442.00s -> 449.00s]  Because in the prediction, we use the motion model, which in turn introduces a correlation between the two states.
+[449.00s -> 452.00s]  A correlation between the position and the velocity.
+[452.00s -> 457.00s]  In the prediction, the motion model leads to a predicted velocity value of two.
+[457.00s -> 466.00s]  However, the position measurement value is six, which suggests that we are actually moving faster than what we had predicted.
+[466.00s -> 471.00s]  So in this case, we get an updated velocity of about 3.5.
+[471.00s -> 477.00s]  And for the updated covariance, we can see that it is smaller than the predicted covariance.
+[477.00s -> 481.00s]  We are much less uncertain about the position and the velocity.
+[481.00s -> 485.00s]  And this holds especially true for the updated position.
+[485.00s -> 490.00s]  Okay, that was a simple example of one cycle of the Kalman filter.
+[490.00s -> 493.00s]  In the prediction, we use the motion model.
+[493.00s -> 498.00s]  And in the update, the measurement and measurement model are used to update the state density.

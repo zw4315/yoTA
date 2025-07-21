@@ -1,0 +1,160 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 7.06s]  Alright, so learning the reward function in the graphical model corresponds to
+[7.06s -> 14.58s]  learning the optimality variable. So now P of O T given S T A T, it'll still be
+[14.58s -> 18.54s]  equal to the exponential of the reward, but now it's R psi. It's a reward
+[18.54s -> 22.42s]  parameterized by parameter psi. And our goal is to find the reward
+[22.42s -> 28.02s]  parameters. So for clarity I'll write it as P of O T given S T A T comma psi
+[28.02s -> 35.46s]  to emphasize that this CPD depends on our parameter psi. The probability of a
+[35.46s -> 39.62s]  trajectory given optimality and psi is, like before, proportional to the
+[39.62s -> 45.14s]  probability of the trajectory times the exponential of the sum of rewards. And in
+[45.14s -> 49.70s]  the inverse RL setting, we are given samples from this unknown optimal policy.
+[49.70s -> 52.70s]  And the way that we're going to learn the reward is by a maximum
+[52.70s -> 56.50s]  likelihood learning. We're going to basically choose the parameter psi that
+[56.50s -> 62.28s]  will maximize the log probability of the trajectories that we observed. So this
+[62.28s -> 69.86s]  is very much like maximum likelihood in any other machine learning setting. Now
+[69.86s -> 73.90s]  when we're doing this, it turns out that we can actually ignore the P
+[73.90s -> 78.34s]  of tau term because it's independent of psi. So the main challenge in performing
+[78.34s -> 82.54s]  this maximum likelihood optimization is really the exponentiated reward
+[82.54s -> 88.86s]  component. So if we plug in this expression for the log probability of the
+[88.86s -> 92.58s]  trajectory, we get the following very intuitive expression. We want to maximize
+[92.58s -> 97.06s]  the respect of psi, the average over all of our trajectories, of the reward
+[97.06s -> 101.76s]  of that trajectory, meaning the sum of rewards along tau i, minus the log
+[101.76s -> 109.42s]  normalizer. Now if you just ignore the log normalizer, this seems at once both
+[109.46s -> 113.18s]  intuitive and kind of silly. This is just saying find the reward that makes
+[113.18s -> 116.38s]  the trajectories have a high reward. But the problem is that if you just
+[116.38s -> 119.70s]  assign huge rewards to everything, then some other trajectories that were
+[119.70s -> 123.06s]  not taken and have a very low probability of the expert policy
+[123.06s -> 126.94s]  might get an even higher reward. And that's what the log normalizer takes
+[126.94s -> 131.26s]  care of. The log Z term, the normalizing constant, says you can't
+[131.26s -> 134.46s]  just assign a high reward to anything. You need to assign rewards that make the
+[134.46s -> 137.78s]  trajectories that you saw look more likely than other trajectories that you
+[137.78s -> 143.90s]  did not see. And it's actually this log normalizer that makes inverse
+[143.90s -> 149.18s]  reinforcement learning difficult. All right, so let's talk about the log
+[149.18s -> 152.66s]  normalizer or the partition function. That's what Z is sometimes referred to as
+[152.66s -> 157.30s]  the partition function. Z is equal to the integral over all possible
+[157.30s -> 163.86s]  trajectories of p of tau times the exponential of r psi of tau. Now of
+[163.86s -> 169.14s]  course immediately we could say well let's just plug in this equation for Z,
+[169.14s -> 172.78s]  take its gradient and optimize, very reasonable thing to do, but of course
+[172.78s -> 176.18s]  integrating over all possible trajectories is in general going to be
+[176.18s -> 180.34s]  intractable. So if you plug in the equation for Z and then take the
+[180.34s -> 185.66s]  derivative with respect to psi, you get this expression. You get 1 over m
+[185.66s -> 188.74s]  times the sum over all your samples of the gradient of the reward of the
+[188.74s -> 192.54s]  trajectory tau i minus 1 over Z, that just comes from the derivative of a
+[192.54s -> 197.90s]  logarithm, times the integral of p of tau times the exponential reward times
+[197.90s -> 204.18s]  grad r. But something pretty neat that you might note about this is that the
+[204.18s -> 210.54s]  second term can actually be viewed as an expected value under the distribution
+[210.54s -> 216.22s]  of trajectories induced by your current psi. Right, because this expression 1
+[216.22s -> 222.14s]  over Z times p of tau times exponential of r psi of tau is exactly p of tau
+[222.14s -> 228.94s]  given optimality and psi. So you can equivalently write the gradient as the
+[228.94s -> 235.84s]  expected value under the optimal policy pi star of grad r minus the
+[235.84s -> 242.46s]  expected value under p tau given your current psi of grad r. The first term
+[242.46s -> 247.98s]  is approximated with samples and that turns into a sum of grad r's on the
+[247.98s -> 253.98s]  tau i divided by m, and the second term turns into that integral. So that's a
+[253.98s -> 257.66s]  very appealing interpretation. Your gradient is just the difference between
+[257.66s -> 261.62s]  the expected value of the gradient under the expert's policy minus the
+[261.62s -> 266.54s]  expected value of the gradient under your current reward. Note that p of tau
+[266.54s -> 271.34s]  given O 1 through t comma psi is simply the distribution over trajectories that
+[271.34s -> 277.74s]  are softly optimal with respect to r psi. So this might immediately suggest
+[277.98s -> 283.22s]  an appealing algorithmic approach. Take your current reward r psi, find the soft
+[283.22s -> 287.04s]  optimal policy by running inference in the graphical model that we saw on
+[287.04s -> 290.98s]  Monday, sample trajectories from that policy, and then perform this kind of
+[290.98s -> 295.82s]  contrastive operation where we increase the reward for the trajectories that
+[295.82s -> 299.38s]  we saw from the expert and decrease the reward for trajectories that we
+[299.38s -> 305.94s]  sampled for our current reward. So we estimate the first term with samples
+[305.94s -> 311.30s]  from the expert and the second term comes from the soft optimal policy under
+[311.30s -> 314.98s]  the current reward. And we can compute the soft optimal policy using the
+[314.98s -> 320.82s]  algorithms that we learned about in Monday's lecture. But let's actually
+[320.82s -> 324.32s]  work through how we can estimate this expectation because I think this will
+[324.32s -> 330.54s]  give us a little bit of clarity on maximum entropy IRL methods. So if we
+[330.54s -> 335.42s]  take this second term, let me just make it a little more explicit that it's
+[335.42s -> 339.70s]  really the gradient with respect to psi of the sum of rewards for all time
+[339.70s -> 344.30s]  steps along that trajectory. And that means that we can write it by moving
+[344.30s -> 347.62s]  the sum outside of the expectation by linearity of expectation and write it
+[347.62s -> 351.98s]  as the sum from t equals 1 to capital T of the expected value under the
+[351.98s -> 362.74s]  STAT marginal given optimality of the gradient of the reward at STAT. So the
+[362.74s -> 366.10s]  distribution under which we take the expected value is the probability of the
+[366.10s -> 370.70s]  action given ST comma optimality times the probability of the state given
+[370.70s -> 374.98s]  optimality. And on Monday we learn how to compute both of these quantities
+[374.98s -> 379.46s]  because the first quantity is the policy, which we learn is the ratio of
+[379.46s -> 383.34s]  two backward messages, and the second term is the state marginal, which we
+[383.34s -> 386.36s]  learned on Monday can be obtained as the product of the forward and the
+[386.36s -> 393.64s]  backward messages. Alright, so that's where we've seen this before. So the
+[393.64s -> 398.36s]  first term is just equal to the ratio of beta STAT divided by beta ST, and if
+[398.36s -> 401.68s]  you don't remember how to compute beta, please go back to the lecture on
+[401.68s -> 406.76s]  Monday and re-watch the first inference problem. And the second term
+[406.76s -> 411.48s]  is proportional to the forward message over ST and the backward message over
+[411.48s -> 414.72s]  ST. And again, if you don't remember how we derived this, go back to the
+[414.72s -> 423.04s]  lecture on Monday and watch the third inference problem. Now, here the beta ST
+[423.04s -> 426.68s]  in the denominator of the first expression cancels out with the beta ST
+[426.68s -> 430.12s]  in the numerator of the second expression, and we just get the answer
+[430.12s -> 434.96s]  that this quantity is proportional to beta STAT times alpha ST, and then you
+[434.96s -> 438.12s]  have to normalize it over states and actions, but not over trajectories,
+[438.12s -> 441.84s]  crucially. So this is a much more tractable thing to normalize if you
+[441.84s -> 450.52s]  have a relatively small state space. Okay, so now the way that we can
+[450.52s -> 456.20s]  estimate this second term is by first calculating this quantity that I'm going to
+[456.20s -> 460.60s]  call mu t, the state-action marginal, and we calculate that by multiplying the
+[460.60s -> 463.92s]  backward messages by the forward messages and normalizing over all
+[463.92s -> 470.00s]  states and actions. And then we can express this expectation as just a sum
+[470.32s -> 475.82s]  in discrete spaces or integral and continuous spaces of mu STAT times the
+[475.82s -> 482.04s]  gradient of r STAT, which we can also write as an inner product between a
+[482.04s -> 488.08s]  vector of probabilities mu and a vector of derivatives for the reward at
+[488.08s -> 494.08s]  every state-action tuple. Okay, so that's a pretty elegant expression for this
+[494.08s -> 498.24s]  gradient. It doesn't require us to actually be able to compute mu, which
+[498.28s -> 503.28s]  means that we need a small and countable state space. Typically a discrete state
+[503.28s -> 506.28s]  space would be best, and of course we need to actually be able to calculate
+[506.28s -> 509.44s]  those forward and backward messages, which requires knowing the transition
+[509.44s -> 513.00s]  probabilities. So this wouldn't work for unknown dynamics, and it wouldn't
+[513.00s -> 516.60s]  work for large or continuous state-action spaces, but for small and
+[516.60s -> 521.42s]  discrete spaces, this is quite feasible. So this leads us to the classic
+[521.42s -> 526.48s]  maximum entropy inverse RL algorithm, as proposed by Brian Zebard in his 2008
+[526.48s -> 532.60s]  paper. Given your current vector psi, compute your backward messages as
+[532.60s -> 536.24s]  described in the previous lecture, and compute your forward messages as
+[536.24s -> 539.88s]  described in the previous lecture. Then compute your mu by multiplying
+[539.88s -> 544.36s]  these messages and renormalizing, and then evaluate the gradient of the
+[544.36s -> 550.40s]  likelihood of the trajectories as the difference between the average over all
+[550.40s -> 555.24s]  the trajectories of grad psi r psi minus the inner product between mu and
+[555.24s -> 560.88s]  grad r. And then simply take a gradient ascent step on psi, since you've just
+[560.88s -> 563.44s]  calculated the gradient of the likelihood. And then repeat this
+[563.44s -> 567.40s]  process until convergence. So this is basically an algorithm for computing
+[567.40s -> 571.24s]  the gradient of the likelihood of the demonstrated trajectories, and at
+[571.24s -> 574.80s]  convergence this will yield the reward parameters that maximize the
+[574.80s -> 578.36s]  likelihood of those trajectories, and therefore produce the reward that best
+[578.36s -> 582.92s]  explains the potentially suboptimal behavior of the expert. And crucially,
+[582.92s -> 586.96s]  this formulation removes much of the ambiguity that we saw before. The way
+[586.96s -> 592.12s]  that it removes that ambiguity is by utilizing that notion of suboptimality.
+[592.12s -> 596.92s]  It says that, well, it's not actually the case anymore that very different
+[596.92s -> 601.64s]  rewards have very similar policies. If the reward was higher, then the expert
+[601.64s -> 604.52s]  would be more deterministic. It essentially uses the stochasticity of the
+[604.52s -> 608.40s]  expert to disambiguate the universe RL problem, which seems very intuitive. If
+[608.40s -> 611.52s]  you saw the expert doing very random things, it might mean that they don't
+[611.52s -> 614.92s]  care about those different random outcomes. It might mean that all those
+[614.92s -> 618.28s]  outcomes are about equally good to the expert. But if you saw the
+[618.28s -> 621.12s]  expert repeatedly doing something very specific, you might say, well, that thing
+[621.12s -> 625.92s]  really matters to the expert, and therefore it has a much larger reward.
+[625.92s -> 630.72s]  Why do we call this the maximum entropy algorithm? Well, in the case where the
+[630.72s -> 635.52s]  reward is linear in the parameter vector psi, we can actually show that this
+[635.52s -> 640.04s]  algorithm also optimizes a constrained optimization problem, where we maximize
+[640.04s -> 644.68s]  the entropy of the learned policy subject to the constraint that it matches
+[644.68s -> 648.04s]  the future expectations of the expert. So there's actually a deep
+[648.04s -> 651.72s]  connection between this algorithm and the feature matching methods that we saw
+[651.72s -> 655.80s]  before, and the way that they disambiguate the ambiguity in feature
+[655.80s -> 659.72s]  matching is by saying that you should match the features, but besides that,
+[659.72s -> 663.40s]  you should be as random as possible. And that's the principle of maximum
+[663.40s -> 668.52s]  entropy. It says that you should not make any inference other than the ones
+[668.52s -> 672.28s]  that are supported by the data. It's a kind of statistical formalization of
+[672.28s -> 676.36s]  Occam's Razor. And that's perhaps part of the explanation for why this method
+[676.36s -> 681.80s]  for inverse RL works so well, because it avoids making undue assumptions. It
+[681.80s -> 686.32s]  avoids making inferences about the expert's behavior that are not
+[686.32s -> 690.16s]  supported by your data, and the principle of maximum entropy is what
+[690.16s -> 696.68s]  allows you to do that. So this maximum entropy inverse RL algorithm has been
+[696.76s -> 704.20s]  used quite effectively in a number of smaller discrete settings. So for instance,
+[704.20s -> 707.80s]  Brian Zebart's original paper on this topic showed that you could use this
+[707.80s -> 712.12s]  algorithm to infer navigational routes in a map. For instance, you could
+[712.12s -> 716.60s]  collect data from taxi drivers in Pittsburgh, infer their reward function,
+[716.60s -> 721.40s]  whether they prefer driving on city streets or highways, and then get a route
+[721.40s -> 724.28s]  planning software to navigate the way a taxi driver would.
+[726.76s -> 730.28s]  And the methods generally work decently well. However, this approach is still
+[730.28s -> 734.36s]  restricted to settings where we have relatively small and discrete state
+[734.36s -> 738.12s]  spaces. In the next portion of the lecture, we'll discuss how to extend
+[738.12s -> 743.72s]  this to settings where the state space might be very large or continuous.

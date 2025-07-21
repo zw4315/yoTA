@@ -1,0 +1,79 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.00s]  The earlier parts of this lecture have described single-object tracking models
+[5.00s -> 9.00s]  and how to recursively compute the exact posterior density.
+[9.00s -> 14.00s]  Unfortunately, it is intractable to compute the posterior exactly,
+[14.00s -> 18.00s]  and we therefore need ways to approximate the posterior density.
+[18.00s -> 22.00s]  In this section, we will cover the most commonly used strategies
+[22.00s -> 27.00s]  for approximating the posterior density in single-object tracking.
+[27.00s -> 31.00s]  Once we have decided how to approximate the posterior density,
+[31.00s -> 35.00s]  we obtain a single-object tracking algorithm.
+[35.00s -> 40.00s]  In this video, we provide an overview of the most common ways to approximate the posterior,
+[40.00s -> 46.00s]  and describe the connection to the single-object tracking algorithms that we will present.
+[46.00s -> 50.00s]  As a brief recap, roughly speaking, we found that the number of hypotheses
+[50.00s -> 53.00s]  grows exponentially with time.
+[53.00s -> 58.00s]  It is therefore intractable to compute the posterior, except for the first few time steps.
+[58.00s -> 63.00s]  The main reason is perhaps that we essentially need to perform one separate Kalman filter update
+[63.00s -> 65.00s]  for every hypothesis.
+[65.00s -> 69.00s]  But there is also a limit to how many hypotheses we can store in memory, and so on.
+[69.00s -> 72.00s]  So, it is clear that we need to introduce approximations.
+[72.00s -> 78.00s]  And the main focus in the upcoming videos is to provide an overview of different ways to do this.
+[78.00s -> 83.00s]  We focus specifically on settings where the posterior density is a Gaussian mixture,
+[83.00s -> 87.00s]  or where it can at least be approximated as a Gaussian mixture.
+[87.00s -> 89.00s]  The basic idea is quite simple.
+[89.00s -> 93.00s]  The problem is that the number of components in the posterior grows with time,
+[93.00s -> 96.00s]  and eventually becomes too large.
+[96.00s -> 101.00s]  A natural solution is to find an approximation to the posterior that contains fewer terms.
+[101.00s -> 106.00s]  That is, we usually seek another Gaussian mixture that approximates the two posterior,
+[106.00s -> 108.00s]  but that contains fewer components.
+[108.00s -> 112.00s]  By reducing the number of components in every step of the recursion,
+[112.00s -> 116.00s]  we can maintain the number of components at a reasonable level,
+[116.00s -> 118.00s]  and thereby obtain a tractable algorithm.
+[118.00s -> 121.00s]  Still, there are many different ways that one can do this.
+[121.00s -> 127.00s]  Most algorithms that we see do mixture reduction using either pruning or merging,
+[127.00s -> 129.00s]  or a combination of pruning and merging.
+[129.00s -> 134.00s]  In this context, pruning means that we remove unlikely hypotheses.
+[134.00s -> 137.00s]  That is, hypotheses with small weights,
+[137.00s -> 141.00s]  and we normalize the weights of the remaining hypotheses such that they sum to one.
+[141.00s -> 145.00s]  For instance, suppose we have a Gaussian mixture with two components,
+[145.00s -> 151.00s]  where the first has the weight 0.07 and the second has the weight 0.93.
+[151.00s -> 154.00s]  If we want to approximate this density as Gaussian,
+[154.00s -> 160.00s]  we could prune the first hypothesis and set p-hat of x to the density p-12x,
+[160.00s -> 163.00s]  which is the density given hypothesis 2.
+[163.00s -> 169.00s]  As you can see, in this example, p-hat is then this red point dashed curve,
+[169.00s -> 172.00s]  which approximates p of x reasonably well,
+[172.00s -> 177.00s]  even though it is much smaller than p of x in the region around x equal minus 2,
+[177.00s -> 180.00s]  where p1 of x has its peak.
+[180.00s -> 183.00s]  Another common technique for mixture reduction is merging.
+[183.00s -> 188.00s]  Doing merging means that we approximate a mixture of densities by a single density,
+[188.00s -> 191.00s]  which is often a Gaussian density.
+[191.00s -> 193.00s]  This may sound precisely like pruning,
+[193.00s -> 199.00s]  but the difference here is that the approximation now depends on all components in the original mixture.
+[199.00s -> 205.00s]  For instance, if we return to the example where p of x is a Gaussian mixture with two components,
+[205.00s -> 210.00s]  we could then use merging to reduce this mixture to a single Gaussian density.
+[210.00s -> 213.00s]  However, instead of removing one component,
+[213.00s -> 219.00s]  we would select p-hat of x to be a Gaussian density with the same mean and variance as p of x.
+[219.00s -> 224.00s]  A consequence of this is that the approximation depends on both components in p of x.
+[224.00s -> 226.00s]  We have illustrated this in the figure,
+[226.00s -> 230.00s]  where you can see that p-hat now has a larger variance than before,
+[230.00s -> 236.00s]  and it has also shifted slightly towards the area where p1 of x has its support.
+[236.00s -> 242.00s]  The approximation p-hat of x still underestimates the true density around x equal minus 2,
+[242.00s -> 245.00s]  but not to the same extent as when we used pruning.
+[245.00s -> 250.00s]  In upcoming videos, we present three different single object tracking algorithms.
+[250.00s -> 253.00s]  First, the nearest neighbor algorithm that uses pruning.
+[253.00s -> 259.00s]  Second, the probabilistic data association or PDA filter that uses merging.
+[259.00s -> 262.00s]  And finally, the more general Gaussian sum filter,
+[262.00s -> 266.00s]  which often uses pruning, but that can also use merging.
+[266.00s -> 268.00s]  Like all algorithms that we describe,
+[268.00s -> 271.00s]  these are three examples of assumed density filters.
+[272.00s -> 275.00s]  The fact that these filters are assumed density filters
+[275.00s -> 281.00s]  means that they start and end every recursion with a density from the same family of distributions.
+[281.00s -> 287.00s]  Both nearest neighbor and PDA reduce the Gaussian mixture to a single Gaussian density,
+[287.00s -> 292.00s]  whereas the Gaussian sum filter reduces it to a Gaussian mixture with a few components.
+[292.00s -> 297.00s]  Nearest neighbor and PDA therefore start every recursion with a Gaussian density,
+[297.00s -> 302.00s]  whereas the Gaussian sum filter starts every recursion with a Gaussian mixture density.
+[302.00s -> 306.00s]  Apart from these filters, we also present a technique called gating.
+[306.00s -> 312.00s]  The idea behind gating is that we typically know roughly where we may receive object measurements.
+[312.00s -> 318.00s]  A detection that appears far from that region is therefore very unlikely to be an object detection.
+[318.00s -> 325.00s]  Using gating would disregard such unlikely measurements as clutter before starting the usual update step,
+[325.00s -> 330.00s]  which means that we can reduce the computational complexity, often by a considerable amount.

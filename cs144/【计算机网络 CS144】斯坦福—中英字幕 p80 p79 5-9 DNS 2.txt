@@ -1,0 +1,259 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.00s]  This video goes into the details of what DNS queries actually look like and their
+[5.00s -> 9.00s]  format and their structure. So queries and the resource records that
+[9.00s -> 13.00s]  compose them. So recall, a DNS query starts from a
+[13.00s -> 19.00s]  client. Say it asks a resolver, what's www.stanford.edu?
+[19.00s -> 24.00s]  And is a recursive query. And then resolver might either answer
+[24.00s -> 29.00s]  from its cache or use cache entries. And if it doesn't have a cache entry for
+[29.00s -> 35.00s]  that stage of the query, it can ask questions from external servers.
+[35.00s -> 44.00s]  So, whom would I ask about edu? Who would I ask about stanford.edu?
+[44.00s -> 54.00s]  Hey, what's www.stanford.edu? Each of these are non-recursive
+[54.00s -> 59.00s]  queries, and the resolver then caches those results.
+[59.00s -> 74.00s]  So edu, stanford.edu, and www.stanford.edu. So that's a query at a high level.
+[74.00s -> 79.00s]  But in the details, the way DNS works is that all DNS information, so in every
+[80.00s -> 85.00s]  DNS message, is represented in terms of things called resource records, RRs.
+[85.00s -> 88.00s]  And the form of resource record is generally pretty simple.
+[88.00s -> 92.00s]  It has a name, also a kind of resource record, sort of the name of the, the
+[92.00s -> 97.00s]  name associated with this record. There can be a time to live in a class.
+[97.00s -> 101.00s]  Then there's the type of record, and then the record data.
+[101.00s -> 107.00s]  So, for example, a resource record would be named, say, www.stanford.edu.
+[107.00s -> 113.00s]  So this is a record for www.stanford.edu. TTL, how long is this record?
+[113.00s -> 116.00s]  Good. Class, so this is the address class.
+[116.00s -> 121.00s]  So typically, it's almost always I am one of the, it's class one, so for,
+[121.00s -> 124.00s]  this is for an Internet, for the Internet.
+[124.00s -> 127.00s]  There's the type of the record, and then the, the data.
+[127.00s -> 132.00s]  And so here I'm going to walk through two critical RR types, resource record
+[132.00s -> 137.00s]  types. Type A, which is an address, an IPv4 address,
+[137.00s -> 142.00s]  and NS, which is a name server. So an A record tells you an address
+[142.00s -> 147.00s]  associated with the name. So it'll say, type A, the R data is
+[147.00s -> 150.00s]  an address, it's the address associated with the name.
+[150.00s -> 155.00s]  Whereas a name server record, an NS record, will tell you the address of a
+[155.00s -> 158.00s]  name server associated with the name.
+[159.00s -> 164.00s]  So a great way to explore DNS, and what records look like, and what kinds of
+[164.00s -> 169.00s]  records you get, is to use this cool, tool called DIG, which I'll use several
+[169.00s -> 172.00s]  times. A DNS message that, an actual DNS
+[172.00s -> 176.00s]  message, its structure looks like this. This is specified in RFC 1035.
+[176.00s -> 180.00s]  So, in the beginning there's a header, which describes the overall, sort of,
+[180.00s -> 183.00s]  what's in the message. There's the question that this
+[183.00s -> 186.00s]  message is for. If it's a query, then it's the
+[186.00s -> 189.00s]  question of the query. If it's a response, then it's the
+[189.00s -> 193.00s]  question it's a response to. And then there are other sections
+[193.00s -> 197.00s]  which are empty inquiries. The answer, authority, and additional
+[197.00s -> 199.00s]  sections. So it's possible, for example, to
+[199.00s -> 202.00s]  send a DNS query with multiple questions in it if you want.
+[202.00s -> 204.00s]  Each of these can have multiple entries.
+[204.00s -> 207.00s]  So there's a header, and the question, answer, authority, and additional
+[207.00s -> 210.00s]  sections are all made up of resource records.
+[210.00s -> 213.00s]  So let's look at an example of this.
+[213.00s -> 222.00s]  So if I dig www.stanford.edu. Now this simple use of dig, I'm asking,
+[222.00s -> 227.00s]  I'm basically saying, I'd like to send a DNS query of, to, for the address of
+[227.00s -> 232.00s]  www.stanford.edu. And this is what we see come back.
+[232.00s -> 238.00s]  So, here, here's the dig output. I'll tell you the version of dig.
+[238.00s -> 241.00s]  Here's the header. Some header information, we'll talk a
+[241.00s -> 244.00s]  little bit more about that later. So here's the question.
+[244.00s -> 248.00s]  I was asking for an address record of www.stanford.edu.
+[248.00s -> 252.00s]  So you see here's a record, resource record in the question section.
+[252.00s -> 258.00s]  And the answer has two records in it. The first is what's called a CNAME
+[258.00s -> 262.00s]  record, which I'll talk a little bit more later.
+[262.00s -> 267.00s]  Basically it says that www.stanford.edu is actually the canonical name for
+[267.00s -> 273.00s]  that. So it's CNAME stands for, CNAME stands for is www-v6.stanford.edu.
+[273.00s -> 278.00s]  So there are six different, maybe there are six different, well the web
+[278.00s -> 282.00s]  servers for Stanford. Then the address of www-v6, here's,
+[282.00s -> 286.00s]  here's the internet. IN, so it's IN1, that's the class.
+[286.00s -> 290.00s]  TTL is 1800. This is an A record, and it's for
+[290.00s -> 294.00s]  this address. In addition to that, the authority
+[294.00s -> 297.00s]  section is telling me who are the authoritative names.
+[297.00s -> 300.00s]  These are the NS, the name server records for stanford.edu.
+[300.00s -> 304.00s]  So here are all of these different servers I could ask about addresses in
+[304.00s -> 307.00s]  Stanford. The additional section then gives me a
+[307.00s -> 311.00s]  whole bunch of just additional stuff. Like here's the address record for
+[311.00s -> 314.00s]  Argus. Here's the address record for Erithia.
+[314.00s -> 317.00s]  Here's the address record for Atlanta. Here's the Atlanta.
+[317.00s -> 321.00s]  Here's the address record for Avalon. And so when we think of what DNS is
+[321.00s -> 325.00s]  often doing, and the reason why you see this message is so big, is that given
+[325.00s -> 329.00s]  that it's going to send a response, it tries to send you a whole bunch of extra
+[329.00s -> 332.00s]  data, a whole bunch of extra information just to maybe prevent you
+[332.00s -> 335.00s]  from asking another query. And so these are A records, these are
+[335.00s -> 339.00s]  IPv4 addresses. So quad A records, AAAA, these are
+[339.00s -> 342.00s]  IPv6 addresses. And so it turns out Stanford's DNS
+[342.00s -> 346.00s]  server is giving you not only the address records of the Stanford name
+[346.00s -> 350.00s]  servers, but also their, not only the A records, but also the IPv6, in case I
+[350.00s -> 356.00s]  want to query them over IPv6. So this is what a response to a DNS
+[356.00s -> 359.00s]  query looks like. So you can see that there's the
+[359.00s -> 363.00s]  header, there's the question section, the answer section, the authority
+[363.00s -> 366.00s]  section, and then the additional section.
+[366.00s -> 372.00s]  So if you look inside the header, it's specified in RFC 1035.
+[372.00s -> 378.00s]  The header is ten bytes long, sorry, twelve bytes long, so it's pretty
+[378.00s -> 381.00s]  short. The first two bytes are an ID, this you
+[381.00s -> 386.00s]  can pair queries and responses. And then the second, so the first two
+[386.00s -> 390.00s]  byte is an ID, the second two bytes are a bunch of flags.
+[390.00s -> 395.00s]  So there's the first, that bit I mentioned whether this is a query or a
+[395.00s -> 398.00s]  response. There's an opcode, so standard
+[398.00s -> 402.00s]  queries. And there's a return code, if there's
+[402.00s -> 405.00s]  an error code, then there's a bunch of flags.
+[405.00s -> 408.00s]  So is this an authoritative answer? Is this truncated?
+[408.00s -> 411.00s]  All of these sorts of things. So you can see here at the bottom,
+[411.00s -> 415.00s]  recursion desired, recursion available. There are ways where you can in fact
+[415.00s -> 418.00s]  ask your resolver for a non-recursive query if you want.
+[418.00s -> 423.00s]  Then after these first four bytes, there are four two byte values which
+[423.00s -> 428.00s]  say how many resource records are there in each section.
+[428.00s -> 432.00s]  So how many queries are there? How many answers are there?
+[432.00s -> 438.00s]  How many authorities are there? And how many additional records are
+[438.00s -> 442.00s]  there? Now then within each of these, of the,
+[442.00s -> 445.00s]  the four sections that have resource records.
+[445.00s -> 450.00s]  A resource record is pretty simple. It has a name that could be a variable
+[450.00s -> 454.00s]  number of, of bytes long depending on how long it is.
+[454.00s -> 458.00s]  Then there's a type, class, and the TTL.
+[458.00s -> 462.00s]  Within an RD length field specifying the R data.
+[462.00s -> 467.00s]  So here, here's the, the basic DNS name, then the type, then the class,
+[467.00s -> 471.00s]  TTL, RD length, R data. And so this is one of the, sort of
+[471.00s -> 476.00s]  the, on the wire with the byte format of a resource record looks like.
+[476.00s -> 479.00s]  Now notice that the beginning of a resource record is a name, but it
+[479.00s -> 482.00s]  doesn't say how long the name is. That's because the length of the
+[482.00s -> 486.00s]  names is self-describing. It turns out that DNS does a lot of
+[486.00s -> 490.00s]  name compression because it's trying to pack everything into 512 bytes.
+[490.00s -> 496.00s]  Then names that are repeated through the packet are just, rather than repeated,
+[496.00s -> 501.00s]  are just referenced. And so imagine if I'm asking a query
+[501.00s -> 506.00s]  about, say, www.stanford.edu. I don't necessarily want to have that
+[506.00s -> 509.00s]  repeated many times in the packet. I can just put it once and then refer
+[509.00s -> 512.00s]  to it. So the first thing that DNS does is
+[512.00s -> 517.00s]  it breaks a name into separate labels related to the steps of the hierarchy.
+[517.00s -> 523.00s]  So www.stanford.edu is three separate labels, www, stanford, and edu.
+[523.00s -> 529.00s]  Then each label's encoded as a length and then text values.
+[529.00s -> 535.00s]  The length is in binary, so it's basically some number, it's just one,
+[535.00s -> 540.00s]  one byte. And then the text is in ASCII.
+[540.00s -> 546.00s]  So for example, if I were to encode three www, so w is 0x77, the way this would be
+[546.00s -> 552.00s]  encoded in the bits in the packet is 03777777. So this tells me these are
+[552.00s -> 557.00s]  three bytes, and here they are. Now one trick then that the name
+[557.00s -> 562.00s]  compression uses in order to take advantage of the fact that names can be
+[562.00s -> 567.00s]  long and repeated several times in a packet is if the length field here in
+[567.00s -> 576.00s]  the label is greater than 192, that is some of the harder bits are set, then the
+[576.00s -> 581.00s]  next fourteen bits specify an offset in the packet.
+[581.00s -> 587.00s]  And so the way to think of this is that if I see here that the first two bits
+[587.00s -> 593.00s]  of the length, so 128 plus 64 is 192, are one one, then this length is
+[594.00s -> 599.00s]  actually two bytes long, this length field, and the later fourteen bits
+[599.00s -> 602.00s]  specify, specify an offset into the packet.
+[602.00s -> 609.00s]  So for example, if I see 0x000C, this means that the name that this label
+[609.00s -> 615.00s]  refers, that this label refers to is at this value minus take out those first
+[615.00s -> 618.00s]  two bits is at offset twelve within the packet.
+[618.00s -> 622.00s]  So if I were just to go to offset twelve, that's the label that this
+[622.00s -> 625.00s]  refers to. So if I have something like Stanford,
+[625.00s -> 630.00s]  which is eight characters long, rather than repeat Stanford many times, it
+[630.00s -> 634.00s]  would actually be a ninth because it would need the length, right?
+[634.00s -> 638.00s]  It would be 0x08, then the bytes of Stanford.
+[638.00s -> 643.00s]  I can just say 0xC0, and then the offset of Stanford.
+[643.00s -> 648.00s]  It would be only two bytes long. So this is a little bit detailed, but
+[648.00s -> 651.00s]  it's important for when we, when I'm going to open up bar chart, I can show
+[651.00s -> 653.00s]  you what some DNS queries and responses look like.
+[653.00s -> 656.00s]  Otherwise, it can be really hard to figure out, wait, what are these
+[656.00s -> 659.00s]  resource records, and what are these weird values that aren't actually
+[659.00s -> 663.00s]  specifying names. So just to give you an idea, so what
+[663.00s -> 666.00s]  a DNSA, what a DNSA or address record looks like.
+[666.00s -> 670.00s]  So, this is say for market.scs.stanford.edu.
+[670.00s -> 675.00s]  So the first name region would say market.scs.stanford.edu.
+[675.00s -> 678.00s]  This might be compressed, so it might be much shorter.
+[678.00s -> 682.00s]  Then the next two bytes would say one, this is an address record.
+[682.00s -> 685.00s]  The next two bytes would say one, this is for the internet.
+[685.00s -> 693.00s]  The next four bytes say 3600, so the TTL of this record, the time to live,
+[693.00s -> 698.00s]  is an hour. Then the length of the R data, the
+[698.00s -> 702.00s]  length of the internet address is four bytes, and then here are the four
+[702.00s -> 705.00s]  bytes. And so if you were to see it printed out,
+[705.00s -> 709.00s]  say if you're using dig, you'd see this, but the overall record
+[709.00s -> 713.00s]  actually looks like this. And NS records say the name server
+[713.00s -> 717.00s]  record for scs.stanford.edu looks similar, where here we have
+[717.00s -> 719.00s]  scs.stanford.edu in the name section.
+[719.00s -> 724.00s]  Again, it might be compressed. Then we have two saying that this
+[724.00s -> 728.00s]  is an NS record. Again, it's the internet, time to
+[728.00s -> 731.00s]  live here. And then the length is, say, ten.
+[731.00s -> 736.00s]  Because it turns out that scs.stanford.edu is compressed because,
+[736.00s -> 742.00s]  well, it's been mentioned elsewhere. So we really have mission, one, two,
+[742.00s -> 748.00s]  three, four, five, six, seven, right? And then we have the one, the one,
+[748.00s -> 753.00s]  the length for mission, and then the two, which is the compressed
+[753.00s -> 757.00s]  indication of scs.stanford.edu. So the first two bytes in the R
+[757.00s -> 760.00s]  data are going to point to scs.stanford.edu.
+[760.00s -> 763.00s]  Then we have a byte saying the length of mission is seven,
+[763.00s -> 767.00s]  and the seven mission bytes for a total of ten bytes.
+[767.00s -> 771.00s]  So let's dig for market.scs.stanford.edu.
+[771.00s -> 773.00s]  So just use the tool, see what happens.
+[773.00s -> 777.00s]  So we're asking, what is the address of market.scs.stanford.edu?
+[777.00s -> 779.00s]  So we're asking for an address record.
+[779.00s -> 784.00s]  We get the answer. Its address is 17166.3.10.
+[784.00s -> 789.00s]  And here's the time to live of 2050. Authority section, here are the name
+[789.00s -> 792.00s]  servers that answered, that can answer this question.
+[792.00s -> 796.00s]  Here's a bunch of them, fs.m, mission.scs.stanford.edu.
+[796.00s -> 801.00s]  And here's some additional information, address records for these name
+[801.00s -> 804.00s]  servers. So that's what this looks like when
+[804.00s -> 809.00s]  you ask dig. We can also ask dig, what is the NS
+[809.00s -> 818.00s]  record for market for scs.stanford.edu? And so here's the querying for the NS
+[818.00s -> 823.00s]  record, scs.stanford.edu. You see there's a whole bunch of name
+[823.00s -> 828.00s]  servers that serve scs.stanford.edu. NS3, NS1, garage, market, mission.
+[828.00s -> 833.00s]  And then here's the additional section which is giving you their IP addresses.
+[833.00s -> 838.00s]  Some of them are just IPv4 addresses. Some of them are IPv4 and IPv6
+[838.00s -> 841.00s]  addresses. And so here we can see there's so many
+[841.00s -> 845.00s]  name servers and what that means is that if any one of these goes down, I can
+[845.00s -> 850.00s]  still, I can still go to another one. So even if say three of these name
+[850.00s -> 855.00s]  servers went down, let's say the NS3 garage and market, I could still contact
+[855.00s -> 860.00s]  NS1 or mission to ask questions about names and scs.stanford.edu.
+[860.00s -> 864.00s]  So now let's see what those queries look like in Wireshark.
+[864.00s -> 869.00s]  So here I've opened up Wireshark and I've set up a filter, UDP port 53 so that the
+[869.00s -> 875.00s]  DNS port and IP adder, my IP address. This is going to look at DNS requests
+[875.00s -> 881.00s]  and responses from for my machine. And so if we were to ask this question,
+[881.00s -> 888.00s]  dig market.scs.stanford.edu. We see we get a query and a response.
+[888.00s -> 893.00s]  And so here's a standard DNS query, right? Again, Internet protocol version
+[893.00s -> 903.00s]  four source, there's my DNS server. And so here's the query.
+[903.00s -> 910.00s]  There's a standard query, there's one question, no other records.
+[910.00s -> 916.00s]  And so the question is market.scs.stanford.edu. Type A, so I'm asking
+[917.00s -> 922.00s]  for an address record, class IN. Name market.scs.stanford.edu.
+[922.00s -> 927.00s]  Type A, host address, class Internet. And so here, in fact, we're looking
+[927.00s -> 931.00s]  inside the bytes of the packet. Here's all this information about the
+[931.00s -> 935.00s]  size, right? You can see here down in these bytes,
+[935.00s -> 941.00s]  zero, zero, zero, zero, zero. Here is, this is the header of the
+[941.00s -> 948.00s]  DNS transaction ID right there, 0x3eaa. Flags, questions, et cetera,
+[948.00s -> 951.00s]  zero, zero. Then here's the query itself.
+[951.00s -> 956.00s]  So this is the query section. This is market.scs.stanford.edu.
+[956.00s -> 960.00s]  If you look down at the bytes, this byte, this first byte for market is
+[960.00s -> 963.00s]  zero, six. That's because market is six characters
+[963.00s -> 968.00s]  long. So we have zero, six, then M-A-R-K-E-T.
+[968.00s -> 973.00s]  Then SCS, which is three, so three long, three, S-C-S.
+[973.00s -> 979.00s]  Then Stanford, which is eight long, so here's eight, S-T-A-N-F-O-R-D.
+[979.00s -> 985.00s]  Then three long, E-D-U. And then that's the and then type A,
+[985.00s -> 989.00s]  so zero, one, class IN zero, one. Great.
+[989.00s -> 993.00s]  Now if we look at the response, it's a lot more complicated.
+[993.00s -> 996.00s]  Because remember how many entries there are in a response.
+[996.00s -> 1000.00s]  So let's look inside this. So it's telling us it's for the
+[1000.00s -> 1004.00s]  transaction ID 03 E-A-A. Send a query response, no error.
+[1004.00s -> 1009.00s]  There was one question, one answer, five authorities, seven additional.
+[1009.00s -> 1012.00s]  So now let's look at the query section.
+[1012.00s -> 1018.00s]  So the query here, you can see again market.scs.stanford.edu.
+[1018.00s -> 1023.00s]  Type A, class IN. And so here's the answer.
+[1023.00s -> 1027.00s]  Market SCS.stanford.edu, blah, blah, blah. Here's the address.
+[1027.00s -> 1033.00s]  But now if you look at this, the name section of this resource record is only
+[1033.00s -> 1036.00s]  two bytes long. It's using name compression.
+[1036.00s -> 1040.00s]  So here's that C00C. What it's saying is that C, the
+[1040.00s -> 1044.00s]  first two bits are one. This is a compressed name.
+[1044.00s -> 1049.00s]  And the start of the name is at offset 0C or 12 within the packet.
+[1049.00s -> 1055.00s]  And if you were to count the bytes within the DNS packet, you'd see that market
+[1055.00s -> 1060.00s]  starts at byte 12. So it's saying this name is right
+[1060.00s -> 1064.00s]  there. And so then here's type A, IN, 30, et
+[1064.00s -> 1067.00s]  cetera, et cetera. So that, you can see, so we're
+[1067.00s -> 1071.00s]  gonna take market.scs.stanford.edu and compress the name entirely.
+[1071.00s -> 1075.00s]  But it turns out you can do some other types of compression.
+[1075.00s -> 1080.00s]  So here is the authoritative, here's an answer for scs.stanford.edu.
+[1080.00s -> 1085.00s]  And so we see again this name for scs.stanford.edu is compressed.
+[1085.00s -> 1090.00s]  So C0 is compressed, 13. So this is at address, the first, the
+[1090.00s -> 1095.00s]  one represents 16, so this is at address 19 within the packet, or offset
+[1095.00s -> 1097.00s]  19. So why 19?
+[1097.00s -> 1102.00s]  Well, if you think the original market.scs name, which is at offset 12,
+[1103.00s -> 1107.00s]  then there's the length byte from market, and then the six market bytes.
+[1107.00s -> 1111.00s]  So a total of seven bytes. And so, offset 19 within the packet is
+[1111.00s -> 1115.00s]  scs.stanford.edu. So you can address not only into
+[1115.00s -> 1119.00s]  the beginning of the series of labels, but any label within there.
+[1119.00s -> 1121.00s]  And so you'll see this happen many times.
+[1121.00s -> 1125.00s]  And so if you start doing some, digging some requests, and open up a
+[1125.00s -> 1128.00s]  bar shock, you'll see this kind of name compression.
+[1128.00s -> 1133.00s]  And what this means in practice, right, is that this packet which had all of this
+[1133.00s -> 1138.00s]  information in it, right, look at all this stuff that's in this packet.
+[1138.00s -> 1143.00s]  All of these different records, address records, name server records,
+[1143.00s -> 1146.00s]  quad address records, fits in 311 bytes.
+[1146.00s -> 1149.00s]  It's a 311 byte DNS response.

@@ -1,0 +1,174 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.00s]  So in this video on names and addresses, I'm going to talk about the Dynamic Host
+[4.00s -> 8.00s]  Configuration Protocol, or DHCP, something that you probably use every day when you
+[8.00s -> 12.00s]  access the Internet. So if you take a step back and think
+[12.00s -> 17.00s]  about what do we need to communicate with IP, with Internet protocol, there are
+[17.00s -> 20.00s]  basically three things that a host needs.
+[20.00s -> 24.00s]  It needs first an IP address. It needs an address which you can give
+[24.00s -> 28.00s]  to other nodes for, to send packets to, and which you can put in some packets
+[28.00s -> 32.00s]  that nodes know to send back to it. It needs a subnet mask.
+[32.00s -> 38.00s]  So it needs to know what nodes are on its own local subnet versus nodes it must
+[38.00s -> 44.00s]  contact through a local gateway. It also needs to know the gateway
+[44.00s -> 48.00s]  router, such that if a node is not on the local subnet, what's the IP address
+[48.00s -> 52.00s]  of the next hop, or the first hop, towards destinations outside the local
+[52.00s -> 55.00s]  subnet. So these are the three things that you
+[55.00s -> 59.00s]  need to have in order to communicate with IP on the Internet as a whole.
+[59.00s -> 63.00s]  In addition, often it's very useful to have this fourth thing, which is the IP
+[63.00s -> 67.00s]  address of a domain name service server, or domain name system server.
+[67.00s -> 75.00s]  This is basically where it allows you to translate names like www.cnn.com
+[75.00s -> 79.00s]  into an IP address. And so you don't need this per se to
+[79.00s -> 83.00s]  communicate with IP if you just know the IP address, but it's very, very
+[83.00s -> 87.00s]  useful for most applications and for people. So there's this basic problem.
+[87.00s -> 91.00s]  You take, you buy a new computer, and you plug it into a network.
+[91.00s -> 95.00s]  You need these three things, and hopefully this fourth one.
+[95.00s -> 99.00s]  How do you get them? How do you get these values?
+[99.00s -> 103.00s]  So in the old days, like actually when I, my first year in college, you'd get
+[103.00s -> 107.00s]  them from your system administrator. So you'd fill out a request for a
+[107.00s -> 111.00s]  network tap, and then a couple days later you'd get a slip of paper, which
+[111.00s -> 115.00s]  had your important values. It had your IP address.
+[115.00s -> 123.00s]  It had your subnet mask. It had your gateway address.
+[123.00s -> 131.00s]  And it had the DNS server address. And so you get a slip of paper with
+[131.00s -> 135.00s]  these four things on it, and a sheet of usually a photocopy saying okay, take
+[135.00s -> 139.00s]  these values and here's how you open up your control panel and type them in
+[139.00s -> 143.00s]  here. And that was basically how you configure your machine.
+[143.00s -> 147.00s]  So this is, I did it at Brown when I went there as an undergraduate in 1995.
+[147.00s -> 151.00s]  By the time I graduated though they had moved on.
+[151.00s -> 155.00s]  So if you imagine, on one hand this can work, but it has all kinds of
+[155.00s -> 159.00s]  problems. If your machine moves, like if I take my
+[159.00s -> 163.00s]  machine and move it to a friend's, friend's room.
+[163.00s -> 167.00s]  It no longer works because that particular machine was configured for
+[168.00s -> 171.00s]  that particular top in the network topology.
+[171.00s -> 173.00s]  Just a question as to how long this lasts.
+[173.00s -> 177.00s]  So back then when you filled out the slip of paper, it lasted a year.
+[177.00s -> 181.00s]  And in fact, if you didn't request it by a certain point in the year, you
+[181.00s -> 185.00s]  couldn't get one. So these addresses and configurations are
+[185.00s -> 190.00s]  given out on a yearly basis. One final question is, how do you
+[190.00s -> 195.00s]  collect unused entries? So if I only want a machine, you know,
+[195.00s -> 199.00s]  plug in my machine for three days, does this mean that I have to allocate an
+[199.00s -> 201.00s]  entry for an entire year? The answer is yes.
+[201.00s -> 204.00s]  And so, while this works, it's remarkably inefficient.
+[204.00s -> 208.00s]  So the approach that computers use today, and this is what was Brown
+[208.00s -> 212.00s]  started using by the time I graduated across the entire campus, is something
+[212.00s -> 216.00s]  called DHCP, the Dynamic Host Configuration Protocol, specified in RFC 2131.
+[216.00s -> 220.00s]  Basically the idea is that a machine, when it connects to a network, can
+[220.00s -> 223.00s]  request its configuration from a DHCP server.
+[223.00s -> 226.00s]  And if you can just request your configuration and say, what's my IP
+[226.00s -> 229.00s]  address, what's my subnet mask, what's my gateway, what's my DNS
+[229.00s -> 232.00s]  server? This turns out to solve the three
+[232.00s -> 235.00s]  major problems I outlined. If you move, well, you just do a
+[235.00s -> 237.00s]  re-request. You're in a different part of the
+[237.00s -> 239.00s]  network, you need a different configuration.
+[239.00s -> 243.00s]  For the duration, how long it lasts, well, when the DHCP server gives you
+[243.00s -> 246.00s]  a configuration, it's associated with a lease saying, the
+[246.00s -> 249.00s]  configuration is this good for this long.
+[249.00s -> 253.00s]  And then, if you're nearing the end of that lease, you can re-request the same
+[253.00s -> 256.00s]  configuration, and usually the server will give it to you, so there's a way
+[256.00s -> 259.00s]  to renew the lease. These leases then make garbage
+[259.00s -> 263.00s]  collection very easy, because if somebody doesn't re-request it, you can
+[263.00s -> 268.00s]  reclaim, say, that IP address. And so, the basic interaction, the
+[268.00s -> 273.00s]  basic packet exchange that you see in DHCP is there's a basic four-step
+[273.00s -> 276.00s]  exchange, and then there's this optional release.
+[277.00s -> 281.00s]  So, when a node first joins the network, and it knows nothing about what's going
+[281.00s -> 285.00s]  on, it sends out a discover message. I want to discover what DHCP servers
+[285.00s -> 288.00s]  are out there and what configurations they might give you.
+[288.00s -> 294.00s]  So, the client sends a discover. Then, the DNS, sorry, the DHCP servers
+[294.00s -> 298.00s]  that can hear that discover respond with an offer.
+[298.00s -> 301.00s]  So, here are the servers. And more than one server can be
+[301.00s -> 303.00s]  connected, and you might get more than one offer.
+[303.00s -> 306.00s]  And I'll say, here, I'm going to offer you this configuration.
+[306.00s -> 311.00s]  The client then selects one of the configurations and sends a request to
+[311.00s -> 315.00s]  the originating DHCP server saying, well, I'd like to request that
+[315.00s -> 319.00s]  configuration you offered me. And then the server sends an
+[319.00s -> 323.00s]  acknowledgement saying, I acknowledge you can have that configuration.
+[323.00s -> 327.00s]  This configuration is now valid for the duration of its lease.
+[327.00s -> 332.00s]  And a client can release it early if it wants to, or if the lease starts
+[332.00s -> 336.00s]  to reach the end, it does a re-request. So, the request mechanism is both in
+[336.00s -> 339.00s]  response and offer, but also a way to renew a lease.
+[341.00s -> 345.00s]  So, let's walk through an example with a client and two servers.
+[345.00s -> 351.00s]  First up, a client connects to the network, and it sends a DHCP discover
+[351.00s -> 359.00s]  message as a broadcast, as a broadcast. Server A and Server B both hear this
+[359.00s -> 364.00s]  message. There happen to be two DHCP servers that can hear the discover
+[364.00s -> 369.00s]  broadcast. And let's say both respond with offers for different
+[369.00s -> 373.00s]  configurations. Here's an offer, offer B, and offer A.
+[375.00s -> 379.00s]  The client, seeing these two offers, decides that it wants offer B.
+[379.00s -> 384.00s]  And so it then sends a request to B saying, I would like to request the
+[384.00s -> 388.00s]  configuration that you offered me. Server B can then acknowledge and say,
+[388.00s -> 391.00s]  okay, you have it. Server A doesn't hear a request for the
+[391.00s -> 394.00s]  offer, and so at some point then, that offer will time out.
+[394.00s -> 397.00s]  Now, client A is configured. It has an IP address.
+[397.00s -> 404.00s]  It has all it needs to communicate. If that, the lease on this offer gets
+[404.00s -> 412.00s]  close to an end, it can re-request. And, say, receive an acknowledgement.
+[412.00s -> 415.00s]  And it'll do this, you know, well before the lease expires.
+[415.00s -> 419.00s]  So now the lease has been extended. And then it can also optionally send what's
+[419.00s -> 422.00s]  called a release, and say, oh, actually I'm done with this.
+[422.00s -> 425.00s]  In practice, clients often don't do this, they just let the lease expire.
+[425.00s -> 428.00s]  But sometimes you see under a control panel, you can say release.
+[428.00s -> 430.00s]  And I'll show you this example on a Mac in a second.
+[430.00s -> 434.00s]  So here would be a basic DHCP sequence, or exchange of messages.
+[438.00s -> 441.00s]  So I've said you send these messages, what do these messages look like?
+[441.00s -> 445.00s]  The issue here is you're trying to bootstrap IP, you're trying to get the,
+[445.00s -> 450.00s]  the beginning IP configuration before you have any IP information.
+[450.00s -> 456.00s]  And so the way it works is a client sends UDP packets to port 67, that's the
+[456.00s -> 462.00s]  DHCP port, from port 68. And it sends these packets, it doesn't
+[462.00s -> 466.00s]  know the IP address of DHCP server, so it sends them to the broadcast IP
+[466.00s -> 470.00s]  address, and also makes them come from the broadcast IP address, since it
+[470.00s -> 474.00s]  doesn't have an IP address. In cases where the DHCP server is not
+[474.00s -> 478.00s]  on the exact same link, you can have relays that will forward it
+[478.00s -> 481.00s]  across links. And most switches, etc., will actually
+[481.00s -> 486.00s]  just forward broadcast packets across all of their, all of their ports.
+[486.00s -> 490.00s]  And so the way you bootstrap this is to use the special IP address,
+[490.00s -> 494.00s]  communicate using UDP packets, then once a node has received its
+[494.00s -> 498.00s]  configuration, it now can bootstrap with its own IP address.
+[500.00s -> 504.00s]  And so this is then the message exchange that we see.
+[504.00s -> 508.00s]  So you start with my iMac issuing a DHCP discover.
+[508.00s -> 514.00s]  And it sends this, so here's my source Ethernet address, 0454531078E4.
+[514.00s -> 518.00s]  And it sends it to the Ethernet broadcast address, so all ones.
+[518.00s -> 522.00s]  The source address is 0.0.0, source IP address.
+[522.00s -> 526.00s]  The destination IP address is 255.255.255.255.
+[526.00s -> 531.00s]  And you can see it's sending it from source port UDP port 68 to the
+[531.00s -> 535.00s]  destination port 67. And if you look inside this
+[535.00s -> 540.00s]  message, right, this basically just a, the basic DHCP discover message.
+[540.00s -> 544.00s]  It sends it once, doesn't hear anything, so it retries after a second.
+[544.00s -> 547.00s]  Doesn't hear anything, so retries after another two and a half seconds.
+[547.00s -> 552.00s]  Then it hears two offers. Which perhaps might be a response to
+[552.00s -> 554.00s]  these two different discovers. Who knows?
+[554.00s -> 560.00s]  It's the same transaction ID. So this first offer is sent from
+[560.00s -> 570.00s]  1033.0.2 to IP address 1033.1.94. The second one is 1033.3.188.
+[570.00s -> 574.00s]  But if you look inside the Ethernet frame, these are being sent from, you
+[574.00s -> 578.00s]  know, some device, and they're being sent to my Ethernet address.
+[578.00s -> 583.00s]  So these are offers that are sent in response to my discovery.
+[583.00s -> 587.00s]  You can also tell by the transaction ID. And so this is destined to this IP
+[587.00s -> 591.00s]  address because my node knows that it doesn't even have an IP address, this
+[591.00s -> 594.00s]  turns out to be part of, in fact, the information.
+[594.00s -> 597.00s]  And so here, here's the reply, the offer, and there's all this
+[597.00s -> 601.00s]  configuration information. It's basically saying here, I'm offering
+[601.00s -> 607.00s]  you an IP address of 1033.1.94, which maps up here at 10.33.1.94.
+[607.00s -> 612.00s]  And the same in the second one, you'd see that it was offering for 10.33.
+[612.00s -> 616.00s]  3.188. So you've got two different IP addresses in that one.
+[616.00s -> 620.00s]  In terms of all kinds of options in this message, it's also going to tell
+[620.00s -> 625.00s]  me the subnet mask, 255.255.48.0. It's also going to tell me the
+[625.00s -> 629.00s]  router, 10.33.0.1. And it's also going to tell me the
+[629.00s -> 633.00s]  domain name server. It's going to tell me that my domain
+[633.00s -> 638.00s]  server is here at three servers that I can use, 171, 64, 755, 121, and 99.
+[638.00s -> 642.00s]  It's also going to tell me the domain name. Oh, you're in stanford.edu.
+[642.00s -> 646.00s]  And so that's what these offers contain, all this information which I can use to
+[646.00s -> 651.00s]  configure my host when it starts up. Then, in response to one of these
+[651.00s -> 655.00s]  offers, I send a, my device sends a DHCP request.
+[655.00s -> 660.00s]  And so now it's sending, again, here's from my address, sending as a broadcast,
+[660.00s -> 665.00s]  it broadcasts its request. And if we look, which IP address did it
+[665.00s -> 668.00s]  choose? Alright, so here's all this information,
+[668.00s -> 672.00s]  all these flags, options. So, parameter request list.
+[672.00s -> 677.00s]  So I'm requesting a certain subnet mask, router, a certain subnet mask, a certain
+[677.00s -> 680.00s]  router, domain name server, et cetera, et cetera.
+[680.00s -> 686.00s]  And so you can see here that my node ended up requesting the first offer.
+[687.00s -> 692.00s]  And it also ended up requesting a host name, Phillips.
+[692.00s -> 697.00s]  So it's saying, hey, I would like to respond to the request.
+[697.00s -> 702.00s]  I would like to request the off, the offer that you made for 10.33.1.94.
+[702.00s -> 707.00s]  Then the DHCP server acknowledges that and all is well.
+[707.00s -> 713.00s]  And so now if we open up my network control panel, we look, we look at what
+[714.00s -> 718.00s]  my configuration is. That's in fact what we see.
+[718.00s -> 724.00s]  So my IP address is 10.33.1.94. My subnet mask is 255.255.248.0.
+[724.00s -> 729.00s]  My router is 10.33.01. And if we were to check, my host
+[729.00s -> 733.00s]  name would be phillipsimac.stanford.edu.
+[743.00s -> 745.00s]  Thank you.

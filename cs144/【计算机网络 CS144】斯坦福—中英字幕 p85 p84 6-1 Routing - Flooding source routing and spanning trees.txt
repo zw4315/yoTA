@@ -1,0 +1,290 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 3.54s]  In the next few videos, we're going to look at a number of different ways that packets
+[3.54s -> 5.14s]  can be routed across a network.
+[5.14s -> 8.38s]  In this video, I'm going to start with some of the basic concepts and principles
+[8.38s -> 13.92s]  of routing, regardless of whether we're routing packets based on their Layer 3 or IP addresses,
+[13.92s -> 18.84s]  or if we're using the Ethernet address and Ethernet switches.
+[18.84s -> 23.46s]  The basic problem that we're trying to solve when routing packets is, how should packets
+[23.46s -> 26.78s]  be routed from A to B?
+[26.78s -> 33.10s]  Should the path be picked by the end host A over here?
+[33.10s -> 36.50s]  By the network in the middle?
+[36.50s -> 37.90s]  Or by some other entity?
+[37.90s -> 41.60s]  So what path should they pick, and what are the most important metrics for them
+[41.60s -> 42.60s]  to consider?
+[42.60s -> 47.74s]  Should they take the shortest path, the least congested path, a randomly picked path,
+[47.74s -> 49.62s]  the safest and most reliable path?
+[49.62s -> 51.22s]  Does it matter?
+[51.22s -> 55.54s]  So in the next few minutes, we're going to look through at some different techniques
+[55.54s -> 59.14s]  and some different metrics for solving this basic problem.
+[59.14s -> 61.42s]  So I'm going to look at a number of different approaches.
+[61.42s -> 65.06s]  Flooding, source routing, forwarding table, and spanning tree.
+[65.06s -> 68.60s]  We'll look at some metrics, and then I'll describe what a shortest path spanning
+[68.60s -> 77.08s]  tree is, and then describe some other types of routing, multipath and multicast.
+[77.08s -> 80.50s]  Flooding is perhaps the simplest way to make sure at least one copy of a packet
+[80.50s -> 84.80s]  is delivered to every destination in the network, and therefore to the destination
+[84.80s -> 87.00s]  that it's wanting to go to.
+[87.00s -> 91.20s]  With flooding, each router is going to forward the packet to every interface.
+[91.20s -> 95.16s]  So if A is sending a packet, and let's say that it's sending it to B,
+[95.16s -> 98.36s]  so it has B's address in it.
+[98.36s -> 102.08s]  When it reaches the first router, it's going to send it out of every interface,
+[102.08s -> 104.44s]  except the one through which it arrived.
+[104.44s -> 108.48s]  That's going to happen at the next router as well, so it'll send it out of these
+[108.48s -> 109.72s]  interfaces.
+[109.72s -> 113.64s]  It will come down to this one here, which will send it out here and here.
+[113.64s -> 118.78s]  Then it'll go out from here, and then it'll go from this one out of here.
+[118.78s -> 122.72s]  But it'll also go in this direction, and it'll come back around here, and come
+[122.72s -> 125.92s]  back around here, and you can see very quickly that there's a loop that's going
+[125.92s -> 129.44s]  to form in the middle, with the packet going round and round forever.
+[129.44s -> 135.24s]  But we can be sure in this case, because every packet will be delivered at least once
+[135.24s -> 138.80s]  to every leaf, it will therefore reach every destination.
+[138.80s -> 143.60s]  And if it contains B's address, which it does, then we can be sure that B can find
+[143.60s -> 148.16s]  the packet, or receive the packet, by simply filtering on packets matching its address.
+[148.16s -> 151.08s]  These are clearly very inefficient.
+[151.08s -> 155.80s]  All packets are going to cross every link, potentially multiple times.
+[155.80s -> 157.88s]  And packets can loop forever.
+[157.88s -> 162.64s]  Therefore it's common to use a hop count or a time-to-live field like we do in IP
+[162.64s -> 165.44s]  to stop packets looping forever.
+[165.44s -> 169.08s]  But at least we can be sure that packets are going to reach their eventual destination.
+[169.08s -> 171.26s]  We can be absolutely sure of that.
+[171.26s -> 172.88s]  So flooding is nice and simple.
+[172.88s -> 181.08s]  It requires no state in the routers, doesn't require any understanding by A of the topology
+[181.08s -> 182.96s]  of the network.
+[182.96s -> 184.92s]  So it's very, very simple.
+[184.92s -> 189.24s]  But because it's so inefficient, it's really only used at times, at instances when we
+[189.24s -> 194.16s]  know nothing about the topology, or we can't trust our knowledge of it, and we
+[194.16s -> 195.64s]  need to be able to reach every node.
+[195.64s -> 198.92s]  So we'll see a couple of examples of this later, particularly at times of transition
+[198.92s -> 201.62s]  when we're not quite sure what's going on.
+[201.62s -> 205.22s]  So in summary, it's inefficient in link usage.
+[205.22s -> 206.54s]  Packets can loop forever.
+[206.54s -> 210.86s]  And it's used when we don't know or can't trust the topology.
+[210.86s -> 213.36s]  Now let's look at another method called source routing.
+[213.36s -> 217.88s]  Source routing is when the source populates the packet with a sequence of hops that it
+[217.88s -> 219.66s]  will visit along its path.
+[219.66s -> 230.50s]  So if we give names to these routers, let's call them R1, R2, R3, R4, R5, and R6.
+[230.50s -> 235.34s]  And so if A is sending to B with source routing, it might, for example, put in the header
+[235.34s -> 244.50s]  R1, R3, R6 to indicate that it wants the packet to go through that sequence before it gets
+[244.50s -> 250.18s]  to B. So that would just say go to R1 first, go to R3, R6, and then to B. I just
+[250.18s -> 254.30s]  happen to draw them in the order in which they'll be visited.
+[254.30s -> 256.70s]  That's going to depend on the way in which we use source routing.
+[256.70s -> 257.78s]  We'll see that a little bit later.
+[257.78s -> 259.36s]  But it hits specifically here.
+[259.36s -> 261.38s]  A knows the topology.
+[261.38s -> 265.26s]  It knows the order in which it wants the routers to be visited.
+[265.26s -> 269.62s]  And it's giving the final destination to make sure that it works and reaches B.
+[269.62s -> 277.38s]  Likewise, with flooding, the routers need no forwarding tables to be populated in advance.
+[277.38s -> 279.38s]  All the decision making is made by the end host.
+[279.38s -> 283.90s]  This is actually a pretty good example of the end-to-end principle in action.
+[283.90s -> 285.82s]  The function is implemented at the end host.
+[285.82s -> 292.22s]  A is the one that knew the route, and so it picked the path that would be taken.
+[292.22s -> 294.94s]  This way we can make sure it's done correctly.
+[294.94s -> 297.18s]  But it's a lot of work for the end host.
+[297.18s -> 301.84s]  Packets are of variable length and might carry a lot of addresses.
+[301.84s -> 303.90s]  On the face of it, it's kind of a good scheme.
+[303.90s -> 308.90s]  But clearly we would like to do something that was a little less heavyweight on the
+[308.90s -> 309.90s]  end host.
+[309.90s -> 311.66s]  It's an end-to-end solution.
+[311.66s -> 313.54s]  No support needed from the network.
+[313.54s -> 316.42s]  Packet care is a variable and maybe long list of addresses.
+[316.42s -> 319.98s]  End hosts must know the topology and choose the route.
+[319.98s -> 325.18s]  And this is used when the end host wants to control the route.
+[325.18s -> 329.58s]  So now let's look at the method that we already know is used by the internet.
+[329.58s -> 336.62s]  And this is when we actually have a forwarding table that's used throughout the network
+[336.62s -> 338.90s]  to route the packets hop by hop.
+[338.90s -> 342.52s]  And as you know already, I'll go through this fairly quickly, if we're sending a packet
+[342.52s -> 348.56s]  from A to B along this particular path, S1, S2, S4, and then to B.
+[348.56s -> 353.48s]  With a forwarding table case, we use a forwarding table at each hop in order to decide where
+[353.48s -> 354.48s]  the packet will go next.
+[354.48s -> 357.00s]  And we've seen this example before.
+[357.00s -> 360.40s]  You can really think of this as an optimization.
+[360.40s -> 366.20s]  It's an optimization in the sense that although we could correctly have the behavior work
+[366.20s -> 372.08s]  by populating the packets with the route, using source routing.
+[372.08s -> 376.20s]  We've decided to have the network take on this function to optimize it, because it's
+[376.20s -> 380.94s]  such a common function, common to everybody that's using the network.
+[380.94s -> 384.80s]  So it's an optimization in the sense that the network is going to handle the
+[384.80s -> 388.08s]  hop by hop routing on behalf of everybody.
+[388.08s -> 392.68s]  It does require a population of the forwarding tables, so we need a way to populate these
+[392.68s -> 393.68s]  forwarding tables.
+[393.68s -> 399.40s]  And we're going to see in the next few videos various ways in which we can populate
+[399.40s -> 400.40s]  this table.
+[400.40s -> 404.04s]  So from here on, we're going to be making the assumption that we're using forwarding
+[404.04s -> 410.20s]  tables, and that we need some method in order to populate this table in order to
+[410.20s -> 414.18s]  decide how the routing will take place.
+[414.18s -> 420.36s]  We have per destination state in the network, because for each of the destinations, we're
+[420.36s -> 424.64s]  going to have to have a next hop address populated in the table, although we don't
+[424.64s -> 426.84s]  necessarily have to have per flow state.
+[426.84s -> 430.64s]  Any flows in the network that are heading towards the same destination can all use the
+[430.64s -> 433.20s]  same entries.
+[433.20s -> 439.36s]  When I'm populating the forwarding tables with entries, it's often the goal to create
+[439.36s -> 443.62s]  what we call a spanning tree, and we're going to see many examples of this.
+[443.62s -> 449.14s]  Spanning tree is spanning in the sense that it reaches all leaves, and it's a tree
+[449.14s -> 451.68s]  in the sense that it has no loops.
+[451.68s -> 456.96s]  So we want to make sure that we can reach every destination, or every source can reach
+[456.96s -> 460.56s]  a particular destination, and we want to make sure that there are no loops.
+[460.56s -> 463.36s]  Let me give you an example of this.
+[463.36s -> 468.04s]  Imagine that we want to create the spanning tree that A, B, C and D, the hosts at the
+[468.04s -> 473.38s]  top, will use in order to send packets to X, the destination at the bottom.
+[473.38s -> 476.96s]  So A, its packets could follow this path.
+[476.96s -> 479.28s]  B's might follow this path.
+[479.28s -> 481.24s]  C's might follow this path.
+[481.24s -> 483.34s]  And D's might follow that path.
+[483.34s -> 489.36s]  So you can see I've created a tree with the root at X, and it's spanning all of the
+[489.36s -> 491.20s]  sources that might send to it.
+[491.20s -> 495.34s]  It's a tree in the sense that it has no loops.
+[495.34s -> 502.68s]  This would be implemented by populating the forwarding table at R1 with the entry, if
+[502.68s -> 508.80s]  I want to go to X, then I go to R3 as my next hop.
+[508.80s -> 510.84s]  That's telling it what to do here.
+[510.84s -> 518.36s]  Likewise, at R3 we would have an entry that said if I want to go to X, then I will go
+[518.36s -> 519.36s]  directly to X.
+[519.36s -> 527.56s]  Similarly, over here in R4, I will say if I'm going to go to X, then I'll go
+[527.56s -> 531.08s]  there via R7.
+[531.08s -> 535.92s]  So the spanning tree is used in order to create the routing entries so that we can
+[535.92s -> 543.36s]  populate the forwarding tables and therefore route paths along that spanning tree.
+[543.36s -> 546.92s]  When calculating the spanning tree, we need to know what our objective is, or what our
+[546.92s -> 549.20s]  metrics of success are.
+[549.20s -> 553.00s]  How will we know amongst all of the possible spanning trees which one we're going to
+[553.00s -> 555.40s]  pick?
+[555.40s -> 558.86s]  So this is going to depend on what our metric is, so let's look at some choices
+[558.86s -> 560.12s]  that we might have.
+[560.12s -> 564.22s]  We might choose to pick the spanning tree that minimizes the distance.
+[564.22s -> 568.70s]  This could be the geographic distance or they minimize the length of the links between
+[568.70s -> 570.30s]  the source and the destination.
+[570.30s -> 579.22s]  So for example, noticing that this link along here is long, we might decide that
+[579.22s -> 583.66s]  this path is actually geographically shorter than this one down here, and therefore prefer
+[583.66s -> 586.50s]  it.
+[586.50s -> 588.94s]  We might also choose the one with the minimum hop count.
+[588.94s -> 593.34s]  So the example I showed you before was generally following the shortest hop count.
+[593.34s -> 598.74s]  So for example, D would take this path here, because it's the shortest number of hops.
+[598.74s -> 602.54s]  It could also be the one that minimizes delay.
+[602.54s -> 606.34s]  I've got no way of telling directly from the graph what will minimize the delay, but
+[606.34s -> 608.24s]  that might be something that I can measure.
+[608.24s -> 612.86s]  In recent past, what have been the links that have experienced the minimum delay, and
+[612.86s -> 615.06s]  therefore give preference to those.
+[615.06s -> 617.58s]  I might use the ones that maximize the throughput.
+[617.58s -> 619.18s]  They may be the least congested.
+[619.18s -> 621.54s]  Or the path that is least loaded.
+[621.54s -> 625.74s]  Or it may be the most reliable path, the one that in the recent past has failed least
+[625.74s -> 626.74s]  often.
+[626.74s -> 627.74s]  That may be my metric.
+[627.74s -> 629.42s]  It could also be the lowest cost path.
+[629.42s -> 633.78s]  I may have a price or a cost associated with using any one link, and I want to minimize
+[633.78s -> 634.78s]  it.
+[634.78s -> 639.86s]  Or it could be the most secure path, the one that most recently has had the fewest
+[639.86s -> 641.78s]  security attacks.
+[641.78s -> 645.18s]  Or it might be one over which I have a virtual private network running.
+[645.18s -> 646.18s]  And so on.
+[646.18s -> 647.86s]  There are many, many metrics that I could use.
+[647.86s -> 652.06s]  Or in fact I could actually use a combination of any of those.
+[652.06s -> 657.46s]  So typically how we do this is we start by creating an annotated graph with whatever
+[657.46s -> 660.60s]  cost metric we've chosen, and I could have picked any of those ones.
+[660.60s -> 664.16s]  So we can represent our metric as a cost for using a link.
+[664.16s -> 668.20s]  So this is a set of costs that I made up, just as an example.
+[668.20s -> 673.06s]  In general the cost might be different in each direction, just because of the congestion
+[673.06s -> 676.52s]  may be more in one direction, or the throughput may be different.
+[676.52s -> 681.38s]  But for ease of drawing, I'm going to show one number per link here.
+[681.38s -> 686.20s]  So one natural choice is to try to find the spanning tree from every host to x.
+[686.20s -> 690.04s]  And I might try to find the one that is minimizing the cost.
+[690.04s -> 694.02s]  In which case I'm going to call it the minimum cost spanning tree.
+[694.02s -> 697.48s]  In this example, the solution is fairly obvious.
+[697.48s -> 700.32s]  Let's have a look at what that would be.
+[700.32s -> 707.76s]  So coming to x, if I'm coming from B, then the minimum cost is going to be to take that
+[707.76s -> 712.22s]  path here, because that has a cost of 4.
+[712.22s -> 718.40s]  When I'm going from C, the minimum cost is going to be this one here, which has
+[718.40s -> 721.14s]  a cost of 5, 3 plus 2.
+[721.14s -> 724.12s]  Coming from D it's pretty easy, it's going to be down here.
+[724.12s -> 728.48s]  A is a little bit more subtle, it's not the one down here, the lowest cost one is the
+[728.48s -> 732.04s]  one that goes this way, which has a cost of 5.
+[732.04s -> 734.92s]  So there's my minimum cost spanning tree.
+[734.92s -> 737.12s]  And here's an example of that drawn out.
+[737.12s -> 740.52s]  So in this case it's very simple to calculate it.
+[740.52s -> 744.04s]  What we need is a method that will work in much more complicated networks, for example
+[744.04s -> 745.04s]  this one.
+[745.04s -> 748.10s]  This is clearly way beyond something a human could do in their head.
+[748.10s -> 752.92s]  This is a picture of the topology map for the backbone of the internet.
+[752.92s -> 755.12s]  Well I couldn't do this in my head, maybe you can.
+[755.12s -> 758.70s]  So we need automated algorithms to calculate the route and put the necessary forwarding
+[758.70s -> 761.36s]  entries into the forwarding tables in the routers.
+[761.36s -> 764.28s]  So to calculate the routes, the routers are going to exchange information with each
+[764.28s -> 767.32s]  other about the current topology as they know it.
+[767.32s -> 772.30s]  This is the job of what we call the routing algorithm or the routing protocol.
+[772.30s -> 776.00s]  In some cases the algorithm to calculate the route is wrapped in with the exchange
+[776.00s -> 777.00s]  of the state itself.
+[777.00s -> 778.00s]  In other cases they're separate.
+[778.00s -> 780.84s]  We're going to look at examples of both.
+[780.84s -> 785.64s]  Going back to our outline, we've got down to the shortest path spanning tree.
+[785.64s -> 789.20s]  We're going to be looking at several examples of this over the next few videos.
+[789.20s -> 794.12s]  I just want to finish up by telling you about two other types of routing that are
+[794.12s -> 797.08s]  commonly used.
+[797.08s -> 798.92s]  The first one is multipath.
+[798.92s -> 802.80s]  So far we've assumed that all the packets to a given destination are going to follow
+[802.80s -> 806.82s]  the same path, in particular the shortest path spanning tree.
+[806.82s -> 812.74s]  The downside of the shortest path spanning tree is that some links can become very popular.
+[812.74s -> 816.98s]  We saw that we had a path that went down here before and a path that went down here.
+[816.98s -> 819.94s]  You can see that this whole area here is going to become quite popular and could
+[819.94s -> 822.58s]  become congested.
+[822.58s -> 825.46s]  So it means we might need to keep adapting the algorithm.
+[825.46s -> 829.14s]  An alternative would be instead of adapting the algorithm is to, from the beginning, spread
+[829.14s -> 831.30s]  all of the traffic over all of the links.
+[831.30s -> 835.18s]  So this is quite different from the shortest path spanning tree.
+[835.18s -> 840.86s]  This might be a case where we send some of the packets from A to X this way, and we
+[840.86s -> 843.90s]  might choose to send some of them this way, and we might choose to send some of
+[843.90s -> 846.94s]  them this way, and we might choose to send some of them this way.
+[846.94s -> 851.62s]  This is called multipath, where we're spreading the packets to a destination over multiple
+[851.62s -> 852.62s]  paths.
+[852.62s -> 856.66s]  Essentially, we're load-balancing traffic over some or possibly all of the paths.
+[856.66s -> 860.34s]  We're going to see the details later, but for now it's enough to know that it might
+[860.34s -> 863.98s]  look something like what I just drew.
+[863.98s -> 870.34s]  So in principle, it's OK for packets to take different length paths and to get misordered.
+[870.34s -> 875.46s]  So it might be that, in the example I had here, that a packet taking this path here
+[875.46s -> 879.78s]  might get there much sooner than one taking this path here, and therefore get misquenced
+[879.78s -> 881.38s]  relative to it.
+[881.38s -> 885.46s]  Now the Internet makes no promise of in-sequence delivery.
+[885.46s -> 887.78s]  That's the job of TCP, to put them back in the right order.
+[887.78s -> 892.06s]  But we're going to see later that in practice, it's common to make sure that packets
+[892.06s -> 895.62s]  within a given application flow don't get mis-sequenced, just to make life a bit easier
+[895.62s -> 896.62s]  for TCP.
+[896.62s -> 900.00s]  But this is just really an optimization in the network.
+[900.00s -> 904.78s]  So multipath is when we spread the packets over multiple links in order to spread the
+[904.78s -> 909.58s]  load as evenly as we can across the network.
+[909.58s -> 914.18s]  Another type of routing, another method, is called multicast.
+[914.18s -> 918.54s]  So far, we've assumed that all packets are going to a single destination, something
+[918.54s -> 920.30s]  we call unicast.
+[920.30s -> 925.46s]  For example, the packets in the last few examples have shown them going from A to X as a single
+[925.46s -> 926.84s]  packet.
+[926.84s -> 932.74s]  In some applications, an end host might want to send packets to a set of hosts.
+[932.74s -> 938.72s]  For example, A might want to send packets to a single packet that gets delivered to
+[938.72s -> 946.90s]  B, C, and X maybe, but not D.
+[946.90s -> 950.54s]  Applications that might want to do this could be like a broadcast TV or radio station where
+[950.54s -> 955.42s]  currently B, C, and X are listening to a TV station being broadcast from A.
+[955.42s -> 960.50s]  It could be automatic updates to a large number of hosts, for example, a car company
+[960.50s -> 963.94s]  updating its inventory every night to all of its dealerships.
+[963.94s -> 967.22s]  Or it could be stock prices being updated in a trading room where you want everybody
+[967.22s -> 971.46s]  to receive the update at the same time.
+[971.46s -> 975.98s]  So while we can obviously send each packet one at a time to its destination, that
+[976.06s -> 977.06s]  would be fine.
+[977.06s -> 980.38s]  A could send individual packets to B, C, and X.
+[980.38s -> 985.62s]  It's natural to ask if the network can help, whether it can and whether it should do the
+[985.62s -> 987.22s]  replication for us.
+[987.22s -> 992.10s]  So for example, A could send a single packet.
+[992.10s -> 996.78s]  It could come down until it reaches B, and then it could be replicated one packet going
+[996.78s -> 1002.86s]  this way, and one packet going this way, and another packet going on to C, and so on at every
+[1002.86s -> 1005.06s]  branching point within the network.
+[1005.06s -> 1009.02s]  So now we send one packet, and it's delivered to everybody, and we're using the graph
+[1009.02s -> 1014.34s]  structure of the network to do the replication for us.
+[1014.34s -> 1019.78s]  So notice that in order to send for A to B, C, and X, I've essentially drawn a spanning
+[1019.78s -> 1020.78s]  tree.
+[1020.78s -> 1023.02s]  And this is actually going to prove to be quite interesting later.
+[1023.02s -> 1025.94s]  I've got a spanning tree across the set of destinations.
+[1025.94s -> 1029.90s]  And we're going to see some examples of how this works later.
+[1029.90s -> 1036.94s]  It's enough for us to know right now that this is just a one-way of routing packets.
+[1036.94s -> 1041.90s]  And we'll see later how this is done specifically in the Internet.
+[1041.90s -> 1045.82s]  So in summary, there are several ways to route packets across a network, starting with the
+[1045.82s -> 1048.74s]  simplest method, flooding.
+[1048.74s -> 1054.02s]  In practice, we use routing algorithms, or also known as routing protocols, to calculate
+[1054.02s -> 1057.02s]  the routes and populate the forwarding tables.
+[1057.02s -> 1061.70s]  In addition, the algorithms calculate the minimum-cost spanning tree to the destination,
+[1061.70s -> 1065.58s]  and we're going to see lots of examples of that soon.
+[1065.58s -> 1070.62s]  Other types of routing include multipath to spread traffic over links, and multicast to
+[1070.62s -> 1073.94s]  deliver to multiple end hosts.
+[1073.94s -> 1074.78s]  That's the end of this video.

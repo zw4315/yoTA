@@ -1,0 +1,28 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 13.00s]  The answer to case 1 is 95 ms. The setup is 20 ms, the act request is 25 ms, and the response is 30 ms, so 95 ms total.
+[13.00s -> 25.00s]  The answer to case 2 is 380 ms. It takes 95 ms to load the initial page. It then takes 95 ms to load image 1.
+[25.00s -> 33.00s]  When image 1 finishes, image 3 starts. Meanwhile, image 2 is already in flight, so that's 95 ms.
+[33.00s -> 40.00s]  When image 3 completes, that's another 95 ms, since image 2 has already completed. Image 4 is in flight.
+[40.00s -> 47.00s]  It takes a final 95 ms for image 5, for a total of 380 ms.
+[47.00s -> 51.00s]  Let's look at this pictorially to see what's happening.
+[51.00s -> 59.00s]  This picture starts after the first initial page request. It's showing what happens as the client requests images.
+[59.00s -> 67.00s]  So we start at 95 ms. There's a pair of synacs as the two connections start their 3-way handshake.
+[67.00s -> 78.00s]  So 40 ms later, at 135 ms, the client sends request 1 at 135 ms, and then request 2 at 140 ms.
+[78.00s -> 86.00s]  Request 1 arrives at the server at 165 ms, 20 ms of latency, and 5 ms of packetization delay.
+[86.00s -> 95.00s]  The server starts sending the response. It sent one segment of the response, 1A, when the second request arrives.
+[95.00s -> 101.00s]  The response segments for the second request are enqueued and sent after response 1B.
+[102.00s -> 113.00s]  Response 1B arrives at the client at 190 ms. At this point, the client opens a new connection through a 3-way handshake.
+[113.00s -> 124.00s]  But note how long this took. The client is requesting the third image at 190 ms, 95 ms after the first request started.
+[124.00s -> 132.00s]  Because the second request is going in parallel, the client doesn't have to wait for it to complete before starting the third request.
+[132.00s -> 138.00s]  It will start the fifth request immediately after the third one completes.
+[138.00s -> 149.00s]  So these three rounds take on 95 ms each. If we'd requested six images, then the final round would take 105 ms.
+[149.00s -> 153.00s]  Look at this figure carefully until you understand what's going on.
+[153.00s -> 160.00s]  As requests are delayed going out from queuing, they delay the responses.
+[160.00s -> 165.00s]  As responses are delayed from going out due to queuing, they delay further requests.
+[165.00s -> 172.00s]  Over time, this causes the requests and responses to naturally space themselves out, reducing queuing delay.
+[172.00s -> 178.00s]  And because we have multiple operations in parallel, they can mask each other's latencies.
+[178.00s -> 187.00s]  If you look at these numbers and think about them a bit, you should see that requesting multiple resources in parallel doesn't take much longer than requesting a single resource.
+[187.00s -> 193.00s]  There's additional packetization delay, but in most networks today, packetization delay is a tiny fraction of the overall time.
+[193.00s -> 198.00s]  A single request can't fold the network capacity, but many requests might be able to.
+[198.00s -> 202.00s]  HTTP only allows a single request per connection, though.

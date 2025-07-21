@@ -1,0 +1,229 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.00s]  This is the first of three videos about the domain name system, or DNS.
+[6.00s -> 11.00s]  So let's look at a URL for a second. If we look at a basic URL like you would
+[11.00s -> 15.00s]  put into your web browser, it has three basic parts.
+[15.00s -> 19.00s]  It has first, at the front, the application protocol import.
+[19.00s -> 24.00s]  So this is saying that we're going to be requesting a file over HTTP.
+[24.00s -> 28.00s]  And by default, that means port 80, TCP port 80.
+[28.00s -> 32.00s]  You could also tell this URL after the host to be some other thing, say port
+[32.00s -> 35.00s]  1001 or something. But by default, this means port 80.
+[35.00s -> 39.00s]  The middle part of the name is specifying a host.
+[39.00s -> 44.00s]  So in this case, cs144.scs.stanford.ed is a human readable name, delimited by
+[44.00s -> 48.00s]  periods into four parts. And it's specifying the actual node
+[48.00s -> 51.00s]  that we want to contact. The last is then the file.
+[51.00s -> 56.00s]  So this is the application level for HTTP. The application level specification
+[56.00s -> 60.00s]  of what file we want to request. HTTP.
+[60.00s -> 65.00s]  And so the question is, so far we've been talking about the internet in terms
+[65.00s -> 70.00s]  of IP addresses, usually IPv4 addresses. When we type a URL, we have this human
+[70.00s -> 75.00s]  readable name describing the computer or the host that we want to contact.
+[75.00s -> 80.00s]  The question is, how do we translate this human readable name to an IP address?
+[80.00s -> 85.00s]  Well, it turns out you can, of course, enter a URL without using a host
+[85.00s -> 88.00s]  name instead of just by entering the IP address.
+[88.00s -> 93.00s]  You could, rather than typing cs144.scs.stanford.ed, you could actually write
+[93.00s -> 97.00s]  the IP address that's associated with that name if you'd like.
+[97.00s -> 100.00s]  But these human readable names are very, very useful.
+[100.00s -> 105.00s]  People realize that human readable names are useful just from the beginnings of
+[105.00s -> 108.00s]  the internet. And so way back when, when the
+[108.00s -> 112.00s]  internet was tiny, there was this file called host.txt.
+[112.00s -> 117.00s]  And it turns out that every single host on the internet was in this file, host.txt.
+[117.00s -> 121.00s]  And it was maintained by the Network Information Center.
+[121.00s -> 126.00s]  So it was maintained at SRI, so the srinic.arpa, at this particular IP
+[126.00s -> 129.00s]  address. If you go and read RSC952, it talks a
+[129.00s -> 132.00s]  bit about this. And essentially, if you are a node on
+[132.00s -> 136.00s]  the internet, what you would do is periodically contact this node at SRI
+[136.00s -> 140.00s]  and use a file transfer protocol to download a new version of it.
+[140.00s -> 144.00s]  And this new version would have all the new hosts, and then you'd be able to map
+[144.00s -> 148.00s]  those host names to IP addresses. Of course, if you don't have too many
+[148.00s -> 151.00s]  hosts, this isn't bad. But generally speaking, the network
+[151.00s -> 155.00s]  capacity required by this scales with N squared, in that periodically N nodes are
+[155.00s -> 158.00s]  going to request a file that's order N in length.
+[158.00s -> 161.00s]  So this was not seen as a scalable, good, long-term solution.
+[161.00s -> 165.00s]  It's fine when there's just a couple of hosts, but as the internet grew, it
+[165.00s -> 167.00s]  clearly, it quickly became a problem.
+[168.00s -> 172.00s]  And this is what led to the birth of what's called the domain name system, or
+[172.00s -> 175.00s]  DNS. The basic problem that DNS is trying
+[175.00s -> 179.00s]  to solve, the basic task it's trying to, to complete, is to map names, human
+[179.00s -> 183.00s]  readable names, to addresses, or more generally, these days, to values.
+[183.00s -> 185.00s]  Originally, it was to map to IP addresses.
+[185.00s -> 187.00s]  It turns out, nowadays, you can do it, use it for much more.
+[187.00s -> 191.00s]  And there are a couple of design considerations for the domain name system.
+[191.00s -> 195.00s]  The first is we like to be able to handle a huge number of records, right?
+[195.00s -> 199.00s]  In theory, there are two to the 32 IP addresses we should be able to map names
+[199.00s -> 203.00s]  in that kind of order. Furthermore, we'd like to have
+[203.00s -> 206.00s]  distributed control. One of the problems with host.txt is
+[206.00s -> 208.00s]  there's this single centralized repository.
+[208.00s -> 212.00s]  It should be that we can say, this set of names, you can manage them.
+[212.00s -> 214.00s]  This other set of names, you can manage them.
+[214.00s -> 217.00s]  So Stanford, you can manage names under Stanford.
+[217.00s -> 221.00s]  But Amazon, you can manage names under Amazon.
+[221.00s -> 225.00s]  Furthermore, we'd like this system to be robust to individual node failures.
+[225.00s -> 229.00s]  It shouldn't be that if one node goes down, the entire domain name system comes
+[229.00s -> 231.00s]  down. Because if that's the case, then
+[231.00s -> 235.00s]  suddenly, we can no longer map names to addresses, and lots of things would
+[235.00s -> 237.00s]  grind to a halt. So we want to be robust.
+[241.00s -> 243.00s]  This might seem like an amazingly challenging problem.
+[243.00s -> 247.00s]  We want to handle billions of records distributed hierarchically across the
+[247.00s -> 250.00s]  entire internet, which is robust to failures.
+[250.00s -> 255.00s]  But there are two things which made, which turned out to make this problem
+[255.00s -> 260.00s]  tractable, make the design feasible. The first is that this database that
+[260.00s -> 263.00s]  maps names to values is read only or read mostly.
+[263.00s -> 267.00s]  And that there are updates to it, but you generally expect that it is going to
+[267.00s -> 271.00s]  be read much more than it's written. It's not like there aren't nodes
+[271.00s -> 275.00s]  coming in and out all the time, but nothing compared to the rate at which
+[275.00s -> 278.00s]  you're mapping nodes up. Furthermore, we don't need perfect
+[278.00s -> 281.00s]  consistency. We can have something called loose
+[281.00s -> 284.00s]  consistency. So if a node connects to the internet
+[284.00s -> 288.00s]  or if, say, a node, a mapping between a name and an address changes,
+[288.00s -> 291.00s]  it's okay if there's some delay before everyone sees that.
+[291.00s -> 295.00s]  It might be some people see it a little earlier than others, but it's okay if
+[295.00s -> 298.00s]  there's some delay. And so it turns out that these two
+[298.00s -> 302.00s]  properties together, that it's a read mostly database, and that it's okay if
+[302.00s -> 307.00s]  things are slightly out of date, allows DNS to, to have extensive caching.
+[307.00s -> 312.00s]  The idea is that once you have a result, you can hold on to it for a long time,
+[312.00s -> 316.00s]  and then maybe when it expires, request a new result.
+[316.00s -> 320.00s]  But rather than have one place, say, that has to be asked for everything,
+[320.00s -> 324.00s]  you can ask someplace once and then cache that result and answer it for other
+[324.00s -> 326.00s]  people. So you can look up a name and then
+[326.00s -> 330.00s]  keep the result for a long time and then use it to answer other queries.
+[332.00s -> 335.00s]  So recall that one of the requirements is that names be hierarchically
+[335.00s -> 337.00s]  administrated. That is, you can distribute the
+[337.00s -> 340.00s]  administration of names. And to accomplish that, DNS uses a
+[340.00s -> 343.00s]  hierarchy of names. And we're all familiar with this.
+[343.00s -> 348.00s]  So at the top, there's implicitly what's called dot, or what's called the root
+[348.00s -> 351.00s]  of the DNS name space. It's, it's nothing, it's a nothing,
+[351.00s -> 353.00s]  right? It's an empty name.
+[353.00s -> 355.00s]  So these are called the root servers, just dot.
+[355.00s -> 360.00s]  Then beneath them are what are called the top-level domains, TLDs, such as
+[360.00s -> 367.00s]  edu, com, org, US, France, China. Then underneath each of those top-level
+[367.00s -> 371.00s]  domains, there are what we often think of as domain names, say,
+[371.00s -> 375.00s]  stanford.edu, or cisco.com, or baidu.cn.
+[375.00s -> 380.00s]  And of course, within those domains, the owner of those domains can hand out
+[380.00s -> 384.00s]  additional names, additional domains. So for example, at Stanford,
+[384.00s -> 387.00s]  generally there's just one level of names below Stanford.
+[387.00s -> 393.00s]  So there's cs.stanford.edu, www.stanford.edu. Berkeley has another layer.
+[393.00s -> 397.00s]  So there's cs.berkeley, there's the cs domain, and then there are names
+[397.00s -> 401.00s]  underneath the cs domain, like www.cs.berkeley.edu.
+[401.00s -> 406.00s]  Similarly, Google has maps.google.com. So now the way DNS servers work is
+[406.00s -> 410.00s]  that there is hierarchical zones. There's the root zone, then the TLDs,
+[410.00s -> 413.00s]  then the domains, and then there can be subdomains.
+[413.00s -> 416.00s]  So Stanford, for example, as you may have seen so far, it does have a
+[416.00s -> 419.00s]  subdomain, scs, managed by David Mazier.
+[419.00s -> 424.00s]  And the key thing is that each of these zones can be separately administered.
+[424.00s -> 429.00s]  So, Stanford can grant David Mazier the domain scs, so it will answer
+[429.00s -> 434.00s]  questions about scs, but then David can completely control all of the host
+[434.00s -> 438.00s]  names underneath scs. Similarly, edu can grant Stanford
+[438.00s -> 442.00s]  the name Stanford, but then it's completely up to Stanford to manage all
+[442.00s -> 446.00s]  of the names beneath Stanford. Furthermore, each zone can be served
+[446.00s -> 450.00s]  from several replicated servers. And so rather than there's being one
+[450.00s -> 453.00s]  server that serves Stanford's name, there are in fact many servers
+[453.00s -> 455.00s]  replicated. And there's some rules as to how
+[455.00s -> 457.00s]  they're replicated. So the idea is that if one server
+[457.00s -> 461.00s]  goes down, there are others that can still answer questions about Stanford.
+[461.00s -> 467.00s]  So it turns out the root zone, so the zone you'd ask for, hey, who to ask about edu,
+[467.00s -> 472.00s]  there are thirteen servers labeled A to M, and they're highly replicated.
+[472.00s -> 476.00s]  And so there's sort of this boot-stopping process of your computer
+[476.00s -> 480.00s]  comes up for the first time and wants to ask a name, and it knows
+[480.00s -> 483.00s]  nothing. Well, it needs to talk to a root
+[483.00s -> 486.00s]  server in order to contact, say, a top-level domain server.
+[486.00s -> 488.00s]  But how does it find out the root servers?
+[488.00s -> 492.00s]  It turns out these are generally just IP, IPs that are stored in a name, in a
+[492.00s -> 496.00s]  file in the name servers. The name server comes up and it has some
+[496.00s -> 500.00s]  IP addresses for root servers. And then the first query that comes in,
+[500.00s -> 504.00s]  let's say it's for stanford.edu, it knows that it needs to talk to the
+[504.00s -> 507.00s]  edu servers. And so it can ask the root servers,
+[507.00s -> 510.00s]  hey, who has edu? Then when it gets a response, who has
+[510.00s -> 513.00s]  edu, it can contact the edu servers, hey, who has stanford.
+[513.00s -> 517.00s]  In addition to having thirteen different servers, they're highly replicated
+[517.00s -> 521.00s]  through something called Anycast. IP Anycast, where it turns out that
+[521.00s -> 525.00s]  there are many machines that have the same IP address, which basically causes
+[525.00s -> 528.00s]  you to contact the one that is closest to you.
+[528.00s -> 531.00s]  So this makes the root servers highly, highly robust.
+[531.00s -> 536.00s]  Often when you hear about large-scale distributed denial of servers or DDoS
+[536.00s -> 541.00s]  attacks against the root servers, this is exactly what they're talking
+[541.00s -> 544.00s]  about. The people are trying to attack the
+[544.00s -> 548.00s]  DNS root servers to prevent, to basically cause the DNS, the DNS system
+[548.00s -> 550.00s]  to grind to a halt. As of yet, nobody has yet succeeded.
+[550.00s -> 554.00s]  There's so many of these servers, they're so robust, and it turns out their job is
+[554.00s -> 557.00s]  so simple, people haven't been able to do it.
+[557.00s -> 562.00s]  But they keep on trying. So here's a map of the DNS root
+[562.00s -> 567.00s]  servers. So abcdefghijklm.
+[567.00s -> 572.00s]  I mean, so colored, so here are all these different a servers or a server,
+[572.00s -> 577.00s]  abdeghl. And then for the Anycast instances,
+[577.00s -> 581.00s]  for cfijkm, you can see that they're spread all over the world.
+[581.00s -> 587.00s]  So this means that say, if you're somebody in you know, in say, Saudi
+[587.00s -> 591.00s]  Arabia, and you want to issue a, you know, a DNS server, and you want to
+[591.00s -> 594.00s]  issue a DNS query, you don't have to go very far.
+[594.00s -> 599.00s]  There's some that are very close by. Okay.
+[599.00s -> 604.00s]  So that's the basic naming architecture and sort of a sense as to what DNS
+[604.00s -> 607.00s]  servers and how they're structured, these hierarchies.
+[607.00s -> 613.00s]  So what does a query actually look like? So there are two kinds of DNS queries,
+[613.00s -> 619.00s]  recursive and non-recursive. Recursive query asks the server you
+[619.00s -> 624.00s]  contact to resolve the entire the entire query.
+[624.00s -> 629.00s]  So you're asking it a question, and if there's many steps to the question, then
+[629.00s -> 633.00s]  it should ask each of those steps. As opposed to a non-recursive query
+[633.00s -> 636.00s]  where you're going to contact the server, it's just going to answer one step
+[636.00s -> 638.00s]  of the query. And I'll show you why this difference
+[638.00s -> 640.00s]  occurs in a second. You specify just a bit in the query
+[640.00s -> 643.00s]  to say whether it's a recursive or non-recursive, recursive query.
+[643.00s -> 648.00s]  So DNS usually uses UDP port 53, and there's a 512 byte message limit.
+[648.00s -> 653.00s]  You can use TCP port 53, and then all the DNS, all the DNS messages have
+[653.00s -> 658.00s]  a 16-bit length field, so you know how long they are since they're not
+[658.00s -> 662.00s]  diagrams, they're a stream. So let's say that I'm a client.
+[662.00s -> 666.00s]  So here's me. And I want to ask a question of, hey, what
+[666.00s -> 671.00s]  is the IP address associated with www.stanford.edu?
+[671.00s -> 677.00s]  So using DHCP I have an address for a DNS server, and so let's just, let's
+[677.00s -> 681.00s]  call this here resolver, and so it has some address r.
+[681.00s -> 687.00s]  And so I send a DNS request or DNS query saying, I need the IP address for
+[687.00s -> 691.00s]  www.stanford.edu, and I send this message to the resolver.
+[691.00s -> 701.00s]  So, I'm asking for address of www.stanford.edu.
+[701.00s -> 706.00s]  And I ask this as a recursive query. So the resolver is going to resolve
+[706.00s -> 711.00s]  this entire query recursively for me. Well, let's say my resolver has
+[711.00s -> 714.00s]  nothing cache. It doesn't know anything about the
+[714.00s -> 717.00s]  world. It just has the IP address of some root servers.
+[717.00s -> 723.00s]  Well, the first thing it's going to do is it needs to figure out whom to ask a
+[723.00s -> 727.00s]  question about edu. So, who does, where are the servers
+[727.00s -> 730.00s]  for edu? So it sends a query to one of the
+[730.00s -> 735.00s]  root servers saying, hey, whom do I ask about edu?
+[735.00s -> 742.00s]  This is a non-recursive query. I can't ask the root query to, the
+[742.00s -> 746.00s]  root servers to answer the whole query for me and start contacting other
+[746.00s -> 749.00s]  people. They're just going to answer one step.
+[749.00s -> 752.00s]  They'll answer, hey, who should I talk to about edu?
+[752.00s -> 757.00s]  And the root will send a response saying, here's some information for who you
+[757.00s -> 761.00s]  should talk about edu. Now the resolver knows, okay, now I
+[761.00s -> 765.00s]  have, I can cache the entry for edu. Great, I can put it in my cache.
+[765.00s -> 769.00s]  This is the IP address I should contact if I have a question about edu.
+[769.00s -> 774.00s]  Now let me contact that IP address. And it's going to ask edu, hey, who
+[774.00s -> 779.00s]  should I ask about Stanford? Again, this is a non-recursive query.
+[779.00s -> 786.00s]  The edu server is going to say, okay, you, here's some information about whom
+[786.00s -> 794.00s]  you should ask about Stanford. I can then cache that result and ask
+[794.00s -> 799.00s]  that server, so the domain server. So now I'm going to say, Stanford,
+[799.00s -> 806.00s]  what's the address for www? And Stanford can respond and say, aha,
+[806.00s -> 816.00s]  here's the address for www.stanford.edu. And then the resolver can cache this
+[816.00s -> 826.00s]  result. www.stanford.edu.
+[826.00s -> 830.00s]  Now the resolver can cache these values of, if I want to ask a question about edu,
+[830.00s -> 833.00s]  what DNS server should I talk to? If I want to ask a question about
+[833.00s -> 836.00s]  stanford.edu, what DNS server should I talk to?
+[836.00s -> 843.00s]  And what's the address for www.stanford.edu? And then it can return this
+[843.00s -> 851.00s]  result to the client. Here's the IP address for www.stanford.edu.
+[851.00s -> 854.00s]  And that's the basic operation of a DNS query.
+[854.00s -> 858.00s]  It starts with the client asking the recursive query of the resolver.
+[858.00s -> 862.00s]  The resolver may then ask non-recursive queries to servers in the network in
+[862.00s -> 866.00s]  order to generate the response which would then send to the client.
+[866.00s -> 870.00s]  It could also be that the resolver had answered this question before and so
+[870.00s -> 874.00s]  rather than go and ask all these servers, just answered from its cache.
+[874.00s -> 878.00s]  So if a couple minutes later another client asks the same question, hey,
+[878.00s -> 882.00s]  what's the address of www.stanford.edu? This resolver, rather than
+[882.00s -> 886.00s]  contacting anyone, anyone, can just return the cached result.
+[886.00s -> 890.00s]  And so if you ever hear the noise about DN, hear in the news, not the noise
+[890.00s -> 897.00s]  about DNS cache poisoning. There's this aspect of DNS which these
+[897.00s -> 902.00s]  attacks try to tackle, which is, or try to take advantage of, which is that
+[902.00s -> 907.00s]  if you can get a bad record into the resolver that somehow convince it that,
+[907.00s -> 911.00s]  you know, that www.stanford.edu actually points at, you know,
+[911.00s -> 916.00s]  www.evil.com or something such that if you try to go to Stanford,
+[916.00s -> 920.00s]  instead you go to some evil hacker's server.
+[920.00s -> 924.00s]  If you can get that cache entry into the resolver and poison the cache,
+[924.00s -> 928.00s]  then anybody who asks that question is going to get that answer.
+[928.00s -> 932.00s]  And so later in the course we talk about security, we'll see some of the
+[932.00s -> 936.00s]  ways in which that can happen and some ways in which DNS can solve it.
+[941.00s -> 945.00s]  www.stanford.edu

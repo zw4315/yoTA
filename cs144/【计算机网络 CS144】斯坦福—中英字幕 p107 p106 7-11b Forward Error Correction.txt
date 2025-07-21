@@ -1,0 +1,268 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.00s]  Noise and interference can lead to significant bit errors at the physical layer.
+[6.00s -> 16.00s]  In this video, I'll present forward error correction, or FEC, a technique that allows the network to successfully receive frames that have bit errors in them.
+[16.00s -> 24.00s]  It's called forward error correction because the approach assumes that some errors will occur, so it includes extra error-correcting information by default.
+[25.00s -> 39.00s]  That is, rather than reacting to errors and sending some correcting data only as needed, forward error correction adds some redundant data to the message so the receiver can recover from a reasonable number of errors without any additional transmissions.
+[39.00s -> 46.00s]  I'll also walk through a technique called interleaving that can make messages even more robust to long bursts of errors.
+[46.00s -> 54.00s]  If you make some mathematical assumptions about noise, there is a precise relationship between the link's signal-to-noise ratio and its bit error rate.
+[54.00s -> 60.00s]  These assumptions tend to be pretty accurate in practice, so this means there's a strong theoretical basis for bit error rates.
+[60.00s -> 65.00s]  The exact bit error rate for a given signal-to-noise ratio depends on the modulation used.
+[65.00s -> 72.00s]  For example, at a given signal-to-noise ratio, phase shift keying has a lower bit error rate than amplitude shift keying.
+[73.00s -> 81.00s]  Increasing the signal-to-noise ratio, either increasing the signal or reducing the noise, decreases the bit error rate.
+[81.00s -> 87.00s]  But something very important is that the bit error rate never reaches zero.
+[87.00s -> 94.00s]  This is because noise isn't uniform. It follows a Gaussian distribution. That's the mathematical assumption.
+[94.00s -> 99.00s]  So the chances of having noise greater than any threshold is always non-zero.
+[99.00s -> 103.00s]  No matter how strong you make your signal, you'll always lose packets.
+[103.00s -> 108.00s]  You might lose very few, but there's no such thing as a link with no bit errors.
+[111.00s -> 117.00s]  I won't go into the details why, but it turns out if you work through the math, sending packets as raw bits is very inefficient.
+[117.00s -> 125.00s]  If the signal strength is high enough that bit errors are rare, then a system is operating far below the Shannon limit.
+[126.00s -> 134.00s]  It's important that every word you say is perfectly understood. You have to speak very slowly and very loudly.
+[134.00s -> 137.00s]  This means you're wasting a lot of the capacity of the channel.
+[137.00s -> 148.00s]  For example, suppose you wanted to transmit a 1500 byte, so 12,000 bit, packets with a packet loss rate below 1 in 10,000, so 10 to the minus 4.
+[148.00s -> 160.00s]  This means that every one of the 12,000 bits must be correct, so 1 minus the bit error rate, raised to the 12,000th power, must be greater than 0.9999.
+[160.00s -> 165.00s]  So the bit error rate must be approximately 10 to the minus 8th.
+[165.00s -> 170.00s]  To get this bit error rate, the system needs to transmit at a high power.
+[170.00s -> 177.00s]  If you calculate what the channel capacity is at this power, that is, what speed you could send data if you used the channel perfectly,
+[177.00s -> 186.00s]  it's 5 times higher than your speed when sending 12,000 bit packets with packets with a loss rate below 0.01%.
+[186.00s -> 193.00s]  So if you try to send packets this way, just cranking the power up to have very few bit errors, you're wasting 80% of your capacity.
+[193.00s -> 198.00s]  The theory says you can send data 5 times faster.
+[198.00s -> 205.00s]  Highly engineered wireless systems like LTE operate very close to their theoretical maximums.
+[205.00s -> 211.00s]  So how does a system do that? How does it send data in order to not waste that 80%?
+[211.00s -> 217.00s]  The rest of this video explains the basic technique called forward error correction and the mechanism it uses called coding.
+[219.00s -> 222.00s]  The basic idea behind coding is very simple.
+[222.00s -> 228.00s]  Rather than just send the raw bits and hope none of them are corrupted, send the data plus a little bit of redundancy.
+[228.00s -> 232.00s]  Mechanisms like CRCs, MACs, and checksums can detect errors.
+[232.00s -> 236.00s]  With coding, we can not only detect, but also correct errors.
+[236.00s -> 241.00s]  The idea is that by adding just a little bit of redundancy, one can correct a few bit errors.
+[241.00s -> 246.00s]  Sending packets that have only a few errors lets you send them either much faster.
+[246.00s -> 250.00s]  And this greater speed more than makes up for the redundancy added.
+[250.00s -> 256.00s]  The amount of redundancy you add is described by something called the coding gain.
+[256.00s -> 265.00s]  The gain is described as a fraction, which shows the ratio between the number of bits sent by the link layer and the corresponding number of bits at the physical layer.
+[265.00s -> 277.00s]  For example, if a system doubles the length of a packet, so it sends 1 bit of redundant data for every bit of link layer data, 2 bits for every bit, then coding gain is one half.
+[277.00s -> 283.00s]  If 3 link layer bits are sent as 4 bits at the physical layer, this is a 3-4 code.
+[284.00s -> 288.00s]  So a gain of 1 means you're just sending raw bits.
+[288.00s -> 295.00s]  Adding some redundant data like this to proactively correct errors is called forward error correction, or FEC.
+[295.00s -> 302.00s]  It's called forward error correction because the sender doesn't need any feedback from the receiver, so it doesn't need a back channel.
+[302.00s -> 307.00s]  Instead, the sender uses a bit of the capacity of the forward channel to correct errors.
+[307.00s -> 310.00s]  There are many coding algorithms.
+[310.00s -> 316.00s]  It's a rich field of study that's over 70 years old. Some of them are very simple, some of them are very complex.
+[316.00s -> 319.00s]  I'm going to present one of them, Reed-Solomon codes.
+[319.00s -> 322.00s]  Reed-Solomon codes have three great qualities.
+[322.00s -> 325.00s]  First, they're very effective and they're used a lot.
+[325.00s -> 331.00s]  For example, CDs, DVDs, DSL, WiMAX, and RAID 6 storage systems all use Reed-Solomon codes.
+[331.00s -> 335.00s]  Second, as that list shows, they're very flexible in general.
+[335.00s -> 341.00s]  They're used in storage, CDs, DVDs, and RAID, as well as communication systems, DSL and WiMAX.
+[341.00s -> 347.00s]  Third, they're mathematically very simple, so they are simple to explain and understand.
+[350.00s -> 353.00s]  Reed-Solomon codes operate on a block of data.
+[353.00s -> 362.00s]  So you take a block of, say, 223 bytes and add 30 bytes of redundancy to turn it into a block of 255 bytes.
+[363.00s -> 370.00s]  The basic intuition behind Reed-Solomon is that you take your block and split it into k chunks.
+[370.00s -> 373.00s]  For example, a chunk might be a byte.
+[373.00s -> 378.00s]  You take a 223-byte block and break it into 2,223 chunks.
+[378.00s -> 386.00s]  You then consider each of these k values as the coefficients of a polynomial whose degree is k-1.
+[387.00s -> 392.00s]  So in this example, we consider the chunks as the coefficient of a 220-degree polynomial.
+[392.00s -> 397.00s]  So say our first three chunks are 71, 69, and 84.
+[397.00s -> 403.00s]  This means that the three smallest coefficients of the polynomial are 71, 69, and 84.
+[403.00s -> 408.00s]  So 71x2 plus 69x plus 84.
+[408.00s -> 410.00s]  Or they could be the largest three.
+[410.00s -> 417.00s]  71x to the 222nd, 69x to the 221st, plus 84x to the 220th.
+[417.00s -> 419.00s]  It doesn't matter.
+[420.00s -> 428.00s]  The unit solvents theorem says that any n-degree polynomial is defined by n plus 1 different data points.
+[428.00s -> 435.00s]  So, following our example, if we have a 222-degree polynomial,
+[435.00s -> 440.00s]  then if we have 223 data points from that polynomial,
+[440.00s -> 443.00s]  we can figure out its coefficients.
+[443.00s -> 446.00s]  Each data point has to have a different x value.
+[446.00s -> 450.00s]  So this means that if we send more than 223 data points,
+[450.00s -> 452.00s]  and some of those data points are corrupted,
+[452.00s -> 457.00s]  as long as we receive 223 correct data points and know which ones are correct,
+[457.00s -> 460.00s]  then we can recover the polynomial's coefficient.
+[460.00s -> 464.00s]  And remember the coefficients of the data we're trying to send.
+[464.00s -> 468.00s]  So what you can do is, rather than send the original data,
+[468.00s -> 470.00s]  the coefficients of the polynomial,
+[470.00s -> 473.00s]  you can send points on the polynomial.
+[473.00s -> 475.00s]  Suppose the polynomial is f.
+[475.00s -> 480.00s]  You send a message that contains f of 0, f of 1, f of 2, f of 3.
+[480.00s -> 487.00s]  The recipient receives these data points, and then from them computes the coefficients.
+[487.00s -> 491.00s]  There's one mathematical complication though.
+[491.00s -> 494.00s]  If you have a polynomial with large positive coefficients,
+[494.00s -> 499.00s]  the value of each data point will quickly become much larger than can fit in a single chunk.
+[499.00s -> 505.00s]  For example, if one of the terms of the polynomial is 84 times x to the 220th,
+[505.00s -> 510.00s]  then x equals 2 will be 1.4 times 10 to the 68th.
+[510.00s -> 514.00s]  Encoding this in binary would take 226 bits.
+[514.00s -> 518.00s]  So the points instead are computed on a finite field.
+[518.00s -> 521.00s]  This means it has a limited number of bits.
+[521.00s -> 523.00s]  For example, since each chunk is a byte,
+[523.00s -> 527.00s]  you compute the value over the 8-bit field with values 0 to 255.
+[527.00s -> 530.00s]  When a computation overflows, it just wraps around.
+[530.00s -> 537.00s]  So the value in this field is 84 times 2 to the 20th, modulo 256, which happens to be 0.
+[540.00s -> 542.00s]  If we have enough correct data points,
+[542.00s -> 547.00s]  we can reconstitute the polynomial coefficients and decode the data.
+[547.00s -> 550.00s]  But there might be bit errors.
+[550.00s -> 554.00s]  How do we know which data points are correct and which are corrupted?
+[554.00s -> 556.00s]  The prior slide assumed we know.
+[556.00s -> 559.00s]  How do we find out?
+[560.00s -> 563.00s]  Reed-Solomon distinguishes two kinds of errors.
+[563.00s -> 566.00s]  The first are called erasures.
+[566.00s -> 569.00s]  These denote errors that the receiver knows are errors.
+[569.00s -> 571.00s]  They are erased values.
+[571.00s -> 574.00s]  For example, you didn't receive the chunk.
+[574.00s -> 576.00s]  For example, in a RAID array,
+[576.00s -> 580.00s]  you have erasures when a hard drive fails and stops responding.
+[580.00s -> 584.00s]  The second type are errors, which you don't know are errors.
+[584.00s -> 586.00s]  This is the more common case in communication systems.
+[586.00s -> 590.00s]  Some of the chunks have bit errors, and you don't know which ones.
+[591.00s -> 597.00s]  The number of erasures and errors Reed-Solomon can recover from depends on the amount of redundancy.
+[598.00s -> 601.00s]  Let's say that the original number of chunks is k,
+[601.00s -> 605.00s]  and the encoding adds redundancy, so it sends n chunks.
+[605.00s -> 609.00s]  It's adding n-k chunks of redundancy.
+[609.00s -> 614.00s]  If the problem is erasures, then all the receiver needs is k chunks.
+[614.00s -> 619.00s]  So the receiver can recover from up to n-k erasures.
+[620.00s -> 627.00s]  It turns out the receiver can recover from n-k divided by two errors.
+[628.00s -> 631.00s]  The receiver can recover from fewer errors than erasures
+[631.00s -> 634.00s]  because it needs to figure out which chunks have errors.
+[634.00s -> 638.00s]  So why can it handle only half as many errors as erasures?
+[638.00s -> 642.00s]  One way to think of this is that the receiver is trying to solve for two sets of unknowns.
+[642.00s -> 646.00s]  Which received chunks are bad, and the coefficients of the polynomial.
+[646.00s -> 650.00s]  If there are erasures, this tells the receiver which chunks are bad,
+[650.00s -> 652.00s]  and so it doesn't need to solve for those unknowns.
+[652.00s -> 656.00s]  But if there are errors, the receiver needs to solve for an additional unknown,
+[656.00s -> 660.00s]  and so it needs correct redundant bytes to do so.
+[661.00s -> 670.00s]  So returning to our example of a 223-byte data block turned into a 220-degree polynomial sent as 255 bytes,
+[670.00s -> 673.00s]  and so 32 bytes of redundancy.
+[673.00s -> 676.00s]  If 16 or fewer of the encoded chunks have bit errors,
+[676.00s -> 682.00s]  the receiver can successfully decode the data and reconstitute the original 223 bytes.
+[682.00s -> 686.00s]  This particular code is described as a 255-223 code.
+[686.00s -> 694.00s]  An encoded block is 255 code words, which are generated from 223 data words.
+[695.00s -> 697.00s]  For a code to support C code words,
+[697.00s -> 703.00s]  each word must be at least the ceiling of log2 of C bits long.
+[704.00s -> 709.00s]  So to support 255 code words, each word must be at least 8 bits long.
+[709.00s -> 713.00s]  Otherwise, there isn't enough information in each word to decode the polynomial.
+[716.00s -> 721.00s]  It turns out what I've just described isn't exactly how Reed-Solomon is used,
+[721.00s -> 723.00s]  because decoding is extremely expensive.
+[723.00s -> 727.00s]  Instead, slightly different mathematical formulations are used that are more efficient,
+[727.00s -> 732.00s]  but the basic principles are the same, and the idea of points along a polynomial is still used.
+[735.00s -> 737.00s]  Let's walk through an example.
+[737.00s -> 742.00s]  In this example, we're encoding 6 bytes of data, the word HELLO.
+[743.00s -> 745.00s]  We're going to encode it with a 7-5 code.
+[746.00s -> 750.00s]  So, 5 data chunks are turned into 7 coded chunks.
+[751.00s -> 756.00s]  Because we have 7 code words per block, each chunk must be at least 3 bits long.
+[757.00s -> 765.00s]  So for a 7-5 code, this means we take 5 3-bit data words and encode them as 7 3-bit code words.
+[766.00s -> 768.00s]  15 bits becomes 21 bits.
+[769.00s -> 775.00s]  The sender sends this longer data, the receiver receives it, and decodes it to the original data.
+[776.00s -> 780.00s]  If you look at this example closely, you'll see there's an interesting edge case.
+[781.00s -> 783.00s]  The input is 48 bits long.
+[784.00s -> 786.00s]  We need to break it up into 15-bit blocks.
+[787.00s -> 789.00s]  And we need to send an integer number of blocks.
+[790.00s -> 795.00s]  So we have to increase the size of the data to be 60 bits, or 4 blocks long.
+[796.00s -> 798.00s]  The edge case is that our data doesn't easily fit into 4 blocks.
+[799.00s -> 802.00s]  The typical solution to this is just to pad the last block with zeros.
+[802.00s -> 806.00s]  In this example, we pad the last block by 12 zero bits.
+[807.00s -> 814.00s]  These 60 data bits are encoded as 4 21-bit code words, or 84 bits.
+[815.00s -> 818.00s]  The sender sends 84 bits to the receiver.
+[819.00s -> 825.00s]  The receiver runs a read-song decoder to get the 60 data bits and recover the string, hello.
+[825.00s -> 837.00s]  One way one often thinks about encoding schemes is how long a burst of consecutive errors the approach can recover from.
+[838.00s -> 842.00s]  So let's suppose that there are bit errors in the transmitted data.
+[843.00s -> 845.00s]  Let's ask a first question.
+[846.00s -> 850.00s]  What's the shortest burst of errors that could cause the 7-5 code to fail?
+[850.00s -> 854.00s]  In Reed-Solomon, errors are in terms of code words.
+[855.00s -> 859.00s]  A single bit error in a code word makes the whole word an error.
+[860.00s -> 866.00s]  So with a 7-5 code, a receiver can recover from a single code word error per block.
+[867.00s -> 871.00s]  So let's suppose there's one bit error here.
+[871.00s -> 881.00s]  The decoder can still decode the first block, and the data is received correctly.
+[882.00s -> 888.00s]  Now suppose there are two consecutive bit errors. Can Reed-Solomon recover from this?
+[889.00s -> 891.00s]  It turns out it depends.
+[892.00s -> 895.00s]  If both bit errors fall in the same code word,
+[895.00s -> 906.00s]  then there's only one code word in error, and Reed-Solomon can decode correctly.
+[907.00s -> 914.00s]  If the two bit errors fall in a block boundary, there's one error in the last bit of one block,
+[915.00s -> 919.00s]  and one error in the first bit of another block.
+[920.00s -> 922.00s]  Reed-Solomon can recover.
+[922.00s -> 934.00s]  But if the two bit errors fall in adjacent code words in the same block,
+[941.00s -> 949.00s]  like this, then there are two code words in error, and Reed-Solomon can't decode the block.
+[949.00s -> 957.00s]  So the shortest burst of consecutive bit errors can cause this 7-5 code to fail is 2.
+[958.00s -> 966.00s]  A second question is what's the longest burst of consecutive bit errors that the encoding might be able to recover from?
+[967.00s -> 971.00s]  Since it's a 7-5 code, at most one code word in a block can be corrupted.
+[972.00s -> 975.00s]  It doesn't matter if one bit or all the bits in a code word are corrupted.
+[976.00s -> 978.00s]  In either case, the code word is corrupted.
+[979.00s -> 992.00s]  A three bit burst of errors can corrupt only a single code word, which Reed-Solomon can recover from.
+[993.00s -> 999.00s]  If the string of errors spans two different blocks,
+[1000.00s -> 1008.00s]  then it could corrupt one code word in each of the two different blocks.
+[1009.00s -> 1013.00s]  Both blocks would be decoded correctly.
+[1014.00s -> 1018.00s]  So the longest burst of consecutive bit errors is 6.
+[1019.00s -> 1025.00s]  The first three corrupt a single code word in one block, and the second three corrupt a single code word in the second block.
+[1026.00s -> 1031.00s]  If there are seven bit errors, then the burst of errors must corrupt three blocks.
+[1032.00s -> 1040.00s]  Two of which must corrupt three code words, two of which must be in one block, so Reed-Solomon cannot recover.
+[1041.00s -> 1046.00s]  The longest burst of consecutive bit errors that this 7-5 code can recover from is 6.
+[1047.00s -> 1054.00s]  These numbers are small, in part because his example is using such a small code with very little redundancy in small code words.
+[1055.00s -> 1059.00s]  Imagine instead that the system uses a 255-223 code with 8-bit words.
+[1059.00s -> 1065.00s]  The shortest burst that can corrupt a block that is 122 bits, it corrupts 17 code words.
+[1066.00s -> 1074.00s]  The longest burst that it could recover from is 256 bits, 16 code words in one block, 16 code words in a second block.
+[1075.00s -> 1080.00s]  One technique that can make Reed-Solomon even more resistant to burst errors is interleaving.
+[1080.00s -> 1096.00s]  The basic idea of interleaving is that rather than lay out the code words linearly, spread them out so that the burst of errors corrupts a small number of code words in many blocks rather than many code words in a small number of blocks.
+[1097.00s -> 1102.00s]  For example, imagine we're using our 7-5 code with 3-bit words.
+[1103.00s -> 1108.00s]  A coded block is 21 bits long, 7 3-bit words.
+[1108.00s -> 1110.00s]  Now suppose we have 12 blocks.
+[1111.00s -> 1116.00s]  So let's call the blocks A through L, with the individual bits of each block being a subscript.
+[1117.00s -> 1125.00s]  So A0 is the first bit of the first block, while C20 is the last bit of the third block, and B4 is the fifth bit of the second block.
+[1126.00s -> 1137.00s]  If we use the format shown here, the longest burst error that this data can recover from is 6 bits long, corrupting the last 3 bits of one code word in one block.
+[1138.00s -> 1141.00s]  And the first 3 bits, one code word in the following block.
+[1143.00s -> 1149.00s]  Now imagine if, instead, we organize the bits so the code words from different blocks are interleaved.
+[1150.00s -> 1159.00s]  Now, instead of A0, A1, A2, A3, the first 4 bits are A0, A1, A2, B0.
+[1160.00s -> 1170.00s]  So the sent data starts with the first code word from block A, followed by the first code word from block B, then C, etc.
+[1171.00s -> 1180.00s]  After the first code word from L, so bits L0, L1, L2, there's the second code word from A, so bits A3, A4, A5.
+[1181.00s -> 1183.00s]  Let's call this code word interleaving.
+[1184.00s -> 1188.00s]  In this case, what's the shortest burst error that could cause decoding to fail?
+[1189.00s -> 1190.00s]  Let's walk through it.
+[1191.00s -> 1198.00s]  For the decoding to fail, bits from two different code words from the same block must be corrupted.
+[1199.00s -> 1207.00s]  For example, one bit of the first code word of A, bit A2, must be corrupted,
+[1214.00s -> 1217.00s]  as well as one bit of the second code word of A, so A3.
+[1220.00s -> 1227.00s]  These two bits are 34 bits apart because there are 12 chunks.
+[1228.00s -> 1243.00s]  That is, we'd have to corrupt A2, B0, B1, B2, C0, C1, C2, all the way up to L3, A2, L2, A3, or 11 code words plus 2 bits, 35 bits.
+[1244.00s -> 1248.00s]  The shortest burst error that could cause decoding to fail is 35 bits.
+[1249.00s -> 1252.00s]  This is over 16 times longer than if we didn't use interleaving.
+[1254.00s -> 1257.00s]  And what's the longest burst error this could recover from?
+[1259.00s -> 1265.00s]  This would cover a single code word in every single block, so 36 bits.
+[1266.00s -> 1271.00s]  For example, a burst error that covers the first 36 bits of the interleaved encoded data
+[1272.00s -> 1277.00s]  would corrupt the first code word of A, the first code word of B, the first code word of C, etc.
+[1277.00s -> 1279.00s]  up to the first code word of L.
+[1287.00s -> 1290.00s]  Let's consider another option, bit interleaving.
+[1291.00s -> 1296.00s]  In bit interleaving, we interleave the bits from individual code words.
+[1297.00s -> 1302.00s]  So the first bit is A0, the second bit is B0, the third bit is C0.
+[1303.00s -> 1305.00s]  After bit L0 comes bit A1.
+[1306.00s -> 1311.00s]  The last 12 bits of the data are bits A20 to L20.
+[1312.00s -> 1317.00s]  So we've turned 12 blocks of 21 bits into 21 encoded blocks of 12 bits.
+[1319.00s -> 1321.00s]  What's the shortest burst of errors that corrupt the data?
+[1322.00s -> 1326.00s]  The burst has to cover two code words in one block.
+[1327.00s -> 1330.00s]  Suppose there is a burst starting at bit A2.
+[1331.00s -> 1335.00s]  If the burst is 13 bits long, it will reach A3.
+[1337.00s -> 1339.00s]  A3 is in a different code word,
+[1342.00s -> 1344.00s]  so this will cause the decoding of A to fail.
+[1345.00s -> 1349.00s]  So the shortest burst of errors that could prevent decoding is 13 bits.
+[1353.00s -> 1357.00s]  What's the longest burst of errors that this Reed-Solomon code can recover from?
+[1358.00s -> 1363.00s]  The answer is 36 bits, covering a single code word from every block.
+[1364.00s -> 1369.00s]  For example, A0 to L2, the first 36 bits.
+[1372.00s -> 1375.00s]  What's important to note here is that bit-level interleaving
+[1376.00s -> 1381.00s]  can recover from the same longest burst of errors as code word-level interleaving.
+[1382.00s -> 1386.00s]  But the shortest burst that can corrupt the data using bit interleaving is shorter.
+[1387.00s -> 1389.00s]  For code interleaving, remember, it was 35 bits.
+[1390.00s -> 1392.00s]  For bit interleaving, it's 13 bits.
+[1393.00s -> 1394.00s]  So why is this?
+[1396.00s -> 1398.00s]  It's because of the important property of Reed-Solomon
+[1399.00s -> 1402.00s]  that any number of bits corrupted in a code word cause it to be invalid.
+[1403.00s -> 1404.00s]  So if there's a burst of errors,
+[1405.00s -> 1408.00s]  you want them to be spread across as many blocks as possible
+[1409.00s -> 1410.00s]  so that there are a few errors in any block.
+[1411.00s -> 1413.00s]  But if an error corrupts a code word,
+[1414.00s -> 1415.00s]  you want it to concentrate on that code word.
+[1417.00s -> 1421.00s]  As every bit being an error is no worse than a single bit being an error.
+[1422.00s -> 1425.00s]  So you want to minimize the number of code words that are corrupted in any block.
+[1426.00s -> 1428.00s]  You can do this by spreading errors across blocks
+[1429.00s -> 1431.00s]  and by concentrating errors within code words.
+[1432.00s -> 1436.00s]  With code word interleaving, all the bits of a code word are adjacent.
+[1437.00s -> 1440.00s]  So a burst error that corrupts one bit will also usually corrupt the other bits.
+[1441.00s -> 1443.00s]  With bit interleaving, all the bits of a code word are spread out,
+[1444.00s -> 1446.00s]  so it's easily possible to corrupt only one bit of a code word.
+[1447.00s -> 1451.00s]  You see this, where corrupting both A2 and A3 in bit interleaving requires
+[1452.00s -> 1457.00s]  also corrupting a single bit from the code words B2, B2, C2, D2, etc.
+[1458.00s -> 1459.00s]  For code word interleaving, in contrast,
+[1460.00s -> 1462.00s]  it requires corrupting the entire intervening code words.
+[1463.00s -> 1469.00s]  So B0, B1, B2, C0, C1, C2, etc.

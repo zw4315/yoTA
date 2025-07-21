@@ -1,0 +1,1279 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 7.58s]  Okay, so today we're going to talk
+[7.58s -> 10.26s]  about distributed computing with Spark.
+[10.82s -> 13.34s]  And to put this in context, right, you spent a lot
+[13.34s -> 16.82s]  of time thinking about how to optimize the performance,
+[16.82s -> 21.74s]  a power performance of single core, so single chips,
+[22.18s -> 23.64s]  composed of multiple cores
+[23.64s -> 28.18s]  with Cindy units using ISPC and thread-based programming.
+[28.76s -> 33.36s]  You thought about how to write data parallel programs
+[33.36s -> 37.36s]  with hundreds of thousands of threads using CUDA.
+[37.92s -> 42.82s]  We've also talked about how you can use data parallel
+[42.82s -> 48.22s]  programming ideas to generate the large number
+[48.22s -> 52.08s]  of threads you need to take advantage of a GPU.
+[52.44s -> 53.58s]  And today we want to think
+[53.58s -> 57.10s]  about how you use data parallel programming ideas
+[57.14s -> 60.16s]  to program a distributed computer, right,
+[60.16s -> 61.52s]  so a computer composed
+[61.82s -> 67.36s]  of multiple separate operating system instances.
+[68.04s -> 72.88s]  And the main programming model we're going to be talking
+[72.88s -> 74.62s]  about is one called Spark.
+[75.50s -> 77.34s]  And I wish there was a podium up here.
+[77.34s -> 78.66s]  I could raise this to be higher.
+[78.66s -> 82.68s]  But anyway, I'll fix that in future lectures.
+[83.62s -> 86.20s]  And so the way to think about this is sort of,
+[86.20s -> 88.86s]  how are we going to program hundreds
+[88.86s -> 90.92s]  of thousands of cores, right?
+[91.28s -> 93.98s]  And so the question then is sort of, you know,
+[93.98s -> 95.92s]  something might fail and you want to make sure
+[95.92s -> 98.02s]  that you don't lose data, especially if you think
+[98.02s -> 100.76s]  about the main use of distributed computing
+[100.76s -> 103.10s]  in this context is data processing, right?
+[103.10s -> 105.30s]  And so you want to make sure you don't lose data.
+[105.30s -> 109.10s]  So we're going to revisit this whole idea of data parallel
+[109.26s -> 115.64s]  or functional data parallel primitives as the way
+[115.64s -> 120.68s]  in which we program these distributed computers, right?
+[120.68s -> 123.88s]  So the question then is given the data parallel programming
+[123.88s -> 126.48s]  model, we want to think about how do we make it scale
+[126.48s -> 128.26s]  to hundreds of thousands of cores
+[128.62s -> 131.38s]  and do that efficiently, right?
+[131.38s -> 134.66s]  And then how do we make sure that we can handle faults
+[134.94s -> 138.20s]  or cases where parts of the system fails
+[138.20s -> 141.62s]  and we can recover from that in an elegant way.
+[141.96s -> 143.54s]  And lastly we want to make sure
+[143.54s -> 145.02s]  that we efficiently use memory
+[145.02s -> 147.12s]  because of course that is going to be the key component
+[147.12s -> 150.28s]  that determines the performance that we get.
+[151.22s -> 155.44s]  So, you know, the main motivation then is why would you
+[155.44s -> 157.90s]  want to use a cluster of machines as opposed
+[157.90s -> 159.16s]  to a single machine, right?
+[159.52s -> 161.44s]  And so the key thing of course is if you want
+[161.44s -> 164.72s]  to process huge amounts of data, hundreds of terabytes
+[164.72s -> 166.68s]  of data, for instance if you're looking
+[166.68s -> 168.40s]  at processing the log data
+[168.40s -> 171.76s]  from a large website like Facebook, right?
+[171.82s -> 176.06s]  So you could do it with a single node and, you know,
+[176.06s -> 180.80s]  your performance would be limited by the IO rate
+[180.80s -> 184.84s]  that you could get the bandwidth to the disk.
+[185.32s -> 188.82s]  And if you did it with a single node it would take you
+[189.10s -> 192.44s]  23 days at the rate of sort of 50 megabytes per second.
+[193.30s -> 195.32s]  But if you have a thousand nodes then
+[195.32s -> 198.48s]  of course you have a thousand-fold speed
+[199.12s -> 202.90s]  up in the bandwidth from your storage system and so
+[202.90s -> 204.94s]  that goes down to 33 minutes, right?
+[204.94s -> 206.24s]  So kind of this is the motivation.
+[206.24s -> 208.26s]  If you want to process hundreds of terabytes
+[208.26s -> 211.32s]  of data then you need to do it across multiple machines
+[211.32s -> 217.14s]  because you need the IO bandwidth to solve the problem.
+[217.14s -> 218.58s]  So it's just something we haven't really talked
+[218.58s -> 220.26s]  about up to this point.
+[220.26s -> 223.04s]  We've talked about compute, we've talked about memory
+[223.04s -> 224.86s]  but we haven't really talked about IO.
+[224.86s -> 227.22s]  And so one of the really big reasons
+[227.26s -> 231.24s]  to use a cluster is to get IO bandwidth, right?
+[232.02s -> 234.00s]  But the problem now is that you need to figure out how
+[234.00s -> 238.34s]  to program these hundreds of thousands of cores, right?
+[238.60s -> 244.38s]  And so you need to think about how to deal with the fact
+[244.38s -> 245.70s]  that things break, right?
+[245.70s -> 247.70s]  So even if the meantime to failure
+[248.02s -> 252.00s]  of a single server is 25 years you put a thousand
+[252.00s -> 254.56s]  of them together and then something breaks every hour,
+[254.98s -> 255.34s]  right?
+[255.34s -> 257.70s]  And so you want to make sure that you can recover from that
+[257.94s -> 260.46s]  and you need it to be, you know, efficient,
+[260.46s -> 262.54s]  you need it to be reliable and you need it
+[262.54s -> 263.86s]  to be a usable framework.
+[263.86s -> 267.28s]  A framework that, you know, programmers can, you know,
+[267.28s -> 268.96s]  after taking a course like this can think
+[268.96s -> 271.64s]  about how to use, okay?
+[271.64s -> 276.32s]  So the whole idea of clusters is actually being elevated
+[276.58s -> 280.52s]  to what is called warehouse sized computers
+[280.52s -> 282.18s]  or warehouse sized clusters.
+[282.30s -> 286.26s]  And so these are the computing infrastructures behind large
+[286.26s -> 291.10s]  websites like Google, Facebook, Amazon,
+[291.44s -> 294.68s]  and of course there are huge data warehouses with racks
+[294.68s -> 297.86s]  and racks of computers networked together in a way
+[297.86s -> 301.30s]  that gives you a single computing environment.
+[301.70s -> 306.12s]  And the pioneer of this idea is a guy named Luis Barroso
+[306.38s -> 308.82s]  and he came up with this idea of sort of thinking
+[308.82s -> 313.34s]  about the whole computer as a single, sorry,
+[313.34s -> 316.54s]  the whole warehouse which is composed of hundreds of thousands
+[316.54s -> 318.24s]  of computers as a single computer
+[318.24s -> 319.42s]  that can be optimized together.
+[319.42s -> 321.98s]  So you think about the networking, you think
+[321.98s -> 323.60s]  about the power and the cooling
+[323.84s -> 325.00s]  and the programming model.
+[325.24s -> 329.78s]  And I mention Luis because he's a great computer architect.
+[329.78s -> 332.98s]  He recently passed away and he was a good friend of mine.
+[332.98s -> 335.82s]  So, you know, this is somebody, if you want to kind
+[335.94s -> 338.14s]  of go look at his book, it's called, you know,
+[338.14s -> 342.22s]  Data Center as a Computer, it's a great book, a great primer
+[342.22s -> 344.46s]  on sort of how to design systems like this.
+[345.80s -> 348.34s]  Okay, so warehouse scale computers,
+[348.34s -> 349.28s]  what are they all about?
+[349.28s -> 352.96s]  Well, you know, they came out of this idea of a cluster,
+[353.02s -> 355.70s]  right, so you take a commodity PC
+[355.96s -> 358.72s]  and you connect them together with Ethernet, right?
+[358.72s -> 362.58s]  And so the idea is now you've got this scalable computer,
+[362.76s -> 365.38s]  right, and it's fairly cheap because it's based
+[365.38s -> 368.40s]  on these commodity PC components, right, which,
+[368.40s -> 370.50s]  you know, everybody in the world, you know,
+[370.66s -> 374.24s]  especially when this idea was kind of first invented
+[374.24s -> 377.86s]  in the early 2000s had a PC on their desk and the idea is,
+[377.86s -> 379.62s]  okay, well, if we network them all together,
+[379.94s -> 382.88s]  we can get this large scalable computer, right?
+[383.30s -> 387.70s]  And so the Ethernet networks of those times were not that fast.
+[387.70s -> 393.76s]  You know, today we're in the 10 to 40 gigabits regime.
+[394.36s -> 397.84s]  And the notion is that now you could build this large scale
+[397.84s -> 400.32s]  computer and you could build it out of these cheap components
+[400.32s -> 403.60s]  and so the whole thing was relatively cheap compared
+[403.60s -> 408.24s]  to the big computers that were used
+[408.24s -> 411.38s]  in scientific computing, high performance computing computers,
+[411.38s -> 416.18s]  right, but it turns out that as people started to think
+[416.18s -> 418.76s]  about programming these computers
+[418.76s -> 422.82s]  and using these computers in places like Google and Yahoo
+[422.82s -> 426.20s]  and Facebook, they found out that really the big thing
+[426.20s -> 428.74s]  that differentiated the clusters
+[428.74s -> 431.30s]  from the supercomputers was the network
+[431.78s -> 436.64s]  and that having a really powerful high bandwidth network
+[436.80s -> 440.42s]  could dramatically make the development
+[440.42s -> 442.18s]  of applications easier.
+[442.42s -> 446.16s]  And so it turns out that they actually kind of took a page
+[446.16s -> 448.48s]  from the supercomputer systems
+[448.48s -> 451.40s]  when they were building these warehouse scale computers
+[451.60s -> 455.06s]  and they decided to use a customized expensive network
+[455.44s -> 457.28s]  and so now of course the cost
+[457.28s -> 463.10s]  of these warehouse scale computers are kind of edging
+[463.10s -> 465.22s]  up into the realm
+[465.76s -> 469.10s]  of high performance computing supercomputers, right?
+[469.10s -> 473.08s]  So the question then is sort of given this style
+[473.08s -> 475.80s]  of computer, how do you organize computations
+[475.80s -> 479.04s]  on this architecture and mask this issue of, you know,
+[479.04s -> 484.20s]  how do you balance the load across 100,000 CPUs
+[484.20s -> 486.24s]  and then how do you mask failures, right?
+[486.24s -> 489.90s]  So the first thing we need to understand in order to figure
+[489.90s -> 492.44s]  out how to do this is sort of how these kinds
+[492.44s -> 494.16s]  of systems are organized, right?
+[494.16s -> 496.36s]  So the way I think about it, as I said, you've got,
+[496.68s -> 500.88s]  you know, hundreds of racks of computers and each
+[500.88s -> 503.04s]  of the racks is organized in the following way.
+[503.28s -> 504.70s]  At the top of the rack, sorry,
+[504.70s -> 506.16s]  at the top of the rack you've got this top
+[506.16s -> 509.30s]  of rack switch which is the networking interface
+[509.80s -> 513.78s]  to the rest of the racks in the system and then
+[513.78s -> 516.08s]  within the rack you've got, you know,
+[516.08s -> 521.68s]  a stack of computer servers and you can have 20
+[521.68s -> 524.06s]  to 40 servers, you know,
+[524.06s -> 527.14s]  and how many servers you can fit in the rack is really
+[527.54s -> 529.28s]  dependent on the amount of power
+[529.28s -> 531.06s]  that you can actually deliver to the rack
+[531.54s -> 532.66s]  and that will be dependent
+[532.66s -> 535.70s]  on what infrastructure you've built in the data center, right?
+[535.78s -> 540.34s]  So that could range from 12 to 20 kilowatts, right?
+[540.62s -> 544.72s]  And if these racks, you know, today if you're in the ML regime
+[544.94s -> 549.22s]  and they have GPUs in them, then of course the number
+[549.22s -> 550.72s]  of computers you can fit
+[550.72s -> 553.32s]  in the rack is dramatically lower, right?
+[553.32s -> 556.08s]  Because GPUs take a lot more power, right?
+[556.08s -> 558.22s]  So then the way to think about it then is, okay,
+[558.22s -> 563.60s]  so within the rack you've got the nodes
+[563.84s -> 569.90s]  or servers are connected by between, today between 1
+[569.90s -> 573.48s]  to 2 gigabytes of bandwidth, right?
+[573.48s -> 577.74s]  And then, you know, between the racks, right,
+[577.74s -> 579.38s]  so outside the racks, you know,
+[579.46s -> 582.36s]  early on it was maybe a tenth of a gigabyte,
+[582.36s -> 584.74s]  today it might go up to 2 gigabytes.
+[585.02s -> 586.38s]  So let's look at, you know,
+[586.38s -> 588.90s]  what an individual node looks like, right?
+[588.96s -> 593.74s]  So you've seen this picture before in the sense
+[593.74s -> 596.64s]  that you've got maybe two socket system
+[596.64s -> 599.02s]  which means two CPU chips,
+[599.02s -> 605.00s]  each of those chips could contain 16 to 32 CPU cores
+[606.00s -> 610.36s]  and then they're connected to DDR chips
+[610.36s -> 614.56s]  which provide the main memory and you might have 128 to,
+[614.82s -> 618.66s]  you know, 2 terabytes of DRAM main memory
+[618.90s -> 621.58s]  and the bandwidth channel between there is roughly,
+[621.58s -> 624.28s]  you know, 100 to 200 gigabytes per second.
+[624.76s -> 628.68s]  And then from the IO point of view, then you've got IO
+[628.68s -> 632.14s]  which is to storage which is solid state disk
+[632.68s -> 636.90s]  which would give you 10 to 30 terabytes of storage
+[637.10s -> 640.00s]  and then the other IO interfaces to the network, right?
+[640.00s -> 642.40s]  And so you can imagine then racking
+[642.40s -> 644.76s]  and stacking these servers
+[644.76s -> 646.96s]  to create these racks of computation.
+[647.52s -> 649.18s]  So any questions at this point?
+[649.18s -> 649.26s]  Yeah.
+[649.26s -> 655.52s]  So I didn't understand, was it a single node and a server?
+[655.52s -> 659.08s]  The same, I use them exchangeably, okay?
+[659.20s -> 664.96s]  But you think about a node as a computer
+[664.96s -> 667.86s]  which is running an operating system, right?
+[667.86s -> 672.48s]  So all of these nodes are running a separate
+[672.48s -> 673.96s]  operating system, okay?
+[673.96s -> 676.18s]  So it's important to understand that.
+[676.42s -> 678.54s]  So one thing that I should point out then is kind
+[678.54s -> 682.14s]  of you take a look at this picture, so, you know,
+[682.14s -> 684.26s]  what are the new system components that we've mentioned
+[684.26s -> 686.28s]  that we haven't really introduced before?
+[691.20s -> 691.42s]  Yeah?
+[691.80s -> 692.36s]  A network.
+[692.60s -> 693.62s]  Network and?
+[694.10s -> 695.20s]  Solid state.
+[695.48s -> 696.52s]  And solid state storage, right?
+[696.52s -> 698.62s]  So these two IO components, right?
+[698.94s -> 701.10s]  So what's the other thing you notice about when you kind
+[701.10s -> 705.86s]  of look at the bandwidths that are shown in this diagram?
+[706.44s -> 711.36s]  What conclusions do you make about the bandwidths
+[711.36s -> 712.66s]  that we see in this picture?
+[712.80s -> 712.92s]  Yeah?
+[713.76s -> 715.82s]  The main bottleneck is that it works to keep it slower,
+[716.36s -> 718.62s]  potentially the writing to harvest.
+[719.20s -> 722.62s]  Right. So what you see is that, you know, the network,
+[722.62s -> 728.62s]  especially in the early days when you've got .1 gigabytes
+[728.62s -> 734.04s]  of bandwidth between the racks, this is maybe a tenth
+[734.04s -> 737.38s]  of the bandwidth you get from going to your local disk.
+[737.82s -> 741.52s]  Okay? So that's one thing to point out, that the network,
+[741.52s -> 745.72s]  you know, is potentially has lower bandwidth
+[745.72s -> 747.62s]  than accessing your local disk.
+[747.84s -> 748.78s]  What's the other point to make?
+[748.98s -> 749.78s]  Go for it.
+[749.78s -> 751.56s]  I was just going to ask, why is there a difference
+[751.56s -> 753.96s]  between the bandwidth for the network and the nodes
+[754.18s -> 756.60s]  in other racks, like, isn't the communication
+[756.60s -> 758.52s]  between nodes in between racks to the network?
+[759.18s -> 761.76s]  Yes, but what you have is you have a, you've got,
+[762.10s -> 765.54s]  you know, within the rack you have a higher bandwidth network
+[765.58s -> 766.92s]  than you have between the racks.
+[768.24s -> 770.60s]  Right? At least to a first order.
+[770.82s -> 772.32s]  Okay? But then we're going
+[772.32s -> 773.62s]  to make another point in just a moment.
+[773.62s -> 777.22s]  Okay? So what other point, before we talk
+[777.22s -> 780.50s]  about the network, what other things do you see here
+[780.50s -> 781.90s]  when you're looking at the bandwidths?
+[787.26s -> 789.78s]  What's the relationship between the memory bandwidth
+[789.78s -> 791.20s]  and the network and disk bandwidth?
+[791.76s -> 799.14s]  Yeah. In fact, you're towards the magnitude, right?
+[799.14s -> 800.74s]  That's a big difference, right?
+[801.66s -> 804.26s]  Alright. So that's the one point.
+[804.26s -> 806.12s]  But the point about networks, so I made this point
+[806.12s -> 808.38s]  about the fact that, you know, in the early days it was kind
+[808.38s -> 812.44s]  of commodity ethernet and then the warehouse scale
+[812.44s -> 814.34s]  computers guys really got serious
+[814.34s -> 816.04s]  about their networking capability.
+[816.40s -> 819.98s]  And they started making the network, you know,
+[819.98s -> 821.30s]  much higher bandwidth, right?
+[821.30s -> 823.78s]  And so if you're in the two gigabytes per second,
+[824.20s -> 827.16s]  then that's roughly the bandwidth that you're getting
+[827.16s -> 829.58s]  from the solid state disk, right?
+[829.86s -> 832.90s]  And so, you know, at this point, right?
+[833.54s -> 839.02s]  So at this point it may be the same bandwidth to get data
+[839.02s -> 841.64s]  from another node's disks as it is
+[841.64s -> 843.40s]  from your local node's disk, right?
+[843.74s -> 846.98s]  So in the early days that was certainly not the case, right,
+[846.98s -> 848.08s]  when you're down at point one.
+[848.08s -> 853.62s]  But when you get up to two gigabytes per second,
+[853.62s -> 855.30s]  now the picture's changing, right?
+[855.30s -> 860.58s]  Right? Because now you can get potentially the same bandwidth
+[860.92s -> 866.46s]  to a remote node's disk as to your local disk, okay?
+[866.96s -> 869.48s]  So good point, something to keep in mind.
+[870.20s -> 872.94s]  Alright. Okay.
+[872.94s -> 878.76s]  So I said that all of these nodes are running different
+[878.76s -> 880.28s]  operating systems, okay?
+[881.12s -> 884.06s]  So what does that mean about how they can communicate?
+[884.96s -> 885.94s]  Can they share memory?
+[885.94s -> 888.20s]  They can't share memory, right?
+[888.32s -> 891.84s]  They're not touching the same address spaces at all, right?
+[891.84s -> 895.44s]  And so what we need to do is we need another mechanism
+[895.44s -> 898.48s]  for communication and that mechanism is called message
+[898.48s -> 901.00s]  passing, okay, which is like kind of sending a letter
+[901.14s -> 904.14s]  or sending a note to your friend, okay?
+[904.14s -> 910.96s]  And so the abstraction is I'm a thread in some address space
+[910.96s -> 913.84s]  and I've got some variable X that's in my address space
+[913.84s -> 916.26s]  and I want it to send it to another thread
+[916.52s -> 918.02s]  that doesn't share my address space
+[918.02s -> 926.22s]  and so I issue a send call and that I give it the address
+[926.22s -> 929.80s]  of my variable X in my address space.
+[930.66s -> 933.66s]  I say which thread I want to send it to
+[933.66s -> 937.62s]  and I might give it some message ID tag, okay?
+[937.62s -> 940.48s]  And that will be the send and that will go over the network
+[940.48s -> 947.54s]  and, you know, land at the thread or, you know,
+[947.54s -> 951.18s]  of course you can do message passing on the same node
+[951.54s -> 954.98s]  but if you've got separate address spaces but let's assume
+[954.98s -> 957.40s]  that, you know, it's going over the network and then
+[957.64s -> 959.92s]  on the thread running on a different node,
+[959.92s -> 967.46s]  thread two does a receive and it receives the message and puts it
+[967.46s -> 972.26s]  in its variable in its local address space Y, okay?
+[973.00s -> 974.70s]  So it receives the message, right?
+[974.70s -> 980.56s]  And so this communication then happens with sends and receives
+[981.22s -> 987.92s]  and the question is if you've got message passing do you
+[987.92s -> 989.04s]  need synchronization?
+[989.60s -> 995.24s]  See somebody shaking their head yes,
+[995.24s -> 996.70s]  somebody shaking their head no.
+[998.18s -> 999.10s]  So what's the answer?
+[999.10s -> 1000.50s]  So someone who says yes,
+[1000.50s -> 1001.98s]  why do you think you need synchronization?
+[1001.98s -> 1023.60s]  You could potentially deadlock if you're waiting for a message
+[1023.60s -> 1027.92s]  that you, that is never going to arrive
+[1028.10s -> 1030.20s]  but do you need explicit synchronization?
+[1030.20s -> 1035.10s]  You would say no, no because the message,
+[1035.10s -> 1038.02s]  the act of sending a message is the synchronization, right?
+[1039.02s -> 1041.34s]  Okay, so you don't need, you can get deadlocked
+[1041.34s -> 1043.10s]  so that was the issue you were thinking
+[1043.10s -> 1045.66s]  about that's true, you could deadlock
+[1045.82s -> 1047.50s]  but you don't need explicit synchronization.
+[1049.40s -> 1051.90s]  Okay, so we've got send and receive
+[1051.90s -> 1056.48s]  so we have a mechanism, an abstraction for communicating
+[1056.48s -> 1058.90s]  between these separate address spaces
+[1059.08s -> 1062.32s]  that could potentially live on the same machine but,
+[1062.32s -> 1065.02s]  you know, in this large distributed system are typically
+[1065.02s -> 1067.28s]  going to be on different nodes.
+[1068.90s -> 1071.70s]  Okay, so first order of business, right,
+[1071.70s -> 1076.16s]  we're going to use this distributed computer system
+[1076.16s -> 1077.90s]  for doing data processing, right?
+[1078.24s -> 1080.46s]  And so the data's got to live somewhere and it's going
+[1080.46s -> 1082.32s]  to live somewhere in the storage system
+[1082.78s -> 1086.30s]  but we said you've got potentially hundreds of thousands
+[1086.30s -> 1089.66s]  of components and, you know, the components could break,
+[1090.12s -> 1092.94s]  right, and you could lose a node
+[1092.94s -> 1095.86s]  or you could lose a whole rack because the networking
+[1095.86s -> 1097.90s]  at the top of rack, you know, breaks
+[1098.18s -> 1101.18s]  and now the question is how do we ensure
+[1101.36s -> 1103.04s]  that we don't lose any data?
+[1103.04s -> 1106.42s]  We're using this process, this computer for data processing
+[1106.64s -> 1108.66s]  and, you know, if we lose data then, you know,
+[1108.66s -> 1112.94s]  it's kind of failed in its first goal, right?
+[1112.94s -> 1116.16s]  So how can we store the data persistently
+[1116.20s -> 1119.88s]  so the answer is well let's build a distributed file system.
+[1120.30s -> 1125.82s]  So any of you been introduced to the idea
+[1125.82s -> 1126.88s]  of a distributed file system?
+[1128.28s -> 1130.12s]  Okay, yes, some of you, all right,
+[1130.12s -> 1133.06s]  so we'll just talk briefly about it here.
+[1133.06s -> 1136.50s]  So the idea of a distributed file system is that, you know,
+[1136.50s -> 1140.84s]  you've got some global file name space and kind
+[1140.84s -> 1144.68s]  of the idea was, you know, pioneered by Google
+[1144.68s -> 1146.38s]  with the Google file system GFS,
+[1147.02s -> 1151.10s]  the open source version was Hadoop distributed file system
+[1151.10s -> 1154.98s]  HDFS, right, and so, you know, it was predicated
+[1154.98s -> 1158.28s]  on a particular usage model, right, and the model is
+[1158.28s -> 1162.26s]  that you've got large files, you know, potentially, you know,
+[1162.26s -> 1166.44s]  100, tens or hundreds of terabytes and that the data
+[1166.44s -> 1171.40s]  that you write to, the kind of access patent that you use
+[1171.40s -> 1175.60s]  with these files is that you basically just append data
+[1175.96s -> 1179.00s]  to the files in terms of writes and then you read.
+[1179.00s -> 1180.98s]  So it's mostly read and append
+[1181.26s -> 1184.12s]  and very rarely do you update the data in place
+[1184.40s -> 1188.32s]  because a big use of this is for storage of log data,
+[1188.32s -> 1192.88s]  right, so log data you just essentially as the new entry
+[1193.10s -> 1196.06s]  for the log gets generated it gets appended
+[1196.36s -> 1197.56s]  to the log file, right?
+[1198.44s -> 1204.72s]  Okay, so reads and appends are the dominant access mode
+[1204.72s -> 1206.74s]  for this different file system.
+[1206.98s -> 1210.32s]  Okay, so the idea then of this file system is to,
+[1210.68s -> 1217.26s]  you know, divide your huge file up into chunks or blocks
+[1217.26s -> 1225.50s]  and these are usually 64 to 256 megabytes in size
+[1226.48s -> 1228.92s]  and then in order to make sure
+[1228.92s -> 1232.74s]  that you don't lose data you replicate the chunks
+[1233.24s -> 1234.28s]  and where would you, you know,
+[1234.28s -> 1236.84s]  what kind of replication scheme would you want
+[1236.84s -> 1238.84s]  to come up with here?
+[1240.96s -> 1242.68s]  Would you put all of them,
+[1243.00s -> 1246.36s]  all of the replicates in the same rack?
+[1247.00s -> 1248.82s]  Probably not, right, so you want to distribute
+[1249.04s -> 1253.62s]  across my little racks so if you lost a top
+[1253.62s -> 1256.70s]  of rack switch you wouldn't lose the data.
+[1257.38s -> 1260.32s]  So then the idea then is you've got a master node,
+[1260.32s -> 1261.72s]  the master node is going to tell,
+[1261.72s -> 1266.28s]  basically it's got the metadata, the directory for all
+[1266.48s -> 1271.74s]  of the where all the replicas are stored, right?
+[1271.74s -> 1275.72s]  And so the idea then is you've got a global name space,
+[1275.72s -> 1279.26s]  right, across the whole distributed file system
+[1279.76s -> 1283.60s]  and the way that the clients access files is they
+[1283.60s -> 1287.16s]  to talk to the master, they find out where the replicas are
+[1287.16s -> 1289.62s]  and then they go read directly from the replicas.
+[1289.62s -> 1293.02s]  So this is kind of shown in this figure here, right?
+[1293.02s -> 1296.06s]  So you've got a name node or the master node
+[1296.56s -> 1301.12s]  and that has the metadata and you've got a client
+[1301.12s -> 1304.38s]  that wants to read so first of all it goes to the name node,
+[1304.38s -> 1307.54s]  finds out where the replicas are, that's step one
+[1307.82s -> 1312.86s]  and then in step two it goes to the particular data nodes
+[1312.86s -> 1318.38s]  which actually have the data and it picks up the block
+[1318.72s -> 1322.38s]  from one of the replicas and then if it's,
+[1323.38s -> 1325.36s]  that's client number one, client number two wants
+[1325.36s -> 1327.60s]  to do it right and so of course it has
+[1327.66s -> 1329.42s]  to update all the replicas, right?
+[1329.42s -> 1330.82s]  Because it got that information
+[1330.82s -> 1334.18s]  about where the replicas exist from the name node.
+[1334.30s -> 1334.64s]  Question?
+[1334.64s -> 1351.48s]  How do you make sure that the mobile clients aren't?
+[1351.48s -> 1362.00s]  Well, typically you make sure that sort of only one
+[1362.00s -> 1367.04s]  of the clients is writing to, you know, you handle
+[1367.04s -> 1368.80s]  that at the application level, right?
+[1368.80s -> 1368.90s]  Yeah. Yeah.
+[1368.90s -> 1369.00s]  Yeah.
+[1369.00s -> 1381.82s]  No, there's a single master node that may be replicated,
+[1382.14s -> 1382.36s]  right?
+[1382.62s -> 1383.64s]  Turns out that, you know,
+[1383.64s -> 1386.08s]  if you've only got a single node the chances
+[1386.20s -> 1388.02s]  of failure are not that high.
+[1388.50s -> 1390.94s]  The issue is of course if you've got thousands of nodes.
+[1390.94s -> 1391.04s]  Yeah.
+[1391.36s -> 1395.06s]  But of course you may want some duplication, you know,
+[1395.06s -> 1398.82s]  maybe to handle the load, right?
+[1398.82s -> 1402.98s]  And you can imagine that in a system with enough,
+[1403.52s -> 1409.32s]  high enough usage, right, that you might need to duplicate,
+[1409.52s -> 1411.86s]  you know, to make sure that you can handle the load
+[1411.86s -> 1414.26s]  and you might want some duplication to make sure
+[1414.26s -> 1416.64s]  that if a node fails you still have a backup.
+[1416.64s -> 1416.74s]  Yeah.
+[1417.14s -> 1419.04s]  Since we are replicating two to three times,
+[1419.26s -> 1421.74s]  so does that really mean like in my time
+[1421.74s -> 1425.88s]  that I'm just giving 50% of my container?
+[1425.88s -> 1428.04s]  Yeah. Yeah, storage.
+[1428.50s -> 1429.34s]  Yeah. Yeah.
+[1429.68s -> 1434.06s]  Is this, like this looks very similar to a file
+[1434.06s -> 1435.82s]  at risk table, FAD storage.
+[1436.20s -> 1439.58s]  You have like address tables for where on the file there.
+[1439.96s -> 1442.66s]  And then you go, yeah, is it very similar or are there
+[1442.66s -> 1442.96s]  other options?
+[1442.96s -> 1443.52s]  To what?
+[1444.24s -> 1448.42s]  FAD, like the finest file at risk table storage.
+[1448.42s -> 1449.38s]  Yeah, it's similar.
+[1449.56s -> 1450.64s]  Yeah, but it's distributed.
+[1451.80s -> 1458.48s]  Yeah. Okay, so now we have a way
+[1458.48s -> 1463.18s]  of persistently storing data such that we never lose data
+[1463.18s -> 1466.92s]  if one of our components in our distributed system fails.
+[1467.24s -> 1471.62s]  Okay. So now here's the problem we're trying to solve.
+[1471.78s -> 1476.08s]  Suppose CS 149 gets even more popular than it is today.
+[1476.62s -> 1481.24s]  Everybody who majors in CS and everybody outside wants
+[1481.24s -> 1484.04s]  to understand and learn about parallel computing.
+[1484.36s -> 1489.98s]  And so the website is getting tons of page views, right.
+[1489.98s -> 1495.00s]  So here's a log of page views from the course website.
+[1495.76s -> 1501.12s]  And your goal is to understand something
+[1501.12s -> 1502.66s]  about these page views, right.
+[1502.66s -> 1506.26s]  So you imagine, right, that we're going to store these page views
+[1507.16s -> 1508.96s]  on a cluster of four nodes.
+[1509.68s -> 1514.24s]  So our tiny cluster here, but we'll give you an idea, right.
+[1514.24s -> 1518.30s]  And so each of the nodes has a 10 terabyte SSD.
+[1518.96s -> 1525.24s]  And you've got some number of blocks associated with each
+[1525.32s -> 1529.38s]  of the nodes in the system, right.
+[1529.38s -> 1535.80s]  So you've, you know, you've divided the large log file
+[1535.80s -> 1542.22s]  into 256 megabyte chunks that we're going to call blocks.
+[1542.62s -> 1544.26s]  And then we're going to distribute the blocks
+[1544.26s -> 1547.10s]  across all the nodes in our cluster.
+[1547.10s -> 1548.70s]  In this case, four nodes, okay.
+[1548.70s -> 1553.88s]  So we've got, we've divided the file into eight blocks
+[1554.28s -> 1557.08s]  and distributed across the four nodes.
+[1557.92s -> 1564.86s]  Okay. All right, so, so what we want to know is, you know,
+[1565.12s -> 1568.52s]  who's accessing the site, rather than who's accessing,
+[1568.52s -> 1571.20s]  you know, what type of device are they using
+[1571.20s -> 1572.14s]  to access the site.
+[1572.26s -> 1575.08s]  So what type of mobile phone are the students using
+[1575.08s -> 1576.16s]  because of course, you know,
+[1576.60s -> 1581.04s]  who accesses websites using anything else these days, right.
+[1581.52s -> 1585.36s]  Okay, so you could potentially write a program
+[1585.36s -> 1591.00s]  to analyze the log file using message passing, right.
+[1591.00s -> 1595.06s]  So we're not going to talk about it in this class,
+[1595.06s -> 1598.52s]  but you know, you can program these distributed computers using
+[1598.52s -> 1601.14s]  message passing, using send and receive
+[1601.14s -> 1603.18s]  and what's called collective operations.
+[1603.48s -> 1608.82s]  There's an API called the Message Passing Interface, MPI.
+[1609.10s -> 1611.94s]  I encourage you to go look at it if you're interested,
+[1612.12s -> 1614.18s]  but believe me, it would be painful.
+[1614.54s -> 1617.92s]  And furthermore, it wouldn't necessarily, you know,
+[1618.04s -> 1619.86s]  handle fault tolerance, right.
+[1619.86s -> 1622.36s]  So there's one thing, you know,
+[1622.36s -> 1625.12s]  we've got this persistent distributed file system
+[1625.12s -> 1627.42s]  which makes sure that you don't lose any data once you
+[1627.42s -> 1629.08s]  put data in the file system.
+[1629.38s -> 1631.38s]  But what happens if in the middle
+[1631.50s -> 1635.96s]  of your computation you lose one of the nodes, right,
+[1635.96s -> 1638.66s]  and the data that you have is in memory.
+[1639.18s -> 1640.42s]  Right, then you've lost that.
+[1640.42s -> 1642.80s]  So MPI doesn't help you there, right.
+[1642.80s -> 1645.80s]  So you need some other way of dealing
+[1645.80s -> 1649.90s]  with fault tolerance beyond just having a file system
+[1650.46s -> 1651.42s]  that doesn't lose data.
+[1651.42s -> 1656.30s]  All right, so MPI is an option, but it's not a very good one
+[1656.30s -> 1659.42s]  and it's not easily programmable.
+[1659.70s -> 1664.78s]  So let's think about how you might want to, you know,
+[1664.78s -> 1668.44s]  how you might want to think about programming the application.
+[1668.44s -> 1672.10s]  So let's go back to the idea of data parallel operations,
+[1672.10s -> 1676.86s]  right, in particular, map and reduce, right.
+[1676.86s -> 1680.26s]  So just to refresh your memory, right, so the map is going
+[1680.26s -> 1684.68s]  to take a collection or a sequence, in this case,
+[1684.68s -> 1690.98s]  of type A and create or produce a sequence
+[1690.98s -> 1694.14s]  or collection of type B. And the way that it's going
+[1694.14s -> 1696.30s]  to do that is it's going to take each element
+[1696.44s -> 1701.40s]  of the input sequence and convert it to an element
+[1701.40s -> 1702.76s]  of the output sequence, right.
+[1703.46s -> 1705.98s]  So what do we set, there are two things we set about map
+[1706.58s -> 1709.30s]  that we could do that are important.
+[1713.50s -> 1714.38s]  What's important about map?
+[1716.60s -> 1716.80s]  Yeah.
+[1718.30s -> 1719.46s]  It's easily parallelizable.
+[1719.46s -> 1722.38s]  It's easily parallelizable, right, so because, of course,
+[1722.52s -> 1724.36s]  we know there are no dependencies
+[1724.36s -> 1729.62s]  between the different elements, right,
+[1729.74s -> 1731.56s]  so we can do the elements,
+[1731.56s -> 1735.86s]  we can create the output sequence in any order.
+[1737.00s -> 1738.48s]  What's the other important thing about map?
+[1741.48s -> 1744.70s]  Something feels like a different opinion.
+[1744.70s -> 1745.12s]  Why is that?
+[1745.66s -> 1748.96s]  Well, it's like side effect for you to be fun, so.
+[1748.96s -> 1751.00s]  Ah, side effect free, so what does that mean?
+[1751.32s -> 1753.46s]  Which means you can draw it again, like again and again,
+[1753.46s -> 1754.74s]  on the same input, same output.
+[1754.74s -> 1756.30s]  And why is that?
+[1757.00s -> 1761.12s]  Well, because, like, it's bad, like we can access
+[1761.12s -> 1763.58s]  that piece of, like, that important number here,
+[1763.58s -> 1765.02s]  like you do, like you do that output.
+[1765.02s -> 1769.16s]  Because map does not mutate its input, right,
+[1769.16s -> 1772.58s]  it doesn't change its input, so the input never changes,
+[1772.58s -> 1775.22s]  so you can run it as much, as often as you like
+[1775.76s -> 1777.76s]  and generate the output, right.
+[1778.98s -> 1780.62s]  Good, so that's an important point to remember.
+[1781.26s -> 1786.54s]  That sort of these data parallel functional operations,
+[1786.54s -> 1793.62s]  the key thing about functional programming models is they
+[1793.62s -> 1795.82s]  don't mutate their input, okay.
+[1796.58s -> 1798.60s]  And because they don't mutate their input, you know,
+[1798.60s -> 1800.86s]  it has all these nice properties of side effect,
+[1801.34s -> 1805.22s]  free-ness and, you know, which will have,
+[1805.22s -> 1808.80s]  I think you're alluding to the fact
+[1808.86s -> 1811.76s]  that it has some fault tolerant benefits
+[1811.76s -> 1813.26s]  that we'll definitely talk about.
+[1814.44s -> 1818.82s]  All right, so the other operation is reduce, right.
+[1818.90s -> 1825.86s]  So reduce will take a sequence of type A
+[1825.86s -> 1831.46s]  and produce a single element of type B by using some sort
+[1831.46s -> 1833.58s]  of reduction function.
+[1835.10s -> 1836.64s]  All right, so now let's think
+[1836.64s -> 1840.42s]  about the map-reduce programming model and a way
+[1840.42s -> 1845.78s]  of counting the page views of a different type, of each type.
+[1846.22s -> 1849.36s]  Right, so the key elements of the map-reduce programming
+[1849.36s -> 1851.72s]  model, of course, are a mapper function,
+[1852.60s -> 1856.96s]  which is shown here, oops.
+[1856.96s -> 1870.60s]  And a reducer function, which is shown here, right.
+[1870.60s -> 1874.34s]  So the mapper function is called once per line
+[1874.76s -> 1881.88s]  of the log file, and it passes the line and figures
+[1881.92s -> 1885.80s]  out whether the line is from a,
+[1885.80s -> 1889.90s]  the entry is from a mobile client.
+[1890.56s -> 1893.82s]  Okay, so it figures out whether it's from a mobile client.
+[1894.76s -> 1900.48s]  And if it is, it figures, it records a entry
+[1901.08s -> 1907.32s]  or updates an entry in the result map, right.
+[1907.32s -> 1913.74s]  So you, the input to mapper is a single line from the log file
+[1913.74s -> 1920.74s]  and the output is a map of results, right.
+[1920.74s -> 1930.98s]  And so it's going to add an entry to the map data structure.
+[1931.90s -> 1936.96s]  And then the reducer function is going to be called
+[1937.00s -> 1943.72s]  for unique value, unique keys, all the values associated
+[1943.72s -> 1947.24s]  with the unique key, and it's going to be called once
+[1947.48s -> 1952.04s]  for each unique key, and what it's going to do is it's going
+[1952.04s -> 1955.98s]  to take the string of values and just add them up, right,
+[1956.06s -> 1961.96s]  to create a sum, right, which is the result.
+[1962.64s -> 1965.58s]  Okay, so the idea then is we,
+[1965.58s -> 1973.26s]  we generate these key value pairs in the mapper function
+[1973.62s -> 1975.72s]  and then we reduce these key value pairs
+[1975.72s -> 1978.60s]  in the reducer function, right.
+[1978.60s -> 1985.66s]  And so the code at the bottom shows how things get called.
+[1985.66s -> 1989.18s]  First of all, we get the input
+[1989.18s -> 1991.82s]  from our distributed file system,
+[1992.50s -> 1998.36s]  and then the write the output again back
+[1998.36s -> 1999.80s]  to the distributed file system.
+[2000.42s -> 2004.98s]  And that happens when we run map produce job
+[2005.24s -> 2007.62s]  with the mapper function, the reducer function,
+[2007.92s -> 2009.14s]  and the input and output.
+[2010.00s -> 2010.18s]  Yeah.
+[2011.16s -> 2026.38s]  So the way to think about this is that the input
+[2026.90s -> 2029.76s]  to the map is really the data that you get
+[2029.76s -> 2033.12s]  from the distributed file system, right.
+[2033.12s -> 2037.86s]  So you think about the, in this case you can think
+[2037.86s -> 2040.00s]  about the kind of results as sort
+[2040.00s -> 2043.00s]  of internal to map reduce, right.
+[2043.74s -> 2049.94s]  And so the interface is really, the API really has to do
+[2049.94s -> 2055.26s]  with the data that you give to the run map produce job,
+[2055.56s -> 2061.08s]  right, and so, you know, the input doesn't get mutated.
+[2061.44s -> 2066.46s]  Okay, so let's think
+[2066.46s -> 2071.64s]  about actually implementing run map reduce job.
+[2071.80s -> 2074.12s]  And so the way to think about things, you know,
+[2074.12s -> 2078.20s]  is so I'm going to show you the kind of classic, you know,
+[2078.98s -> 2081.58s]  map reduce 101, which is word count, right.
+[2082.32s -> 2083.98s]  All right, so the idea is
+[2083.98s -> 2089.70s]  that you have one map task per block of the input file,
+[2090.12s -> 2092.56s]  right, and so in this case we've got three blocks,
+[2092.98s -> 2097.10s]  and so we've got three map tasks, right,
+[2097.10s -> 2101.80s]  and the map task, you know, read lines
+[2101.80s -> 2109.82s]  from the input blocks, and they create this set
+[2109.82s -> 2112.86s]  of key value pairs, and so here we want
+[2112.86s -> 2117.68s]  to count the number of word occurrences in the input file,
+[2118.28s -> 2121.24s]  and it creates an entry, a key value pair,
+[2121.24s -> 2125.50s]  which has a one associated with all of the words
+[2125.50s -> 2130.04s]  that it found in the input files, right,
+[2130.04s -> 2136.04s]  and so you've got three sets of, or three maps,
+[2136.18s -> 2141.52s]  three instances of key value pairs associated with each
+[2141.52s -> 2145.00s]  of the mapper tasks, right, okay.
+[2145.14s -> 2152.36s]  So now in this case we've got two reduce tasks, right,
+[2152.86s -> 2156.28s]  and so the question, so in the mapper task the parallelism is
+[2156.28s -> 2157.92s]  obvious, right, it's associated
+[2157.92s -> 2159.64s]  with each of the input blocks.
+[2160.28s -> 2162.64s]  How about the reducer task,
+[2162.64s -> 2163.62s]  where do we get the parallelism
+[2163.62s -> 2165.46s]  from for the reducer tasks?
+[2165.46s -> 2178.64s]  Right, so you're going to associate some number of keys
+[2179.02s -> 2180.94s]  to each of the reducer tasks, right,
+[2180.94s -> 2184.10s]  and so that's where the parallelism is going to come from,
+[2184.40s -> 2186.96s]  but what happens when you do that?
+[2186.96s -> 2187.06s]  Yeah.
+[2187.22s -> 2187.32s]  Yeah.
+[2187.72s -> 2199.64s]  So you, I mean it won't work unless you have an associative
+[2199.64s -> 2205.12s]  reducer, yeah, that's right, so that's kind of part
+[2205.12s -> 2207.24s]  of the limitation of a map reduce,
+[2209.24s -> 2210.80s]  if you want to parallelize it at least, yeah.
+[2212.12s -> 2214.56s]  So but what happens when you do this?
+[2217.56s -> 2221.46s]  Who said we want to get the parallelism
+[2221.46s -> 2226.14s]  by having multiple keys being operated at the same time
+[2226.14s -> 2229.16s]  by different reduce tasks, so what do we have to do
+[2229.16s -> 2230.24s]  in order to make that happen?
+[2231.96s -> 2232.94s]  Yeah, somebody said something.
+[2233.34s -> 2236.30s]  Synchronization of what sort?
+[2237.42s -> 2242.68s]  Somebody back there, what's the answer to what,
+[2242.68s -> 2246.94s]  if we've got to parallelize across keys, what do we have
+[2246.94s -> 2250.30s]  to make sure happens in order for the reduction to be correct?
+[2250.30s -> 2250.48s]  Yeah.
+[2250.80s -> 2257.52s]  All the keys of the same type or the same value have to go
+[2257.52s -> 2262.76s]  to the same reducer task, right, and so the way to think
+[2262.76s -> 2269.38s]  about this is map reduce is really map group by key reduce,
+[2269.86s -> 2274.36s]  right, or there's this big sort or shuffle in the middle
+[2274.56s -> 2278.62s]  to make sure all the keys with the same value go
+[2278.62s -> 2285.36s]  to the same reduce task, right, and so that's the way to think
+[2285.36s -> 2291.70s]  about map reduce, it's really map group by key reduce
+[2292.24s -> 2295.92s]  or some people say sort or shuffle, right, in the middle
+[2296.14s -> 2298.70s]  in which you've got a lot of communication
+[2298.70s -> 2302.12s]  that is potentially going to happen between the mapper tasks
+[2302.62s -> 2305.30s]  and the reducer tasks, right, and then we're going
+[2305.30s -> 2308.70s]  to talk more specifically about sort of how you make sure,
+[2308.70s -> 2313.24s]  you know, that the keys of the same value go
+[2313.24s -> 2315.04s]  to the same reduce task.
+[2316.00s -> 2318.80s]  Okay, so let's run the mapper function,
+[2318.80s -> 2323.18s]  so here's our map reduce code and we want
+[2323.18s -> 2327.72s]  to run the map reduce job, right,
+[2327.72s -> 2330.06s]  and so the first question is, you know,
+[2330.06s -> 2333.12s]  we've got these mapper tasks associated
+[2333.12s -> 2335.54s]  with each block, how should we run them?
+[2338.08s -> 2340.48s]  Anybody have ideas about how we should run them?
+[2342.20s -> 2346.80s]  Yeah, that's one idea, we could run the same,
+[2346.80s -> 2349.10s]  how do we make sure things get load balanced?
+[2349.56s -> 2354.10s]  What if we were really concerned
+[2354.10s -> 2355.60s]  about load balance, what would we do?
+[2360.20s -> 2360.30s]  Yeah?
+[2364.30s -> 2364.46s]  Yeah?
+[2364.90s -> 2367.62s]  You could do something like the trip, right,
+[2367.62s -> 2370.52s]  like I think this has to make one node like a blade
+[2370.82s -> 2373.14s]  and that's going to have like all the tests queued
+[2373.14s -> 2374.66s]  up there and all the ones queued,
+[2375.18s -> 2377.22s]  sending messages together in the next class.
+[2377.22s -> 2379.60s]  Right, right, use a work queue or some sort
+[2379.60s -> 2381.30s]  of distributive work queue to make sure
+[2381.30s -> 2383.00s]  that we had extreme,
+[2383.00s -> 2385.80s]  make sure that we had extreme load balance
+[2386.28s -> 2390.48s]  and this might work well in the case
+[2390.48s -> 2392.88s]  where we had a really powerful network, right,
+[2393.38s -> 2397.28s]  that second case I talked about, about having bandwidth
+[2397.86s -> 2400.14s]  in the network equal to what you might get
+[2400.14s -> 2404.44s]  to your local hard disk, but what if, you know,
+[2404.44s -> 2408.20s]  in the early days of map reduce when the network was much,
+[2409.32s -> 2412.50s]  had much less bandwidth than the bandwidth you get
+[2412.50s -> 2415.02s]  to your local disk, then we had another idea
+[2415.02s -> 2416.98s]  which was proposed first, which was what?
+[2418.42s -> 2426.10s]  Yeah, run the task associated with the block on the CPU
+[2426.32s -> 2428.32s]  that actually contains, on the node
+[2428.32s -> 2432.16s]  that actually contains the block, right, so this idea is
+[2432.16s -> 2436.28s]  sort of data distribution or task distribution,
+[2436.28s -> 2440.96s]  each processor node, processor lines or blocks
+[2441.32s -> 2444.02s]  in the input file that are stored locally.
+[2445.92s -> 2455.80s]  Okay, alright, so now we, so now we've got all the mapper tasks
+[2455.80s -> 2459.22s]  and we've created all these key value pairs associated
+[2459.56s -> 2462.62s]  with the different mobile clients and now we have
+[2462.74s -> 2466.16s]  to do the reductions, right, so we've got all these keys
+[2466.52s -> 2470.52s]  which have been generated by the mapper function, okay,
+[2470.52s -> 2472.88s]  and so now we have to make sure
+[2473.40s -> 2475.58s]  that we can do the reduction.
+[2476.06s -> 2477.34s]  So the two questions, right,
+[2477.70s -> 2481.68s]  how do we assign the reducer tasks, right,
+[2482.22s -> 2485.94s]  and then how do we make sure we get all the data
+[2485.94s -> 2490.06s]  for a key value to the correct worker node?
+[2491.24s -> 2493.98s]  So who has ideas about what we should do
+[2493.98s -> 2501.36s]  to assign the reducer task to nodes to run?
+[2503.54s -> 2503.64s]  Yeah?
+[2504.78s -> 2511.48s]  I think that's answering the second question.
+[2512.74s -> 2516.30s]  What about the first question, about where, you know,
+[2516.30s -> 2517.82s]  where the task is going to run?
+[2519.04s -> 2519.26s]  Yeah?
+[2519.26s -> 2529.02s]  Right, so you have some sort of scheduler which is looking
+[2529.02s -> 2535.44s]  at the, you have some set of nodes which are going
+[2535.44s -> 2539.22s]  to be reducer nodes, right, and you have a scheduler
+[2539.22s -> 2541.44s]  which is going to assign tasks, right,
+[2541.72s -> 2544.24s]  but the question then still is sort
+[2544.24s -> 2548.00s]  of who is actually going to, how are you going to make sure
+[2548.14s -> 2550.48s]  that the data gets to the right node?
+[2555.00s -> 2558.68s]  Right, and so somebody had, you had an idea for that, right,
+[2558.68s -> 2561.38s]  which was use some hash function, right,
+[2562.12s -> 2564.86s]  based on the key value, and then use that as the
+[2564.86s -> 2568.54s]  partitioner to, or use that as the information given
+[2568.54s -> 2575.14s]  to the mapping task nodes, and that will indicate
+[2575.14s -> 2581.32s]  where those nodes should send the key value data
+[2581.32s -> 2583.12s]  to be reduced, depending on the key.
+[2583.48s -> 2590.52s]  So example is assign Safari IOS to node zero,
+[2590.74s -> 2593.76s]  and then we know where to send the data to,
+[2594.18s -> 2596.00s]  and where the task is going to run,
+[2596.00s -> 2599.38s]  where the reducer task is going to run, okay?
+[2599.62s -> 2602.40s]  So in different systems that work, some ways kind
+[2602.40s -> 2606.40s]  of decide up front, and so the mapper, you know,
+[2606.40s -> 2610.40s]  declares what key value pairs it has, but it knows where
+[2610.40s -> 2613.90s]  to send them ahead of time, and others might decide,
+[2613.90s -> 2617.56s]  you know, once all of the mapper tasks are complete,
+[2617.56s -> 2620.42s]  right, because you can't do any reduction, right,
+[2620.82s -> 2624.12s]  until all the mapper tasks are complete, so there has
+[2624.16s -> 2628.74s]  to be a barrier between the mapper tasks
+[2629.16s -> 2630.52s]  and the reducer tasks, yeah?
+[2631.32s -> 2635.02s]  Would this system be aware of the, so in this case,
+[2635.02s -> 2637.82s]  Safari values are all equally distributed among the four
+[2637.82s -> 2640.10s]  nodes, but say like three
+[2640.10s -> 2641.96s]  of the Safari values were a node one,
+[2642.44s -> 2643.70s]  and one of them was a node two,
+[2643.70s -> 2645.66s]  it would be more efficient to get it?
+[2645.96s -> 2649.00s]  Yes, you could imagine a locality aware scheduling
+[2649.00s -> 2652.14s]  mechanism that took that into account, good point, yeah.
+[2655.54s -> 2658.84s]  All right, so we have a mechanism for deciding,
+[2658.84s -> 2660.90s]  you could use the scheme that was just suggested,
+[2661.12s -> 2665.36s]  where we try and group the reducer task,
+[2665.36s -> 2668.20s]  we put the reducer task on the place where most
+[2668.20s -> 2672.16s]  of the key value pairs already exist in order
+[2672.16s -> 2679.26s]  to minimize data movement, or we could, you know,
+[2679.26s -> 2680.52s]  in the instance of, hey,
+[2680.52s -> 2681.86s]  I've got a really powerful network,
+[2681.86s -> 2683.00s]  it may not matter, right?
+[2683.00s -> 2692.32s]  All right, so we've solved the, you know, key problem
+[2692.32s -> 2697.80s]  of executing the mapper and reducer function, you know,
+[2697.80s -> 2699.86s]  using these different tasks associated
+[2700.40s -> 2705.34s]  with either different blocks of the input file
+[2705.34s -> 2709.18s]  or different keys, but what if I've got, you know,
+[2709.68s -> 2712.10s]  thousands of nodes, there are a couple of issues
+[2712.10s -> 2715.24s]  that could crop up, one is that, you know,
+[2715.24s -> 2717.76s]  some of the nodes may fail, as we've talked
+[2717.76s -> 2721.20s]  about, right, during the computation, right,
+[2721.20s -> 2723.78s]  so we're not going to lose any data, right,
+[2723.78s -> 2729.18s]  because we have made sure that, you know,
+[2729.18s -> 2734.16s]  that we've got a file system that is fault tolerant,
+[2734.36s -> 2737.08s]  but we need some way of making sure
+[2737.08s -> 2740.52s]  that we can recover the computation and make sure
+[2740.58s -> 2743.36s]  that the computation will complete successfully.
+[2744.10s -> 2744.82s]  So that's one issue.
+[2744.82s -> 2748.60s]  The other issue is that if I've got a huge data center,
+[2748.88s -> 2752.82s]  I'm not going to have all the nodes in the data center be
+[2752.82s -> 2754.02s]  of the same vintage, right,
+[2754.02s -> 2757.70s]  that you may refresh the data center over time,
+[2757.70s -> 2759.56s]  over the period of maybe three to five years,
+[2759.82s -> 2762.54s]  and so I'm going to have some older nodes, maybe with,
+[2762.90s -> 2765.98s]  you know, fewer cores and maybe a lower clock rate
+[2765.98s -> 2768.38s]  and some newer nodes with more cores
+[2768.38s -> 2770.02s]  and maybe a higher clock rate,
+[2770.18s -> 2775.26s]  and so some of those nodes may finish faster than other nodes,
+[2775.50s -> 2780.50s]  and so how do I make sure that I can deal with this problem?
+[2781.50s -> 2786.14s]  And so the key thing then is to have a job scheduler
+[2786.40s -> 2789.62s]  that handles these issues, right, so it exploits data,
+[2789.90s -> 2795.02s]  locality, you know, runs map of jobs close to input blocks,
+[2795.30s -> 2799.54s]  runs reducer blocks, reducer jobs or tasks, as was suggested,
+[2799.88s -> 2802.90s]  close to the place where you've got most of the data,
+[2803.22s -> 2806.12s]  and in particular, it handles node failures, right?
+[2806.32s -> 2810.16s]  So basically, you've got a heartbeat, which is, you know,
+[2810.16s -> 2815.22s]  which is, you know, each of the nodes regularly sends a
+[2815.72s -> 2820.90s]  message saying, hey, I'm alive, to the master node,
+[2820.90s -> 2823.20s]  the node is doing the job scheduling, at some point,
+[2823.20s -> 2827.36s]  if that heartbeat goes away, then the node is declared
+[2827.36s -> 2832.42s]  to be dead and the scheduler has to figure out what to do, okay?
+[2832.64s -> 2835.42s]  So what can you do?
+[2835.42s -> 2837.70s]  Well, once you detect a failure
+[2837.70s -> 2840.86s]  of a mapper node, what should you do?
+[2844.86s -> 2845.08s]  Yeah?
+[2845.62s -> 2849.76s]  You go to another one of the computers that has copies
+[2849.76s -> 2851.32s]  of the storage in front of them.
+[2851.32s -> 2856.28s]  Right, so you go somewhere else and you fire up the tasks
+[2856.30s -> 2860.90s]  that were running on that mapper node and the data will come
+[2861.02s -> 2864.54s]  from blocks that have been replicated in the system, right?
+[2864.94s -> 2870.54s]  And the fact that you've got this data parallel,
+[2870.54s -> 2872.32s]  functional data parallel model
+[2872.32s -> 2874.90s]  in which the inputs are not mutated guarantees
+[2874.90s -> 2876.24s]  that that's the safe thing to do.
+[2876.64s -> 2879.38s]  And so now you're going to create a new set
+[2879.38s -> 2882.24s]  of key value pairs that can be reduced.
+[2883.06s -> 2887.24s]  So what happens if a reducer fails?
+[2893.10s -> 2893.20s]  Yeah?
+[2893.80s -> 2895.88s]  We need to send all that data to a new reducer.
+[2896.16s -> 2898.26s]  What if it fails after it's done?
+[2901.20s -> 2901.64s]  Does it matter?
+[2903.60s -> 2907.44s]  If the reduced tasks are complete,
+[2907.68s -> 2908.64s]  then it doesn't matter, right?
+[2908.64s -> 2911.90s]  But if they're in the middle, then you've got to restart them
+[2912.56s -> 2915.94s]  and the data has to be, you know, either,
+[2916.14s -> 2920.28s]  it's got to go get the data again from the file system
+[2920.70s -> 2923.06s]  where the key value pairs were stored.
+[2925.98s -> 2927.52s]  So how do you handle slow machines?
+[2927.52s -> 2932.74s]  Well, you know, the scheduler can just replicate multiple
+[2933.62s -> 2935.64s]  reducer or mapper jobs.
+[2935.94s -> 2938.86s]  If the machine is taking too long,
+[2939.06s -> 2942.14s]  it'll say I'll just fire off a new job.
+[2942.42s -> 2943.82s]  And then it'll be a race, right?
+[2943.98s -> 2947.34s]  So if the slow computer finishes first,
+[2947.42s -> 2949.32s]  then that result will be taken
+[2949.58s -> 2953.80s]  and the replicated job will be killed.
+[2953.96s -> 2956.96s]  Otherwise, if the replicated job finishes first, then,
+[2957.02s -> 2959.86s]  you know, you can kill the slow machine.
+[2960.94s -> 2964.72s]  So duplicate and, you know, handle multiple machines
+[2964.72s -> 2967.56s]  and this is all possible because of this kind
+[2967.56s -> 2970.88s]  of data parallel functional programming model.
+[2970.94s -> 2971.04s]  Yeah?
+[2971.58s -> 2974.66s]  Couldn't we have some sort of a metadata or heuristics
+[2974.66s -> 2976.66s]  to avoid wasteful computation?
+[2976.66s -> 2978.60s]  Like in this case, they're killing a node
+[2978.84s -> 2980.82s]  which is not doing any useful work.
+[2982.08s -> 2984.80s]  Like if you have metadata that this machine is generally
+[2984.86s -> 2987.24s]  positive, this machine is generally slow.
+[2987.46s -> 2991.36s]  Wouldn't you like schedule for that?
+[2991.36s -> 2994.86s]  I suppose you could, but that, you know, then,
+[2994.86s -> 2997.10s]  you know, extra sort of complication
+[2997.10s -> 2998.26s]  in your scheduler, right?
+[2998.76s -> 2999.92s]  Yeah. And, you know,
+[2999.92s -> 3002.68s]  what happens when the machine, you know, and it's got to,
+[3002.68s -> 3005.14s]  you know, keep track of sort of what machines
+[3005.14s -> 3007.10s]  or what vintage and so on and so forth
+[3007.10s -> 3011.34s]  and how loaded they are, you know, that becomes more
+[3011.34s -> 3012.08s]  of a scheduling issue.
+[3012.08s -> 3012.32s]  Yes?
+[3012.72s -> 3016.18s]  What if the job scheduler fails?
+[3016.18s -> 3017.32s]  Then you're out of luck, you're whole.
+[3018.76s -> 3022.52s]  Well, I mean, so as I said, you've got a single node.
+[3022.52s -> 3025.80s]  The chance of that failing is not that high, but,
+[3025.80s -> 3026.90s]  you know, you might duplicate it.
+[3026.90s -> 3037.50s]  All right, so the advantage of MapReduce then, of course,
+[3037.50s -> 3041.44s]  is that, you know, gives you this nice data parallel
+[3041.44s -> 3042.46s]  programming model.
+[3042.74s -> 3045.52s]  MapReduce, it's fairly easy to understand.
+[3045.52s -> 3048.94s]  I, you know, I, you know, can explain MapReduce
+[3048.94s -> 3052.18s]  to most CS undergrads and they would get it right away.
+[3052.18s -> 3054.58s]  Whereas if I introduced them to message passing,
+[3055.10s -> 3058.00s]  it would be a difficult process, right?
+[3058.00s -> 3061.44s]  So you've got this automatic division of jobs,
+[3061.66s -> 3065.40s]  of the job into tasks, either mapper tasks or reducer tasks.
+[3065.86s -> 3069.14s]  You've got this low balancing that happens
+[3069.14s -> 3071.96s]  because you've got many reducer, many mapper tasks
+[3071.96s -> 3073.68s]  and many reducer tasks.
+[3074.18s -> 3076.34s]  You've got locality aware scheduling.
+[3077.04s -> 3080.64s]  And you've got this idea of being able to recover
+[3080.64s -> 3082.76s]  from failures and stragglers.
+[3082.76s -> 3085.96s]  So it's a pretty nice programming model and it,
+[3085.96s -> 3089.66s]  you know, made it possible for mere model, mere mortals
+[3089.90s -> 3093.60s]  to program hundreds of thousands of CPU's for sort
+[3093.60s -> 3095.60s]  of doing these data processing tasks.
+[3095.60s -> 3099.16s]  So it really took off and it became an idea
+[3099.16s -> 3103.40s]  that actually had widespread use even beyond distributed
+[3103.40s -> 3104.10s]  computing, right?
+[3104.10s -> 3107.04s]  You know, we've already seen it in the context of sort
+[3107.04s -> 3112.38s]  of GPU computing and it's being used in other areas too.
+[3113.02s -> 3115.24s]  However, it does have some issues, right?
+[3115.84s -> 3118.94s]  And the first issue being the programming model is pretty
+[3118.94s -> 3120.00s]  simplistic.
+[3120.00s -> 3123.30s]  The only thing you can do is have a map followed
+[3123.30s -> 3125.90s]  by a reduce followed by a map followed by a reduce and so on.
+[3125.90s -> 3129.22s]  So it's a fairly kind of this linear arrangement of map
+[3129.82s -> 3135.70s]  and reduce functions which kind of limits what kinds
+[3135.70s -> 3137.64s]  of applications you can write.
+[3137.82s -> 3144.66s]  And so there was an extension to a directed acyclic graph.
+[3144.66s -> 3148.60s]  The work was called Dryad Link and, you know,
+[3148.60s -> 3152.76s]  it certainly had some academic impact
+[3152.76s -> 3157.16s]  but it didn't get much adoption as far as I can tell.
+[3158.04s -> 3160.32s]  But it's an interesting idea.
+[3160.32s -> 3163.18s]  If you're interested, go and look up the Dryad Link paper.
+[3163.18s -> 3164.28s]  It's a pretty interesting paper.
+[3164.92s -> 3167.56s]  Okay? And how about iterative program?
+[3167.56s -> 3168.74s]  Iterative algorithm.
+[3168.74s -> 3170.86s]  So PageRank, everybody's heard of PageRank, right?
+[3170.86s -> 3173.66s]  You want to understand the importance
+[3173.66s -> 3175.12s]  of a particular website.
+[3175.12s -> 3177.54s]  Then you compute PageRank.
+[3177.54s -> 3180.86s]  It was originally invented by Larry Page, right?
+[3180.86s -> 3185.40s]  He's one of the founders of Google.
+[3185.40s -> 3189.50s]  And the idea is it's an iterative algorithm
+[3189.86s -> 3192.96s]  and if you implement it using the MapReduce model,
+[3192.96s -> 3199.38s]  then every iteration requires a distributed file system read
+[3199.66s -> 3203.68s]  followed by a distributed file system write.
+[3204.08s -> 3208.00s]  Okay? And this could go on for many iterations
+[3208.00s -> 3212.78s]  and so it becomes fairly inefficient
+[3213.32s -> 3216.60s]  to run this algorithm using MapReduce.
+[3217.42s -> 3221.30s]  Another area where MapReduce doesn't work so well is
+[3221.30s -> 3227.84s]  if you've got a set of data that you want to query
+[3228.12s -> 3230.08s]  in some sort of ad hoc way.
+[3230.58s -> 3233.16s]  And this often happens
+[3233.82s -> 3239.16s]  in interactive data processing applications, right?
+[3239.16s -> 3244.30s]  So you've got some data that exists in the file system
+[3244.62s -> 3247.46s]  and you've got a bunch of ad hoc queries and each
+[3247.46s -> 3252.52s]  of them requires this access to the file system
+[3252.52s -> 3254.76s]  which is not very inefficient, right?
+[3254.86s -> 3258.02s]  So even though then this MapReduce has all these nice
+[3258.02s -> 3263.24s]  properties and as I said had a huge impact in the ability
+[3263.24s -> 3266.96s]  for programmers to develop these distributed applications,
+[3267.28s -> 3275.34s]  these kind of limitations led to people thinking
+[3275.36s -> 3278.02s]  about more efficient ways of using the computation.
+[3278.52s -> 3287.48s]  And sorry for the font, the way the fonts look
+[3287.48s -> 3292.76s]  on this slide, but the key point is to remember what we
+[3292.76s -> 3297.18s]  said about the relative bandwidth between the memory
+[3297.18s -> 3300.74s]  versus the network and the storage devices.
+[3301.22s -> 3304.68s]  And so what we want to do is to say is to think
+[3304.68s -> 3307.68s]  about how we can make much more intensive use
+[3307.68s -> 3311.08s]  of the highest bandwidth interface on this picture
+[3311.08s -> 3312.28s]  which is the memory.
+[3314.32s -> 3317.66s]  So what is the problem, well before we talk
+[3317.66s -> 3321.20s]  about the problem let's talk about kind of further motivation
+[3321.20s -> 3325.02s]  for why we potentially could use the memory more intensively.
+[3325.02s -> 3332.98s]  So this is a table from a paper called Dislocality
+[3332.98s -> 3336.40s]  in Data Center Computing is Considered Irrelevant, right?
+[3336.88s -> 3340.96s]  And that's from a paper published in 2011, right?
+[3340.96s -> 3344.52s]  So part of the reason that it was considered irrelevant was
+[3344.52s -> 3345.64s]  the point that we've already made
+[3345.64s -> 3349.36s]  which is the networks were getting much more bandwidth
+[3349.62s -> 3350.56s]  capable, right?
+[3350.86s -> 3355.90s]  But the other reason is shown in this table which you know,
+[3355.90s -> 3361.90s]  is data from 2009 and it's looking at the working set
+[3361.90s -> 3367.04s]  of the big data applications at Facebook, Microsoft and Yahoo
+[3367.56s -> 3374.44s]  and it's showing that with 64 gigabytes of memory 97%
+[3374.44s -> 3378.52s]  of the working sets of data at Facebook can be contained
+[3378.52s -> 3386.38s]  in the memory, 98% at Microsoft and 99.5% at Yahoo, right?
+[3386.38s -> 3390.10s]  So the point here is that you really can keep most
+[3390.10s -> 3392.20s]  of your data in the memory.
+[3392.20s -> 3396.56s]  The memory is big enough but the programming model forces you
+[3396.56s -> 3398.74s]  to shuttle this data back and forth
+[3398.96s -> 3403.20s]  between the storage devices and the memory, right?
+[3403.20s -> 3405.24s]  So the question is could we come
+[3405.24s -> 3408.00s]  up with a programming model which is just as nice
+[3408.44s -> 3412.58s]  or even better than MapReduce but allows you
+[3412.58s -> 3415.16s]  to use the memory much more intensively?
+[3415.58s -> 3416.50s]  What would be the problem, yeah?
+[3416.60s -> 3416.72s]  Yeah?
+[3417.16s -> 3429.94s]  So for all the nodes that you're running, the data will fit
+[3430.14s -> 3432.14s]  in the local memory, not disk?
+[3433.26s -> 3434.06s]  Yeah. Yeah.
+[3434.76s -> 3439.98s]  The replicas have to do with the file system.
+[3440.86s -> 3443.00s]  It's talking about you're actually doing the computation,
+[3443.00s -> 3444.56s]  you're in the middle of the computation,
+[3445.14s -> 3448.42s]  will the data fit in your local, in the memory?
+[3448.94s -> 3453.08s]  Or will you have to, you know, make use of the disk?
+[3453.80s -> 3456.70s]  It turns out you can actually do the computation
+[3457.32s -> 3461.00s]  by having the data, by keeping the data in memory, okay?
+[3461.54s -> 3461.68s]  Yeah?
+[3461.82s -> 3461.92s]  Yeah?
+[3461.98s -> 3474.22s]  Yeah, I mean you still, this is talking about working set, right?
+[3474.22s -> 3477.54s]  Which is sort of most of the accesses are
+[3477.54s -> 3480.32s]  to data that lives in memory, okay?
+[3480.58s -> 3482.14s]  There's not all the accesses, right?
+[3482.14s -> 3484.66s]  So you still get to move some of the data from other places.
+[3484.66s -> 3487.28s]  The question is, you know, we talked about locality, right?
+[3487.38s -> 3492.22s]  So you've got reuse, you've got spatial locality, right?
+[3492.22s -> 3494.12s]  So this is just talking about working set, right?
+[3494.12s -> 3496.98s]  Which is a concept that you should have, you know,
+[3497.28s -> 3500.00s]  we should have talked about in an operating systems class, right?
+[3500.00s -> 3502.16s]  This notion of sort of what is the set of data
+[3502.16s -> 3504.02s]  that you're actively using, right?
+[3504.62s -> 3507.98s]  And that is what they're trying to measure here, right?
+[3509.92s -> 3517.00s]  Okay, so what would be the problem with using memory instead
+[3517.14s -> 3521.16s]  of the storage system to hold the intermediate data
+[3521.16s -> 3522.14s]  in your computation?
+[3522.24s -> 3522.40s]  Yeah?
+[3523.22s -> 3524.52s]  If you lose power, you're screwed.
+[3524.72s -> 3526.24s]  If you lose power, you're screwed, right?
+[3526.24s -> 3528.32s]  You're going to lose your computation, right?
+[3528.40s -> 3532.50s]  So the whole idea of Spark was in memory,
+[3532.78s -> 3535.56s]  fault tolerant distributed computing, right?
+[3535.56s -> 3539.76s]  With emphasis on the fault tolerant piece being once you
+[3539.76s -> 3542.94s]  lose power, you don't want to be screwed, okay?
+[3543.22s -> 3548.34s]  So the goals were, you know, can you have support
+[3548.34s -> 3550.80s]  for iterative machine learning algorithms,
+[3551.34s -> 3555.30s]  data mining algorithms that, in which you will kind
+[3555.30s -> 3561.00s]  of keep your data in memory, so you don't want
+[3561.00s -> 3562.82s]  to incur the inefficiencies
+[3563.20s -> 3566.22s]  of writing the intermediate data to the disk.
+[3566.22s -> 3567.92s]  Because we said that's a low bandwidth,
+[3568.00s -> 3570.94s]  low performance data path, and what you want
+[3570.94s -> 3574.62s]  to make sure is intensively use the high performance,
+[3574.62s -> 3578.42s]  high bandwidth data path between the CPU and memory.
+[3579.42s -> 3583.92s]  Okay? So the challenge then, of course, is how do we make sure
+[3584.14s -> 3586.36s]  that we can do this efficiently
+[3586.36s -> 3589.22s]  and we can efficiently implement fault tolerance
+[3589.70s -> 3592.18s]  for this large scale distributed memory, right?
+[3592.18s -> 3595.78s]  So the solution that we've come up so far is, oh,
+[3595.84s -> 3599.02s]  we know how to do a fault tolerant storage system,
+[3599.02s -> 3600.42s]  so let's just use that.
+[3600.52s -> 3601.86s]  That's the MapReducer solution.
+[3602.00s -> 3603.86s]  But that's a low performance solution, right?
+[3604.10s -> 3607.42s]  So what we want is a higher performance solution that,
+[3607.42s -> 3608.66s]  you know, relies on memory.
+[3608.66s -> 3612.80s]  And so that's SPARC, right?
+[3613.18s -> 3616.86s]  So, you know, we talked about, you could kind
+[3616.86s -> 3620.80s]  of checkpoint and roll back, but then the question is sort
+[3620.80s -> 3623.12s]  of how do you do that and how do you make sure
+[3623.12s -> 3627.02s]  that you distribute your data to different racks,
+[3627.02s -> 3629.82s]  so it could be network intensive.
+[3630.66s -> 3633.70s]  You can maintain a log of updates,
+[3634.16s -> 3638.68s]  but it could be high overhead to maintain these logs.
+[3639.26s -> 3641.56s]  So that probably is not going to work so well.
+[3641.74s -> 3643.76s]  And then you could go to a low performance solution
+[3643.76s -> 3648.86s]  like we've talked about in the case of MapReduce.
+[3649.80s -> 3652.24s]  Okay? So in this case we're going to checkpoint
+[3652.24s -> 3655.28s]  after each MapReduce by writing results
+[3655.28s -> 3658.42s]  to the file system and then, you know, the scheduler is going
+[3658.42s -> 3660.80s]  to make sure that, you know, it's keeping a list of sort
+[3660.80s -> 3667.42s]  of what needs to complete, and it will rerun things that fail.
+[3668.64s -> 3671.76s]  And, you know, the functional structure of programs allows
+[3671.76s -> 3673.70s]  for the restart at the granularity
+[3674.02s -> 3677.90s]  of the mapper or reduce task.
+[3679.10s -> 3680.62s]  Okay? All right.
+[3681.00s -> 3684.26s]  So how does SPARC solve the problem?
+[3684.44s -> 3688.24s]  So the first thing SPARC does is introduce this idea
+[3688.70s -> 3693.66s]  which is central to the approach, which is the idea
+[3693.66s -> 3697.22s]  of a resilient distributed data set, RDD.
+[3697.58s -> 3700.94s]  So this is SPARC's, you know, key programming abstraction.
+[3701.98s -> 3704.38s]  And what is an RDD?
+[3704.96s -> 3709.14s]  It's a read only ordered collection of records.
+[3709.78s -> 3710.48s]  So it's immutable.
+[3710.48s -> 3718.22s]  So this idea of the RDD is a, it's functional in nature,
+[3718.38s -> 3721.36s]  right, so once you think about functional programming,
+[3721.76s -> 3726.28s]  RDD is a fairly natural construct, right?
+[3726.84s -> 3731.72s]  And so RDDs can only be created by the transformations
+[3732.32s -> 3736.64s]  from other RDDs or from persistent storage.
+[3737.44s -> 3744.18s]  Okay? So, for instance, if I start with CS149 log,
+[3745.30s -> 3747.28s]  which is a text file which is stored
+[3747.54s -> 3752.36s]  in our distributed file system, right, I can get the lines
+[3752.36s -> 3755.76s]  from that file to create an RDD called lines.
+[3757.28s -> 3759.60s]  Okay? So that was a transformation
+[3759.66s -> 3763.16s]  from the file system to an RDD called lines.
+[3763.92s -> 3769.30s]  Then I can use a filter transformation, right?
+[3769.44s -> 3772.46s]  So I have lines, the lines RDD,
+[3772.46s -> 3776.22s]  and I'm going to apply a filter transformation
+[3776.66s -> 3781.64s]  to see whether this is a mobile client, and then the,
+[3782.28s -> 3786.34s]  what I'm going to get is mobile views,
+[3786.54s -> 3789.56s]  lines that correspond to mobile views.
+[3790.44s -> 3793.40s]  And so this is another RDD, okay?
+[3795.00s -> 3801.46s]  And then I'm going to take the mobile views RDD,
+[3801.46s -> 3802.94s]  and I'm going to filter it again
+[3803.42s -> 3808.06s]  to see whether the string contains Safari.
+[3808.70s -> 3811.96s]  And if that is true, I'm going to create, I mean,
+[3811.96s -> 3817.02s]  it's going to be entered into this new RDD called Safari
+[3817.02s -> 3817.96s]  views, okay?
+[3817.96s -> 3820.64s]  And then finally I'm going to take Safari views,
+[3820.64s -> 3824.00s]  I'm going to apply a action
+[3824.14s -> 3827.10s]  which will essentially give us a count.
+[3827.10s -> 3828.74s]  It's kind of a reduction which, of course,
+[3828.74s -> 3832.70s]  it's going to create this int which is not an RDD, right?
+[3832.70s -> 3836.78s]  But the RDDs are lines, mobile views, and Safari views.
+[3837.30s -> 3841.34s]  And the sequence of operations
+[3841.78s -> 3847.30s]  that create the RDDs is called a lineage.
+[3847.78s -> 3851.14s]  And we'll come back and revisit this idea, okay?
+[3852.06s -> 3857.38s]  So this is the main way that you program using Spark.
+[3858.32s -> 3862.12s]  You start with some data in the file system,
+[3862.12s -> 3865.22s]  and then you apply transformations to that data
+[3865.22s -> 3869.96s]  to create different RDDs to encode the logic
+[3869.96s -> 3871.50s]  of your program, right?
+[3872.40s -> 3875.60s]  And each of the RDDs is, of course, read-only,
+[3876.18s -> 3879.82s]  and it's ordered, and it's immutable, right?
+[3879.82s -> 3882.84s]  And these turn out to be very useful properties
+[3882.84s -> 3885.64s]  when you're trying to build a fault-tolerant system.
+[3888.58s -> 3888.98s]  All right?
+[3888.98s -> 3898.36s]  So we talked about the fact that using Scala you can write
+[3898.36s -> 3903.24s]  all this in a very functional way, and you can create,
+[3903.88s -> 3908.36s]  in this case, you create an RDD from the file system,
+[3909.08s -> 3914.94s]  and you don't have to explicitly call out the RDDs.
+[3915.62s -> 3919.22s]  And the sequence of operations, or transformations then,
+[3919.54s -> 3921.86s]  as I said, called lineage.
+[3925.82s -> 3926.06s]  All right?
+[3926.06s -> 3931.36s]  So in this case, you do, your operation is a filter, map,
+[3931.86s -> 3933.66s]  reduce by, and collect.
+[3934.92s -> 3936.84s]  Sorry. Reduce by.
+[3936.90s -> 3938.60s]  Collect is an action.
+[3939.24s -> 3941.46s]  It's not a transformation.
+[3941.64s -> 3945.38s]  Okay. Any questions?
+[3946.78s -> 3952.22s]  So you've got this concept of the RDD,
+[3952.22s -> 3956.68s]  the resilient distributed data set.
+[3956.90s -> 3959.30s]  You've got this concept of a lineage.
+[3960.06s -> 3966.32s]  So how can we kind of optimize things with Spark?
+[3966.32s -> 3970.40s]  Well, we have this notion of persist,
+[3971.02s -> 3976.64s]  which says keep the RDD in memory, right?
+[3976.92s -> 3981.98s]  And so in this case, we create our mobile views RDD,
+[3982.92s -> 3984.40s]  and then we're going to use it twice.
+[3985.56s -> 3992.36s]  Once we're going to filter for Chrome, and then collect,
+[3992.36s -> 3999.64s]  you know, take that, the lines, the strings that are
+[3999.64s -> 4007.40s]  in the RDD created from the filter, and extract time counts,
+[4008.10s -> 4011.58s]  timestamps I should say, and in the other case,
+[4011.58s -> 4015.68s]  we're going to filter based on Safari, and figure
+[4015.68s -> 4018.08s]  out the number of views, page views,
+[4018.08s -> 4020.42s]  that came from a Safari client.
+[4024.42s -> 4026.82s]  So here are the set of, you know, transformations
+[4026.82s -> 4029.82s]  that you can use in Spark, right?
+[4029.82s -> 4038.58s]  So you've got map, filter, flat map, sample, reduce by key, join, sort,
+[4039.04s -> 4041.92s]  partition by, which we're going to talk about in just a moment,
+[4042.80s -> 4047.24s]  and then you've got actions, right, which of course create data back
+[4047.24s -> 4051.16s]  to the host, like count, collect, reduce, look up, save.
+[4052.16s -> 4052.60s]  All right?
+[4052.64s -> 4055.26s]  So, you know, with these operations,
+[4055.26s -> 4058.54s]  you can write very sophisticated applications.
+[4059.88s -> 4063.58s]  So let's think about now, any questions on sort
+[4063.58s -> 4068.74s]  of the programming model and abstraction that Spark presents?
+[4069.12s -> 4070.88s]  Right? So it's the notion of the RDD,
+[4071.04s -> 4072.60s]  and then these transformations and actions.
+[4072.60s -> 4072.72s]  Yeah?
+[4072.72s -> 4087.10s]  So, persist just says, keep the RDD in memory.
+[4093.16s -> 4095.36s]  Well, it may not keep it in memory.
+[4096.22s -> 4100.00s]  Right? So it's not going to, I mean,
+[4100.22s -> 4108.86s]  the RDD will exist potentially in the file system, right?
+[4110.36s -> 4113.88s]  The question is, will it stay in memory?
+[4114.58s -> 4120.42s]  Right? And that's what persist says, keep the RDD in memory.
+[4121.92s -> 4126.72s]  Well, you can say it explicitly, right?
+[4126.72s -> 4130.12s]  The scheduler can make some decisions,
+[4130.12s -> 4131.84s]  or you can say explicitly, right?
+[4132.16s -> 4132.32s]  Yeah?
+[4132.96s -> 4135.48s]  One question is, if you, what's the process,
+[4135.48s -> 4137.50s]  can you ask for it again, so now you don't do it,
+[4137.96s -> 4140.86s]  or is it just, it's going to stay out of storage
+[4140.86s -> 4141.60s]  and then it will go off?
+[4141.60s -> 4143.56s]  Yeah, it'll probably stay out of storage in the moment.
+[4143.70s -> 4147.90s]  Yeah. So it will be inefficient, right?
+[4147.90s -> 4151.86s]  So in the case of the example that we showed here,
+[4151.86s -> 4159.68s]  if you didn't persist mobile views, right,
+[4160.68s -> 4164.48s]  then mobile views would get written to the file system
+[4165.60s -> 4168.34s]  and you'd have to go fetch it again in order to do,
+[4168.34s -> 4171.34s]  let's suppose you did the left hand side first,
+[4171.50s -> 4173.02s]  then to do the right hand side you'd have
+[4173.02s -> 4173.62s]  to fetch it again.
+[4174.04s -> 4174.16s]  Yeah?
+[4174.16s -> 4177.00s]  One more question is, when you're hitting the collect,
+[4177.00s -> 4181.00s]  it's kind of clear that you've run it in both cases.
+[4181.00s -> 4184.20s]  If you're like a collector on top of something,
+[4184.20s -> 4186.38s]  like if you make something that's like some sort
+[4186.38s -> 4189.52s]  of lazy variable, perhaps I'll do the optimization for you.
+[4190.44s -> 4191.28s]  Do what optimization?
+[4191.72s -> 4195.46s]  Like if you know, if Spark knew that, you know,
+[4195.46s -> 4197.34s]  mobile views is used by two operations,
+[4198.16s -> 4200.34s]  then can it not just like leave it in memory,
+[4200.34s -> 4202.42s]  do it more than like I do that operation?
+[4202.42s -> 4203.20s]  Yeah, good.
+[4204.12s -> 4208.28s]  Yeah? Sometimes you've got to help the system,
+[4208.36s -> 4211.70s]  but other times the system, you know, can analyze.
+[4211.70s -> 4216.78s]  And as I'll describe, the Spark run system does a bunch
+[4216.78s -> 4218.82s]  of analysis and we'll do optimizations for you
+[4218.82s -> 4221.40s]  and we'll talk about one in just a moment.
+[4224.28s -> 4231.04s]  Okay, so let's think about how we can implement RDDs, right?
+[4231.04s -> 4235.10s]  So imagine that here are the RDDs we've got,
+[4235.10s -> 4243.20s]  lines lower, mobile views, and how many is not an RDD,
+[4243.20s -> 4246.56s]  but lines lower and mobile views, right?
+[4246.82s -> 4250.40s]  So if you think about the fact that this is going to be,
+[4251.12s -> 4254.26s]  these are going to be partitioned across the nodes,
+[4254.26s -> 4260.24s]  right, so let's assume that there are two partitions
+[4260.42s -> 4269.72s]  on every node, right, so lines partition creates,
+[4269.96s -> 4273.34s]  is used to create the lower partition, which is used
+[4273.34s -> 4275.24s]  to create the mobile views partition, right?
+[4275.34s -> 4284.22s]  So one way would be we could think of these as arrays,
+[4284.32s -> 4288.14s]  right, that get duplicated in memory, right,
+[4288.14s -> 4291.56s]  but that would lead to a lot of memory use, right?
+[4292.38s -> 4297.38s]  Right. And so the question is how can we implement this data
+[4297.38s -> 4302.16s]  parallel RDD abstraction in an efficient way
+[4302.76s -> 4306.60s]  such that we minimize the use of memory,
+[4306.60s -> 4308.46s]  but we still keep all
+[4308.46s -> 4312.26s]  of the fault tolerant capabilities that we want.
+[4312.26s -> 4312.38s]  Yeah?
+[4313.02s -> 4315.74s]  We don't keep the partitions that we're done with,
+[4315.84s -> 4319.88s]  like if we finish, if we're computing lower,
+[4319.88s -> 4321.70s]  if we finish computing lower,
+[4321.86s -> 4325.04s]  we don't need to then also keep the data from lines
+[4325.08s -> 4327.50s]  because we already have the RDD that comes after that,
+[4328.04s -> 4330.40s]  and so we're already like, yeah.
+[4330.66s -> 4334.68s]  Yeah. That would be a good first step, right,
+[4334.68s -> 4337.42s]  but we might maybe be able to do even better than that.
+[4337.42s -> 4337.54s]  Yeah?
+[4337.54s -> 4337.66s]  Yeah?
+[4338.16s -> 4342.74s]  Instead of duplicating the array each time you're doing a filter
+[4342.80s -> 4346.12s]  or any sort of, I guess, function, you can kind
+[4346.12s -> 4349.14s]  of just have one general array and change the references
+[4349.22s -> 4351.60s]  to the elements in it each time you do a filter,
+[4351.60s -> 4354.62s]  so that way you don't have to duplicate the array each time.
+[4354.62s -> 4368.20s]  In which case, I mean, so, in terms of efficiency,
+[4368.56s -> 4371.12s]  you probably don't want references going all
+[4371.12s -> 4372.04s]  over the place, right?
+[4373.46s -> 4378.30s]  I mean, you want things to be concatenated
+[4378.30s -> 4381.46s]  and you want things to be dense, right?
+[4381.46s -> 4385.02s]  So having references is probably not a very efficient way
+[4385.02s -> 4385.56s]  of doing things.
+[4386.56s -> 4388.60s]  Yeah. Other questions?
+[4392.44s -> 4392.82s]  Where are we?
+[4392.88s -> 4394.44s]  Oh, running out of time.
+[4396.12s -> 4396.46s]  All right.
+[4396.60s -> 4402.28s]  So let's figure out how we can do things efficiently.
+[4403.08s -> 4407.34s]  So one of the things we could do is think
+[4407.34s -> 4409.86s]  about the dependencies, right?
+[4410.44s -> 4418.58s]  And the dependencies go from the data in the file system
+[4418.80s -> 4424.84s]  through the different partitions of the different RDDs,
+[4424.84s -> 4433.02s]  right, from lines to lower to mobile views, okay?
+[4433.90s -> 4436.78s]  So the question is, you know, thinking about the fact
+[4436.78s -> 4439.12s]  that we've got these dependencies,
+[4439.12s -> 4443.96s]  can we optimize the implementation of RDDs?
+[4443.96s -> 4446.54s]  And the way to think about it is think back to some
+[4446.54s -> 4449.52s]  of the optimizations that we've talked about so far.
+[4449.62s -> 4455.80s]  So we've talked about the fact that this program is better
+[4455.80s -> 4457.30s]  than that program, right?
+[4457.52s -> 4458.58s]  And why is that?
+[4460.28s -> 4461.06s]  Let's write some memory.
+[4461.36s -> 4462.88s]  Right. Let's write some memory.
+[4462.88s -> 4465.48s]  We've done fusion of these loops
+[4465.72s -> 4471.50s]  and we have reduced the device memory
+[4471.50s -> 4474.36s]  and so improved the arithmetic intensity, okay?
+[4475.04s -> 4480.84s]  And so we also talked about this optimization
+[4481.90s -> 4490.22s]  where we use tiling to optimize the use of memory
+[4490.60s -> 4493.52s]  such that we reduce the amount of memory we need
+[4493.94s -> 4501.90s]  to support the blurring, right?
+[4502.94s -> 4505.34s]  And so these two ideas of fusion
+[4505.34s -> 4511.28s]  and tiling are pretty important and they can be implemented
+[4511.28s -> 4513.54s]  in the Spark runtime system, okay?
+[4513.94s -> 4515.20s]  So the question is, you know,
+[4515.20s -> 4518.06s]  when can you apply these transformations?
+[4518.06s -> 4521.40s]  Well, if you try and do these transformations
+[4521.40s -> 4525.66s]  on arbitrary C programs, they're difficult to do, right?
+[4525.80s -> 4530.46s]  Usually you as the programmer have to implement them.
+[4530.80s -> 4533.30s]  However, if you start from a high-level representation
+[4533.30s -> 4537.12s]  like Spark or PyTorch or something
+[4537.12s -> 4539.82s]  that gives you more semantic information
+[4539.82s -> 4543.16s]  about what is actually going on, then you can do some
+[4543.16s -> 4545.40s]  of these transformations automatically, right?
+[4545.40s -> 4549.08s]  So fusion with RDDs is possible
+[4549.80s -> 4555.82s]  and however you need to know what the dependencies are
+[4555.82s -> 4557.44s]  between the different RDDs.
+[4557.84s -> 4560.48s]  So we have this notion of narrow dependencies
+[4560.78s -> 4568.42s]  where one RDD only depends on one other partition, right?
+[4568.42s -> 4571.02s]  So these are called narrow dependencies, right?
+[4571.02s -> 4574.12s]  So partition zero of mobile views is dependent
+[4574.12s -> 4577.02s]  on partition zero of lower which is dependent
+[4577.02s -> 4582.74s]  on partition zero of lines which is dependent on block zero.
+[4582.74s -> 4584.16s]  So these are narrow dependencies
+[4584.50s -> 4591.08s]  in that an RDD only depends on one other partition of an RDD.
+[4592.52s -> 4596.38s]  Wide dependencies are a case where you've got an RDD
+[4596.38s -> 4602.80s]  which depends on multiple RDDs, right?
+[4602.92s -> 4610.20s]  So in this case if I do a group by key, right, I may have
+[4610.32s -> 4615.14s]  to get elements of the partition from multiple places.
+[4616.60s -> 4619.46s]  And so if I have narrow partitions,
+[4619.92s -> 4624.46s]  then potentially I can have the system automatically do
+[4624.46s -> 4625.04s]  the fusion.
+[4625.86s -> 4628.34s]  At this point we're right out of time.
+[4628.48s -> 4636.80s]  So what we'll do is after probably next Tuesday I will
+[4636.98s -> 4641.56s]  finish up this discussion of Spark and move
+[4641.56s -> 4643.12s]  on to cache coherency.
+[4643.38s -> 4648.32s]  And on Thursday Kayvon will be back to talk
+[4648.32s -> 4652.10s]  about efficient implementation of DNNs, right?
+[4653.58s -> 4656.10s]  This Thursday, yeah, right.
+[4656.10s -> 4657.96s]  And then on Tuesday I'll come back
+[4658.04s -> 4661.88s]  and we'll wrap up Spark and we'll start talking
+[4661.88s -> 4663.02s]  about cache coherency.
+[4663.52s -> 4666.20s]  So sorry for going over time
+[4666.20s -> 4668.24s]  but it's really interesting stuff.

@@ -1,0 +1,213 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.72s]  Alright, in the next section of today's lecture I'm going to talk about another
+[4.72s -> 8.64s]  way that we can use the critic by incorporating the critic as a baseline
+[8.64s -> 11.20s]  to the policy gradient, and this is going to have some interesting
+[11.20s -> 14.88s]  trade-offs as compared to the standard actor-critic algorithm that
+[14.88s -> 20.08s]  we've discussed so far. So on this slide I have the equation for the
+[20.08s -> 23.10s]  actor-critic that we discussed in today's lecture, as well as the
+[23.10s -> 27.44s]  equation for the policy gradient that we saw in the previous lecture. The
+[27.44s -> 32.78s]  actor-critic consists of the grad log pi term multiplied by the reward plus gamma
+[32.78s -> 38.00s]  times the next value minus the current value. The policy gradient consists of
+[38.00s -> 44.56s]  the grad log pi term times the sum of the rewards to go minus a baseline. So
+[44.56s -> 48.52s]  the sum of the rewards to go is an unbiased single sample estimate of
+[48.52s -> 55.72s]  the Q value at s i t a i t. Now the actor-critic policy gradient
+[55.72s -> 60.28s]  estimator has the advantage that it drastically lowers the variance because
+[60.28s -> 63.84s]  the function approximator in the critic integrates in all those
+[63.84s -> 67.04s]  different possibilities for what might happen instead of relying on a single
+[67.04s -> 72.28s]  sample. Unfortunately the actor-critic gradient estimator also has the
+[72.28s -> 77.68s]  disadvantage that it's not no longer unbiased. The reason for that is that if
+[77.68s -> 81.80s]  your value function is slightly incorrect, which it might be because it's a
+[81.84s -> 88.48s]  function approximator trained on a finite number of samples, then you can't show
+[88.48s -> 91.84s]  any more than in expectation this gradient will actually converge to the
+[91.84s -> 98.56s]  true policy gradient. The original policy gradient is unbiased, so even
+[98.56s -> 101.92s]  though it might have high variance, even though each individual evaluation
+[101.92s -> 106.92s]  might be off, in expectation it'll come out to the right value, but it has
+[106.92s -> 109.92s]  much higher variance, which means that you typically need to use more samples
+[110.16s -> 115.76s]  or smaller learning rates. So one question we could ask is could we get a
+[115.76s -> 120.12s]  policy gradient estimator that is still unbiased but uses the critic in
+[120.12s -> 124.12s]  some other way to lower the variance? And the answer is that we can. We can
+[124.12s -> 127.76s]  actually construct a policy gradient estimator that has slightly higher
+[127.76s -> 131.36s]  variance than the actor-critic version, but no bias like the policy gradient
+[131.36s -> 136.20s]  version. And the way that we can do this is by using what's called a
+[136.20s -> 141.56s]  state-dependent baseline. So it turns out that we can prove by extending the proof
+[141.56s -> 146.84s]  from the previous lecture that not only does the policy gradient remain
+[146.84s -> 151.28s]  unbiased when you subtract any constant b, it actually still remains unbiased if
+[151.28s -> 156.24s]  you subtract any function that depends on only the state and not on the action.
+[156.24s -> 161.00s]  It's actually a very easy proof to construct. It follows almost exactly the
+[161.00s -> 163.84s]  proof that we had in the previous lecture, and I would encourage those
+[163.88s -> 167.56s]  of you that are interested to go back and re-derive that to show that that is true.
+[167.56s -> 172.36s]  It's very straightforward to do. But the bottom line is that you can use any
+[172.36s -> 176.00s]  baseline that depends on the state, and a very good choice is the value
+[176.00s -> 180.68s]  function, because you would expect this single sample estimator in
+[180.68s -> 184.52s]  expectation to come out to be equal to the value function. So if you use the
+[184.52s -> 188.64s]  value function as the baseline, then the numbers that are multiplying the grad
+[188.64s -> 192.80s]  log pi, should it in expectation be smaller, which means that their
+[192.80s -> 195.64s]  variance is smaller, which means that the variance of your entire policy
+[195.64s -> 199.92s]  gradient is smaller. So it's actually quite a good idea to use a value
+[199.92s -> 204.92s]  function as a baseline. Now, this doesn't lower the variance as much as the full
+[204.92s -> 207.96s]  actual critic algorithm, because you still have the sum over future rewards,
+[207.96s -> 216.44s]  but it's much lower than a constant baseline, and it's still unbiased. Now,
+[216.44s -> 220.12s]  some of you might be wondering at this point, well, okay, we used the value
+[220.12s -> 223.68s]  function as a baseline, we made it depend on more stuff, and we got a lower
+[223.68s -> 226.54s]  variance. What if we make it depend on even more things? What if we make the
+[226.54s -> 230.48s]  baseline depend on the state and the action? Will we get an even lower
+[230.48s -> 235.44s]  variance that way? And the answer is yes, but at that point, things get much
+[235.44s -> 239.60s]  more complicated. So that's what we'll talk about next. Methods that use
+[239.60s -> 243.56s]  state and action dependent baselines are sometimes referred to as control
+[243.56s -> 248.36s]  variants in the literature. So the true advantage is the Q-value minus the
+[248.40s -> 253.42s]  value function. Our approximate advantage that we use in policy gradients when we
+[253.42s -> 258.04s]  have a state dependent baseline is the sum of all future rewards minus the
+[258.04s -> 263.24s]  current value. So this is nice because it has lower variance, but we can make
+[263.24s -> 267.80s]  the variance even lower if we subtract the Q-value. So this version has no
+[267.80s -> 272.08s]  bias, but it has higher variance than the actor-critic because of a single
+[272.08s -> 277.56s]  sample estimate. If we subtract the Q-value, this has the nice property
+[277.56s -> 281.44s]  that it actually goes to zero if your critic is correct. So if your critic is
+[281.44s -> 286.72s]  correct and your future behavior is not too random, then you'd expect these
+[286.72s -> 292.48s]  quantities eventually just converge to zero. Unfortunately, if you plug in this
+[292.48s -> 296.32s]  advantage estimator into your policy gradient, the policy gradient is no longer
+[296.32s -> 299.56s]  correct. It won't actually give you the right gradient because there's an
+[299.56s -> 303.40s]  error term that you have to compensate for. See, unlike the standard baseline,
+[303.40s -> 307.32s]  which integrates to zero in expectation, an action dependent baseline no
+[307.32s -> 310.56s]  longer integrates to zero, it integrates to an error term, and you have to account
+[310.56s -> 314.72s]  for that error term. So if you incorporate a baseline that depends on
+[314.72s -> 318.08s]  both the state and action and account for the error term, then you get
+[318.08s -> 322.20s]  this equation. This equation is a valid estimator for the policy gradient
+[322.20s -> 325.88s]  even if your baseline doesn't depend on the action, but in that
+[325.88s -> 330.24s]  case the second term basically vanishes. The second term is equal to zero. But if
+[330.24s -> 333.72s]  your baseline depends on the action, the second term is no longer zero. So the
+[333.72s -> 337.24s]  first term is just your policy gradient with your baseline. The second term is
+[337.24s -> 341.76s]  what's left over. It's the expected value, it's the gradient of the expected
+[341.76s -> 347.38s]  value under the policy of your baseline. Now, some of you might be
+[347.38s -> 350.20s]  looking at this and thinking, well, have we really bought ourselves anything like
+[350.20s -> 353.40s]  yes, the first term is going to be small because it's going to go to zero,
+[353.40s -> 358.64s]  but the second term looks a lot like the original policy gradient. So is this
+[358.64s -> 362.84s]  really any better? Well, it turns out that this is actually a lot better in
+[362.84s -> 367.40s]  some cases. For example, in many cases the second term can actually be
+[367.40s -> 372.04s]  evaluated very very accurately. If you have discrete actions, you can sum over
+[372.04s -> 377.18s]  all possible actions. If you have continuous actions, then you can sample a
+[377.18s -> 380.88s]  very large number of actions, because evaluating the expectation over actions
+[380.88s -> 384.88s]  doesn't require sampling new states. So it doesn't require actually
+[384.88s -> 387.60s]  interacting with the world, which means that you can generate many more
+[387.60s -> 391.92s]  samples from the same state, something that we could not do before when we
+[391.96s -> 397.20s]  had to actually make entire rollouts. And furthermore, in many continuous
+[397.20s -> 401.48s]  action cases, if you make a careful choice of the class of distributions
+[401.48s -> 405.20s]  and the class of Q functions, this integral also has an analytic solution.
+[405.20s -> 409.92s]  For example, the expected value of a quadratic function under a Gaussian
+[409.92s -> 414.64s]  distribution has an analytic solution. So in many cases the second term can be
+[414.64s -> 419.16s]  evaluated in such a way that its variance is zero or very close to zero.
+[419.28s -> 424.68s]  And the first term has low variance because Q-hat minus Q-pi is typically
+[424.68s -> 430.64s]  going to be a small number. So this kind of trick can be used to provide a very
+[430.64s -> 433.88s]  low variance policy gradient, especially if you can get a good Q-function estimator.
+[433.88s -> 437.24s]  If you want to read more about these kinds of control variants and how
+[437.24s -> 441.76s]  you can use a critic without incurring bias, provided the second term can be
+[441.76s -> 446.68s]  evaluated, then check out this paper by Shixian Gu, called QProl.
+[446.68s -> 453.28s]  Okay, so so far we talked about ways that we can use critics and get policy
+[453.28s -> 458.16s]  gradient estimators that are unbiased, but can we also use critics and get
+[458.16s -> 462.24s]  policy gradients that are still biased but only a little bit biased? So
+[462.24s -> 467.08s]  next we're going to talk about eligibility traces and n-step returns.
+[467.08s -> 473.32s]  First let's take a look at the advantage estimator in an actual critic
+[473.32s -> 479.12s]  algorithm. I'm going to denote this as A-hat C. So A-hat C is the current reward
+[479.12s -> 483.84s]  plus the next value minus the current value. And this, as we saw, has much
+[483.84s -> 488.00s]  lower variance than the policy gradient, but higher bias if the value is wrong,
+[488.00s -> 492.96s]  and it's always at least a little bit wrong. We can also take a look at the
+[492.96s -> 496.52s]  Monte Carlo advantage estimator that we use in policy gradient algorithms,
+[496.96s -> 501.08s]  which I've written out here using the value function as the baseline to keep
+[501.08s -> 505.24s]  things consistent, so that both of them have a minus V-term. So here we
+[505.24s -> 508.92s]  have a sum of future rewards minus our baseline, which in this case is the
+[508.92s -> 514.56s]  value function. This has no bias, but it has much higher variance because of
+[514.56s -> 519.48s]  the single sample estimate. So at this point you might wonder, well, can we get
+[519.48s -> 523.64s]  something in between? Could we, for example, sum over the rewards over the next
+[523.80s -> 527.84s]  five time steps instead of infinite time steps, and then put the value at the
+[527.84s -> 532.40s]  end of that? And it turns out that we can, and we can use this to get a very
+[532.40s -> 536.44s]  nice way to control the bias-variance trade-off. There are a couple of
+[536.44s -> 540.80s]  factors that make this interesting. First, when you're using a discount, typically
+[540.80s -> 544.72s]  your reward will decrease over time because you're discounting it. So that
+[544.72s -> 547.84s]  means that the bias that you get from the value function is much less of a
+[547.84s -> 551.40s]  problem if you put the value function not at the next time step, but further
+[551.48s -> 557.76s]  into the future where the rewards are smaller. On the other hand, the variance
+[557.76s -> 561.36s]  that you get from the single sample estimator is also much more of a problem
+[561.36s -> 566.36s]  further into the future. To understand why that might be, consider making
+[566.36s -> 571.16s]  single sample predictions. Let's say that you ask me, make a single sample
+[571.16s -> 575.56s]  prediction where you, which city you'll be in in five minutes. Well, if you
+[575.56s -> 579.60s]  ask me that question, my single sample will be Berkeley, because I'll be in
+[579.64s -> 585.40s]  Berkeley in five minutes. But if you ask me which city will I be in in 20 years, I might
+[585.40s -> 589.12s]  say, okay, you want a single sample? Let's say San Francisco. But I really
+[589.12s -> 592.48s]  don't know. It could be anything, right? So there are many more possibilities
+[592.48s -> 596.84s]  far to the future than close to the present. So usually, if you have these
+[596.84s -> 601.00s]  many possible trajectories emanating from the current state, they'll branch
+[601.00s -> 603.92s]  out a lot more further into the future, and they'll be clustered much closer
+[603.92s -> 608.44s]  together in the present, which means that you have much higher variance far in
+[608.48s -> 612.32s]  the future and much lower variance closer to the present. So that means that
+[612.32s -> 616.88s]  if you're going to use your single sample estimator for a chunk of this
+[616.88s -> 620.44s]  trajectory, you'd rather use it close to the present and then cut it off
+[620.44s -> 623.72s]  before the variance gets too big, and then replace it with your value
+[623.72s -> 627.32s]  function, which has much lower variance. And the value function will then
+[627.32s -> 632.92s]  account for all these different possibilities, but potentially with some bias. So the
+[632.92s -> 636.60s]  way that you can do this is by constructing what's called an n-step
+[636.64s -> 641.00s]  return estimator. So in an n-step return estimator, you sum up rewards until
+[641.00s -> 644.60s]  some time step n, and then you cut it off and replace it with the value
+[644.60s -> 650.20s]  function. So here's the equation for the n-step return estimator. The first
+[650.20s -> 655.08s]  part looks a lot like AMC. So you sum up your rewards, but now you don't sum
+[655.08s -> 660.48s]  them up until infinity. You sum them from t until t plus n. You still subtract
+[660.48s -> 663.96s]  off your baseline, but then you have that remaining chunk, everything from n
+[664.00s -> 667.60s]  plus 1 until infinity, and that you replace with your value function. So you
+[667.60s -> 672.32s]  evaluate your reward function at s t plus n, and you multiply by gamma to
+[672.32s -> 677.68s]  the n. And that's an n-step return estimator. And oftentimes, choosing n
+[677.68s -> 681.32s]  greater than 1 works better than n equals 1, right? So n equals 1 is kind
+[681.32s -> 686.12s]  of the limiting case of this. Generally, the larger n is, the lower the bias,
+[686.12s -> 689.76s]  because the coefficient in front of the value function gets smaller and
+[689.76s -> 694.40s]  smaller, but the variance is higher because you're summing over more time
+[694.40s -> 697.52s]  steps with that single sample estimator, which is the first term. So the first
+[697.52s -> 703.36s]  term contributes variance, the last term contributes bias, and the larger the
+[703.36s -> 707.84s]  n is, the smaller the third term, the larger the first term, which means the
+[707.84s -> 713.08s]  larger n is, the lower the bias, the higher the variance. But very often, the
+[713.08s -> 717.12s]  sweet spot is not at n equals 1 nor at n equals infinity, and you may want to
+[717.12s -> 723.04s]  use an intermediate value. Now, the last trick that I'm going to discuss is
+[723.04s -> 729.20s]  a way to actually generalize the n-step return estimator and actually
+[729.20s -> 734.12s]  construct a kind of hybrid estimator that uses many different n-step
+[734.12s -> 739.24s]  returns. So do we have to choose just one end? Do we have to make this hard
+[739.24s -> 744.12s]  slice at a particular point in time? What if we want to actually construct
+[744.12s -> 750.20s]  all possible n-step return estimators and average them together? So here's the
+[750.20s -> 754.64s]  equation for the n-step return estimator. We can construct a kind of
+[754.64s -> 758.52s]  fused estimator, which we're going to call A-G-A-E for generalized advantage
+[758.52s -> 763.28s]  estimation, which consists of a weighted average of all possible n-step return
+[763.28s -> 767.36s]  estimators with a weight for different n. And the way that you can
+[767.36s -> 775.28s]  choose your weight is by utilizing that insight that you'll have more bias
+[775.28s -> 780.24s]  if you use small n, more variance if you use larger n. So you mostly prefer cutting
+[780.24s -> 783.88s]  earlier, because then you have less variance, but you want to keep around
+[783.88s -> 787.96s]  some of those traces that go further in the future. So a pretty decent choice
+[787.96s -> 791.16s]  that leads to an especially simple algorithm is to use an exponential
+[791.16s -> 796.24s]  fall-off. It's to set the weight wn to be lambda to some power n minus 1. And
+[796.28s -> 803.20s]  if you think this is reminiscent of a discount factor, it's because it really is. So if you
+[803.20s -> 808.80s]  use a exponential fall-off, which means that wn is lambda to the n minus 1, then
+[808.80s -> 812.00s]  it turns out there's a very convenient way to evaluate this infinite
+[812.00s -> 818.48s]  sum over all possible n-step returns. If wn is lambda to the n minus 1, then
+[818.48s -> 827.76s]  you can write out a GAE as the current reward plus gamma times 1 minus lambda of
+[827.76s -> 832.56s]  the next value plus lambda of the next reward and its next value and so on. So
+[832.56s -> 836.40s]  at every time step, you have 1 minus lambda times the value function of the
+[836.40s -> 841.92s]  time step plus lambda of the GAE estimator from there on out. And that
+[841.92s -> 847.56s]  gives you this weighted sum of all possible n-step return estimators. This
+[847.56s -> 851.52s]  gives you a formula to calculate a GAE recursively, but it turns out that we
+[851.52s -> 855.96s]  can collect the terms and get an even simpler form by expressing the GAE
+[855.96s -> 861.28s]  estimator as simply gamma times lambda to the power t prime minus t
+[861.28s -> 865.84s]  times a quantity that I'm going to call delta t prime. And delta t prime
+[865.84s -> 871.88s]  is just the reward at t prime plus the value at t prime plus 1 minus the
+[871.88s -> 876.56s]  value at t prime. It's kind of like that single step advantage estimator at
+[876.56s -> 880.76s]  time step t prime. So this is pretty cool. If you just construct a weighted
+[880.76s -> 884.80s]  sum of these one-step advantage estimators at every time step weighted
+[884.80s -> 889.80s]  by gamma times lambda to the t prime minus t, you recover exactly the sum of
+[889.80s -> 895.20s]  all possible n-step returns. So this can allow you to trade off bias
+[895.20s -> 899.56s]  variance just by choosing this lambda, which acts very similarly to a discount.
+[899.56s -> 904.48s]  So larger lambdas look further in the future, smaller lambdas use value
+[904.48s -> 908.80s]  functions closer to the present. So it has a very similar effect as the discount,
+[908.80s -> 912.36s]  which also maybe sheds some light on the role that discounts play in policy
+[912.36s -> 916.92s]  gradients. So this suggests that even if we didn't have lambda, the role of
+[916.92s -> 921.28s]  gamma would be a kind of bias variance trade-off, and that's in fact the case.
+[921.28s -> 925.44s]  So the discount can also be interpreted itself as a kind of
+[925.44s -> 931.40s]  variance reduction, because smaller discounts will result in your Monte
+[931.40s -> 936.36s]  Carlo single sample estimator putting lower weight on rewards
+[936.36s -> 938.92s]  far in the future, which are exactly the rewards that you'd expect to have high
+[938.92s -> 943.84s]  variance. Just using a discount, of course, introduces more bias if you use a
+[943.84s -> 948.04s]  small discount, as opposed to the correct higher discount value, but using
+[948.04s -> 953.64s]  the lambda mitigates that by replacing it with a value function.

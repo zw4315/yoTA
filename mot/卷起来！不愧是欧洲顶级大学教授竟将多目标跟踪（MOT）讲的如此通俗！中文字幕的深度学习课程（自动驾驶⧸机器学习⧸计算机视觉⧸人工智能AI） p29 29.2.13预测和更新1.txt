@@ -1,0 +1,61 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.00s]  You have already seen the different pieces of the single object tracking filtering recursions.
+[6.00s -> 13.00s]  You know that every sequence of data association hypotheses contributes with one term to the posterior.
+[13.00s -> 19.00s]  You also know how to compute the density given a sequence of data associations.
+[19.00s -> 28.00s]  And you have seen how to compute the weight or the probability of a data association hypothesis, at least in a single update.
+[29.00s -> 38.00s]  With the risk of being slightly repetitive, we will now put the pieces together and present a complete conceptual solution to single object tracking,
+[38.00s -> 45.00s]  that we could, in theory, use to recursively compute the exact posterior at any time k.
+[45.00s -> 49.00s]  Let us first summarize the main results that we are about to present.
+[49.00s -> 57.00s]  Suppose we have expressed the posterior at time k-1 as a sum over all possible sequences of hypotheses up to time k-1,
+[57.00s -> 61.00s]  of a weight w times the density p of xk-1.
+[61.00s -> 68.00s]  Here, θ1 to k-1 denotes the sequence of hypotheses up to time k-1.
+[68.00s -> 72.00s]  And both the weight and the density are functions of that sequence.
+[72.00s -> 77.00s]  For the density p, we use sub-indices k-1 given k-1,
+[77.00s -> 84.00s]  which indicates that we are expressing the density of x at time k-1, based on measurements up to time k-1.
+[84.00s -> 89.00s]  One can show that the weight is the posterior probability of the data association sequence,
+[89.00s -> 95.00s]  whereas the density is the posterior of xk-1, given both the data and the data association sequence.
+[95.00s -> 99.00s]  However, we are not going to prove that they have this interpretation in this video.
+[99.00s -> 106.00s]  What we will show is that both the predicted density and the posterior at time k can be written on the same form,
+[106.00s -> 111.00s]  and we provide detailed expressions for how to compute both the weights and the densities.
+[111.00s -> 115.00s]  Even though the posterior at time k is on the same form,
+[115.00s -> 120.00s]  the summation is over all possible data association sequences up to time k,
+[120.00s -> 123.00s]  and it therefore generally contains more terms.
+[123.00s -> 128.00s]  We know how to compute the posterior density at time 1 on the above form.
+[128.00s -> 136.00s]  With the above results, we therefore obtain a recursive algorithm to exactly compute the predicted density and the posterior at any time k.
+[136.00s -> 144.00s]  Let us start with the prediction step and assume that the posterior at time k-1 is 1 is written as this mixture of densities.
+[144.00s -> 148.00s]  As always, we can use the Chapman-Kolmogorov equation to perform the prediction step.
+[148.00s -> 157.00s]  We can then use the expression for the posterior at time k-1 is 1 to write the predicted density as a weighted sum of these integrals.
+[157.00s -> 164.00s]  If you look closely at the integral, you can see that it expresses the Chapman-Kolmogorov equation for an individual density.
+[164.00s -> 171.00s]  The result of this integral is therefore the predicted density given a data association sequence theta 1 to k-1,
+[171.00s -> 173.00s]  and we denote this as follows,
+[173.00s -> 180.00s]  where the sub-indices indicate that it is the density of x at time k given measurements up to time k-1,
+[180.00s -> 185.00s]  and the super index indicates that we condition on this data association sequence.
+[185.00s -> 195.00s]  We conclude that the predicted density is the sum over the weights w theta 1 to k-1 times the predicted density for the same sequence of associations.
+[195.00s -> 203.00s]  We note that the number of hypotheses does not change during the prediction step and that the probabilities remain the same.
+[203.00s -> 214.00s]  The only difference is that we replace the posterior density of xk-1 given a sequence of associations with the predicted density given the same sequence of data associations.
+[214.00s -> 225.00s]  Suppose the motion model is linear and Gaussian, such that pi k of xk given xk-1 is a Gaussian density with mean f times xk-1,
+[225.00s -> 228.00s]  and covariance Q evaluated at xk.
+[228.00s -> 236.00s]  If the posterior density at time k-1 given a data association sequence theta 1 to k-1 is also Gaussian,
+[236.00s -> 243.00s]  then the predicted density under that hypothesis is given by the prediction step in a regular Kalman filter,
+[243.00s -> 252.00s]  that is, the predicted mean is f times the previous mean, whereas the predicted covariance is fp f transpose plus Q.
+[252.00s -> 260.00s]  Under the linear and Gaussian assumptions, the prediction step therefore consists of performing one Kalman filter prediction for each hypothesis.
+[260.00s -> 266.00s]  If we instead assume that xk is some non-linear function fk-1 of xk,
+[266.00s -> 271.00s]  it is typically no longer possible to find a closed form expression for the predicted density.
+[271.00s -> 277.00s]  However, we can use a Gaussian filter for non-linear models to approximate the predicted density as Gaussian.
+[277.00s -> 283.00s]  Simple alternatives may be to use an extended Kalman filter or a cube or two Kalman filter.
+[283.00s -> 287.00s]  You may recall the video where we visualized the conceptual solution.
+[287.00s -> 291.00s]  In this video, we present detailed equations for the conceptual solution,
+[291.00s -> 297.00s]  and we return to the same visualization to confirm that it matches the equations that we present here.
+[297.00s -> 305.00s]  To briefly summarize the simulation scenario, we assume linear and Gaussian motion and measurement models pi k and gk.
+[305.00s -> 309.00s]  The initial prior is Gaussian, and pd is 0.9.
+[309.00s -> 314.00s]  We obtain two detections at time 1 and one detection at time 2.
+[314.00s -> 319.00s]  In this video, we focus on time step 2, and therefore ignore measurements at time 3.
+[319.00s -> 324.00s]  In these figures, the green curve to the left is the posterior at time 1,
+[324.00s -> 327.00s]  and the green curve to the right is the predicted density.
+[327.00s -> 330.00s]  We have three association hypotheses at time 1.
+[330.00s -> 337.00s]  To perform prediction, we predict the densities for the different hypotheses one at a time, and then sum up the results.
+[337.00s -> 344.00s]  For the undetected hypothesis, the weight times the posterior at time 1 is this red dashed curve.
+[344.00s -> 350.00s]  After the prediction, the density has a larger covariance, which yields a flatter red dashed curve.
+[351.00s -> 355.00s]  Similarly, for the other two hypotheses, the covariance has also increased.
+[355.00s -> 364.00s]  Consequently, the overall predicted density is flatter, and the two peaks that we see in the posterior at time 1 are no longer visible.

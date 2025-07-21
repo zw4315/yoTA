@@ -1,0 +1,269 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.46s]  Alright, now let's talk about how amortized variational inference can
+[5.46s -> 12.06s]  allow us to basically learn this Q of z given x and thereby make variational
+[12.06s -> 15.78s]  inference an applicable tool even in settings where the data set size is
+[15.78s -> 22.38s]  extremely large. So to recap what we had before, our variational inference
+[22.38s -> 27.46s]  procedure for training the model parameters theta basically looks
+[27.46s -> 34.30s]  something like this. For every image x i or data point x i in our data set, or more
+[34.30s -> 38.14s]  generally for every mini-batch, you would estimate the gradient with respect to
+[38.14s -> 42.62s]  theta of your variational lower bound l i p comma q, and the way you would do
+[42.62s -> 47.80s]  this is by sampling a z from the approximate posterior q i of z, then
+[47.80s -> 51.40s]  estimating the gradient, which would simply be the gradient with respect to theta of
+[51.40s -> 56.20s]  log p theta of x i given z, which is the single sample estimator using the
+[56.20s -> 61.66s]  one sample that you just got from q i of the expectation. Then you take a gradient
+[61.66s -> 67.78s]  step using this estimated gradient grad theta l i and then you update q i to
+[67.78s -> 75.02s]  maximize the bound l i and thereby tighten it. And the issue of course is
+[75.02s -> 78.52s]  with how you maximize the bound. So what we saw in the previous part of the
+[78.52s -> 83.70s]  lecture is that if you represent q i as a separate Gaussian distribution for
+[83.70s -> 88.68s]  every data point x i, then you could simply calculate the derivative of l i
+[88.68s -> 93.18s]  with respect to theta, but the total number of parameters now increases with
+[93.18s -> 98.72s]  n. So the idea in amortized variational inference will be to
+[98.72s -> 102.72s]  essentially amortize the cost of inferring this approximate posterior q i
+[102.72s -> 107.36s]  of z over all of the data points by using a single model that will give
+[107.36s -> 111.32s]  us the posterior for any x. And that single model could be a neural network
+[111.32s -> 115.94s]  model. So in this case we're still going to have a Gaussian posterior for every
+[115.94s -> 119.54s]  x, but instead of storing the mean and variance of that posterior for every
+[119.54s -> 123.22s]  data point, we would have a neural network that takes in that data point
+[123.22s -> 128.42s]  and outputs mu of phi of x and sigma of phi of x, the parameters of the
+[128.42s -> 135.46s]  Gaussian posterior for the data point x. All right, so that's the basic
+[135.46s -> 138.82s]  idea for amortized variational inference. You have two networks, the
+[138.82s -> 141.88s]  network that you're trying to learn your generative model p theta of x given z,
+[141.88s -> 147.56s]  and what we would call your inference network q subscript phi of z
+[147.56s -> 155.36s]  given x. So we know from our discussion before that you can formulate a lower
+[155.36s -> 161.36s]  bound on log p of x i using really any q, but this lower bound is tightest
+[161.36s -> 166.76s]  when this q is close to the posterior. So now just like before we had q i of
+[166.76s -> 175.26s]  z, now we have q phi of z given x i. And now our variational lower bound is a
+[175.26s -> 183.02s]  function of two distributions, p theta of x i given z and q phi of z given x i.
+[183.02s -> 187.62s]  So our training procedure, which is just a modification of the one from the
+[187.62s -> 193.18s]  previous slide, will look like this. First calculate the gradient of the
+[193.18s -> 196.96s]  variational lower bound with respect to theta, and that's going to work
+[196.96s -> 202.24s]  basically the same way as before. Sample z from q phi of z given x i, and
+[202.24s -> 206.92s]  then calculate the gradient with respect to theta, which is approximated by the
+[206.92s -> 211.78s]  gradient with respect to theta of log p theta of x i given z, where z is the z
+[211.78s -> 215.32s]  that you just sampled. And then you can do a gradient ascent step on theta,
+[215.32s -> 220.16s]  the parameters of your generative model. And then what you need to do is take
+[220.16s -> 224.54s]  a gradient step on phi, and the gradient step on phi is also doing
+[224.54s -> 230.86s]  gradient ascent on the variational lower bound L. So the question that we have
+[230.86s -> 234.58s]  to answer in order to complete this algorithm is how do we calculate the
+[234.58s -> 240.74s]  gradient with respect to phi of L. So this is the quantity we're concerned
+[240.74s -> 246.22s]  with now. So here's the expression for L, and you can see that phi shows up in
+[246.22s -> 251.60s]  two places. First, phi is the distribution under which you take the expected
+[251.60s -> 258.96s]  value, and second, phi shows up in the entropy term. So here's a question for
+[258.96s -> 263.68s]  all of you. Let's think about that first term. It's the expected value
+[263.68s -> 268.36s]  under distribution parameterized by phi of some quantity that is independent of
+[268.36s -> 277.32s]  phi, and we want to take its gradient. Where have we seen this before? We've
+[277.32s -> 280.94s]  actually already discussed an algorithm that can calculate this part of the
+[280.94s -> 286.18s]  gradient. We discussed this algorithm early on in the course. Take a
+[286.18s -> 290.10s]  moment to think about this, and try to think what would the gradient of this
+[290.10s -> 298.76s]  term look like based on what we've already learned in the class. So our Q
+[298.76s -> 304.08s]  subscript phi of z given x will be given by a Gaussian distribution where
+[304.08s -> 310.70s]  the mean and variance are neural network functions of x. The entropy of a
+[310.70s -> 314.22s]  Gaussian can be expressed in closed form. It's a closed form equation
+[314.22s -> 318.18s]  involving mu phi and sigma phi. You can look this up in the textbook or on
+[318.24s -> 322.86s]  Wikipedia. It's a very standard equation, so that one is actually pretty easy to
+[322.86s -> 326.52s]  do. You just write down the equation in terms of mu and sigma, and you can take
+[326.52s -> 333.04s]  its derivative. It's really the first term that's problematic. So we can
+[333.04s -> 338.34s]  suggestively rewrite that term by calling it J of phi, which is equal to
+[338.34s -> 343.14s]  the expected value with respect to z distributed according to Q phi of z
+[343.14s -> 348.88s]  given xi of some quantity that I'm going to call r that is a function of xi and z.
+[348.88s -> 355.04s]  And the important thing is that r just doesn't depend on phi. So how do
+[355.04s -> 359.40s]  we calculate the derivative of this with respect to phi? Well, we can just
+[359.40s -> 364.72s]  use policy gradient. So I suggestively use J and r here intentionally just to
+[364.72s -> 368.08s]  make it clear that this is exactly the same form of equation as what we had
+[368.08s -> 371.82s]  before with policy gradients, and that means that we can estimate the
+[371.84s -> 379.84s]  derivative grad J of phi by sampling z's from Q phi and then averaging over those
+[379.84s -> 385.48s]  samples, and the quantity that we average is grad phi log Q phi for that
+[385.48s -> 392.96s]  sample times r. Now unlike with policy gradient, these samples don't require
+[392.96s -> 397.24s]  actually interacting with the real world. These samples just require
+[397.26s -> 401.74s]  sampling from your Q model and then evaluating the log likelihood under the P
+[401.74s -> 406.22s]  model. So you can cheaply generate these samples, and this is a very
+[406.22s -> 413.66s]  reasonable way to calculate the gradient of that first term. Okay, so
+[413.66s -> 417.62s]  what's wrong with this gradient? Take a moment to think back to the policy
+[417.62s -> 421.78s]  gradient lecture and think a little bit about why we might want to improve
+[421.78s -> 426.90s]  this gradient a little bit. So I'll tell you right now, you can use the
+[427.12s -> 431.48s]  this policy gradient. It's totally reasonable to implement amortized
+[431.48s -> 434.96s]  variational inference using the policy gradient to optimize the
+[434.96s -> 439.04s]  parameters of the inference network. You might need to draw more than one
+[439.04s -> 443.80s]  sample to get an accurate gradient, but it's a perfectly viable approach. But
+[443.80s -> 448.36s]  it's not the best approach. So just like we learned in the policy
+[448.36s -> 452.68s]  gradient lectures, this gradient estimator tends to suffer from high
+[452.70s -> 457.26s]  variance, and high variance means that your gradients will be noisy or
+[457.26s -> 461.54s]  you need to draw more samples to get an equally accurate gradient, which
+[461.54s -> 462.66s]  can be a bit inconvenient.
+[465.22s -> 468.70s]  Fortunately, there's a particular trick that you can use with
+[468.70s -> 472.06s]  amortized variational inference, which is generally not available to
+[472.06s -> 475.02s]  us when we're doing regular reinforcement learning, and that's
+[475.02s -> 480.26s]  called the reparameterization trick. The high level idea is that in
+[480.32s -> 485.40s]  reinforcement learning we use the policy gradient because we can't
+[485.40s -> 488.16s]  calculate derivatives through the dynamics.
+[489.44s -> 492.40s]  But with amortized variational inference, there is no unknown
+[492.40s -> 496.92s]  dynamics. There's only Q, and calculating derivatives through the
+[496.92s -> 499.76s]  mean and variance of Q is actually quite feasible.
+[500.94s -> 503.28s]  So here's the trick that we can use that exploits this.
+[505.04s -> 508.20s]  Here's the equation for J of phi again, and remember, the
+[508.22s -> 510.66s]  difficult part is calculating the gradient of this term. The gradient
+[510.66s -> 513.90s]  of the entropy is easy to get because the entropy is a closed
+[513.90s -> 517.20s]  form equation expressed in terms of mu and sigma, and you can
+[517.20s -> 519.78s]  just calculate derivatives for that using any automatic
+[519.78s -> 522.62s]  differentiation software. The difficult part is calculating
+[522.62s -> 524.14s]  the gradient of J of phi,
+[526.14s -> 528.10s]  where Q phi again is this Gaussian.
+[529.90s -> 533.38s]  So if you have a variable z that is distributed according to a
+[533.38s -> 538.18s]  Gaussian distribution, you can always rewrite that variable as
+[538.20s -> 543.62s]  the sum of a deterministic term, mu phi of x, and a stochastic
+[543.62s -> 548.42s]  term given by some random number epsilon times sigma phi of x.
+[548.90s -> 552.70s]  And if epsilon is distributed according to a Gaussian with
+[552.70s -> 556.58s]  mean zero and variance one, then plugging into this formula
+[556.74s -> 560.18s]  will make z correspond to samples from a Gaussian with mean
+[560.18s -> 562.02s]  mu and variance sigma.
+[563.02s -> 565.86s]  So you're essentially transforming a sample from a zero
+[566.12s -> 570.16s]  mean unit variance Gaussian into a sample with a mean mu and
+[570.16s -> 571.04s]  a variance sigma.
+[574.64s -> 578.00s]  Now, something to note about this equation is that epsilon
+[578.24s -> 579.56s]  doesn't depend on phi.
+[581.60s -> 585.92s]  So this way of writing z expresses z as a deterministic
+[585.92s -> 590.32s]  function, parametrized by phi, of a random variable epsilon
+[590.44s -> 591.72s]  that is independent of phi.
+[591.72s -> 596.10s]  And this is why we call this the reparametrization trick,
+[596.10s -> 599.70s]  because we are reparametrizing the random variable z to be
+[599.70s -> 603.26s]  a deterministic function of another random variable epsilon
+[603.42s -> 604.70s]  that is independent of phi.
+[606.22s -> 608.34s]  And when we do this, we can get a better gradient
+[608.34s -> 608.86s]  estimator.
+[610.62s -> 614.34s]  So what we can do is we can write our expectation with
+[614.34s -> 618.66s]  respect to z as instead an expectation with respect to
+[618.72s -> 619.44s]  epsilon,
+[621.32s -> 624.16s]  where I simply plugged in the equation for z expressed in
+[624.16s -> 625.88s]  terms of epsilon into R.
+[626.92s -> 628.28s]  So this is a strict equality.
+[628.28s -> 629.60s]  This is not an approximation.
+[630.40s -> 634.04s]  The expected value over z distributed according to a Gaussian
+[634.04s -> 636.60s]  with mean mu and variance sigma is equal to the
+[636.60s -> 639.52s]  expected value over epsilon distributed according to a
+[639.52s -> 643.60s]  Gaussian with mean zero and variance one, where you evaluate
+[643.60s -> 647.80s]  your R at xi comma mu of xi plus epsilon sigma xi.
+[648.66s -> 654.12s]  So now we're very close to being able to compute a better
+[654.12s -> 655.48s]  gradient for J of phi,
+[656.56s -> 661.08s]  because phi here now parametrizes only
+[661.08s -> 662.68s]  deterministic quantities.
+[664.96s -> 668.32s]  So think for a minute for how we could write a better
+[668.32s -> 671.52s]  gradient estimator based on this expectation over epsilon.
+[671.52s -> 677.34s]  Alright, so here's how we estimate the gradient with
+[677.34s -> 681.14s]  respect to phi of J of phi.
+[682.42s -> 686.98s]  First, sample epsilons from a zero mean unit of variance
+[686.98s -> 690.62s]  Gaussian. Sample epsilon one through epsilon m.
+[692.22s -> 694.74s]  A single sample actually works pretty well, so you can just
+[694.74s -> 697.30s]  generate one sample for every data point in your mini batch,
+[697.30s -> 698.90s]  and that's actually what we would usually do.
+[698.90s -> 704.12s]  Then calculate the gradient with respect to phi as simply the
+[704.12s -> 708.60s]  average over all of your samples of grad phi of R evaluated
+[708.60s -> 714.00s]  at xi comma mu phi xi plus epsilon J sigma phi xi.
+[715.88s -> 719.12s]  So this requires R to be differentiable with respect to
+[719.12s -> 723.40s]  z, and of course it requires mu phi and sigma phi to be
+[723.40s -> 725.92s]  differentiable with respect to phi, which they are because they're
+[725.92s -> 729.46s]  neural networks. We generally can't use this in reinforcement
+[729.46s -> 731.22s]  learning because in reinforcement learning, we don't
+[731.22s -> 734.06s]  assume that we know we can calculate the derivative of
+[734.06s -> 738.22s]  your return. But here we can, because R is just this log
+[738.22s -> 740.26s]  probability under the train of the model. It's another neural
+[740.26s -> 742.66s]  network. We know what it is, so we can calculate its
+[742.66s -> 743.82s]  derivative with respect to phi.
+[745.74s -> 749.30s]  This gradient estimator has a lower variance because we're
+[749.30s -> 752.70s]  actually using the derivatives of R. The policy gradient that
+[752.70s -> 755.82s]  we had before didn't use the derivatives of R. So this is
+[755.88s -> 757.00s]  a better gradient estimator.
+[760.52s -> 763.24s]  And most automatic differentiation software, like
+[763.24s -> 766.48s]  TensorFlow or PyTorch, will calculate this for you, so
+[766.48s -> 771.64s]  you don't need to know how to differentiate p theta of xi
+[771.64s -> 775.38s]  comma z yourself. You just implement it in autodiff and
+[775.38s -> 778.44s]  let autodiff take care of everything. So this is
+[778.44s -> 781.12s]  actually a very simple way to calculate derivatives. The
+[781.12s -> 783.12s]  only unusual thing is that you have to sample these
+[783.12s -> 785.52s]  epsilons. Otherwise, it looks like just any other
+[785.52s -> 786.18s]  neural network.
+[790.06s -> 794.26s]  Here's another way you can look at it. You can take your
+[794.26s -> 797.18s]  original variational lower bound, the expected value
+[797.18s -> 801.86s]  with respect to z, of log p theta xi given z plus log p
+[801.86s -> 806.42s]  of z plus the entropy of q, write it out as three terms.
+[806.42s -> 809.62s]  So there's an expectation under z of the decoder p
+[809.62s -> 813.82s]  theta xi given z plus an expectation under z of the
+[813.84s -> 819.72s]  prior log p of z plus the entropy. The second term is
+[819.72s -> 822.64s]  essentially the equation for the KL divergence between
+[822.64s -> 829.56s]  q phi of z given x and p of z, right, because KL
+[829.56s -> 832.92s]  divergence has an entropy term and an expected value
+[832.92s -> 841.08s]  term. And if our prior p of z is also Gaussian, the
+[841.10s -> 843.98s]  KL divergence between two Gaussian distributions has a
+[843.98s -> 847.38s]  convenient analytic form. So if you look up KL divergence
+[847.38s -> 849.74s]  between two Gaussians, you'll just find an equation
+[849.86s -> 852.54s]  expressed in terms of the means and variances of those
+[852.54s -> 854.54s]  Gaussians, just like you'll find an equation for
+[854.54s -> 858.54s]  the entropy. So that means that you don't need any
+[858.54s -> 860.76s]  fancy gradient estimator for this. You just write out
+[860.76s -> 864.84s]  that equation, implement it in TensorFlow or PyTorch and
+[864.84s -> 867.94s]  then call dot gradients on it. So there's no
+[867.94s -> 870.54s]  random sampling necessary to calculate this term.
+[872.06s -> 878.70s]  So here's what we're left with. And now we'll do the
+[878.70s -> 881.50s]  reparameterization trick for the first term, expressing
+[881.50s -> 884.46s]  it as an expected value under epsilon. And now
+[884.46s -> 887.70s]  everything in this equation is deterministic, except
+[887.70s -> 892.54s]  for epsilon. So we'll approximate the first
+[892.54s -> 894.54s]  expectation with a single sample, with a single
+[894.54s -> 897.46s]  Gaussian sample epsilon. And here's the equation
+[897.46s -> 901.02s]  we're left with. And now everything in this equation
+[901.58s -> 903.70s]  you can directly code up in your automatic
+[903.70s -> 908.58s]  differentiation software. So the log p theta of xi
+[908.58s -> 912.98s]  given q phi xi plus epsilon sigma phi xi, that is
+[912.98s -> 915.22s]  just calling the neural network representation for
+[915.22s -> 917.58s]  p theta with an input dependent on the neural
+[917.58s -> 920.42s]  network representation for mu phi and sigma phi. So
+[920.42s -> 922.42s]  everything here can be back-propped through, and
+[922.42s -> 926.14s]  epsilon is just treated as a constant. The second
+[926.14s -> 929.30s]  term, the KL divergence, has a closed form equation
+[929.32s -> 931.28s]  for it, expressed in terms of the means and
+[931.28s -> 937.40s]  variances of q and p of z. So you could think of
+[937.40s -> 940.16s]  it like this. You have your inference
+[940.16s -> 944.24s]  network, parametrized by phi, which takes an xi
+[944.24s -> 947.96s]  and it outputs two quantities, a mean mu phi of
+[947.96s -> 954.92s]  xi and a sigma phi of xi. Then you sample your
+[954.92s -> 957.92s]  epsilon from your zero mean unit variance
+[957.94s -> 960.42s]  Gaussian, and you combine that together with a mu
+[960.42s -> 965.26s]  and sigma to get your z. And the z is then fed
+[965.26s -> 968.38s]  into p theta of xi given z to produce a
+[968.38s -> 972.32s]  distribution over x. So this is a complete
+[972.32s -> 974.74s]  computation graph, and everything here has
+[974.74s -> 977.06s]  known derivatives, so you can back-propped through
+[977.06s -> 979.66s]  this whole thing with respect to both phi and
+[979.66s -> 984.94s]  theta. So what this means is that you could
+[984.94s -> 987.18s]  actually code this up in your automatic
+[987.18s -> 988.48s]  data-fresher software and just call that
+[988.48s -> 990.40s]  gradient on this whole thing, and this will give
+[990.40s -> 993.32s]  you derivatives of L with respect to both theta
+[993.32s -> 997.80s]  and phi. Okay, so how does this
+[997.80s -> 1000.08s]  reparametrization trick compare the policy
+[1000.08s -> 1003.44s]  gradient? So this is the policy gradient
+[1003.44s -> 1006.84s]  estimator for the derivative of the variational
+[1006.84s -> 1008.32s]  lower bound, just the first term, not the
+[1008.32s -> 1011.96s]  entropy term. This can handle both discrete
+[1011.96s -> 1014.44s]  and continuous latent variables, so this doesn't
+[1014.44s -> 1016.24s]  actually care whether z is a continuous number
+[1016.26s -> 1019.06s]  or not, so q doesn't have to be Gaussian, q could
+[1019.06s -> 1021.82s]  be literally any distribution, as long as it has
+[1021.82s -> 1025.06s]  well-defined log probabilities. But it has high
+[1025.06s -> 1027.74s]  variance and typically requires drawing multiple
+[1027.74s -> 1031.74s]  samples for each x and smaller learning rates.
+[1033.06s -> 1035.34s]  The reparametrization trick given by this
+[1035.34s -> 1038.94s]  equation only applies to continuous latent
+[1038.94s -> 1041.02s]  variables because you have to be able to take
+[1041.02s -> 1043.50s]  the derivative of R with respect to z, and if z
+[1043.50s -> 1045.78s]  is discrete, that derivative is not well defined.
+[1046.90s -> 1049.22s]  It is however very simple to implement and
+[1049.22s -> 1051.18s]  generally has low variance and only requires a
+[1051.18s -> 1053.46s]  single sample per data point to work well.
+[1055.26s -> 1058.10s]  So if you're wondering which gradient
+[1058.10s -> 1060.22s]  estimator to use in your amortized variational
+[1060.22s -> 1062.38s]  inference implementation, if you have continuous
+[1062.38s -> 1064.42s]  variables, probably a good idea to go with the
+[1064.42s -> 1066.38s]  reparametrization trick. If you have discrete
+[1066.38s -> 1068.18s]  variables, then you probably need to use the
+[1068.18s -> 1069.66s]  policy gradient style estimator.

@@ -1,0 +1,1143 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 11.74s]  So, the thing that seems kind of amazing to me and us is the fact that well actually
+[11.74s -> 17.84s]  this course was taught just last quarter and here we are with an enormous number
+[17.84s -> 20.92s]  of people again taking this class.
+[20.92s -> 26.56s]  I guess that says something maybe approximately what it says is ChatGPT.
+[26.56s -> 33.56s]  But anyway, it's great to have you all,
+[33.56s -> 38.32s]  lots of exciting content to have and hope you'll all enjoy it.
+[38.32s -> 42.56s]  So, let me get started and start telling you a bit about
+[42.56s -> 47.28s]  the course before diving straight into today's content.
+[47.28s -> 49.68s]  For people still coming in,
+[49.92s -> 55.28s]  there are oodles of seats still right on either side, especially down near the front.
+[55.28s -> 61.52s]  There are tons of seats, so do feel empowered to go out and
+[61.52s -> 66.40s]  seek those seats if people on the corridors are really nice.
+[66.40s -> 69.24s]  They could even move towards the edges to make it easier for people.
+[69.24s -> 72.80s]  But one way or another, feel free to find a seat.
+[72.80s -> 76.72s]  Okay, so this is the plan for what I want to get through today.
+[76.76s -> 81.48s]  So, first of all, I'm gonna tell you about the course for a few minutes.
+[81.48s -> 85.92s]  Then have a few remarks about human language and word meaning.
+[86.96s -> 90.52s]  Then the main technical thing we want to get into today
+[90.52s -> 93.80s]  is start learning about the word-to-vec algorithm.
+[93.80s -> 98.28s]  So the word-to-vec algorithm is slightly over a decade old now.
+[98.28s -> 102.72s]  It was introduced in 2013, but
+[102.72s -> 109.16s]  it was a wildly successful simple way of learning vector representations of words.
+[109.16s -> 114.84s]  So I wanna show you that as a sort of a first easy baby system for
+[114.84s -> 119.76s]  the kind of neural representations that we're gonna talk about in class.
+[119.76s -> 121.76s]  We're then gonna get more concrete with that,
+[121.76s -> 125.88s]  looking at its objective function gradients and optimization.
+[125.88s -> 129.32s]  And then hopefully if all goes, I stick to schedule,
+[129.36s -> 133.56s]  spend a few minutes just playing around in my Python notebook.
+[133.56s -> 137.88s]  I'm gonna have to change computers for that.
+[137.88s -> 142.60s]  Then sort of seeing some of the things you can do with this.
+[142.60s -> 145.84s]  Okay, so this is the course logistics and brief.
+[145.84s -> 147.16s]  I'm Christopher Manning.
+[147.16s -> 149.48s]  Hi again, everyone.
+[149.48s -> 154.24s]  The head TA is who unfortunately has a bit of a health problem, so
+[154.24s -> 156.56s]  he's not actually here today.
+[156.56s -> 162.60s]  We've got a course manager for the course who is up the back there.
+[162.60s -> 166.16s]  And then we've got a whole lot of TAs.
+[166.16s -> 169.56s]  If you're a TA who's here, you could stand up and wave or
+[169.56s -> 173.80s]  something like that so people can see a few of the TAs and
+[173.80s -> 175.68s]  see some friendly faces.
+[175.68s -> 179.96s]  Okay, we've got some TAs and some other ones.
+[179.96s -> 182.52s]  And so you can look at them on the website.
+[182.52s -> 185.88s]  If you're here, you know what time the class is.
+[185.92s -> 190.52s]  There's an email list, but preferably don't use it and
+[190.52s -> 194.60s]  use the ed site that you can find on the course website.
+[194.60s -> 196.20s]  So the main place to go and look for
+[196.20s -> 200.04s]  information is the course website, which we've got up here.
+[200.04s -> 202.28s]  And that then links into ed,
+[202.28s -> 205.88s]  which is what we're going to use as the main discussion board.
+[205.88s -> 208.80s]  Please use that rather than sending emails.
+[208.80s -> 214.76s]  The first assignment for this class, it's a sort of an easy one.
+[214.80s -> 216.40s]  It's the warm up assignment, but
+[216.40s -> 220.20s]  we want to get people busy in doing stuff straight away.
+[220.20s -> 224.60s]  So the first assignment is already live on the web page and
+[224.60s -> 228.08s]  it's due next Tuesday before class.
+[228.08s -> 231.68s]  So slightly less than seven days left to do it.
+[231.68s -> 234.24s]  So do get started on that.
+[234.24s -> 235.96s]  And to help with that,
+[235.96s -> 239.88s]  we're going to be immediately starting office hours tomorrow.
+[239.88s -> 242.80s]  And they're also described on the website.
+[242.80s -> 246.80s]  We also do a few tutorials on Friday.
+[246.80s -> 251.44s]  The first of these tutorials is a tutorial on Python and NumPy.
+[251.44s -> 253.56s]  Many people don't need that because they've done other
+[253.56s -> 255.48s]  classes and done this.
+[255.48s -> 257.76s]  But for some people, we try and
+[257.76s -> 259.72s]  make this class accessible to everybody.
+[259.72s -> 262.92s]  So if you'd like to brush up a bit on Python or
+[262.92s -> 266.32s]  how to use NumPy, it's a great thing to go along to.
+[266.32s -> 269.88s]  And who's right over there is gonna be teaching it on Friday.
+[270.88s -> 274.52s]  Okay, what do we hope to teach?
+[274.52s -> 278.12s]  At the end of the quarter when you get the eval,
+[278.12s -> 281.76s]  you'll be asked to write whether this class met its
+[281.76s -> 285.80s]  learning goals, these are my learning goals.
+[287.20s -> 288.92s]  What are they?
+[288.92s -> 293.68s]  So the first one is to teach you about the foundations and
+[293.68s -> 297.24s]  current methods for using deep learning applied to natural
+[297.24s -> 298.68s]  language processing.
+[298.72s -> 302.56s]  So this class tries to sort of build up from the bottom up.
+[302.56s -> 306.00s]  So we start off doing simple things like word vectors and
+[306.00s -> 309.64s]  feed forward neural networks, recurrent networks and attention.
+[309.64s -> 313.16s]  We then fairly quickly move into the kind of key methods
+[313.16s -> 317.72s]  they use for NLP in 2024.
+[317.72s -> 320.92s]  I wrote down here transformers and coded decoder models.
+[320.92s -> 323.32s]  I probably should have written large language models somewhere
+[323.32s -> 325.40s]  in this list as well.
+[325.44s -> 328.56s]  But then pre-training and post-training of large language
+[328.56s -> 332.68s]  models, adaptation, model interpretability agents, etc.
+[332.68s -> 335.40s]  But that's not the only thing that we want to do.
+[335.40s -> 337.48s]  So there are a couple of other things that we crucially
+[337.48s -> 339.12s]  want to achieve.
+[339.12s -> 344.44s]  The second is to give you some understanding of human
+[344.44s -> 347.56s]  languages and the difficulties in understanding and
+[347.56s -> 349.84s]  producing them on computers.
+[349.84s -> 352.84s]  Now there are a few of you in this class who are linguistics
+[352.88s -> 356.12s]  majors or perhaps the symbolic systems majors.
+[356.12s -> 358.36s]  Yay to the symbolic systems majors.
+[358.36s -> 362.32s]  But for quite a few of the rest of you, you'll never see
+[362.32s -> 366.88s]  any linguistics in the sense of understanding how language
+[366.88s -> 369.24s]  works apart from this class.
+[369.24s -> 372.44s]  So we do want to try and convey a little bit of a sense
+[372.44s -> 376.60s]  of what some of the issues are in language structure and
+[376.60s -> 381.48s]  why it's proven to be quite difficult to get computers to
+[381.48s -> 384.96s]  understand human languages even though humans seem very
+[384.96s -> 388.20s]  good at learning to understand each other.
+[388.20s -> 391.80s]  And then the final thing that we want to make it on to is
+[391.80s -> 395.40s]  actually concretely building systems so that this isn't
+[395.40s -> 399.04s]  just a theory class that we actually want you to leave
+[399.04s -> 404.16s]  this class thinking, yeah, in my first job, wherever you go,
+[404.16s -> 408.96s]  whether it's a start-up or a big tech or some non-profit,
+[408.96s -> 411.72s]  or there's something they want to do that they'd like,
+[411.72s -> 415.04s]  that would be useful if we had a text classification system or
+[415.04s -> 417.92s]  we did information extraction to get some kind of facts out
+[417.92s -> 420.52s]  of documents, I know how to build that.
+[420.52s -> 425.88s]  I can build that system because I did CS224N.
+[425.88s -> 428.88s]  Okay, here's how you get graded.
+[428.88s -> 432.64s]  So we have four assignments, mainly one and
+[432.64s -> 435.24s]  a half weeks long apart from the first one.
+[435.24s -> 437.72s]  They make up almost half the grade.
+[437.72s -> 442.36s]  The other half of the grade is made up of a final project,
+[442.36s -> 445.52s]  which there are two variants of, a custom or
+[445.52s -> 449.24s]  a default final project, which we'll get on to in a minute.
+[449.24s -> 452.28s]  And then there's a few percent that go for participation.
+[454.00s -> 459.24s]  Six late days, collaboration policy.
+[459.24s -> 461.28s]  Like all other CS classes,
+[461.28s -> 465.64s]  we've had issues with people not doing their own work.
+[465.68s -> 468.60s]  We really do want you to learn things in this class and
+[468.60s -> 471.88s]  the way you do that is by doing your own work.
+[471.88s -> 475.60s]  So make sure you understand that.
+[475.60s -> 477.08s]  And so for the assignments,
+[477.08s -> 480.64s]  everyone is expected to do their own assignments.
+[480.64s -> 482.32s]  You can talk to your friends, but
+[482.32s -> 484.60s]  you're expected to do your own assignment.
+[484.60s -> 487.20s]  For the final project, you can do that as a group.
+[488.72s -> 492.80s]  Then we have the issue of AI tools.
+[492.80s -> 496.28s]  Now, of course, in this class, we love large language models.
+[496.28s -> 499.92s]  But nevertheless, we don't want you to do your assignments by
+[499.92s -> 504.60s]  saying, hey, chat GPT, could you answer question three for me?
+[504.60s -> 507.04s]  That is not the way to learn things.
+[507.04s -> 510.88s]  If you wanna make use of AI as a tool to assist you,
+[510.88s -> 514.44s]  such as for coding assistance, go for it.
+[514.44s -> 518.24s]  But we're wanting you to be working out how to answer
+[518.24s -> 520.32s]  assignment questions by yourself.
+[521.32s -> 524.12s]  Okay, so this is what the assignments look like.
+[524.12s -> 527.36s]  So assignment one is meant to be an easy on-ramp, and
+[527.36s -> 530.56s]  it's done as a Jupyter notebook.
+[530.56s -> 538.28s]  Assignment two then has people, what can I say?
+[538.28s -> 542.80s]  Here we are at this fine liberal arts and
+[542.80s -> 546.52s]  engineering institution, we're not at a coding boot camp.
+[546.60s -> 550.28s]  So we hope that people have some deep understanding
+[550.28s -> 551.76s]  of how things work.
+[551.76s -> 555.80s]  So in assignment two, we actually want you to do some
+[555.80s -> 560.52s]  math and understand how things work in neural networks.
+[560.52s -> 564.72s]  So for some people, assignment two is the scariest assignment
+[564.72s -> 566.60s]  in the whole class.
+[566.60s -> 569.64s]  But then it's also the place where we introduce PyTorch,
+[569.64s -> 573.44s]  which is a software package we use for building neural networks.
+[573.48s -> 575.76s]  And we build a dependency parser,
+[575.76s -> 578.48s]  which we'll get to later as something more linguistic.
+[579.68s -> 583.04s]  Then for assignment three and four, we move on to larger
+[583.04s -> 585.84s]  projects using PyTorch with GPUs, and
+[585.84s -> 588.64s]  we'll be making use of Google Cloud.
+[588.64s -> 593.40s]  And for those two assignments, we look at doing machine
+[593.40s -> 598.88s]  translation and getting information out with transformers.
+[598.88s -> 601.64s]  And then these are the two final project options.
+[601.64s -> 605.72s]  So essentially, we have a default final project where we
+[605.72s -> 609.28s]  give you a lot of scaffolding and an outline of what to do.
+[609.28s -> 612.12s]  But it's still an open-ended project.
+[612.12s -> 614.92s]  There are lots of different things you can try to make
+[614.92s -> 618.84s]  this system work better, and we encourage you to explore.
+[618.84s -> 624.68s]  But nevertheless, you're given a leg up from quite a lot of scaffolding.
+[624.68s -> 627.92s]  We'll talk about this more, but you can either do that option or
+[627.92s -> 631.40s]  you can just come up with totally your own project and do that.
+[631.64s -> 635.04s]  Okay, that's the course.
+[635.04s -> 636.44s]  Any questions on the course?
+[638.16s -> 638.76s]  Yes?
+[638.76s -> 642.88s]  In the final project, how a mentor is assigned?
+[642.88s -> 647.48s]  So if you can find your own mentor,
+[647.48s -> 650.08s]  you're interested in something and there's someone that's
+[650.08s -> 653.68s]  happy to mentor you, that person can be your mentor.
+[653.68s -> 657.84s]  Otherwise, one of the course TAs will be your mentor.
+[657.88s -> 663.44s]  And how that person is assigned is one of the TAs who is in
+[663.44s -> 668.08s]  charge of final projects, assigns people, and they do the best they can
+[668.08s -> 671.84s]  in terms of finding people with some expertise and having to divide all
+[671.84s -> 674.24s]  the students across the mentors roughly equally.
+[675.68s -> 676.92s]  Any other questions?
+[679.96s -> 681.72s]  Okay, I'll power ahead.
+[682.76s -> 685.00s]  Human language and word meaning.
+[686.00s -> 692.20s]  So let me just sort of say a little bit about the big picture here.
+[693.32s -> 696.96s]  So we're in the area of artificial intelligence and
+[696.96s -> 700.96s]  we've got this idea that humans are intelligent.
+[700.96s -> 707.44s]  And then there's the question of how does language fit into that?
+[707.44s -> 711.00s]  And this is something that there is some argument about and
+[711.04s -> 714.52s]  if you want to you can run off onto social media and
+[714.52s -> 716.88s]  read some of the arguments about these things and
+[716.88s -> 720.04s]  contribute to it if you wish to.
+[720.04s -> 724.72s]  But here is my perhaps biased take as a linguist.
+[725.88s -> 730.96s]  Well, you can compare human beings to some of our
+[730.96s -> 735.96s]  nearest neighbors like chimpanzees, bonobos, and things like that.
+[735.96s -> 744.00s]  And well, one big distinguishing thing is we have language and they don't.
+[744.00s -> 750.64s]  But in most other respects, chimps are very similar to human beings, right?
+[750.64s -> 757.80s]  They can use tools, they can plan how to solve things.
+[757.80s -> 759.60s]  They've got really good memory.
+[759.60s -> 763.52s]  Chimps have better short-term memory than human beings do, right?
+[763.60s -> 768.72s]  So that in most respects, it's hard to show an intelligence difference
+[768.72s -> 773.64s]  between chimps and people except for the fact that we have language.
+[773.64s -> 779.48s]  But us having language has been this enormous differentiator, right?
+[779.48s -> 783.32s]  That if you look around what happened on the planet,
+[783.32s -> 787.68s]  you know that there are creatures that are stronger than us, faster than us,
+[787.68s -> 791.36s]  more venomous than us, have every possible advantage.
+[791.56s -> 794.40s]  But human beings took over the whole place.
+[794.40s -> 796.04s]  And how did that happen?
+[796.04s -> 799.88s]  We had language, so we could communicate.
+[799.88s -> 805.56s]  And that communication allowed us to have human ascendancy.
+[805.56s -> 807.32s]  But I'd like to make, so
+[807.32s -> 811.96s]  one big role of language is the fact that it allows communication.
+[811.96s -> 815.84s]  But I'd like to suggest it's actually not the only role of language.
+[815.88s -> 820.08s]  The language has also allowed humans,
+[820.08s -> 823.96s]  I would argue, to achieve a higher level of thought.
+[823.96s -> 826.72s]  So there are various kinds of thoughts that you can have
+[826.72s -> 828.60s]  without any language involved.
+[828.60s -> 832.92s]  You can think about a scene, you can move some bits of furniture around in
+[832.92s -> 837.84s]  your mind, and there's no language, and obviously emotional responses of
+[837.84s -> 842.64s]  feeling scared or excited, they happen and there's no language involved.
+[842.64s -> 848.32s]  But I think most of the time when we're doing higher level cognition,
+[848.32s -> 853.60s]  if you're thinking to yourself, gee, my friend seemed upset about what I said
+[853.60s -> 859.60s]  last night, I should probably work out how to fix that, maybe I could.
+[859.60s -> 862.60s]  I think we think in language and plan out things.
+[862.60s -> 868.44s]  And so it's given us a scaffolding to do much more detailed thought and planning.
+[869.44s -> 875.08s]  Most recently of all, of course, human beings invented ways to write.
+[876.48s -> 880.44s]  And that led, so writing is really, really recent.
+[880.44s -> 884.00s]  I mean, no one really knows how old human languages are.
+[884.00s -> 886.24s]  Most people think a few hundred thousand years,
+[886.24s -> 889.76s]  not very long by evolutionary time scales.
+[889.76s -> 893.00s]  But writing we do know, writing is really, really recent.
+[893.00s -> 896.16s]  So writing is about 5,000 years old.
+[896.56s -> 902.16s]  And so, but writing proved to be this,
+[902.16s -> 908.48s]  again, this amazing cognitive tool that just gave humanity an enormous leg up.
+[908.48s -> 912.08s]  Because suddenly, it's not only that you could share information and
+[912.08s -> 916.04s]  learn from the people that were standing within 50 feet of you.
+[916.04s -> 920.16s]  You could then share knowledge across time and space.
+[920.16s -> 926.12s]  So really, having writing was enough to take us from the Bronze Age,
+[927.12s -> 932.28s]  very simple metalworking, to the kind of mobile phones and
+[932.28s -> 937.20s]  all the other technology that we walk around with today in just a very short
+[937.20s -> 938.56s]  amount of time.
+[938.56s -> 940.40s]  So language is pretty cool.
+[942.56s -> 950.40s]  But one shouldn't only fixate on the sort of knowledge side of language and
+[950.40s -> 953.68s]  how that's made human beings great.
+[953.68s -> 956.60s]  I mean, there's this other side of language,
+[956.60s -> 960.92s]  where language is this very flexible system,
+[960.92s -> 965.20s]  which is used as a social tool by human beings.
+[965.20s -> 970.88s]  So that we can speak with a lot of imprecision and
+[970.88s -> 976.16s]  nuance and emotion in language, and we can get people to understand.
+[976.16s -> 981.08s]  We can set up sort of new ways of thinking about things by using words for
+[981.08s -> 983.32s]  them, and languages aren't static.
+[983.32s -> 986.32s]  Languages change as human beings use them.
+[986.32s -> 991.72s]  That languages aren't something that were delivered down on tablets by God.
+[991.72s -> 995.12s]  Languages are things that humans constructed, and
+[995.12s -> 998.36s]  humans changed them with each successive generation.
+[998.36s -> 1003.72s]  And indeed, most of the innovation in language happens among young people.
+[1003.72s -> 1008.68s]  People that are either a few years younger than most of you are now,
+[1008.68s -> 1012.36s]  in their earlier teens, going into the 20s, right?
+[1012.40s -> 1015.12s]  That's a big period of linguistic innovation,
+[1015.12s -> 1019.08s]  where people think up cool new phrases and ways of saying things.
+[1019.08s -> 1021.68s]  And some of those get embedded and extended, and
+[1021.68s -> 1023.40s]  that then becomes the future of language.
+[1025.32s -> 1031.00s]  So Herb Clark used to be a psychologist at Stanford.
+[1031.00s -> 1034.56s]  He's now retired, but he had this rather nice quote.
+[1034.56s -> 1039.20s]  The common misconception is that language use has primarily to do with words and
+[1039.20s -> 1040.36s]  what they mean.
+[1040.36s -> 1041.40s]  It doesn't.
+[1041.48s -> 1044.20s]  It has primarily to do with people and what they mean.
+[1045.80s -> 1049.32s]  Okay, so that's language in two slides for you.
+[1049.32s -> 1051.72s]  So now we'll skip ahead to deep learning.
+[1051.72s -> 1057.04s]  So in the last decade or so, we've been able to make
+[1057.04s -> 1060.08s]  fantastic progress in doing more with computers,
+[1060.08s -> 1065.52s]  understanding human languages in using deep learning.
+[1065.52s -> 1068.56s]  We'll say a bit more about the history later on.
+[1068.56s -> 1073.32s]  But work on trying to do things with human language started in the 1950s, so
+[1073.32s -> 1077.40s]  it had been sort of going for 60 years or so.
+[1077.40s -> 1079.64s]  And there was some stuff.
+[1079.64s -> 1081.92s]  It's not that nobody could do anything.
+[1081.92s -> 1085.44s]  But the ability to understand and
+[1085.44s -> 1089.52s]  produce language had always been kind of questionable.
+[1089.52s -> 1094.68s]  But it's really in the last decade with neural networks that just enormous strides
+[1094.68s -> 1099.44s]  of progress have been made that's led into the world that we have today.
+[1099.44s -> 1105.28s]  So one of the first big breakthroughs came in the area of using
+[1105.28s -> 1109.20s]  neural NLP systems for machine translation.
+[1109.20s -> 1111.96s]  And so this started about 2014 and
+[1111.96s -> 1117.24s]  was already deployed live on services like Google by 2016.
+[1117.24s -> 1122.84s]  It was so good that it saw really, really rapid commercial deployment.
+[1122.84s -> 1129.68s]  And I mean, overall, this kind of facility with machine translation
+[1129.68s -> 1134.64s]  just means that you're growing up in such a different world
+[1134.64s -> 1138.16s]  to people a few generations back, right?
+[1138.16s -> 1143.60s]  People a few generations back that unless you actually knew different
+[1143.60s -> 1148.96s]  languages of different people, you sort of had no chance to communicate with them.
+[1148.96s -> 1154.32s]  Where now we're very close to having something like the Babel Fish from
+[1154.32s -> 1158.72s]  Hitchhiker's Guide to the Galaxy for understanding all languages.
+[1158.72s -> 1162.72s]  It's just it's not a Babel Fish, it's a cell phone.
+[1162.72s -> 1165.60s]  But you can have it out between two people and
+[1165.60s -> 1168.08s]  have it do simultaneous translation.
+[1168.08s -> 1171.80s]  And it's not perfect, people keep on doing research on this.
+[1171.80s -> 1176.56s]  But by and large, it means you can pick anything up from different
+[1176.56s -> 1178.56s]  areas of the world.
+[1178.56s -> 1181.20s]  As you can see, this example is from a couple of years ago,
+[1181.20s -> 1184.52s]  since it's still from the COVID pandemic era.
+[1184.52s -> 1189.68s]  But I can see this Swahili from Kenya and say,
+[1189.68s -> 1193.96s]  gee, I wonder what that means, stick it into Google Translate.
+[1193.96s -> 1199.76s]  And I can learn that Malawi lost two ministers
+[1199.76s -> 1203.16s]  due to COVID infections and they died, right?
+[1203.20s -> 1208.40s]  So we're just in this different era of being able to understand stuff.
+[1208.40s -> 1212.12s]  And then there are lots of other things that we can do with modern NLP.
+[1212.12s -> 1218.04s]  So until a few years ago, we had web search engines and
+[1218.04s -> 1222.24s]  you put in some text, you could write it as a sentence if you wanted to.
+[1222.24s -> 1224.32s]  But it didn't really matter whether you wrote a sentence or
+[1224.32s -> 1228.48s]  not because what you got was some keywords that were then matched against
+[1228.48s -> 1233.32s]  an index and you were shown some pages that might have the answers to your question.
+[1233.32s -> 1239.28s]  But these days, you can put an actual question into a modern search engine,
+[1239.28s -> 1242.28s]  like when did Kendrick Lamar's first album come out?
+[1242.28s -> 1246.80s]  It can go and find documents that have relevant information.
+[1246.80s -> 1250.92s]  It can read those documents and it can give you an answer.
+[1250.92s -> 1255.24s]  So that it actually can become an answer engine rather than just something that
+[1255.28s -> 1259.04s]  defines documents that might be relevant to what you're interested in.
+[1259.04s -> 1262.72s]  And the way that that's done is with big neural networks.
+[1262.72s -> 1267.20s]  So that you might commonly have, for your query,
+[1267.20s -> 1271.88s]  you've got a retrieval neural network which can find passages that are similar
+[1271.88s -> 1276.52s]  to the query, they might then be re-ranked by a second neural network.
+[1276.52s -> 1280.12s]  And then there'll be a third reading neural network that'll read those
+[1280.12s -> 1284.28s]  passages and synthesize information from them,
+[1284.32s -> 1286.44s]  which it then returns as the answer.
+[1287.68s -> 1293.92s]  Okay, that gets us to about 2018, but then things got more advanced again.
+[1293.92s -> 1298.96s]  So it was really around 2019 that people started to see
+[1298.96s -> 1301.96s]  the power of large language models.
+[1301.96s -> 1309.04s]  And so back in 2019, those of us in NLP were really excited about GPT-2.
+[1309.04s -> 1312.04s]  It didn't make much of an impact on the nightly news, but
+[1312.08s -> 1314.60s]  it was really exciting in NLP land.
+[1314.60s -> 1319.40s]  Cuz GPT-2, already for the first time,
+[1319.40s -> 1324.92s]  meant here was a large language model that could just generate fluent text.
+[1324.92s -> 1329.96s]  That really until then, NLP systems had done a sort of a decent
+[1329.96s -> 1333.20s]  job at understanding certain facts out of text.
+[1333.20s -> 1338.04s]  But we'd just never been able to generate fluent text that was at all good.
+[1338.04s -> 1343.12s]  Where here, what you could do with GPT-2 was you could write something like
+[1343.12s -> 1347.48s]  the start of a story, a train carriage containing controlled nuclear materials
+[1347.48s -> 1351.68s]  was stolen in Cincinnati today, its whereabouts are unknown.
+[1351.68s -> 1356.24s]  And then GPT-2 would just write a continuation.
+[1356.24s -> 1359.24s]  The incident occurred on the downtown train line which runs from
+[1359.24s -> 1361.40s]  Covington and Ashland stations.
+[1361.40s -> 1365.68s]  In an email to Ohio news outlets, the US Department of Energy said as working
+[1365.68s -> 1369.92s]  with the Federal Railroad Administration to find the thief, dot, dot, dot.
+[1369.92s -> 1375.12s]  And so the way this is working is it's conditioning on all the past material.
+[1375.12s -> 1380.32s]  And as I show at the very bottom line down here, it's then generating one word
+[1380.32s -> 1386.04s]  at a time as to what word it thinks would be likely to come next after that.
+[1386.04s -> 1391.04s]  And so from that simple method of sort of generating words out of one after
+[1391.04s -> 1394.36s]  another, it's able to produce excellent text.
+[1394.36s -> 1399.68s]  And the thing to notice is, I mean, this text is not only kind of
+[1399.68s -> 1403.24s]  formally correct, not the spelling's correct and
+[1403.24s -> 1408.08s]  the sentences are real sentences, not disconnected garbage.
+[1408.08s -> 1410.88s]  But it actually understands a lot, right?
+[1410.88s -> 1415.88s]  So the prompt that was written said there were stolen nuclear materials
+[1415.88s -> 1420.72s]  in Cincinnati, but GPT-2 knows a lot of stuff.
+[1420.72s -> 1423.88s]  It knows that Cincinnati is in Ohio.
+[1423.92s -> 1426.04s]  It knows that in the United States,
+[1426.04s -> 1430.88s]  it's the Department of Energy that regulates nuclear materials.
+[1430.88s -> 1434.92s]  It knows if something is stolen, it's a theft, and
+[1434.92s -> 1441.24s]  that that would make sense that people are getting involved with that.
+[1441.24s -> 1444.16s]  It talks about, there was a train carriage, so
+[1444.16s -> 1446.60s]  it's talking about the train line, where it goes.
+[1446.60s -> 1453.04s]  It really knows a lot and can write coherent discourse like a real story.
+[1453.08s -> 1456.76s]  So that's kind of amazing.
+[1456.76s -> 1459.40s]  But things moved on from there.
+[1459.40s -> 1463.16s]  And so now we're in the world of chat GPT and GPT-4.
+[1463.16s -> 1467.44s]  And one of the things that we'll talk about later is,
+[1467.44s -> 1473.72s]  this was a huge user success because now you could ask questions or
+[1473.72s -> 1477.72s]  give it commands and it would do what you wanted.
+[1477.72s -> 1479.12s]  And that was further amazing.
+[1479.16s -> 1484.60s]  So here I'm saying, hey, please draft a polite email to my boss Jeremy,
+[1484.60s -> 1486.44s]  that I would not be able to come into the office for
+[1486.44s -> 1490.92s]  the next two days because my nine year old song, that's a misspelling for
+[1490.92s -> 1494.00s]  some, but the system works fine despite it.
+[1494.00s -> 1498.60s]  Peter is angry with me that I'm not giving him much time.
+[1498.60s -> 1501.84s]  And it writes a nice email.
+[1501.84s -> 1506.00s]  It corrects the spelling mistake cuz it knows people make spelling mistakes.
+[1506.00s -> 1507.88s]  It doesn't talk about songs.
+[1507.88s -> 1510.04s]  And everything works out beautifully.
+[1511.40s -> 1513.00s]  You can get it to do other things.
+[1513.00s -> 1517.88s]  So you can ask it, what is unusual about this image?
+[1517.88s -> 1522.28s]  So in thinking about meaning, one of the things that's interesting with these
+[1522.28s -> 1528.56s]  recent models is that they're multimodal and can operate across modes.
+[1528.56s -> 1533.28s]  And so a favorite term that we coined at Stanford is the term
+[1533.28s -> 1537.92s]  foundation models, which we use as a generalization of large language
+[1537.92s -> 1543.48s]  models to have the same kind of technology used across different modalities.
+[1543.48s -> 1548.36s]  Images, sound, various kinds of bioinformatic things,
+[1548.36s -> 1552.20s]  DNA, RNA, things like that, seismic waves,
+[1552.20s -> 1557.60s]  any kind of signal building these same kind of large models.
+[1557.60s -> 1565.48s]  Another place that you can see that is going from text to images.
+[1565.48s -> 1569.68s]  So if I ask for a picture of a train going over the Golden Gate Bridge,
+[1570.88s -> 1574.68s]  this is now DALI 2.
+[1574.68s -> 1578.32s]  It gives me a picture of a train going over the Golden Gate Bridge.
+[1578.32s -> 1583.20s]  This is a perfect time to welcome anyone who's watching this on
+[1583.20s -> 1584.84s]  Stanford Online.
+[1584.84s -> 1587.88s]  If you're on Stanford Online and are not in the Bay Area,
+[1587.88s -> 1593.76s]  the important thing to know is no trains go over the Golden Gate Bridge.
+[1593.76s -> 1598.80s]  But you might not be completely happy with this picture because it
+[1598.80s -> 1603.12s]  shows the Golden Gate Bridge and a train going over it, but it doesn't show the bay.
+[1603.12s -> 1607.44s]  So maybe I'd like to get with the bay in the background.
+[1607.44s -> 1612.00s]  And if I ask for that, well look, now I've got a train going over the Golden Gate
+[1612.00s -> 1614.72s]  Bridge with the bay in the background.
+[1614.72s -> 1619.16s]  But you still might not be, this might not be exactly what you want.
+[1619.16s -> 1623.16s]  Like maybe you'd prefer something that's a pencil drawing.
+[1623.16s -> 1626.68s]  So I can say a train going over the Golden Gate Bridge detailed pencil
+[1626.68s -> 1629.12s]  drawing and I can get a pencil drawing.
+[1630.24s -> 1635.16s]  Or maybe it's unrealistic that the Golden Gate Bridge only has trains going over
+[1635.16s -> 1636.08s]  it now.
+[1636.08s -> 1638.84s]  So maybe it'd be good to have some cars as well.
+[1638.88s -> 1642.88s]  So I could ask for a train and cars, and we can get a train and
+[1642.88s -> 1645.08s]  cars going over it.
+[1645.08s -> 1648.12s]  Now, I actually made these ones all by myself, so
+[1648.12s -> 1651.04s]  you should be impressed with my generative AI artwork.
+[1651.04s -> 1655.00s]  But these examples are actually a bit old now because they're done with
+[1655.00s -> 1658.28s]  Dali 2 and if you keep up with these things, that's a few years ago.
+[1658.28s -> 1660.04s]  There's now Dali 3 and so on.
+[1660.04s -> 1663.24s]  So we can now get much fancier things again, right?
+[1663.24s -> 1665.32s]  An illustration from a graphic novel,
+[1665.32s -> 1668.52s]  a bustling city street under the shine of a full moon.
+[1668.52s -> 1672.12s]  The sidewalks bustling with pedestrians enjoying the nightlife.
+[1672.12s -> 1674.92s]  At the corner stall, a young woman with fiery red hair,
+[1674.92s -> 1679.28s]  dressed in a signature velvet cloak, is haggling with the grumpy old vendor.
+[1679.28s -> 1683.16s]  The grumpy vendor, a tall, sophisticated man, is wearing a sharp suit.
+[1683.16s -> 1684.80s]  Sports a noteworthy mustache,
+[1684.80s -> 1688.24s]  is animatedly conversing on his steampunk telephone.
+[1688.24s -> 1691.28s]  And pretty much, we're getting all of that.
+[1692.28s -> 1699.36s]  Okay, so let's now get on to starting to think more about meaning.
+[1699.36s -> 1705.28s]  So perhaps, what can we do for meaning, right?
+[1705.28s -> 1709.68s]  So if you think of words and their meaning,
+[1709.68s -> 1713.60s]  if you look up a dictionary and say, what does meaning mean?
+[1713.60s -> 1718.32s]  Meaning is defined as the idea that is represented by a word or phrase.
+[1718.36s -> 1724.00s]  The idea that a person wants to express by using words, the idea that is expressed.
+[1724.00s -> 1730.84s]  And in linguistics, if you go and do a semantics class or something,
+[1730.84s -> 1735.40s]  the commonest way of thinking of meaning is somewhat like what's presented
+[1735.40s -> 1740.64s]  up above there, that meaning is thought of as a pairing between what's
+[1740.64s -> 1745.48s]  sometimes called signifier and signified, but is perhaps easy to think of
+[1745.48s -> 1750.32s]  as a symbol, a word, and then an idea or thing.
+[1750.32s -> 1753.96s]  And so this notion is referred to as denotational semantics.
+[1753.96s -> 1758.20s]  So the idea or thing is the denotation of the symbol.
+[1758.20s -> 1761.84s]  And so this same idea of denotational semantics has also been used for
+[1761.84s -> 1764.96s]  programming languages, because in programming languages,
+[1764.96s -> 1769.88s]  you have symbols like while and if and variables.
+[1769.88s -> 1774.32s]  And they have a meaning, and that could be their denotation.
+[1774.36s -> 1777.76s]  So we sort of would say that the meaning of tree
+[1777.76s -> 1780.40s]  is all the trees you can find out around the world.
+[1781.56s -> 1786.80s]  That's sort of an okay notion of meaning, it's a popular one.
+[1786.80s -> 1791.48s]  It's never been very obvious, or at least traditionally it wasn't very
+[1791.48s -> 1795.80s]  obvious as to what we could do with that to get it into computers.
+[1795.80s -> 1800.80s]  So if you looked in the pre-mural world when people tried to look at
+[1800.88s -> 1806.72s]  meanings inside computers, they sort of had to do something much more primitive
+[1806.72s -> 1809.48s]  of looking at words and their relationship.
+[1809.48s -> 1814.20s]  So a very common traditional solution was to make use of word net.
+[1814.20s -> 1818.08s]  And word net was kind of a sort of a fancy thesaurus that showed
+[1818.08s -> 1819.08s]  word relations.
+[1819.08s -> 1824.12s]  So I'll tell you about synonyms and is a kind of things.
+[1824.12s -> 1827.36s]  So a panda's a kind of carnivore, which is a placental,
+[1827.36s -> 1830.04s]  which is a mammal, and things like that.
+[1830.04s -> 1834.80s]  Good has various meanings, it's a trade good, or the sense of goodness.
+[1834.80s -> 1836.56s]  And you could explore with that.
+[1836.56s -> 1842.08s]  But systems like word net were never very good for computational meaning.
+[1843.20s -> 1845.16s]  They missed a lot of nuance.
+[1845.16s -> 1849.44s]  Word net would tell you that proficient is a synonym for good.
+[1849.44s -> 1853.20s]  But if you think about all the things that you would say were good,
+[1853.20s -> 1855.04s]  you know, that was a good shot.
+[1855.04s -> 1857.40s]  Would you say that was a proficient shot?
+[1857.40s -> 1859.20s]  Sounds kind of weird to me.
+[1859.40s -> 1862.96s]  It's a lot of color and nuance on how words are used.
+[1864.16s -> 1865.92s]  Word net is very incomplete.
+[1865.92s -> 1869.92s]  It's missing anything that's kind of cooler, more modern slang.
+[1869.92s -> 1872.36s]  This maybe isn't very modern slang now, but
+[1872.36s -> 1874.80s]  you won't find more modern slang either in it.
+[1874.80s -> 1877.52s]  It's sort of very human made, etc.
+[1877.52s -> 1878.80s]  It's got a lot of issues.
+[1878.80s -> 1884.20s]  So this led into the idea of can we represent meaning differently?
+[1884.20s -> 1886.40s]  And this leads us into word vectors.
+[1887.40s -> 1893.68s]  So when we have words, wicked, badass, nifty, wizard,
+[1893.68s -> 1898.40s]  what do they turn into when we have computers?
+[1899.44s -> 1906.24s]  Well, effectively, you know, words are these discrete symbols.
+[1906.24s -> 1909.52s]  That they're just kind of some kind of atom or symbol.
+[1909.52s -> 1915.56s]  And if we then turn those into something that's closer to math,
+[1915.56s -> 1921.12s]  how symbols are normally represented is you have a vocabulary.
+[1921.12s -> 1925.04s]  And your word is some item in that vocabulary.
+[1925.04s -> 1928.44s]  So motel is that word in the vocabulary.
+[1928.44s -> 1931.68s]  And hotel is this word in the vocabulary.
+[1931.68s -> 1934.28s]  And commonly this is what computational systems do.
+[1934.28s -> 1938.24s]  You take all your strings and you index them to numbers.
+[1938.24s -> 1942.00s]  And that's the sort of position in a vector that they belong in.
+[1942.68s -> 1948.24s]  And while we have huge numbers of words, so we might have a huge vocabulary.
+[1948.24s -> 1950.76s]  So we'll have very big and long vectors.
+[1950.76s -> 1955.72s]  And so these get referred to as one-hot vectors for
+[1955.72s -> 1958.24s]  representing the meaning of words.
+[1958.24s -> 1963.00s]  But representing words by one-hot vectors
+[1963.00s -> 1967.20s]  turns out to not be a very good way of computing with them.
+[1967.20s -> 1971.72s]  It was used for decades, but it turns out to be kind of problematic.
+[1971.72s -> 1976.52s]  And part of why it's problematic is it doesn't have any
+[1976.52s -> 1979.72s]  natural inherent sense of the meanings of words.
+[1979.72s -> 1981.20s]  You just have different words.
+[1981.20s -> 1985.12s]  You have hotel and motel and house and chair.
+[1985.12s -> 1990.24s]  And so if you think about in terms of these vector representations,
+[1990.24s -> 1992.60s]  that if you have motel and hotel,
+[1992.60s -> 1996.24s]  there's no indication that they're kind of similar.
+[1996.24s -> 2000.40s]  They're just two different symbols which have ones in different positions in
+[2000.40s -> 2004.24s]  the vector or formally in math terms.
+[2004.24s -> 2009.12s]  If you think about taking the dot product of these two vectors, it's zero.
+[2009.12s -> 2011.12s]  The two vectors are orthogonal.
+[2011.12s -> 2014.36s]  They have nothing to do with each other.
+[2014.36s -> 2016.40s]  Now there are things that you can do with that.
+[2016.40s -> 2021.20s]  You can start saying, let me start building up some other resource of
+[2021.20s -> 2025.52s]  word similarity and I'll consult that resource of word similarity.
+[2025.52s -> 2029.32s]  And it'll tell me that motels and hotels are similar to each other.
+[2029.32s -> 2031.12s]  And people did things like that, right?
+[2031.12s -> 2035.60s]  In web search, it was referred to as query expansion techniques.
+[2035.60s -> 2041.04s]  But still the point is that there's no natural notion of similarity
+[2041.04s -> 2042.60s]  in one-hot vectors.
+[2044.12s -> 2050.08s]  And so the idea was that maybe we could do better than that,
+[2050.08s -> 2055.40s]  that we could learn to include similarity in the vectors themselves.
+[2055.40s -> 2058.72s]  And so that leads into the idea of word vectors.
+[2058.92s -> 2063.12s]  But it also leads into a different way of thinking about semantics.
+[2064.44s -> 2067.52s]  I just realized I forgot to say one thing back two slides.
+[2068.96s -> 2074.08s]  These kind of representations are referred to as localist representations,
+[2074.08s -> 2079.36s]  meaning that there's one point in which something is represented.
+[2079.36s -> 2085.56s]  So that you've got here is the representation of motel and
+[2085.56s -> 2087.92s]  here is the representation of hotel.
+[2087.92s -> 2091.84s]  It's in one place in the vector that each word is represented.
+[2091.84s -> 2093.88s]  And they'll be different to what we do next.
+[2095.04s -> 2101.76s]  So there's an alternative idea of semantics, which goes back quite a long way.
+[2101.76s -> 2106.64s]  People commonly quote this quote of J.R. Firth, who was a British linguist,
+[2106.64s -> 2111.16s]  who said in 1957, you shall know a word by the company it keeps.
+[2111.16s -> 2115.32s]  But it also goes back to philosophical work by Bickenstein and others.
+[2115.32s -> 2120.28s]  That what you should do is represent a word's meaning
+[2120.28s -> 2123.44s]  by the context in which it appears.
+[2123.44s -> 2130.04s]  So the words that appear around the word give information about its meaning.
+[2130.04s -> 2134.44s]  And so that's the idea of what's called distributional semantics in contrast
+[2134.44s -> 2136.60s]  to denotational semantics.
+[2136.60s -> 2139.56s]  So if I wanna know about the word banking,
+[2139.56s -> 2143.40s]  I say give me some sentences that use the word banking.
+[2143.40s -> 2145.80s]  Here are some sentences using the word banking.
+[2145.80s -> 2149.48s]  Government debt problems turning into banking crises,
+[2149.48s -> 2153.08s]  as happened in 2009, et cetera, et cetera.
+[2153.08s -> 2158.12s]  And knowing about that context words that occur around banking,
+[2158.12s -> 2161.64s]  those will become the meaning of banking.
+[2161.64s -> 2168.28s]  And so we're gonna use those statistics about words and
+[2168.28s -> 2173.28s]  what other words appear around them in order to learn
+[2173.28s -> 2177.52s]  a new kind of representation of a word.
+[2177.52s -> 2183.32s]  So a new representation of words is we're gonna represent them now as
+[2183.32s -> 2189.60s]  a sort of a shorter dense vector that gives the meaning of the words.
+[2189.60s -> 2192.28s]  Now my vectors are very short here.
+[2192.28s -> 2195.00s]  These are only eight dimensional if I counted right, so
+[2195.00s -> 2196.76s]  I could fit them on my slide.
+[2196.80s -> 2198.72s]  They're not that short in practice.
+[2198.72s -> 2203.24s]  They might be 200, 2,000, but reasonably short.
+[2203.24s -> 2206.72s]  They're not gonna be like the half a million of the half a million different
+[2206.72s -> 2209.16s]  words in our vocabulary.
+[2209.16s -> 2213.60s]  And the idea is if words have stuff to do with each other,
+[2213.60s -> 2216.44s]  they'll have sort of similar vectors,
+[2216.44s -> 2220.40s]  which corresponds to their dot product being large.
+[2220.40s -> 2223.44s]  So for banking and monetary in my example here,
+[2223.44s -> 2225.84s]  both of them are positive in the first dimension,
+[2225.84s -> 2229.52s]  positive in the second dimension, negative on the third.
+[2229.52s -> 2231.56s]  On the fourth, they've got opposite signs.
+[2231.56s -> 2233.64s]  So if we wanna work out the dot product,
+[2233.64s -> 2238.56s]  we're taking the product of the corresponding terms and it'll get bigger
+[2238.56s -> 2242.40s]  to the extent that both of the corresponding ones have the same sides.
+[2242.40s -> 2246.40s]  And bigger if they have large magnitude.
+[2246.40s -> 2250.60s]  Okay, so these are what we call word vectors,
+[2250.60s -> 2253.28s]  which are also known as embeddings or
+[2253.32s -> 2257.00s]  neural word representations or phrases like that.
+[2257.00s -> 2262.96s]  And so the first thing we want to do is learn good word vectors for
+[2262.96s -> 2267.80s]  different words, and our word vectors will be good word vectors.
+[2267.80s -> 2273.92s]  If they give us a good sense of the meanings of words,
+[2273.92s -> 2277.60s]  they know which words are similar to other words in meaning.
+[2278.76s -> 2283.16s]  We refer to them as embeddings because we can think
+[2284.08s -> 2286.68s]  of this as a vector in a high dimensional space.
+[2286.68s -> 2290.64s]  And so that we're embedding each word as a position
+[2290.64s -> 2292.76s]  in that high dimensional space.
+[2292.76s -> 2296.96s]  And the dimensionality of the space will be the length of the vector.
+[2296.96s -> 2301.32s]  So it might be something like a 300 dimensional space.
+[2301.32s -> 2307.08s]  Now that kinda gets problematic because human beings can't look at 300
+[2307.08s -> 2311.28s]  dimensional spaces and aren't very good at understanding or
+[2311.28s -> 2313.64s]  visualizing what goes on in them.
+[2313.64s -> 2319.88s]  So the only thing that I can show you is two dimensional spaces.
+[2319.88s -> 2328.44s]  But a thing that is good to have somewhat in your head is that really
+[2328.44s -> 2335.00s]  high dimensional spaces behave extremely differently to two dimensional spaces.
+[2335.00s -> 2340.96s]  In high dimensional spaces, things can, in a two dimensional space,
+[2340.96s -> 2345.12s]  you're only near to something else if you've got similar x and y coordinates.
+[2345.12s -> 2349.76s]  In a high dimensional space, things can be very near to all sorts of things
+[2349.76s -> 2351.96s]  on different dimensions in the space.
+[2351.96s -> 2355.52s]  And so we can capture different senses of words and
+[2355.52s -> 2358.28s]  ways that words are similar to each other.
+[2358.28s -> 2360.96s]  But here's the kind of picture we end up with.
+[2360.96s -> 2367.68s]  So what we're gonna do is learn a way to represent all words
+[2367.68s -> 2372.88s]  as vectors based on the other words that they procure within context.
+[2372.88s -> 2375.36s]  And we can embed them into this vector space.
+[2375.36s -> 2377.36s]  And of course, you can't read anything there.
+[2377.36s -> 2380.80s]  But we can zoom into this space further.
+[2380.80s -> 2384.24s]  And if we zoom into this space and just show a bit of that, well,
+[2384.24s -> 2388.76s]  here's a part of the space where it's showing country words and
+[2388.76s -> 2390.72s]  some other location words.
+[2390.72s -> 2394.32s]  So we've got sort of countries up the top there.
+[2394.32s -> 2397.52s]  We've got some nationality terms, British, Australian, American,
+[2398.36s -> 2400.48s]  European, further down.
+[2400.48s -> 2402.68s]  Or we can go to another piece of the space.
+[2402.68s -> 2406.36s]  And here's a bit of the space where we have verbs.
+[2406.36s -> 2410.44s]  And not only have we got verbs, but there's actually quite a lot of
+[2410.44s -> 2415.04s]  fine structure here of what's similar that represents things about verbs.
+[2415.04s -> 2421.24s]  So you've got sort of verbs of communication statements,
+[2421.24s -> 2426.32s]  saying, thinking, expecting, grouping together, come and go, group together.
+[2426.32s -> 2429.24s]  Down the bottom, you've got forms of the verb have.
+[2429.24s -> 2431.76s]  Then you've got forms of the verb to be.
+[2431.76s -> 2436.20s]  Above them, you've got become and remain, which are actually sort of similar to
+[2436.20s -> 2441.52s]  the verb to be because they take these sort of complements of state.
+[2441.52s -> 2446.36s]  So just the same as you can say, I am angry.
+[2446.36s -> 2451.16s]  You can say, he remained angry or he became angry, right?
+[2451.16s -> 2456.16s]  So those verbs are more so than most verbs, sort of similar to the verb to be.
+[2456.16s -> 2460.76s]  So we get these kind of interesting semantic spaces where things that have
+[2460.76s -> 2464.44s]  similar meaning are close by to each other.
+[2464.44s -> 2468.60s]  And so the question is, how do we get to those things?
+[2468.60s -> 2472.88s]  And how we get to those things is then for,
+[2472.88s -> 2475.04s]  there are various ways of doing it.
+[2475.04s -> 2481.24s]  But the one I want to get through today is showing you about word devek.
+[2481.24s -> 2484.32s]  Okay, I'll pause for 30 seconds for breath.
+[2484.36s -> 2486.76s]  Anyone have a question or anything they want to know?
+[2486.76s -> 2487.28s]  Yes.
+[2487.28s -> 2493.40s]  So, what do you find your ideas are reasonable to have a context function.
+[2493.40s -> 2497.52s]  But if that doesn't seem to solve the problem where
+[2497.52s -> 2501.44s]  the similar meanings might depend on context.
+[2501.44s -> 2503.76s]  Right, so let's take your example about profession for
+[2503.76s -> 2505.24s]  this good portfolio, okay?
+[2505.24s -> 2509.20s]  So, those two words have their own point of matters.
+[2509.20s -> 2512.52s]  But we have to understand the similarity between some
+[2513.52s -> 2514.48s]  vectors.
+[2514.48s -> 2516.28s]  But it's really a kind of context, right?
+[2516.28s -> 2520.64s]  Because you get different context and those two words may not be similar.
+[2520.64s -> 2524.32s]  And this, what if any goes wrong, does not seem to solve the problem.
+[2524.32s -> 2525.84s]  Yes, correct.
+[2525.84s -> 2526.88s]  So that's a good thought.
+[2526.88s -> 2529.40s]  You can keep it for a few weeks to some extent.
+[2529.40s -> 2531.96s]  Yeah, so for the first thing we're going to do,
+[2531.96s -> 2536.48s]  we're just going to learn one word vector for a string.
+[2536.48s -> 2540.60s]  So we're going to have a word, let's say it's star, and
+[2540.60s -> 2543.16s]  we're going to learn one word vector for it.
+[2543.16s -> 2548.00s]  So that absolutely doesn't capture the meaning of a word in context.
+[2548.00s -> 2553.08s]  So it won't be saying whether it's meaning a Hollywood star or
+[2553.08s -> 2556.24s]  an astronomical star or something like that.
+[2556.24s -> 2560.12s]  And so later on, we're going to get onto contextual meaning representation.
+[2560.12s -> 2561.76s]  So wait for that.
+[2561.76s -> 2564.66s]  But the thing I would like to,
+[2564.66s -> 2568.16s]  going along with what I said about high dimensional spaces being weird.
+[2568.72s -> 2573.40s]  The cool thing that we will already find is our representation for
+[2573.40s -> 2579.24s]  star will be very close to the representations for
+[2579.24s -> 2586.32s]  astronomical words like nebula, and whatever other astronomical words you know.
+[2586.32s -> 2591.24s]  And simultaneously, it'll be very close
+[2591.24s -> 2595.60s]  to words that mean something like a Hollywood star.
+[2595.60s -> 2598.72s]  Help me out.
+[2598.72s -> 2600.68s]  Know any words that mean something similar?
+[2600.68s -> 2603.96s]  Celebrity, that's a good one, okay, yeah.
+[2603.96s -> 2611.36s]  How are you reducing the embeddings to a lower dimensional space to visualize?
+[2611.36s -> 2617.56s]  So that picture I was showing you used a particular method called t-SNE,
+[2617.56s -> 2622.56s]  which is a non-linear dimensionality reduction that tends to work better for
+[2622.56s -> 2627.76s]  high dimensional neural representations than PCA, which you might know.
+[2627.76s -> 2629.88s]  But I'm not going to go into that now, yes.
+[2629.88s -> 2637.44s]  How do you know how many dimensions is optimal to produce a dense enough space,
+[2637.44s -> 2640.04s]  but not too sparse?
+[2640.04s -> 2643.96s]  I mean, that's something that people have worked on.
+[2643.96s -> 2650.92s]  It depends on how much data you've got to make your representations over.
+[2650.92s -> 2656.52s]  So normally, it's worked out either empirically for what works best or
+[2656.52s -> 2660.60s]  practically based on how big vectors you want to work on.
+[2660.60s -> 2666.56s]  I mean, to give you some idea, things start to work well when you get to
+[2666.56s -> 2668.48s]  100 dimensional space.
+[2668.48s -> 2673.28s]  For a long time, people used 300 dimensions cuz that seemed to work pretty well.
+[2673.28s -> 2676.24s]  But as people have started building huger and
+[2676.24s -> 2680.60s]  huger models with way, way more data, it's now become increasingly
+[2680.60s -> 2684.80s]  common to use numbers like 1,000 or even 2,000 dimensional vectors.
+[2684.80s -> 2685.30s]  Yeah.
+[2687.48s -> 2689.40s]  Okay, yeah, go ahead.
+[2689.40s -> 2692.76s]  So you mentioned that there are sort of hidden structures and
+[2692.76s -> 2696.12s]  small areas as well as large areas of the embedding.
+[2696.12s -> 2700.80s]  And as your dimensionality increases, different structures will come up.
+[2700.80s -> 2704.24s]  But generally, we seem to use distance as the single metric for
+[2705.24s -> 2708.32s]  which doesn't seem to me that we'll get it like this is between like this and
+[2708.32s -> 2710.96s]  that in space we will be missing, right?
+[2710.96s -> 2713.96s]  So how would that- We don't only use distance.
+[2713.96s -> 2718.12s]  We also use directions in the space as having semantic meanings.
+[2718.12s -> 2720.68s]  I'll show an example of that soon.
+[2720.68s -> 2721.20s]  Yeah.
+[2721.20s -> 2724.44s]  So I was wondering, for the entries of the word vector,
+[2724.44s -> 2727.52s]  we seem to be between negative one and one.
+[2727.52s -> 2732.60s]  Is there a reason for that, or do you have bounds that we can break from them?
+[2732.60s -> 2734.64s]  So good question.
+[2734.64s -> 2739.16s]  I mean, you know, they don't have to be, and
+[2739.16s -> 2742.88s]  the way we're going to learn them, they're not bounded.
+[2742.88s -> 2745.28s]  But you know, you can bound things.
+[2745.28s -> 2750.72s]  Sometimes people length normalize so that the vectors are of length one.
+[2750.72s -> 2755.40s]  But at any rate, normally in this work, we use some method called
+[2755.40s -> 2759.88s]  regularization that tries to kind of keep coefficients small so
+[2759.88s -> 2762.48s]  that they're generally not getting huge.
+[2762.48s -> 2763.32s]  Yeah.
+[2763.32s -> 2765.60s]  Yeah, give it a specific word, for example,
+[2765.60s -> 2769.76s]  like the bank we used as before in the previous slides.
+[2769.76s -> 2775.00s]  So is there, for the word representation, is there a single
+[2775.00s -> 2779.44s]  embedding for each word, or do we have multiple embeddings for each word?
+[2779.44s -> 2783.52s]  So what we're doing at the moment, each word,
+[2783.52s -> 2787.68s]  each string of letters has a single embedding.
+[2787.68s -> 2792.00s]  And what you can think of that embedding as
+[2793.00s -> 2796.72s]  kind of an average over all its senses.
+[2796.72s -> 2801.72s]  So for example, a bank, it can mean like a financial institution,
+[2801.72s -> 2803.76s]  or it can also mean like the river bank.
+[2803.76s -> 2807.40s]  Yeah, and then what I said before about star applies.
+[2807.40s -> 2811.32s]  The interesting thing is you'll find that we're able to come up with
+[2811.32s -> 2814.60s]  a representation where our learned representation,
+[2814.60s -> 2819.16s]  because it's kind of an average of those, will end up similar to words
+[2819.40s -> 2823.36s]  that are semantically evoked by both senses.
+[2823.36s -> 2826.64s]  I think I'd probably about go on at this point.
+[2828.04s -> 2830.00s]  Okay, word2vec.
+[2830.00s -> 2835.32s]  Okay, so word2vec was this method of learning word vectors that was
+[2835.32s -> 2841.68s]  thought up by Tomasz Mikhalov and colleagues at Google in 2013.
+[2841.68s -> 2843.88s]  It wasn't the first method.
+[2843.88s -> 2847.92s]  There are other people that did methods of learning word vectors that go back
+[2847.92s -> 2850.84s]  to about the turn of the millennium.
+[2850.84s -> 2852.24s]  It wasn't the last.
+[2852.24s -> 2854.84s]  There are ones that come after it as well.
+[2854.84s -> 2861.20s]  But it was a particularly simple one and a particularly fast running one.
+[2861.20s -> 2864.40s]  And so it really caught people's attention.
+[2864.40s -> 2872.60s]  So the idea of it is that we start off with a large amount of text.
+[2872.60s -> 2876.00s]  So that can just be thought of as a long list of words.
+[2876.00s -> 2879.08s]  And in NLP, we refer to that as a corpus.
+[2879.08s -> 2882.60s]  Corpus is just Latin for body.
+[2882.60s -> 2886.88s]  So it's exactly the same as if you have a dead person on the floor, right?
+[2886.88s -> 2888.12s]  That's a corpus, no.
+[2888.12s -> 2891.08s]  Yeah, so it's just a body.
+[2891.08s -> 2897.56s]  But we mean a body of text, not a dead person.
+[2897.56s -> 2901.24s]  Yeah, if you wanna know more about Latin,
+[2901.24s -> 2905.88s]  since there isn't very good classical education these days.
+[2906.80s -> 2912.16s]  Corpus, despite the US ending, is a fourth declension neuter noun.
+[2912.16s -> 2918.68s]  And that means the plural of corpus is not corpii.
+[2918.68s -> 2922.68s]  The plural of corpus is corpora.
+[2922.68s -> 2926.36s]  So I'm sure sometime later in this class,
+[2926.36s -> 2930.72s]  I will read a project or assignment that refers to corpii.
+[2930.72s -> 2935.76s]  And I will know that that person was not paying attention in the first lecture.
+[2936.64s -> 2941.20s]  Or else they should have said corpora, C-O-R-P-O-R-A.
+[2941.20s -> 2943.36s]  That's the correct form for that.
+[2943.36s -> 2944.68s]  Okay, I should move on.
+[2944.68s -> 2947.44s]  Okay, so we have our text.
+[2947.44s -> 2953.12s]  Then we know that we're gonna represent each word.
+[2953.12s -> 2954.96s]  So this is each word type.
+[2954.96s -> 2958.12s]  So, you know, star or bank, etc.
+[2958.12s -> 2962.36s]  So for wherever it occurs by a single vector.
+[2962.36s -> 2965.28s]  And so what we're gonna do in this algorithm
+[2965.32s -> 2968.76s]  is we're going to go through each position in the text.
+[2968.76s -> 2972.20s]  And so at each position in the text, which is a list of words,
+[2972.20s -> 2976.80s]  we're gonna have a center word and words outside it.
+[2976.80s -> 2983.08s]  And then what we're gonna do is use the similarity of the word vectors for C
+[2983.08s -> 2989.32s]  and the outside words to calculate the probability that they should have occurred or not.
+[2989.32s -> 2993.36s]  And then we just keep fiddling and we learn word vectors.
+[2993.36s -> 2997.32s]  Now, you know, at first sight, I'll show this more concretely.
+[2997.32s -> 2999.08s]  Maybe I'll just show it more concretely first.
+[2999.08s -> 3000.92s]  So here's the idea.
+[3000.92s -> 3005.24s]  We're going to have a vector for each word type.
+[3005.24s -> 3009.88s]  So a word type means, you know, the word problems wherever it occurs,
+[3009.88s -> 3016.04s]  which is differentiated from a word token, which is this instance of the word problems.
+[3016.04s -> 3019.16s]  So we're gonna have a vector for each word type.
+[3019.16s -> 3024.28s]  And so I'm gonna want to know, look, in this text,
+[3024.28s -> 3029.12s]  the word turning occurred before the word into.
+[3029.12s -> 3031.88s]  How likely should that have been to happen?
+[3031.88s -> 3037.72s]  And what I'm gonna do is calculate a probability of the word turning
+[3037.72s -> 3040.56s]  occurring close to the word into.
+[3040.56s -> 3044.72s]  And I'm going to do that for each word in a narrow context.
+[3044.72s -> 3048.08s]  In the example here, I'm saying I'm using two words to the left
+[3048.12s -> 3049.96s]  and two words to the right.
+[3049.96s -> 3055.60s]  And what I want to do is make those probability estimates as good as possible.
+[3055.60s -> 3059.80s]  So in particular, I want the probability of co-occurrence to be high for
+[3059.80s -> 3063.88s]  words that actually do occur within the nearby context of each other.
+[3065.08s -> 3069.76s]  And so then the question is, how am I going to, and once I've done it for
+[3069.76s -> 3075.20s]  that word, I'm gonna go along and do exactly the same thing for the next word.
+[3075.20s -> 3080.36s]  And so I'll continue through the text in that way.
+[3080.36s -> 3088.92s]  And so what we want to do is come up with vector representations of words
+[3088.92s -> 3094.12s]  that will let us predict these probabilities, quote unquote, well.
+[3094.12s -> 3097.16s]  Now, there's a huge limit to how well we can do it,
+[3097.16s -> 3099.60s]  cuz we've got a simple model.
+[3099.60s -> 3102.20s]  Obviously, when you see the word banking,
+[3102.24s -> 3107.04s]  I can't tell you that the word into is gonna occur before banking.
+[3107.04s -> 3110.52s]  But I wanna do it as well as possible.
+[3110.52s -> 3114.76s]  So what I want my model to say is after the word banking,
+[3114.76s -> 3124.28s]  crises is pretty likely, but the word skillet is not very likely.
+[3124.28s -> 3127.76s]  And if I can do that, I'm doing a good job.
+[3127.76s -> 3130.20s]  And so we turn that into a piece of math.
+[3131.08s -> 3134.72s]  Here's how we do it, turn it into a piece of math.
+[3134.72s -> 3139.72s]  So we're going to go through our corpus, every position in the corpus.
+[3139.72s -> 3145.52s]  And we're going to have a fixed window size m, which was 2 in my example.
+[3145.52s -> 3150.00s]  And then what we're gonna want to do is have the probability of words
+[3150.00s -> 3154.20s]  in the context being as high as possible.
+[3154.20s -> 3158.52s]  So we want to maximize this likelihood where we're going through every
+[3158.56s -> 3160.32s]  position in the text.
+[3160.32s -> 3163.64s]  And then we're going through every word in the context and
+[3163.64s -> 3165.92s]  sort of wanting to make this big.
+[3168.64s -> 3172.64s]  Okay, so conceptually, that's what we're doing.
+[3172.64s -> 3177.12s]  But in practice, we never quite do that.
+[3177.12s -> 3180.96s]  We use two little tricks here.
+[3180.96s -> 3185.12s]  The first one is, for completely arbitrary reasons,
+[3185.12s -> 3187.84s]  it really makes no difference.
+[3187.84s -> 3192.64s]  Everyone got into minimizing things rather than maximizing things.
+[3192.64s -> 3197.24s]  And so the algorithms that we use get referred to as gradient descent,
+[3197.24s -> 3198.68s]  as you'll see in a moment.
+[3198.68s -> 3203.08s]  So the first thing we do is put a minus sign in front so
+[3203.08s -> 3205.44s]  that we can minimize it rather than maximize it.
+[3205.44s -> 3207.16s]  That part's pretty trivial.
+[3207.16s -> 3211.08s]  But the second part is, here we have this enormous product.
+[3211.08s -> 3215.16s]  And working with enormous products is more difficult for the math.
+[3215.16s -> 3219.76s]  So the second thing that we do is introduce a logarithm.
+[3219.76s -> 3223.92s]  And so once we take the log of the likelihood,
+[3223.92s -> 3230.56s]  that then when we take logs of products, they turn into sums.
+[3230.56s -> 3235.56s]  And so now we can sum over each word position in the text,
+[3235.56s -> 3241.88s]  sum over each word in the context window, and then sum these log probabilities.
+[3241.88s -> 3244.60s]  And then we've still got the minus sign in front.
+[3244.60s -> 3248.24s]  So we want to minimize the sum of log probabilities.
+[3248.24s -> 3256.04s]  So what we're doing is then wanting to look at the negative log likelihood.
+[3256.04s -> 3260.40s]  And then the final thing that we do is to,
+[3260.40s -> 3265.32s]  since this will get bigger depending on the number of words in the corpus,
+[3265.32s -> 3268.56s]  we divide through by the number of words in the corpus.
+[3268.56s -> 3274.40s]  And so our objective function is the average negative log likelihood.
+[3274.40s -> 3277.32s]  So by minimizing this objective function,
+[3277.32s -> 3281.08s]  we're maximizing the probability of words in the context.
+[3282.24s -> 3286.12s]  Okay, we're almost there.
+[3286.12s -> 3288.28s]  That's what we want to do.
+[3288.28s -> 3292.72s]  We've got a couple more tricks that we want to get through.
+[3292.72s -> 3298.00s]  The next one is, well, I've said we want to maximize this probability.
+[3298.00s -> 3300.80s]  How do we maximize this probability?
+[3300.80s -> 3302.52s]  What is this probability?
+[3302.52s -> 3306.32s]  We haven't defined how we're gonna calculate this probability.
+[3306.32s -> 3309.48s]  And this is where the word vectors come in.
+[3309.48s -> 3315.84s]  So we're gonna define this probability in terms of the word vector.
+[3315.84s -> 3321.12s]  So we're gonna say each word type is represented by a vector of real numbers,
+[3321.12s -> 3323.12s]  these 100 real numbers.
+[3323.12s -> 3328.00s]  And we are going to have a formula that works out the probability
+[3328.00s -> 3333.40s]  simply in terms of the vectors of each word.
+[3333.40s -> 3335.84s]  There are no other parameters in this model.
+[3335.84s -> 3340.84s]  So over here, I've shown this theta, which are the parameters of our model.
+[3340.84s -> 3344.92s]  And all and only the parameters of our model
+[3344.92s -> 3349.04s]  are these word vectors for each word in the vocabulary.
+[3349.04s -> 3351.92s]  That's a lot of parameters because we have a lot of words.
+[3351.92s -> 3356.28s]  And we've got fairly big word vectors, but they are the only parameters.
+[3357.28s -> 3363.28s]  Okay, and how we do that is by using this little trick here.
+[3363.28s -> 3368.76s]  We're gonna say the probability of an outside word given a center word
+[3368.76s -> 3374.28s]  is going to be defined in terms of the dot product of the two word vectors.
+[3374.28s -> 3379.08s]  So if things have a high dot product, they'll be similar and
+[3379.08s -> 3382.68s]  therefore they'll have a high probability of co-occurrence.
+[3382.68s -> 3386.20s]  Where I mean similar in a kind of a weird sense, right?
+[3386.20s -> 3390.60s]  It is the case that we're gonna wanna say hotel and motel are similar.
+[3390.60s -> 3394.70s]  But it's also the case that we're gonna want to have
+[3394.70s -> 3399.40s]  the word the able to appear easily before the word student.
+[3399.40s -> 3403.76s]  So in some weird sense, the also has to be similar to student.
+[3403.76s -> 3406.44s]  The has to be similar to basically any noun, right?
+[3408.20s -> 3411.40s]  Okay, so we're gonna work with dot products.
+[3411.40s -> 3414.28s]  And then we do this funky little bit of math here.
+[3414.28s -> 3417.76s]  And that will give us our probabilities.
+[3417.76s -> 3421.48s]  Okay, so let's just go through the funky bit of math.
+[3421.48s -> 3425.36s]  So here's our formula for the probabilities.
+[3425.36s -> 3431.56s]  So what we're doing here is we're starting off with this dot product, right?
+[3431.56s -> 3434.92s]  So the dot product is you take the two vectors,
+[3434.92s -> 3438.52s]  you multiply each component together and you sum them.
+[3438.52s -> 3443.92s]  So if they're both the same sign, that increases your dot product.
+[3443.92s -> 3446.80s]  And if they're both big, it increases it a lot.
+[3446.80s -> 3452.28s]  Okay, so that gives us a similarity between two vectors.
+[3452.28s -> 3454.88s]  And that's unbounded, that's just a real number.
+[3454.88s -> 3457.04s]  It can be either negative or positive.
+[3457.04s -> 3460.44s]  Okay, but what we'd like to get out is a probability.
+[3460.44s -> 3464.92s]  So for our next tricks, we first of all exponentiate.
+[3464.92s -> 3469.28s]  Because if we take e to the x for any x,
+[3469.28s -> 3471.76s]  we now have to get something positive out, right?
+[3471.80s -> 3474.56s]  That's what exponentiation does.
+[3474.56s -> 3478.40s]  Okay, and then well, since it's meant to be a probability,
+[3478.40s -> 3481.32s]  we'd like it to be between zero and one.
+[3481.32s -> 3484.40s]  And so we turn it into numbers between zero and
+[3484.40s -> 3489.12s]  one in the dumbest way possible, which is we just normalize.
+[3489.12s -> 3492.84s]  So that we work out the quantity in the numerator for
+[3492.84s -> 3495.20s]  every possible context word.
+[3496.32s -> 3500.88s]  And so we get the total of all of those numbers and divide through by it.
+[3500.92s -> 3504.92s]  And then we're getting a probability distribution of how likely different
+[3504.92s -> 3506.60s]  words are in this context.
+[3508.08s -> 3513.60s]  Okay, yeah, so this little trick that we're doing here
+[3513.60s -> 3516.52s]  is referred to as the softmax function.
+[3516.52s -> 3523.04s]  So for the softmax function, you can take unbounded real numbers,
+[3523.04s -> 3527.40s]  put them through this little softmax trick that we just went through the steps of.
+[3527.40s -> 3531.52s]  And what you'll get out is a probability distribution.
+[3531.52s -> 3534.88s]  So I'm now getting, in this example,
+[3534.88s -> 3538.24s]  probability distribution over context words.
+[3538.24s -> 3543.24s]  My probability estimates over all the context words in my vocabulary
+[3543.24s -> 3549.48s]  will sum up to one by definition by the way that I've constructed this.
+[3549.48s -> 3553.20s]  So it's called the softmax function because
+[3553.20s -> 3556.64s]  it amplifies the probabilities of the largest things.
+[3556.64s -> 3561.32s]  That's because of the exp function.
+[3561.32s -> 3567.76s]  But it's soft because it still assigns some probability to smaller items.
+[3567.76s -> 3574.20s]  But it's sort of a funny name because when you think about max,
+[3574.20s -> 3577.44s]  I mean max normally picks out just one thing.
+[3577.44s -> 3581.72s]  Whereas the softmax is turning a bunch of real numbers
+[3581.72s -> 3583.68s]  into a probability distribution.
+[3584.20s -> 3589.84s]  So this softmax is used everywhere in deep learning.
+[3589.84s -> 3593.88s]  Anytime that we're wanting to turn things that are just vectors in Rn into
+[3593.88s -> 3597.64s]  probabilities, we shove them through a softmax function.
+[3599.48s -> 3608.68s]  Okay, so in some sense,
+[3608.68s -> 3613.84s]  this part I think still seems very abstract.
+[3613.84s -> 3618.08s]  And I mean, the reason it seems very abstract is
+[3619.12s -> 3624.76s]  because I've sort of said we have vectors for each word.
+[3624.76s -> 3629.64s]  And using these vectors, we can then calculate probabilities.
+[3629.64s -> 3633.56s]  But where do the vectors come from?
+[3633.56s -> 3638.24s]  And the answer to where the vectors are gonna come from is we're gonna
+[3638.84s -> 3641.16s]  turn this into an optimization problem.
+[3641.16s -> 3643.84s]  We have a large amount of text.
+[3643.84s -> 3649.00s]  And so therefore, we can hope to find word vectors
+[3649.00s -> 3656.00s]  that make the context of the words in our observed text as big as possible.
+[3656.00s -> 3660.80s]  So literally what we're gonna do is we're gonna start off with random
+[3660.80s -> 3666.04s]  vectors for every word, and then we want to fiddle those vectors so
+[3666.12s -> 3671.96s]  that the calculated probabilities of words in the context go up.
+[3671.96s -> 3675.96s]  And we're gonna keep fiddling until they stop going up anymore.
+[3675.96s -> 3680.04s]  And we're getting the highest probability estimates that we can.
+[3680.04s -> 3684.04s]  And the way that we do that fiddling is we use calculus.
+[3685.44s -> 3691.00s]  So what we're gonna do is kind of conceptually exactly what you do if
+[3691.00s -> 3695.00s]  you're in something like a two dimensional space like the picture on the right.
+[3695.24s -> 3699.44s]  That if you want to find the minimum in this two dimensional space and
+[3699.44s -> 3703.12s]  you start off at the top left, what you can do is say,
+[3703.12s -> 3708.94s]  let me work out the derivatives of the function at the top left.
+[3708.94s -> 3712.08s]  And they sort of point sort of down and a bit to the right.
+[3712.08s -> 3714.88s]  And so you can walk down and a bit to the right.
+[3714.88s -> 3720.08s]  And you can say, gee, given where I am now, let me work out the derivatives.
+[3720.08s -> 3722.08s]  What direction do they point?
+[3722.08s -> 3724.76s]  And they're still pointing down, but a bit more to the right.
+[3725.52s -> 3728.36s]  So you can walk a bit further that way, and you can keep on walking.
+[3728.36s -> 3733.04s]  And eventually, you'll make it to the minimum of the space.
+[3733.04s -> 3737.96s]  In our case, we've got a lot more than two dimensions.
+[3737.96s -> 3745.04s]  So our parameters for our model are the concatenation of all the word vectors.
+[3745.04s -> 3750.20s]  But it's even slightly worse than I've explained up until now.
+[3750.20s -> 3754.60s]  Because actually, for each word, we assume two vectors.
+[3755.48s -> 3758.20s]  We assume one vector when they're the center word and
+[3758.20s -> 3760.56s]  one vector when they're the outside word.
+[3760.56s -> 3765.20s]  Doing that just makes the math a bit simpler, which I can explain later.
+[3765.20s -> 3768.28s]  So if we say have a hundred dimensional vectors,
+[3768.28s -> 3773.04s]  we'll have a hundred parameters for aardvark as an outside word.
+[3773.04s -> 3777.04s]  A hundred parameters for a, as an outside word,
+[3777.04s -> 3781.08s]  all the way through to a hundred parameters for zebra as an outside word.
+[3781.08s -> 3788.12s]  Then we'd have a hundred parameters for aardvark as a center word continuing down.
+[3788.12s -> 3791.92s]  So if we had a vocabulary of 400,000 words and
+[3791.92s -> 3798.00s]  a hundred dimensional word vectors, that means we'd have 400,000
+[3798.00s -> 3803.96s]  times 2 is 800,000 times 100, we'd have 80 million parameters.
+[3803.96s -> 3807.40s]  So that's a lot of parameters in our space to try and
+[3807.40s -> 3809.32s]  fiddle, to optimize things.
+[3809.32s -> 3814.96s]  But luckily we have big computers, and that's the kind of thing that we do.
+[3814.96s -> 3821.76s]  So we simply say, gee, this is our optimization problem.
+[3821.76s -> 3828.08s]  We're going to compute the gradients of all of these parameters.
+[3828.08s -> 3832.88s]  And that will give us the answer of what we have.
+[3833.88s -> 3839.36s]  And, you know, this feels like magic.
+[3839.36s -> 3844.52s]  I mean, it doesn't really seem like, you know, we could just start with nothing.
+[3844.52s -> 3849.00s]  We could start with random word vectors and a pile of text and
+[3849.00s -> 3853.60s]  say, do some math and we will get something useful out.
+[3853.60s -> 3858.28s]  But the miracle of what happens in these deep learning spaces
+[3858.28s -> 3860.44s]  is we do get something useful out.
+[3860.44s -> 3864.80s]  We can just minimize all of the parameters and
+[3867.08s -> 3870.00s]  then we'll get something useful out.
+[3870.00s -> 3874.28s]  So what I wanted to, I guess I'm not gonna quite get to the end of what I
+[3874.28s -> 3878.60s]  hope to today, but what I wanted to do is sort of
+[3880.16s -> 3884.88s]  get through some of what we do here.
+[3884.88s -> 3888.80s]  But I wanted to take a few minutes to sort of go through,
+[3888.80s -> 3893.60s]  concretely, how we do the math of minimization.
+[3893.60s -> 3900.64s]  Now, lots of different people take CS224n.
+[3900.64s -> 3904.36s]  And some of you know way more math than I do.
+[3904.36s -> 3908.64s]  And so this next ten minutes might be extremely boring.
+[3908.64s -> 3912.52s]  And if that's the case, you can either catch up on Discord or
+[3912.52s -> 3915.64s]  Instagram or something, or else you can leave.
+[3915.66s -> 3919.68s]  But it turns out there are other people that do CS224n
+[3919.68s -> 3924.08s]  that can't quite remember when they lasted a math course.
+[3924.08s -> 3928.92s]  And we'd like everybody to be able to learn something about this.
+[3928.92s -> 3932.96s]  So I do actually liken the first two weeks to kind of
+[3932.96s -> 3934.92s]  go through it a bit concretely.
+[3934.92s -> 3936.76s]  So let's try to do this.
+[3936.76s -> 3940.80s]  So this was our likelihood, and then we'd already covered the fact
+[3940.80s -> 3944.24s]  that what we were gonna do is have an objective function
+[3944.24s -> 3949.04s]  in terms of our parameters that was the average
+[3949.04s -> 3952.68s]  negative log likelihood across all the words.
+[3955.92s -> 3958.24s]  I remember the notation for this.
+[3958.24s -> 3966.48s]  The sum in the, oops, I'll probably have a hard time writing this.
+[3967.60s -> 3972.56s]  The sum of position m, I've got a more neatly
+[3972.56s -> 3975.92s]  written out version of it that appears on the version of the slides.
+[3975.92s -> 3977.88s]  It's on the web size.
+[3977.88s -> 3984.84s]  And then we're gonna be taking this log of the probability
+[3984.84s -> 3990.24s]  of the word at position t plus.
+[3993.24s -> 4001.04s]  Sorry, position j, t plus j, okay.
+[4003.08s -> 4007.92s]  Trying to write this on my iPad is not working super well, I'll confess.
+[4007.92s -> 4011.96s]  We'll see how I get on, wt, okay.
+[4014.04s -> 4021.04s]  Okay, and so then we had the form of what we wanted to use for
+[4021.04s -> 4027.72s]  the probability, and the probability of an outside word given a context word
+[4027.96s -> 4035.92s]  was then this softmaxed equation where we're taking the x of the outside vector
+[4037.36s -> 4042.48s]  and the center vector over
+[4042.48s -> 4046.84s]  the normalization term where we sum over the vocabulary.
+[4058.72s -> 4067.16s]  Okay, so to work out how to change our parameters,
+[4067.16s -> 4075.36s]  so our parameters are all of these word vectors that we summarize inside theta.
+[4075.36s -> 4081.52s]  What we're then going to want to do is work out the partial derivative
+[4081.72s -> 4088.12s]  of this objective function with respect to all the parameters theta.
+[4088.12s -> 4093.92s]  But in particular, I'm going to just start doing here
+[4093.92s -> 4100.00s]  the partial derivatives with respect to the center word.
+[4101.36s -> 4104.72s]  Then we can work through the outside word separately.
+[4104.72s -> 4109.56s]  Well, this partial derivative is a big sum, and
+[4109.60s -> 4113.48s]  it's a big sum of terms like this.
+[4113.48s -> 4117.96s]  And so when I have a partial derivative of a big sum of terms,
+[4117.96s -> 4123.80s]  I can work out the partial derivatives of each term independently and then sum them.
+[4123.80s -> 4130.40s]  So what I want to be doing is working out the partial derivative of
+[4132.12s -> 4136.60s]  the log of this probability which equals the log of that
+[4136.60s -> 4140.96s]  with respect to the center vector.
+[4142.64s -> 4150.20s]  And so at this point, I have a log of two things being divided.
+[4150.20s -> 4155.24s]  And so that means I can separate that out of the log of the numerator
+[4155.24s -> 4158.88s]  minus the log of the denominator.
+[4158.88s -> 4164.12s]  And so what I'll be doing is working out the partial derivative with respect
+[4164.12s -> 4168.44s]  to the center vector of the log, the numerator.
+[4169.84s -> 4179.44s]  Log X of UTBC minus the partial derivative
+[4181.08s -> 4188.00s]  with respect to the denominator, which is then the log of the sum
+[4188.00s -> 4194.32s]  of W equals 1 to V of X.
+[4199.68s -> 4202.08s]  Okay, I'm having real trouble here writing.
+[4203.76s -> 4206.56s]  I look at the slides where I wrote it neatly at home.
+[4206.56s -> 4212.40s]  Okay, so I want to work with these two terms.
+[4212.40s -> 4221.00s]  Now, at this point, part of it is easy
+[4221.00s -> 4224.96s]  because here I just have a log of an exponential.
+[4224.96s -> 4229.64s]  And so those two functions just cancel out and go away.
+[4229.64s -> 4237.28s]  And so then I want to get the partial derivative of U outside transpose,
+[4237.28s -> 4241.32s]  V center with respect to V center.
+[4241.36s -> 4250.44s]  And so what you get for the answer to that is that that just comes out as U0.
+[4250.44s -> 4256.04s]  And maybe you remember that, but if you don't remember that,
+[4256.04s -> 4261.72s]  the thing to think about is, okay, this is a whole vector, right?
+[4261.72s -> 4264.88s]  And so we've got a vector here and a vector here.
+[4264.92s -> 4270.64s]  So what this is gonna be looking like is sort of U1V1
+[4270.64s -> 4278.92s]  plus U2V2 plus U3V3, etc., long.
+[4278.92s -> 4283.32s]  And so what we're gonna want to do is work out the partial derivative
+[4283.32s -> 4288.08s]  with respect to each element Vi, right?
+[4288.08s -> 4292.28s]  And so if you just think of a sort of a single element derivative
+[4292.32s -> 4296.32s]  with respect to V1, well,
+[4296.32s -> 4301.52s]  it's gonna be just U1 because every other term would go to 0.
+[4301.52s -> 4305.08s]  And then if you worked it out with respect to V2,
+[4305.08s -> 4309.80s]  then it'd be just U2 and every other term goes to 0.
+[4309.80s -> 4313.16s]  And so since you keep on doing that along the whole vector,
+[4313.16s -> 4317.64s]  that what you're gonna get out is the vector U1,
+[4317.80s -> 4324.72s]  U2, U3, down the vocab for the whole list of vocab items.
+[4324.72s -> 4328.20s]  Okay, so that part is easy.
+[4328.20s -> 4335.72s]  But then we also want to work out the partial derivatives of that one.
+[4335.72s -> 4342.36s]  And at that point, I maybe have to go to another slide.
+[4342.36s -> 4347.96s]  So we then want to have the partial
+[4347.96s -> 4354.24s]  derivative with respect to Vc
+[4354.24s -> 4360.96s]  of the log of the sum equals
+[4360.96s -> 4368.72s]  W to the 1 to V of the X of UW transpose VC, right?
+[4368.72s -> 4372.68s]  So at this point, things aren't quite so easy.
+[4372.68s -> 4376.04s]  And we have to remember a little bit more calculus.
+[4376.04s -> 4380.24s]  So in particular, what we have to remember is the chain rule.
+[4380.24s -> 4386.24s]  So here we have this inside function so that we've got a function.
+[4388.08s -> 4395.40s]  We've got a function g of vc, which we might say the output of that is z.
+[4395.44s -> 4401.52s]  And then we put outside that an extra function f.
+[4401.52s -> 4404.80s]  And so when we have something like that,
+[4404.80s -> 4410.40s]  what we get is the derivative of f with respect to vc.
+[4410.40s -> 4415.60s]  We can take the derivative of f with respect to z times
+[4415.60s -> 4420.32s]  the derivative of z with respect to vc, right?
+[4420.32s -> 4422.00s]  So that's the chain rule.
+[4422.00s -> 4426.24s]  So we are going to then apply that here.
+[4426.24s -> 4430.76s]  So first of all, we're gonna take the derivative of log.
+[4432.44s -> 4436.00s]  And so the derivative of log is one on x.
+[4436.00s -> 4437.92s]  You have to remember that or look it up or
+[4437.92s -> 4440.96s]  get Mathematica to do it for you or something like that.
+[4443.08s -> 4450.00s]  And so we're going to have one over the inside z part,
+[4450.00s -> 4456.56s]  the sum of w equals one to v of the x u, w, t, v, c.
+[4458.16s -> 4465.52s]  And then that's gonna be multiplied by the derivative of the inside part.
+[4467.80s -> 4473.68s]  So then we're going to have the derivative with respect to vc of
+[4473.68s -> 4483.20s]  the sum of w equals one to v of the x of.
+[4488.80s -> 4496.68s]  Okay, so that's made us a little bit of progress.
+[4496.68s -> 4500.16s]  But we've still got something to do here.
+[4500.60s -> 4505.12s]  And so, well, what we're gonna do here is we're gonna notice, wait,
+[4505.12s -> 4510.24s]  we're again in the space to run the chain rule again.
+[4510.24s -> 4512.28s]  So now we've got this function.
+[4512.28s -> 4516.40s]  Well, so first of all, we can move the sum to the outside, right?
+[4516.40s -> 4520.04s]  Because we've got a sum of terms, w equals one to v.
+[4520.04s -> 4524.84s]  And so we want to work out the derivatives of the inside piece
+[4524.84s -> 4525.96s]  with respect to it.
+[4525.96s -> 4529.28s]  Sorry, I'm doing this kind of informally of just doing this piece now.
+[4530.40s -> 4536.60s]  Okay, so this again gives us an f over a function g.
+[4538.20s -> 4542.00s]  And so we're going to again want to split the pieces up.
+[4542.00s -> 4545.08s]  And so use the chain rule one more time.
+[4545.08s -> 4548.96s]  So we're gonna have the sum of w equals one to v.
+[4548.96s -> 4551.60s]  And now we have to know what the derivative of x is.
+[4551.60s -> 4554.08s]  And the derivative of x is x.
+[4554.08s -> 4561.72s]  So that will be exp of u x t v 0.
+[4561.72s -> 4566.52s]  And then we're taking the derivative of the inside part
+[4566.52s -> 4572.72s]  with respect to v c of u x t v c.
+[4572.72s -> 4576.52s]  Well, luckily, this was the bit that we already knew how to do,
+[4576.52s -> 4578.64s]  because we worked it out before.
+[4578.64s -> 4584.20s]  And so this is going to be the sum of w equals one to v of this exp.
+[4587.84s -> 4591.16s]  Times u x.
+[4591.16s -> 4598.88s]  Okay, so then at this point, we want to combine these two forms together.
+[4598.88s -> 4603.92s]  So that we want to combine this part that we worked out and
+[4603.92s -> 4607.24s]  this piece here that we've worked out.
+[4607.28s -> 4612.88s]  And if we combine them together with what we worked out on
+[4612.88s -> 4619.24s]  the first slide for the numerator, since this is,
+[4619.24s -> 4626.40s]  we have the u 0, which was the derivative of the numerator.
+[4626.40s -> 4631.60s]  And then for the derivative of the denominator,
+[4631.60s -> 4636.76s]  we're going to have on top this part and
+[4637.32s -> 4639.68s]  then on the bottom, we're going to have that part.
+[4639.68s -> 4646.88s]  And so we can rewrite that as the sum from w equals 1 to v.
+[4646.88s -> 4658.40s]  Of the exp of u x t v 0 times u x over the sum.
+[4661.80s -> 4664.72s]  Sorry, x equals 1 to v.
+[4664.72s -> 4670.36s]  Sum over w equals 1 to v of v x.
+[4670.36s -> 4673.28s]  This part here of u w.
+[4676.76s -> 4681.36s]  Okay, so we can rearrange things in that form.
+[4681.36s -> 4686.56s]  And then lo and behold, we find that we've recreated here
+[4686.56s -> 4689.48s]  this form of the softmax equation.
+[4689.48s -> 4697.72s]  So we end up with u 0 minus the sum over x equals 1 to v
+[4697.72s -> 4705.24s]  of the probability of x given c times u of x.
+[4705.24s -> 4711.00s]  So what this is saying is we're wanting to have this quantity
+[4711.00s -> 4714.96s]  which takes the actual observed u vector and
+[4714.96s -> 4720.28s]  it's comparing it to the weighted prediction.
+[4720.28s -> 4725.84s]  So we're taking the weighted sum of our current u x vectors
+[4725.84s -> 4730.76s]  based on how likely they were to occur.
+[4730.76s -> 4735.60s]  And so this is a form that you see quite a bit in these kind of derivatives.
+[4735.60s -> 4740.84s]  You get observed minus expected, the weighted average.
+[4740.84s -> 4744.44s]  And so what you'd like to have is your expectation,
+[4744.44s -> 4750.36s]  the weighted average, be the same as what was observed
+[4750.36s -> 4753.08s]  because then you'll get a derivative of zero
+[4753.08s -> 4756.76s]  which means that you've hit a maximum.
+[4756.76s -> 4765.12s]  And so that gives us the form of the derivative of the
+[4765.12s -> 4769.60s]  that we're having with respect to the center vector parameters.
+[4769.60s -> 4772.20s]  To finish it off, you'd have to then work it out also
+[4772.20s -> 4774.60s]  for the outside vector parameters.
+[4774.60s -> 4777.60s]  But hey, it's officially the end of class time
+[4777.60s -> 4780.72s]  so I'd better wrap up quickly now.
+[4780.72s -> 4782.96s]  So the deal is we're going to work out
+[4782.96s -> 4787.48s]  all of these derivatives for each parameter
+[4787.48s -> 4790.32s]  and then these derivatives will give a direction
+[4790.32s -> 4794.28s]  to change numbers which will let us find good word
+[4794.28s -> 4797.36s]  vectors automatically.
+[4797.36s -> 4799.80s]  I do want you to understand how this works,
+[4799.80s -> 4802.28s]  but fortunately you'll find out very quickly
+[4802.28s -> 4804.48s]  that computers will do this for you
+[4804.48s -> 4806.36s]  and on a regular basis you don't actually
+[4806.36s -> 4807.92s]  have to do it yourself.
+[4807.92s -> 4809.64s]  More about that on Thursday.
+[4809.64s -> 4812.16s]  OK, see you everyone.

@@ -1,0 +1,1154 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 14.08s]  Am I loud and clear? Yeah, sounds good. Okay, great. So good afternoon or good evening
+[14.08s -> 20.86s]  or good morning or good night wherever you are. Let's get started on the third lecture
+[20.86s -> 33.74s]  in SOA 1, which is going to be about OAS organization. And the topics for today are four things that
+[33.74s -> 40.94s]  I want to touch on. One is isolation, which you'll see is the driving design goal for
+[40.94s -> 49.18s]  OAS organization. I'll talk a little bit about kernel and user mode as a way of isolating
+[49.26s -> 54.94s]  kernel or the operating system from user applications. Then we'll talk about system calls,
+[55.66s -> 62.46s]  which is a way for user applications to basically transition into the kernel so they can ask for
+[62.46s -> 68.54s]  services. And we'll look a little bit how this all is instantiated in simple form inside of
+[68.54s -> 77.98s]  XJ6. So that is the point for today. And just to sort of remind you where we were
+[79.50s -> 84.54s]  after the first lecture, the picture sort of in your head that you should have in your head is,
+[84.54s -> 91.90s]  you know, there are processes like the shell, like echo, or whatever,
+[92.46s -> 97.02s]  you know, find, you know, whatever, some of the utilities that you implement it.
+[97.74s -> 103.90s]  They're running on top of an operating system. And, you know, the operating system
+[103.90s -> 109.90s]  abstracts some of the hardware resources, you know, like a disk or CPU. And, you know,
+[109.90s -> 113.90s]  basically the interface between the operating systems and the shell is typically referred
+[113.90s -> 118.78s]  to as a system call interface. And the interface that we've been looking at is the Unix interface.
+[119.02s -> 127.18s]  And here, what we see is, so that was roughly, you know, actually with that Unix interface,
+[127.18s -> 131.82s]  you've been playing around in lab one, where in the usual app where you used, you know,
+[131.82s -> 136.06s]  the system call interface or the Unix API to actually implement different sets of applications.
+[136.94s -> 142.86s]  So, lab one, usual app is mostly focused on, you know, sort of using, you know, this part
+[143.42s -> 148.46s]  of the design picture here. And what we're going to be doing now, in this first lecture,
+[148.46s -> 153.10s]  or this lecture, and many subsequent lectures, we're going to really look actually how the
+[153.10s -> 157.10s]  interface is actually implemented. In fact, almost all the semester, we're going to be
+[157.10s -> 162.14s]  spending time on figuring out actually how to implement the interface. And so this is going
+[162.14s -> 169.34s]  to be the first lecture of that kind of style. And unfortunately, a lot of you asked a really
+[169.34s -> 176.30s]  great questions over email, or submitted a great question to the website. And we won't be able,
+[177.34s -> 180.78s]  you know, to go into great amount of detail immediately in the sort of first lecture that
+[180.78s -> 185.02s]  takes an inside look at the operating system. We're going to touch on a lot of different things,
+[185.02s -> 189.82s]  but many things will become more clear in subsequent lectures where we're going to explore
+[189.82s -> 196.30s]  them in more depth. But nevertheless, if there's something unclear, feel free to interrupt
+[196.30s -> 202.54s]  and ask a question. And maybe just to start off, before actually going any further,
+[202.54s -> 207.50s]  let me ask you a question and sort of get the question and answering hopefully going,
+[207.50s -> 211.90s]  and ask you, like, what is the sort of most interesting thing that you learned from the
+[211.90s -> 217.74s]  YouTube lab? And I'll start by answering the question myself. One of the things that actually
+[217.74s -> 223.90s]  surprised me after writing or doing the YouTube lab is that, you know, I was in the lab,
+[223.90s -> 230.38s]  doing the YouTube lab is that I use XRX a lot more frequently than I'm used to do. I had another
+[230.38s -> 237.10s]  way of doing basically the same thing as XRX instead of commands. And after actually doing
+[237.10s -> 241.50s]  the XRX lab, it's like, oh, it's much more convenient actually to use it in that way. And
+[241.50s -> 247.42s]  so since then, I've been a much more aggressive user of XRX. And I'm just wondering, you know,
+[247.42s -> 253.58s]  what the, you know, what the experience has been for some of you. And so maybe I'll call out a
+[253.58s -> 260.46s]  few names and maybe you can unmute your microphone then and sort of say, say a little bit about,
+[260.46s -> 267.18s]  like, your experience with the YouTube lab. So let me, you know, pick some people. Andrew, you.
+[272.94s -> 278.14s]  Andrew, are you online or listening? The most interesting thing for me was just the pipes,
+[279.02s -> 280.38s]  how to write concurrent programs.
+[282.54s -> 284.54s]  Had you done any sort of pipe programming before?
+[285.34s -> 288.38s]  No, I haven't. I like seeing the all concurrent stuff, but I haven't seen like
+[288.38s -> 293.18s]  OS level pipes before. Okay. How about Elizabeth Weeks?
+[295.50s -> 300.54s]  Yeah, I'd agree with that. I also thought that the like OS pipes are super interesting and like
+[300.54s -> 306.78s]  the primes example specifically was cool to kind of figure out and realize that like I needed to
+[306.78s -> 310.46s]  close certain pipes and just like how they kind of related to each other.
+[311.02s -> 315.10s]  Yeah, yeah. I'm assuming you did find the pipes of the primes a little bit harder than
+[316.30s -> 321.10s]  you might have thought. It surprised me every time, a little bit tricky to get it right.
+[323.26s -> 323.98s]  Jessica Shih.
+[326.78s -> 329.98s]  I also thought the primes exercise was the most interesting.
+[332.94s -> 335.34s]  Did it take you a lot of time or was it not too bad?
+[337.58s -> 343.26s]  It took me more time after I realized my initial implementation wasn't actually concurrent.
+[343.26s -> 346.46s]  So it was interesting to think about like what the differences are there.
+[348.46s -> 350.06s]  How about Robert Murphy?
+[353.82s -> 361.58s]  Yeah, I think that my experience was really just, I found it really challenging to program
+[361.58s -> 365.50s]  in the original way that was set up. So I actually created like a bunch of helper
+[365.50s -> 369.66s]  functions that wrapped around things. So that's, I guess, what I did.
+[371.50s -> 379.18s]  Okay. Anybody else who has sort of any piece of wisdom? Amanda, go ahead.
+[379.82s -> 383.02s]  I kind of liked it and found it surprising slash cool that
+[383.90s -> 388.62s]  stdin and stdout are just filed strippers themselves, zero and one.
+[388.62s -> 393.82s]  Yeah, yeah, yeah. Good. Yeah, yeah. Yeah, and xv6 doesn't hide that from you at all,
+[393.90s -> 400.30s]  at least in a normal C library that's a little bit wrapped up in an interface, but
+[401.26s -> 404.30s]  xv6 doesn't hide it at all. But in the end, it boils down indeed to,
+[404.30s -> 407.50s]  you know, just file the script for zero and one, and two, I guess, for standard error.
+[409.18s -> 412.46s]  Good, good. Alexandra.
+[414.30s -> 419.98s]  I guess one thing I was surprised about was also from the primes problem.
+[420.14s -> 428.70s]  I had this bug that I spent hours on. And the thing was that I didn't realize that actually
+[428.70s -> 438.30s]  there were whenever you were opening a pipe and then for like calling fork, then basically,
+[438.30s -> 445.18s]  there would be four ends to the pipe, because that pipe, it's kind of goes both
+[445.18s -> 451.10s]  to the child process and the press the parent process. And but I was only closing two of those.
+[452.86s -> 459.50s]  So yeah, that was a common common problem. It made sense, but for some reason, because
+[460.06s -> 467.26s]  especially the textbook says that when you fork, all of the open file descriptors get copied,
+[467.26s -> 470.46s]  but I didn't think about it then. Yeah, no, it's hard to I mean,
+[470.46s -> 473.34s]  there's a lot of details in that interface. And you know, the only way to get actually
+[473.34s -> 477.58s]  really familiar with it actually is to program with it and then experience it.
+[478.70s -> 483.18s]  Good. Well, good. I hope you enjoyed the lab. And you know, of course, I hope you will enjoy
+[483.18s -> 487.10s]  the subsequent labs too. So the lecture for today in some sense is really, you know,
+[487.10s -> 493.58s]  partially to help you to get going on the Cisco lab, if you haven't already started. And
+[493.58s -> 499.02s]  so again, feel free to interrupt and ask questions. Okay, so the first thing I want to do
+[499.90s -> 508.22s]  is talk a little bit about isolation. And, you know, why it's important and why we might care.
+[508.22s -> 511.90s]  And, you know, the basic stories in our reasonable simple, you know, we have multiple
+[511.90s -> 515.98s]  applications here, we got the shell, we got echo, we find, and it'd be great, correct,
+[515.98s -> 520.38s]  if you had a bug in the shell, or, for example, in your crimes program, that actually
+[520.38s -> 523.50s]  didn't affect any of the other applications, you know, particularly, it would be bad,
+[523.50s -> 527.02s]  for example, if it affected the shell, because probably the shell you're using to actually,
+[527.98s -> 533.02s]  you know, kill the program, if something goes bad. And so you want sort of strong isolation
+[533.02s -> 538.38s]  between these different applications. And similarly, you know, the OS is sort of the
+[538.38s -> 542.62s]  servant, you know, for all the applications. And you would like it to be the case that,
+[542.62s -> 546.62s]  you know, if again, you know, you make a bug in one of your util programs that actually
+[546.62s -> 550.78s]  the operating system doesn't crash, you know, you pass some strange argument to the operating
+[550.78s -> 555.26s]  system, it should be the case that the operating system handles that well. And so again,
+[555.34s -> 563.10s]  you would like to be there for strong isolation between the applications and the operating system
+[563.10s -> 568.94s]  itself. And one way to think about this a little bit is to say, is ask ourselves the question,
+[568.94s -> 573.02s]  you know, what would happen if there's actually no operating system? So like,
+[573.02s -> 582.70s]  you know, consider some straw man design, design, where there is no operating system.
+[585.26s -> 589.50s]  Or you can think about it as the operating system, basically, just being a library, you know,
+[589.50s -> 594.78s]  sort of thinking of, you know, in terms of Python, maybe just import OS, and import OS
+[594.78s -> 599.10s]  basically loads the whole operating system inside of your application. And that's, you know,
+[599.10s -> 604.78s]  the programming interface you use. So you think about that sort of way of thinking. So let's
+[604.78s -> 609.74s]  say we have the shell here, you know, maybe it includes the, you know, the library for the
+[609.74s -> 616.14s]  OS, and maybe we already have some other application echo. And then basically, you know,
+[616.14s -> 621.82s]  these, these applications, if there's no operating system, really, it would directly interact with the
+[621.82s -> 626.94s]  hardware. So for example, you know, they would actually see, you know, there's a CPU core,
+[626.94s -> 631.98s]  there's another CPU core. And, you know, maybe there's a disk, and then we interact directly
+[631.98s -> 635.58s]  with the disk box, and maybe there's memory, and they will directly interact with the memory
+[635.58s -> 641.58s]  of the machine. And so there's no layer between, no abstraction layer between basically
+[641.58s -> 647.90s]  the applications and the hardware. And it turns out that it's just not such a great design
+[648.86s -> 655.34s]  for isolation. And you can see how isolation might be broken. Let's assume, for example,
+[655.34s -> 660.22s]  that, you know, one of the goals of the operating system is run multiple applications.
+[660.22s -> 664.78s]  And so that has to be the case that once in a while, they will switch from one application
+[664.78s -> 669.82s]  to another application. Let's say the hardware has only one CPU. And so we're running the shell
+[669.82s -> 673.82s]  saying that one CPU, but, you know, periodically, you know, other applications should be able to
+[673.82s -> 679.18s]  run too. Well, we have no operating system, you know, to do it for us, then the shell
+[679.18s -> 684.86s]  basically has to sort of give up, you know, the CPU once in a while, and sort of be a nice
+[684.86s -> 688.62s]  person and say like, well, again, I've run for a little while, well, you get a chance to
+[688.62s -> 694.22s]  run. And this sometimes is called cooperative scheduling. But that's not so great for isolation,
+[694.30s -> 698.78s]  you know, for example, what what if you know, some function in the shell has an infinite loop,
+[698.78s -> 703.58s]  and therefore it will never actually give up the CPU. And then no other, you know, applications
+[703.58s -> 708.78s]  could run, including maybe the application that would like stop or kill the shell. And so
+[709.42s -> 714.62s]  we basically don't get any sort of form of enforced multiplexing. And that's something
+[714.62s -> 719.74s]  that we'd like to have where no matter what the application does, it will be forced to give
+[719.74s -> 725.42s]  up the CPU once in a while, so that other applications grow up. Similarly, you know,
+[725.42s -> 731.42s]  if you think about the Strahman design, you know, we have physical memory, right, and all
+[731.42s -> 735.98s]  I drew the picture here as the application sitting on the top of the hardware. But, you
+[735.98s -> 740.54s]  know, there's physical memory, and basically the text and the code and the data for these
+[740.54s -> 745.66s]  applications actually sits in physical memory, right? So here's memory. And here's maybe,
+[745.66s -> 750.46s]  you know, the part of physical memory that's used by the shell. And here's maybe the part
+[750.46s -> 755.74s]  of the physical memory that's used by echo application. And so you're gonna, you know,
+[755.74s -> 760.14s]  and, again, what we see here, if you would like simply, simplistically like this,
+[760.86s -> 767.82s]  there's sort of no boundary between these two guys. For example, if, you know, echo,
+[768.70s -> 773.18s]  you know, stores through a location that example belongs, you know, to the shell,
+[773.18s -> 778.62s]  like location of thousands and writes a value there, you know, whatever x, then it will just
+[778.62s -> 783.42s]  overwrite the physical memory of the shell memory. And so that, you know, be pretty
+[783.42s -> 787.98s]  undesirable, right? Because then a bug, you know, an echo could actually percolate into the shell.
+[787.98s -> 791.02s]  And, you know, it's going to be very tricky to debug and that kind of stuff. And so this
+[791.02s -> 799.02s]  basically, again, gives us like no strong isolation. What we like is to have no memory
+[799.02s -> 805.10s]  isolation so that one application cannot overwrite the memory of another application.
+[807.18s -> 813.50s]  And it's a, you know, one reason, you know, or maybe probably the main reason to actually
+[813.50s -> 819.50s]  have an operating system is basically to enforce both that multiplexing and to enforce,
+[819.50s -> 823.26s]  you know, strong memory isolation. And if you didn't have an operating system and the
+[823.26s -> 826.86s]  application were directly interacting with the hardware, it would be very hard to achieve that.
+[827.82s -> 832.22s]  And so this design of basically, you know, operating system as a library is not a very
+[832.22s -> 836.62s]  common design. You may see it in some real-time systems where basically the applications trust
+[836.62s -> 841.18s]  each other. But in most other operating systems, you know, there is an operating system
+[841.18s -> 847.18s]  that really enforces, you know, that kind of isolation. So if we look a little bit now
+[847.74s -> 849.74s]  at the Unix interface from this perspective,
+[849.74s -> 859.50s]  then we see that the interface actually is carefully designed so that it actually is
+[859.50s -> 867.82s]  feasible to implement that enforced isolation in terms of multiplexing, in terms of physical memory.
+[868.38s -> 873.50s]  And the way that is sort of done is that the interface basically abstracts the hardware,
+[874.46s -> 884.94s]  the hardware resources in a way that then it makes it easy to actually do, or not easy,
+[884.94s -> 889.26s]  or it makes it possible, you know, to provide, you know, the strong isolation.
+[890.86s -> 895.42s]  And, you know, maybe it gives you some examples. So processes, you know,
+[895.42s -> 900.62s]  we've seen them, like the things that are created by fork. You know, they're not,
+[900.62s -> 905.66s]  you know, literally a CPU, right? But they correspond to like what a CPU is,
+[905.66s -> 910.38s]  and it allows you to run computation. But, you know, because, you know, the application
+[910.38s -> 914.46s]  cannot directly interact with the CPU, but only for this process abstraction,
+[914.46s -> 918.46s]  the kernel sort of behind the scenes, you know, can switch between processes.
+[920.06s -> 925.66s]  So instead of having, you know, direct CPUs to manipulate or given to the application,
+[925.90s -> 930.70s]  operating system provides processes that abstract away the CPU itself so that actually
+[930.70s -> 935.74s]  the operating system can multiplex in one CPU or multiple CPUs among multiple applications.
+[937.02s -> 941.82s]  Similarly, if you think about exec, exec provides a memory image.
+[943.50s -> 947.74s]  And Armando, yeah, go ahead. Ask your question.
+[947.74s -> 953.74s]  One question about like processes sort of like abstracting the CPU. Is it that
+[954.14s -> 961.90s]  one process uses part of the CPU and another process uses a different part of that CPU or
+[961.90s -> 967.34s]  a different CPU if it's like a multi-core? Or like, what do you mean by processes instead of
+[967.34s -> 973.26s]  the CPU? Yeah, okay, so I really mean one CPU abstracted away into a process. So okay,
+[973.26s -> 978.86s]  so the way to think about it is the RISC-V core or RISC-V processor that we're using
+[979.66s -> 986.78s]  in the lab has actually four cores. And so you can run four processes concurrently or in parallel,
+[986.78s -> 990.62s]  you know, one process on each core. And what the operating system does is,
+[990.62s -> 994.94s]  let's say you have eight applications or seven applications, it will take some core
+[994.94s -> 1000.14s]  and multiplex it, time multiplex it between different processes. So for example, it will run,
+[1000.14s -> 1004.94s]  you know, one app process for a hundred milliseconds, then stop, unload, you know,
+[1005.02s -> 1011.98s]  that process out of the CPU or out of the core, loading the next application or the next process
+[1011.98s -> 1016.38s]  and runs that for a hundred milliseconds. And it just enforces that no application can run or
+[1016.38s -> 1020.22s]  no process can run longer than a hundred milliseconds. And we'll see exactly how this
+[1020.22s -> 1023.02s]  will be done in a couple lectures, but that's sort of the basic idea.
+[1024.06s -> 1028.38s]  Okay, but multiple processes cannot use the same CPU at the same time?
+[1028.38s -> 1033.10s]  No, it's time multiplication. You run for a while, then you run the next one for a while.
+[1033.90s -> 1034.54s]  All right, thank you.
+[1035.98s -> 1042.22s]  Okay, so one way to think about EXEC is that it takes an abstract memory.
+[1048.14s -> 1053.02s]  So for example, if you think about the EXEC system call, you know, it takes a file name,
+[1053.02s -> 1058.94s]  you know, and in that file is basically the memory image of a program store. It's text,
+[1059.10s -> 1067.90s]  some of its global data, and that forms the memory of the application. Now the
+[1067.90s -> 1075.42s]  application can grow its memory, for example, by calling sbreak and extending its data segment,
+[1075.42s -> 1079.82s]  but it doesn't really have a direct access to physical memory. You know, you can't just ask,
+[1079.82s -> 1086.14s]  you know, I want, you know, addresses, you know, physical memory, 1K to 2K. You know,
+[1086.22s -> 1090.54s]  there's no way of getting at that. And again, the reason that there's no way that you can get at that
+[1090.54s -> 1094.06s]  is because the operating system is going to wants to provide memory isolation,
+[1094.06s -> 1097.98s]  and therefore wants to be in control or sort of sit intermediate, intermediate
+[1097.98s -> 1103.02s]  between the applications and the physical hardware. And EXEC is going to sort of a system call that,
+[1103.02s -> 1110.38s]  you know, capture or shows that there's no direct access to the memory. Another example of this
+[1110.38s -> 1115.10s]  is like files. Files basically abstract the way disk blocks.
+[1121.50s -> 1127.42s]  Instead of reading and writing the disk blocks of the disk that sits attached to your computer,
+[1128.14s -> 1132.22s]  that actually just not allowed in Unix. You know, the only way to interact with the
+[1132.22s -> 1136.22s]  storage system is through files, and you can read and write files, you provide a convenient
+[1136.22s -> 1141.82s]  abstraction, you can name files, etc, etc. But then the operating system in itself can
+[1141.82s -> 1147.66s]  actually decide how to map those files to disk blocks and make sure that example of disk block
+[1147.66s -> 1151.98s]  only shows up in one file. And then, you know, user A cannot actually, you know,
+[1151.98s -> 1158.54s]  manipulate or read or write the files of user B. And again, you know, this, you know,
+[1158.54s -> 1163.82s]  that sort of interface, that the file abstraction allows that sort of strong isolation
+[1163.82s -> 1167.82s]  between even different users and, you know, two different processes of the same user.
+[1169.18s -> 1172.70s]  As you can see that, you know, in some ways, you know, the system call interface or the
+[1172.70s -> 1176.70s]  Unix interface that you've been programming with, you know, in the Utah lab seems to be sort of
+[1176.70s -> 1181.74s]  carefully designed to abstract the research in a way so that, you know, the operating system,
+[1181.74s -> 1184.78s]  the implementation of the interface, can actually multiplex, you know,
+[1184.78s -> 1189.34s]  the resource or multiple applications and provide strong isolation.
+[1193.90s -> 1197.50s]  Any questions about that? We have a question in the chat that says,
+[1197.50s -> 1202.62s]  do more complex kernels try to reschedule processes on the same core to reduce cache misses?
+[1202.62s -> 1209.42s]  Oh, yeah, there's something called cache affinity. You know, the scheduler in, you know,
+[1209.42s -> 1214.46s]  modern operating systems are very sophisticated and indeed, you know, try to avoid cache misses
+[1214.46s -> 1218.94s]  and things like that, you know, to optimize the performance. And, you know, we'll see some of
+[1218.94s -> 1222.46s]  that much later in the semester, you know, when we're going to be talking about high
+[1222.46s -> 1228.94s]  performance networking, we'll show up there. Another question from chat, where in xv6 can
+[1228.94s -> 1235.50s]  we see how the OS multiplexes processes? We're going to, there's a couple pile of files
+[1235.50s -> 1240.62s]  that are relevant, but proc.c is probably the most relevant one. This will be a topic of
+[1240.62s -> 1245.10s]  lecture in like two or three weeks. And we're going to go in great amount of detail and show
+[1245.10s -> 1249.66s]  exactly how the multiplexing happens. So one way to think about this lecture is a little
+[1249.66s -> 1254.06s]  bit of an introduction to a lot of different pieces. And, you know, because we got to start somewhere.
+[1256.38s -> 1264.30s]  Okay, so, um, so we go back into this picture here that I showed a little while ago, we have
+[1264.30s -> 1269.66s]  this shell running the echo running or not that picture on this picture. Here on this side,
+[1269.66s -> 1274.06s]  we've got the operating system, we have the applications running. And one point we should be
+[1274.06s -> 1280.06s]  worried about these words that the operating system should be should be defensive.
+[1282.94s -> 1287.26s]  And this is sort of an important mindset, you know, that you have to get used to
+[1287.26s -> 1293.58s]  when you're doing kernel development. The operating system, you know, has to ensure that
+[1293.58s -> 1298.62s]  everything you know, everything works out. And so it has to set up things up so that, you know,
+[1298.62s -> 1301.10s]  an app cannot crash the operating system.
+[1304.62s -> 1311.10s]  It would be too bad if an application that either by accident or maliciously passes, you know,
+[1311.10s -> 1315.90s]  a tricky argument, bad argument to the operating system, and the opposite system would crash. That
+[1315.90s -> 1321.10s]  basically means denial of service for every other application. So the operating system has
+[1321.10s -> 1327.10s]  to be written in a way that it can deal and handle malicious applications. And in particular,
+[1327.10s -> 1333.58s]  another concern is that the application should not be able, cannot break out of its isolation.
+[1334.06s -> 1346.62s]  I mean, the application might be definitely malicious, maybe written by an attacker,
+[1346.62s -> 1351.42s]  and attacker probably, you know, would like to break out of the application example and take
+[1351.42s -> 1355.50s]  control over the kernel. And once you have control over the kernel, then you can do anything
+[1355.50s -> 1360.22s]  because the kernel is in control of all the hardware resources. And so the operating system
+[1360.22s -> 1365.26s]  has to be or the kernel has to be written defensively, you know, to avoid those kinds
+[1365.26s -> 1372.30s]  of things. This turns out to be very tricky to actually get right. In fact, in Linux, you know,
+[1372.30s -> 1377.34s]  there are still periodic bugs, you know, kernel bugs, or bugs that actually allow an
+[1377.34s -> 1385.10s]  application to exploit or to break out of this isolation domain and take control. But it's just
+[1385.10s -> 1389.74s]  continuous concern, and we'd like to do as good a job as possible. And this is the mindset
+[1389.82s -> 1393.42s]  you have to have, you know, when you're developing a kernel that actually applications are
+[1395.26s -> 1401.10s]  perhaps malicious. Now, this means that there has to be strong isolation
+[1406.46s -> 1407.58s]  between the apps
+[1411.34s -> 1418.86s]  and the OS. If the OS needs to be defensive and needs to be in a position that it can be
+[1418.86s -> 1422.78s]  defensive, there has to be sort of a strong wall between the applications so that the operating
+[1422.78s -> 1426.30s]  system can actually enforce, you know, whatever policies that wants to enforce.
+[1427.42s -> 1432.30s]  And this is typically done, that typical approach to achieving this strong isolation
+[1432.30s -> 1439.90s]  is using hardware support. And we'll get a little bit of flavor of that in this lecture,
+[1439.90s -> 1443.02s]  but we'll come back to it in much more detail in subsequent lectures. And there's sort of two
+[1443.82s -> 1448.78s]  parts of this hardware support. One is something that's called user kernel mode,
+[1450.54s -> 1455.18s]  kernel mode. In RISC-V, it's called supervisor mode, but it's the same thing,
+[1456.54s -> 1458.86s]  and then page tables or virtual memory.
+[1464.06s -> 1471.26s]  So all processors, all sort of serious processors that are intended to run an operating system
+[1471.26s -> 1476.78s]  in multiple applications have support for either for user kernel mode and virtual memory. You know,
+[1476.78s -> 1480.30s]  it might mean men have stated or implemented in slightly different ways,
+[1480.30s -> 1486.38s]  but basically all processors have it. And our RISC-V processor that we're using in this
+[1486.38s -> 1491.42s]  class has that support too. So let me talk a little bit, I'm going to talk a little bit
+[1491.42s -> 1495.10s]  about user mode and kernel mode first, and then I'll talk a little bit about virtual memory.
+[1496.06s -> 1501.26s]  And mostly at the highest level possible, because there's a lot of important details,
+[1501.26s -> 1506.54s]  but I won't be able to cover those in this lecture. So let's first talk about user kernel mode.
+[1514.46s -> 1520.22s]  And basically what it means is that the processor has two modes of operation. One is user mode,
+[1520.22s -> 1524.30s]  and the other one is kernel mode. And when running in kernel mode,
+[1525.34s -> 1528.14s]  the CPU can execute privileged instructions.
+[1535.18s -> 1538.70s]  I'll come back to it in a second to that. When running in user mode,
+[1539.42s -> 1542.70s]  the CPU can only execute unprivileged instructions.
+[1549.74s -> 1553.34s]  And unprivileged instructions are the instructions you're well familiar with. You know, think about
+[1553.34s -> 1559.66s]  like add, sub, adding two registers together, subtracting two registers, show you basic
+[1560.70s -> 1565.90s]  procedure calls, JAR, all that kind of stuff, branches. Those are all
+[1567.58s -> 1570.86s]  unprivileged instructions that any user application is allowed to execute.
+[1571.82s -> 1576.06s]  Privileged instructions are instructions that basically are involved in
+[1577.42s -> 1581.90s]  manipulating the hardware directly or setting up protections and things like that. So for
+[1581.90s -> 1589.50s]  example, setting up a page table register, which we'll talk about later, or
+[1591.66s -> 1594.38s]  you know, setting the disabling clock interrupts.
+[1599.02s -> 1602.94s]  And so there's all kinds of sort of state on the processor that the operating system,
+[1602.94s -> 1606.86s]  you know, is going to use and manipulating that state is, you know, completely
+[1607.82s -> 1613.02s]  is done for privileged instructions. And so for example, when a user application tries to actually
+[1613.02s -> 1618.22s]  execute a privileged instruction, then the processor won't execute it. Because if a
+[1618.22s -> 1623.74s]  privileged instruction in user mode is disallowed, and basically that will result in the transfer
+[1623.74s -> 1627.90s]  control from user space from user mode to kernel mode, so that then the operating system
+[1627.90s -> 1631.66s]  can actually take control and maybe kill the application because it's misbehaving.
+[1631.66s -> 1637.74s]  To get a little bit of a sense of the difference between the two in the privileged and
+[1637.74s -> 1643.82s]  unprivileged instructions, let me switch the display for a second. And here on the right
+[1643.82s -> 1650.30s]  side of the display is a document, you know, the RISC-V privileged architecture
+[1650.30s -> 1654.78s]  document. And that document contains all the privileged instructions. It's linked from the
+[1654.78s -> 1663.66s]  website, under the references page, and in the next couple of weeks, or almost months,
+[1663.66s -> 1667.50s]  you will be playing around, you know, all these privileged instructions that, you know,
+[1669.02s -> 1672.70s]  are shown here. And in fact, many of them will, you know, show up in,
+[1672.70s -> 1675.58s]  some of them will actually show up in the next lecture in a great amount of detail.
+[1676.46s -> 1679.98s]  But users think about this as there are privileged instructions that
+[1679.98s -> 1684.30s]  user applications should not be able to execute, and those can only be executed in kernel mode.
+[1685.58s -> 1690.46s]  So that's one aspect of, you know, this sort of hardware support for strong isolation.
+[1691.74s -> 1692.70s]  Yeah, Amanda, go ahead.
+[1693.58s -> 1698.86s]  Just a quick question, like, the, what I'm imagining in my head is something like,
+[1698.86s -> 1705.10s]  if kernel mode allow, else don't, like what, who is running that code and checking
+[1705.10s -> 1709.66s]  if it's kernel mode, and how do they know if it's in kernel mode? Is it like a flag or something?
+[1709.66s -> 1713.74s]  Yeah, it's basically flagging the processor. You know, literally, there's a bit
+[1713.82s -> 1720.54s]  in the processor that says, you know, user mode, you know, one is, say, typically one is user mode,
+[1720.54s -> 1724.38s]  and zero is kernel mode. And so when the processor decodes an instruction,
+[1725.10s -> 1728.46s]  looks at the opcode, if the opcode is a privileged instruction,
+[1728.46s -> 1732.78s]  and the bit is set to one, it will deny executing that instruction.
+[1734.14s -> 1737.34s]  It's like defined by zero. You're not allowed to do that.
+[1737.98s -> 1743.34s]  Okay. But if that bit is changed, like if some way you were just able to overwrite that bit,
+[1744.22s -> 1745.82s]  that's the only thing controlling.
+[1745.82s -> 1749.50s]  Yeah. So what do you think, what instruction that overrides a bit?
+[1749.50s -> 1751.98s]  Is that a privileged instruction or an unprivileged instruction?
+[1759.18s -> 1759.98s]  Is there a question?
+[1762.78s -> 1767.42s]  Clearly, you know, the instruction that sets the bit must be privileged instruction,
+[1767.42s -> 1771.18s]  because the user application should not be able to set the bits to kernel mode, correct?
+[1771.18s -> 1775.02s]  And then, you know, be able to actually run all kinds of privileged instructions.
+[1775.74s -> 1779.66s]  And so that bit is protected. Does that make sense?
+[1780.70s -> 1781.50s]  Okay. Yeah.
+[1784.54s -> 1788.94s]  Okay, good. So, uh, so that's user kernel mode, or at least, you know, the top view
+[1788.94s -> 1793.26s]  of user kernel mode. Turns out the RISC-V has a, as a number of you asked about,
+[1793.26s -> 1798.14s]  has a third mode called machine mode. We're mostly going to ignore that.
+[1798.22s -> 1801.50s]  So I'm not going to have much to say about it. Basically, there's one more level,
+[1801.50s -> 1804.54s]  basically three levels of privileges instead of two level of privileges.
+[1805.10s -> 1805.98s]  Amir, go ahead.
+[1807.74s -> 1813.50s]  Hi. So I'm wondering, with respect to security, if all user code does go through the kernel,
+[1813.50s -> 1820.38s]  the intent is that things are secure. But is there a way for a user of the computer
+[1820.38s -> 1823.82s]  to completely go around the operating system?
+[1824.78s -> 1829.10s]  No, not really. At least, you know, if done carefully, not.
+[1832.22s -> 1835.98s]  And if possible, like, you know, that might be the case that some programs have additional
+[1835.98s -> 1842.22s]  privileges that the operating system will respect. But those privileges are not given
+[1842.22s -> 1847.42s]  to every user. For example, the root user has certain privileges that allow you to do
+[1848.14s -> 1849.58s]  security sensitive operations.
+[1849.98s -> 1855.02s]  What about BIOS? Does BIOS happen before OS or after?
+[1855.02s -> 1861.58s]  Yeah. So the BIOS, this is the piece of software that basically comes with the computer
+[1862.30s -> 1866.62s]  and that's booted first. And the BIOS basically boots the operating system.
+[1867.18s -> 1873.02s]  So the BIOS is a trusted piece of code. It better be correct and better be not malicious.
+[1875.82s -> 1876.78s]  Noah, go ahead.
+[1876.78s -> 1882.86s]  Yeah. So you mentioned that the, you know, the instruction to set the kernel mode bit is a
+[1882.86s -> 1889.26s]  privileged instruction. How would a user program ever then be able to, you know, get like,
+[1889.26s -> 1894.30s]  like, you know, essentially have the kernel execute any kernel instructions if like the very
+[1894.30s -> 1898.38s]  instruction to access kernel mode is itself a privileged instruction? I guess it seems like
+[1898.38s -> 1902.62s]  there's immediately a barrier for a user program ever changing that bit.
+[1902.62s -> 1908.06s]  Yeah. Yeah. That's correct. And that's exactly the way we want it, correct. So one way to think
+[1908.06s -> 1912.06s]  about it, and this is not exactly how it works on the RISC-V, but like if you
+[1912.06s -> 1916.62s]  execute a privileged instruction in user space, we'll try to execute a privileged instruction in
+[1916.62s -> 1920.62s]  user space, we'll try to execute a privileged instruction in user space.
+[1946.62s -> 1947.12s]  Yeah.
+[1976.62s -> 1994.86s]  I'm back. Sorry about that. It looked like my Zoom client crashed on me.
+[1997.26s -> 2000.54s]  I apologize for that. I don't really know why, but it did.
+[2001.50s -> 2009.90s]  Can everybody hear me again? Yep. You're good. All good. All right.
+[2011.34s -> 2024.62s]  Well, there's somewhere a bug. Okay. So back to the second piece of hardware support,
+[2025.26s -> 2030.70s]  which almost all CPUs provide, which CPUs provide virtual memory.
+[2042.62s -> 2046.54s]  And I'm going to talk about this on Wednesday in much, much more detail,
+[2047.26s -> 2050.54s]  but basically the processors have something, you know, what is called the page table.
+[2051.10s -> 2055.82s]  And you've seen this a little bit, I think in 004, and the page table basically maps
+[2055.82s -> 2066.62s]  virtual addresses to physical addresses. And the basic idea is to give every process
+[2067.58s -> 2079.02s]  its own page table. And in this way, you know, the process can actually only use,
+[2079.82s -> 2083.50s]  or it's only allowed to access that piece of physical memory that actually shows up in its
+[2083.50s -> 2088.22s]  page table. And so if you set up, if the operating system sets the page tables up in a way
+[2088.22s -> 2093.98s]  that every process has disjoint, you know, physical memory, then a process can't even access,
+[2093.98s -> 2097.42s]  you know, somebody else's physical memory, because it's not even in its page tables. So
+[2097.42s -> 2102.38s]  there's no way even to create an address or write down an address that will allow a process
+[2102.38s -> 2107.34s]  to access somebody else's physical memory. And so this gives us strong memory isolation.
+[2109.82s -> 2116.14s]  Basically page table defines view on memory, and every application or every user process
+[2116.14s -> 2121.34s]  has its own view of memory, independent of each other. And this gives us very strong
+[2121.90s -> 2127.10s]  memory isolation. And so now what we can do, if we can think a little bit in this way,
+[2127.66s -> 2132.70s]  then we can redraw the picture a little bit earlier. And because we're thinking about this
+[2132.70s -> 2140.14s]  as follows, you know, we have a box, and LS sits in that box, and we have another box, and, you
+[2140.14s -> 2146.46s]  know, echo sits in that box. And that box basically has an address, a virtual address range
+[2146.46s -> 2152.54s]  starting from zero to like whatever some number two to the power, whatever the number is, in
+[2152.54s -> 2157.74s]  RISC-V, which we'll talk about on Wednesday. And similarly, you know, the address range for
+[2157.74s -> 2164.38s]  echo is, you know, something whatever it's saying to the powers on X. And so LS has a memory
+[2164.38s -> 2169.66s]  location zero, echo has a location like zero, and users completely separate it. And if the operating
+[2169.66s -> 2174.06s]  system maps those virtual addresses zero to different pieces of physical addresses, then
+[2174.06s -> 2179.50s]  basically LS cannot access echo's memory, and echo cannot access LS's memory. And similarly, you
+[2179.50s -> 2183.90s]  know, the kernel actually, you know, which sits below it, you know, also has its own, at least
+[2183.90s -> 2190.14s]  in xv6, has its own address range independent of the applications. And we can think about the
+[2190.14s -> 2195.42s]  user kernel mode as sort of sitting in between, you know, the boundary, you know, things that
+[2195.42s -> 2202.94s]  actually run in user space, run in user mode, and things that sit in the kernel, run in kernel mode.
+[2207.34s -> 2211.10s]  And that's sort of the picture, you know, that you should have like the OS, you know, sits there,
+[2211.10s -> 2215.34s]  you know, sitting in kernel mode. And so this is the picture that you should have within your head.
+[2216.38s -> 2220.54s]  Now, as described so far, this picture is a little bit too strict, you know, we have made
+[2220.54s -> 2224.78s]  basically put everything in a box, but there's no way for one box to transfer control to another
+[2224.78s -> 2228.70s]  box. And clearly when that needs to happen, right, because for example, LS, you know,
+[2228.70s -> 2235.42s]  probably wants to call, you know, read, read system call, or write system call, or maybe,
+[2235.42s -> 2240.38s]  you know, whatever the shell wants to call fork or an exit. And so there has to be a way
+[2240.38s -> 2247.82s]  for an application or user application to transfer control in a coordinated manner to the kernel,
+[2247.82s -> 2254.22s]  so that the kernel can actually provide services. And so there's a plan, basically,
+[2254.22s -> 2259.42s]  in addition to this two pieces of hardware support that I talked about so far,
+[2259.42s -> 2263.42s]  is a controlled way of entering the kernel.
+[2269.34s -> 2275.58s]  It turns out actually on RISC-V, there is an instruction for this, it's called the E-call
+[2275.58s -> 2282.94s]  instruction. An E-call instruction, you know, takes one argument, a number. And so when a user
+[2282.94s -> 2287.66s]  application that wants to transfer control into the kernel, basically can call the E-call
+[2287.66s -> 2292.06s]  instruction with numbers like two, or three, or four, or five, and that number basically
+[2292.06s -> 2296.22s]  is the system call number that the application wants to invoke.
+[2301.58s -> 2305.50s]  And then basically what that does, it actually enters the kernel at a particular
+[2306.70s -> 2313.10s]  point or a particular location in the kernel that's controlled by the kernel. And as we'll
+[2313.10s -> 2320.46s]  see in xv6 in some later lectures, you know, there's basically a single system call entry point,
+[2321.10s -> 2326.54s]  and every time an application calls E-call, you know, the application enters the kernel
+[2326.54s -> 2332.86s]  at that particular point. So one way to think about this is that if you have fork,
+[2333.66s -> 2339.10s]  you know, the fork, you know, call in user space, for example, the shell or your pranks
+[2339.10s -> 2343.58s]  program called fork, well whatever it calls fork, it doesn't really call the operating system
+[2343.58s -> 2348.30s]  directly, you know, the corresponding function in the kernel. Instead, you know, what it does,
+[2348.30s -> 2358.06s]  it actually calls E-call with, you know, this number for fork, which, you know, and then that
+[2358.06s -> 2364.06s]  actually jumps into the kernel. So this is a kernel transition, and here's the user site,
+[2364.06s -> 2369.90s]  here's the kernel site, and then the kernel site, you know, there's a function called syscall,
+[2369.90s -> 2376.22s]  syscall.c, and that basically every system call will end up at that particular system call function,
+[2376.22s -> 2379.98s]  and the system call will look at the number and then the site, and the number is actually
+[2379.98s -> 2385.50s]  passed in the register, I think it's a0, and the syscall can look at that register,
+[2385.50s -> 2389.66s]  look at a0, see what the number is, and then for example call the fork system call.
+[2389.74s -> 2397.50s]  And so just to make it really clear, so this is this hard boundary between the user and kernel,
+[2397.50s -> 2404.46s]  so the user cannot call, you know, this fork directly, you know, the only way, you know,
+[2404.46s -> 2408.86s]  usually application can actually invoke, you know, the system call for fork is actually through
+[2408.86s -> 2424.06s]  this ecall instruction. And so I have another, whoops, I have another system call, let's say,
+[2424.06s -> 2431.98s]  write, it does something similar, you know, the write system call cannot call, you know,
+[2431.98s -> 2438.46s]  the write, you know, code directly into the kernel, instead what it does, it calls these
+[2438.46s -> 2445.58s]  little wrappers are called, system call stops, it will call ecall, a function called write that
+[2445.58s -> 2449.42s]  actually executes the ecall instruction, you know, with the argument, you know, sys write
+[2450.22s -> 2453.26s]  to indicate, you know, the write system call, and then again, you know,
+[2453.26s -> 2460.46s]  transgenders control through syscall, and then syscall can actually de-multiplex it to
+[2460.46s -> 2463.66s]  the write system call. For two questions, please go ahead.
+[2469.26s -> 2480.78s]  Okay, I can go ahead. The question I had was, how does, or where does the kernel check,
+[2482.94s -> 2489.58s]  for example, fork or write, if it is allowed or not? Right now you're just passing in like,
+[2489.58s -> 2494.86s]  you know, you're just calling ecall and the system call number, but where does the kernel
+[2494.86s -> 2501.34s]  basically decide whether this application should be able to invoke this particular kernel syscall?
+[2501.34s -> 2505.34s]  Yeah, so great question. So in principle, you know, the on the kernel side, correct,
+[2505.34s -> 2510.54s]  when we actually use fork call runs, it can implement any secure check it wants, you know,
+[2510.54s -> 2514.54s]  it can look at the arguments, you know, if the system call and decide whether actually the
+[2514.54s -> 2520.22s]  application should be allowed to execute the system call fork. Now, in user, in Unix,
+[2520.22s -> 2524.54s]  any application can actually call fork, but let's say take write, you know, write,
+[2524.78s -> 2529.50s]  needs to check whether the implementation of write needs to check whether the address that
+[2529.50s -> 2536.62s]  is actually passed into write actually is part of the user applications. And so that, you know,
+[2536.62s -> 2542.94s]  the kernel is not tricked to writing data from somewhere else. It actually doesn't belong to the
+[2542.94s -> 2551.58s]  application. There are more hints, you know, please ask. Yeah, I had a quick question.
+[2552.30s -> 2558.46s]  So how does the kernel seize back control from a user application in the case where
+[2558.46s -> 2561.98s]  the user application is acting maliciously, or it's in an infinite loop?
+[2562.54s -> 2566.86s]  Yeah, so the way the plan for that, and again, we're going to talk about in much more detail
+[2566.86s -> 2572.54s]  in a couple of weeks, is that the kernel actually programs the hardware to set a timer.
+[2573.34s -> 2579.66s]  And after the timer goes off, that will cause a transfer from user space to kernel mode.
+[2579.74s -> 2583.66s]  So at that point, the kernel is back in control, and then the kernel can reschedule
+[2584.38s -> 2588.86s]  the CPU to another process. Okay, makes sense. Thank you.
+[2589.50s -> 2593.90s]  Yeah, and we'll see that exact details, you know, we'll see in a little while.
+[2594.94s -> 2596.14s]  You have one more questions.
+[2598.62s -> 2602.14s]  Yeah, so this is more of a high level question, but what drives
+[2602.14s -> 2607.82s]  the designers of an operating systems implementation to use a language like C?
+[2608.70s -> 2619.26s]  Ah, okay, so great question. C gives you a lot of control over hardware. And so,
+[2620.54s -> 2627.50s]  so example, you know, you need to program the timer chip. In C, that is actually easy to do,
+[2627.50s -> 2631.34s]  because you get a lot of low level control over any hardware resource,
+[2631.90s -> 2638.70s]  partly because you can cast anything to anything. And so C is basically a very convenient
+[2638.70s -> 2642.46s]  program language if you have to do very low level programming, particularly interacting
+[2642.46s -> 2648.70s]  with hardware. You know, it doesn't mean you can't do it in other languages.
+[2648.70s -> 2651.42s]  But this is historically the reason why C has been successful.
+[2652.70s -> 2653.50s]  I see. Thanks.
+[2655.02s -> 2660.94s]  Why is C so much more popular than C++ only for historic reasons in like these
+[2661.02s -> 2668.30s]  kinds of applications? Or is there any other reason that like, no, like most OSes don't
+[2668.30s -> 2672.70s]  have an adopted C++? Yeah, so most operating systems, you know, there are, I think, operating
+[2672.70s -> 2677.10s]  systems written in C++, totally impossible. Probably the most ones that, you know,
+[2677.10s -> 2682.94s]  you know, are not written in C++. And there are various reasons for it. You know,
+[2682.94s -> 2687.66s]  Linux is mostly C or no C++. And I think partially because Linus just doesn't like C++.
+[2691.34s -> 2695.18s]  Any other questions?
+[2704.14s -> 2709.98s]  Okay, so, so in this view of the world, right, where, you know, we have a way of transferring
+[2709.98s -> 2715.18s]  control into the operating system using system calls or this E call instruction.
+[2716.14s -> 2722.38s]  And so the kernel is not responsible for implementing actually the actual functions
+[2722.38s -> 2726.70s]  and ensuring, you know, checking arguments and things like that to make sure that, you know,
+[2726.70s -> 2730.86s]  the it's not being tricked into something, doing something badly.
+[2730.86s -> 2734.06s]  And so in this view of the world, the kernel is sometimes called,
+[2736.94s -> 2738.54s]  you know, it's the trusted computing base.
+[2745.90s -> 2749.10s]  It's sometimes called in security terms, the TCP.
+[2751.58s -> 2755.50s]  And, you know, basically, you know, what does it mean for it to be the trusted computing base?
+[2755.50s -> 2758.38s]  Well, it must be correct. You know, kernels must have no bugs.
+[2765.50s -> 2768.54s]  Because if there's a bug in the kernel, you know, the way to think about it is
+[2768.54s -> 2774.62s]  that maybe an attacker is able sort of to tickle that bug and turn the bug into an exploit.
+[2775.18s -> 2780.46s]  And, you know, that exploit may maybe allow that particular attacker to break out of isolation
+[2780.46s -> 2784.54s]  or maybe take control over the kernel. And so it's really important that, you know,
+[2784.54s -> 2787.18s]  the kernel really, you know, has to have as few bugs as possible.
+[2789.50s -> 2791.74s]  And basically the kernel, you know, must treat,
+[2795.26s -> 2798.94s]  must treat user apps or application or processes
+[2801.58s -> 2802.38s]  as malicious.
+[2805.18s -> 2810.30s]  And basically, as I said before, you know, basically, the kernel designer should have
+[2810.30s -> 2815.26s]  sort of a security mindset, you know, when writing and implementing kernel code.
+[2815.98s -> 2820.62s]  And, you know, it's hard to achieve this goal, right? We're having no bugs.
+[2820.62s -> 2824.78s]  If the operating system is identically big, it's not that straightforward.
+[2824.78s -> 2829.26s]  And, you know, almost every operating system, you know, that you use or is lightly reused
+[2830.06s -> 2835.02s]  once in a while actually has a security bug. And, you know, they get fixed over time
+[2835.02s -> 2840.54s]  but basically no matter what, there's always a new exploit at some point down the line.
+[2841.10s -> 2844.54s]  And, you know, we'll see later why it's so tricky to get it all right.
+[2845.10s -> 2849.50s]  But, you know, the sort of understandable, like, you're in the kernel that has to do
+[2849.50s -> 2855.34s]  tricky stuff. It has to manipulate hardware. It has to be very careful in its checking.
+[2855.34s -> 2859.58s]  And it's very easy to make a small slip up and, you know, a half a buck.
+[2860.22s -> 2870.94s]  And so, an interesting question, right, is then what should run in kernel mode?
+[2870.94s -> 2874.22s]  Because it's really the kernel code that actually is in kernel mode.
+[2874.22s -> 2878.62s]  That is the sensitive code, right? That is the trusted computing days.
+[2879.98s -> 2887.18s]  And one answer, you know, to that question is like, well, you know, we have our user kernel
+[2887.18s -> 2893.66s]  boundary. So here's user, here's kernel, and here's our applications running.
+[2893.66s -> 2896.70s]  And here is, you know, the program running in kernel mode.
+[2896.70s -> 2900.62s]  One option is to stick the whole operating system in kernel mode.
+[2900.62s -> 2903.98s]  For example, in most Unix operating systems,
+[2903.98s -> 2907.58s]  the whole Unix implementation runs inside of kernel mode.
+[2907.58s -> 2915.10s]  So for example, in xv6, all the operating system services are basically in kernel mode.
+[2915.10s -> 2920.46s]  And this is called monolithic kernel design.
+[2927.42s -> 2931.74s]  And, you know, there's a couple things in the way to think about it.
+[2933.10s -> 2935.74s]  One, you know, it's probably not so good for bugs, right?
+[2938.78s -> 2942.70s]  Because any bug, you know, that you might have in a monolithic design,
+[2942.94s -> 2946.14s]  might actually turn into an exploit, and that would be bad.
+[2946.86s -> 2949.98s]  So if we have a large operating system running inside of the kernel,
+[2949.98s -> 2951.74s]  it's likely that there are going to be more bugs.
+[2951.74s -> 2956.30s]  But any statistics that you look up, it's just like every 3,000 lines of code will have,
+[2956.30s -> 2958.22s]  you know, some small number of bugs.
+[2958.22s -> 2961.10s]  And so if you have many, many more lines of code running in the kernel book,
+[2961.10s -> 2963.18s]  you know, the probability of chance that you have
+[2964.38s -> 2967.34s]  in a series of bugs, you know, goes up a little bit.
+[2967.34s -> 2971.58s]  And so the downside from the monolithic kernel design from a security perspective is
+[2971.58s -> 2973.90s]  there's a lot of code in the kernel.
+[2975.50s -> 2979.90s]  The plus, though, is, you know, typically if you're thinking about an operating system,
+[2979.90s -> 2981.42s]  it contains all kinds of different pieces.
+[2981.42s -> 2983.02s]  You know, you might have the file system piece,
+[2983.58s -> 2988.70s]  you might have the virtual memory piece, you might have, you know, processes, you know.
+[2988.70s -> 2991.66s]  And so there are all kinds of sort of sub-modules inside of the operating system
+[2991.66s -> 2993.34s]  that implement particular functionality.
+[2993.98s -> 2998.30s]  And the plus side of that is there's going to be tight integration possible
+[2998.94s -> 3000.62s]  between these different sub-modules.
+[3000.78s -> 3002.38s]  They're all sitting in the same program.
+[3003.34s -> 3005.74s]  And that can actually lead, you know, to great performance.
+[3011.26s -> 3013.90s]  An example, if you look at an operating system on Linux,
+[3013.90s -> 3016.86s]  it actually achieves a very impressive performance.
+[3017.66s -> 3020.06s]  And so this is one design.
+[3021.18s -> 3025.82s]  Another design, which basically focuses on reducing the amount of code in the kernel
+[3025.82s -> 3027.82s]  is what's called microkernel design.
+[3030.62s -> 3040.54s]  And in this design, the goal is actually to run as few lines as possible in kernel mode.
+[3040.54s -> 3043.10s]  And so, for example, there is something up in kernel,
+[3044.22s -> 3048.06s]  but the kernel has very few components to it.
+[3048.06s -> 3051.90s]  So, for example, it typically has some form of IPC or message passing,
+[3052.86s -> 3055.74s]  a little bit of VM support, very minimal,
+[3056.94s -> 3059.66s]  basically only the thing necessary for page tables
+[3059.66s -> 3065.90s]  and something to multiplex different CPUs, so some multiplexing code.
+[3069.50s -> 3074.78s]  But generally the goal is to run the bulk of the operating system outside of the kernel.
+[3074.78s -> 3077.90s]  And so, for example, again, as we have our boundary here,
+[3078.70s -> 3084.46s]  what we'll do is actually we'll run other parts of the kernel as normal user applications.
+[3084.54s -> 3086.22s]  So, for example, we might have an...
+[3094.22s -> 3095.66s]  We might have a user process.
+[3097.34s -> 3099.18s]  It's not what I intended, but it doesn't really matter.
+[3099.18s -> 3101.34s]  You know, that's the file server.
+[3102.14s -> 3107.74s]  And so the file server is just in regular user space, user space kernel.
+[3107.74s -> 3112.46s]  So even though I drew it by accident in red, I intended to draw it in black,
+[3112.54s -> 3115.74s]  the file system might run like a user application, like, you know,
+[3115.74s -> 3120.06s]  Echo, Shell, they're all running user space.
+[3120.06s -> 3123.58s]  We might have other user applications, like parts of the VM system
+[3123.58s -> 3129.02s]  might actually run a regular user application in user mode.
+[3129.82s -> 3131.34s]  So this is sort of a nice design, correct?
+[3131.34s -> 3135.34s]  Because, you know, the amount of code that presumably that's in the kernel is small.
+[3135.34s -> 3142.62s]  And small means hopefully fewer bugs.
+[3147.98s -> 3150.22s]  The one issue, you know, of course, it's like, you know,
+[3150.22s -> 3152.94s]  we have to arrange that the Shell can talk to the file system.
+[3152.94s -> 3155.02s]  Example, you know, the Shell calls exec
+[3155.02s -> 3157.82s]  and there has to be a way of getting to the file system.
+[3157.82s -> 3161.74s]  And so typically the way that works is that the Shell will send a message,
+[3161.74s -> 3164.54s]  you know, through the IPC system to the kernel,
+[3165.02s -> 3166.70s]  the kernel will look at it and say like, oh, you know,
+[3166.70s -> 3170.22s]  this is intended for the file system, so the file system sends it to the file system.
+[3171.34s -> 3175.66s]  The file system doesn't work, you know, sends a message back saying like,
+[3175.66s -> 3178.62s]  you know, here's the results of your exact system call
+[3178.62s -> 3180.70s]  and then, you know, sends it back to the shell.
+[3181.66s -> 3185.34s]  And so these are typically implemented using messages.
+[3186.14s -> 3189.42s]  And so for any interaction with the file server,
+[3189.42s -> 3193.02s]  now you have to jump once into the kernel, once out of the kernel,
+[3193.02s -> 3195.50s]  once into the kernel, once out of the kernel.
+[3195.50s -> 3197.74s]  If you compare that with the previous design,
+[3197.74s -> 3200.30s]  like if this guy wants to talk to the file system,
+[3200.30s -> 3203.98s]  it's one system call in and one basically call back out.
+[3203.98s -> 3207.82s]  And so you double the numer of a system called entries.
+[3208.62s -> 3213.10s]  And so one typical problem or challenge we thought from it,
+[3213.10s -> 3216.86s]  the microkernel approach is actually how to achieve good performance.
+[3217.66s -> 3219.34s]  And it has sort of two components to it.
+[3219.34s -> 3224.30s]  One, you know, just jumping back and forth, you know,
+[3224.30s -> 3227.26s]  between user mode and kernel mode to actually get something done.
+[3227.26s -> 3229.34s]  And the second part is because, you know,
+[3229.34s -> 3232.30s]  the different pieces are really well isolated from each other,
+[3232.30s -> 3236.62s]  a tight integration is less, you know, more complicated to arrange than,
+[3236.62s -> 3239.98s]  for example, in the monolithic kernel where basically everybody can, you know,
+[3239.98s -> 3244.54s]  for example, the file system and the virtual memory system can easily share a page cache,
+[3244.54s -> 3247.10s]  which is a little bit harder to achieve in the microkernel design.
+[3247.18s -> 3250.38s]  And therefore it's sometimes more difficult to get high performance.
+[3251.98s -> 3253.66s]  Now, these distinctions, you know,
+[3253.66s -> 3255.98s]  between microkernel and monolithic are very high level.
+[3256.54s -> 3260.06s]  So in practice, both types of kernel designs show up.
+[3261.58s -> 3265.66s]  Most desktop operating systems are typically monolithic systems,
+[3265.66s -> 3267.10s]  mostly for historical reasons.
+[3267.66s -> 3271.74s]  A lot of the, if you run very intense, you know,
+[3271.74s -> 3274.38s]  OS intense applications, for example, in a data center,
+[3274.38s -> 3276.86s]  they typically run on a monolithic kernel.
+[3277.98s -> 3280.94s]  Mostly because, for example, Linux provides great performance,
+[3280.94s -> 3285.90s]  but many, again, in embedding settings like Minix or Cell 4,
+[3287.66s -> 3290.22s]  those all tend to be microkernel designs.
+[3291.26s -> 3292.62s]  And so both designs are popular.
+[3293.50s -> 3295.82s]  If you probably start a new operating system from scratch,
+[3296.62s -> 3299.58s]  you probably start with, you may, you know,
+[3300.70s -> 3302.54s]  you may start with a microkernel design.
+[3303.82s -> 3306.78s]  And once you have a monolithic design like, for example, Linux,
+[3306.78s -> 3308.94s]  you know, it's going to be, it would be a ton of work
+[3308.94s -> 3310.94s]  to rewrite it into a microkernel design.
+[3310.94s -> 3313.34s]  And as maybe, you know, just not conducive to the incentives.
+[3313.34s -> 3316.62s]  You know, people probably want to spend rather time implementing new features
+[3316.62s -> 3320.94s]  than actually, you know, restructuring their kernel.
+[3322.62s -> 3325.18s]  And so these are sort of the two main designs.
+[3326.38s -> 3329.98s]  As you know, xe6, it falls into monolithic design,
+[3329.98s -> 3331.82s]  as most classic Unix systems do.
+[3332.54s -> 3335.82s]  But later in the semester, we'll talk a lot more in detail
+[3335.82s -> 3337.90s]  about some of the microkernel designs.
+[3339.98s -> 3341.02s]  Any questions about this?
+[3341.02s -> 3344.78s]  Because this was a hot topic in the, in the email questions.
+[3354.54s -> 3354.78s]  Okay.
+[3356.38s -> 3358.46s]  Okay, so let me switch a little bit.
+[3358.46s -> 3363.66s]  I'm going to show it to some code and sort of see how this plays out in xe6.
+[3366.54s -> 3368.46s]  So here's two windows.
+[3370.70s -> 3373.66s]  And, you know, you can actually know with like the proc structure.
+[3374.86s -> 3379.50s]  And the first thing I want to do is, you know, look a little bit at the code base.
+[3379.50s -> 3380.94s]  You've probably already done this,
+[3380.94s -> 3385.82s]  but you see that the code is sort of organized around three parts.
+[3385.82s -> 3386.54s]  One, the kernel.
+[3387.58s -> 3392.22s]  And the kernel that basically includes all kernel files.
+[3392.22s -> 3395.26s]  And so xe6 being a monolithic kernel,
+[3395.34s -> 3399.98s]  basically all these programs are compiled into a single binary called the kernel.
+[3399.98s -> 3401.98s]  And that's actually what we run in kernel mode.
+[3403.90s -> 3405.50s]  And then, you know, there's user.
+[3405.50s -> 3408.22s]  And those are the, basically the programs that run in user mode.
+[3408.22s -> 3410.06s]  And this is why, you know, one is called kernel,
+[3410.06s -> 3411.18s]  the other called user.
+[3411.82s -> 3413.98s]  And then there's one more program called makefs,
+[3414.86s -> 3417.82s]  which actually builds an empty file system image
+[3418.38s -> 3419.90s]  that we have stored on disk
+[3420.54s -> 3424.14s]  so that we can get off the ground with an empty file system.
+[3426.14s -> 3432.70s]  Okay, so before, so let me switch back again to,
+[3432.70s -> 3435.10s]  I want to say a little bit about how the kernel is compiled,
+[3436.46s -> 3437.66s]  because you probably have seen this
+[3437.66s -> 3439.26s]  and might not really have realized it.
+[3440.22s -> 3441.58s]  And so it's important to understand.
+[3443.02s -> 3446.54s]  So when the kernel, the construction of the kernel,
+[3446.54s -> 3450.70s]  the make file basically takes, you know, one of PC's files like proc.c,
+[3451.66s -> 3455.98s]  you know, invokes, you know, the GCC, the GCC compiler
+[3455.98s -> 3459.26s]  that generates a file called proc.s
+[3459.98s -> 3461.26s]  that goes to the assembler.
+[3464.62s -> 3466.78s]  And this is basically a RISC-V assembly.
+[3469.10s -> 3472.22s]  And that actually produces a file called proc.o.
+[3472.22s -> 3474.94s]  And basically that's, you know, the binary version of the assembler.
+[3476.94s -> 3479.10s]  And, you know, the make file does this for all,
+[3479.10s -> 3480.70s]  you know, part files of the kernel.
+[3480.70s -> 3484.14s]  So for example, you know, pipe, another one,
+[3484.14s -> 3487.98s]  you know, same story, GCC compiles into pipe.s
+[3489.10s -> 3491.26s]  and, you know, goes through the assembler
+[3491.26s -> 3492.62s]  and we get a pipe.o.
+[3493.90s -> 3497.02s]  And basically then the loader, you know,
+[3497.02s -> 3501.10s]  takes all of these .o files from all the different files
+[3501.10s -> 3505.10s]  and links them together and produces the kernel.
+[3505.18s -> 3509.82s]  And that is actually what we run.
+[3510.78s -> 3512.78s]  And, you know, for your convenience, you know,
+[3512.78s -> 3515.74s]  the make file also produces a file called kernel.asm
+[3518.94s -> 3524.14s]  that has the complete kernel disassembled.
+[3524.14s -> 3526.22s]  And you can just look at it and, you know,
+[3526.22s -> 3528.30s]  that helps later on when you have kernel bugs
+[3528.30s -> 3531.50s]  and it's easy to see which instruction was executed
+[3531.50s -> 3532.94s]  at the point you got the bug.
+[3533.82s -> 3538.94s]  So for example, if I look here, kernel.asm,
+[3540.22s -> 3544.78s]  we see here's the kernel file with assembly instructions.
+[3545.50s -> 3548.06s]  And one thing you note, for example,
+[3548.06s -> 3550.86s]  is that the first instruction is located
+[3550.86s -> 3555.58s]  at this address, 80000, and that is in whatever,
+[3555.58s -> 3557.90s]  a UPC instruction, the RISC-V instruction.
+[3557.90s -> 3563.90s]  And anybody knows what this is?
+[3563.90s -> 3567.58s]  008117 or the 83103 is 6505.
+[3574.54s -> 3575.90s]  Anybody wants to answer that question?
+[3576.70s -> 3579.74s]  That's the hex version of the assembly instructions
+[3579.74s -> 3580.22s]  on the right?
+[3580.94s -> 3581.66s]  Yeah, exactly.
+[3581.66s -> 3585.82s]  So what here on the 008117 is exactly the same thing
+[3585.82s -> 3588.86s]  as the symbolic, you know, the textual version of that,
+[3589.42s -> 3590.38s]  a UPC.
+[3590.38s -> 3593.26s]  And so basically this is the binary encoding
+[3593.26s -> 3594.46s]  of the actual instruction.
+[3596.30s -> 3598.54s]  And every instruction has a binary encoding
+[3598.54s -> 3600.62s]  and, you know, the kernel.asm file actually
+[3600.62s -> 3602.06s]  shows those binary encodings.
+[3603.34s -> 3605.66s]  And this is sometimes convenient when you look at the GDB
+[3605.66s -> 3607.42s]  and you want to know what actually is going on,
+[3607.42s -> 3609.34s]  you know, you can see actually what the binary encoding is.
+[3609.34s -> 3612.22s]  Okay.
+[3613.42s -> 3616.46s]  Okay, so then when we run XP6,
+[3616.46s -> 3617.66s]  I'm going to run it inside of XP6.
+[3617.66s -> 3619.74s]  Let me first run it without the GDB.
+[3620.94s -> 3622.38s]  You know, we'll compile a bunch of stuff
+[3622.38s -> 3625.98s]  and then it invokes QEMU, right?
+[3625.98s -> 3629.58s]  And this is a basically C program that simulates
+[3629.58s -> 3631.26s]  or emulates a RISC-V processor.
+[3631.90s -> 3633.98s]  And you can see here in the dash kernel flag,
+[3633.98s -> 3638.62s]  it actually passes the kernel and the program
+[3638.62s -> 3640.46s]  to be run inside of QEMU.
+[3641.02s -> 3643.82s]  And QEMU and the kernel agreed,
+[3643.82s -> 3646.78s]  basically the starting place for any program
+[3646.78s -> 3648.86s]  is this address 80000.
+[3649.82s -> 3652.06s]  And we see that we pass a couple other flags to QEMU.
+[3652.06s -> 3654.70s]  It says M, that's the amount of memory
+[3654.70s -> 3657.66s]  that the machine, this virtual machine has,
+[3657.66s -> 3659.02s]  this virtual RISC-V machine.
+[3659.90s -> 3661.82s]  It passes in how many cores there are.
+[3662.78s -> 3666.06s]  It passes in the machine, the disk drive,
+[3666.06s -> 3668.14s]  which contains the file fs.image.
+[3668.62s -> 3670.54s]  And so basically a bunch of things are sort of set up
+[3670.54s -> 3672.78s]  to make, you know, QEMU behave like a real computer.
+[3674.38s -> 3677.18s]  And so one way, when you think about QEMU,
+[3677.18s -> 3680.38s]  really you should not think about it as a C program.
+[3680.38s -> 3683.26s]  Really the way you should think about it is as follows.
+[3685.34s -> 3691.34s]  You should think about it as this,
+[3692.62s -> 3694.62s]  namely a real board.
+[3695.74s -> 3697.02s]  So for example, on the left,
+[3697.26s -> 3699.02s]  this is a RISC-V board.
+[3699.74s -> 3701.74s]  It actually is a RISC-V board that sits in my office
+[3702.38s -> 3705.42s]  and it can boot more or less xv6.
+[3706.14s -> 3709.90s]  And so when you're running QEMU with your kernel,
+[3709.90s -> 3710.70s]  you should think about it
+[3710.70s -> 3712.46s]  that actually you're running it on this board.
+[3713.18s -> 3715.82s]  And the board has an on-off button.
+[3717.02s -> 3719.58s]  Here's actually the RISC-V processor.
+[3720.94s -> 3722.62s]  There's room for peripherals.
+[3723.18s -> 3725.18s]  So for example, one of these connectors
+[3725.18s -> 3726.62s]  is a connector for Ethernet.
+[3727.34s -> 3730.70s]  One is the TCIAE slots.
+[3730.70s -> 3733.66s]  There are some RAM chips on the board.
+[3733.66s -> 3735.58s]  I don't exactly know where they are, but there are.
+[3737.10s -> 3738.14s]  And so this is sort of a,
+[3738.78s -> 3741.02s]  that's the physical hardware, the computer actually,
+[3741.02s -> 3742.46s]  that actually you're programming.
+[3742.46s -> 3744.54s]  So xv6 manages this board.
+[3745.90s -> 3747.98s]  And that's the picture you should have here ahead.
+[3748.86s -> 3750.78s]  And in fact, if you zoom in,
+[3751.58s -> 3752.94s]  you can find all the documentation
+[3752.94s -> 3754.94s]  of like what actually sits inside of this.
+[3755.74s -> 3757.34s]  And inside of this,
+[3758.46s -> 3761.02s]  inside of this RISC-V processor,
+[3761.02s -> 3763.26s]  the schema for the RISC-V processor
+[3763.26s -> 3764.86s]  is shown in this picture here.
+[3766.22s -> 3767.66s]  And we see here, for example,
+[3767.66s -> 3768.78s]  there are multiple cores.
+[3769.42s -> 3770.70s]  And in fact, there are four cores.
+[3772.38s -> 3774.38s]  There's an L2 cache.
+[3775.18s -> 3776.62s]  There's a connector to DRAM.
+[3778.38s -> 3780.78s]  There's a bunch of ways to connect to the outside world.
+[3780.78s -> 3782.70s]  So for example, here's UART zero
+[3782.70s -> 3784.70s]  and UART zero is actually connected
+[3784.70s -> 3786.78s]  from one end to the keyboard
+[3786.78s -> 3788.38s]  and to the other end to the display.
+[3789.90s -> 3794.46s]  And there's some ways to actually get clocks going,
+[3794.46s -> 3797.10s]  which we'll talk about in much more detail later.
+[3797.10s -> 3798.46s]  But these are all the components
+[3798.46s -> 3800.38s]  that basically the xv6
+[3800.38s -> 3802.22s]  or things that you will be modifying
+[3802.22s -> 3803.98s]  to interact with actually the real hardware.
+[3804.78s -> 3807.42s]  And in fact, the computer system
+[3807.42s -> 3811.10s]  or the computer board that actually is emulated by QEMU
+[3811.74s -> 3814.94s]  is pretty close minus some small details
+[3814.94s -> 3816.86s]  to this particular computer board,
+[3816.86s -> 3818.22s]  which is made by SciFi.
+[3820.22s -> 3822.46s]  And unfortunately, I can't show you the real thing.
+[3822.46s -> 3823.74s]  As I said, it sits in my office
+[3824.38s -> 3826.30s]  and I haven't been in my office since March,
+[3826.30s -> 3827.58s]  probably collecting a lot of dust.
+[3828.54s -> 3830.62s]  But it's important to keep in your head
+[3830.62s -> 3831.98s]  when you're running QEMU,
+[3831.98s -> 3834.22s]  you're running basically on real hardware
+[3834.78s -> 3836.62s]  and just happens to be able in any software.
+[3841.42s -> 3843.10s]  Does that make sense?
+[3844.54s -> 3845.58s]  Pause for a second here.
+[3851.34s -> 3853.34s]  So let me say a little bit more about this.
+[3853.34s -> 3855.98s]  So what does it mean for QEMU to emulate
+[3860.22s -> 3861.42s]  the RISC-V processor?
+[3864.78s -> 3866.70s]  Well, literally, if you think about it,
+[3867.66s -> 3869.74s]  as I said, QEMU is a C program,
+[3869.82s -> 3872.06s]  it's an open source C program, it's a big program.
+[3872.06s -> 3875.18s]  You can actually just download it or get clone it.
+[3875.90s -> 3877.42s]  But internally into C,
+[3877.98s -> 3880.70s]  there's basically four loop, an infinite four loop
+[3881.90s -> 3884.30s]  that basically does nothing else than read instruction.
+[3888.46s -> 3892.14s]  The RISC-V instruction basically reads four bytes
+[3892.14s -> 3896.38s]  or eight bytes and basically looks at the bits
+[3896.38s -> 3898.06s]  in that instruction and decodes them,
+[3898.78s -> 3900.22s]  figures out what the opcode is.
+[3903.42s -> 3905.34s]  And we saw for some of the instructions,
+[3905.34s -> 3909.02s]  the binary version of those instructions in the .asm file.
+[3909.02s -> 3910.38s]  And so it decodes the instruction.
+[3910.38s -> 3911.82s]  So for example, maybe it will decide
+[3911.82s -> 3914.86s]  this is an add instruction or it's a sub instruction,
+[3915.42s -> 3916.54s]  RISC-V sub instruction.
+[3916.54s -> 3922.46s]  And then basically it executes the instruction in software.
+[3925.10s -> 3927.42s]  And that basically is all what it does
+[3927.42s -> 3929.98s]  for every core, it runs this particular loop.
+[3930.78s -> 3932.62s]  And in addition to doing this loop,
+[3932.62s -> 3933.82s]  it has to maintain some states.
+[3933.82s -> 3935.50s]  So the main state for all the registers.
+[3936.78s -> 3940.14s]  So it has a C declaration for like X zero,
+[3940.14s -> 3942.46s]  register zero, X one, et cetera.
+[3944.06s -> 3945.98s]  And so basically when it executes an instruction,
+[3945.98s -> 3947.82s]  for example, the instruction is like whatever,
+[3948.38s -> 3955.58s]  add A zero, one through seven and store it in A zero,
+[3955.66s -> 3957.50s]  then basically it takes the constant seven and one,
+[3957.50s -> 3959.26s]  adds them up and sticks it in A zero.
+[3961.90s -> 3963.42s]  And then it executes the next instruction
+[3963.42s -> 3964.70s]  and it keeps going, keeps going.
+[3965.66s -> 3968.14s]  In addition to basically emulating or correctly
+[3968.14s -> 3970.38s]  all the unprivileged instructions,
+[3970.38s -> 3972.38s]  it also emulates all the privileged instructions.
+[3973.26s -> 3975.82s]  So that is in essence what QEMU does.
+[3976.86s -> 3978.94s]  And what the best picture for you to have in your head
+[3978.94s -> 3979.90s]  is that basically you're running
+[3979.90s -> 3981.82s]  on a real physical RISC-V processor.
+[3982.38s -> 3984.06s]  Like the ones that you have probably,
+[3984.06s -> 3986.78s]  many of you implemented one I think in 004.
+[3990.14s -> 3991.10s]  Any questions about this?
+[3993.10s -> 3997.18s]  Hi, yeah, I was wondering if it does any hardware tricks,
+[3997.18s -> 3999.58s]  so like overlapping instructions or anything?
+[4001.66s -> 4004.86s]  No, it runs on a real processor below it, correct?
+[4004.86s -> 4006.38s]  So when you run QEMU,
+[4006.38s -> 4008.54s]  it runs probably on an x86 processor.
+[4009.10s -> 4011.42s]  That x86 processor does all kinds of tricks,
+[4011.42s -> 4013.82s]  you know, to pipeline instructions and things like that.
+[4014.38s -> 4016.86s]  So the way to think about QEMU, it's just a C program.
+[4020.38s -> 4021.34s]  Makes sense, thank you.
+[4028.22s -> 4029.66s]  What about multi-threading?
+[4029.66s -> 4033.74s]  So if the QEMU supports, you said four cores
+[4033.74s -> 4035.50s]  or does it only support one?
+[4035.50s -> 4036.86s]  And if that case,
+[4036.86s -> 4039.10s]  does it have actually multiple threads running it?
+[4039.90s -> 4043.42s]  Yeah, so actually the QEMU that we use on Athena
+[4043.42s -> 4045.18s]  and probably the ones that you actually download,
+[4046.14s -> 4048.86s]  they will use multiple threads internally.
+[4048.86s -> 4051.10s]  So QEMU internally use it to get parallelism.
+[4051.10s -> 4055.02s]  So in fact, these four cores that are being emulated
+[4055.02s -> 4056.70s]  are sort of being emulated in parallel.
+[4059.82s -> 4061.50s]  And we'll see that in one of the labs later
+[4062.62s -> 4063.50s]  how that plays out.
+[4064.46s -> 4066.78s]  So definitely there's a real parallelism going on
+[4066.78s -> 4067.74s]  between the different cores.
+[4074.06s -> 4077.18s]  Okay, so I'm gonna do a little bit of,
+[4079.10s -> 4082.22s]  you know, walking through x86
+[4082.22s -> 4083.18s]  to get a little bit of sense
+[4083.18s -> 4084.38s]  what the layout of the land is.
+[4085.34s -> 4086.86s]  And, you know, in later lecture again,
+[4086.86s -> 4088.06s]  we're gonna go in much more detail.
+[4088.94s -> 4093.66s]  So I'm gonna fire up QEMU under, we have GDB support.
+[4093.66s -> 4096.70s]  So basically QEMU has inside of it a GDB server.
+[4098.14s -> 4100.54s]  And so it starts it up and then it just waits,
+[4100.54s -> 4102.70s]  you know, for GDB to connect.
+[4103.42s -> 4106.62s]  To that, so I'm gonna start here on my computer
+[4106.62s -> 4109.18s]  and this is a RISC-64 Linux new GDB.
+[4110.46s -> 4112.54s]  Some of your machines might be multi-arch
+[4112.54s -> 4113.58s]  or something else,
+[4114.30s -> 4117.90s]  but basically the GDB compiled for RISC-64, RISC-564.
+[4119.42s -> 4122.94s]  And I'm gonna set a breakpoint at entry
+[4122.94s -> 4124.06s]  because that's the first,
+[4124.06s -> 4125.90s]  we know it has roughly the first instruction
+[4126.46s -> 4129.18s]  that actually where QEMU is gonna jump to.
+[4129.82s -> 4131.34s]  I set the breakpoint, I run
+[4132.06s -> 4135.82s]  and basically it doesn't actually break exactly at eight zero zero zero,
+[4135.82s -> 4137.18s]  but at zero eight.
+[4137.18s -> 4138.86s]  And if we look here on the right,
+[4138.86s -> 4141.90s]  you know, we see the zero eight is right,
+[4141.90s -> 4146.62s]  meeting the control system register and hard ID
+[4146.62s -> 4148.54s]  and loading that value into A1.
+[4149.50s -> 4152.14s]  And so basically QEMU simulates that instruction
+[4152.14s -> 4153.50s]  and we can execute that instruction
+[4153.50s -> 4154.86s]  then we go to the next instruction.
+[4157.58s -> 4160.14s]  And basically this address eight zero zero zero
+[4160.22s -> 4162.38s]  is just basically something that was agreed on
+[4164.70s -> 4166.94s]  by QEMU or QEMU told,
+[4166.94s -> 4169.42s]  basically says if you wanna use QEMU,
+[4169.42s -> 4170.94s]  the first instruction we're gonna jump to
+[4170.94s -> 4172.38s]  is at that particular location.
+[4172.94s -> 4176.62s]  And we basically arranged for the kernel loader
+[4178.14s -> 4180.30s]  to load the kernel of that program.
+[4180.30s -> 4181.90s]  So there's a file kernel LD
+[4182.46s -> 4185.74s]  that basically specifies how the kernel should be loaded.
+[4185.74s -> 4188.54s]  And you see here that basically the first address
+[4188.54s -> 4189.82s]  that the kernel is gonna use
+[4189.90s -> 4191.18s]  is actually that particular address
+[4191.18s -> 4192.54s]  that basically QEMU specified.
+[4193.90s -> 4195.18s]  This is how we get off the ground.
+[4198.54s -> 4199.26s]  Does that make sense?
+[4204.62s -> 4205.12s]  Okay.
+[4206.38s -> 4208.30s]  And we see also that here actually GDB
+[4208.30s -> 4210.62s]  shows the binary encoding of the instructions.
+[4211.50s -> 4213.10s]  And so we see that basically, I guess,
+[4213.10s -> 4218.14s]  the CSRR is a four-byte instruction
+[4218.14s -> 4219.74s]  and add I is a two-byte instruction.
+[4221.98s -> 4222.48s]  Okay.
+[4223.42s -> 4224.30s]  So I'm gonna see,
+[4225.10s -> 4227.66s]  so xv6 basically starts at entry dot s
+[4228.94s -> 4231.02s]  and we have no paging with no isolation
+[4231.02s -> 4232.30s]  and in fact it starts in M mode.
+[4234.22s -> 4235.98s]  xv6 jumps as quickly as possible
+[4235.98s -> 4239.10s]  to kernel mode or supervisor mode
+[4239.10s -> 4240.38s]  that's called in RISC-V
+[4240.38s -> 4242.14s]  and just gonna set a breakpoint in main
+[4242.78s -> 4244.30s]  which actually runs in supervisor mode.
+[4244.30s -> 4245.10s]  So I'm gonna run there
+[4246.06s -> 4248.78s]  and then I get to the first instruction of main.
+[4248.78s -> 4251.58s]  So let me show this.
+[4251.58s -> 4252.22s]  Here's main.
+[4253.66s -> 4258.70s]  And I'd like to run GDB in this layout split mode.
+[4261.82s -> 4263.74s]  And so you can see in GDB actually,
+[4263.74s -> 4265.82s]  and I want the next instruction is being executed.
+[4265.82s -> 4267.10s]  So you see there's a breakpoint
+[4267.10s -> 4268.30s]  at that particular instruction.
+[4269.34s -> 4274.30s]  Since this is a, I ran QEMU with one CPU.
+[4274.30s -> 4276.62s]  This makes the GDB a little bit easier.
+[4276.62s -> 4278.54s]  So there's not only one core active.
+[4279.50s -> 4281.50s]  So QEMU emulates only one single core
+[4282.06s -> 4284.06s]  and I can just step through that.
+[4284.06s -> 4286.30s]  So I can go to the next instruction
+[4286.30s -> 4289.02s]  and that is calls a function called console init
+[4289.02s -> 4290.78s]  which does exactly what you imagine it does.
+[4290.78s -> 4292.06s]  It actually sets up the console.
+[4292.70s -> 4294.30s]  And so once we set up the console
+[4294.30s -> 4296.06s]  we can actually print to it.
+[4296.06s -> 4298.06s]  And so you'll see in a second
+[4298.06s -> 4299.50s]  we'll get a new line
+[4299.50s -> 4301.10s]  and we get xv6 booting.
+[4302.06s -> 4302.46s]  Okay.
+[4302.46s -> 4306.94s]  So there's a whole bunch of additional code to set things up.
+[4306.94s -> 4309.90s]  You know, there's a setting up the page allocator,
+[4309.90s -> 4312.38s]  you know, setting up virtual memory
+[4312.38s -> 4313.66s]  which I'll talk about on Wednesday.
+[4314.22s -> 4316.14s]  Loading, actually starting turning paging on
+[4316.14s -> 4317.50s]  which I'll also talk about on Wednesday.
+[4318.70s -> 4320.38s]  Setting up the initial processing
+[4320.38s -> 4321.74s]  or setting the process table.
+[4322.70s -> 4323.82s]  Setting up code, you know,
+[4323.82s -> 4325.50s]  to do the use of the kernel transition.
+[4326.78s -> 4329.58s]  Setting up the interrupt control, the click.
+[4329.58s -> 4331.34s]  We'll talk about when we talk about interrupts
+[4331.34s -> 4334.30s]  but this is one of the things that we're going to be using
+[4334.30s -> 4335.90s]  to basically talk to the disk
+[4335.90s -> 4338.46s]  or talk to the console using interrupts.
+[4339.18s -> 4342.78s]  Sets up the file system, allocates a buffer cache,
+[4342.78s -> 4345.66s]  initializes the inode cache,
+[4345.66s -> 4348.14s]  initializes the file system, initializes the disk.
+[4348.86s -> 4351.74s]  And then basically once all sort of things are set up
+[4351.74s -> 4353.42s]  you know, when the operating system is running
+[4353.42s -> 4355.42s]  it's going to start running the first process.
+[4355.42s -> 4356.94s]  And this is the user init.
+[4357.82s -> 4359.26s]  So this is a little bit of interesting.
+[4359.58s -> 4362.14s]  So I'm going to go to user init for a second
+[4362.14s -> 4363.42s]  and then I'm going to single step there.
+[4366.14s -> 4368.38s]  Before continuing, you know, any questions about this?
+[4373.98s -> 4375.26s]  Is there a specific order
+[4375.26s -> 4377.74s]  in which the setup functions need to be called?
+[4378.30s -> 4378.80s]  Yes.
+[4380.22s -> 4382.38s]  Some function must be run after other functions
+[4382.38s -> 4384.54s]  and they're in particular in their
+[4385.18s -> 4386.06s]  some of them doesn't matter
+[4386.06s -> 4386.94s]  but for you of them, yeah,
+[4386.94s -> 4388.54s]  it's important that they run after other ones.
+[4389.58s -> 4391.58s]  Good point.
+[4392.62s -> 4393.12s]  Okay.
+[4393.82s -> 4394.54s]  Let me go to
+[4397.10s -> 4398.14s]  so here's user init
+[4399.02s -> 4401.74s]  and basically user init is a little bit of glue code
+[4401.74s -> 4403.90s]  or initialization code to sort of take advantage
+[4403.90s -> 4406.70s]  of all the general infrastructure that xv6 had
+[4406.70s -> 4408.46s]  basically get the first process of the ground.
+[4409.42s -> 4411.58s]  You know, xv6 needs some image, right?
+[4411.58s -> 4413.26s]  We can't run the file system really yet
+[4414.14s -> 4415.10s]  or do exec
+[4416.14s -> 4418.46s]  and so xv6 needs sort of a small little program
+[4418.54s -> 4419.66s]  to sort of get off the ground
+[4419.66s -> 4423.26s]  and that small little program is init code
+[4423.98s -> 4425.58s]  and the binary version of that program
+[4425.58s -> 4429.82s]  is actually linked or declared statically into the kernel
+[4429.82s -> 4431.66s]  and the fact that code corresponds
+[4434.14s -> 4436.62s]  to this particular user program
+[4440.46s -> 4443.66s]  it's a little program written in assembly
+[4443.66s -> 4444.78s]  and basically it does
+[4444.78s -> 4447.90s]  it loads the address of init into a zero
+[4447.90s -> 4450.94s]  it loads the address of argv into a1
+[4450.94s -> 4453.74s]  and then it loads the number for this exec system call
+[4453.74s -> 4454.78s]  into a7
+[4454.78s -> 4456.46s]  and then look at the year
+[4456.46s -> 4457.34s]  it calls ecall
+[4458.22s -> 4461.42s]  so basically what init does is like running free instructions
+[4461.42s -> 4462.78s]  and then running the fourth instruction
+[4462.78s -> 4465.82s]  to basically transfer back control to the
+[4468.30s -> 4470.78s]  back control to the operating system
+[4470.78s -> 4474.14s]  so example if I set a breakpoint in syscall
+[4475.42s -> 4476.30s]  and I keep running
+[4476.30s -> 4481.18s]  then basically user init will create the initial process
+[4481.18s -> 4482.30s]  return the user space
+[4483.10s -> 4484.46s]  run these free instructions
+[4485.02s -> 4486.06s]  or four instructions
+[4486.06s -> 4487.98s]  and basically come back into kernel space
+[4488.86s -> 4490.62s]  so basically this is the first system call
+[4490.62s -> 4493.66s]  that any user application in xv6 runs
+[4493.66s -> 4495.74s]  so let's see what happens if I'm right
+[4496.86s -> 4499.02s]  so we're going to continue
+[4499.02s -> 4500.46s]  and we actually got to syscall
+[4504.54s -> 4505.34s]  so if we can syscall
+[4505.34s -> 4505.98s]  we can look at it
+[4506.78s -> 4507.90s]  it's a function at the bottom
+[4509.10s -> 4511.10s]  and so we're back into kernel space now
+[4511.66s -> 4513.10s]  and we can sort of walk through
+[4513.10s -> 4516.30s]  and see actually what happens exactly in syscall
+[4516.30s -> 4518.22s]  so I'm going to single step a little bit
+[4519.02s -> 4520.86s]  it looks up at the current
+[4520.86s -> 4522.62s]  the processes that's in it
+[4522.62s -> 4525.58s]  that pulls out the system call number that's used
+[4525.58s -> 4526.78s]  so we can now print num
+[4527.74s -> 4529.02s]  and we'll see that's seven
+[4529.74s -> 4530.62s]  and if we look at
+[4531.34s -> 4537.58s]  let's use our kernel syscall.h
+[4538.46s -> 4540.46s]  that declares all the system call numbers
+[4540.46s -> 4543.74s]  and we see seven that is indeed system call exec
+[4544.70s -> 4546.14s]  and so basically this tells the kernel
+[4546.14s -> 4547.74s]  that you know some user application
+[4549.02s -> 4550.38s]  called an e-call instruction
+[4550.38s -> 4553.10s]  and with the intention of calling this system call
+[4557.90s -> 4559.66s]  with the intention of running the exec system call
+[4560.70s -> 4563.10s]  and so I can we can single step a little bit further
+[4563.10s -> 4564.30s]  we go to the next thing
+[4564.30s -> 4566.22s]  this is the line that executes a system call
+[4566.22s -> 4566.94s]  so let's go there
+[4567.58s -> 4569.98s]  and you see that basically the number is used
+[4569.98s -> 4571.58s]  into index into an array
+[4571.58s -> 4573.50s]  and the arrays has a bunch of function pointers
+[4574.14s -> 4577.18s]  and presumably the sys exec entry you know
+[4577.18s -> 4579.98s]  points to the sys exec function
+[4579.98s -> 4581.50s]  so we're going to single step into this
+[4582.78s -> 4586.30s]  and we see that we're actually at the sys exec
+[4587.10s -> 4591.34s]  uh so this is in sys file
+[4592.86s -> 4595.66s]  we can move it a little bit more in the bigger window
+[4596.30s -> 4600.62s]  and we basically see here the system call
+[4601.74s -> 4603.58s]  and the first thing that you see is actually
+[4603.58s -> 4605.74s]  it actually gets arguments from user space
+[4605.74s -> 4606.94s]  so it gets the path name
+[4607.50s -> 4609.74s]  so we can like jump a little bit further
+[4610.54s -> 4611.90s]  uh mention it
+[4617.02s -> 4619.26s]  basically allocates in the space for arguments
+[4619.26s -> 4620.54s]  you know copies all the arguments
+[4620.54s -> 4622.22s]  from user space to kernel space
+[4622.22s -> 4624.14s]  we'll look at that in great amount of detail
+[4624.14s -> 4625.02s]  in a couple weeks
+[4625.02s -> 4626.38s]  so don't worry about it too much yet
+[4627.10s -> 4629.90s]  but basically there's some code to move arguments
+[4629.90s -> 4631.26s]  from user space to kernel space
+[4631.26s -> 4633.26s]  you know from the kernel from the user address space
+[4633.26s -> 4634.30s]  to the kernel address space
+[4634.86s -> 4636.30s]  and if we now look at path
+[4636.30s -> 4637.98s]  you can print the path hopefully
+[4638.54s -> 4640.22s]  and we'll see actually that you know
+[4640.22s -> 4641.58s]  that is a string
+[4641.58s -> 4643.02s]  and we'll see that basically
+[4643.66s -> 4646.14s]  what that little inner code program does
+[4646.14s -> 4649.58s]  is trying to exec you know the init program
+[4649.58s -> 4651.42s]  which is yet another you know program
+[4651.42s -> 4652.94s]  so let's look at that for a second
+[4652.94s -> 4654.86s]  just to see what that is
+[4657.90s -> 4659.10s]  so here we have init
+[4659.82s -> 4661.66s]  and init basically sets up a couple things
+[4661.66s -> 4662.78s]  used for user space
+[4662.78s -> 4664.06s]  you know it opens the console
+[4664.06s -> 4665.66s]  the file descriptor for the console
+[4665.66s -> 4667.26s]  adopts it you know a couple times
+[4667.98s -> 4668.54s]  calls fork
+[4669.26s -> 4670.94s]  and basically the first thing it does
+[4670.94s -> 4672.38s]  actually it tries to
+[4672.38s -> 4673.82s]  create a new process
+[4673.82s -> 4675.66s]  and it will exec the shell
+[4676.30s -> 4678.78s]  and so this will in the end result
+[4678.78s -> 4679.90s]  as the shell being run
+[4680.78s -> 4682.30s]  so for example if I continue
+[4682.30s -> 4683.26s]  I probably break again
+[4683.26s -> 4683.98s]  it says exec
+[4683.98s -> 4685.26s]  and if I look at the arguments
+[4685.26s -> 4686.30s]  I will see that actually
+[4686.86s -> 4688.86s]  the exec system call is being called
+[4688.86s -> 4690.62s]  to exec the shell
+[4691.26s -> 4692.54s]  and once you exec the shell
+[4692.54s -> 4693.58s]  you know let's do that
+[4694.38s -> 4695.18s]  then you know
+[4695.18s -> 4696.94s]  we'll do a couple more system calls
+[4696.94s -> 4698.38s]  and at some point we'll see the
+[4700.06s -> 4701.82s]  let me continue
+[4701.82s -> 4703.26s]  then basically the shell starts running
+[4704.62s -> 4706.46s]  and so it gives you a little bit of a sense
+[4706.46s -> 4709.34s]  you know actually how xv6 gets off the ground
+[4709.34s -> 4711.50s]  how the first shell actually gets to run
+[4711.50s -> 4712.46s]  and we saw the sort of
+[4713.02s -> 4714.30s]  a little bit of an overview
+[4714.30s -> 4715.42s]  about how the first you know
+[4715.42s -> 4717.10s]  when the first system call actually happened
+[4717.90s -> 4719.42s]  and we haven't really looked at the
+[4719.42s -> 4721.18s]  the machinery for these system calls
+[4721.18s -> 4723.10s]  now how they get in and out of the kernel
+[4723.10s -> 4723.98s]  we're going to talk about that
+[4723.98s -> 4725.02s]  in a couple weeks
+[4725.02s -> 4726.54s]  or two weeks in a lecture
+[4726.54s -> 4727.82s]  in great amount of detail
+[4727.82s -> 4729.10s]  but this is sort of enough
+[4729.10s -> 4730.38s]  for you to understand actually
+[4730.38s -> 4732.06s]  how to do the syscall lab
+[4732.06s -> 4733.98s]  you know that we assigned for this week
+[4734.94s -> 4736.14s]  and so these are the pieces
+[4736.14s -> 4737.34s]  that you will be interacting with
+[4738.86s -> 4740.78s]  any questions before I wrap up
+[4740.78s -> 4742.14s]  because we're almost out of time
+[4748.06s -> 4749.26s]  feel free to fire away
+[4749.26s -> 4759.10s]  are we going to do anything with networks
+[4759.10s -> 4761.10s]  or like networking in the labs
+[4761.66s -> 4763.34s]  yes the last lab is
+[4763.34s -> 4764.78s]  you will implement a network driver
+[4765.34s -> 4766.46s]  and so you will write the code
+[4766.46s -> 4767.82s]  that interacts with the hardware
+[4767.82s -> 4768.86s]  and you have to manipulate the
+[4770.22s -> 4771.74s]  registers of the network driver
+[4773.02s -> 4773.98s]  over the network cart
+[4774.70s -> 4775.90s]  that basically connects you know
+[4775.90s -> 4777.18s]  to this rich five board
+[4777.18s -> 4777.90s]  you know you saw that
+[4777.90s -> 4779.10s]  there was a block basically
+[4779.10s -> 4781.58s]  to plug in an ethernet control cable
+[4781.58s -> 4783.42s]  and so there's an ethernet card
+[4784.14s -> 4785.02s]  and so you're going to be
+[4785.02s -> 4785.90s]  programming that card
+[4785.90s -> 4787.26s]  and you're going to actually
+[4787.26s -> 4788.78s]  send some packets across the internet
+[4791.58s -> 4792.70s]  great thanks
+[4792.70s -> 4793.74s]  yeah that's the last lab
+[4797.98s -> 4798.78s]  any other questions
+[4804.06s -> 4805.18s]  okay let me wrap up here
+[4805.18s -> 4807.02s]  I think the system called lab itself
+[4808.62s -> 4809.82s]  because we're not really going
+[4809.82s -> 4810.94s]  great amount of detail
+[4810.94s -> 4812.46s]  hopefully shouldn't be too bad
+[4812.46s -> 4814.14s]  might be easier than the utila lab
+[4815.58s -> 4816.78s]  labs next lab however
+[4816.78s -> 4818.06s]  might be more difficult
+[4818.06s -> 4819.02s]  so it's always hard to get
+[4819.02s -> 4820.14s]  all these labs right
+[4820.14s -> 4821.34s]  but the cisco lab hopefully
+[4821.34s -> 4823.10s]  shouldn't be too difficult
+[4823.10s -> 4824.54s]  but please don't start
+[4824.54s -> 4826.06s]  don't wait until the night before
+[4826.06s -> 4827.42s]  you know get going early
+[4827.42s -> 4828.22s]  so that if you're running
+[4828.22s -> 4829.18s]  some obscure book
+[4829.18s -> 4830.54s]  that we can actually help you out
+[4830.54s -> 4831.42s]  and make sure that
+[4831.98s -> 4833.10s]  your program works in the end
+[4835.10s -> 4835.50s]  with that
+[4836.30s -> 4838.30s]  uh i'll sign off
+[4838.30s -> 4840.30s]  and i'll see you in winter

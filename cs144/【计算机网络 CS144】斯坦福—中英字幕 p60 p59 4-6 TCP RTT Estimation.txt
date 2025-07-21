@@ -1,0 +1,122 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 8.40s]  TSP-TAHO made three major improvements that solved the congestion collapse problem the
+[8.40s -> 9.68s]  internet encountered.
+[9.68s -> 15.24s]  In the prior video, I talked about how it incorporated a congestion window into its
+[15.24s -> 19.04s]  two states of operation, slow start and congestion avoidance.
+[19.04s -> 23.16s]  In this video, I'll explain the other two mechanisms, RTT estimation and self-clocking.
+[23.16s -> 33.28s]  Recall that a TCP implementation boils down to three questions.
+[33.28s -> 35.24s]  The first is when you should send data.
+[35.24s -> 39.44s]  TCP's answer is to use a congestion window to limit its transmissions when the network
+[39.44s -> 40.12s]  is congested.
+[40.12s -> 42.84s]  Next, let's answer the second question.
+[42.84s -> 45.44s]  When should TCP retransmit data?
+[53.96s -> 58.36s]  It turns out that estimating retransmission timeouts well can have a significant effect
+[58.36s -> 60.80s]  on TCP's behavior.
+[60.80s -> 66.08s]  Choosing timeouts that are too long will cause TCP to stall, waiting for acknowledgements.
+[66.08s -> 70.38s]  Choosing timeouts that are too short will cause TCP to back off too aggressively, dropping
+[70.38s -> 72.00s]  into the slow start state.
+[72.00s -> 76.64s]  So TCP-TAHO introduced some improvements to timeout estimation.
+[76.64s -> 80.28s]  These improvements have turned out to be a generally good way to estimate noisy signals
+[80.28s -> 85.28s]  in network systems, so learning them can give guidance on designing other protocols.
+[93.16s -> 98.12s]  Since TCP transitions to the slow start state and retransmits on the timeout, having
+[98.12s -> 100.88s]  a good timeout value is critical.
+[100.88s -> 105.14s]  If the round-trip time is a constant, then the optimal transmission timeout is just a
+[105.14s -> 109.28s]  tiny bit larger than the round-trip time because a successfully received packet's acknowledgement
+[109.28s -> 113.16s]  should take an RTT after the packet transmission.
+[113.16s -> 116.16s]  But round-trip times are not constant, they can be highly dynamic.
+[116.16s -> 119.48s]  Furthermore, they can vary significantly with load.
+[119.48s -> 124.46s]  As a flow sends segments faster, it might start filling queues along the route, increasing
+[124.46s -> 125.96s]  its RTT.
+[125.96s -> 129.56s]  Versive traffic from other sources can also vary the queuing delay.
+[129.56s -> 134.48s]  Given all of this noise, we need a robust way to estimate how long before assuming
+[134.48s -> 135.76s]  a packet was lost.
+[140.28s -> 147.68s]  Before TCP-TAHO, TCP kept track of a single variable, R, its RTT estimate.
+[147.68s -> 153.20s]  Each time it received a new acknowledgement, it would calculate an RTT estimate, M, from
+[153.20s -> 158.08s]  the time between when the segment was sent and the acknowledgement was received.
+[158.08s -> 161.90s]  R was an exponentially weighted moving average of those measurements.
+[161.90s -> 166.80s]  If there was no acknowledgement for a segment after 2R, TCP assumed it was lost and triggered
+[166.80s -> 168.80s]  a retransmission.
+[169.80s -> 172.80s]  So what's the problem with this approach?
+[172.80s -> 178.00s]  The basic problem is that it assumes that the variance of RTT measurements is a constant
+[178.00s -> 180.24s]  factor of its value.
+[180.24s -> 184.88s]  Imagine for example that you have a path of the high-low variance delay.
+[184.88s -> 188.80s]  For example, you have an underutilized link across the ocean floor.
+[188.80s -> 197.56s]  Even if the RTT is 80 milliseconds, with 99.99% of RTTs being between 80 and 81 milliseconds,
+[197.56s -> 202.96s]  this TCP algorithm would wait 160 milliseconds before triggering the retransmit timer.
+[202.96s -> 206.76s]  This is almost an entire wasted RTT.
+[206.76s -> 210.54s]  Or imagine the opposite case, where the average RTT is 20 milliseconds but is very
+[210.54s -> 215.36s]  high variance, such that RTTs are sometimes as high as 80 milliseconds.
+[215.36s -> 220.98s]  Despite the fact that a significant fraction of packets have a high RTT, TCP would assume
+[220.98s -> 224.92s]  these packets are lost, shrink its congestion window to 1, and retransmit them.
+[227.56s -> 238.08s]  So TCP-TAHO incorporates an estimate of the RTT variance in its retransmission timeout.
+[238.08s -> 243.40s]  It maintains an exponentially weighted moving average of the RTT estimates as before.
+[243.40s -> 249.04s]  It also measures how much the measurement differs from the estimate, that is, the error
+[249.04s -> 251.88s]  between the estimate and the most recent measurement.
+[251.88s -> 256.52s]  It applies an exponentially weighted moving average to this variance v as well.
+[256.52s -> 261.76s]  It calculates a timeout as the RTT estimate plus 4 times the variance.
+[261.76s -> 266.36s]  So if the connection is a very stable RTT, timeouts will be only slightly larger than
+[266.36s -> 268.24s]  the average RTT.
+[268.24s -> 274.80s]  But if there's large variation in the RTT, TCP will choose a much larger timeout.
+[274.80s -> 280.44s]  If a retransmission fails, that is, it isn't acknowledged, then TCP retransmits
+[280.44s -> 283.16s]  again with an exponentially increasing timer.
+[283.24s -> 287.64s]  TCP assumes that this means there's tremendous congestion, so continues its multiplicative
+[287.64s -> 294.92s]  decrease by decreasing, by increasing the interval between its retransmitted segments.
+[294.92s -> 298.88s]  The two values, G and beta, they were selected after a bit of experimentation.
+[298.88s -> 301.68s]  This approach is reasonably robust to slight changes in them.
+[301.68s -> 306.08s]  There isn't any special magic behind them, they just tend to work well in practice.
+[306.08s -> 316.56s]  Here are two plots taken from the original TCP congestion control paper.
+[316.56s -> 321.80s]  They show both the RTT that TCP observes, the bottom light line with data points,
+[321.80s -> 325.48s]  and the timeout estimate TCP maintains, the dark line on top.
+[325.48s -> 329.20s]  TCP Tahoe and pre-Tahoe was very conservative.
+[329.20s -> 334.68s]  The large gap between the measurements and the timeout value represent wasted time when
+[334.68s -> 338.28s]  TCP has been waiting too long to retransmit.
+[338.28s -> 344.84s]  Also, around packet 60, when the RTT spikes upward, pre-Tahoe would retransmit and slow
+[344.84s -> 347.84s]  start unnecessarily.
+[347.84s -> 353.40s]  In contrast, RTT estimation for TCP Tahoe shown on the right much more closely tracks
+[353.40s -> 354.40s]  the RTT values.
+[354.40s -> 357.64s]  So now we've answered the second question.
+[357.64s -> 361.52s]  When does TCP retransmit data?
+[361.52s -> 366.84s]  The lesson from this is that one needs to estimate a retransmission or retry timer when
+[366.84s -> 371.04s]  one needs to estimate a retransmission or retry timer in a network protocol,
+[371.04s -> 375.48s]  considering not only the observed round-trip time, but also its variant.
+[384.48s -> 386.56s]  So now we've come to the third question.
+[386.56s -> 388.32s]  When should TCP send acknowledgments?
+[392.52s -> 396.68s]  It turns out the answer is generally with as little delay as possible.
+[396.68s -> 401.00s]  If TCP follows this policy, it leads to a very important and powerful behavior called
+[401.00s -> 407.00s]  self-clocking.
+[407.00s -> 411.72s]  Self-clocking means that if TCP sends acknowledgments aggressively, then it turns out they will
+[411.72s -> 416.40s]  space out in time according to the throughput of the bottleneck link.
+[416.40s -> 420.60s]  The sender will receive acknowledgments spaced out over time.
+[420.68s -> 424.92s]  Since the sender will send new data as soon as the sender window advances, this means
+[424.92s -> 430.24s]  that it will send segments at the rate that the bottleneck link can support.
+[430.24s -> 433.56s]  This figure shows that behavior visually.
+[433.56s -> 438.80s]  The throughput of the network is shown as the width of the path, and time is shown
+[438.80s -> 442.56s]  as the length of the path.
+[442.56s -> 448.12s]  Packets sent on fat, high bandwidth links take a small amount of time.
+[448.16s -> 453.40s]  These same packets, sent over a low bandwidth link, have a longer transmission time and
+[453.40s -> 456.48s]  queuing delay and so take more time.
+[456.48s -> 470.28s]  When they emerge out of a bottleneck link, they will be fast again, but spaced out
+[470.28s -> 474.48s]  in time according to the rate at which they exit the bottleneck.
+[474.48s -> 478.44s]  Since acknowledgement packets are small, and assuming the bottleneck is not on the
+[478.44s -> 483.60s]  reverse path, this means the acknowledgments will arrive at the sender at approximately
+[483.60s -> 489.12s]  the rate at which they traverse the bottleneck link.
+[489.12s -> 492.16s]  This policy has an additional benefit.
+[492.16s -> 496.68s]  TCP only puts new packets into the network when it receives an acknowledgement, that is,
+[496.68s -> 499.24s]  when one of its existing packets has left the network.
+[499.24s -> 504.16s]  From a congestion standpoint, this means TCP is keeping the number of outstanding packets,
+[504.16s -> 509.80s]  that is, the utilization of queues and capacity in the network, stable.
+[516.44s -> 520.16s]  So the self-clocking principle means that TCP sends acknowledgments aggressively as
+[520.16s -> 522.56s]  soon as it receives data segments.
+[522.56s -> 525.84s]  This is to signal to the sender that data has left the network, as well as to give
+[525.84s -> 530.52s]  RCT estimates and allow it to self-clock its transmissions.
+[530.52s -> 535.28s]  So in summary, TCP-TAO introduced three major mechanisms that allow it to effectively
+[535.28s -> 539.36s]  manage congestion and obtain good performance even in busy networks.
+[539.36s -> 545.08s]  The first is that it introduces a congestion window and maintains an AMD-like state machine
+[545.08s -> 549.16s]  that transitions between the slow start and congestion avoidance states.
+[549.16s -> 553.20s]  This state machine controls how the congestion window updates.
+[553.20s -> 557.64s]  The second is that it calculates retransition timers using both an exponentially weighted
+[557.64s -> 562.48s]  moving average as well as a variance, thereby reducing both false positives as well as
+[562.48s -> 564.08s]  false negatives.
+[564.08s -> 569.36s]  Finally, by sending acknowledgments aggressively, it self-clocks data transmissions to match
+[569.36s -> 570.84s]  the speed of the bottleneck link.

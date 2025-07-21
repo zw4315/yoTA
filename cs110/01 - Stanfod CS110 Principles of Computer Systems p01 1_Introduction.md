@@ -1,0 +1,1089 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 9.48s]  All right welcome to CS 110. I'm Chris Gregg teaching CS 110 this quarter.
+[9.48s -> 14.16s]  Welcome the room we actually we were going to be in the nice spacious room
+[14.16s -> 17.88s]  next door but turns out 106A is gigantic as you might imagine so we're
+[17.88s -> 20.76s]  kind of in here. The bad news is every single one of you is going to
+[20.76s -> 25.20s]  be coming to every single lecture so all the seats will be taken I'm sure.
+[25.20s -> 30.20s]  We'll talk more about if you decide not to attend lecture what what that means
+[30.20s -> 38.48s]  and as we go along. CS 110 principles of computer systems I assume at this point
+<!-- related course: cs106B + cs107 -->
+[38.48s -> 45.32s]  you have gone through either CS 106A or some AP class CS 106B and CS 107. If
+[45.32s -> 49.92s]  you haven't gone through those that series of courses welcomed everybody
+[49.92s -> 53.16s]  come on you can find a seat I'm sure there's some seats in the middle
+[54.08s -> 58.96s]  I'm sure you can find some. If you haven't taken that sequence especially CS 106B
+[58.96s -> 62.40s]  and CS 107 this class is going to be challenging. Now the class is
+[62.40s -> 68.36s]  challenging in general as you can imagine but it's kind of in some sense
+[68.36s -> 72.52s]  we will do a lot of things in here that you have seen in 106B
+[72.52s -> 76.08s]  because you're going to be building big programs that mean you have to use
+[76.08s -> 81.12s]  a bunch of data structures you've used in CS 106B and a lot of the classes in
+[81.16s -> 86.84s]  C++ so you have to remember that sort of thing and then CS 107 the system Z stuff
+[86.84s -> 90.72s]  well this is also a systems class and so you need to know what pointers are
+[90.72s -> 94.64s]  you need to know what void stars are not too too much but you need to
+[94.64s -> 97.60s]  understand those need to understand what structs are and all those things
+[97.60s -> 103.52s]  so we will do like one minute of assembly code but that's it so you
+[103.52s -> 110.24s]  have passed that that barrier from 107 and that's that. So what is this
+[110.24s -> 117.28s]  class all about? There are actually five main topics and the odds are very good
+[117.28s -> 121.68s]  that you have not seen any of those topics before in great detail you may
+[121.68s -> 124.12s]  have kind of seen some of them and if you've done some programming on your
+[124.12s -> 127.44s]  own you may have seen some of them but there's basically five main things the
+[127.44s -> 130.28s]  first thing we're going to cover and I'll go over some more in detail in a
+[130.28s -> 134.04s]  few minutes as well but here's the big thing Unix file systems so you know a
+[134.04s -> 138.00s]  little bit about files and you've used Unix if you've done if you logged
+[138.00s -> 143.32s]  into myth from CS 107 etc but we're going to talk about how the actual file
+[143.32s -> 147.80s]  system itself is built like what does it mean to be a file system how do you
+[147.80s -> 152.72s]  actually take keep track of where the various bytes are in a file and how
+[152.72s -> 155.40s]  to keep track of the file names and how you look up file names and all
+[155.40s -> 158.08s]  that sort of stuff that's kind of the first big topic and you'll have an
+[158.08s -> 163.20s]  assignment on that then we go into this thing called multi processing okay on
+[163.20s -> 167.08s]  your computer you guys know that you can be browsing the internet at the same
+[167.12s -> 169.88s]  time you can be printing a document at the same time that you can be
+[169.88s -> 175.48s]  downloading a file at the same time etc etc etc this all happens because your
+[175.48s -> 180.58s]  computers are running multiple programs at exactly the same time okay
+[180.58s -> 185.80s]  even if you only have one processor on your computer the operating system is
+[185.80s -> 191.20s]  smart enough to say hey I've got two programs or 20 programs running I'm
+[191.20s -> 194.68s]  going to time slice them and give a little bit of this program some time
+[194.68s -> 199.84s]  to do its thing and then a little bit of this program etc etc and as it does
+[199.84s -> 204.36s]  that you it seems to the user more or less that all these things are
+[204.36s -> 207.92s]  actually happening at the same time now if your computer does have multiple
+[207.92s -> 213.36s]  processors or multiple cores things can literally happen at the same time so
+[213.36s -> 216.88s]  we're going to run right we are going to write a bunch of programs that
+[216.88s -> 220.40s]  utilizes this we're going to write a program that does what we call
+[220.40s -> 225.72s]  forking and sets off another process at the exact same time as the first
+[225.72s -> 229.76s]  process and they go at the same time okay the tricky part of this is
+[229.76s -> 232.68s]  debugging it you guys think you're great at debugging well wait till you
+[232.68s -> 235.68s]  have two or twenty things keep going at the same time trying to debug it's a
+[235.68s -> 238.28s]  little bit trickier so we have to talk about those sorts of things
+[238.28s -> 242.28s]  that's the next thing um the third thing which is kind of part of
+[242.28s -> 246.00s]  multi-processing is signal handling it turns out that if you have multiple
+[246.00s -> 249.84s]  processes going at the same time on your computer you might want to talk
+[250.16s -> 253.28s]  you might want them to talk to each other okay turns out when you do this
+[253.28s -> 256.92s]  thing called fork which we'll talk about again later you actually get a
+[256.92s -> 261.08s]  parent process and then a child process and if you want to talk between
+[261.08s -> 265.24s]  them or if the parent wants to know when the child has finished well
+[265.24s -> 268.12s]  signals get sent so those are the things we're going to talk about
+[268.12s -> 271.72s]  there all right then we're going to go and we're going to shift into this
+[271.72s -> 277.08s]  thing called multi-threading which is a very similar sort of topic but it
+[277.12s -> 282.64s]  involves these things called threads which means one program is now running
+[282.64s -> 286.96s]  well one process is now running multiple things at once very similar
+[286.96s -> 290.16s]  but handled in a much different way so we're going to transition to that and
+[290.16s -> 294.92s]  then finally we're going to go into talking a little about networks so
+[294.92s -> 297.44s]  we're going to build some servers we're going to build some clients and
+[297.44s -> 300.32s]  we're going to have them talk to each other on different machines and
+[300.32s -> 303.44s]  through the internet and so forth and that's going to be the kind of
+[303.60s -> 308.36s]  culminating part of the course so those are the big topics now what are all those
+[308.36s -> 311.44s]  topics all about well most of them happen to do with have to do with
+[311.44s -> 315.68s]  operating system sort of things so 110 a lot of times is considered like
+[315.68s -> 320.36s]  operating systems late and it's kind of an introduction to operating systems
+[320.36s -> 324.28s]  if you do want to take operating systems you can take cs140 and and go
+[324.28s -> 328.32s]  take an actual operating systems class but we're going to talk about all
+[328.32s -> 332.84s]  these things that the operating system has to help you do in this course okay
+[333.04s -> 337.88s]  there are eight assignments there will be eight assignments roughly one a week a
+[337.88s -> 340.84s]  little bit more than one a week in the midterm we're extending the assignment a
+[340.84s -> 345.44s]  little bit little longer so you have time to study etc the you can look at
+[345.44s -> 348.72s]  what that what all those are but they're basically assignments that test
+[348.72s -> 351.44s]  all the things we talk about obviously and there's a couple multi
+[351.44s -> 354.56s]  processing ones and a couple threading ones and and so forth and then
+[354.56s -> 360.80s]  there's a culminating process project called map reduce which is a which has
+[360.84s -> 364.88s]  threading and processes and networking and is all kind of tied into one and
+[364.88s -> 368.88s]  it's kind of a cool big last assignment all right so that's kind of
+[368.88s -> 373.68s]  the overview of the course who am I I've seen I see some friendly faces
+[373.68s -> 376.48s]  out there that I've seen all of you are friendly I hope I've seen some
+[376.48s -> 381.04s]  people I know before but if you haven't had me for a class before I
+[381.04s -> 385.28s]  am my original bachelor's reviews in electrical engineering at Johns Hopkins
+[385.28s -> 389.24s]  then I decided I actually went into the Navy right after that and then
+[389.28s -> 394.12s]  decided to go into teaching so I went and got a master's degree in
+[394.12s -> 399.20s]  education and then decided a little bit later on that I still had some GI Bill
+[399.20s -> 402.64s]  which is the Navy's or the military's kind of money for college that they
+[402.64s -> 407.04s]  let people use and I still had some of that so I decided to go get a PhD
+[407.04s -> 411.32s]  in computer engineering and thinking that I still wanted to teach and so that
+[411.32s -> 415.96s]  kind of led me to Tufts University in Massachusetts and then out here I've
+[415.96s -> 420.56s]  been here for three years I'm technically a junior now so some of you
+[420.56s -> 426.72s]  guys are more have been here longer than me and that's that so I've lectured a
+[426.72s -> 429.16s]  whole bunch of classes this is why I recognize some of you is because I've
+[429.16s -> 435.00s]  lectured 106 B, 106 X, 107, 107 E, 208 E which is a great ideas in computer
+[435.00s -> 438.60s]  science I'm gonna do it again next year and it's a fun course and it's
+[438.60s -> 441.48s]  very generally very small and we talk about all these big ideas in computer
+[441.48s -> 444.44s]  science over the years kind of like a history class that was fun and then
+[444.48s -> 453.68s]  now CS 110. As far as teaching CS 110 my first quarter was last quarter
+[453.68s -> 458.00s]  normally Jerry Kane teaches this course he's actually not here this quarter and
+[458.00s -> 461.92s]  I kind of wanted to roll into 110 so I co-taught it with Jerry last quarter
+[461.92s -> 467.68s]  the class is ostensibly his class he put most of it together we are not
+[467.68s -> 471.24s]  going to change too much okay I'm a very different lecturer than Jerry but
+[471.24s -> 475.96s]  the material is all the same so except for a couple of minor tweaks here and
+[475.96s -> 480.80s]  and there so I'm gonna keep it mostly mostly the same a little bit more about
+[480.80s -> 485.68s]  me I love to tinker if you haven't seen my typewriter project my musical
+[485.68s -> 488.20s] **typewriter project** TODO: 可以关注一下这是什么？you can just look it up Chris Greg typewriter on the
+[488.20s -> 491.52s]  internet and you can find it and then or you can come by my office and
+[491.52s -> 496.60s]  actually see it in real life I love kind of doing you know everything from
+[496.60s -> 500.28s]  soldering to Arduinos to Raspberry Pi stuff so if you have any projects
+[500.28s -> 504.28s]  you're working on in that feel free to stop by and chat with me about that
+[504.28s -> 510.28s]  all right okay so who else is going to be involved in this class well as of
+[510.28s -> 514.88s]  noon today there's 209 students enrolled it's not a huge huge class but
+[514.88s -> 521.20s]  it's still relatively big what do you need to know for the class well we're
+[521.20s -> 525.44s]  going to be primarily programming in a combination of C and C++ most of the
+[525.44s -> 529.52s]  projects are actually going to be C++ the reason for that is it's much
+[529.56s -> 533.60s]  easier to use C++ strings we've got all these cool things like maps and and
+[533.60s -> 538.92s]  sets and things that you can use by the way we will be using the standard
+[538.92s -> 543.96s]  template library not the Stanford library so for instance if you want to
+<!-- TODO: enque, deque, pq 什么的数据结构，考场问题，需要找一些例子 blog 
+- std::queue 是一个“适配器容器”，底层默认使用 std::deque 实现
+  - q.push(value);  // 等价于 deque.push_back(value)
+  - q.pop();        // 等价于 deque.pop_front()
+  - 访问队头是 front()，访问队尾是 back()（虽然不常用）
+- std::deque，它支持两端操作：
+  - 入队
+    - push_back(value)：从尾部加入
+    - push_front(value)：从头部加入 TODO: 双端队列需要学习，还有环形队列 blog
+  - 出队：
+    - pop_back()：从尾部删除
+    - pop_front()：从头部删除
+  - 访问元素：
+    - front()：查看头部元素
+    - back()：查看尾部元素
+-->
+[543.96s -> 550.96s]  use a if you want to use a queue you do if you want to get the front value
+<!-- 
+- 队列的 front 是最先进去的结构
+- pop_front()
+-->
+[550.96s -> 554.96s]  off the queue you do pop underscore front and that pops the value off but
+[554.96s -> 558.20s]  it doesn't give it back to you if you just do front it gives it back to
+[558.20s -> 562.40s]  you so there's a couple **nuances** 还真的是，比如上面说的 back() 
+再 pop_back() , 后者只是删除，void 不返回 that you have to learn most of those things will
+[562.40s -> 566.12s]  come relatively naturally it will not take long to learn that there's a few
+[566.12s -> 570.80s]  few things about using maps that are a little tricky I will do my best to
+[570.80s -> 574.56s]  kind of preview you on any new C++ things that you might not have seen
+
+<!-- 我的第一印象定义： 闭包 = 函数 + 它引用的外部变量的环境 ：闭包是在某个作用域中定义的函数对象，它可以访问并保留该作用域中被捕获的变量，即使超出了作用域依然有效。-->
+[574.56s -> 579.20s]  in cs110 for instance there's these things called **closures** which we're
+[579.20s -> 581.28s]  gonna have for the first assignment and then through most of the other
+[581.28s -> 584.36s]  assignments and you have to learn how to use those and I'm gonna explain how
+[584.68s -> 590.68s]  so don't worry too too much about that we do write pretty complex programs in
+[590.68s -> 595.52s]  this class what does that mean well it means you're going to have a large
+[595.52s -> 599.96s]  code base that you are going to have to build part of and you kind of
+[599.96s -> 603.80s]  did this a little bit for cs110 and maybe a little for cs107 this is kind
+[603.80s -> 606.52s]  of even more so people always go and they look at the first assignment they
+[606.52s -> 611.28s]  go the assignments like 15 pages long or whatever right and and the number of
+[611.32s -> 614.88s]  files you get is like 22 files and half of them are header files and whatever
+[614.88s -> 619.20s]  you really need to be able to comprehend those things before you even
+[619.20s -> 624.32s]  start writing any code so I'll try to well the first assignments a good
+[624.32s -> 627.00s]  example of hey there's a bunch of code here you have to figure out where to
+[627.00s -> 631.68s]  put your pieces and that's sometimes the one of the harder parts about the
+[631.68s -> 636.12s]  course itself you should be able to trace memory diagrams I mean you
+[636.12s -> 640.04s]  should understand memory if you took cs107 I'm confident you understand
+[640.20s -> 645.08s]  enough about memory to do just fine in this class you should also understand
+[645.08s -> 650.88s]  Unix and Linux and the terminal and so forth GCC and Valgrind if you took
+<!-- TODO: CS107e 这个嵌入式版本和 cs110 rust 版本 是需要后续工作的 -->
+[650.88s -> 654.16s]  cs107e for instance you probably have no idea what I mean when I say
+[654.16s -> 658.08s]  Valgrind it's just a program you run that tells you when your programs
+[658.08s -> 662.84s]  leaking memory or you haven't closed files etc not very hard to use and
+[662.84s -> 667.40s]  then make and so forth you won't have to write any make files but you
+[667.40s -> 672.72s]  might want to modify them so not a bad idea to to do that there are 10 CAs this
+[672.72s -> 678.32s]  is roughly the same proportion of CAs as you would have seen in 107 that means
+[678.32s -> 683.60s]  that there's 200 of you and there's 10 CAs well it means that there's
+[683.60s -> 689.24s]  possibly longer lines than you might hope for in office hours that's the way
+[689.24s -> 693.00s]  it goes the one thing about office hours and I think this is covered on
+[693.00s -> 698.96s]  another slide too is the difference in 110 versus 107 is the CAs are not going
+[698.96s -> 703.32s]  to look at your code so you bring a bug to the top side you go I've got
+[703.32s -> 705.84s]  this bug and they go great tell me about your bug what's going on what
+[705.84s -> 708.32s]  did you do here what you there they're not going to sit down and try
+[708.32s -> 711.28s]  to help you find the bug you guys are believe it or not you're good
+[711.28s -> 714.68s]  enough programmers now you can probably track down where your bug is
+[714.68s -> 717.44s]  right it is harder when you get into multi-threading and
+[717.44s -> 722.84s]  multi-processing things but by this point your you are fairly advanced and
+[722.84s -> 726.72s]  we expect you to do that and it does make office hours go smoother I mean if
+[726.72s -> 730.84s]  you unfortunately some of the assignments are very they're not
+[730.84s -> 734.40s]  open-ended so much as we say write this function and you just kind of go
+[734.40s -> 737.76s]  and write it and your decisions might be very different than your neighbors
+[737.76s -> 740.96s]  decisions and it would be impossible for the CAs to sit down and try to
+[740.96s -> 744.36s]  figure out what the differences are in the 10 minutes they might be able to
+[744.36s -> 749.12s]  give to you so so that's that for what it's worth most people think it's a it
+[749.12s -> 753.32s]  works pretty well like you you'd be surprised at how talking through what
+[753.32s -> 756.72s]  you think should be happening your program translates into you being able
+[756.72s -> 761.28s]  to fix your own bugs surprise you're not in 106b anymore 107 where you can
+[761.28s -> 766.20s]  you know you can rely on the TAs and CAs to do that okay the CAs are also
+[766.20s -> 770.32s]  going to hold lab sections I'll talk about labs in a few minutes so for what
+[770.32s -> 777.28s]  it's worth the class is held Monday Wednesday 132 250 and then Fridays are
+[777.28s -> 781.28s]  most of the labs during the same time frame there are also some labs on
+[781.28s -> 784.92s]  Thursdays so you'll be able to sign up for those I'll talk more about
+[784.92s -> 788.60s]  labs in a minute labs are just they're they're not sitting at a
+[788.60s -> 793.48s]  computer although you should bring your laptop but it's run by a CA and they
+[793.48s -> 798.04s]  people like those too because you get a little bit more small kind of feel for
+[798.56s -> 804.64s]  the teaching all right what questions you have so far I think we will get to
+[804.64s -> 807.40s]  more logistics I promise not to do all the justice we're gonna get into some
+[807.40s -> 812.20s]  real stuff today too of course website cs110.stanford.edu as you might
+[812.20s -> 817.96s]  imagine the website is not you know super detailed with stuff it's got the
+[817.96s -> 821.38s]  lectures on it it's got the lecture slides it's got the handouts it's got
+[821.38s -> 825.28s]  discussion section information and the links and so forth that's about it's
+[825.28s -> 829.80s]  got a calendar which lists all of the lists it right now it lists when all
+[829.80s -> 833.28s]  the assignments are going to be given out the due dates are kind of still to
+[833.28s -> 837.68s]  be a little bit determined as well we will also have a Piazza as you can
+[837.68s -> 843.08s]  imagine Piazza gets pretty busy because lots of you have lots of
+[843.08s -> 846.32s]  questions and keep up to that keep up to date on that and you'll be in
+[846.32s -> 850.68s]  pretty good shape and then we'll also have a slack channel just in case you
+[850.68s -> 854.72s]  want to chat I'm not having the CAs go to the slack channel I'll keep my
+[854.76s -> 858.16s]  eye on it if you have specific questions but it's more for you guys to chat
+[858.16s -> 862.86s]  amongst yourselves if you want questions and things generally go to Piazza as you
+[862.86s -> 865.72s]  can imagine but if you have something you want to chat about then slacks a
+[865.72s -> 869.06s]  better better place for that ISM office hours you can find out when
+[869.06s -> 872.92s]  those are if you can't make my office hours and you really want to chat with
+[872.92s -> 878.44s]  me directly shoot me an email and we'll find a time to meet CAs of course
+[878.44s -> 882.40s]  will have their own office hours and we will probably start them this week
+[882.40s -> 886.84s]  but they will be official as of next like the weekend because your first
+[886.84s -> 892.92s]  assignments coming out on Wednesday okay as I said CAs don't look at your code
+[892.92s -> 897.12s]  during office hours neither will I for what it's worth now if you've got
+[897.12s -> 900.68s]  something you don't understand an error message certainly will look it's not
+[900.68s -> 903.24s]  like we're like no I can't you see your screen right we're gonna be able
+[903.24s -> 906.52s]  to see like they help you at least get figure out what error messages are
+[906.52s -> 910.12s]  and so forth and if you haven't done much C++ programming you'll know that
+[910.32s -> 914.76s]  error messages in C++ are ridiculous so that does take a little bit of time to
+[914.76s -> 918.64s]  get your head wrapped around okay there's two textbooks for the course
+<!-- TODO: 107 的这个课本可以找来看一看  -->
+[918.64s -> 924.00s]  the textbook that you may have used for 107 the Bryant and O'Halloran
+[924.00s -> 929.12s]  textbook is the same one
+[929.12s -> 933.76s]  there is actually a custom version just for 110 which has you know the six or
+[933.76s -> 938.12s]  eight chapters we're gonna cover in 110 if you want to buy that or if you
+[938.12s -> 941.88s]  bought the whole book last time continue to use it it doesn't really
+[941.88s -> 945.44s]  matter so much if you have a slightly older version it's basically for you to
+[945.44s -> 949.04s]  read I'm not assigning anything from the book and most of the things haven't
+[949.04s -> 953.32s]  changed and it's not like 107 where the older versions were in 32-bit
+[953.32s -> 956.64s]  architecture and now we're talking about 64-bit architecture we really
+[956.64s -> 960.68s]  don't get into those details in this class so it's still fun question yeah
+[960.68s -> 965.76s]  all right there's another textbook which will primarily be for the first
+[965.76s -> 970.52s]  couple of weeks on file systems that talks about file systems it's called
+[970.52s -> 975.20s]  principles of computer system design and if you want to do well on assignment
+[975.20s -> 980.16s]  to read the book because it has all the details for the for the the way
+[980.16s -> 985.44s]  that an old Unix file system was built so when we get to that you'll see
+[985.44s -> 989.60s]  those reading assignments come up you can buy it it's also available free on
+[990.60s -> 997.64s]  okay all right lecture example so this class is I'm gonna have slides but I'm
+[997.64s -> 1002.92s]  also gonna do lots of coding kind of live or kind of from my notes etc where
+[1002.92s -> 1008.24s]  you're gonna see lots of code put up and run in real life and the code
+[1008.24s -> 1012.60s]  examples if you want to either follow along or look at them yourselves you
+[1012.60s -> 1016.96s]  can get them by you can get them online I generally have links on the
+[1016.96s -> 1022.72s]  slides or you can actually clone the entire repository of all the examples I
+[1022.72s -> 1027.36s]  would really suggest looking at those examples and understanding how they work
+[1027.36s -> 1030.36s]  especially if they fly by and lecture and you're right and don't really know
+[1030.36s -> 1033.68s]  what that is go down and look at them line by line test some things try
+[1033.68s -> 1037.96s]  it out yourself and that's a good way to get yourself up to speed on those
+[1037.96s -> 1042.44s]  assignments or those those code examples okay everything we do is gonna be done
+[1042.44s -> 1046.12s]  in the myth machines if you need to you could do it on cardinal I believe
+[1046.28s -> 1051.36s]  but the machines that we'll use for class are myth the myth machines if for
+[1051.36s -> 1053.76s]  some reason you're going out of town you're gonna be on an airplane and don't
+[1053.76s -> 1057.28s]  have internet access we can figure out how to get most things working on your
+[1057.28s -> 1061.60s]  laptop itself especially if you have a Mac but you can also get a you can
+[1061.60s -> 1067.00s]  also put a Linux machine a VM on your computer and that will work too so we
+[1067.00s -> 1069.68s]  can we can get that to work but most all the assignments just like 107
+[1069.68s -> 1077.08s]  are going to be on the myth machines okay all right what else the slide so
+[1077.08s -> 1081.32s]  I'm gonna try to make the slides as comprehensive as possible I think
+[1081.32s -> 1084.76s]  putting sometimes you'll the complaints I sometimes get there's too
+[1084.76s -> 1087.96s]  many words in the slides too much stuff on the slides I'll try not to
+[1087.96s -> 1091.84s]  focus on like the stuff and I certainly will try not to read like
+[1091.84s -> 1095.64s]  whole slides and so forth but you can use them a little bit for reference as
+[1095.64s -> 1100.64s]  well so it's not a not a bad idea to to do that they're not a substitute for
+[1100.64s -> 1104.60s]  attending lecture because we do go off script and you'll ask lots of good
+[1104.60s -> 1107.48s]  questions and that will get those are good answer and we'll try things and
+[1107.48s -> 1113.36s]  so forth that aren't going to be reflected in the slides and and
+[1113.36s -> 1116.68s]  anything we talk about in class really is going to be covered on the
+[1116.68s -> 1119.64s]  midterms and short answer questions and so forth I mean if it's a way off
+[1119.64s -> 1123.16s]  topic it won't be of course but you should be responsible for that now while
+[1123.16s -> 1127.80s]  I'm thinking about it as far as the class itself being videotaped it is not
+[1127.80s -> 1130.96s]  being videotaped wearing a microphone and it looks like it's being videotaped
+[1130.96s -> 1137.92s]  but it's not I will generally put together a screencast which means it's
+[1137.92s -> 1141.04s]  just going to be what you see on the board and me talking you won't see
+[1141.04s -> 1145.52s]  me at all and some people like to rely on those if you do rely on those
+[1145.52s -> 1148.72s]  just know that sometimes my computer breaks or I forget to do the
+[1148.72s -> 1151.36s]  screencast or whatever don't blame me if you don't want to come to class
+[1151.36s -> 1155.20s]  don't blame me but but I would do my best to try to have the resources
+[1155.20s -> 1159.80s]  available I do that not so that you can miss class and time shift the lectures
+[1159.80s -> 1162.20s]  but more so that if you need to go back and look at something from
+[1162.20s -> 1165.84s]  lecture it's a good idea to do that that's why I do it some people time
+[1165.84s -> 1169.60s]  shift it and I'm not going to complain about it but it's nice to see your
+[1169.60s -> 1176.32s]  smiling faces here regardless okay well questions so far it's lots of
+[1176.32s -> 1182.92s]  logistics so far okay I talked I talked most about this mostly about these
+[1182.92s -> 1188.48s]  things already the the and this kind of goes over some of the syllabus again
+[1188.48s -> 1192.12s]  and you can get the syllabus online and I've already put these some of the
+[1192.12s -> 1196.40s]  details on the calendar as well but as I said the first thing we're going
+[1196.40s -> 1200.52s]  to talk about starting today is Linux file systems and how file systems
+[1200.52s -> 1205.44s]  actually work and some of the different system calls that we will use and by
+
+<!-- system call 就是 kernel 调用的函数 -->
+[1205.44s -> 1208.84s]  the way that word **system call** is something that you may not have heard
+[1208.84s -> 1213.88s]  before it's basically a function that ends up getting run by the kernel
+[1213.88s -> 1217.32s]  which is run by the operating system so you've got your program doing its
+[1217.32s -> 1220.60s]  thing and then it does a system call which looks just like a function call
+[1220.60s -> 1225.16s]  into the kernel and the kernel does all the stuff that touches the system
+[1225.16s -> 1229.92s]  like files and networking and so forth and that's so that you don't have
+[1230.12s -> 1236.00s]  access directly in your own programs and it's a security feature of the of the
+[1236.00s -> 1240.20s]  operating system okay so we'll do that we'll talk about naming and layering
+[1240.20s -> 1244.44s]  and we'll talk about we'll talk about these things called eye nodes
+[1244.44s -> 1250.64s]  which are the the way the computer keeps track of your files low and
+[1250.64s -> 1254.64s]  behold computers actually put a number associated with all your files go
+[1254.64s -> 1257.84s]  figure all right of course it does right because computers like numbers
+[1257.88s -> 1261.56s]  better than words so that's there's this thing called an eye node which
+[1261.56s -> 1264.72s]  kind of distinguishes your file from some other one and it's just a number
+[1264.72s -> 1268.56s]  as it turns out we'll talk about that then as I said we'll go into
+[1268.56s -> 1272.00s]  multi-processing and we'll do these things called forking which is
+[1272.00s -> 1276.40s]  branching of your program as it almost sounds like and then there's you
+[1276.40s -> 1279.52s]  have to be able to coordinate those things so we'll use things like
+
+<!-- execve 的作用就是运行另一个已经存在于系统上的程序，并替换当前进程的内容
+这对于运行外部程序会有帮助
+ -->
+[1279.52s -> 1286.88s]  waitpid  and **execve** which means which basically means take your
+[1286.92s -> 1291.40s]  take another program and start running it immediately that's already that's on
+[1291.40s -> 1295.36s]  your system it's a cool way to run external programs while your program
+[1295.36s -> 1297.84s]  is doing things one of the assignments for that is called
+[1297.84s -> 1301.64s]  Stanford shell which is basically what your shell is doing I mean if we go
+[1301.64s -> 1307.44s]  over here and we say `ls` right well there's a program running the shell
+[1307.44s -> 1310.36s]  which is what the which is what you're typing right and then when I
+[1310.36s -> 1315.92s]  type `ls` that's another program and your shell says to the operating system
+[1315.96s -> 1321.16s]  hey run that `ls` program and then come back to me and go from there so that's
+[1321.16s -> 1326.32s]  what's happening when you take `ls` it's a multi-processing endeavor right there
+[1326.32s -> 1332.48s]  okay all right we are going to also talk about **protected address spaces** and
+[1332.48s -> 1337.36s]  a little bit about **virtual memory** you know how you've written on the let's
+[1337.36s -> 1345.56s]  see if I can do this you know how on you know how on in your like cs107
+<!-- TODO: blog: 关于内存的图，可以画一画 -->
+[1345.84s -> 1348.88s]  we **drew all these memory diagrams** and we said that well it's not going to look
+[1348.88s -> 1352.24s]  very good here oh they're not here do these memory diagrams and like here's
+[1352.24s -> 1357.56s]  the heap and here's the stack and like it's the other way around sorry
+[1357.56s -> 1362.04s]  the **stack grows down** 栈是从高地址往低地址的 
+stacks up here and then the **heaps down here** 堆是从低地址向上涨的 I'm doing
+<!-- TODO: 看看这幅图，和 mitos 里面的图做比较 -->
+[1362.04s -> 1364.52s]  it backwards depends on which class you teach about how you draw those
+[1364.52s -> 1368.72s]  anyway stack goes down the heap goes up and this like starts at some value
+[1368.72s -> 1373.20s]  and this okay it's all a lot for what it's worth it turns out that every
+
+<!-- os 会让程序有自己拥有所有内存空间的错觉 -->
+[1373.32s -> 1378.44s]  program thinks it has access to the entire memory system and it's all faked
+[1378.44s -> 1382.08s]  out by that right the entire program like the your program says oh I have
+[1382.08s -> 1385.28s]  access to all the memory well really whenever it accesses memory the
+[1385.28s -> 1388.88s]  operating system gets in the way and says okay you're actually looking at over
+[1388.88s -> 1392.72s]  here but you think you're looking at this part of memory and it's it's a
+[1392.72s -> 1397.68s]  it's kind of a neat way to to virtualize things and we call it
+[1397.68s -> 1403.32s]  **virtual memory** because of that and it the the reason we do that is so that it
+[1403.32s -> 1406.52s]  simplifies your program it's not like your program needs to know oh I'm
+[1406.52s -> 1410.28s]  shoehorned into this little part of memory here I get the entire system
+[1410.28s -> 1413.60s]  well we'll make it look like you have the entire system and we'll take
+[1413.60s -> 1419.04s]  care of the the handshaking that makes makes it it go back to to the
+[1419.04s -> 1423.00s]  original or to make it look like you know what you're doing and actually
+[1423.00s -> 1427.40s]  stores things where it really is we'll get into the details of that that's
+[1427.40s -> 1432.80s]  all part of multi-processing exceptional control flow etc ok we'll also talk a
+[1432.80s -> 1437.40s]  little about concurrency versus parallelism 
+<!-- concurrency 定义: 多件事情同时发生 -->
+concurrency is this idea
+[1437.40s -> 1441.96s]  that two or more things are happening at the same time 
+<!-- parallelism 定义 -->
+parallelism is the
+[1441.96s -> 1445.28s]  idea that you've got a big problem that you're breaking into chunks and
+[1445.28s -> 1448.44s]  solving at the same time 
+
+so there's there's a little bit of a difference
+[1448.44s -> 1454.28s]  there in like idea and abstraction we'll get to those things and we'll
+
+<!-- 信号处理的问题了，（比如 kill, SIGINT, SIGKILL 等） -->
+[1454.28s -> 1457.88s]  also talk about how to send signals between different programs 
+
+okay then I
+[1457.88s -> 1461.28s]  said we're going to talk about **threading** which is another concurrency
+[1461.28s -> 1466.32s]  kind of idea and this is where you can actually emulate many real-world
+[1466.32s -> 1469.68s]  things using this threading idea where you basically say hey I've got a
+[1469.68s -> 1473.00s]  whole bunch of tasks to do and they might communicate between each other
+
+<!-- 先外包任务，再按 message 收作业？ -->
+[1473.00s -> 1477.52s]  I'm going to set part of my program off doing these things independently of
+[1477.52s -> 1481.12s]  everything else until it receives a message to go do like work with
+[1481.12s -> 1483.68s]  something else so they're happening kind of all at the same time and it
+
+[1483.72s -> 1489.20s]  models some nice problems <!-- （如生产者-消费者、消息队列等）。 -->
+for us so we will do that we also have to talk
+[1489.20s -> 1496.64s]  about this idea that if you have two things both trying to access a data
+[1496.64s -> 1499.92s]  structure at the same time let's say they both are trying to add things to a
+[1499.92s -> 1503.76s]  set or read from a set or so forth if they're trying to do that at the
+[1503.76s -> 1507.64s]  same time and we only have one copy of the set guess what we're gonna run
+[1507.64s -> 1512.08s]  into problems （数据竞态的问题）unless we say hey you go first and then you go first or then
+[1512.08s -> 1516.40s]  you go second right and one one after the other and we may not be able to
+[1516.40s -> 1520.28s]  order those necessarily that's the other thing about this class there's a
+[1520.28s -> 1523.64s]  lot of non-deterministic things that are going to happen in your programs 这听起来不太妙
+
+[1523.64s -> 1526.60s]  okay and I don't mean things that are just bugs I mean like you have
+[1526.60s -> 1530.24s]  things that when you run it two times in a row and it's perfectly written it
+
+<!-- 操作系统安排的顺序不同，会导致输出不同的结果 -->
+[1530.24s -> 1534.08s]  will produce two different outputs because it just happens that the
+[1534.08s -> 1538.44s]  operating system grabbed this part of the program first before this one and
+[1538.44s -> 1541.60s]  it did it in a slightly different order so those sorts of things are we'll
+[1541.64s -> 1544.84s]  have to contend with those as we go through the as we go through the course
+[1544.84s -> 1549.68s]  okay but anyway point is that when you're trying to access that one data
+
+<!-- TODO: blog 调研多进程的时候的锁，各种锁 -->
+[1549.68s -> 1552.84s]  structure with two different threads you need to do what we call **locking**
+[1552.84s -> 1557.56s]  where you basically say I'm going to access it now anybody else has to wait
+[1557.56s -> 1560.84s]  and then the next and then the next thread can can go and do it so we
+[1560.84s -> 1563.76s]  will get into those details it's kind of fun when it works and it is a
+[1563.76s -> 1568.56s]  little challenging to get it right but **it is fun** 呵呵 when it works okay all
+
+<!-- TODO: 可以从历史演进的角度聊聊 threads 在 C/C++ 中的实现 -->
+[1568.56s -> 1571.24s]  right and and then we're going to talk about there's some differences
+[1571.24s -> 1576.28s]  between the way threads work in C and C++ most of the stuff we do will be in C++
+[1576.28s -> 1579.92s]  but we'll see the differences okay all right and then finally as I said we're
+
+<!-- C++ 的网络知识 -->
+[1579.92s -> 1584.44s]  going to do networking and networking is as you might expect it's
+[1584.44s -> 1588.20s]  two computers talking to each other or or a computer talking to itself
+[1588.20s -> 1593.68s]  through this thing called a port and this this involves IP addresses which is
+[1593.68s -> 1598.16s]  how the internet determines what computer your computer is if you type
+[1599.16s -> 1603.20s]  it goes to a particular bank of computers and that's an over the network
+
+<!-- 可以写简单小网页，帮助调试的网页？没试过 -->
+[1603.20s -> 1607.88s]  of course we'll write some very trivial web pages that will actually be
+[1607.88s -> 1611.64s]  accessing to so you can test some of your programs with your browser and
+[1611.64s -> 1616.68s]  we'll go into that and we'll also go into some of the details of 
+
+<!-- 应用层？TODO: 可以结合 socks5 弄懂 -->
+HTTP
+[1616.68s -> 1621.52s]  which is the protocol used on the internet to send and receive data like
+[1621.52s -> 1624.56s]  it has to be two computers when they're talking to each other had better agree
+[1624.72s -> 1628.76s]  on what language they're using and what protocol they're using otherwise they'd
+[1628.76s -> 1633.68s]  never be able to talk and HTTP happens to be the way the way that works okay
+[1633.68s -> 1637.56s]  and then finally as I said we're going to end up doing this program called
+
+<!-- TODO: 这怎么和 GOOGLE 的方式有点类似 -->
+[1637.56s -> 1643.20s]  **MapReduce** which is an idea of taking a problem breaking it into many parts
+[1643.20s -> 1646.48s]  having lots of different computers work on all those parts and then collecting
+[1646.48s -> 1651.52s]  the data back again for a final answer so that's that's the final thing
+[1651.52s -> 1653.88s]  and then the last thing we'll talk about for the last couple days of
+[1653.88s -> 1658.44s]  class there's not an actual assignment on it is what we call
+
+<!-- TODO: blog-是不是 epoll 那些事情 -->
+<!-- 餐厅吃饭和点外卖的区别 -->
+non blocking IO and
+[1658.44s -> 1662.36s]  by blocking we mean we're gonna see an example of blocking later today by
+[1662.36s -> 1667.80s]  blocking we mean the program when you're asking for data will wait for that
+[1667.80s -> 1671.96s]  data to arrive and that's called blocking otherwise we can have it ask
+[1671.96s -> 1676.44s]  for data and then keep going if the data is doesn't it hasn't available yet
+[1676.44s -> 1679.88s]  and then comes back later and checks again 
+
+so that's the last thing we're
+[1679.88s -> 1683.72s]  going to do okay so that's the big thing like I said most of the stuff
+[1683.80s -> 1688.68s]  in this class is all about like operating systems sort of things so you're gonna
+[1688.68s -> 1692.92s]  we're gonna get into some of the details of what the operating system is
+[1692.92s -> 1696.76s]  actually doing for you in particular the Linux operating system but guess what
+[1696.76s -> 1699.88s]  the Mac operating system and the Windows operating system and the
+
+<!-- 自己造一个 R2S 上面的系统 -->
+[1699.88s -> 1704.88s]  Raspberry Pi's operating system all that are really the same sort of thing
+[1704.88s -> 1708.36s]  they're all doing the same have the same sort of features because some
+[1708.36s -> 1711.20s]  people decided a while ago hey those are cool features that we'd like to
+[1711.20s -> 1716.24s]  have that's the other thing by the way in this class we'll talk about a lot of
+[1716.24s -> 1721.76s]  things and you'll say to yourself huh that seems really specific like doing
+[1721.76s -> 1726.12s]  this this way seems like a really specific way of doing it and you're
+[1726.12s -> 1730.20s]  absolutely right it was some people some very clever people in my opinion
+[1730.20s -> 1735.44s]  who made decisions to do something this way there are many many other
+[1735.44s -> 1738.44s]  ways to do it we're gonna look at a file system for our second
+[1738.44s -> 1741.60s]  assignment and you're gonna have to know all the nuances of how that file
+[1741.60s -> 1744.88s]  system works and all these things about block numbers and I know numbers
+[1744.88s -> 1748.52s]  and how to how to access and how much data is stored and so forth that
+
+<!-- 不同操作系统的文件系统是不一样的 -->
+[1748.52s -> 1751.80s]  wasn't the only way to do this in fact newer operating systems have
+[1751.80s -> 1755.04s]  different file systems and your Mac (**APFS**) is in file system and Windows（**NTFS**）is a
+[1755.04s -> 1758.08s]  different file system it's just one way of doing it and we want you to
+[1758.08s -> 1762.44s]  appreciate that aspect of it not necessarily to say oh my gosh this is
+[1762.44s -> 1765.00s]  the one way to do it and I better memorize this exact way of doing it I
+
+<!-- 知道实现上的巨大差异是存在的，所以，更重要的是知道需求 why -->
+[1765.00s -> 1768.96s]  mean you do have to know it but you you don't have to specifically think oh
+[1768.96s -> 1773.44s]  that's the only way of doing it please don't think that okay all right
+[1773.44s -> 1777.44s]  a little bit more logistics here programming assignments 40% of your
+[1777.44s -> 1783.24s]  grade they're the most important part all at once is there's eight
+[1783.24s -> 1786.44s]  assignments as I said some of the assignments are like one file do your
+[1786.44s -> 1788.84s]  thing and you're done like the first assignment I think you have to write
+[1788.84s -> 1793.00s]  basically code in one file most of the programming assignments you have to
+[1793.04s -> 1796.60s]  write in a few different files you generally don't have to write like 20
+[1796.60s -> 1800.88s]  different files or things but there's key things in each file as I said a
+[1800.88s -> 1805.60s]  few minutes ago there are lots of files involved in these in these
+[1805.60s -> 1808.92s]  programs we want to give you programming assignments that are both
+[1808.92s -> 1812.16s]  challenging and interesting and to do that a lot of times we have to have
+[1812.16s -> 1816.76s]  a lot of back-end kind of things to make it kind of work and then you do
+[1816.76s -> 1820.96s]  that kind of the meat of it and that's why there's lots of different types of
+[1820.96s -> 1824.92s]  header files and things really really really when you're going and reading
+[1824.92s -> 1830.00s]  your through your assignment 
+
+<!-- 先读头文件的习惯是不错的 -->
+just spend an hour or two looking through the
+[1830.00s -> 1832.72s]  header files going oh that's that and that's what this is oh I better
+[1832.72s -> 1836.72s]  remember this because you'll use it later and you'll and that will help
+[1836.72s -> 1840.40s]  you kind of trigger your memory that oh that's what I can go use you
+[1840.40s -> 1843.80s]  wouldn't be you'd be surprised at how many questions on Piazza are all about
+[1843.80s -> 1847.40s]  oh how do I do this and somebody says look in this header file it's right
+[1847.40s -> 1850.92s]  there and the other files have a lot of comments in them too so that's my
+[1850.92s -> 1856.28s]  comment on that the late policy for this class as it turns out the late
+[1856.28s -> 1860.28s]  policy may or may not cost you points it's a little different than lots
+[1860.28s -> 1863.92s]  other classes here's how it works if you submit on time obviously you get
+[1863.92s -> 1867.56s]  you can get up to a hundred percent of the points that makes sense if you
+[1867.56s -> 1872.68s]  submit 24 up to 24 hours later your assignment is capped at 90 percent so
+[1872.68s -> 1875.36s]  if you get an 80 percent on the assignment and you hand it in a day
+[1875.40s -> 1879.36s]  late doesn't matter you're still going to get that 80 percent it's not gonna take
+[1879.36s -> 1883.64s]  more points off okay but if you had a 95 it gets capped at 90 that's how that
+[1883.64s -> 1888.44s]  works the same thing is true for 24 hours it goes down to 60 percent cap
+[1888.44s -> 1893.36s]  so you're sorry for the next 24 for 48 hours later so you probably want
+[1893.36s -> 1896.48s]  to try to hand it in at most a day late otherwise you do get kind of
+[1896.48s -> 1899.60s]  penalized on lots of points we generally don't accept assignments after
+[1899.60s -> 1903.72s]  48 hours unless there's very good extenuating circumstances you're ill or
+[1903.72s -> 1908.68s]  you've got something that's curricular related that's not another class but
+[1908.68s -> 1913.60s]  something that's it's related to why you can't actually do the assignment job
+[1913.60s -> 1916.56s]  interview or something like that email me will probably I'll probably give you a
+[1916.56s -> 1923.64s]  little extension for free that's that let's see the part that Oh discussion
+[1923.64s -> 1927.20s]  sections that's what's next as I said Monday Wednesdays are lectures the one
+[1927.20s -> 1931.56s]  exception Friday we are having lecture labs sections start next week we're
+[1931.56s -> 1934.48s]  doing three lectures this week just so that we can get through some material
+[1934.48s -> 1937.96s]  for your project next for your assignment next week so our three this
+[1937.96s -> 1941.76s]  week following this just Monday Wednesday not Friday Fridays are
+[1941.76s -> 1948.12s]  generally the lack of their labs the discussion sections as I said a CA is
+[1948.12s -> 1952.16s]  leading them I think I'm gonna be leading a section two and they're a
+[1952.16s -> 1954.52s]  little bit of theoretical things talking about stuff we talked about in
+[1954.52s -> 1957.08s]  class but then there's a lot of looking at code and going through code
+[1957.08s -> 1961.48s]  and then answering questions about that code and doing some other kind of
+[1961.48s -> 1967.08s]  looking at the details of things okay they are not mandatory in the sense
+[1967.08s -> 1971.96s]  that if you go to all of the lab all the discussion sections it's five
+[1971.96s -> 1975.20s]  percent of your final grade and you just get a hundred percent for showing
+[1975.20s -> 1980.12s]  up okay every time you miss a discussion section you your grade
+[1980.12s -> 1983.52s]  counts a little bit counts a little bit less and your final exam counts a
+[1983.52s -> 1987.04s]  little bit more right so that's all it's not so much a penalty if you don't
+[1987.04s -> 1989.84s]  go to sections it's just that I got to do a little bit better on the on the
+[1989.84s -> 1992.32s]  final and this is for people who are like I hate going to sections they're
+[1992.32s -> 1996.36s]  boring I don't need them well great you don't have to but they are there
+[1996.36s -> 2003.20s]  for your benefit okay discussion section sign ups Sunday April 7th this
+[2003.20s -> 2006.70s]  Sunday at noon is when it's going to open up like I said most of the
+[2006.70s -> 2010.56s]  sections are going to be Friday during this time slot some of the sections are
+[2010.56s -> 2016.12s]  going to be on Thursday so if you really want a Thursday section get in
+[2016.20s -> 2019.76s]  there early on Sunday like Sunday around noon and sign up for them okay I
+[2019.76s -> 2023.00s]  don't know exactly how many sections yet in each one but that would be
+[2023.00s -> 2030.76s]  available then okay all right midterm there are exams in this class the
+[2030.76s -> 2036.36s]  midterm is going to be Thursday May 2nd 6 to 8 p.m. it's outside of class
+[2036.36s -> 2040.34s]  we're gonna use blue book who has used blue book before yeah most of you
+[2040.34s -> 2042.80s]  guys if you've never used it it's just a program that you use that you've
+[2042.80s -> 2046.52s]  kind of written in-house and it's enables you to type your answers where
+[2046.52s -> 2049.44s]  people tend to like and it makes grading a little bit easier and like you
+[2049.44s -> 2051.80s]  don't have to worry about your handwriting and you can erase and delete
+[2051.80s -> 2055.90s]  and so forth I think it's pretty good it does require a laptop if you don't
+[2055.90s -> 2059.20s]  have a laptop that has a good enough battery to last two hours let me know
+[2059.20s -> 2063.08s]  we'll try to get you one okay I don't want anybody to not be able to do
+[2063.08s -> 2067.04s]  it because of that the exams are closed book closed notes if you do get one
+[2067.04s -> 2071.36s]  page back in front notes for the midterm here's the big thing you have to
+[2071.36s -> 2076.08s]  pass the midterm to pass the class all right now what does that mean well it
+[2076.08s -> 2079.96s]  means that most of you will pass the midterm okay I mean we don't sit there
+[2079.96s -> 2082.70s]  and go oh 40% of you are out of the class because you failed a midterm no
+[2082.70s -> 2086.80s]  the number of people who fail a midterm is very very small but it is
+[2086.80s -> 2090.28s]  possible to fail a midterm so you do have to do well on you have to do a
+[2090.28s -> 2094.64s]  passing grade don't stress about that too much just know that you do have to
+[2094.64s -> 2099.76s]  do that that does bring me to another point how many graduating seniors do we
+[2099.76s -> 2103.08s]  have here a few of you guys right first of all get ready everybody give you
+[2103.08s -> 2107.84s]  guys our applause all right we made it through Stanford well almost haven't
+[2107.84s -> 2110.40s]  quite made through Stanford yet you decided to take a really hard class as
+[2110.40s -> 2113.28s]  your last quarter some of you had to do that I'm sorry that if you had to
+[2113.28s -> 2116.80s]  do that that was the way it worked out this is a challenging course the
+[2116.80s -> 2120.34s]  odds are good that you haven't taken follow-ons systems classes because you
+[2120.34s -> 2123.24s]  would have had to take this first so this may be a very very challenging
+[2123.24s -> 2127.80s]  course for you if you find yourself falling behind and this goes
+[2127.80s -> 2131.10s]  particularly for seniors who can't really take the course or over there or
+[2131.10s -> 2133.68s]  you have to take it over summer whatever please please get the help
+[2133.68s -> 2138.44s]  early okay I know that's we say that in every class but that's really
+[2138.44s -> 2143.00s]  really important okay now multiple practices we're gonna give multiple
+[2143.00s -> 2148.32s]  practice exams we're going to do that if you have a if you have another
+[2148.32s -> 2152.40s]  competing thing at the midterm time I know lots of people have I think
+[2152.40s -> 2154.88s]  Thursday evenings might be like Symphony or something like that that's
+[2154.92s -> 2158.28s]  fine you can take it earlier in the day we'll have those details a little bit
+[2158.28s -> 2161.84s]  later okay and of course we do have testing accommodations email me those as
+[2161.84s -> 2166.24s]  soon as you can the earlier kind of the better there's a final exam the
+[2166.24s -> 2170.36s]  final exams 35% of your grade it is cumulative there are going to be
+[2170.36s -> 2175.24s]  problems you'll see on file systems on the final exam also closed book you
+[2175.24s -> 2181.56s]  get two pages of notes and it's going to be June 10th 7 p.m. I'm sorry June
+[2181.56s -> 2186.72s]  10th 3 30 p.m. there's an alternative 7 if you have another class that conflicts a
+[2186.72s -> 2189.56s]  lot of times you say can't have conflicting classes look I understand
+[2189.56s -> 2193.76s]  some people have conflicting classes you can take it at the second time if
+[2193.76s -> 2197.34s]  you have two conflicting classes well figure it out all right or three
+[2197.34s -> 2202.04s]  conflicting classes or whatever figure it out the let's see what else about
+[2202.04s -> 2204.96s]  the final you do have to pass the final pass the class as well again
+[2204.96s -> 2211.12s]  very few people fail the final it does happen okay all right I think those
+[2211.60s -> 2215.16s]  that's the biggest thing about the logistics the final thing that really
+[2215.16s -> 2218.62s]  should not be even need to be mentioned as honor code look some of
+[2218.62s -> 2222.44s]  these assignments are out there okay your friends took these this class
+[2222.44s -> 2226.36s]  before or assignments are online or whatever because people put them there
+[2226.36s -> 2230.00s]  you should not be putting any of your assignments on public repositories
+[2230.00s -> 2234.92s]  please we will ask you to take them down but if you find things online
+[2234.92s -> 2239.80s]  please disregard you want to do the assignments and we have ways of
+[2239.80s -> 2244.58s]  checking them so I will leave it at that all right what question you have on
+[2244.58s -> 2249.92s]  logistics before we go into some details about file systems any logistics
+[2249.92s -> 2261.44s]  questions no okay let's jump right in file systems so you guys should be
+[2261.44s -> 2266.52s]  familiar with Unix and Linux at this point right if you go and you type LS
+[2266.52s -> 2270.76s]  right you type LS you get a list of the files that are in some directory that
+[2270.76s -> 2273.60s]  you happen to be in and you may and you may have traversed down the
+[2273.60s -> 2278.28s]  directory some some distance like this you may have traversed down the
+[2278.28s -> 2282.80s]  directory some some distance to actually get there okay and there are
+[2282.80s -> 2287.08s]  other things that you can do aside from just typing LS if you type LS
+[2287.08s -> 2293.12s]  dash a L for instance it gives you a more detailed list the a stands for
+[2293.12s -> 2297.48s]  all files which includes all the hidden ones which start with a period and it
+[2297.48s -> 2301.48s]  include the L stands for give me a nice big listing of more details about
+[2301.48s -> 2306.76s]  the files okay in here there are two files in particular that are
+[2306.76s -> 2311.08s]  interesting one is called dot and one is called dot dot you probably know
+[2311.08s -> 2316.72s]  about those from 107 as well but those those files stand for
+[2316.72s -> 2322.78s]  directories stand for the current directory dot and the previous
+[2322.78s -> 2326.08s]  directory dot dot and this is how you traverse backwards and forwards through a
+[2326.08s -> 2329.96s]  directory okay and then the other files in here just the ones that exist
+[2329.96s -> 2332.80s]  any others I don't think there's any other ones that start with a period in
+[2332.80s -> 2335.16s]  here but those the hidden ones and then there's all this other
+[2335.16s -> 2338.44s]  information like this stuff out here we're gonna go into more details in a
+[2338.44s -> 2341.46s]  second on that that's your well it tells you whether or not it's a
+[2341.46s -> 2344.92s]  directory and it's also the permissions for the file so you talk
+[2344.92s -> 2348.52s]  about permissions at all in 107 I don't think you did yeah okay permissions
+[2348.52s -> 2354.64s]  are basically who has access to your files okay and on this list right here
+[2354.64s -> 2358.76s]  it looks like I am the only one that has access because the first three
+[2358.76s -> 2364.88s]  things after the first dash are the users permissions and only the only ones
+[2364.88s -> 2369.48s]  that have anything in there are are for the user which is me in this case
+[2369.48s -> 2373.68s]  all the rest of those dashes are for the group which you guys all belong to
+[2373.68s -> 2376.96s]  various groups like the course group and some other groups and you also
+[2376.96s -> 2381.36s]  belong to the other category which is everybody else those are the other two
+[2381.36s -> 2385.20s]  parts we're gonna do more details about that in a minute okay who's
+[2385.20s -> 2390.68s]  sending me messages stop sending your messages thank you you can do that you
+[2390.68s -> 2393.12s]  can do that please don't learn how to do that it's not it's not you know
+[2393.12s -> 2402.36s]  it messes things up sometimes anyway very nice all right so oh by the way
+[2402.36s -> 2405.76s]  the permissions that you have a read write and execute the only things you
+[2405.76s -> 2410.72s]  can execute are files that are binary files or files that are like scripts
+[2410.72s -> 2414.92s]  written in language like Python and so forth okay that's that's when the X
+[2414.92s -> 2420.14s]  becomes important as I said there's three parts to these files there's the
+[2420.14s -> 2424.68s]  owner part the group part and the other part and each one can have its
+[2424.68s -> 2429.84s]  own type of permit its own permissions like if this this up here like if I
+[2429.84s -> 2435.20s]  had this file called list and it had these permissions dash RWX R dash X R
+[2435.20s -> 2441.08s]  dash X that's down here this basically means okay that the owner has
+[2441.08s -> 2444.96s]  read write execute privileges the owner being in this case me let's say
+[2444.96s -> 2449.64s]  the group can also read the file and execute it and anybody else can also
+[2449.64s -> 2455.32s]  read the file and execute it that's how permissions work okay the and we do
+[2455.32s -> 2458.08s]  this for security reasons we also do it for sharing reasons if you want to
+[2458.08s -> 2462.48s]  share things and so forth here's the interesting part about it because it's
+[2462.48s -> 2468.46s]  RW and X that means there's three bits of information which means three
+[2468.46s -> 2472.84s]  with three bits of information bits of information you can encode that in
+[2472.84s -> 2479.04s]  one value that goes from zero to seven which would maybe make you think
+[2479.04s -> 2483.28s]  that we could actually use the octal base eight system for this and you're
+[2483.28s -> 2487.48s]  going why would we ever do this well here's why okay if you have the
+
+<!-- 一些 Linux 系统权限的问题，三组三种权限
+每组三个权限位（rwx）可以被看作是 3 个二进制位（bit）：
+-->
+[2487.52s -> 2492.80s]  following permissions RWX assume that as a one means that permission is set so
+[2492.80s -> 2496.76s]  that you can do that a zero means it's set so you can't do it or it's unset
+[2496.76s -> 2502.96s]  so RWX would be one one one that's seven right that's a 107 sort of thing
+[2502.96s -> 2507.60s]  convert binary to two in this case either decimal or hexadecimal or for
+[2507.60s -> 2512.24s]  that matter octal and then one zero one would be R dash X and that would
+[2512.24s -> 2519.44s]  be five well if you take the number seven five five that number is an octal
+[2519.44s -> 2523.60s]  number okay so it's a seven it can't go if if you added one to that it would
+[2523.60s -> 2527.72s]  not be seven five six it would be seven six zero right no no sorry I
+[2527.72s -> 2530.80s]  wouldn't lie if you had if you had one two it would be seven five six if
+[2530.80s -> 2534.44s]  you added three to it it would or if you had if you had a three to it it
+[2534.44s -> 2537.24s]  would flip over because it's base eight the only point the important part is
+[2537.24s -> 2541.36s]  you will often see this just think of them as individual digits each being
+[2541.48s -> 2544.68s]  those three bits of information that's all you really need to know about that
+[2544.68s -> 2552.72s]  okay now in C we can open files now you have done that before I assume in
+[2552.72s -> 2558.64s]  other in other classes like 107 if you want to open a file there's
+[2558.64s -> 2564.92s]  actually two different kind of overloaded ways to do it you can use the
+[2564.92s -> 2569.88s]  open command the open function which is actually a system call number I said
+[2570.12s -> 2574.80s]  it's just basically a function and you can put the path name and then some flags and some of those
+[2574.80s -> 2580.64s]  flags need a mode which is those permissions we talked about okay and you might be saying to
+[2580.64s -> 2584.08s]  yourself oh great I know how to overload functions I know all about that you can do
+[2584.08s -> 2588.68s]  that in C I don't know if you remember from 107 but it turns out you can't overload
+[2588.68s -> 2593.88s]  functions in C so how does this work well go look you can go look at stack overflow and
+[2593.88s -> 2602.44s]  see that anybody happen to look at stack overflow today yeah it looks kind of looks
+[2602.44s -> 2607.64s]  kind of like ugly it's your mouse goes and it puts little stars behind it and there's banners
+[2607.64s -> 2611.64s]  and everything and banners whatever it's like it says just like the 90s they tried to make
+[2611.64s -> 2619.96s]  it look like the 90s April Fool's Day anyway that's that let's see there we go okay hold on
+[2619.96s -> 2626.76s]  there we go okay you don't know what to do I want to try this again make it a little bit bigger and
+[2626.76s -> 2634.40s]  then go right here there we go okay there we go well that's still not making it bigger okay
+[2634.40s -> 2639.88s]  well anyway about the same all right so you can you can open a file in Linux by using the
+[2639.88s -> 2644.24s]  open command okay you can open a file to be either read only which means you can only read
+[2644.24s -> 2651.44s]  from it can't write to it write only which means you can I think that's actually not the
+[2651.44s -> 2658.20s]  right flag I'll look it up but you can read it read only or write only or you can do read
+[2658.20s -> 2661.64s]  write which means you can read to it and write to it which is a little bit odd you don't do
+[2661.64s -> 2668.04s]  that too often okay and then you can when you can do that you can actually say I want to
+[2668.04s -> 2676.40s]  create a file and I want to create the file and when you create a file you have to pass
+[2676.40s -> 2682.32s]  in the permissions you want to use for it okay and you can do this by doing the O underscore
+[2682.32s -> 2687.00s]  create without the E this is because they wanted a safe space I guess they decided they
+[2687.00s -> 2692.20s]  don't want that extra letter in there but you have to do the O create without the E that tells
+[2692.36s -> 2700.12s]  you create the file and then O-E-X-C-L says only create the file if it doesn't exist already that
+[2700.12s -> 2705.16s]  might be important to you like try to create the file and if it exists fail don't recreate
+[2705.16s -> 2712.12s]  the file and so we're going to care about those things okay let's actually and by the way
+[2712.12s -> 2717.80s]  the third mode is the permissions this is actually used to attempt to set the permissions
+[2717.80s -> 2722.68s]  operating systems are a little weird okay one of the things that the operating system does
+[2722.68s -> 2727.40s]  is it says I'm going to give you a default set of permissions that I'm going to create
+[2727.40s -> 2734.84s]  this file with and if you tell me to create more explicit permissions I won't let you which
+[2734.84s -> 2738.92s]  sounds a little weird but I'll show you an example of how that works you figure that
+[2738.92s -> 2747.08s]  out with the command called or a function called `umask()` which is basically says what default
+[2747.08s -> 2755.64s]  permissions do we have and it if the bit is set right then if you try to set that bit for
+[2755.64s -> 2760.04s]  the permissions it doesn't work let me show you what I mean okay let's actually write our first
+[2760.04s -> 2765.72s]  program here let's see we'll call it I think I already have a program here we're going to call
+
+[2765.72s -> 2771.00s]  it `show_umask.c` 
+```c
+// show_umask.c
+// 打印当前 umask；如果指定八进制参数，将临时设为该值再显示
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+
+/* 打印用法并退出 */
+static void usage(const char *prog) {
+    fprintf(stderr, "usage: %s [NEW_UMASK (octal)]\n", prog);
+    exit(EXIT_FAILURE);
+}
+
+int main(int argc, char *argv[]) {
+    mode_t newmask = 0;
+    int change     = 0;              // 是否需要修改
+
+    if (argc > 2) usage(argv[0]);
+
+    if (argc == 2) {
+        /* strtol 支持 8/10/16 进制；加 0 检测无效输入 */
+        char *endptr = NULL;
+        newmask      = (mode_t)strtol(argv[1], &endptr, 8);
+        if (*endptr != '\0' || newmask > 0777) usage(argv[0]);
+        change = 1;
+    }
+
+    /* 读取当前 umask，同时（可选）设为新值或 0 */
+    mode_t old = umask(change ? newmask : 0);
+    /* 若只是读取而不改变，需要恢复原值 */
+    if (!change) umask(old);
+
+    printf("current umask: %03o\n", old);
+    if (change) {
+        printf("umask temporarily set to: %03o\n", newmask);
+        /* 如果实际应用程序还要执行别的操作，可保持新值；
+           这里演示结束前恢复，避免影响 shell 会话。       */
+        umask(old);
+    }
+    return 0;
+}
+
+```
+okay and in here what we're going to do is we're going to pound include
+[2771.00s -> 2782.44s]  some things pound includes dot H pound include uh sys slash types dot H that's and then another
+[2782.44s -> 2788.52s]  one also you have to pound include to be able to use this `umask()` thing and include by the way I'm
+[2788.52s -> 2792.60s]  I always make mistakes mistakes when I'm typing these things in so catch me if you find them
+[2792.60s -> 2800.52s]  or if you find them catch me or tell me sys slash stat dot H okay and then we can do our
+[2800.52s -> 2804.20s]  main function because it's just in C we're going to put the return zero in there now
+[2804.76s -> 2811.40s]  and then there's a type called mode underscore T I'm going to call it the old mask here's how
+[2811.40s -> 2817.64s]  this works equals `umask()` which is the it's saying hey get me the permissions that you are
+[2817.64s -> 2824.92s]  going to allow me to set okay and I'm actually going to set it to zero which says allow any
+[2824.92s -> 2828.68s]  permissions here's the dirty little secret you can make any permissions actually set
+[2828.68s -> 2832.12s]  ah it's a little bit weird okay but anyway it's going to do that and then this is how you
+[2832.12s -> 2836.20s]  get the result it's kind of dumb you have to set the result to get it back so what we can
+[2836.20s -> 2841.72s]  do is we can say okay fine let's just set it back to our old mask it's I think it's a
+[2841.72s -> 2846.84s]  kind of a it was a weird choice but that's the way they did it okay and then if we print F U
+[2846.84s -> 2854.84s]  mask is set to remember it's octal these things are octal if you do if you do percent
+[2855.48s -> 2861.08s]  zero three will pad it with zeros and then you do oh that means do an octal number with
+[2861.08s -> 2868.04s]  three dot with three places in it okay and then we'll do the old mask and we'll
+[2868.12s -> 2873.24s]  it's the old mask and then we'll return zero okay this all this is doing it's going to
+[2875.96s -> 2881.08s]  you know yo`umask()` what it's going to do it's going to tell us what the permissions are
+[2881.08s -> 2887.00s]  right now all right zero seven seven what are those three bits what's the zero mean
+[2888.84s -> 2893.80s]  zero zero zero right what's the uh seven mean one one one well what this me and then
+[2893.80s -> 2900.12s]  there's another one one one what it means is the user can set any permissions and then
+[2900.12s -> 2905.56s]  the group and for the group and for anybody else you're not allowed to set the permissions
+[2905.56s -> 2909.08s]  or in other words it won't set those permissions it'll just be dash dash dash
+[2909.08s -> 2912.28s]  that's what that means it kind of seems a little backwards but that's what it's what
+[2912.28s -> 2917.64s]  it's all about why do we do that again part of it is because somebody decided they want
+[2917.64s -> 2923.16s]  things to be a little more secure and they also want things to be able to have some default
+[2923.16s -> 2927.16s]  i was talking with do you guys know michael chang some of you took cs107 from him
+[2927.16s -> 2930.68s]  he was telling me today that the umask thing is actually a really good idea for this and this
+[2930.68s -> 2934.60s]  and this reason and i said yeah nobody really knows that he goes i know nobody knows it but
+[2934.60s -> 2938.44s]  anyway that's what it's all about as far as doing that it's just basically saying
+[2938.44s -> 2944.68s]  what permissions can you set okay so we just did that let's actually uh we're actually going
+[2944.68s -> 2950.68s]  to write a quick program and these programs are all as i said available for you to download
+[2950.68s -> 2957.40s]  or to actually to clone into your own myth directory somewhere and as you clone and when
+[2957.40s -> 2960.76s]  you clone them you can actually look at them okay every time i mention new examples i'll put
+[2960.76s -> 2966.68s]  them into the into that repository um the next one i want to write is a little program that
+[2966.68s -> 2973.96s]  actually opens a file up or creates a file and then set some permissions okay so let's actually
+[2973.96s -> 2980.76s]  do that right now this one we're gonna i'm gonna call it `openx.c`
+```c
+// openx.c
+// 演示以指定权限创建文件；若已存在则报错退出
+#define _POSIX_C_SOURCE 200809L     // 为了显式声明 POSIX API
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "usage: %s <filename>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+    const char *fname = argv[1];
+
+    /* 为了演示“完全按我说的来”，把屏蔽位清零 */
+    mode_t old_mask = umask(0);      // 取消屏蔽
+    /* 只写 + 创建 + 文件不存在时才成功 */
+    int fd = open(fname,
+                  O_WRONLY | O_CREAT | O_EXCL,
+                  0644);             // rw-r--r--
+
+    /* 恢复原 umask，避免影响后续程序 */
+    umask(old_mask);
+
+    if (fd == -1) {
+        if (errno == EEXIST) {
+            fprintf(stderr, "%s: file already exists\n", fname);
+        } else {
+            fprintf(stderr, "%s: open failed: %s\n", fname, strerror(errno));
+        }
+        return EXIT_FAILURE;
+    }
+
+    /* 可在此写入内容，这里仅做演示 */
+    const char *msg = "hello, world\n";
+    write(fd, msg, strlen(msg));
+
+    close(fd);
+    puts("file created successfully.");
+    return 0;
+}
+
+// 常见 flags：
+// O_RDONLY（只读）
+// O_WRONLY（只写）
+// O_RDWR（读写，很少用）
+// O_CREAT（无 E，创建文件）
+// O_EXCL（与 O_CREAT 组合：若文件已存在则失败）
+```
+<!-- TODO: errno 进行错误分支 -->
+
+ and i've already put some
+[2980.76s -> 2986.68s]  stuff in there uh for us here okay and we are going to uh to do this basically as i said
+[2986.68s -> 2991.48s]  we're going to open a file up and then we are going to set its permissions to some value
+[2991.48s -> 2998.36s]  okay while we're opening it up okay all right in c we generally don't like
+[2998.36s -> 3006.04s]  global variables but constants are okay okay and we'll call this one k file name and we'll just
+[3006.04s -> 3013.32s]  call it my file okay um that is a global variable it is a constant all right um anyone know what
+[3013.32s -> 3020.68s]  the k stands for constant of course that's for some reason that's a c thing i don't know why
+[3020.68s -> 3025.80s]  they always did that but that's what it is uh we'll have another one that i looked up k file
+[3026.36s -> 3032.76s]  exists uh error and by the way it's nice to put the k there so that anytime you use it in a file
+[3032.76s -> 3036.04s]  in the rest of the program you know it's a constant that just kind of tells you that
+[3036.04s -> 3040.28s]  okay we'll get to what this is in a in a second okay and then in maine
+[3041.48s -> 3047.64s]  we're simply going to say `umask()` zero because i actually want to set the permissions the way i
+[3047.64s -> 3052.36s]  want to set them as it turns out so you have to set it to tell the system hey i'm going to
+[3052.36s -> 3056.60s]  set the bridge to whatever however i want so i don't care what the `umask()` is in this case
+[3056.60s -> 3060.68s]  okay and then we do this thing we get a what we call a file descriptor
+[3063.24s -> 3070.28s]  descriptor we're going to three to 250 right yeah we go to 250 file descriptor
+[3070.28s -> 3078.68s]  uh which equals in this case uh open k file name okay and then we have to tell it yeah
+[3078.68s -> 3084.20s]  this is what it was wrong on the slide i'll fix the slide read write only is what we're going to
+[3084.20s -> 3094.04s]  do with this i can bitwise or it with o create and i can bitwise with it with o e x c l which
+[3094.04s -> 3099.72s]  means what write only create the file and only create the file if it doesn't already exist
+[3099.72s -> 3104.20s]  that's what those three flags mean okay and then i'm going to change i'm going to make the
+[3104.20s -> 3118.12s]  permissions zero six four four okay six four four six is what one one one zero right and four is
+[3118.12s -> 3123.16s]  one zero zero and one zero zero is the other four notice that i prepended this number with
+[3123.16s -> 3128.20s]  a zero what base do you think that means it's in octal as it turns out that's how you make
+[3128.20s -> 3134.84s]  an octal number in uh c okay all right and then we'll check it file descriptor
+[3136.68s -> 3139.96s]  this is our error checking you won't have to do too much error checking for class but
+[3139.96s -> 3144.68s]  we generally try to do it as much as we can in lecture or in the real slides to show you
+[3144.68s -> 3151.88s]  how to do it because you should do it in real life print f okay there was a problem opening or
+[3151.88s -> 3161.48s]  creating uh let's call percent s like that and k file by the way in vim i don't know if you know
+[3161.48s -> 3167.56s]  how many people use took 107 last quarter and learned emacs nick telling you
+[3169.72s -> 3173.56s]  emacs is fine if you want to use emacs you can use emacs i'm a vim person these days anyway
+[3173.56s -> 3180.12s]  um okay if there was an error we can actually use this thing called error no to determine the
+[3180.12s -> 3190.68s]  error and oops file exists error if error number equals file exists there we can print out
+[3190.68s -> 3193.88s]  okay the file already exists
+[3196.36s -> 3206.52s]  right like that okay if we don't know the filing we just print out unknown error error no
+[3207.08s -> 3215.72s]  okay percent d and air no did you use air no in cs 107 you may have a little bit maybe not
+[3215.72s -> 3220.28s]  error no is a global variable that's based in c and it basically gets set when your program
+[3220.28s -> 3223.72s]  has some error it's a little bit strange that they do it that way but that's how they do it
+[3223.72s -> 3226.76s]  and this guy i'm just going to return negative one to basically say hey our program is not did
+[3226.76s -> 3230.76s]  not do so well and then we're going to close this file descriptor
+[3230.84s -> 3236.12s]  like that and we're just going to return zero
+[3238.36s -> 3242.44s]  all right so what type is a file descriptor
+[3246.36s -> 3251.32s]  an integer when you open a file you get back an integer a lot of times a very low numbered
+[3251.32s -> 3257.48s]  integer like five or four or something like that um file descriptors are a low level way of saying
+[3257.48s -> 3261.80s]  here's the number for a particular file we're going to go into details about that later in
+[3261.80s -> 3266.92s]  the week about how that actually works did anybody see any typos in there we'll find out
+[3267.64s -> 3275.80s]  open x okay so if i do open x right all right just just runs right and the file that i call
+[3275.80s -> 3284.12s]  created was called what my file l my file and there it is notice that it permissions are
+[3285.08s -> 3292.44s]  read and write right and then and remember it starts after the second after the second one here
+[3292.44s -> 3299.16s]  so the permissions were read and write for the owner read for you for a group and read for
+[3299.16s -> 3302.68s]  others and that's how we set that right what's going to happen if i run it again
+[3307.40s -> 3310.76s]  there's a problem creating my file it already exists right we checked that
+[3310.76s -> 3313.72s]  right if you want to find out all these error numbers i had to look this up
+[3314.60s -> 3319.32s]  dash l will give you a list of all the different file numbers and if we go up here and we look at
+[3319.96s -> 3324.92s]  there's a lot of them we look at 17 it says file exists and that one will be in there we will
+[3324.92s -> 3331.00s]  use a lot of error numbers as we go through the course for various things in some cases we use
+[3331.00s -> 3335.64s]  it there was an error but we don't care about the error we want to know that it was that error
+[3335.64s -> 3340.52s]  that we were expecting sounds a little weird now but we will get there and you will use these
+[3340.52s -> 3345.24s]  to do that so you'll get familiar with that okay and by the way how on linux would i say
+[3345.80s -> 3350.84s]  error number l and then be able to stop the file halfway through or part of the way after one page
+[3350.84s -> 3358.28s]  anybody know the command less works just fine and then you can go up and down in less and see
+[3358.28s -> 3362.12s]  it right that works pretty well that's a nice way of doing it so you should get used to those
+[3362.12s -> 3372.20s]  sorts of things as well okay so that's the basics of file systems okay we're going to look at a lot
+[3372.20s -> 3380.44s]  of other low-level operations and by the way umask and open are two of these functions that
+[3380.44s -> 3387.64s]  aren't really functions they're system calls when you say open your program transfers control
+[3387.72s -> 3393.40s]  over to the operating system and the operating system's kernel does the work to open the file
+[3393.40s -> 3398.04s]  and then gives you back your program back control as far as you're concerned it looks just
+[3398.04s -> 3403.08s]  like a file a function call but we have to know some of the details about what's happening
+[3403.08s -> 3409.56s]  under the hood okay um let's let's do one other thing and then i'll let you guys go because
+[3409.56s -> 3419.24s]  it is the first class um let's emulate the copy command cp okay if you do cp right if we do cp
+[3419.24s -> 3423.48s]  i've got a file called copy.c and i'll call it copy `copy.c` this is getting a little meta
+```c
+// copy.c
+// 用纯 read/write 复制普通文件；若目标已存在则拒绝覆盖
+#define _POSIX_C_SOURCE 200809L
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#define BUF_SIZE 4096               // 4 KiB，一般页大小
+
+static void die(const char *msg) {
+    perror(msg);
+    exit(EXIT_FAILURE);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 3) {
+        fprintf(stderr, "usage: %s <src> <dst>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+    const char *src = argv[1];
+    const char *dst = argv[2];
+
+    int in  = open(src, O_RDONLY);
+    if (in == -1) die("open src");
+
+    /* 复制 src 文件权限，若失败则退回 0644 */
+    struct stat st;
+    mode_t mode = 0644;
+    if (fstat(in, &st) == 0) mode = st.st_mode & 0777;
+
+    /* WRONLY | CREATE | EXCL 表示“必须不存在” */
+    int out = open(dst, O_WRONLY | O_CREAT | O_EXCL, mode);
+    if (out == -1) {
+        close(in);
+        die("open dst");
+    }
+
+    char buf[BUF_SIZE];
+    for (;;) {
+        ssize_t nread = read(in, buf, sizeof buf);
+        if (nread == 0) break;               // EOF
+        if (nread < 0) {                     // read error
+            die("read");
+        }
+
+        ssize_t nwritten = 0;
+        while (nwritten < nread) {
+            ssize_t n = write(out, buf + nwritten, (size_t)(nread - nwritten));
+            if (n < 0) die("write");
+            nwritten += n;
+        }
+    }
+
+    if (close(in)  == -1) die("close src");
+    if (close(out) == -1) die("close dst");
+
+    return 0;
+}
+
+```
+
+
+[3423.48s -> 3430.44s]  right if you do that now there's two files copy.c and copy copy.c right which are exactly
+[3430.44s -> 3437.00s]  the same okay let's remove copy copy.c okay and what we want to do is we just want to
+[3437.00s -> 3445.00s]  write a quick little program to copy a file okay and we use that by doing the
+[3445.64s -> 3453.16s]  the open command and also okay we're going to use uh two other system calls called read and
+[3453.16s -> 3458.12s]  write which do what you imagine reading from a file and then writing to a file okay let's
+[3458.12s -> 3466.12s]  actually just quickly do this one up right now uh let's see copy.c okay i've got most of it
+[3466.12s -> 3471.56s]  i've got the beginning parts of it in here so i want to be able to uh let's just do that
+[3471.56s -> 3475.48s]  formatting correctly there we go okay so this is basically it says to run this you do you
+[3475.48s -> 3481.40s]  have the file name or the the copy command file one and gets copied into file two like that
+[3481.40s -> 3488.20s]  okay well how does this actually work okay we need an in file so the file descriptor
+[3488.20s -> 3496.76s]  open argv1 which is the first one and o read only okay says i'm only going to read from that
+[3496.76s -> 3502.60s]  file so i should open it as such and then we have the out file which is another open which
+[3502.60s -> 3513.72s]  is the other one open argv2 and this one we are going to do o write only and o create
+[3513.72s -> 3522.28s]  without the e and o e xcl and then we'll do 0644 again is it going to create it with 0644
+[3522.28s -> 3527.64s]  if i don't do the umask probably not but who cares we don't know that okay you can set your
+[3527.64s -> 3532.52s]  own umask as the user by the way through linux if you wanted to do that okay anyway
+[3532.52s -> 3540.60s]  that's how we do that now let's do this let's create a buffer 1024 bytes long okay and then
+[3540.60s -> 3548.84s]  we will do s size t bytes red equals now an s size t well that's a weird one you might have
+[3548.84s -> 3556.36s]  used size underscore t in 107 and s size underscore t is a signed size underscore t
+[3556.36s -> 3563.16s]  it allows us to have negative values for the specific purpose of negative one saying that's
+[3563.16s -> 3567.72s]  going to be like the uh it's going to say there was an error it's the only reason they
+[3567.72s -> 3573.64s]  use an s size t otherwise it would use a size t but that's c for you all right so anyway bytes red
+[3573.64s -> 3579.24s]  okay equals well we're going to read and how do we do this we read from a file descriptor
+[3579.24s -> 3585.00s]  we read into the buffer so we pass the buffer in and we read the number of bytes
+[3586.52s -> 3591.64s]  not booger buffer there we go okay there we go we read the number of bytes into that
+[3591.64s -> 3597.80s]  okay and then and that tells us how many bytes read now what could cause a program
+[3597.80s -> 3602.68s]  to not read all the number of bytes we pass in to the size of buffer
+[3606.12s -> 3610.12s]  if it's smaller if the file is only 10 bytes long it's not going to read all 1024
+[3610.12s -> 3613.80s]  why what else there's actually one there's actually a very interesting way thing that
+[3613.80s -> 3618.76s]  might happen it might be that you tried to read in so much data that your program
+[3619.48s -> 3624.84s]  got time shifted by to or got taken off the processor some other program could run
+[3624.84s -> 3629.80s]  and it only returned so many bytes this will almost never happen with reading local files
+[3629.80s -> 3634.04s]  but it happens all the time when you're reading network data okay if you're reading network data
+[3634.04s -> 3639.40s]  you try to read 1024 bytes you might get 480 bytes even though there's plenty more bytes there
+[3639.40s -> 3642.92s]  they're that's not all available this is all about time slicing so you have to be a little
+[3642.92s -> 3647.80s]  bit careful with that and you have to make sure to only try to write the number of bytes you read
+[3647.80s -> 3656.36s]  okay for a number of different reasons now if bytes read equals zero break now one thing that
+[3656.36s -> 3661.16s]  i kind of just lied to you a little bit in the sense that the other reason you might not get a
+[3661.16s -> 3666.12s]  read of all the bytes this will block until all the bytes are available as it turns out
+[3667.00s -> 3674.20s]  that that happens if there are more than 1024 bytes it will or well if there are 1024
+[3674.20s -> 3679.96s]  bytes to read it will wait until they're all read in in this case but in general you can for
+[3679.96s -> 3684.52s]  networking and things we don't necessarily block on that okay if the number of bytes read
+[3684.52s -> 3688.60s]  is zero that means that we're done reading because no bytes came back as it turns out
+[3688.60s -> 3698.60s]  okay and then we now have a regular size t bytes written equals zero while bytes written
+[3698.84s -> 3711.64s]  is less than bytes read okay bytes written plus equals okay right we also write to a file
+[3711.64s -> 3721.96s]  descriptor this time the out one buffer plus bytes written and then that's the location we
+[3722.04s -> 3728.52s]  are going to look for in the buffer as it turns out okay and then bytes read minus
+[3728.52s -> 3736.92s]  bytes written like that okay and we are going to have this strange while loop like that okay
+[3736.92s -> 3748.36s]  i'm missing one hang on let's see where did i go wrong here maybe let's see there's one hang
+[3748.44s -> 3750.60s]  on i bet
+[3752.92s -> 3755.00s]  new is that my phone b
+[3757.16s -> 3761.64s]  hang on that was a spam call anybody get those these days i heard that that's like
+[3761.64s -> 3767.24s]  tripled in the past year the number of like robot calls kind of crazy okay hold on a sec uh
+[3767.24s -> 3771.96s]  let's see while bites well we'll check it when we get it but anyway point is that after
+[3771.96s -> 3781.80s]  you do this then you want to actually close the file and then close the two files and then
+[3782.60s -> 3787.00s]  return zero but there's an error here i'm just going to make it and see what happens
+[3787.00s -> 3795.00s]  there it is okay uh if but not inside the break or not 23 huh
+[3796.92s -> 3800.92s]  all right let's see did i not did i miss a while still i did miss a while statement
+[3800.92s -> 3806.44s]  okay right here we need a while statement that says while true this basically says do this
+[3806.44s -> 3813.08s]  until the file is that was the big mistake there do this until the file is uh done so what
+[3813.08s -> 3817.72s]  have we done here we have opened two files one that we're going to read from one that we're
+[3817.72s -> 3824.60s]  going to write to that we created okay then we are going to read 1024 bytes at a time
+[3825.16s -> 3829.64s]  okay and if we get back zero it means there were no no bytes left to read
+[3830.60s -> 3833.88s]  okay so we can stop reading because we're done with the file and then we have this
+[3833.88s -> 3837.88s]  weird while loop where we say while the bytes written is less than the bytes read
+[3840.36s -> 3847.48s]  get back the number of bytes we've written using the right command and then go down into
+[3847.48s -> 3852.12s]  the buffer a certain distance of the number of bytes we've already written to get the rest of
+[3852.12s -> 3857.00s]  it this is the same idea where you're not sure if all your bytes are going to be written
+[3857.00s -> 3862.20s]  all at once so you have to do this weird while loop okay and that's how it works okay and then
+[3862.20s -> 3865.96s]  you should remember to close your files at the end we do use valgrind to make sure that you
+[3865.96s -> 3876.92s]  do that okay make copy there is copy okay let's do copy.c to copy copy.c and diff copy.c
+[3876.92s -> 3882.28s]  and copy copy.c there we go they're the same okay so that's how that worked not too
+[3882.84s -> 3887.88s]  difficult as far as like what's going on but there's some nuances in there you can't write
+[3887.88s -> 3891.72s]  all the bytes at once and expect that they all wrote you can't read all the bytes at once
+[3891.72s -> 3895.24s]  necessarily and expect that they all read except in this case it does we know that it
+[3895.24s -> 3901.08s]  blocks before it does that okay and that's the that's the the way the copy program works and
+[3901.08s -> 3906.44s]  the copy program on your computer is not that much more the cp command is not that much more
+[3906.44s -> 3911.88s]  advanced than this okay all right so a couple other things about this
+[3913.80s -> 3920.20s]  like i said you should close your files as you do that and let's see what else oh if you were
+[3920.20s -> 3926.36s]  used to c and c++ lots of times you'll use what we call file pointers uppercase f-i-l-e
+[3926.36s -> 3934.36s]  and iostreams and so forth that's a higher level that uses read and write for you
+[3934.36s -> 3938.84s]  basically it knows how to do those those uh while loops and so forth why are we doing it in this
+[3938.84s -> 3942.68s]  class where we use read and write sometimes you have to because of the types of things we're doing
+[3942.68s -> 3948.60s]  and sometimes you want to because you uh you know you want to get that lower level access
+[3948.60s -> 3953.56s]  which might be faster which isn't buffered and so forth and you might actually want that okay
+[3953.56s -> 3958.52s]  a lot of times you use streams and other and file pointers because it's just easier go for it
+[3958.52s -> 3962.44s]  in this class most of the time we use read and write because we need to for various reasons
+[3962.44s -> 3966.28s]  okay let's stop there 10 minutes early if you have questions come on up i'll stick
+[3966.28s -> 3971.80s]  around until the end of class uh wednesday's next class and we'll see you then

@@ -1,0 +1,1033 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 14.00s]  This is week two of the systems lecture where we try to leverage the most out of the hardware we have to make models train faster.
+[14.00s -> 19.00s]  And last week, we talked about parallelism within a single GPU.
+[19.00s -> 23.00s]  And this week, we're talking about parallelism across multiple GPUs.
+[23.00s -> 26.00s]  So this is a picture you should have in your head.
+[26.00s -> 28.00s]  So we have a bunch of nodes.
+[28.00s -> 34.00s]  These are basically computers that each have a number of GPUs, usually eight.
+[34.00s -> 42.00s]  And within each GPU, there's a bunch of streaming multiprocessors, or SMs, which actually do the work.
+[42.00s -> 47.00s]  And you see that in green here are essentially the memory and the communication.
+[47.00s -> 51.00s]  So within each SM, you have a very small L1 cache.
+[51.00s -> 57.00s]  On a GPU, you have high bandwidth memory, HPM, which is bigger.
+[57.00s -> 62.00s]  And then you have these links that connect the different GPUs.
+[62.00s -> 70.00s]  So the way to think about it is that compute has to happen within the SM on these ALUs.
+[70.00s -> 74.00s]  And compute needs inputs and needs to write outputs.
+[74.00s -> 79.00s]  And generally, the inputs and outputs can be relatively far.
+[79.00s -> 81.00s]  If you're lucky, they're on the L1 cache.
+[81.00s -> 84.00s]  If you're, say, less than lucky, they're in HPM.
+[84.00s -> 88.00s]  And now, this week, we're talking about multi-GPU and multi-node training,
+[88.00s -> 92.00s]  where the data that you might need might be across on another GPU.
+[92.00s -> 93.00s]  Right?
+[93.00s -> 99.00s]  So the name of the game is how do you structure all your computation to avoid data transfer bottlenecks?
+[99.00s -> 104.00s]  Because we want to, remember, keep the arithmetic intensity high.
+[104.00s -> 108.00s]  We want to saturate our GPUs, make them go home alone.
+[108.00s -> 111.00s]  And generally, data transfer is going to be a lot slower.
+[111.00s -> 114.00s]  So we have to, that's going to be the bottleneck.
+[114.00s -> 119.00s]  So last week, we saw a bunch of different techniques to try to do that within a GPU,
+[119.00s -> 121.00s]  including fusion and tiling.
+[121.00s -> 126.00s]  So the idea, basically, is that instead of reading and writing from HPM,
+[126.00s -> 130.00s]  you can load into L1 cache or, I guess, shared memory,
+[130.00s -> 136.00s]  which is using the same type of, you know, has the same speed,
+[136.00s -> 144.00s]  and just work there on your local scratch pad and then write out to HPM only judiciously.
+[144.00s -> 149.00s]  And this week, we started looking at communication across GPUs and nodes,
+[149.00s -> 154.00s]  where we have to replicate and shard our models and parameters and optimize our states.
+[154.00s -> 160.00s]  And there, it's, the way we do that will determine the cost.
+[160.00s -> 166.00s]  So here's a kind of, I'm taking a little bit of liberty to put everything in kind of one hierarchy,
+[166.00s -> 169.00s]  you can think, from small fast to big slow.
+[169.00s -> 175.00s]  So the smallest and fastest is on a single node, single GPU, you have L1 cache.
+[175.00s -> 178.00s]  That's extremely fast, but very small.
+[178.00s -> 182.00s]  And then you have HPM on a single GPU.
+[182.00s -> 189.00s]  And then between GPUs on the same node, we have NVLink.
+[189.00s -> 192.00s]  And then finally, we have, you know, NVSwitch.
+[192.00s -> 196.00s]  And of course, this is all in the NVIDIA ecosystem.
+[196.00s -> 204.00s]  So the idea is that many of the core concepts of minimizing data transfer are really the same,
+[204.00s -> 214.00s]  but now the mechanics are a bit different because L1 behaves differently than these kind of NV switches.
+[214.00s -> 221.00s]  So this lecture is going to be mostly about concretizing the concepts from the lecture in code.
+[221.00s -> 225.00s]  There's going to be a few new things, but Tatsu did an excellent job of giving you an overview
+[225.00s -> 228.00s]  of all the different types of parallelism.
+[228.00s -> 233.00s]  I'm going to try to anchor it in the code so we can more deeply understand what's going on.
+[233.00s -> 239.00s]  And then we're going to have, I'm going to refer to this standard out file here,
+[239.00s -> 242.00s]  which is the output of running this lecture.
+[242.00s -> 248.00s]  There were some minor issues I'll spare you of where if you have multi-processing,
+[248.00s -> 251.00s]  then this framework doesn't quite work.
+[251.00s -> 254.00s]  Okay, so this lecture has two parts.
+[254.00s -> 260.00s]  One, in part one, we're going to look at the building blocks collective operations,
+[260.00s -> 264.00s]  which we discussed last time, how this is implemented in Nickel and PyTorch.
+[264.00s -> 266.00s]  And then we're going to do some benchmarking.
+[267.00s -> 271.00s]  And then in part two, we're going to look at actually distributed training,
+[271.00s -> 275.00s]  data, tensor, and pipeline parallelism.
+[275.00s -> 279.00s]  Okay, so let's start with collective operations.
+[279.00s -> 285.00s]  So collective operations are these primitives that are used generally for distributed programming.
+[285.00s -> 288.00s]  And collective means that you have many nodes.
+[288.00s -> 295.00s]  These are actually quite old from at least the 80s in the parallel programming literature.
+[295.00s -> 303.00s]  And generally, they provide better abstraction than trying to manage the point-to-point communication yourself.
+[303.00s -> 310.00s]  So these are really tried and true primitives that have stood the test of time.
+[310.00s -> 312.00s]  So a bit of terminology.
+[312.00s -> 316.00s]  So world size refers essentially to the number of devices, for example, four.
+[316.00s -> 322.00s]  And the rank, sort of confusingly, if you're used to kind of linear algebra,
+[322.00s -> 324.00s]  is actually just refers to device.
+[324.00s -> 328.00s]  So we have rank zero, rank one, rank two, and rank three if you have four devices.
+[328.00s -> 333.00s]  Okay, so the collective operations are as follows.
+[333.00s -> 342.00s]  So starting from broadcast, the idea is you have T0 on one of the ranks,
+[342.00s -> 346.00s]  and you just want to put it on all the other ranks, or all ranks.
+[346.00s -> 348.00s]  Okay, so that's very straightforward.
+[348.00s -> 353.00s]  Scatter is similar, but you have four values,
+[353.00s -> 356.00s]  and you want to put each of the values on a different rank.
+[356.00s -> 362.00s]  So each of the ranks get different values, not the same value.
+[362.00s -> 368.00s]  Gather is sort of the inverse of scatter, where you have each rank having a different value,
+[368.00s -> 372.00s]  and then you bring them all together onto one rank.
+[372.00s -> 379.00s]  You know, reduce is the same as gather except for instead of concatenating, you add them.
+[379.00s -> 386.00s]  All gather is the same as gather except for you just do it for all the destinations.
+[386.00s -> 392.00s]  Gather was just rank zero, or rank one, or rank two, or any individual rank.
+[392.00s -> 395.00s]  All gather is you do it for all of them.
+[395.00s -> 399.00s]  And then finally, reduce scatter, I couldn't find a good picture of this,
+[399.00s -> 403.00s]  so I'm reusing the one from last time,
+[403.00s -> 410.00s]  is like reduce, where you take a bunch of different values,
+[410.00s -> 416.00s]  and you add them, or perform other commutative operation on them,
+[416.00s -> 419.00s]  and put it on one rank.
+[419.00s -> 429.00s]  But like scatter, you're going to be putting different pieces of the vector or tensor on different ranks.
+[430.00s -> 438.00s]  Okay, and remember that all reduce is equivalent to reduce plus all gather.
+[438.00s -> 444.00s]  So the way to remember this terminology is as follows,
+[444.00s -> 449.00s]  because it can get kind of confusing, like which ones all gather, which ones reduce, scatter,
+[449.00s -> 456.00s]  is that reduce just means you're performing some associative and commutative operation,
+[456.00s -> 459.00s]  like sum or min or max or average.
+[459.00s -> 463.00s]  Broadcast scatter is the inverse of gather.
+[463.00s -> 469.00s]  And all just means a destination is all devices.
+[469.00s -> 475.00s]  Okay, so totally this is a review from last time.
+[475.00s -> 481.00s]  So, any questions before I move on?
+[481.00s -> 486.00s]  Since we're going to build on these primitives, so it's useful if everyone understands.
+[493.00s -> 501.00s]  Okay, so now let's see how this is actually implemented, starting with the hardware.
+[501.00s -> 508.00s]  Okay, so here's classically what hardware for GPUs looks like.
+[508.00s -> 511.00s]  So, this is kind of in the home.
+[511.00s -> 516.00s]  You have a computer, I guess, and you have your CPUs.
+[516.00s -> 526.00s]  And generally, you have your GPUs on one node that communicate via a PCI-E bus.
+[526.00s -> 532.00s]  And if you have to go connect, communicate between different nodes,
+[532.00s -> 535.00s]  then this is all connected to Ethernet.
+[535.00s -> 538.00s]  So, this is kind of typically how machines were built.
+[538.00s -> 545.00s]  If you buy a GPU for gaming or something, this is kind of probably what your setup looks like.
+[545.00s -> 551.00s]  As we'll see, this is kind of suboptimal because there's a lot of overhead.
+[551.00s -> 557.00s]  When the data needs to get shipped from GPU to GPU, it has to go through the kernel,
+[557.00s -> 563.00s]  get copied into buffers, and then go through this kind of transport over Ethernet,
+[563.00s -> 566.00s]  and that introduces a lot of overhead.
+[566.00s -> 572.00s]  So, what has happened in modern times with scientific computing and deep learning
+[572.00s -> 576.00s]  is that if you know that you're going to just string a bunch of GPUs together
+[576.00s -> 585.00s]  and do something together, then we're just going to hook the GPUs up directly, basically.
+[585.00s -> 591.00s]  So, in the NVIDIA ecosystem, we have NVLink that directly connects the GPUs,
+[591.00s -> 593.00s]  therefore bypassing the CPU.
+[593.00s -> 599.00s]  You don't need to go through the kernel of the host machine.
+[599.00s -> 606.00s]  And even across nodes, we can connect the GPUs directly via NVSwitch.
+[606.00s -> 608.00s]  So, therefore, we're bypassing Ethernet
+[608.00s -> 615.00s]  because Ethernet was developed a long time ago, clearly not for these type of applications.
+[615.00s -> 620.00s]  So, NVSwitch and NVLink kind of skip all that and just optimize directly
+[620.00s -> 624.00s]  for the type of workloads that we're interested in.
+[624.00s -> 637.00s]  So, if you look at H100s, each GPU has 18 NV links, generation four, coming out.
+[637.00s -> 642.00s]  So, that gives you a total bandwidth of 900 gigabytes.
+[642.00s -> 648.00s]  If you compare to these, it's certainly a lot faster than PCIe
+[648.00s -> 652.00s]  and it's certainly way faster than Ethernet.
+[652.00s -> 660.00s]  And in comparison, if you think about the cost of just going from the SM
+[660.00s -> 665.00s]  to reading from high bandwidth memory, that's still quite a bit faster
+[665.00s -> 669.00s]  by a factor of four or so.
+[669.00s -> 673.00s]  And, of course, these numbers are constantly changing with the new Blackwells.
+[673.00s -> 679.00s]  This number is like two or three times more, I believe.
+[679.00s -> 681.00s]  Okay? Yeah?
+[681.00s -> 686.00s]  For the PCI, does it go through the CPU and then through another GPU
+[686.00s -> 689.00s]  or is it directly used in the GPU?
+[689.00s -> 695.00s]  So, the question is, for the PCIe, how does the data get transferred?
+[695.00s -> 702.00s]  I think it has to still go through the CPU.
+[702.00s -> 709.00s]  Was there another question?
+[709.00s -> 713.00s]  Yeah, the PCIe, I mean, it's developed for things like,
+[713.00s -> 716.00s]  other things are connected to it as well, like your sound card
+[716.00s -> 718.00s]  or your SSD hard drive.
+[718.00s -> 722.00s]  So, it's not really, it's sort of like a general purpose, you know,
+[722.00s -> 724.00s]  bus for communication of devices.
+[724.00s -> 725.00s]  Yeah?
+[725.00s -> 730.00s]  NVLink also has connection with CPUs.
+[730.00s -> 734.00s]  Yeah, so the question is NVLink also connects to the CPU.
+[734.00s -> 738.00s]  We're going to see a bit later how, I think maybe just in this slide,
+[738.00s -> 740.00s]  how things are connected.
+[740.00s -> 741.00s]  Yeah.
+[741.00s -> 743.00s]  So, you still need to talk to your CPU, of course.
+[743.00s -> 745.00s]  Yeah.
+[745.00s -> 748.00s]  Okay, so there's this command that you can run,
+[749.00s -> 755.00s]  and this produces some output, which allows you to see how the GPUs
+[755.00s -> 757.00s]  are actually connected.
+[757.00s -> 760.00s]  So, I ran this on our cluster.
+[760.00s -> 763.00s]  There's eight GPUs.
+[763.00s -> 767.00s]  I guess you won't be able to get eight GPUs, but I guess if you could,
+[767.00s -> 769.00s]  this is what it would look like.
+[769.00s -> 775.00s]  And you see that between every pair of GPUs, there's NV18 connecting.
+[775.00s -> 784.00s]  There's also these kind of network, you know, cards and other things.
+[784.00s -> 787.00s]  Okay.
+[787.00s -> 791.00s]  Oh, yeah, so then network cards are basically what gives you the PCA connection
+[791.00s -> 795.00s]  and the CPUs.
+[795.00s -> 799.00s]  So, okay, so that's the hardware.
+[799.00s -> 801.00s]  So, how do you use the hardware?
+[801.00s -> 807.00s]  So, Nvidia has spent a lot of time developing really good software
+[807.00s -> 810.00s]  on top of their, I guess, really good hardware.
+[810.00s -> 815.00s]  And there's a collective communication library by Nvidia called Nickel.
+[815.00s -> 819.00s]  And this essentially translates the collective operations,
+[819.00s -> 822.00s]  which we looked at before, like all reduce,
+[822.00s -> 825.00s]  into low-level packets that need to be sent between GPUs.
+[825.00s -> 828.00s]  So, this library actually does a lot of work
+[828.00s -> 832.00s]  because it allows the programmer just to operate the level of,
+[832.00s -> 835.00s]  I need this tensor to appear on all the machines.
+[835.00s -> 837.00s]  And it just happens.
+[837.00s -> 839.00s]  Okay?
+[839.00s -> 845.00s]  So, you know, just a little bit of what happens is when you configure,
+[845.00s -> 850.00s]  set up Nickel, you bring up a bunch of, you know, devices.
+[850.00s -> 855.00s]  And there's some communication that happens to figure out the topology of the hardware.
+[855.00s -> 857.00s]  It optimizes the path between the GPUs.
+[857.00s -> 862.00s]  And then, when you actually call these collective communication operations
+[862.00s -> 866.00s]  and then launch CUDA kernels to send and receive data.
+[866.00s -> 867.00s]  Okay, so that's Nickel.
+[867.00s -> 869.00s]  It's provided as a library.
+[869.00s -> 873.00s]  But Nickel is still a bit too low-level to us
+[873.00s -> 877.00s]  because most of what we're doing is, you know, in Python.
+[877.00s -> 881.00s]  So, PyTorch has this Torch.distributed library,
+[881.00s -> 886.00s]  which essentially provides a clean interface for these collective operations.
+[886.00s -> 890.00s]  Now, from the comfort of your PyTorch program,
+[890.00s -> 894.00s]  you can just write all gathered into tensor on a tensor
+[894.00s -> 898.00s]  and it will appear on all the different ranks.
+[899.00s -> 903.00s]  It also has this nice useful feature
+[903.00s -> 906.00s]  that it supports multiple backends for different hardware.
+[906.00s -> 909.00s]  So, in particular, Nickel, remember, was for GPU.
+[909.00s -> 912.00s]  But you can also run collective operations.
+[912.00s -> 914.00s]  Remember, this is not GPU-specific.
+[914.00s -> 917.00s]  This is for any set of devices.
+[917.00s -> 921.00s]  So, you can also do it for CPU using this backend called Glue.
+[921.00s -> 926.00s]  So, if you're debugging stuff on your laptop for your assignment, for example,
+[926.00s -> 931.00s]  you can use Glue and still be able to run things without even a GPU.
+[932.00s -> 936.00s]  So, anyway, that's another advantage of having these high-level primitives
+[936.00s -> 940.00s]  is that they're much more portable than having to, you know,
+[940.00s -> 944.00s]  only having something that's very GPU-specific.
+[946.00s -> 949.00s]  Of course, the performance is gonna really depend on the hardware.
+[949.00s -> 952.00s]  But at least logically, you can make sure your code runs.
+[954.00s -> 959.00s]  PyTorch distributed also supports other high-level things like FSTP,
+[959.00s -> 961.00s]  which Tatsu talked about last lecture.
+[961.00s -> 963.00s]  But we're not gonna use this in this class
+[963.00s -> 966.00s]  because in the spirit of developing things from scratch,
+[966.00s -> 968.00s]  that's just what we're gonna do.
+[969.00s -> 972.00s]  Okay, so let's look at some examples
+[972.00s -> 975.00s]  of how torch.distributed collective operations work.
+[975.00s -> 979.00s]  Okay, so there's this utility function I wrote,
+[979.00s -> 981.00s]  which you can take a look at in the code if you want,
+[981.00s -> 986.00s]  which takes a function and just runs this,
+[986.00s -> 990.00s]  basically it's a wrapper around Python multiprocessing
+[990.00s -> 996.00s]  where it just runs four processes that execute this function.
+[996.00s -> 999.00s]  So when you're in this function, you should think about it
+[999.00s -> 1003.00s]  as there's actually world-size number of processes
+[1003.00s -> 1005.00s]  running this identical function
+[1005.00s -> 1008.00s]  where the rank indexes from zero, one,
+[1008.00s -> 1010.00s]  all the way to world-size minus one.
+[1010.00s -> 1015.00s]  Okay, so right now I'm stepping through just one of the ranks
+[1015.00s -> 1019.00s]  because lectures are not parallel.
+[1019.00s -> 1023.00s]  And so generally what you do is you,
+[1023.00s -> 1028.00s]  the first thing, the process needs to initialize itself
+[1028.00s -> 1032.00s]  and you essentially, they need to kind of find each other,
+[1032.00s -> 1037.00s]  right, because your multiprocessor running a lot of processes,
+[1037.00s -> 1040.00s]  they need to connect to a single host
+[1040.00s -> 1045.00s]  so that they can figure, know that each other exists.
+[1045.00s -> 1049.00s]  So know that this is not where all of the data goes.
+[1049.00s -> 1050.00s]  The data goes through nickel,
+[1050.00s -> 1053.00s]  but this is just for kind of coordination.
+[1053.00s -> 1057.00s]  And since we have a GPU, we can use nickel,
+[1057.00s -> 1060.00s]  otherwise you would use glue.
+[1060.00s -> 1065.00s]  Okay, so after you set up, so now we're going to do some stuff.
+[1065.00s -> 1068.00s]  There's this useful function called barrier
+[1068.00s -> 1072.00s]  which basically waits for all of the processes
+[1072.00s -> 1075.00s]  in your process group to get to this point.
+[1075.00s -> 1078.00s]  Right, remember everything is running asynchronously
+[1078.00s -> 1082.00s]  and in some cases you just want to have a synchronization point,
+[1082.00s -> 1084.00s]  so barrier does that.
+[1084.00s -> 1088.00s]  The reason I put it here is actually sort of for trivial reasons
+[1088.00s -> 1090.00s]  because I want all of these print statements
+[1090.00s -> 1093.00s]  to kind of be grouped together.
+[1093.00s -> 1095.00s]  But there's other reasons why you might want to use barrier
+[1095.00s -> 1097.00s]  as we'll get to later.
+[1097.00s -> 1101.00s]  So I'm going to, for each of these groups,
+[1101.00s -> 1102.00s]  construct a tensor.
+[1102.00s -> 1105.00s]  So the tensor is zero, one, two, three,
+[1105.00s -> 1107.00s]  plus the rank.
+[1107.00s -> 1111.00s]  So I'm going to print out for each rank
+[1111.00s -> 1114.00s]  before it all reduced, what does it look like.
+[1114.00s -> 1118.00s]  Okay, so here's what it looks like.
+[1118.00s -> 1121.00s]  Can people read that in the back?
+[1121.00s -> 1122.00s]  Yes?
+[1122.00s -> 1123.00s]  Okay, good.
+[1123.00s -> 1126.00s]  All right, so our rank zero is zero, one, two, three.
+[1126.00s -> 1128.00s]  Our rank one, one, two, three, four, and so on.
+[1128.00s -> 1130.00s]  And notice that because it's async,
+[1130.00s -> 1135.00s]  the orders, it's just in whatever order it happens to print.
+[1135.00s -> 1136.00s]  Okay?
+[1136.00s -> 1142.00s]  So each rank has a different tensor.
+[1142.00s -> 1145.00s]  And then, then you all reduce.
+[1145.00s -> 1147.00s]  So all reduce, you pass in that tensor,
+[1147.00s -> 1149.00s]  you say, I want to sum it.
+[1149.00s -> 1151.00s]  In this case, I'm not going to do async,
+[1151.00s -> 1154.00s]  but you can do async to,
+[1154.00s -> 1159.00s]  which is useful for overlapping communication and computation.
+[1159.00s -> 1162.00s]  And then, you know, afterwards,
+[1162.00s -> 1164.00s]  what happens after all reduce?
+[1164.00s -> 1167.00s]  As advertised, basically for the first component,
+[1167.00s -> 1169.00s]  you add them up, you get six.
+[1169.00s -> 1172.00s]  This, you get 10, 14, and 18.
+[1172.00s -> 1173.00s]  Okay?
+[1173.00s -> 1177.00s]  So after all reduce, the, basically,
+[1177.00s -> 1184.00s]  this tensor gets overwritten with the corresponding sum.
+[1184.00s -> 1189.00s]  So it's very, very kind of, you know, nice and simple to use.
+[1189.00s -> 1191.00s]  Okay.
+[1191.00s -> 1195.00s]  So, so let's do reduce scatter.
+[1195.00s -> 1202.00s]  So reduce scatter, I'm going to create an input,
+[1202.00s -> 1206.00s]  which is, has dimension, you know, world size,
+[1206.00s -> 1208.00s]  in which case this is four.
+[1208.00s -> 1212.00s]  And I'm going to allocate an output,
+[1212.00s -> 1215.00s]  because reduce scatter is not going to operate in place.
+[1215.00s -> 1217.00s]  This is just going to be a scaler.
+[1217.00s -> 1222.00s]  So before the reduce scatter, this is, you know, what it looks like.
+[1222.00s -> 1225.00s]  I have my, you know, input as before,
+[1225.00s -> 1228.00s]  output, you know, happens to be zeros,
+[1228.00s -> 1232.00s]  but it could be any value, since I didn't initialize it.
+[1232.00s -> 1236.00s]  And then, after the reduce scatter,
+[1236.00s -> 1238.00s]  where I pass in the input and the output,
+[1238.00s -> 1240.00s]  and I'm going to sum,
+[1240.00s -> 1244.00s]  then I get, essentially,
+[1244.00s -> 1248.00s]  what happens is that for the first component, I sum,
+[1248.00s -> 1251.00s]  and that goes on rank zero.
+[1251.00s -> 1256.00s]  For the second component, I sum, and it goes on rank one, and so on.
+[1256.00s -> 1257.00s]  Okay?
+[1257.00s -> 1260.00s]  So as you notice, it is producing the same operation as all reduce,
+[1260.00s -> 1271.00s]  except for the output is sort of scattered across all the different ranks.
+[1271.00s -> 1272.00s]  Okay?
+[1272.00s -> 1275.00s]  So now, let's do all gather.
+[1275.00s -> 1281.00s]  So, I'm going to just directly use the output of reduce scatter,
+[1281.00s -> 1286.00s]  which is this, as the input,
+[1286.00s -> 1292.00s]  and then I'm going to allocate an empty array for the output.
+[1292.00s -> 1298.00s]  And then, so before the all gather, the input is this,
+[1298.00s -> 1304.00s]  and the output, I guess, are just arbitrary values.
+[1304.00s -> 1314.00s]  And after I do the all gather, you know, what happens is I get the,
+[1314.00s -> 1321.00s]  all these tensors to show up in, on all the devices.
+[1321.00s -> 1322.00s]  Okay?
+[1322.00s -> 1325.00s]  So this is just a kind of, also an example.
+[1325.00s -> 1328.00s]  And now, you're very convinced that reduce scatter plus all gathers
+[1328.00s -> 1332.00s]  is just all reduce, because I computed exactly the same quantity
+[1332.00s -> 1340.00s]  as I did for all reduce.
+[1340.00s -> 1341.00s]  Okay.
+[1341.00s -> 1343.00s]  Questions?
+[1343.00s -> 1345.00s]  Is this clear?
+[1345.00s -> 1346.00s]  Yeah?
+[1346.00s -> 1352.00s]  In reduce scatter, how do you get track of which messes to which do you?
+[1352.00s -> 1359.00s]  So the question is, in reduce scatter, do you keep track of which index goes to which GPU?
+[1359.00s -> 1367.00s]  So, by convention, the dimensionality has to be, basically, the world size.
+[1367.00s -> 1371.00s]  I mean, it could be a general tensor, but one of the dimensions is the world size,
+[1371.00s -> 1376.00s]  and it just, you know, infers that basically what you want to do is,
+[1376.00s -> 1384.00s]  the output is, let's say the, sorry, the input has to be basically world size,
+[1384.00s -> 1394.00s]  and then it knows that basically the corresponding computations go to each of the outputs.
+[1394.00s -> 1399.00s]  Yeah, you have to be a bit careful with making sure the dimensionality aligns.
+[1399.00s -> 1404.00s]  So, you know, going through this, you know, smaller examples can be helpful.
+[1404.00s -> 1411.00s]  Is there another question?
+[1411.00s -> 1413.00s]  Okay.
+[1413.00s -> 1422.00s]  So, finally, we're now in this process that's running, and when you're done, you just, you know, clean up.
+[1422.00s -> 1423.00s]  Okay.
+[1423.00s -> 1429.00s]  So, so far we've talked about these collective operations,
+[1429.00s -> 1435.00s]  a bit about how they're implemented in PyTorch and it's nickel and then PyTorch.
+[1435.00s -> 1439.00s]  Let's do a bit of, you know, benchmarking.
+[1439.00s -> 1448.00s]  In the spirit of what we did in assignment, or the first lecture, or rather the second lecture,
+[1448.00s -> 1452.00s]  we're going to focus on one node, you know, for now.
+[1452.00s -> 1455.00s]  So, let's do all reduce.
+[1455.00s -> 1462.00s]  So, I'm going to have this tensor of 100 million elements and a world size of four.
+[1462.00s -> 1463.00s]  Okay.
+[1463.00s -> 1475.00s]  So, I'm going to just allocate a tensor and generally, as I think, as you hopefully are, can appreciate now,
+[1475.00s -> 1481.00s]  that when you benchmark, you have to really be careful to kind of clean your palette in some sense.
+[1481.00s -> 1492.00s]  Like you, in this case, I'm going to warm up, basically run the operation once, and then synchronize and do barrier.
+[1492.00s -> 1500.00s]  Some of this is, I think, probably a bit defensive, but just to be safe so that all the kernels get, you know, loaded
+[1500.00s -> 1503.00s]  and whatever needs to be kind of computed gets computed.
+[1503.00s -> 1512.00s]  And then, I'm going to start the clock, all reduce, and then synchronize again and stop the clock.
+[1512.00s -> 1514.00s]  Okay.
+[1514.00s -> 1520.00s]  So, now I can look at how long that took.
+[1520.00s -> 1526.00s]  Okay, so if I scroll down here, I guess this is not that informative.
+[1526.00s -> 1529.00s]  I should have printed in microseconds probably.
+[1529.00s -> 1532.00s]  It was, I guess, very quick.
+[1532.00s -> 1535.00s]  Some number of seconds.
+[1535.00s -> 1543.00s]  And now let's measure the bandwidth, which is the number of gigabytes that were actually transferred in aggregate per second.
+[1543.00s -> 1549.00s]  Okay, so the way we do that is we have to think about what actually gets transferred here.
+[1549.00s -> 1563.00s]  So, there's a tensor with that element size, and the size of each element is, I guess this, I think this is float 32, so that would be, you know, two.
+[1563.00s -> 1566.00s]  Sorry, four, four bytes.
+[1566.00s -> 1574.00s]  And so that's the size in bytes.
+[1574.00s -> 1578.00s]  Okay, so now this is a little bit, you know, subtle.
+[1578.00s -> 1583.00s]  So, how many bytes are actually sent?
+[1583.00s -> 1584.00s]  Or transferred?
+[1584.00s -> 1587.00s]  Sent slash received.
+[1587.00s -> 1593.00s]  So, each tensor sitting on a rank has size bytes.
+[1593.00s -> 1600.00s]  Okay, and it needs to send it to world size minus one, you know, other machines.
+[1600.00s -> 1603.00s]  Or not, or ranks, rather.
+[1603.00s -> 1606.00s]  So, there, but there's a factor of two.
+[1606.00s -> 1609.00s]  So, why is there a factor of two?
+[1609.00s -> 1612.00s]  Because you're doing it all reduce, remember?
+[1612.00s -> 1618.00s]  So, you need to send all the distinct, you know, elements into basically one place.
+[1618.00s -> 1626.00s]  It needs to get summed up, and then that needs to go back to everyone.
+[1626.00s -> 1627.00s]  Okay?
+[1627.00s -> 1632.00s]  So, a rank needs to just kind of send the input out and then receive the output.
+[1632.00s -> 1635.00s]  So, that's why there's a factor of two there.
+[1635.00s -> 1644.00s]  And so the total duration is the world size times the actual duration that passed.
+[1644.00s -> 1648.00s]  So, I guess we're just kind of assuming that every, we're, you know,
+[1648.00s -> 1653.00s]  if there's four processors, that's sort of like four times as much wall clock time that happened.
+[1653.00s -> 1658.00s]  And the bandwidth is just the bytes over the duration.
+[1658.00s -> 1659.00s]  Okay.
+[1659.00s -> 1662.00s]  So, what do we get here?
+[1662.00s -> 1666.00s]  It's about 277 gigabytes per second.
+[1666.00s -> 1667.00s]  Okay?
+[1667.00s -> 1675.00s]  So, you know, I think for H100 above,
+[1675.00s -> 1680.00s]  I think I claimed that there was something like 900 gigabytes per second.
+[1680.00s -> 1685.00s]  Now, of course, as we know, your mileage varies depending on the size of the tensors
+[1685.00s -> 1689.00s]  and the exact number of devices and the weather and whatever.
+[1689.00s -> 1690.00s]  No, not the weather.
+[1690.00s -> 1693.00s]  But, you know, various factors.
+[1693.00s -> 1695.00s]  So, your mileage might vary.
+[1695.00s -> 1705.00s]  So, it's always good to benchmark to see what is actually the number of gigabytes per second you're getting.
+[1705.00s -> 1706.00s]  Okay.
+[1706.00s -> 1709.00s]  So, reduced scatter is going to be very, very similar.
+[1709.00s -> 1711.00s]  So, let's just go through this very quickly.
+[1711.00s -> 1717.00s]  So, we created input, which is world size times number of elements.
+[1717.00s -> 1722.00s]  So, each rank is going to have this matrix.
+[1722.00s -> 1734.00s]  And so, we're going to warm up and then start the clock, reduce scatter, stop the clock,
+[1734.00s -> 1737.00s]  and then see how long it took.
+[1737.00s -> 1739.00s]  Well, okay, that's not helpful.
+[1739.00s -> 1742.00s]  And then, let's look at the bandwidth.
+[1742.00s -> 1750.00s]  So, the number of sent bytes is no factor of two here because in reduced scatter,
+[1750.00s -> 1757.00s]  remember, all you're doing is you're sending, you know, your inputs into, you know, one place.
+[1757.00s -> 1763.00s]  If you just think about reduced, right, all the elements just go into one place, and that's it.
+[1763.00s -> 1768.00s]  And scatter just means that different components of your tensor are going to different places,
+[1768.00s -> 1772.00s]  but it's, effectively, it's like a, you know, reduce.
+[1772.00s -> 1773.00s]  Okay.
+[1773.00s -> 1781.00s]  So, if you do the same calculation, you'll see that it's, I guess, I got 70 in this case.
+[1781.00s -> 1787.00s]  So, I don't exactly know why it's exactly 70 as opposed to some other number.
+[1787.00s -> 1794.00s]  I guess one could speculate that all reduce, generally, there's more traffic that, you know, happens,
+[1794.00s -> 1798.00s]  and all reduces are, you know, potentially more optimized.
+[1798.00s -> 1802.00s]  I think that NVIDIA hardware has this kind of sharp acceleration
+[1802.00s -> 1810.00s]  that actually does sort of some of these computations in, you know, in the actual network,
+[1810.00s -> 1816.00s]  which shaves off the factor of two, but I don't know if that completely accounts for a difference here.
+[1816.00s -> 1822.00s]  There's a lot of stuff that happens in Nickel that it's a little bit hard to kind of reason
+[1822.00s -> 1828.00s]  about the performance exactly, hence benchmarking.
+[1828.00s -> 1829.00s]  Yeah.
+[1829.00s -> 1834.00s]  I have a question about the set of bytes, or the data bytes, and how those are calculated.
+[1834.00s -> 1841.00s]  Specifically, it looks like, it actually is just like the data that's being sent into the output.
+[1841.00s -> 1844.00s]  But what about, like, the input to the reduction stuff?
+[1844.00s -> 1846.00s]  I'm wondering how it gets to the inputs.
+[1846.00s -> 1847.00s]  Did you think about that?
+[1847.00s -> 1854.00s]  The question is, it seems like this is just the bytes for the output, and what about the input?
+[1854.00s -> 1859.00s]  So, to be clear, I am assuming that the inputs just are already on the device,
+[1859.00s -> 1866.00s]  so I'm not counting that time, and just, I'm just counting what needs to happen to do the reduce scatter.
+[1869.00s -> 1871.00s]  Is this just a scatter operation?
+[1872.00s -> 1874.00s]  This is a reduce scatter operation.
+[1874.00s -> 1878.00s]  So, do you need an reduction sample?
+[1879.00s -> 1882.00s]  So, this function does reduce scatter.
+[1883.00s -> 1885.00s]  So, it's one operation.
+[1887.00s -> 1894.00s]  I mean, like, we really covered twice in the previous lecture, because we were doing reduction,
+[1894.00s -> 1898.00s]  but we covered one half of the bytes in the sample form.
+[1899.00s -> 1906.00s]  So, you're saying that for all reduce, there's a 2x, because you needed to reduce,
+[1906.00s -> 1909.00s]  and then you needed to spread out again.
+[1910.00s -> 1913.00s]  For reduce scatter, I mean, it's just a name.
+[1913.00s -> 1918.00s]  It's called reduce scatter, but it's really just a reduction.
+[1918.00s -> 1932.00s]  Okay, and you can also see, based on this, that if you do reduce scatter and you do all gather,
+[1932.00s -> 1936.00s]  each of those doesn't have the factor of 2, so when you add them up, you get a factor of 2,
+[1936.00s -> 1940.00s]  which is another way to see that all reduces twice.
+[1941.00s -> 1945.00s]  Okay, and there's some references.
+[1945.00s -> 1950.00s]  You can go read about how to benchmark and these collective operations.
+[1951.00s -> 1956.00s]  Okay, so let's now talk about the distributed training piece.
+[1957.00s -> 1962.00s]  So, our general approach here is going to be, I'm going to walk through a bare bones implementation
+[1962.00s -> 1966.00s]  of each strategy on deep MLPs, essentially.
+[1967.00s -> 1973.00s]  So, recall that you generally are in a regime where the MLPs are the compute bottleneck and transformers,
+[1973.00s -> 1978.00s]  not the attention, so in some ways, even though this is a very simple architecture,
+[1978.00s -> 1984.00s]  it's fairly representative of the type of workloads that you'll see.
+[1986.00s -> 1990.00s]  Okay, so let's start with data parallelism.
+[1991.00s -> 1996.00s]  Actually, just one note is that data tensor and pipeline parallelism are,
+[1996.00s -> 2004.00s]  you can just think about them as different ways of cutting up either your model or your data,
+[2004.00s -> 2007.00s]  which hopefully I'll depict visually here.
+[2008.00s -> 2012.00s]  Okay, so in data parallelism, here's your model.
+[2012.00s -> 2017.00s]  Assuming it has four layers, each layer of the MLP is just a matrix multiply,
+[2017.00s -> 2023.00s]  where this is the hidden dimension, and so the data is also a matrix,
+[2023.00s -> 2027.00s]  which is, there's the batch dimension and then the hidden dimension.
+[2027.00s -> 2035.00s]  And data parallel just cuts along the batch dimension into essentially smaller pieces.
+[2036.00s -> 2042.00s]  Okay, so now each rank is going to get a different slice of the data.
+[2042.00s -> 2045.00s]  So, let's do an example here.
+[2045.00s -> 2047.00s]  So, I'm going to generate some sample data.
+[2047.00s -> 2053.00s]  So, let's say I have a batch size of 128, hidden dimension of 1024,
+[2053.00s -> 2056.00s]  and then just generate some random data.
+[2057.00s -> 2060.00s]  Okay, so I have batch size by number of dimension,
+[2060.00s -> 2066.00s]  and I'm going to run this data parallel algorithm, or DDP.
+[2067.00s -> 2075.00s]  So, here I'm going to, so I got past this data,
+[2075.00s -> 2080.00s]  there's a batch size and the dimension, as claimed from before.
+[2080.00s -> 2085.00s]  Now, I divide the batch size by the world size, so I get the local batch size,
+[2085.00s -> 2092.00s]  and that's how many, you know, how big the batch size is on a given rank.
+[2093.00s -> 2100.00s]  And then I'm going to, based on the rank, just figure out which starting and ending indices
+[2100.00s -> 2104.00s]  of size, local batch size I need to access,
+[2104.00s -> 2107.00s]  and then get the corresponding data from that.
+[2107.00s -> 2113.00s]  So, basically I'm just reaching in and grabbing some subset of the rows based on the rank.
+[2114.00s -> 2118.00s]  Okay, so now I'm setting up the MLP here,
+[2118.00s -> 2124.00s]  and this is done very sort of bare bones, you could say.
+[2124.00s -> 2128.00s]  So, here I am creating the MLP parameters.
+[2128.00s -> 2135.00s]  So, each layer has essentially a matrix which is num dimension by num dimension,
+[2135.00s -> 2137.00s]  and remember num dimension is 1024.
+[2139.00s -> 2141.00s]  And I'm going to create the optimizer.
+[2141.00s -> 2150.00s]  So, remember this function is running asynchronously on all the different, on each rank.
+[2150.00s -> 2155.00s]  So, each of the four ranks is going to be running this with rank equals 0, 1, 2, 3.
+[2155.00s -> 2158.00s]  And now I'm going to start training.
+[2158.00s -> 2163.00s]  So, for a number of steps, I'm going to do a forward pass through the layers,
+[2163.00s -> 2168.00s]  matrix multiply nonlinearity, matrix multiply nonlinearity, there's four layers here,
+[2168.00s -> 2173.00s]  going to compute some loss, I don't really care what the loss is, it's just made up, something made up.
+[2173.00s -> 2175.00s]  And I'm going to do the backward pass.
+[2175.00s -> 2181.00s]  So, so far, this just looks like I'm implementing SGD, right?
+[2181.00s -> 2183.00s]  And that's kind of the point.
+[2183.00s -> 2190.00s]  The only difference is now to implement DDP is that you just like inject this line here,
+[2190.00s -> 2193.00s]  which synchronizes the gradients across workers.
+[2193.00s -> 2202.00s]  So, what you do is for each of the layers, you call it all reduce, where you're averaging,
+[2202.00s -> 2207.00s]  and the thing you're averaging is param.grad.
+[2207.00s -> 2208.00s]  Okay?
+[2208.00s -> 2213.00s]  So, it's just like you've kind of hijacked this, someone's SGD code, and you're saying,
+[2213.00s -> 2218.00s]  wait, I'm actually going to just mix all the gradients after the backward pass.
+[2218.00s -> 2225.00s]  And then after you do that, you just update the parameters as usual.
+[2225.00s -> 2229.00s]  So, from the SGD perspective, it seems like nothing is happening, I'm just running SGD,
+[2229.00s -> 2238.00s]  but, you know, someone has just, you know, mixed my gradients.
+[2238.00s -> 2240.00s]  Okay?
+[2240.00s -> 2247.00s]  So, I guess just to print out some things.
+[2247.00s -> 2251.00s]  So, data parallel, I'm printing out the loss.
+[2251.00s -> 2257.00s]  So, one thing to note is that the losses are different between all the different ranks,
+[2257.00s -> 2259.00s]  because they have different datas.
+[2259.00s -> 2266.00s]  But after the all reduce, all of the parameters are, you know, the same.
+[2266.00s -> 2267.00s]  Okay?
+[2267.00s -> 2273.00s]  So, this is kind of your textbook application of all reduce in ML setup.
+[2273.00s -> 2274.00s]  Yeah?
+[2275.00s -> 2293.00s]  So, the question is, how do you ensure, if all of these processes are just running asynchronously,
+[2293.00s -> 2299.00s]  how do you make sure that each of them is actually, for example, on the same step?
+[2299.00s -> 2304.00s]  This is because all reduce is a synchronization point.
+[2304.00s -> 2309.00s]  It'll stop everyone and do the all reduce.
+[2309.00s -> 2317.00s]  So, you have to be careful, because if one of your, you know, ranks has a missing all reduce,
+[2317.00s -> 2319.00s]  then it'll just, you know, hang.
+[2326.00s -> 2327.00s]  Yeah?
+[2327.00s -> 2330.00s]  Oh, why does getting the initial parameters depend on the rank?
+[2330.00s -> 2334.00s]  The question is, why does getting the initial parameters depend on the rank?
+[2334.00s -> 2335.00s]  They're the same.
+[2335.00s -> 2336.00s]  They should be the same.
+[2336.00s -> 2337.00s]  They're the same?
+[2337.00s -> 2345.00s]  The reason is just because, I guess I don't, the code for this basically puts it on the appropriate GPU.
+[2345.00s -> 2347.00s]  Oh, okay.
+[2350.00s -> 2352.00s]  Okay, any other questions?
+[2358.00s -> 2364.00s]  So, DDP is something you're implementing in assignment two, which may be something you have, you know,
+[2364.00s -> 2366.00s]  looked at or maybe not.
+[2366.00s -> 2372.00s]  It'll be done in the context of a transformer, but this is sort of the most bare bones version,
+[2372.00s -> 2375.00s]  so you can see very clearly what's happening.
+[2378.00s -> 2381.00s]  Okay, so that's DDP.
+[2381.00s -> 2390.00s]  Losses are different across ranks, but the gradients are reduced to be all the same,
+[2390.00s -> 2396.00s]  so therefore the parameters of all the ranks are the same.
+[2396.00s -> 2403.00s]  Right, so actually you're doing world size number of SGD runs,
+[2403.00s -> 2406.00s]  but because they're synchronized, they're doing the same thing.
+[2406.00s -> 2412.00s]  So you can think about this as sort of an instantiation of, you know, analog of activation,
+[2412.00s -> 2417.00s]  you know, checkpointing where sometimes you just do extra compute because you don't want to store things.
+[2417.00s -> 2421.00s]  In this case, you know, we could have, for example, shipped the optimizer state around,
+[2421.00s -> 2428.00s]  but that would be a bad idea because, you know, it's much faster just to update the optimizer state
+[2428.00s -> 2432.00s]  than to actually move the optimizer parameters around.
+[2433.00s -> 2440.00s]  Okay, so last year I did try to do FSDP, but that was sort of a hairball,
+[2440.00s -> 2446.00s]  so I'm gonna skip that, and do a tensor parallel.
+[2446.00s -> 2452.00s]  So here the picture is, we leave the data the same,
+[2452.00s -> 2460.00s]  and now what we're gonna do is we're gonna cut the model along the hidden dimension.
+[2461.00s -> 2466.00s]  Okay, so each rank is going to get every layer,
+[2466.00s -> 2469.00s]  but it's gonna get only part of each layer.
+[2469.00s -> 2476.00s]  And what we're gonna end up doing is transfer all the data and the activations around.
+[2476.00s -> 2484.00s]  Okay, so we're generating the same sample data, and let's look at tensor parallel.
+[2485.00s -> 2492.00s]  Okay, so I have the batch size and number of dimension as before,
+[2492.00s -> 2499.00s]  and now I'm going to, before I was cutting batch size, but now I'm cutting num dim,
+[2499.00s -> 2509.00s]  so I have local num dim equals 1024 divided by world size, and that's 256.
+[2509.00s -> 2517.00s]  So each model essentially, sorry, each rank gets a part of the model
+[2517.00s -> 2522.00s]  which is one over the world size fraction of the parameters.
+[2522.00s -> 2525.00s]  Okay, and remember the whole, why we're doing parallelism at all
+[2525.00s -> 2529.00s]  is because the model won't be able to fit into a single GPU,
+[2529.00s -> 2534.00s]  so we're going to shard it across multiple GPUs.
+[2534.00s -> 2543.00s]  Okay, so the parameter matrices are now num dim by local num dim.
+[2543.00s -> 2549.00s]  And now each rank is going to, I'm only gonna implement the forward pass here,
+[2549.00s -> 2552.00s]  not the whole training loop.
+[2552.00s -> 2557.00s]  So I'm gonna start going through all the layers.
+[2557.00s -> 2562.00s]  So I'm gonna compute the activations first.
+[2562.00s -> 2569.00s]  So this looks pretty normal, except for remember the activations are actually batch sized by local num dim
+[2569.00s -> 2576.00s]  rather than num dim because I only, each rank only has a fraction of the activations now.
+[2576.00s -> 2583.00s]  But now once I get the activations, I need to, you know, communicate.
+[2583.00s -> 2591.00s]  And here I, what I have to do is I'm gonna allocate memory for all the activations.
+[2591.00s -> 2603.00s]  So at this point, every one has a, has an x, but that x represents a different part of the activations.
+[2603.00s -> 2611.00s]  Okay, so now I'm going to just allocate batch size, local num dim, but world size number.
+[2611.00s -> 2616.00s]  So basically each rank is going to basically have enough,
+[2616.00s -> 2627.00s]  I'm gonna just get the, basically have world size number of batch size by local num dim matrices.
+[2627.00s -> 2632.00s]  And then I'm going to do an all gather.
+[2632.00s -> 2633.00s]  Okay?
+[2633.00s -> 2643.00s]  So I'm going to send all the activations, and this, I mean it's fairly simple.
+[2643.00s -> 2647.00s]  So x, remember, is batch size times local num dim.
+[2647.00s -> 2649.00s]  But x is different for every rank.
+[2649.00s -> 2662.00s]  So when I do the all gather, I'm going to put it in activations which has essentially a world size number of, you know, the same shape as x.
+[2662.00s -> 2668.00s]  Okay, so now every rank has the same activations.
+[2668.00s -> 2673.00s]  Now it has the activations of all the models, of the whole model.
+[2673.00s -> 2679.00s]  Okay, and then just like, just to concatenate them together to get, you know, x.
+[2679.00s -> 2688.00s]  Okay, so now x is now again batch size by num dim.
+[2688.00s -> 2693.00s]  Okay, and I, you know, repeat.
+[2693.00s -> 2698.00s]  So as you can see, this is, you know, there's quite a bit of communication that happens.
+[2698.00s -> 2705.00s]  Which is why, you know, remember Tatsu said that for tensor parallel you need pretty high interconnects.
+[2705.00s -> 2711.00s]  Otherwise you'll be passing a lot of these activations around.
+[2711.00s -> 2718.00s]  Okay, and then you do it for the next layer and the next layer, and you get the idea.
+[2718.00s -> 2721.00s]  And just to print out some output.
+[2721.00s -> 2732.00s]  So tensor parallel, let's see here, forward pass produces activations of basically the, you know, the full size.
+[2732.00s -> 2743.00s]  And everyone has the same activations at the end.
+[2743.00s -> 2752.00s]  Okay, so backward pass I'm going to skip because that's kind of annoying to do.
+[2752.00s -> 2760.00s]  All right, any questions about that?
+[2760.00s -> 2761.00s]  Yeah.
+[2761.00s -> 2764.00s]  I was wondering why it's hard to do the backward pass.
+[2764.00s -> 2766.00s]  So why is it hard to do the backward pass?
+[2766.00s -> 2776.00s]  I don't think it's necessarily hard but in, I guess, in the constrained, you know, time and space it's not hard.
+[2776.00s -> 2784.00s]  It's just, you know, requires a bit more work.
+[2784.00s -> 2787.00s]  Okay.
+[2787.00s -> 2790.00s]  So now let's go to pipeline parallelism.
+[2790.00s -> 2795.00s]  So in this case we're cutting the model bilayers.
+[2795.00s -> 2809.00s]  So all the ranks get all the data and all the ranks, each rank gets all of one layer but they get different layers.
+[2809.00s -> 2818.00s]  Okay, so sample the data and run this program, this function for all of the ranks.
+[2818.00s -> 2832.00s]  Okay, so here I'm going to figure out how many layers go in each, you know, rank, which is two here.
+[2832.00s -> 2839.00s]  So I have a four layer network, I have two, you know, two ranks.
+[2839.00s -> 2847.00s]  So each rank gets two of the layers, just like this picture actually.
+[2847.00s -> 2856.00s]  And here I'm going to just allocate the parameters just for the layers that I need.
+[2856.00s -> 2859.00s]  Okay.
+[2859.00s -> 2863.00s]  So I'm gonna do the forward pass.
+[2863.00s -> 2874.00s]  Remember there's a further optimization that you can, you do, which is, you know, if you just, you know, do it naively,
+[2874.00s -> 2879.00s]  you get these pipeline bubbles that Tatsu talked about before.
+[2879.00s -> 2884.00s]  One way to sort of mitigate that is to break up the batch into micro batches.
+[2884.00s -> 2897.00s]  So here I'm going to divide this batch into, you know, batches of size 32, so four batches of size 32.
+[2897.00s -> 2908.00s]  And then now the idea is that every rank is going to essentially wait for the previous rank to pass it to the activations.
+[2908.00s -> 2913.00s]  It's going to apply those layers and then it's going to forward it to the next rank.
+[2913.00s -> 2920.00s]  So starting on the base case, we have rank equals zero, that's just the data.
+[2920.00s -> 2926.00s]  So I'm just chunking the data into a bunch of micro batches.
+[2926.00s -> 2934.00s]  And going through each of the micro batches, I, first I receive the tensor.
+[2934.00s -> 2942.00s]  So I'm using these point-to-point primitives now instead of the collective primitives.
+[2942.00s -> 2949.00s]  And I essentially, you know, basically receive the tensor X.
+[2949.00s -> 2953.00s]  And then I'm going to compute the layers that are assigned to this rank.
+[2953.00s -> 2956.00s]  So in this case, there's only two of them.
+[2956.00s -> 2962.00s]  And then I'm going to send it to the next rank.
+[2962.00s -> 2968.00s]  And then again, send is a point-to-point, you know, operation.
+[2968.00s -> 2973.00s]  And then the next batch, I'm going to do the same thing.
+[2973.00s -> 2977.00s]  Okay, so I'm going to skip that.
+[2977.00s -> 2979.00s]  Okay, so that's basically it.
+[2979.00s -> 2985.00s]  So in parallel, at least the very naive version of it is relatively conceptually simple.
+[2985.00s -> 2992.00s]  As Satu mentioned last time, there's many things that are missing from this basic implementation.
+[2992.00s -> 2999.00s]  Overlapping the communication and computation is something we're not doing at all here.
+[2999.00s -> 3004.00s]  For example, receive and send are synchronous, but you should really make them async.
+[3004.00s -> 3011.00s]  And also the order in which you do the forward, actually this is just the forward even, not the backward.
+[3011.00s -> 3022.00s]  But once you have the backward, then you have to figure out how to interleave the forward and the backward steps.
+[3022.00s -> 3023.00s]  Yeah.
+[3023.00s -> 3027.00s]  I guess maybe what you just mentioned about the async of being shown here,
+[3027.00s -> 3031.00s]  I guess in actual edX, the GPU will be sort of releasing,
+[3031.00s -> 3034.00s]  like whether or not it passes something good,
+[3034.00s -> 3040.00s]  and it's kind of used to kind of put it in an event-driven sort of,
+[3040.00s -> 3046.00s]  like it only starts processing it once the player before it passes it.
+[3046.00s -> 3048.00s]  And then it starts point-to-sign.
+[3048.00s -> 3051.00s]  So the question is, is this kind of like event-driven programming,
+[3051.00s -> 3056.00s]  where you're just kind of waiting for things to happen?
+[3056.00s -> 3061.00s]  In event-driven programming, you basically write these handlers,
+[3061.00s -> 3064.00s]  and then whenever stuff happens, maybe you get a mouse click,
+[3064.00s -> 3069.00s]  maybe you get a file-ready event, then a piece of code runs.
+[3069.00s -> 3072.00s]  That's quite different, I think, from this style of coding,
+[3072.00s -> 3077.00s]  where everything has to work in lockstep.
+[3077.00s -> 3084.00s]  It is true that you're sort of waiting for the previous rank
+[3084.00s -> 3087.00s]  to send you the information, but at least in this implementation,
+[3087.00s -> 3091.00s]  there's no flexibility of where it's getting from.
+[3091.00s -> 3095.00s]  It's not like it's waiting for arbitrary data to come from anywhere.
+[3095.00s -> 3100.00s]  I think there are ways to do asynchronous training,
+[3100.00s -> 3106.00s]  which was, I think, quite popular more than 10 years ago,
+[3106.00s -> 3112.00s]  where it's more event-driven, where you have a server that sends data,
+[3112.00s -> 3115.00s]  and whenever the gradients are ready, it just uploads,
+[3115.00s -> 3117.00s]  and then the gradients get accumulated,
+[3117.00s -> 3124.00s]  and if workers die, then that's sort of handled more robustly.
+[3124.00s -> 3130.00s]  But in modern training, despite scaling up quite a bit,
+[3130.00s -> 3137.00s]  everything seems to be kind of in a synchronous paradigm.
+[3137.00s -> 3143.00s]  Yeah, so it is true that when I say the workers are,
+[3143.00s -> 3145.00s]  and the ranks are, operating asynchronous,
+[3145.00s -> 3148.00s]  that's just because it's different processes,
+[3148.00s -> 3151.00s]  but you're still putting quite rigid synchronization
+[3151.00s -> 3155.00s]  on how everything is working in lockstep.
+[3155.00s -> 3157.00s]  Yeah?
+[3157.00s -> 3170.00s]  So the question is, how would you change this to overlap communication and computation?
+[3170.00s -> 3173.00s]  So, for example, when you send this,
+[3173.00s -> 3177.00s]  there's no reason to just wait for the data to be sent.
+[3177.00s -> 3181.00s]  You just basically fire off the send.
+[3181.00s -> 3185.00s]  Remember, the send actually happens on the GPU via some kernel launch,
+[3185.00s -> 3188.00s]  so that's sort of independent.
+[3188.00s -> 3193.00s]  And it can just go and process another micro-batch right away.
+[3193.00s -> 3198.00s]  So the way I think you would do this is there's another function called isend,
+[3198.00s -> 3206.00s]  which is asynchronous, actually this should be asynchronous,
+[3206.00s -> 3209.00s]  asynchronous, which returns a handle,
+[3209.00s -> 3211.00s]  and so you basically do all the send,
+[3211.00s -> 3218.00s]  and then at the end you basically wait for all the sends to complete.
+[3218.00s -> 3224.00s]  And then for overlapping, when you actually have the backwards step,
+[3224.00s -> 3231.00s]  then you basically have to schedule that in here.
+[3231.00s -> 3233.00s]  Yeah?
+[3233.00s -> 3248.00s]  So the question is, if you have multiple sends and multiple receives,
+[3248.00s -> 3250.00s]  how do you know which is which?
+[3250.00s -> 3254.00s]  So here, the tensor name doesn't matter.
+[3254.00s -> 3258.00s]  It's just whatever variable is there,
+[3258.00s -> 3262.00s]  and what you're specifying is the source.
+[3262.00s -> 3265.00s]  So if I'm at a node and I'm receiving,
+[3265.00s -> 3270.00s]  then whatever the next message coming from that rank,
+[3270.00s -> 3277.00s]  I'm just going to put in this x and continue executing.
+[3277.00s -> 3281.00s]  What if I want to do two sends from the same rank?
+[3281.00s -> 3290.00s]  If you want to do two sends from the same rank to the same destination?
+[3290.00s -> 3300.00s]  So I'm not quite sure about this,
+[3300.00s -> 3304.00s]  but I think if you have two sends, it's sort of put in a stream,
+[3304.00s -> 3307.00s]  so the order of the sends still is preserved.
+[3307.00s -> 3311.00s]  It's just that other stuff can happen at the same time.
+[3311.00s -> 3314.00s]  Like, you know, you can send to,
+[3314.00s -> 3318.00s]  like, I think if you have a pair and you do two sends,
+[3318.00s -> 3319.00s]  then that order is preserved.
+[3319.00s -> 3323.00s]  But the order in which, you know,
+[3323.00s -> 3326.00s]  you send some other rank is sending to another rank,
+[3326.00s -> 3333.00s]  it can happen at any time.
+[3333.00s -> 3334.00s]  Yeah?
+[3334.00s -> 3336.00s]  What would happen if you just did, like, this dot send
+[3336.00s -> 3338.00s]  and no one's receiving it?
+[3338.00s -> 3340.00s]  The motor just gets up there, like?
+[3340.00s -> 3343.00s]  So what happens if you send and no one receives it?
+[3343.00s -> 3345.00s]  I think it would just stop.
+[3345.00s -> 3347.00s]  It would just wait.
+[3347.00s -> 3350.00s]  Because there's no, yeah.
+[3350.00s -> 3355.00s]  I mean, because, I mean, the process could just be running
+[3355.00s -> 3358.00s]  and you don't know whether it will, it's just,
+[3358.00s -> 3360.00s]  I mean, it's just code executing,
+[3360.00s -> 3362.00s]  so you don't know if it's never going to get there
+[3362.00s -> 3366.00s]  or if it's just going to be a matter of time.
+[3366.00s -> 3367.00s]  Yeah?
+[3367.00s -> 3370.00s]  What happens to the last rank?
+[3370.00s -> 3373.00s]  So the question is, what happens to the last rank?
+[3373.00s -> 3377.00s]  So at the end, the last rank has all the activation.
+[3377.00s -> 3381.00s]  So that has basically the results of a full forward pass.
+[3381.00s -> 3384.00s]  And then, you know, if you implement the backward pass,
+[3384.00s -> 3388.00s]  then you would be actually now computing the gradient
+[3388.00s -> 3391.00s]  with respect to loss, and then you would go back down
+[3391.00s -> 3402.00s]  and send to, from rank to rank minus one and so on.
+[3402.00s -> 3403.00s]  Okay.
+[3403.00s -> 3406.00s]  I guess maybe, I was afraid I was going to run out of time,
+[3406.00s -> 3409.00s]  but it looks like I actually have time.
+[3409.00s -> 3413.00s]  Maybe next year I should do the backward pass.
+[3413.00s -> 3417.00s]  Okay, so actually I'm going to finish quite early today.
+[3417.00s -> 3421.00s]  So if you have any other questions, you should ask.
+[3421.00s -> 3425.00s]  So, so far we've gone through three simple examples
+[3425.00s -> 3428.00s]  of data tensor pipeline parallel.
+[3428.00s -> 3432.00s]  Of course, this is for simple MLPs.
+[3432.00s -> 3435.00s]  You would actually want to do this with your own,
+[3435.00s -> 3440.00s]  you know, fancier model, like a transformer.
+[3440.00s -> 3444.00s]  I did argue that at least at the core idea,
+[3444.00s -> 3448.00s]  as you can sort of understand through the MLP,
+[3448.00s -> 3452.00s]  I think the, but of course when you want to train,
+[3452.00s -> 3455.00s]  you want to train transformer, not a deep MLP.
+[3455.00s -> 3460.00s]  So you still have to implement the full complexity.
+[3460.00s -> 3462.00s]  What's also missing is the communication
+[3462.00s -> 3466.00s]  and computation overlap, which is not really handled
+[3466.00s -> 3469.00s]  very carefully here.
+[3469.00s -> 3474.00s]  And there is generally more complex code with bookkeeping.
+[3474.00s -> 3476.00s]  I encourage you to check out Megatron LM
+[3476.00s -> 3479.00s]  or PyTorch's FSTP.
+[3479.00s -> 3483.00s]  It gets fairly hairy.
+[3483.00s -> 3486.00s]  And one of the things that I think makes
+[3486.00s -> 3489.00s]  some of the bookkeeping, at least for, let's say, FSTP,
+[3489.00s -> 3492.00s]  and you'll be exposed to this in A2 a bit,
+[3492.00s -> 3495.00s]  is that if you want something that handles
+[3495.00s -> 3499.00s]  arbitrary architectures, then you have to, you know,
+[3499.00s -> 3502.00s]  figure out the parameters and do a bunch of bookkeeping
+[3502.00s -> 3505.00s]  to figure out where the layers are and so on.
+[3505.00s -> 3508.00s]  Whereas in the MLP case, it's just,
+[3508.00s -> 3510.00s]  I've sort of made the decision that I'm going to
+[3510.00s -> 3515.00s]  split the model in this particularly simple way.
+[3515.00s -> 3518.00s]  One other thing I'll just mention as an aside
+[3518.00s -> 3521.00s]  is that all of what we're doing in this course
+[3521.00s -> 3525.00s]  is PyTorch, but it is useful to be aware of
+[3525.00s -> 3529.00s]  this whole other ecosystem around JAX and TPUs,
+[3529.00s -> 3534.00s]  which is actually kind of nice in some way.
+[3534.00s -> 3539.00s]  And the idea here is JAX allows you to just
+[3539.00s -> 3541.00s]  define the model.
+[3541.00s -> 3543.00s]  It defines the sharding strategy,
+[3543.00s -> 3546.00s]  and then the JAX compiler handles the rest.
+[3546.00s -> 3550.00s]  So there's this toolkit that we developed
+[3550.00s -> 3553.00s]  called Lavantur, based on JAX.
+[3553.00s -> 3557.00s]  And I'll just show you a snippet of what happened.
+[3557.00s -> 3560.00s]  So this is FSTP in 10 lines of code.
+[3560.00s -> 3567.00s]  And basically you have a model,
+[3567.00s -> 3571.00s]  and then you just say shard with this particular,
+[3571.00s -> 3574.00s]  I mean, I don't expect you to kind of read this exactly,
+[3574.00s -> 3577.00s]  but basically you define which dimension
+[3577.00s -> 3582.00s]  you're going to shard by, and then that's it.
+[3582.00s -> 3585.00s]  And similarly for tensor parallel,
+[3585.00s -> 3592.00s]  you're just saying I'm going to shard the model along the,
+[3592.00s -> 3598.00s]  you can shard on the head dimension for attention,
+[3598.00s -> 3603.00s]  and also you can shard based on the model dimension.
+[3603.00s -> 3609.00s]  So in some sense, this gives you a sort of conceptual
+[3609.00s -> 3612.00s]  simplicity of what you're trying to do
+[3612.00s -> 3617.00s]  is you have this basically computation graph,
+[3617.00s -> 3620.00s]  but it has these kind of dimensions,
+[3620.00s -> 3623.00s]  the model dimensions, the embedding dimension,
+[3623.00s -> 3625.00s]  the attention, sequence dimension,
+[3625.00s -> 3630.00s]  and JAX allows you to basically just specify
+[3630.00s -> 3633.00s]  which dimensions you want to cut by
+[3633.00s -> 3637.00s]  and also define a mapping from that onto the actual TPUs.
+[3637.00s -> 3641.00s]  And then the JAX compiler magically just figures out
+[3641.00s -> 3644.00s]  how to compile that down into the primitives
+[3644.00s -> 3647.00s]  that shuffle things around.
+[3647.00s -> 3650.00s]  So this is much more higher level than
+[3650.00s -> 3655.00s]  doing the, operating with a collective communication.
+[3655.00s -> 3659.00s]  But we're sticking with PyTorch because
+[3659.00s -> 3663.00s]  it allows you to see kind of underneath the hood
+[3663.00s -> 3665.00s]  what's actually happening.
+[3665.00s -> 3668.00s]  But if you're actually doing this in the real world,
+[3668.00s -> 3670.00s]  obviously you don't need to,
+[3670.00s -> 3674.00s]  and you probably shouldn't implement all this from scratch.
+[3674.00s -> 3678.00s]  Okay, so that's the end of the JAX digression.
+[3678.00s -> 3681.00s]  So just to summarize,
+[3681.00s -> 3686.00s]  we've seen many ways to parallelize so far.
+[3686.00s -> 3688.00s]  And each of these ways of parallelizing is
+[3688.00s -> 3691.00s]  you can think about just like splitting
+[3691.00s -> 3694.00s]  either the model or the data along some dimension,
+[3694.00s -> 3696.00s]  either the data, the batch dimension,
+[3696.00s -> 3698.00s]  the width dimension, or the depth dimension,
+[3698.00s -> 3702.00s]  or the context length dimension.
+[3702.00s -> 3709.00s]  We also see this kind of recurring theme of recomputation.
+[3709.00s -> 3716.00s]  You can kind of recompute something from scratch,
+[3716.00s -> 3718.00s]  or you can store it in memory
+[3718.00s -> 3721.00s]  and suffer the data transfer cost.
+[3721.00s -> 3725.00s]  Or now in the multi-GPU, multi-node setting,
+[3725.00s -> 3728.00s]  you can actually store on another GPU's memory
+[3728.00s -> 3733.00s]  and then communicate, which is even slower.
+[3733.00s -> 3738.00s]  So there's kind of these trade-offs here,
+[3738.00s -> 3743.00s]  and often recomputation is actually,
+[3743.00s -> 3748.00s]  can be better, but obviously you can't
+[3748.00s -> 3750.00s]  recompute the whole thing.
+[3750.00s -> 3754.00s]  And often you're either communication or memory limited.
+[3754.00s -> 3758.00s]  A final word is that it is the case
+[3758.00s -> 3760.00s]  that hardware is getting better.
+[3760.00s -> 3762.00s]  So you might think that, well,
+[3762.00s -> 3764.00s]  maybe none of this is really necessary
+[3764.00s -> 3769.00s]  because in five years everything will fit in L1 HBM.
+[3769.00s -> 3771.00s]  So this is not gonna be the case
+[3771.00s -> 3776.00s]  because those might grow quite a bit,
+[3776.00s -> 3779.00s]  although there are still physical limits.
+[3779.00s -> 3781.00s]  We'll always be ending up with bigger models
+[3781.00s -> 3786.00s]  that sort of are at the limit of what the hardware can do.
+[3786.00s -> 3790.00s]  So this hierarchical structure, ever since system,
+[3790.00s -> 3793.00s]  computer systems was a thing,
+[3793.00s -> 3798.00s]  has always been with us and it will always be there.
+[3798.00s -> 3801.00s]  Okay, that's all I have for you today.
+[3801.00s -> 3806.00s]  So I can take any questions.
+[3806.00s -> 3807.00s]  Yeah.
+[3807.00s -> 3834.00s]  So the question is in data parallel,
+[3834.00s -> 3836.00s]  you're saying that even though the parameters
+[3836.00s -> 3838.00s]  are all kind of synchronized,
+[3838.00s -> 3841.00s]  there could be other things that depend on the data,
+[3841.00s -> 3843.00s]  like in batch norm.
+[3843.00s -> 3846.00s]  So I don't actually know how you,
+[3846.00s -> 3849.00s]  batch norm's always kind of annoying.
+[3849.00s -> 3852.00s]  So I don't know exactly how you would do that
+[3852.00s -> 3854.00s]  off the top of my head.
+[3854.00s -> 3857.00s]  And I guess at least in the LM world
+[3857.00s -> 3859.00s]  that doesn't really show up
+[3859.00s -> 3863.00s]  because layer norm is used.
+[3863.00s -> 3867.00s]  And as long as you initialize all the parameters
+[3867.00s -> 3869.00s]  and they're using the same random seed,
+[3869.00s -> 3870.00s]  you'll be fine.
+[3870.00s -> 3873.00s]  I mean, there could be like non-determinism issues
+[3873.00s -> 3879.00s]  on the GPU, but hopefully those are, you know, minor.
+[3879.00s -> 3880.00s]  Yeah.
+[3880.00s -> 3892.00s]  So the question is,
+[3893.00s -> 3897.00s]  does PyTorch have some niceties as well,
+[3897.00s -> 3900.00s]  kind of like what Jack's offers?
+[3900.00s -> 3901.00s]  Is that?
+[3901.00s -> 3902.00s]  Yeah.
+[3902.00s -> 3906.00s]  So, I mean, PyTorch does have the FSDP library,
+[3906.00s -> 3907.00s]  which you should absolutely use
+[3907.00s -> 3911.00s]  if you're not taking this class,
+[3911.00s -> 3912.00s]  which basically is a wrapper.
+[3912.00s -> 3916.00s]  You define any model and it just does FSDP on it.
+[3916.00s -> 3919.00s]  I think that now if you're asking
+[3919.00s -> 3923.00s]  how well it can more custom,
+[3923.00s -> 3926.00s]  allow you to more do custom charting,
+[3926.00s -> 3929.00s]  I think there are some things that are coming,
+[3929.00s -> 3933.00s]  but it's not as, I think, as developed.
+[3933.00s -> 3935.00s]  I mean, I think there's sort of this,
+[3935.00s -> 3938.00s]  I think, spectrum between the Jack's world
+[3938.00s -> 3940.00s]  where you sort of declare and define things
+[3940.00s -> 3943.00s]  and I think the Google infrastructure,
+[3943.00s -> 3946.00s]  if you stay within the Jack's TPU system,
+[3946.00s -> 3948.00s]  is pretty well developed.
+[3948.00s -> 3951.00s]  But then if you look at DeepSeq,
+[3951.00s -> 3953.00s]  which is kind of the opposite end,
+[3953.00s -> 3957.00s]  where you have these GPUs
+[3957.00s -> 3960.00s]  with actually really bad interconnect,
+[3960.00s -> 3964.00s]  which means that they have to go in and hack,
+[3964.00s -> 3966.00s]  they actually go to the kind of nickel level
+[3966.00s -> 3968.00s]  and actually do a bunch of things,
+[3968.00s -> 3969.00s]  which I don't quite understand,
+[3969.00s -> 3972.00s]  to eke out the performance.
+[3972.00s -> 3973.00s]  Whereas if you're writing in Jack's,
+[3973.00s -> 3976.00s]  you just kind of from on high declare your model
+[3976.00s -> 3978.00s]  and then stuff happens.
+[3978.00s -> 3981.00s]  So, it's kind of,
+[3981.00s -> 3983.00s]  the ways that you leverage hardware,
+[3983.00s -> 3986.00s]  I think, really depends on what ecosystem
+[3986.00s -> 3989.00s]  you're operating in.
+[3989.00s -> 3990.00s]  Yeah?
+[3990.00s -> 3992.00s]  Is there a real magic star
+[3992.00s -> 3994.00s]  at the end of the computation of the activations,
+[3994.00s -> 3999.00s]  so you can recompute some set of activations?
+[3999.00s -> 4003.00s]  Is there an API which may have been added?
+[4003.00s -> 4004.00s]  Yeah, so the question is,
+[4004.00s -> 4007.00s]  activation checkpointing.
+[4007.00s -> 4011.00s]  There is an API that basically allows you to,
+[4011.00s -> 4013.00s]  I mean, I guess in PyTorch and Jack's,
+[4013.00s -> 4017.00s]  to specify which parts you want to recompute,
+[4017.00s -> 4020.00s]  because clearly you don't want to recompute
+[4020.00s -> 4023.00s]  everything or nothing.
+[4023.00s -> 4026.00s]  Probably every few layers,
+[4026.00s -> 4029.00s]  probably right after big matmalls where,
+[4029.00s -> 4031.00s]  for example, if you have, let's say,
+[4031.00s -> 4034.00s]  MAML and then point-wise,
+[4034.00s -> 4037.00s]  non-linearity, I don't think you need to store
+[4037.00s -> 4039.00s]  like two copies of,
+[4039.00s -> 4041.00s]  basically if you have two things
+[4041.00s -> 4045.00s]  where it's sort of trivial to get to,
+[4045.00s -> 4051.00s]  then you might as well just store one version.
+[4051.00s -> 4053.00s]  Yeah, over there.
+[4053.00s -> 4054.00s]  Can you use our,
+[4054.00s -> 4057.00s]  can you replace the CPA hardware
+[4057.00s -> 4059.00s]  with more specialized hardware?
+[4059.00s -> 4060.00s]  So the question is,
+[4060.00s -> 4062.00s]  are GPUs going to ever be replaced
+[4062.00s -> 4065.00s]  by transformer-specific hardware?
+[4065.00s -> 4069.00s]  So you're seeing this in the inference space
+[4069.00s -> 4073.00s]  quite a bit already with,
+[4073.00s -> 4076.00s]  like Grok and Cerebrus have specialized hardware
+[4076.00s -> 4078.00s]  that can do inference,
+[4078.00s -> 4079.00s]  and also, I guess, training.
+[4079.00s -> 4081.00s]  Cerebrus does training.
+[4081.00s -> 4086.00s]  So basically those hardwares
+[4086.00s -> 4089.00s]  essentially give you just a lot more
+[4089.00s -> 4091.00s]  kind of on-chip memory.
+[4091.00s -> 4094.00s]  I mean, that's basically the name of the game.
+[4094.00s -> 4097.00s]  I think the Cerebrus has like a huge,
+[4097.00s -> 4100.00s]  essentially effectively an L1 cache
+[4100.00s -> 4102.00s]  so you don't have to move things off,
+[4102.00s -> 4105.00s]  and I think a lot of simplifications can happen
+[4105.00s -> 4106.00s]  because GPUs were,
+[4106.00s -> 4109.00s]  there's a lot of baggage, actually, if you think about,
+[4109.00s -> 4111.00s]  because they were divided in an era
+[4111.00s -> 4114.00s]  where you had to do a lot of branching
+[4114.00s -> 4117.00s]  and like various types of ad hoc computations
+[4117.00s -> 4121.00s]  which are not really needed in the deep learning regime.
+[4121.00s -> 4123.00s]  So I think there are quite a few opportunities
+[4123.00s -> 4127.00s]  to improve the hardware as well.
+[4127.00s -> 4130.00s]  I think there was a hand back there, and I'll...
+[4130.00s -> 4133.00s]  I don't know if this is like the right question
+[4133.00s -> 4134.00s]  that I'm thinking about,
+[4134.00s -> 4137.00s]  but in the context of the lecture,
+[4137.00s -> 4142.00s]  it's basically a model that's being trained in one go.
+[4142.00s -> 4144.00s]  That's with optimizing the story,
+[4144.00s -> 4145.00s]  but I'm wondering if any of the techniques
+[4145.00s -> 4148.00s]  that we're talking about can be used
+[4148.00s -> 4150.00s]  to be preemptively trained in model.
+[4150.00s -> 4153.00s]  For example, I can get new training data.
+[4153.00s -> 4155.00s]  Not just to like fight team,
+[4155.00s -> 4157.00s]  but actually to kind of recalculate everything
+[4157.00s -> 4159.00s]  without having to recalculate.
+[4159.00s -> 4161.00s]  Yeah, so the question is,
+[4161.00s -> 4163.00s]  can these techniques be used
+[4163.00s -> 4167.00s]  to essentially do continued training?
+[4167.00s -> 4168.00s]  Yeah, absolutely.
+[4168.00s -> 4170.00s]  So if you think about the unit
+[4170.00s -> 4171.00s]  of what we're working on,
+[4171.00s -> 4174.00s]  it's just doing gradient steps, right?
+[4174.00s -> 4177.00s]  So if you take a half-trained checkpoint,
+[4177.00s -> 4180.00s]  you can just continue doing what this is.
+[4180.00s -> 4187.00s]  There's nothing specific about starting from scratch here.
+[4187.00s -> 4189.00s]  I think there was a question there.
+[4189.00s -> 4193.00s]  So how might the models of specific hardware
+[4193.00s -> 4196.00s]  have the previous question?
+[4196.00s -> 4200.00s]  Presumably there is a physical technical reason
+[4200.00s -> 4206.00s]  you can't make nodes much larger than they are currently.
+[4206.00s -> 4212.00s]  What's the change that you're talking about?
+[4212.00s -> 4218.00s]  So if you could just make GPU nodes infinitely,
+[4218.00s -> 4221.00s]  like as big as you wanted, people would do that.
+[4221.00s -> 4224.00s]  So presumably there's a hardware reason
+[4224.00s -> 4225.00s]  that's not possible.
+[4225.00s -> 4227.00s]  So what's the actual advancement?
+[4227.00s -> 4231.00s]  Being done with the raw specific hardware, you mean?
+[4231.00s -> 4232.00s]  Yeah, so the question is,
+[4232.00s -> 4238.00s]  there are physical limits, for sure, for a GPU.
+[4238.00s -> 4240.00s]  Let me just go.
+[4240.00s -> 4246.00s]  So you can't make GPUs infinitely large
+[4246.00s -> 4247.00s]  or infinitely dense.
+[4247.00s -> 4251.00s]  I mean, there's also power issues.
+[4251.00s -> 4255.00s]  You do get rid of all the heat.
+[4255.00s -> 4261.00s]  And there's only so much bandwidth that can fit.
+[4261.00s -> 4264.00s]  So I don't know the exact details,
+[4264.00s -> 4268.00s]  but at least in some of the Cerebrus case,
+[4268.00s -> 4275.00s]  they sort of have this way of manufacturing basically the chips
+[4275.00s -> 4281.00s]  so that the memory is kind of on the chip.
+[4281.00s -> 4284.00s]  So I guess it's just a way of putting it on there.
+[4284.00s -> 4289.00s]  And I think that there are obviously no trade-offs
+[4289.00s -> 4296.00s]  because it comes at a cost of not having as much flexibility.
+[4296.00s -> 4300.00s]  But in general, I think the way to maybe think about this
+[4300.00s -> 4304.00s]  more broadly is that GPUs were still developing
+[4304.00s -> 4309.00s]  kind of the CPU era where it's much more control focused.
+[4309.00s -> 4310.00s]  I have code I'm executing.
+[4310.00s -> 4312.00s]  That's the sort of first-class citizen.
+[4312.00s -> 4319.00s]  And then data needs to be moved to execute to handle the code.
+[4319.00s -> 4323.00s]  But the big difference with deep learning workloads
+[4323.00s -> 4325.00s]  is that it's all sort of data flow.
+[4325.00s -> 4327.00s]  Like the computation graph, if you look at these,
+[4327.00s -> 4328.00s]  is like static.
+[4328.00s -> 4332.00s]  You know from the beginning exactly all the computations
+[4332.00s -> 4336.00s]  that are going to be done until essentially the end of training.
+[4336.00s -> 4339.00s]  So using that knowledge, you should be able to kind of
+[4339.00s -> 4342.00s]  lay out your computation in a much smarter way
+[4342.00s -> 4346.00s]  than having to deal with the flexibility uncertainty
+[4346.00s -> 4352.00s]  over ad hoc computation.
+[4352.00s -> 4355.00s]  Okay, maybe a few more questions and I'll end there.
+[4355.00s -> 4356.00s]  Yeah.
+[4356.00s -> 4358.00s]  Is the computational graph usually stored in the CPU
+[4358.00s -> 4360.00s]  or in the chip?
+[4360.00s -> 4365.00s]  So the question is where is the computation graph stored?
+[4365.00s -> 4374.00s]  Well the code is, I mean all this code is running on this CPU.
+[4374.00s -> 4382.00s]  But when you call something like the iTorch function
+[4382.00s -> 4384.00s]  that needs to run on GPU,
+[4384.00s -> 4387.00s]  then it launches kernels under the hood
+[4387.00s -> 4393.00s]  and the kernels are code that runs on the GPU.
+[4393.00s -> 4395.00s]  Yeah, I'm not sure of that.
+[4395.00s -> 4397.00s]  So I guess maybe another answer is that
+[4397.00s -> 4403.00s]  the computation graph is more of a conceptual.
+[4403.00s -> 4408.00s]  It's not like there's a graph literally that's being stored.
+[4408.00s -> 4410.00s]  I guess there sort of is,
+[4410.00s -> 4416.00s]  but it's not like the graph gets put on the GPU.
+[4416.00s -> 4421.00s]  If that makes sense.
+[4421.00s -> 4422.00s]  Okay.
+[4422.00s -> 4425.00s]  So these are the communication primitives that we have,
+[4425.00s -> 4428.00s]  like, in C, for example.
+[4428.00s -> 4433.00s]  So they are, like, CPU constructions or, like,
+[4433.00s -> 4437.00s]  how do you program the communication primitives?
+[4437.00s -> 4439.00s]  So the question of the communication primitives,
+[4439.00s -> 4442.00s]  are they CPU or GPU?
+[4442.00s -> 4446.00s]  So these collective operations are, in some sense,
+[4446.00s -> 4450.00s]  abstract specification of what types of operations
+[4450.00s -> 4455.00s]  need to happen, which can happen if you remember
+[4455.00s -> 4460.00s]  this piTorch distributed has different backgrounds.
+[4460.00s -> 4465.00s]  So it could happen on GPU or it could happen on CPU.
+[4465.00s -> 4468.00s]  First of all, when you're having a GPU,
+[4468.00s -> 4471.00s]  is it, like, is the CPU kind of scheduling them,
+[4471.00s -> 4475.00s]  or is it, like, patterns which are independently?
+[4475.00s -> 4478.00s]  Yeah, so, well, the CPU sort of drives,
+[4478.00s -> 4482.00s]  basically, is the sort of the master, still.
+[4482.00s -> 4485.00s]  And then, when you do a collective operation,
+[4485.00s -> 4488.00s]  it calls a nickel library, which launches,
+[4488.00s -> 4490.00s]  which is, you know, it's still CPU,
+[4490.00s -> 4495.00s]  and then it launches some kernels that move data around.
+[4495.00s -> 4496.00s]  Yeah.
+[4496.00s -> 4498.00s]  Okay, maybe this is a good place to end.
+[4498.00s -> 4501.00s]  All right, I will see you next Monday,
+[4501.00s -> 4503.00s]  or Tuesday, I think.
+[4508.00s -> 4510.00s]  Okay.

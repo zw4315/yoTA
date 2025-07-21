@@ -1,0 +1,55 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.04s]  Hi again. In this presentation, we're going to talk about something that's called assumed
+[5.04s -> 11.12s]  density filtering. This is an important concept that is actually a requirement to make a multiple
+[11.12s -> 17.52s]  object tracking algorithm viable in practice. Let's start by considering the Kalman filter.
+[17.52s -> 22.56s]  We have linear Gaussian models and a Gaussian initial prior. This means that all the
+[22.56s -> 27.52s]  subsequent predicted and posterior densities will also be Gaussian. So the predicted
+[27.60s -> 33.44s]  density at time k is Gaussian, and the posterior density at time k is also Gaussian.
+[33.44s -> 39.52s]  This is important and very useful because the Bayesian filtering recursion results in
+[39.52s -> 44.56s]  predicting and updating the parameters of a Gaussian density. We get Gaussian density
+[44.56s -> 50.72s]  starting with the initial density at time 0, we get the first update at time 1 given time 1,
+[50.72s -> 57.68s]  we predict time 2, update at time 2, and so on and so forth until time k. And again,
+[57.68s -> 63.12s]  all of these densities in the Bayesian filtering recursion will be Gaussian. So in fact,
+[63.12s -> 68.80s]  if we were to consider the density at time k given measurements up to and including some time
+[68.80s -> 74.24s]  tau, this density will be Gaussian for these models. And you should note that here on this
+[74.24s -> 80.56s]  slide, we introduced an abbreviated notation for the Gaussian density. So in this case,
+[80.56s -> 85.84s]  the mean and the covariance are the so-called sufficient statistics of the posterior density.
+[86.40s -> 91.68s]  And what this means is that it's sufficient to know the mean and the covariance to know the
+[91.68s -> 97.12s]  object state density completely. Well, if we let the models be Gaussian, and if we let the
+[97.12s -> 103.36s]  prior also be Gaussian, then the object state density as we just saw at any given time will be
+[103.36s -> 108.88s]  Gaussian. For the density, we will have a fixed number of parameters of fixed dimension,
+[108.88s -> 114.48s]  specifically the mean vector x bar and the covariance matrix p. And this means that we
+[114.48s -> 119.92s]  can track the objects for as many time steps as we wish by just predicting and updating the
+[119.92s -> 126.16s]  parameters of the Gaussian density. The number of parameters and their dimension are all going to
+[126.16s -> 131.60s]  be constant. So once we have allocated memory for the mean vector and for the covariance,
+[131.60s -> 136.80s]  we will not need any more memory to represent the object state density. So in other words,
+[136.80s -> 142.24s]  we have a complexity that is predictable. We have a constant complexity of the object state
+[142.24s -> 148.24s]  density representation. So the models can be Gaussian and the prior can also be Gaussian.
+[148.24s -> 153.12s]  And this means that we get predictable complexity. We always know exactly what kind of object state
+[153.12s -> 158.72s]  density we have. But are these conditions typical for multiple object tracking applications?
+[159.36s -> 165.52s]  Are things actually always linear with additive Gaussian noise? And the answer to these questions
+[165.52s -> 171.12s]  is no, this is not the typical case. As mentioned before, in many cases,
+[171.12s -> 176.72s]  the tracking requires that either the motion model or the measurement model very often both
+[176.72s -> 184.00s]  are nonlinear. So in the general case, neither the prediction nor the update is in closed form,
+[184.00s -> 191.44s]  and we don't know the exact form of the object state density. However, we can do approximations
+[191.44s -> 197.04s]  such that the object state densities all have the same functional form, for example, Gaussian.
+[197.76s -> 203.60s]  And this is what we call assumed density filtering. In assumed density filtering,
+[203.60s -> 209.60s]  we do as follows. Given an object state representation, a motion and the measurement model,
+[209.60s -> 216.24s]  we select the desired type of density. For the object state density, a very common choice
+[216.24s -> 221.60s]  in multiple object tracking is the Gaussian density. But you should note that this is not
+[221.60s -> 227.52s]  the only possible choice. Then the Chapman Kolmogorov prediction and the base update are
+[227.52s -> 232.80s]  approximated, such that all the predicted and updated object state densities are of this
+[232.80s -> 239.20s]  desired form. So for example, if we go for Gaussian densities, and we have a transition
+[239.20s -> 244.64s]  density that is Gaussian with some nonlinear motion model F, and we have a measurement likelihood
+[244.64s -> 249.76s]  that is also Gaussian with some nonlinear measurement model H, then we approximate the
+[249.76s -> 257.36s]  prediction and the update using, for example, an EKF or a UKF such that we get densities of the
+[257.36s -> 265.44s]  desired Gaussian form. So in fact, for the base recursion to work in practice, we need each
+[265.44s -> 271.12s]  of the densities at any given time to be of the same functional form. And the reason is that
+[271.12s -> 277.60s]  this enables us to apply the same prediction function and the same update function that
+[277.60s -> 283.20s]  we have implemented repeatedly in our implementation of the multiple object tracking.
+[283.20s -> 287.92s]  And the predictable complexity of the tracked object state density that we get from this
+[287.92s -> 294.16s]  is important for facilitating the implementation of a computationally tractable multiple object
+[294.16s -> 300.16s]  tracking system. Okay, that was a brief introduction to assumed density filtering.
+[300.72s -> 304.08s]  Remember that assumed density filtering is a requirement
+[304.08s -> 308.24s]  for multiple object tracking algorithms. Thank you for watching.

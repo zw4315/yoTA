@@ -1,0 +1,268 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.04s]  Continuing our theme of routing, in this video I'm going to tell you about a distance vector
+[5.04s -> 6.20s]  protocol.
+[6.20s -> 11.88s]  Distance vector protocols are one in which the routers maintain a vector of their distances
+[11.88s -> 17.04s]  to a given or to all of the other routers, and then iteratively, through a distributed
+[17.04s -> 22.80s]  algorithm, they converge on finding the shortest path or the lowest cost spanning
+[22.80s -> 25.56s]  tree from them to every other router.
+[25.56s -> 30.82s]  And we're going to see a specific example of this, what's known as the Bellman-Ford algorithm,
+[30.82s -> 35.96s]  which is the most commonly used algorithm in these distance vector protocols.
+[35.96s -> 40.88s]  So the particular problem we're going to address is, how can routers work together to find
+[40.88s -> 42.36s]  the minimum cost spanning tree?
+[42.36s -> 46.84s]  Here's an example that I've shown in green here, as the minimum cost spanning tree for
+[46.84s -> 49.84s]  this particular graph.
+[49.84s -> 53.20s]  Notice that this is equivalent to finding the minimum cost spanning tree amongst just
+[53.20s -> 54.20s]  the routers.
+[54.24s -> 57.80s]  It didn't matter whether I included the end hosts, because really in the end we're just
+[57.80s -> 59.72s]  building the spanning tree amongst the routers.
+[59.72s -> 64.04s]  So in the rest of the examples I'm just going to confine myself to that.
+[64.04s -> 67.32s]  So now let's look at the distributed Bellman-Ford algorithm.
+[67.32s -> 72.12s]  And in this example we're going to use the case of trying to find the minimum cost
+[72.12s -> 74.64s]  spanning tree to R8.
+[74.64s -> 78.32s]  Just to remind you in the previous slide, this was the router in the bottom right
+[78.32s -> 79.32s]  hand corner.
+[79.32s -> 83.72s]  So this green spanning tree shown here is the minimum cost spanning tree for everybody
+[83.76s -> 85.76s]  to reach R8.
+[85.76s -> 90.56s]  So remember that in general all of the routers are going to be building the lowest cost spanning
+[90.56s -> 92.84s]  tree to reach all of the other routers.
+[92.84s -> 97.08s]  So we're just taking one specific case here of finding that minimum cost spanning
+[97.08s -> 99.08s]  tree to R8.
+[99.08s -> 104.08s]  So in the Bellman-Ford algorithm we're going to assume that the routers know the cost
+[104.08s -> 108.44s]  of the link to each of their neighbors, so that there is a metric and a cost associated
+[108.44s -> 110.28s]  with using that link.
+[110.28s -> 116.16s]  And we're going to assume that router R sub i is going to maintain the value of the cost
+[116.16s -> 118.84s]  to reach R8.
+[118.84s -> 124.16s]  So in any one instance it's going to keep a sense of its current lowest cost to reach
+[124.16s -> 125.40s]  R sub 8.
+[125.40s -> 128.24s]  So router R8 is going to be C sub i.
+[128.24s -> 133.00s]  So we're going to have a vector C which is going to contain the seven costs of the
+[133.00s -> 138.48s]  seven routers R1 through R7 of their current cost to reach R8.
+[138.48s -> 143.12s]  And this is the distance vector to reach R8.
+[143.12s -> 149.44s]  Initially the algorithm is going to set this vector to all values of infinity.
+[149.44s -> 155.60s]  And then every T seconds, so starting after the first T seconds, Ri is going to send Ci
+[155.60s -> 156.60s]  to its neighbors.
+[156.60s -> 160.88s]  In other words, each router is going to send the cost to reach R8 to each of its
+[160.88s -> 163.48s]  neighbors.
+[163.48s -> 168.44s]  If Ri at any time learns of a lower cost path, it's going to update this value C sub
+[168.44s -> 169.44s]  i.
+[169.44s -> 174.56s]  So if after T seconds it hears a lower cost path to reach R8, it's going to update
+[174.56s -> 175.76s]  its value.
+[175.76s -> 176.76s]  And then we're going to repeat.
+[176.76s -> 179.36s]  And we're just going to keep repeating forever.
+[179.36s -> 183.80s]  Okay, let's look at this as how this would work on the graph.
+[183.80s -> 187.80s]  And remember, there's a natural extension to calculate this for R1 through R7.
+[187.80s -> 190.92s]  We just exchange all of the values.
+[190.92s -> 193.72s]  I've just shown you the one example here.
+[193.72s -> 196.36s]  Now let's look at a concrete example.
+[196.36s -> 199.08s]  And we're going to look at this particular graph here, which I've annotated with
+[199.08s -> 200.08s]  some costs.
+[200.08s -> 201.36s]  They're different from the costs before.
+[201.36s -> 206.68s]  It doesn't matter the particular values or how they came about, whether they represent
+[206.68s -> 210.80s]  the delay of using a link or the price of using a link.
+[210.80s -> 211.84s]  They're just values.
+[211.84s -> 215.12s]  And we're going to try and find the minimum cost spanning tree using the Bellman-Ford
+[215.12s -> 216.12s]  algorithm.
+[216.12s -> 219.80s]  So remember, in the Bellman-Ford algorithm, we start out with the distance vector to
+[219.80s -> 223.00s]  reach R8 of all the values set to infinity.
+[223.00s -> 228.16s]  So R1 thinks it costs, it's infinite to start with, R2 and so on.
+[228.16s -> 231.24s]  They all think that the cost is infinite in order to reach R8.
+[231.24s -> 233.92s]  Okay, so that's where we're going to begin.
+[233.92s -> 237.44s]  And we're going to go through and see waves of information propagating through so
+[237.44s -> 241.48s]  that we can update these and steadily converge on what the minimum cost spanning tree
+[241.48s -> 244.92s]  is in order to reach R8.
+[244.92s -> 249.50s]  So in the next step, that information is going to propagate outwards from R8.
+[249.50s -> 256.30s]  So this information here is going to tell us in that first wave that R8 can be reached
+[256.30s -> 258.54s]  in one hop from these routers.
+[258.54s -> 262.84s]  R3 is going to learn that it can get there in four.
+[262.84s -> 263.84s]  That's over the direct path.
+[263.84s -> 266.22s]  R5 will learn it can get there in six.
+[266.22s -> 269.78s]  R6 over here will learn that it can get there in two.
+[269.78s -> 272.50s]  And R7 will learn that it can get there in one.
+[272.50s -> 275.30s]  So they're the costs in that first step.
+[275.30s -> 282.82s]  And so R3 will update its own value, four, six, one and two respectively.
+[282.82s -> 288.14s]  And now they will advertise those values on in the next round of the algorithm.
+[288.14s -> 292.76s]  So that information is going to propagate out here into the next hop.
+[292.76s -> 298.26s]  So R4 is going to learn in the next iteration of the algorithm that it can get there at
+[298.26s -> 300.78s]  a cost of two via R7.
+[300.78s -> 302.02s]  So two via R7.
+[302.02s -> 305.26s]  It could also get there at a cost of six via R6.
+[305.26s -> 307.82s]  That's a higher value, so it's going to ignore that one.
+[307.82s -> 311.48s]  R2 can get there at a cost of seven, six plus one.
+[311.48s -> 314.86s]  So that's seven going via R5.
+[314.86s -> 319.06s]  And R1 is going to learn that it can get there at a cost of eight via R3.
+[319.06s -> 323.32s]  OK, so it's tempting to think that we're done at this point because every router
+[323.32s -> 325.50s]  has heard of value.
+[325.50s -> 328.70s]  But of course this is going to keep going because this information is going to propagate
+[328.70s -> 329.70s]  further.
+[329.70s -> 334.06s]  And the next time this news is going to propagate this way, this news is going to propagate
+[334.06s -> 335.06s]  this way.
+[335.06s -> 336.98s]  This news will propagate this way, and so on.
+[336.98s -> 339.98s]  So everyone is going to hear more values in the next round.
+[339.98s -> 343.94s]  Let me clear that to make it a little bit clearer and see what happens in the next
+[343.94s -> 345.20s]  round.
+[345.20s -> 348.82s]  So this was the values that I just showed you.
+[348.82s -> 356.54s]  Just as an example, R1 had learned, if you remember, that it can get to R8 via R3 at
+[356.54s -> 358.42s]  a cost of eight.
+[358.42s -> 363.26s]  So it has that value eight going via R3, for example.
+[363.26s -> 369.82s]  OK, so now what happens, you can see that we've found out all of the two-hop information.
+[369.82s -> 372.70s]  So this is really like the two-hop information.
+[372.70s -> 377.34s]  In the next iteration, we're going to find out the three-hop information.
+[377.34s -> 379.86s]  Let's see what this three-hop information is.
+[379.86s -> 384.42s]  Well, based on this, the ones that are going to change that I've shown in red here,
+[384.42s -> 391.30s]  let's focus on those, R2, which previously thought that the lowest cost path was of
+[391.30s -> 393.98s]  cost seven going via R5.
+[393.98s -> 398.22s]  It's going to learn about this three-hop path because R4 is going to advertise to
+[398.22s -> 400.50s]  it the value six.
+[400.50s -> 403.28s]  And so it's going to hear about this value that it can get there at a cost of
+[403.28s -> 405.42s]  six going via R4.
+[405.42s -> 408.90s]  So that's going to be its new value, and that's the one here.
+[408.90s -> 415.10s]  Similarly, R5 is going to learn about the three-hop path, which goes via R4.
+[415.10s -> 417.14s]  It's going to learn about this one here.
+[417.14s -> 420.90s]  So previously, the lowest cost path was of value six.
+[420.90s -> 426.46s]  Now it's going to learn one of value four, of cost four, going via R4.
+[426.46s -> 429.16s]  So that's this entry here that it just learned about.
+[429.16s -> 434.66s]  So the first three-hop path that was actually lower cost than the two-hop path.
+[434.66s -> 436.58s]  Let's see what happens in the next iteration.
+[436.58s -> 440.58s]  In the next iteration of the algorithm, the news is spreading out further to the four-hop
+[440.58s -> 441.62s]  paths.
+[441.62s -> 446.78s]  And in the four-hop paths, for example, R1 is going to learn of the four-hop path
+[446.78s -> 454.58s]  that goes one, two, three, four, which is of cost seven, because R2 will have propagated
+[454.58s -> 457.58s]  on the information that it can get there at a cost of six.
+[457.58s -> 459.40s]  So six plus one is seven.
+[459.40s -> 463.26s]  So if it goes via R2, it can get there at a cost of seven.
+[463.26s -> 465.66s]  So that's this one here.
+[465.66s -> 472.82s]  R2 has just learned in this next hop that there is an even better path.
+[472.82s -> 473.82s]  And we can see this one here.
+[473.86s -> 478.38s]  I'm going to draw this one in green to make it a little bit clearer, which goes via here.
+[478.38s -> 481.80s]  And that is a cost one, two, three, four, five.
+[481.80s -> 487.38s]  So it's just learning that it can get there at five if it goes via R5.
+[487.38s -> 491.70s]  So the interesting thing here is these two bits of information are actually inconsistent,
+[491.70s -> 493.38s]  because the algorithm hasn't converged.
+[493.38s -> 497.50s]  The news of this particular opportunity hasn't made it to R1 yet.
+[497.50s -> 501.58s]  So we'll see that happen in the next step.
+[501.58s -> 509.42s]  In the next step, R1 is going to learn of the newer value, which is to go via, that
+[509.42s -> 513.54s]  it can reach it in a cost of six going on this path here.
+[513.54s -> 519.58s]  One, two, three, four, five, six, the cost of six going via R2.
+[519.58s -> 522.02s]  Oops, I've got a little bit of a mistake there.
+[522.02s -> 526.42s]  OK, that should be via R2.
+[526.42s -> 527.90s]  So now it appears that we're done.
+[527.90s -> 529.86s]  How do we know that we're done?
+[530.38s -> 533.34s]  Well, we can look at it and see that we can't find any lower-cost paths.
+[533.34s -> 535.36s]  That tells us that we're done.
+[535.36s -> 538.14s]  But you could also see that this will finish.
+[538.14s -> 543.74s]  It can't go any further, so long as we've explored the maximum hop length in the network.
+[543.74s -> 547.54s]  And the maximum hop length here, you can see that there's a longer one that goes
+[547.54s -> 549.22s]  like this.
+[549.22s -> 550.58s]  That's probably about the longest.
+[550.58s -> 554.82s]  So that's one, two, three, four, five, six.
+[554.82s -> 560.76s]  So that will be another hop for that information to propagate.
+[560.76s -> 562.72s]  So it's the longest loop-free path.
+[562.72s -> 566.82s]  We know that a path that has a loop in it must have a higher cost, so we're never
+[566.82s -> 567.94s]  going to pick that one.
+[567.94s -> 571.90s]  So long as we've gone as many hops as the longest loop-free path, we know that
+[571.90s -> 572.90s]  we'll finish.
+[572.90s -> 575.54s]  The question is, how do we know that we'll end up with the right answer?
+[575.54s -> 579.78s]  In fact, there's a couple of questions that are worth asking here.
+[579.78s -> 582.66s]  The first one is, what is the maximum runtime of the algorithm?
+[582.66s -> 583.66s]  Just told you that.
+[583.66s -> 585.38s]  It's going to be the longest loop-free path.
+[585.38s -> 590.02s]  It's going to be the hop count of the longest loop-free path.
+[590.02s -> 592.14s]  Will the algorithm always converge?
+[592.14s -> 597.54s]  Intuitively, it's actually pretty clear that it must converge, because we start out
+[597.54s -> 602.98s]  with the values infinity, and we only ever replace them with lower values, and we keep
+[602.98s -> 606.82s]  reducing the value until the algorithm has run.
+[606.82s -> 611.86s]  So we only ever replace a value with a lower cost value, and eventually we should
+[611.86s -> 617.42s]  hear from all of our neighbours their lowest cost path, and so eventually we will reach
+[617.42s -> 619.62s]  the lowest value, and we will converge.
+[619.62s -> 621.02s]  So the algorithm will always converge.
+[621.02s -> 624.26s]  It's the clever thing about this algorithm.
+[624.26s -> 631.14s]  So what happens when link costs change, or when links and routers fail?
+[631.14s -> 634.54s]  We'll see an example of that in a minute, when actually things can go wrong when that
+[634.54s -> 639.62s]  happens, but in general it will continue to converge, because when something fails,
+[639.62s -> 645.42s]  if a lower cost path should suddenly appear, then it will find it and start using it.
+[645.42s -> 649.78s]  Things are a little bit more complicated when things fail, and there is no longer a
+[649.78s -> 651.14s]  path to somewhere.
+[651.14s -> 654.74s]  And I'll show you an example of this right now.
+[654.74s -> 659.34s]  This is a well-known problem with the Bellman-Ford algorithm, and it's sometimes characterized
+[659.34s -> 661.70s]  as bad news travels slowly.
+[661.70s -> 663.66s]  Let's see what's going on here.
+[663.66s -> 669.14s]  We're going to look at this really simple four-router network here that are all connected
+[669.18s -> 673.10s]  in a line, and the cost from one router to the next is one.
+[673.10s -> 675.46s]  So nice, simple, trivial example.
+[675.46s -> 677.34s]  So initially everything's working fine.
+[677.34s -> 679.66s]  We've converged on these values down here.
+[679.66s -> 685.10s]  At time zero, we happen to know that we can get to R4, so this is all about the
+[685.10s -> 693.58s]  costs to reach R4 in this case, that R1 can get there in a cost of three.
+[693.58s -> 696.22s]  So that's its value if it goes via R2.
+[697.14s -> 704.06s]  R2 can get there at a cost of two, that's this plus this, if it goes via R3.
+[704.06s -> 709.38s]  R3 can get there in a cost of one, and it's directly connected to R4.
+[709.38s -> 711.22s]  So everything is good.
+[711.22s -> 715.10s]  But then suddenly the link from three to four is going to break.
+[715.10s -> 719.38s]  So this link over here has broken.
+[719.38s -> 722.78s]  What happens next?
+[722.78s -> 727.82s]  Well, what's going to happen is they're going to keep advertising their cost.
+[727.82s -> 733.78s]  R3 is going to start advertising, hey, I was under the impression that I could get there
+[733.78s -> 739.74s]  with a cost of one before, that's here, but I don't have that link anymore.
+[739.74s -> 741.78s]  I know that that link is broken.
+[741.78s -> 746.98s]  But I did hear from R2 that R2 could get there at a cost of two.
+[746.98s -> 751.86s]  Now I am one hop away from R2, so therefore I must be able to get there in a cost of
+[751.94s -> 754.90s]  three if I send my packets to R2.
+[754.90s -> 760.06s]  Clearly this is wrong, R3 is delusional, can't really do that, but because it's hearing
+[760.06s -> 764.74s]  this value advertised from R2 that says if you send packets to me, I'll deliver them
+[764.74s -> 769.70s]  to R4 at a cost of two plus the cost from me to you, and so therefore a cost of
+[769.70s -> 772.46s]  three.
+[772.46s -> 776.74s]  R1 doesn't know anything about the failure yet.
+[776.74s -> 779.76s]  Let's see what happens in the next step.
+[779.76s -> 785.86s]  So the question is will it eventually converge and settle down on the correct value.
+[785.86s -> 796.86s]  So in the next step, because R3 is now advertising its cost as being three, if it goes via R2,
+[796.86s -> 802.98s]  that news is going to reach R2, and R2 is going to say, hey, you were previously
+[802.98s -> 808.28s]  saying to me that it was a cost of three, but you're now, sorry, a cost of one, now
+[808.30s -> 813.20s]  you're telling me it's a cost of three, so therefore it must be costing me four to get
+[813.20s -> 814.20s]  there.
+[814.20s -> 818.04s]  It's your cost, which was three that you were advertising to me, plus the one,
+[818.04s -> 821.84s]  so it's costing me four to get there if I go via R3.
+[821.84s -> 825.48s]  You can see what's going to happen is this is going to gradually, they're going
+[825.48s -> 831.28s]  to gradually keep feeding each other bad information iteratively, and it's going to increase
+[831.28s -> 835.02s]  at every step, and this is just going to spiral out of control.
+[835.02s -> 841.66s]  So in the next round, R2 is going to say, hey, you're telling me that I can get there
+[841.66s -> 846.10s]  at four, plus the cost from me to you, that's five, if I send packets to you, and so it
+[846.10s -> 850.26s]  goes to five, and then you know it's going to go to six, and so on, and it's just
+[850.26s -> 852.46s]  going to keep increasing as we go around.
+[852.46s -> 858.58s]  This is known as the counting to infinity problem, or bad news travels slowly.
+[858.58s -> 864.18s]  There's a fairly simple fix to this, which is, it seems a bit of a kludge, but we
+[864.18s -> 868.90s]  could set into infinity to be some small number, and say 16, and stop when you get to a count
+[868.90s -> 869.90s]  of 16.
+[869.90s -> 874.34s]  If you get to a count of 16, it actually means that there's no path at all.
+[874.34s -> 875.54s]  There are various other methods.
+[875.54s -> 879.18s]  There's one that's called split horizon, you'll find this described in textbook.
+[879.18s -> 886.10s]  Essentially, because R2 received the lowest cost path from R3, it does not advertise
+[886.10s -> 887.10s]  that cost to R3.
+[887.10s -> 893.26s]  In other words, because R2 was originally receiving that lowest cost path from R3, it doesn't
+[893.34s -> 901.34s]  send those advertisements to R3, and so R3 will never think that it can reach R4 via
+[901.34s -> 902.34s]  R2.
+[902.34s -> 904.66s]  So that's one way.
+[904.66s -> 908.18s]  Another one is called split horizon with poison reverse.
+[908.18s -> 913.26s]  In this case, R2 will actively advertise infinity to R3.
+[913.26s -> 919.10s]  So it says, because I heard the lowest cost path from you, I'm going to actively send
+[919.14s -> 925.22s]  you the value infinity, so you will absolutely never think that you can get there via me.
+[925.22s -> 930.66s]  So these are kind of fixes to what is really an elegant algorithm, but then in practice
+[930.66s -> 933.50s]  it takes quite a few things like this to make it work.
+[933.50s -> 936.94s]  Let's take a look at Bellman-Ford in practice.
+[936.94s -> 939.86s]  Bellman-Ford is an example of a distance vector algorithm.
+[939.86s -> 944.22s]  In other words, there's a distance vector that is maintained by all of the routers,
+[944.34s -> 950.62s]  of the distance from them to every other router, and then they iteratively converge on the
+[950.62s -> 951.62s]  correct answer.
+[951.62s -> 954.34s]  In other words, the correct minimum cost distance.
+[954.34s -> 959.18s]  This is an example, therefore, of a distance vector algorithm, and formed the heart of
+[959.18s -> 965.02s]  one of the first routing protocols used in the internet called RIP, and the RIP stood
+[965.02s -> 970.10s]  for the Routing Information Protocol, and it was used very widely for quite a long time.
+[970.10s -> 973.18s]  And this was because it requires very little computation on the routers.
+[973.18s -> 977.46s]  It could be calculated in a distributed way, requiring very little computational burden
+[977.46s -> 981.46s]  on each of the routers, and we knew that it would eventually converge, with a few little
+[981.46s -> 987.46s]  fixes here like the split horizon technique and preventing it from counting to infinity.
+[987.46s -> 991.90s]  Over time, though, it was replaced by other algorithms, other techniques that collect
+[991.90s -> 997.18s]  together the entire state of the network on each router, and then independently, on
+[997.18s -> 999.86s]  their own, calculate the minimum cost spanning tree.
+[999.86s -> 1001.26s]  So no longer a distributed algorithm.
+[1001.26s -> 1006.82s]  And we'll see an example of that in another video on Dijkstra's shortest path-first algorithm.

@@ -1,0 +1,49 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.84s]  The answer to the second question is closed. We start in the closed state,
+[4.84s -> 9.16s]  then the user program calls connect, and we transition to the sin-sent state.
+[9.16s -> 14.16s]  While in the sin-sent state, the user program calls close. So there's an edge
+[14.16s -> 22.36s]  from sin-sent on the close event back to the closed state. So now our
+[22.36s -> 26.28s]  sockets are in the established state. They're exchanging data. The six states
+[26.48s -> 31.68s]  in blue boxes are how TCP tears down a connection or how it closes it. It's
+[31.68s -> 35.48s]  sometimes useful to talk about tearing down a connection because the word close
+[35.48s -> 39.88s]  means something in terms of system calls. A connection exists after one side
+[39.88s -> 45.76s]  closes it, as we'll see. There's symmetry between how TCP sets up a
+[45.76s -> 50.02s]  connection and how it tears it down. Where connection establishment uses
+[50.02s -> 54.00s]  synchronization or sin packets, connection teardown uses finish or fin
+[54.00s -> 58.80s]  packets. If one of the sides of the connection calls close, it traverses along
+[58.80s -> 64.48s]  the right edge on the left to the thin-weight-1 state. This causes it to
+[64.48s -> 68.24s]  send a fin packet to the other side of the connection. This is called the
+[68.24s -> 73.40s]  active closer because it starts the operation. The other side receives the
+[73.40s -> 78.08s]  fin and takes the blue edge on the right to the close-weight state. It
+[78.08s -> 81.92s]  remains in this state until the program inside calls close, at which point it
+[81.92s -> 88.60s]  sends a fin. Here's where it gets a little complicated. A TCP connection is
+[88.60s -> 92.56s]  bi-directional. The active closer has closed its direction of the connection,
+[92.56s -> 97.04s]  so it can't write any more data. But it could be the passive closer has more
+[97.04s -> 101.20s]  data to send, so the passive closer can continue to send data which the
+[101.20s -> 105.28s]  active closer receives and acknowledges. Or it could close its side of the
+[105.28s -> 109.36s]  connection too. Or it could even have decided to close the connection at the
+[109.36s -> 112.72s]  same time such that we have two fin packets crossing each other in the
+[112.72s -> 118.72s]  network. From the fin-weight-1 state where the active closer is, there are
+[118.72s -> 124.12s]  three possible outcomes. First, the passive closer might acknowledge the
+[124.12s -> 129.12s]  fin but not send a fin. In this case, the passive closer is in the close-
+[129.12s -> 133.92s]  weight state and can continue to send data. This is the lowermost edge where
+[133.92s -> 137.40s]  the active closer enters the fin-weight-2 state.
+[137.44s -> 144.28s]  Second, the passive closer might close its side too, acknowledging the fin and
+[144.28s -> 149.08s]  sending a fin of its own. This is the middle edge to the time-weight state.
+[149.08s -> 153.96s]  Finally, it could be that both sides actively close at almost the same time
+[153.96s -> 158.40s]  and send fins to each other. In this case, both are in the fin-weight-1
+[158.40s -> 162.88s]  state. Each one will see a fin from the other side that doesn't act its own
+[162.88s -> 167.52s]  fin. In this case, we transition to the closing state and when our fin is
+[167.52s -> 170.80s]  acknowledged, we transition to the time-weight state just as with the
+[170.80s -> 178.16s]  middle edge. TCP transitions from fin-weight-2 to time-weight when we
+[178.16s -> 181.92s]  receive a fin from the other side. It then stays in the time-weight for a
+[181.92s -> 187.24s]  period of time until it can safely transition to close. The final blue edge
+[187.24s -> 191.80s]  from last act to close occurs when the passive closer's fin is
+[191.80s -> 194.32s]  acknowledged.
+[200.04s -> 205.36s]  Now on one hand, that's a lot of detail. There are 12 states covering lots of
+[205.36s -> 209.56s]  cases, but I hope you can see how this finite-state machine makes what
+[209.56s -> 213.52s]  was previously a few colloquial descriptions and gives them detail
+[213.52s -> 218.12s]  and precision. Trying to implement a properly interoperating TCP based on
+[218.12s -> 222.76s]  those descriptions would be really hard. This diagram precisely specifies
+[222.76s -> 228.16s]  how TCP behaves and so it's tremendously useful.

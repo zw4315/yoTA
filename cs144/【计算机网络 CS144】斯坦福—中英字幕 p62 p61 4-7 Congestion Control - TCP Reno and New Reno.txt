@@ -1,0 +1,185 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.00s]  So in this video, I'm gonna talk about some more modern versions of TCP, TCP
+[5.00s -> 9.00s]  Reno and New Reno. Where TCP Tahoe solved the congestion control problems such that
+[9.00s -> 13.00s]  TCP could operate, the internet could work again, it wasn't necessarily as high
+[13.00s -> 16.00s]  performance as it could be. In a sense, it was a bit more conservative
+[16.00s -> 20.00s]  than it needed to be. And so since then, there have been improvements to
+[20.00s -> 24.00s]  TCP, although still keeping the original mechanisms of TCP Tahoe, to make
+[24.00s -> 28.00s]  it, to have it send data more quickly and have higher performance. So I'm
+[28.00s -> 33.00s]  gonna walk through two of those additions. One is something called TCP Reno and then
+[33.00s -> 39.00s]  TCP New Reno. So recall for TCP Tahoe, if the protocol is running, and you
+[39.00s -> 44.00s]  encounter a timeout or a triple duplicate act, which implies that there's
+[44.00s -> 48.00s]  a lost packet, you do three things. You set your slow start threshold to be
+[48.00s -> 52.00s]  the congestion window divided by two. So it's determining when you're gonna
+[52.00s -> 56.00s]  enter the congestion avoidance state as the congestion window grows, again. You
+[56.00s -> 60.00s]  set the congestion window to one, and you enter the slow start state. The idea
+[60.00s -> 66.00s]  here is that you're sending along, you're sending data. Let's just say here is
+[66.00s -> 72.00s]  the window size. You're sending data. Something happens. There's an event.
+[72.00s -> 77.00s]  You set your threshold to be half of your original window size. You set your
+[77.00s -> 81.00s]  congestion window to be one. You enter slow start again, exponential
+[81.00s -> 86.00s]  exponential growth. And then when you reach this threshold, you do additive
+[86.00s -> 91.00s]  increase again. So that's TCP Tahoe's behavior. And so here's a picture just
+[91.00s -> 96.00s]  showing that a little more clearly. So here we start with a congestion window of
+[96.00s -> 101.00s]  size one. We're in the slow start state. Then there's, say, a triple
+[101.00s -> 106.00s]  duplicate act or a timeout. We set the congestion window to be size one again.
+[106.00s -> 111.00s]  We have a slow start threshold here, which is half of this value, right? So
+[111.00s -> 116.00s]  if this is x, this is x over two. So we do exponential growth again until we
+[116.00s -> 121.00s]  reach this point, which point now we're in congestion avoidance. Linear
+[121.00s -> 127.00s]  increase. And here we have a timeout. The window size is staying stable.
+[127.00s -> 133.00s]  Boom. Drop down to congestion window size one again. Slow start.
+[134.00s -> 139.00s]  Congestion avoidance, timeout, etc. So we see this behavior of whenever we have a
+[139.00s -> 144.00s]  triple duplicate act or a timeout, we end up reducing the congestion window to a
+[144.00s -> 150.00s]  size one, going through slow start, and then entering congestion avoidance.
+[153.00s -> 159.00s]  So TCP Reno generally behaves similar to TCP Tahoe with one exception, which is
+[159.00s -> 164.00s]  that on a timeout it behaves the same way. That it sets this congestion window to be
+[164.00s -> 168.00s]  size one and does slow start again. The assumption here is, hey, things have
+[168.00s -> 172.00s]  gone very wrong if I have a timeout. And so I'm just going to assume nothing
+[172.00s -> 176.00s]  about the network and pretend as if things were just starting from the
+[176.00s -> 181.00s]  beginning. What TCP Reno does differently is on a triple duplicate act, it
+[181.00s -> 187.00s]  assumes, look, a segment was lost, but other segments are arriving. Chances are
+[187.00s -> 192.00s]  I'm close to what my speed should be. I don't need to drop my congestion window
+[192.00s -> 197.00s]  to size one. Instead, I still set the threshold to be congestion window divided
+[197.00s -> 202.00s]  by two, as before. But I set my congestion window itself to congestion
+[202.00s -> 207.00s]  window divided by two. So this is called fast recovery, right? Rather than
+[207.00s -> 212.00s]  entering slow start again, I just have my congestion window. Then it adds
+[212.00s -> 217.00s]  another mechanism. This is called fast retransmit, which it'll, won't wait for the
+[217.00s -> 221.00s]  timeout on a triple duplicate act. It says, look, I have a triple duplicate
+[221.00s -> 224.00s]  act. It means that that segment is really likely to be lost. So I'm just
+[224.00s -> 228.00s]  going to retransmit immediately. And what this behavior means is that on a
+[228.00s -> 232.00s]  triple duplicate act, TCP Reno will stay in the congestion avoidance state.
+[232.00s -> 235.00s]  It isn't going to require a logarithmic number of steps to enter that
+[235.00s -> 239.00s]  state, which means the window size is bigger. Fast retransmit means it's not
+[239.00s -> 243.00s]  going to have to wait for a timeout. And so in theory, the idea is that it's not
+[243.00s -> 246.00s]  going to have a couple of round trip times where it's then ramping up, and so
+[246.00s -> 252.00s]  its overall throughput will be higher. And so what, this is a picture showing
+[252.00s -> 257.00s]  how TCP Reno behaves under similar circumstances. Right here we see we
+[257.00s -> 261.00s]  start in the slow start state. Here's slow start. Then we have a triple
+[261.00s -> 266.00s]  duplicate act. And rather than drop down to a congestion window of size one, it
+[266.00s -> 271.00s]  sets, if our congestion window here was x, it sets the congestion window to be x
+[271.00s -> 277.00s]  divided by two. And since that is the slow start threshold, this causes the
+[277.00s -> 282.00s]  protocol to reenter congestion avoid, to enter congestion avoidance. Then here we
+[282.00s -> 286.00s]  see a triple duplicate act. To the fast retransmit, we get the
+[286.00s -> 290.00s]  acknowledgement. We're growing the window again. Then here we have a
+[290.00s -> 294.00s]  timeout. And on a timeout, TCP Reno behaves in the same way, in that it
+[294.00s -> 299.00s]  sets, it says something has gone drastically wrong. I set my congestion
+[299.00s -> 306.00s]  window to be one. And I enter the slow start state again. So here we have a slow
+[306.00s -> 312.00s]  start, congestion avoidance, congestion avoidance, timeout, and triple duplicate
+[312.00s -> 319.00s]  act. So this is how TCP Reno behaves. So let's walk through that. So my
+[319.00s -> 328.00s]  acknowledgement sends packet one. I get an acknowledgement one. I send two and
+[328.00s -> 346.00s]  three. I get acknowledgements two and three. I then send. Four, five, six,
+[346.00s -> 355.00s]  and seven. And let's say that packet four is lost. Well, the receiver is still
+[355.00s -> 361.00s]  gonna send acknowledgements, but in response to five, six, and seven, it's
+[361.00s -> 368.00s]  going to send act three. Act three, three times. So triple duplicate act. So
+[368.00s -> 373.00s]  at this point, my condition was one. Here it was two. Here it was four. Now
+[373.00s -> 379.00s]  I'm receiving this triple duplicate act. TCP Reno's gonna set its congestion window
+[379.00s -> 385.00s]  to be two. Immediately retransmit packet four, right, fast retransmit. So
+[385.00s -> 394.00s]  here's the fast retransmit, no timeout. And hopefully we will get an act
+[394.00s -> 401.00s]  seven. At which point now we have a congestion window of size, of size two,
+[401.00s -> 409.00s]  and we'll send packets eight and nine. So TCP Reno significantly improves TCP's
+[409.00s -> 414.00s]  throughput, cuz you don't have to enter the slow start state and drop your
+[414.00s -> 419.00s]  condition into the size one just when a single segment is lost. TCP new
+[419.00s -> 424.00s]  Reno improves things even a little bit more. Essentially, it behaves the same as
+[424.00s -> 429.00s]  Tylo and Reno on timeout. When you're in the fast recovery state, it does
+[429.00s -> 434.00s]  something a little fancy with your congestion window. When you enter fast
+[434.00s -> 440.00s]  recovery, so this is when there's a triple duplicate act. On every duplicate
+[440.00s -> 445.00s]  act that you receive, you inflate the congestion window by the maximum segment
+[445.00s -> 449.00s]  size. Then when the last packet that's outstanding is acknowledged, you return
+[449.00s -> 454.00s]  to the congestion avoidance state, you set your congestion window back to the
+[454.00s -> 461.00s]  maximum of three. And essentially what this is gonna do is, if I have a large
+[461.00s -> 467.00s]  window of outstanding packets, say, you know, I have a very large window. In this
+[467.00s -> 472.00s]  case, let's just say, let's say I have eight packets. It's not a super
+[472.00s -> 477.00s]  large window, but it's, you know, for drawing it's reasonable. And this
+[477.00s -> 482.00s]  packet here is lost, right? So let's call this packet X, right? So this
+[482.00s -> 487.00s]  packet is lost. Each of these packets are gonna trigger duplicate
+[487.00s -> 492.00s]  acknowledgements. And as now TCP and Reno receives these duplicate
+[492.00s -> 497.00s]  acknowledgements, it's gonna start inflating its congestion window size. And
+[497.00s -> 502.00s]  as it inflates the congestion window size, what that's gonna let it do is
+[502.00s -> 508.00s]  start sending new packets. The idea here is we have evidence that packets are
+[508.00s -> 513.00s]  leaving the network. And so it's okay to send new packets. We don't want to send
+[513.00s -> 517.00s]  them too quickly because clearly we're close to the congestion point of the
+[517.00s -> 520.00s]  network. But otherwise what happens when we do a fast retransmit, we
+[520.00s -> 523.00s]  essentially have to wait for an entire RTT before we can send a new
+[523.00s -> 526.00s]  packet. We have to do this retransmission, and then when we get the
+[526.00s -> 530.00s]  acknowledgement, we can now move the window forward. And so there's this
+[530.00s -> 537.00s]  whole RTT where essentially TCP sits idle. And you see that in the
+[537.00s -> 542.00s]  example here where, gosh, we have this situation where there are these long,
+[542.00s -> 550.00s]  there are these idle periods waiting for the retransmission. And so
+[550.00s -> 554.00s]  essentially what this, this, this tweak which I'll sort of walk through
+[554.00s -> 558.00s]  explicitly in a second allows TCP and Reno to do is to start sending out new
+[558.00s -> 562.00s]  packets while the fast retransmit is in flight. It starts inflating the
+[562.00s -> 566.00s]  congestion window to be bigger so that even though this was the last
+[566.00s -> 570.00s]  acknowledged packet, it can start sending new packets. But then once we get
+[570.00s -> 574.00s]  a proper acknowledgement, like let's say we get an acknowledgement for this
+[574.00s -> 578.00s]  segment here, then it suddenly reduces the congestion window size to the right
+[578.00s -> 583.00s]  size so it's not like we've suddenly saturated the network. So let's walk
+[583.00s -> 589.00s]  through what this looks like. So let's say we have a congestion window of
+[589.00s -> 595.00s]  size sixteen. And we encounter a triple duplicate ACK. So the rules mean we're
+[595.00s -> 601.00s]  going to set the congestion window to be eight. So at this point we have a
+[601.00s -> 607.00s]  triple duplicate ACK, the congestion window becomes eight. And we're going
+[607.00s -> 615.00s]  to do fast retransmit. And so triple duplicate ACK comes in and we send out
+[616.00s -> 624.00s]  fast retransmit. Meanwhile, while that fast retransmit packet is outstanding,
+[624.00s -> 630.00s]  we're receiving additional acknowledgements. Right? The window size
+[630.00s -> 636.00s]  was sixteen and so we had a triple duplicate ACK. So we expect to receive
+[636.00s -> 642.00s]  order sixteen or fifteen duplicate ACKs. And so as those start streaming in, what
+[643.00s -> 647.00s]  we're going to do is increase the congestion window by one for each. And so
+[647.00s -> 651.00s]  we encounter those, those three triple duplicate. So over this interval here,
+[651.00s -> 655.00s]  the congestion window is going to increase plus one for each of those
+[655.00s -> 659.00s]  duplicate acknowledgements. Right? Which means it's going to increase up to
+[659.00s -> 664.00s]  twenty-three. So this might seem really big. Suddenly we've inflated our
+[664.00s -> 668.00s]  congestion window from sixteen to twenty-three. But think about what this
+[668.00s -> 673.00s]  means in terms of the sequence number space. So we had this window of packets.
+[673.00s -> 678.00s]  Right? And this was the last acknowledged packet here. Let's just call
+[678.00s -> 683.00s]  it packet one. Right? Then we've started and we have an outstanding
+[683.00s -> 689.00s]  window of size sixteen. Right? So we can send from one. Right? So we can
+[689.00s -> 696.00s]  safely send from packet one to sixteen. So we got that last
+[696.00s -> 701.00s]  acknowledgement for one. You know, we could send sixteen. Everything is, so
+[701.00s -> 705.00s]  when one was acknowledged, it allowed us to send seventeen, so everything is
+[705.00s -> 710.00s]  good. Now, we have a triple duplicate ACK. And we're not going to be able to
+[710.00s -> 714.00s]  send anything past seventeen until the congestion window grows beyond seventeen.
+[714.00s -> 718.00s]  And so it's starting at one. And the congestion window has shrunk to
+[718.00s -> 723.00s]  eight. And so this means that the valid packets we're allowed to send are
+[723.00s -> 728.00s]  two, three, four, five, six, seven, eight, and nine. Right? That's not very
+[728.00s -> 733.00s]  helpful. And so, now, as these additional acknowledgements come in, we're
+[733.00s -> 737.00s]  going to start inflating this. So we're going to allow ourselves to send
+[737.00s -> 740.00s]  to ten, to eleven, to twelve, to thirteen, to fourteen, et cetera, et
+[740.00s -> 745.00s]  cetera, et cetera. Until when we get, say, the eighth duplicate
+[745.00s -> 751.00s]  acknowledgement, now suddenly we have increased our congestion window size
+[751.00s -> 757.00s]  back up to sixteen, which means that, well, we could resend seventeen. And then
+[757.00s -> 762.00s]  when we get the ninth, we've increased it to seventeen, which means that we can
+[762.00s -> 767.00s]  now send packet eighteen. And so, this will then increase up to twenty-three.
+[767.00s -> 773.00s]  And essentially what this does is it inflates the congestion window so we can
+[773.00s -> 779.00s]  send up to packet twenty-four. Now if you look at this carefully, packet
+[779.00s -> 783.00s]  seventeen, eighteen, nineteen, twenty, twenty-one, twenty-two, twenty-three,
+[783.00s -> 787.00s]  twenty-four, that's eight packets, which is equal to what the actual
+[787.00s -> 792.00s]  congestion window size is. And so the idea is that by inflating in this way,
+[792.00s -> 796.00s]  given that we halved it, and now we're adding plus one, the last, the
+[796.00s -> 800.00s]  last half of acknowledgements that arrive will allow us to clock out new
+[800.00s -> 804.00s]  packets. And so essentially, then, and as soon as the, the faster your
+[804.00s -> 808.00s]  chance of acknowledgement comes in, we just reset everything. Gosh, things are
+[808.00s -> 812.00s]  acknowledged, our congestion window is size eight, we can start moving forward.
+[812.00s -> 817.00s]  But essentially what this does is this inflating of the window after a triple
+[817.00s -> 822.00s]  duplicate acknowledgement allows TCP new Reno to continue to send data while the
+[822.00s -> 826.00s]  faster your transmit is in flight. And the amount of data it's gonna send is
+[826.00s -> 830.00s]  equal to, and it's clocked by, again, acknowledgements coming in, so you know
+[830.00s -> 835.00s]  packets are leaving the network, the expected congestion window size for the
+[835.00s -> 840.00s]  retrans, assuming that the retrans, the fast retransmit packet is delivered
+[840.00s -> 847.00s]  successfully. So that's TCP Reno and New Reno. New Reno is generally used on many
+[847.00s -> 852.00s]  systems today or at least the basis for TCP today. I'll talk a little bit
+[852.00s -> 857.00s]  more about more advanced TCP that deals with some modern network considerations.
+[857.00s -> 862.00s]  But, you know, on a Linux system or, you know, on, on Windows systems, Mac OS
+[862.00s -> 867.00s]  systems, the basic TCP algorithm that's running is very, very similar to New Reno.
+[867.00s -> 871.00s]  It turns out that congestion control is a really hard problem. And it's one of the
+[871.00s -> 876.00s]  hardest problems for, to build a robust network system. The basic approach that
+[876.00s -> 881.00s]  you see that has been adopted and which seems very, very powerful and various
+[881.00s -> 886.00s]  robust is this idea of additive increase, multiplicative decrease. That you
+[886.00s -> 891.00s]  increase a window additively, right? But then reduce it multiplicatively. So
+[891.00s -> 896.00s]  you respond very quickly when things go badly and carefully increase it. And so the
+[896.00s -> 900.00s]  trick is that when you're doing this is how to keep the pipe full and improve
+[900.00s -> 904.00s]  throughput. So there's things like fast retransmit, don't wait for a timeout,
+[904.00s -> 908.00s]  just send very, very, resend quickly. And also things like congestion window
+[908.00s -> 911.00s]  inflation, where gosh, I don't want to waste a whole round trip time waiting for
+[911.00s -> 914.00s]  the fast retransmit acknowledgement. I know stuff's leaving the network. I'm
+[914.00s -> 917.00s]  going to start sending out some new packets. I'm allowed these packets,
+[917.00s -> 919.00s]  packets have left the network.
+[921.00s -> 923.00s]  Thank you.

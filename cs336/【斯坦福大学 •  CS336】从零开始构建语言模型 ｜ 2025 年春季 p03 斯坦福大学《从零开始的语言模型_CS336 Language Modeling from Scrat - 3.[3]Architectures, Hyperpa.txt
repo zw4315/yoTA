@@ -1,0 +1,2137 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.00s]  As you may have noticed, I'm a little bit less innovative
+[8.60s -> 11.24s]  in my lecturing than Percy, so you're gonna get
+[11.24s -> 14.50s]  PowerPoint slides rather than executable Python ones,
+[14.50s -> 16.86s]  but you should be able to find the PDFs
+[16.86s -> 18.86s]  on the website as well.
+[18.86s -> 20.32s]  So I titled this lecture
+[20.32s -> 21.54s]  Everything You Didn't Want to Know
+[21.54s -> 23.50s]  About LM Architecture and Training,
+[23.50s -> 24.40s]  because we're gonna get into
+[24.40s -> 25.76s]  some of the nitty-gritty details
+[25.76s -> 27.82s]  that I think most other classes
+[27.82s -> 29.60s]  would spare you the details of,
+[29.60s -> 31.74s]  you know, like what should my hyperparameters be
+[31.74s -> 33.24s]  and those kinds of questions.
+[34.12s -> 37.64s]  Some minor logistics, also if you're doing the assignments,
+[37.64s -> 38.94s]  we are updating assignments
+[38.94s -> 42.04s]  as we find some mostly minor bugs.
+[42.04s -> 44.90s]  Make sure you pull updates to the assignments
+[44.90s -> 45.90s]  as you go along.
+[47.86s -> 49.58s]  Okay, so what we're gonna do,
+[49.58s -> 52.48s]  we're gonna start with a quick recap of a transformer,
+[52.48s -> 54.18s]  and I'll give you two variants
+[54.18s -> 55.38s]  of a standard transformer,
+[55.38s -> 57.02s]  one that's probably coming from
+[57.02s -> 60.46s]  the standard transformer lectures
+[60.46s -> 62.36s]  that you might see in 224N,
+[62.36s -> 64.98s]  and then I'll talk about what you implement
+[64.98s -> 68.46s]  and kind of the modern consensus variant of a transformer.
+[68.46s -> 69.66s]  And then we're gonna take a much more
+[69.66s -> 71.76s]  kind of data-driven perspective
+[71.76s -> 73.90s]  to understanding transformer architectures.
+[73.90s -> 76.10s]  So the question that we're gonna ask is,
+[76.10s -> 79.06s]  people have trained lots of LLMs at this point,
+[79.06s -> 81.48s]  and you can go and read all of those papers
+[81.48s -> 83.26s]  and try to understand what has changed,
+[83.26s -> 84.66s]  what has been in common,
+[84.66s -> 87.50s]  and from that kind of almost an evolutionary analysis,
+[87.50s -> 89.42s]  try to understand what are the things
+[89.42s -> 92.04s]  that are really important to make transformers work.
+[92.04s -> 94.42s]  So today's theme is, the theme of the class
+[94.42s -> 96.44s]  is the best way to learn is hands-on experience,
+[96.44s -> 97.62s]  but the theme of this lecture,
+[97.62s -> 99.78s]  because we can't train all these transformers,
+[99.78s -> 101.98s]  is to learn from the experience of others.
+[103.66s -> 107.02s]  So the starting point is the original transformer.
+[107.02s -> 108.66s]  So just as a review,
+[108.66s -> 111.14s]  hopefully you all remember this from 224N
+[111.14s -> 113.24s]  or your other NLP classes.
+[113.24s -> 116.56s]  You've got some simple position embeddings at the bottom,
+[116.56s -> 118.44s]  you've got multi-head attention,
+[118.44s -> 120.80s]  you've got layer norms afterwards,
+[120.80s -> 122.44s]  you've got a residual stream going upwards,
+[122.44s -> 125.80s]  you've got a MLP, and then a softmax at the very end.
+[125.80s -> 127.36s]  Now we're gonna see variants to all these
+[127.36s -> 129.98s]  different pieces until we get to basically
+[129.98s -> 133.02s]  the most modern variants of the transformer.
+[133.02s -> 134.76s]  And the latest one we'll talk about
+[134.76s -> 137.02s]  will be just a few months before.
+[138.20s -> 140.16s]  So what you implemented is not
+[140.80s -> 144.76s]  the vanilla transformer variant from the original paper.
+[144.76s -> 146.82s]  We've modified a few things.
+[146.82s -> 148.78s]  We've put the layer norm in front of the block,
+[148.78s -> 151.12s]  so you can see on this slide over here
+[151.12s -> 153.96s]  that the norm is over here right before
+[153.96s -> 156.84s]  each of these blocks in the residual stream.
+[156.84s -> 160.12s]  We've asked you to implement rotary position embeddings.
+[160.12s -> 163.44s]  The feed-forward layers use something called a SWGLU.
+[163.44s -> 167.88s]  And then linear layers now omit these bias terms.
+[168.20s -> 170.32s]  And you might ask, why have you forced us
+[170.32s -> 172.60s]  to implement this weird variant of a transformer
+[172.60s -> 174.34s]  instead of the original transformer
+[174.34s -> 175.80s]  is all you need transformer.
+[177.44s -> 179.80s]  And so we're gonna go through some of those questions.
+[179.80s -> 180.90s]  And then yesterday I was thinking,
+[180.90s -> 183.42s]  okay, I should catch up on all the developments
+[183.42s -> 185.96s]  that have happened in architectures over the last year.
+[185.96s -> 187.40s]  And Percy warned me about this
+[187.40s -> 188.60s]  because he said you're gonna have to redo
+[188.60s -> 190.04s]  the lecture every year.
+[190.04s -> 191.14s]  And so I started looking and I was like,
+[191.14s -> 193.40s]  all right, yeah, there's a couple good papers recently.
+[193.40s -> 196.00s]  There's Command Day, there's Too Old, Mo Too Furious,
+[196.04s -> 198.36s]  there's Small LM and 5.4.
+[198.36s -> 199.36s]  And then you go looking and you're like,
+[199.36s -> 203.16s]  wow, yeah, there's Gemma 3 and Quent 2.5 and Intern LM.
+[203.16s -> 205.96s]  And then there's more, I can't even sort of
+[205.96s -> 208.08s]  cover the screen with these guys.
+[208.08s -> 209.52s]  There's a lot of models.
+[209.52s -> 212.36s]  There were about 19 new dense model releases
+[212.36s -> 214.24s]  in the last year.
+[214.24s -> 216.44s]  Many of them with minor architecture tweaks.
+[216.44s -> 218.20s]  And on the one hand it's kind of annoying
+[218.20s -> 220.88s]  to go through all these papers and say
+[220.88s -> 223.12s]  what is happening in all of these.
+[223.12s -> 225.40s]  But also it's actually a wealth of information
+[225.64s -> 227.04s]  because not all of them do the same thing.
+[227.04s -> 228.96s]  And you can kind of see, not all of you can,
+[228.96s -> 232.44s]  especially in the back, can see the details of this slide
+[232.44s -> 234.56s]  but I put together a little spreadsheet
+[234.56s -> 236.32s]  of what all of these models are doing
+[236.32s -> 238.48s]  and starting with all the way from 2017,
+[238.48s -> 241.24s]  the original Transformer, all the way to 2025
+[241.24s -> 243.36s]  what the US models are doing.
+[243.36s -> 245.22s]  And we'll talk about this as we go.
+[245.22s -> 247.12s]  But you kind of see sort of certain kinds
+[247.12s -> 249.40s]  of architecture changes sort of being explored.
+[249.40s -> 251.72s]  Like so here on this column is position embeddings.
+[251.72s -> 252.96s]  People used to do all sorts of stuff
+[252.96s -> 255.28s]  like absolute, relative, rope.
+[256.12s -> 258.52s]  There was a sort of alibi phase for some people.
+[258.52s -> 260.40s]  But then now, starting around 2023,
+[260.40s -> 261.78s]  everyone just does rope, right?
+[261.78s -> 264.04s]  So you can kind of see this in the convergent evolution
+[264.04s -> 266.04s]  almost of neural architectures.
+[266.04s -> 267.82s]  And we're gonna talk about all of these
+[267.82s -> 269.52s]  different kinds of things, right?
+[270.72s -> 273.00s]  So the parts that I'll cover,
+[273.00s -> 275.68s]  so this is a preview of the three major sections
+[275.68s -> 276.96s]  of this lecture and if I have time
+[276.96s -> 279.36s]  I'm also gonna talk about different attention variants
+[279.36s -> 280.58s]  at the end.
+[280.58s -> 283.24s]  The first thing is gonna be architecture variations.
+[283.24s -> 284.24s]  That's what I'm gonna talk about.
+[284.24s -> 286.94s]  So activations, feed forwards, attention variants,
+[286.94s -> 289.00s]  position embeddings, all of those things.
+[289.00s -> 291.54s]  And then having nailed down the architecture,
+[291.54s -> 292.44s]  what do we have to do?
+[292.44s -> 294.26s]  Well we have to pick hyperparameters, right?
+[294.26s -> 297.58s]  Like how big do we make the hidden dimension?
+[297.58s -> 299.92s]  How big do we make the sort of inner projection layer
+[299.92s -> 301.74s]  inside of MLP?
+[301.74s -> 303.28s]  What do we do about the number of dimensions?
+[303.28s -> 304.36s]  How many vocab elements?
+[304.36s -> 305.94s]  Those are all sort of important things
+[305.94s -> 308.18s]  that you have to choose when you're actually training
+[308.18s -> 309.30s]  your language model.
+[310.68s -> 311.52s]  And you don't want to just sort of
+[311.52s -> 312.58s]  pick these out of a hat, right?
+[312.58s -> 315.30s]  You want to select them in some fairly intelligent way.
+[315.30s -> 319.64s]  So we're gonna start with architecture variations.
+[320.58s -> 324.12s]  And the two things that I'll mention right here
+[324.12s -> 326.52s]  and I'll go back to them as I talk.
+[326.52s -> 329.64s]  The first one is there's not that much consensus
+[329.64s -> 331.00s]  in a lot of the choices.
+[331.00s -> 333.52s]  There's been sort of convergent evolution
+[333.52s -> 334.78s]  in the last few years.
+[334.78s -> 336.50s]  What I'll call like llama-like architectures
+[336.50s -> 337.82s]  at the very bottom here.
+[337.82s -> 339.02s]  But people do all sorts of things.
+[339.02s -> 340.94s]  They swap between layer norm and RMS norm.
+[340.94s -> 342.96s]  They do serial versus parallel layers.
+[342.96s -> 345.94s]  There's one choice that basically everyone does
+[345.94s -> 347.86s]  since the very first GPT.
+[347.86s -> 349.66s]  And I'll talk about that in a bit.
+[350.58s -> 352.34s]  But there's lots of different variations
+[352.34s -> 355.10s]  that we can learn from here.
+[355.10s -> 357.24s]  The big one, I've already talked about this guy
+[357.24s -> 359.86s]  in 224N so if you remember that lecture
+[359.86s -> 361.18s]  this will be review for you
+[361.18s -> 362.90s]  rather than being totally new.
+[362.90s -> 365.90s]  I think the one thing basically everyone agrees on
+[365.90s -> 368.34s]  and agreed on almost from the very start
+[368.34s -> 372.46s]  is the use of pre-norm versus post-norm.
+[372.46s -> 375.26s]  That terminology will get a little bit more confusing.
+[375.26s -> 377.18s]  But the original transformer paper
+[377.18s -> 379.66s]  did this thing on the left over here
+[379.66s -> 382.54s]  where you had your residual stream in the gray
+[382.54s -> 384.96s]  and in addition to the residual stream
+[384.96s -> 388.26s]  you had these layer norms after sort of every subcomponent.
+[388.26s -> 389.50s]  So you would do your multi-head attention,
+[389.50s -> 391.40s]  you would add back to the residual stream
+[391.40s -> 392.54s]  and then you would layer norm that.
+[392.54s -> 393.94s]  And then you would do the same thing
+[393.94s -> 395.56s]  with your fully connected layer
+[395.56s -> 397.14s]  and then you would layer norm it.
+[398.14s -> 400.94s]  Very, very early on people realized
+[400.94s -> 403.42s]  that moving this layer norm to the front
+[403.42s -> 405.22s]  of this sort of non-residual part,
+[405.22s -> 407.30s]  so this block on the right,
+[407.30s -> 409.52s]  did much better in many different ways.
+[409.52s -> 412.46s]  And basically almost all modern LMs
+[412.46s -> 415.90s]  that I know of use this kind of pre-norm.
+[415.90s -> 418.26s]  There have been some sort of new innovations recently
+[418.26s -> 420.78s]  that I'll touch on in two slides.
+[420.78s -> 423.58s]  But lots of models have moved to this.
+[423.58s -> 426.78s]  The one exception is OPT350M
+[426.78s -> 429.10s]  which I'm guessing they kind of messed that one up
+[429.10s -> 431.90s]  and that was sort of orphaned when they were training.
+[431.90s -> 434.72s]  That was a fun find in my survey of architectures.
+[436.30s -> 438.10s]  So this pre versus post-norm thing,
+[438.10s -> 440.94s]  if you look into why it was originally developed,
+[440.94s -> 443.42s]  the arguments were that if you wanted
+[443.42s -> 446.78s]  to use this post-norm stuff it was much less stable
+[446.78s -> 448.58s]  and so you would have to do some careful
+[448.58s -> 450.54s]  learning rate warmup style things
+[450.54s -> 452.62s]  to make it train in a stable way.
+[452.62s -> 455.38s]  And so if you look at some of the earlier papers
+[455.38s -> 458.46s]  arguing for this pre-norm approach,
+[458.46s -> 461.82s]  Salazar and Yan and also this Xiong in 2020 paper,
+[461.82s -> 464.58s]  you almost always see sort of this comparison
+[464.58s -> 467.38s]  of hey, if we use pre-norm and we do some other
+[467.38s -> 470.52s]  stability inducing tricks, then we can remove warmup
+[470.52s -> 473.68s]  and these systems work just as well if not better
+[473.68s -> 477.30s]  than sort of the post-norm layer norm
+[477.30s -> 479.02s]  with careful warmup type approaches.
+[479.02s -> 480.10s]  And you see this in sort of
+[480.10s -> 482.42s]  a machine translation setting here.
+[482.42s -> 487.10s]  You see this as well on the right on various other tasks,
+[487.10s -> 489.90s]  especially using BERT which was trained with post-norm.
+[491.78s -> 495.60s]  So there were many arguments about why this was helpful.
+[495.60s -> 497.54s]  There were arguments about gradient attenuation
+[497.54s -> 499.86s]  across layers, like if you do pre-norm,
+[499.86s -> 502.14s]  then the gradient sizes would remain constant,
+[502.14s -> 505.62s]  whereas if you did post-norm without warmup,
+[505.62s -> 507.98s]  then it would sort of blow up in this orange way.
+[507.98s -> 510.90s]  It's a reasonable argument, but I think it may be more
+[510.90s -> 513.26s]  closer to modern intuition would be this argument
+[513.26s -> 517.10s]  that pre-norm is just a more stable architecture to train.
+[517.10s -> 520.38s]  And so some of the earlier work by Salazar and Yan
+[520.38s -> 522.92s]  identified all these loss spikes
+[522.92s -> 524.62s]  that if you were training with pre-norm,
+[524.62s -> 526.90s]  kind of in blue here, you would see a lot more
+[526.90s -> 528.78s]  loss spikes and the training would be
+[528.78s -> 531.66s]  kind of unstable as you were training.
+[531.66s -> 534.82s]  So you see the gradient norm here spiking
+[534.82s -> 537.90s]  and generally higher than the one with pre-norm.
+[537.90s -> 541.86s]  And so today, you see pre-norm and other layer norm tricks
+[541.86s -> 545.28s]  being used essentially as a stability inducing,
+[546.24s -> 547.78s]  the stability inducing aids
+[547.78s -> 551.12s]  for using training large neural networks.
+[551.12s -> 554.86s]  And so this brings us to one new fairly,
+[554.86s -> 556.50s]  I think, recent innovation.
+[556.50s -> 557.70s]  I think this didn't exist
+[557.70s -> 560.36s]  when I gave this lecture last year,
+[560.36s -> 562.54s]  which is this variant that I don't think
+[562.54s -> 564.78s]  really has a great name, but I'm just gonna call it
+[564.78s -> 566.90s]  the double norm for the moment here.
+[566.90s -> 568.78s]  So this is the original figure
+[568.78s -> 570.22s]  that I showed you at the very beginning.
+[570.22s -> 571.66s]  And we know that putting layer norms
+[571.66s -> 574.02s]  in the residual stream is bad.
+[574.02s -> 577.02s]  But actually someone in 224N this year asked,
+[577.02s -> 578.34s]  well, but why do you have to put
+[578.34s -> 579.78s]  the layer norm in the front?
+[579.78s -> 582.46s]  Why can't you put it after the feed forward network?
+[582.46s -> 583.82s]  And of course you can.
+[583.82s -> 586.44s]  And not only that, sort of recent people
+[586.44s -> 588.90s]  have gone around and just add the layer norm
+[588.90s -> 590.98s]  after the blocks as well.
+[590.98s -> 594.42s]  And so Grok and Gemma2 both take this approach
+[594.42s -> 598.02s]  of layer norms both in front and after.
+[598.02s -> 602.30s]  Olmo2 does only the layer norm after the feed forward
+[602.30s -> 603.58s]  and the multi-head attention.
+[603.58s -> 606.14s]  And so this is actually kind of an interesting change.
+[606.14s -> 608.38s]  Pre-norm has just been kind of dominant
+[608.38s -> 610.34s]  and the only thing for a while,
+[610.34s -> 611.86s]  but things have been changed up a little bit.
+[611.86s -> 613.90s]  So now there's a new variant,
+[613.90s -> 616.46s]  and this is actually, there's been some evaluations
+[616.46s -> 617.82s]  of this kind of approach.
+[617.82s -> 619.96s]  People have argued it's a little bit more stable
+[619.96s -> 623.54s]  and nicer to train on these larger models.
+[623.58s -> 625.90s]  By the way, feel free to stop me
+[625.90s -> 626.94s]  and ask me questions as well.
+[626.94s -> 629.18s]  I have a tendency to sort of keep going
+[629.18s -> 630.16s]  if no one stops me.
+[630.16s -> 631.20s]  So yes.
+[631.20s -> 634.18s]  Why is layer norm in the residual bad?
+[634.18s -> 635.78s]  Why is layer norm in the residual bad?
+[635.78s -> 637.64s]  That's a good question.
+[637.64s -> 639.66s]  I don't think I can give you like a,
+[639.66s -> 641.46s]  this is the proof of why it's bad.
+[641.46s -> 644.54s]  I think one intuitive argument for why this might be bad
+[644.54s -> 647.34s]  is that the residual gives you this identity connection
+[647.34s -> 649.20s]  all the way from almost the top of the network
+[649.20s -> 650.82s]  all the way to the bottom.
+[650.82s -> 652.82s]  And so if you're trying to train really deep networks,
+[652.82s -> 655.22s]  this makes gradient propagation very easy, right?
+[655.22s -> 658.22s]  So there's lots of arguments about how LSTMs
+[658.22s -> 660.38s]  and these other kinds of states-based models
+[660.38s -> 662.46s]  have difficulty propagating gradients backwards.
+[662.46s -> 664.78s]  An identity connection does not have any such problems.
+[664.78s -> 667.06s]  And so putting layer norms in the middle
+[667.06s -> 669.30s]  might mess with that kind of gradient sort of behavior,
+[669.30s -> 671.70s]  and that, of course, you see back here, right?
+[671.70s -> 673.06s]  This is exactly the kind of plot
+[673.06s -> 674.94s]  you expect to see if that's happening.
+[676.46s -> 677.64s]  Okay, cool.
+[679.94s -> 682.38s]  The other thing that people now do
+[683.32s -> 686.90s]  is in the original transformer, people did layer norm.
+[686.90s -> 690.08s]  And so layer norm is this equation over here.
+[690.08s -> 693.46s]  What you do is you have the activations X coming in,
+[693.46s -> 695.58s]  you subtract the empirical mean,
+[695.58s -> 697.66s]  so that's the average of the Xs up top,
+[697.66s -> 701.02s]  and then you divide by the standard, or the variance,
+[701.02s -> 703.02s]  plus a little fudge factor epsilon,
+[703.02s -> 703.98s]  and then you square root that.
+[703.98s -> 706.78s]  So you can roughly think of that as a standard deviation.
+[706.78s -> 710.58s]  So that's gonna standardize your activations X,
+[710.58s -> 712.02s]  you're gonna scale it up by a gamma,
+[712.06s -> 713.30s]  that's a learnable parameter,
+[713.30s -> 715.02s]  and then shift it by a beta, right?
+[715.02s -> 716.06s]  So this makes sense.
+[716.06s -> 718.50s]  You're gonna normalize your activations,
+[718.50s -> 719.50s]  and then you're gonna shift them around
+[719.50s -> 721.26s]  to whatever point you want.
+[721.26s -> 723.36s]  And many models use this layer norm thing,
+[723.36s -> 724.98s]  and it worked quite well.
+[724.98s -> 728.14s]  But many models have sort of now moved on to RMS norm.
+[728.14s -> 729.82s]  And this is one of the consensus changes.
+[729.82s -> 730.94s]  Like basically all the models
+[730.94s -> 733.22s]  have switched to using RMS norm.
+[733.22s -> 734.66s]  And now what do you do?
+[734.66s -> 736.94s]  You just drop the mean adjustment.
+[736.94s -> 738.06s]  So you don't subtract the mean,
+[738.06s -> 739.68s]  you don't add a bias term.
+[739.68s -> 741.36s]  And many notable models do this.
+[741.56s -> 743.20s]  The llama family, pom, chinchilla, T5,
+[743.20s -> 746.16s]  they've all moved to RMS norm.
+[746.16s -> 748.32s]  And what's the reason for this?
+[748.32s -> 750.92s]  One reason is that it doesn't really make a difference.
+[750.92s -> 753.52s]  Turns out if you train models with RMS norm,
+[753.52s -> 755.96s]  that's just as well as training with layer norm.
+[755.96s -> 757.96s]  And so there's a simplification argument.
+[759.08s -> 760.72s]  But really I think the argument
+[760.72s -> 763.28s]  that's often given in these papers,
+[763.28s -> 764.78s]  and I think it's good to appreciate
+[764.78s -> 766.86s]  kind of the details of this argument,
+[766.86s -> 770.42s]  is that going to RMS norm is,
+[770.42s -> 771.98s]  it's faster and just as good.
+[771.98s -> 773.50s]  So in what way is it faster?
+[773.50s -> 776.50s]  Well, if I don't subtract the mean, it's fewer operations.
+[776.50s -> 779.64s]  If I don't have to add that bias term beta back,
+[779.64s -> 782.40s]  it's fewer parameters that I have to load from memory
+[782.40s -> 784.02s]  back into sort of my compute units.
+[784.02s -> 786.82s]  So I don't have to retrieve this sort of state.
+[788.30s -> 789.54s]  And some of you might be thinking,
+[789.54s -> 791.90s]  but wait, you told me in 224n
+[791.90s -> 793.70s]  that nothing but matrix multiplies matter
+[793.70s -> 795.10s]  for the purpose of runtime.
+[795.10s -> 796.86s]  And this is not a matrix multiply,
+[796.86s -> 799.38s]  and so I shouldn't care about any of this.
+[799.38s -> 801.02s]  And that's a reasonable perspective to take.
+[801.02s -> 805.34s]  If you think about the percentage of flops
+[805.34s -> 809.34s]  that is taken up by different operations in a transformer,
+[809.34s -> 814.34s]  this table, there's a nice paper by Ivanov in 2023,
+[814.62s -> 816.84s]  I think the title is like memory movement is all you need
+[816.84s -> 818.90s]  or something that does profiling
+[818.90s -> 822.22s]  of all the different components of a transformer.
+[822.22s -> 823.92s]  And you see that tensor contractions,
+[823.92s -> 825.18s]  which are like matrix multiplies,
+[825.18s -> 828.10s]  that's like 99.8% of the flops
+[828.10s -> 829.42s]  that happen in a transformer.
+[829.42s -> 832.54s]  And so saving 0.17% of your flops
+[832.54s -> 834.46s]  doesn't seem like a huge win.
+[836.28s -> 837.38s]  But I think one of the things
+[837.38s -> 840.68s]  that's important for architecture design now
+[840.68s -> 842.72s]  is to not just think about flops,
+[842.72s -> 844.38s]  because flops are important,
+[844.38s -> 845.86s]  but that's not the only resource
+[845.86s -> 847.90s]  that you have to think about.
+[847.90s -> 849.98s]  It's also that you have to think carefully
+[849.98s -> 852.42s]  about memory movement.
+[852.74s -> 855.38s]  And so even though tensor contractions,
+[855.38s -> 857.34s]  so this is things like matrix multiplies,
+[857.34s -> 860.34s]  that's like 99.8% of the flops,
+[860.34s -> 862.98s]  if you have things like the softmax operation
+[862.98s -> 865.82s]  or layer norms, all these normalization operations
+[865.82s -> 868.74s]  that happen in a transformer,
+[868.74s -> 870.70s]  there are 0.17% of the flops,
+[870.70s -> 873.50s]  so actually they're 25% of the run time.
+[873.50s -> 875.10s]  And a big reason for that
+[875.10s -> 877.78s]  is because these normalization operations
+[877.78s -> 880.78s]  still incur a lot of memory movement overhead.
+[880.78s -> 882.74s]  And so it does actually matter
+[882.74s -> 886.18s]  to try to optimize some of these lower level things,
+[886.18s -> 888.02s]  because it's not just about flops,
+[888.02s -> 889.42s]  it's also about memory movement.
+[889.42s -> 891.62s]  I'm gonna emphasize this quite a bit more
+[891.62s -> 893.10s]  as I get into the systems lecture,
+[893.10s -> 894.98s]  like when we talk about GPU architectures,
+[894.98s -> 897.02s]  it's gonna become very, very, very important
+[897.02s -> 900.02s]  to think about memory, not just about flops.
+[900.02s -> 902.22s]  And so this is one of the reasons
+[902.22s -> 907.22s]  why RMS norm has now become sort of much more popular.
+[907.50s -> 908.82s]  And so I went back and looked
+[908.82s -> 911.98s]  at some of the earlier RMS norm papers.
+[911.98s -> 914.42s]  I think the sad thing is that
+[914.42s -> 916.46s]  there aren't quite as many papers
+[916.46s -> 919.54s]  published by industry labs with big, nice ablations.
+[919.54s -> 921.78s]  And so many of the ablations that I'll show you
+[921.78s -> 924.30s]  are gonna be from a couple years back.
+[924.30s -> 926.26s]  But Narang et al. in 2020
+[926.26s -> 927.90s]  had this very nice ablation showing,
+[927.90s -> 929.22s]  here's the vanilla transformer,
+[929.22s -> 930.90s]  here's the RMS norm version,
+[930.90s -> 933.46s]  and you kind of see the exact thing I told you,
+[933.46s -> 934.86s]  the number of steps per second
+[934.86s -> 937.66s]  that you can do in a vanilla transformer, 3.5 per second.
+[937.66s -> 940.94s]  With RMS norm, you get 3.68, not a huge gain,
+[940.94s -> 942.86s]  but that's, in some sense, for free,
+[942.86s -> 946.74s]  and you get a final loss that's lower
+[946.74s -> 947.98s]  than the vanilla transformer.
+[947.98s -> 948.82s]  So that's great, right?
+[948.82s -> 951.78s]  In some sense, we've gotten runtime improvements,
+[951.78s -> 953.38s]  and we've gotten, in fact,
+[953.38s -> 955.70s]  at least in this case, loss improvements.
+[955.70s -> 958.30s]  And so that's a win-win for us.
+[960.04s -> 961.70s]  The final thing that I'll say,
+[961.70s -> 965.18s]  which is very much in line with this RMS norm thing
+[965.18s -> 968.30s]  in terms of theme, is that most modern transformers
+[968.30s -> 970.42s]  do not have bias terms.
+[970.42s -> 974.30s]  So the original transformer, if you look at the FFN,
+[974.30s -> 975.62s]  will look something like this, right?
+[975.62s -> 976.58s]  You have your inputs x,
+[976.58s -> 978.70s]  you're gonna do a linear layer with a bias term,
+[978.70s -> 979.64s]  and then you'll relu it,
+[979.64s -> 981.28s]  and then you'll have a second linear layer
+[981.28s -> 983.00s]  wrapping around it.
+[983.00s -> 986.86s]  But most implementations, if they're not gated units,
+[986.86s -> 988.46s]  which I'll talk about in a moment,
+[988.46s -> 989.58s]  look actually something like this.
+[989.58s -> 991.94s]  They just drop the bias terms.
+[991.94s -> 993.10s]  You can just make this argument
+[993.10s -> 996.34s]  from basically the same kinds of underlying principles.
+[996.34s -> 998.14s]  They perform just as well.
+[998.14s -> 1000.82s]  Matrix multiplies are apparently all that you need
+[1000.82s -> 1002.74s]  to get these guys to work.
+[1002.74s -> 1005.22s]  And the other thing which is maybe more subtle
+[1005.22s -> 1007.82s]  is actually optimization stability.
+[1008.82s -> 1010.78s]  I don't quite have the deepest understanding
+[1010.78s -> 1014.50s]  of why the bias terms are particularly bad for stability,
+[1014.50s -> 1016.18s]  but there's been sort of really clear
+[1016.18s -> 1018.38s]  empirical observations that people have made
+[1018.38s -> 1020.26s]  that basically dropping these bias terms
+[1020.26s -> 1022.38s]  often stabilizes the training
+[1022.38s -> 1023.86s]  of these largest neural networks.
+[1023.86s -> 1025.82s]  And so now a lot of the implementations
+[1025.82s -> 1027.66s]  now emit bias terms entirely
+[1027.66s -> 1030.66s]  and train only on these pure matrix multiply
+[1030.66s -> 1031.50s]  kind of settings.
+[1032.42s -> 1036.40s]  So that's the layer norm bit.
+[1036.40s -> 1038.38s]  And so there's kind of two things
+[1038.38s -> 1039.94s]  that you should kind of think of.
+[1039.94s -> 1042.38s]  This is nice because the story is pretty clear.
+[1042.38s -> 1043.48s]  Everyone does something,
+[1043.48s -> 1045.28s]  and so you should just kind of know this, right?
+[1045.28s -> 1046.74s]  Basically everyone does pre-norm,
+[1046.74s -> 1048.74s]  or at least they do the layer norms
+[1048.74s -> 1050.22s]  outside of the residual stream.
+[1051.06s -> 1052.90s]  That's kind of the iron rule, right?
+[1052.90s -> 1054.82s]  You get nicer gradient propagation,
+[1054.82s -> 1056.54s]  you get much more stable training.
+[1056.54s -> 1059.20s]  It just doesn't make sense to do it the other way.
+[1059.20s -> 1063.60s]  Most people, or almost everybody, does RMS norm.
+[1064.64s -> 1066.22s]  In practice it works almost as well,
+[1066.22s -> 1067.94s]  has fewer parameters to move around,
+[1067.94s -> 1071.50s]  and this idea of dropping bias terms just broadly applies.
+[1071.50s -> 1074.14s]  A lot of these models just don't have bias terms
+[1074.14s -> 1075.42s]  in most places.
+[1075.42s -> 1077.66s]  I think the one exception to this RMS norm one,
+[1077.66s -> 1079.28s]  as I was reading yesterday,
+[1079.28s -> 1082.68s]  is I think cohere both command A and R plus use layer norm.
+[1082.68s -> 1084.72s]  Not quite sure why.
+[1085.64s -> 1088.92s]  Okay, any questions on kind of the layer norm,
+[1088.92s -> 1092.80s]  RMS norm, and bias term stuff before I move on?
+[1092.80s -> 1094.16s]  Yes, question.
+[1094.16s -> 1096.56s]  You think there are some long-term lessons
+[1096.56s -> 1098.18s]  you can take away from these details
+[1098.18s -> 1099.92s]  that are more future-proof, potentially?
+[1099.92s -> 1102.34s]  Or do you think these are, yeah?
+[1102.34s -> 1103.18s]  Yeah, so the question was,
+[1103.18s -> 1104.82s]  is there something more future-proof?
+[1104.82s -> 1108.68s]  And I think it's hard to have the biggest picture
+[1108.96s -> 1112.02s]  in many ways deep learning has been very empirical
+[1112.02s -> 1113.60s]  and bottom-up rather than top-down.
+[1113.60s -> 1116.10s]  But I do think there's some generalizable lessons
+[1116.10s -> 1117.42s]  that you could sort of draw from here.
+[1117.42s -> 1121.40s]  I think the lesson of have very direct identity map
+[1121.40s -> 1124.16s]  residual connections is sort of a story and a lesson
+[1124.16s -> 1126.20s]  that has played out in many, many different kinds
+[1126.20s -> 1130.10s]  of architectures, not just in these kinds of architectures.
+[1130.10s -> 1131.56s]  The effectiveness of layer norm,
+[1131.56s -> 1134.56s]  we'll see once again later on in this lecture,
+[1134.56s -> 1135.68s]  has been very effective.
+[1135.76s -> 1138.96s]  And so not letting your activations drift and sort of scale
+[1138.96s -> 1140.48s]  is another thing that I think generally
+[1140.48s -> 1142.84s]  has been very effective for training stability.
+[1143.80s -> 1147.44s]  Those two seem like fairly generalizable lessons.
+[1147.44s -> 1150.52s]  We will also kind of see sort of systems concerns
+[1150.52s -> 1151.82s]  come into play again.
+[1151.82s -> 1153.54s]  So this is another generalizable lesson
+[1153.54s -> 1154.90s]  of sort of thinking really carefully
+[1154.90s -> 1156.82s]  about the impact of your architecture
+[1156.82s -> 1159.66s]  on the systems components of your design.
+[1161.56s -> 1165.32s]  Okay, so now there's this other component,
+[1165.84s -> 1166.84s]  which is the activations.
+[1166.84s -> 1170.08s]  And there is a whole big zoo of activations.
+[1170.08s -> 1173.68s]  ReLU, GelU, SwishLU, GLU, and then there's,
+[1173.68s -> 1174.84s]  I mean, these aren't activations.
+[1174.84s -> 1177.08s]  There are different kinds of MLPs.
+[1177.08s -> 1180.48s]  Geglu, Reglu, Cellu, Swiglu, and Liglu.
+[1181.80s -> 1185.44s]  And yeah, I think this is exactly the kind of thing
+[1185.44s -> 1187.92s]  that I didn't originally want to learn
+[1187.92s -> 1189.68s]  when I got into doing deep learning.
+[1189.68s -> 1191.16s]  I was like, I don't care about activations.
+[1191.16s -> 1192.84s]  It's gonna train anyway.
+[1192.84s -> 1195.64s]  But it really does matter, unfortunately,
+[1195.64s -> 1199.68s]  for both you and me, that Swiglu and other GLU variants
+[1199.68s -> 1201.12s]  just consistently work well.
+[1201.12s -> 1202.80s]  And so I will explain those to you.
+[1202.80s -> 1204.26s]  And you should think about them carefully
+[1204.26s -> 1207.14s]  because they do work and internalize that, right?
+[1208.00s -> 1210.96s]  So I think the ReLU and maybe the GelU,
+[1210.96s -> 1212.76s]  you all should already know, right?
+[1212.76s -> 1214.32s]  The ReLU, you learn in like
+[1214.32s -> 1216.60s]  some of the most basic deep learning classes, right?
+[1216.60s -> 1218.24s]  You just take the max of zero.
+[1218.24s -> 1219.72s]  And in the case of the MLP, right,
+[1219.72s -> 1221.76s]  you've got your, I've dropped the bias terms here,
+[1221.92s -> 1225.88s]  X.W1, you take the ReLU, and then you do W2.
+[1225.88s -> 1227.26s]  Fairly easy, right?
+[1227.26s -> 1231.36s]  A GelU is a Gaussian error linear unit.
+[1231.36s -> 1235.82s]  This one multiplies the linear with a CDF of a Gaussian.
+[1235.82s -> 1239.24s]  And so it's basically gonna be like the ReLU
+[1239.24s -> 1241.36s]  but with a little bit of a bump here.
+[1241.36s -> 1243.64s]  Hopefully you can see that over here.
+[1243.64s -> 1246.00s]  This is not just flat at the very bottom.
+[1246.00s -> 1248.32s]  This makes things a little bit more differentiable,
+[1248.32s -> 1250.64s]  which may or may not help.
+[1251.16s -> 1254.76s]  And the GPT family of models, 1, 2, 3, and GPT-J,
+[1254.76s -> 1257.40s]  and so on, all use the GelU.
+[1258.92s -> 1260.08s]  And the original transformer
+[1260.08s -> 1262.90s]  and some of the older models used the ReLU.
+[1262.90s -> 1265.32s]  And really almost all the modern models
+[1265.32s -> 1267.64s]  have switched to the gated linear units
+[1267.64s -> 1270.58s]  like SWIGLU and the GEGLU and others, right?
+[1271.44s -> 1273.12s]  And really I think this is, you know,
+[1273.12s -> 1275.28s]  the Google folks really pushed for this,
+[1275.28s -> 1278.04s]  like POM and P5 and others.
+[1278.04s -> 1280.12s]  But since it's sort of been tried and true,
+[1280.12s -> 1283.66s]  basically almost all the models post-2023
+[1283.66s -> 1285.66s]  use a gated linear unit.
+[1287.52s -> 1290.20s]  And so going back to that earlier question
+[1290.20s -> 1292.58s]  of like what generalizable architecture things
+[1292.58s -> 1294.80s]  can we learn from this lecture?
+[1294.80s -> 1295.64s]  There are some things
+[1295.64s -> 1297.80s]  that have really consistently been very useful.
+[1297.80s -> 1300.56s]  Residual connections, layer norms.
+[1300.56s -> 1302.56s]  Gating is yet another one, right?
+[1302.56s -> 1305.10s]  And so this is another place where gating just appears
+[1305.10s -> 1307.48s]  and is a very good way of doing things.
+[1307.48s -> 1311.20s]  So originally, this is our fully connected layer
+[1311.20s -> 1313.04s]  right here, right, this is with a ReLU.
+[1313.04s -> 1316.32s]  Now instead of doing just linear and a ReLU,
+[1316.32s -> 1320.16s]  what I'm gonna do is I'm gonna gate the output here
+[1320.16s -> 1322.52s]  with entry-wise linear terms.
+[1322.52s -> 1325.24s]  So X.V is gonna give me a vector
+[1325.24s -> 1328.02s]  and I'm gonna multiply that entry-wise
+[1328.02s -> 1331.88s]  with my original inside term of the MLP.
+[1331.88s -> 1334.88s]  And then I'm gonna multiply the whole thing with W2, right?
+[1334.88s -> 1336.64s]  So the way to think about this
+[1336.64s -> 1340.36s]  is I've gated sort of the hidden part of the MLP, right?
+[1340.36s -> 1343.16s]  So I've got my original activation that takes my inputs
+[1343.16s -> 1345.20s]  and puts it into the sort of hidden space
+[1345.20s -> 1347.76s]  and then I'm gonna gate that with X.V
+[1347.76s -> 1350.28s]  and then I'm gonna project that back
+[1350.28s -> 1353.58s]  into sort of the hidden dimensionality using W2, right?
+[1353.58s -> 1356.46s]  So there's this gating operation that happens entry-wise
+[1356.46s -> 1359.04s]  and that's really the basic thing that's happening here
+[1359.04s -> 1363.40s]  and this is the GLU plus the ReLU, so the ReLU
+[1363.40s -> 1364.76s]  and then we have an extra parameter
+[1364.76s -> 1366.28s]  that we've added here for the gating.
+[1366.80s -> 1367.62s]  And this is V.
+[1368.76s -> 1370.26s]  And so when someone says something like,
+[1370.26s -> 1375.26s]  oh, it's a GEGLU flee, there's nothing to laugh about that,
+[1375.56s -> 1378.64s]  there's the GEGLU fully connected layer,
+[1378.64s -> 1382.00s]  what I've got here is I've got the GLU
+[1382.00s -> 1383.80s]  sort of for the non-linearity
+[1383.80s -> 1386.48s]  and I've still got the exact same gating here, X.V, right?
+[1386.48s -> 1388.18s]  And this is the architecture that was used
+[1388.18s -> 1391.12s]  by many of the Google models
+[1391.12s -> 1395.40s]  like T5e 1.1, gamma two, gamma three.
+[1395.40s -> 1398.44s]  And then another variance, there's a SWIGLU
+[1398.44s -> 1400.28s]  and this has been very, very popular.
+[1400.28s -> 1403.98s]  SWISH is X times the sigmoid and this is the non-linearity
+[1403.98s -> 1405.98s]  and you can kind of, a sigmoid is like this
+[1405.98s -> 1407.64s]  and X is like this, so it will look
+[1407.64s -> 1409.58s]  just like the Gaussian error unit.
+[1410.46s -> 1412.16s]  And then you do the same thing here.
+[1412.16s -> 1413.78s]  You have a gating over the SWISH
+[1413.78s -> 1416.18s]  and then you get a fully connected layer here.
+[1416.18s -> 1417.02s]  Yes?
+[1417.02s -> 1417.86s]  I have a question.
+[1417.86s -> 1420.36s]  Below a certain negative value, the SWISH function
+[1420.36s -> 1424.60s]  and also the GLU function,
+[1424.60s -> 1427.10s]  it's not monotonically increasing, in fact it's decreasing.
+[1427.10s -> 1427.94s]  Right.
+[1427.94s -> 1429.72s]  And a lot of the argument about how gradient descent
+[1429.72s -> 1430.92s]  works in like input-up permission,
+[1430.92s -> 1433.52s]  you're like, okay, you want to do gradient descent,
+[1434.92s -> 1436.18s]  but here it seems like you would go
+[1436.18s -> 1439.74s]  in the opposite direction if you use GLU or SWISH
+[1439.74s -> 1441.00s]  or the gated version, so.
+[1441.00s -> 1442.44s]  Yeah.
+[1442.44s -> 1446.48s]  So the question was, this isn't monotonically decreasing.
+[1446.48s -> 1448.40s]  You know, there's a bit on the very left
+[1448.40s -> 1450.08s]  of this zero here that's kind of flipping
+[1450.08s -> 1454.32s]  in the derivative and isn't that going to be a problem?
+[1454.92s -> 1456.92s]  I think intuitively you could have argued
+[1456.92s -> 1457.92s]  that this would be a problem.
+[1457.92s -> 1461.20s]  You might trap a bunch of activations at zeros.
+[1461.20s -> 1463.68s]  I think in practice, you know, if you look at
+[1463.68s -> 1466.44s]  kind of like neural network optimization dynamics,
+[1466.44s -> 1469.00s]  what's actually happening is often you're throwing
+[1469.00s -> 1472.52s]  very high learning rates with momentum into the optimizer
+[1472.52s -> 1474.72s]  and so you're not really going to converge
+[1474.72s -> 1476.04s]  to the zero point, right?
+[1476.04s -> 1478.92s]  Like these activations are going to be all over the place
+[1478.92s -> 1482.28s]  and so in practice I don't think this little tiny
+[1482.28s -> 1484.96s]  negative piece is really an effect that's gonna
+[1484.96s -> 1487.52s]  be huge for the model, if that makes sense.
+[1490.36s -> 1492.68s]  Okay, and then going back to this,
+[1492.68s -> 1495.40s]  the SWIGLU is basically most models today,
+[1495.40s -> 1497.78s]  like the llama family, POM, OMO,
+[1497.78s -> 1500.10s]  and I'll show you the big table later,
+[1500.10s -> 1502.86s]  but you'll see that the SWIGLU is very, very popular.
+[1502.86s -> 1505.04s]  And one thing to note, I'll talk about this again
+[1505.04s -> 1507.56s]  in the hyperparameters part, is, you know,
+[1507.56s -> 1510.20s]  now remember I've added this V term,
+[1510.20s -> 1512.28s]  this extra parameter, right?
+[1512.28s -> 1515.20s]  And so I wanna, you know, think about how to size
+[1515.20s -> 1518.84s]  this extra parameter and what people do is gated models
+[1518.84s -> 1521.12s]  usually make this like hidden size, you know,
+[1521.12s -> 1523.28s]  the basically output dimensionality of W,
+[1523.28s -> 1527.04s]  slightly smaller by a factor of 2 thirds
+[1527.04s -> 1529.08s]  in order to make sure that the total number
+[1529.08s -> 1531.34s]  of parameters of this whole thing
+[1531.34s -> 1533.72s]  remains the same as the non-gated counterparts.
+[1533.72s -> 1536.72s]  And that's a convention thing that most people do.
+[1536.72s -> 1538.32s]  You don't quite understand what that is,
+[1538.36s -> 1540.76s]  and I'll go back over that again later,
+[1540.76s -> 1541.96s]  but you can just kind of keep in mind
+[1541.96s -> 1543.56s]  that basically for the gated linear units,
+[1543.56s -> 1545.64s]  you just make everything a little bit smaller
+[1545.64s -> 1548.08s]  to make sure things remain parameter matched.
+[1550.48s -> 1552.06s]  So, oh yes, question.
+[1553.52s -> 1556.40s]  This may be obvious for a quantum in the past.
+[1556.40s -> 1558.32s]  One of the benefits of ReLU is like,
+[1559.20s -> 1562.28s]  it's very easily differentiable by the input,
+[1562.28s -> 1565.76s]  but if you have the derivative of the CDF of the Gaussian,
+[1565.76s -> 1567.96s]  if you have like a squared with X,
+[1567.96s -> 1571.36s]  does that not really slow things down?
+[1571.36s -> 1572.78s]  That's a very good question.
+[1572.78s -> 1575.52s]  I'm not 100% sure what the internal like CUDA
+[1575.52s -> 1580.08s]  implementation of the SWIGLU or the GEGLU is.
+[1580.08s -> 1582.40s]  I think it's entirely possible that like internally
+[1582.40s -> 1585.16s]  they might be implemented with like lookup tables.
+[1585.16s -> 1586.00s]  Go ahead.
+[1586.00s -> 1588.20s]  I mean what really matters is the memory pressure in here
+[1588.20s -> 1589.36s]  and like it will be the exact same
+[1589.36s -> 1590.72s]  because you're reading the same level of elements.
+[1590.72s -> 1591.78s]  Sure, right.
+[1591.78s -> 1594.12s]  So the extra compute is negligible on compute.
+[1595.08s -> 1598.08s]  That's probably a better argument that like basically flops.
+[1598.08s -> 1599.68s]  Why is this negligible anyway?
+[1599.68s -> 1601.96s]  And actually the memory calculus is the same.
+[1604.04s -> 1604.96s]  Okay, cool.
+[1607.00s -> 1609.92s]  All right, so do gated linear units work?
+[1609.92s -> 1612.44s]  I will have more modern evidence for this as well,
+[1612.44s -> 1614.04s]  but I thought I should take you straight
+[1614.04s -> 1618.22s]  to the horse's mouth, Noam Shazir's original paper
+[1618.22s -> 1621.18s]  where he evaluates all these GLEU variants.
+[1622.04s -> 1624.04s]  And this is somewhat older stuff,
+[1624.80s -> 1627.16s]  so you're seeing COLA and SST2 performance.
+[1627.16s -> 1630.52s]  But you do see basically that the GLEU variants
+[1630.52s -> 1632.00s]  consistently perform better, right?
+[1632.00s -> 1637.00s]  GLEU is 84.2, 84.12, 84.36, 84.67.
+[1637.90s -> 1639.80s]  And you know, wow, it's 2020s,
+[1639.80s -> 1641.60s]  they even give you the standard deviation
+[1641.60s -> 1643.76s]  so you can sort of figure out how significant
+[1643.76s -> 1647.32s]  those results are and they in fact are significant, right?
+[1647.32s -> 1651.32s]  And so this is some nice evidence to see here.
+[1651.36s -> 1654.28s]  There was also the Narang et al in 2020 paper
+[1654.28s -> 1656.40s]  which is a very nice paper studying all sorts
+[1656.40s -> 1659.04s]  of architecture variants, I think in the context
+[1659.04s -> 1660.68s]  of T5 style models.
+[1660.68s -> 1665.12s]  And once again you see that the gated linear unit variants
+[1665.12s -> 1668.04s]  consistently achieve kind of lower losses
+[1668.04s -> 1669.24s]  than their counterparts, right?
+[1669.24s -> 1670.48s]  Like you see that the bolded lines
+[1670.48s -> 1673.52s]  are exactly at the GLEU variants.
+[1673.52s -> 1676.88s]  And this pattern has basically held up.
+[1678.00s -> 1680.04s]  So for gating and activations,
+[1680.08s -> 1684.24s]  there are lots of variants across different models,
+[1684.24s -> 1687.36s]  but the gated linear unit has become basically widespread
+[1687.36s -> 1689.92s]  and dominant and I think for good reason.
+[1689.92s -> 1694.00s]  Of course, the GLEU isn't necessary for a good model.
+[1694.00s -> 1695.76s]  Like it's important to separate the two, right?
+[1695.76s -> 1698.56s]  Just because it's probably the slightly better
+[1698.56s -> 1701.54s]  and everyone does it doesn't mean it's necessary.
+[1701.54s -> 1704.28s]  And you do see examples of very high performance models
+[1704.28s -> 1707.44s]  not using a GLEU like GPT-3 is one example,
+[1707.60s -> 1712.16s]  more recent one, Nemotron 340b uses a squared ReLU
+[1712.16s -> 1713.80s]  which I had not seen before
+[1713.80s -> 1716.44s]  and Falcon 2 11b uses a ReLU.
+[1716.44s -> 1718.58s]  Both of those are relatively high performance models.
+[1718.58s -> 1721.28s]  So you can kind of see that it's not really necessary.
+[1721.28s -> 1723.70s]  And so, you know, evidence does point towards
+[1723.70s -> 1726.08s]  consistent gains from SWIGLU and GEGLU
+[1726.08s -> 1727.16s]  and that's why we ask you
+[1727.16s -> 1731.20s]  to implement exactly that variant, cool.
+[1732.76s -> 1736.68s]  Okay, the final thing that I wanna talk about
+[1736.68s -> 1739.92s]  for architectures and this is one kind of final major,
+[1739.92s -> 1742.72s]  I wanna say, variation that we've seen.
+[1742.72s -> 1745.84s]  Normally, the transformer block is serial, right?
+[1745.84s -> 1749.96s]  In the sense that, you know, for each block,
+[1749.96s -> 1752.36s]  the outputs come in from the bottom
+[1752.36s -> 1754.16s]  and then you do your attention
+[1754.16s -> 1757.08s]  and then you pass the result of that computation forward
+[1757.08s -> 1758.48s]  and then you do your MLP
+[1758.48s -> 1760.96s]  and then you pass that computation forward, right?
+[1760.96s -> 1762.42s]  And so this is inherently serial.
+[1762.42s -> 1764.72s]  You do attention and then MLP.
+[1764.72s -> 1766.24s]  But of course, this might have
+[1766.24s -> 1768.04s]  certain like parallelism constraints.
+[1768.04s -> 1771.96s]  If you wanna parallelize this over gigantic sets of GPUs,
+[1771.96s -> 1774.06s]  it might be harder to do so
+[1774.06s -> 1776.00s]  if you have the serial connection.
+[1776.00s -> 1777.16s]  You know, the system's concerns
+[1777.16s -> 1778.46s]  might also be more difficult, right?
+[1778.46s -> 1781.82s]  You might get lower utilization from your GPUs.
+[1781.82s -> 1784.40s]  And so a few models have done this thing
+[1784.40s -> 1786.08s]  that I'll call parallel layers
+[1787.26s -> 1790.56s]  where basically instead of having serial computation
+[1790.56s -> 1792.28s]  of attention and then MLP,
+[1792.28s -> 1794.52s]  they will do them both at the same time, right?
+[1795.20s -> 1797.36s]  So you will get your X, you know, from your previous layer,
+[1797.36s -> 1800.58s]  you will compute both the MLP and the attention side by side
+[1800.58s -> 1801.84s]  and then you will add them together
+[1801.84s -> 1803.18s]  into the residual stream
+[1803.18s -> 1805.48s]  and then that will be your output, right?
+[1805.48s -> 1808.04s]  And this was pioneered by GPT-J,
+[1808.04s -> 1810.70s]  which is kind of this open source replication effort.
+[1810.70s -> 1813.40s]  And the folks at Google doing POM
+[1813.40s -> 1814.92s]  were kind of bold enough to do this
+[1814.92s -> 1816.68s]  at the really big scale
+[1816.68s -> 1819.62s]  and many others have kind of followed since.
+[1819.62s -> 1821.28s]  So if you're implementing this right,
+[1821.28s -> 1823.64s]  you can share a lot of stuff like the layer norms
+[1823.68s -> 1825.96s]  and the matrix multiplies can get fused together
+[1825.96s -> 1829.64s]  and you can get some systems efficiencies out of that.
+[1829.64s -> 1831.52s]  It hasn't been quite as popular since then,
+[1831.52s -> 1832.54s]  at least in the last year.
+[1832.54s -> 1834.32s]  I think most of the models that we've seen
+[1834.32s -> 1836.72s]  have been serial layers rather than parallel ones.
+[1836.72s -> 1838.20s]  I think the only exceptions to this
+[1838.20s -> 1840.56s]  are like Cohere command A, command R plus
+[1840.56s -> 1842.16s]  and a Falcon Q11B.
+[1844.40s -> 1845.86s]  So now I think we have the ability
+[1845.86s -> 1848.76s]  to kind of go back to this big, you know,
+[1848.76s -> 1850.08s]  hard to see chart
+[1850.08s -> 1851.96s]  and then see what I was sort of pointing out
+[1851.96s -> 1853.40s]  at the very beginning.
+[1854.16s -> 1855.16s]  So this column here, you know,
+[1855.16s -> 1857.20s]  you don't really need to be able to read any of the text
+[1857.20s -> 1858.44s]  because I think the colors
+[1858.44s -> 1859.92s]  will tell you everything you need to see.
+[1859.92s -> 1861.08s]  This check mark here,
+[1861.08s -> 1863.28s]  this is basically pre versus post-norm.
+[1863.28s -> 1865.12s]  The only two models I really know of
+[1865.12s -> 1868.80s]  in the early days that did post-norm,
+[1868.80s -> 1870.82s]  this is the original transformer and GPT
+[1870.82s -> 1873.18s]  and BERT, if you want to include that into this table.
+[1873.18s -> 1874.64s]  And then almost everybody else,
+[1874.64s -> 1878.08s]  I think basically everyone else has done pre-norm.
+[1878.08s -> 1879.76s]  The only other non-checked boxes here
+[1879.76s -> 1881.16s]  are models that are proprietary
+[1881.16s -> 1882.76s]  and I don't have details for.
+[1883.72s -> 1885.92s]  This column here on the left most thing,
+[1885.92s -> 1887.84s]  this is RMS norm versus layer norm.
+[1887.84s -> 1889.88s]  The gray boxes are the layer norm,
+[1889.88s -> 1891.64s]  the blue ones are RMS norm.
+[1891.64s -> 1893.28s]  Basically most people have converged
+[1893.28s -> 1895.20s]  to RMS norm as I said.
+[1895.20s -> 1897.62s]  This column next to it is serial and parallel layers.
+[1897.62s -> 1899.52s]  Once again, most people do serial
+[1899.52s -> 1901.84s]  but you see other variants.
+[1901.84s -> 1902.88s]  What I'm gonna talk about next
+[1902.88s -> 1904.00s]  is gonna be position embeddings
+[1904.00s -> 1906.64s]  and that'll be kind of more interesting in a moment here.
+[1906.64s -> 1908.46s]  Any questions about any of this architecture stuff
+[1908.46s -> 1909.82s]  before I move on?
+[1909.82s -> 1911.80s]  Hopefully that gives you a bit of an overview
+[1912.12s -> 1913.36s]  of at least the major variations
+[1913.36s -> 1914.96s]  in architectures that we see.
+[1916.88s -> 1917.72s]  Yes.
+[1917.72s -> 1922.72s]  So the question was whether serial
+[1923.58s -> 1925.24s]  is more efficient than parallel.
+[1925.24s -> 1927.16s]  It should be actually the reverse
+[1927.16s -> 1929.46s]  that parallel is more efficient than serial
+[1929.46s -> 1931.36s]  and that's why you're kind of willing to do this.
+[1931.36s -> 1933.28s]  So in some sense you might expect serial
+[1933.28s -> 1934.92s]  to be more expressive
+[1934.92s -> 1936.72s]  because you're composing two computations
+[1936.72s -> 1938.80s]  rather than just adding them together.
+[1938.80s -> 1940.72s]  But the benefit of parallel in theory
+[1940.72s -> 1943.96s]  is that if you write the right kinds of fused kernels,
+[1943.96s -> 1945.96s]  a lot of these operations can be done in parallel
+[1945.96s -> 1947.36s]  or the computation is shared
+[1947.36s -> 1949.76s]  across the different parallel parts.
+[1951.76s -> 1952.84s]  Okay.
+[1952.84s -> 1953.68s]  So cool.
+[1954.84s -> 1957.40s]  So the last thing I wanna talk about
+[1957.40s -> 1959.32s]  in architecture land, I think this is the last thing,
+[1959.32s -> 1962.36s]  is variations in position embeddings.
+[1962.36s -> 1963.78s]  And I think this one's interesting
+[1963.78s -> 1968.12s]  because in the first few years of LM's land,
+[1968.12s -> 1969.80s]  there were a lot of different things
+[1969.80s -> 1971.76s]  that people were trying.
+[1971.76s -> 1974.48s]  Sine embeddings were from the original transformer.
+[1974.48s -> 1976.52s]  You should have learned this in 224n.
+[1976.52s -> 1978.88s]  There's sine and cosine positions.
+[1978.88s -> 1980.72s]  Many others did absolute embeddings
+[1980.72s -> 1983.84s]  like the GPTs and OPT all basically just added
+[1983.84s -> 1987.12s]  a learned position vector to the embedding.
+[1987.12s -> 1990.28s]  Some others like T5 and Gopher
+[1990.28s -> 1992.76s]  did various kinds of relative embeddings
+[1992.76s -> 1996.00s]  that add vectors to the attention computation.
+[1996.00s -> 1999.48s]  And then I think most models have converged to rope
+[2000.04s -> 2002.72s]  which is relative position embeddings.
+[2002.72s -> 2004.84s]  And this I think actually started in GPT-J.
+[2004.84s -> 2007.44s]  Once again, another open source contribution
+[2007.44s -> 2009.40s]  that has really rapidly been picked up
+[2009.40s -> 2011.96s]  by most of the models.
+[2011.96s -> 2014.58s]  And so the high level thought process behind rope
+[2014.58s -> 2015.92s]  is that the thing that matters
+[2015.92s -> 2020.32s]  is relative positions of these vectors, right?
+[2020.32s -> 2024.58s]  And so if I have an embedding f of x of i
+[2024.58s -> 2026.90s]  where x is the word I'm trying to embed
+[2026.90s -> 2028.58s]  and i is my position,
+[2028.58s -> 2031.50s]  then I should be able to write things down in this way.
+[2031.50s -> 2035.58s]  So there should exist a f such that f of xi and f of yj,
+[2035.58s -> 2037.94s]  if I take the inner product of these embeddings,
+[2037.94s -> 2041.30s]  then I can write this down as some different function g
+[2041.30s -> 2043.40s]  which is a function of the two words
+[2043.40s -> 2046.14s]  and the difference in their positions.
+[2046.14s -> 2050.12s]  So this is a definition that enforces
+[2050.12s -> 2052.46s]  basically position invariance
+[2052.46s -> 2053.78s]  or absolute position invariance.
+[2053.78s -> 2055.38s]  So you only pay attention to the
+[2055.38s -> 2057.18s]  how far apart these two words are.
+[2058.02s -> 2060.24s]  And so you can do a brief check and see,
+[2060.24s -> 2061.62s]  okay, what happens with signs?
+[2061.62s -> 2064.34s]  Well, you get these cross terms that are not relative
+[2064.34s -> 2067.58s]  so you do still leak absolute position information.
+[2067.58s -> 2069.86s]  Absolute positions, like it's in the name,
+[2069.86s -> 2072.42s]  it's not a relative position embedding.
+[2072.42s -> 2076.30s]  And relative embeddings, well, it is relative
+[2076.30s -> 2077.68s]  but it's not an inner product
+[2077.68s -> 2080.34s]  so it sort of violates this constraint.
+[2080.34s -> 2084.04s]  And so rope is this kind of clever observation
+[2084.04s -> 2086.04s]  that we do know one thing
+[2086.04s -> 2090.00s]  that is invariant to sort of absolute things
+[2090.00s -> 2091.16s]  which is rotations.
+[2091.16s -> 2092.98s]  And so we're gonna exploit that structure
+[2092.98s -> 2095.48s]  to come up with our position embeddings.
+[2095.48s -> 2097.20s]  We know that inner products
+[2097.20s -> 2099.60s]  are invariant to arbitrary rotation
+[2099.60s -> 2100.80s]  so we're gonna leverage that.
+[2100.80s -> 2103.18s]  So on the left, this is the starting point.
+[2103.18s -> 2105.54s]  Let's say my embedding for the word we
+[2105.54s -> 2107.44s]  is this arrow over here.
+[2107.44s -> 2109.10s]  And my embedding for the word no
+[2109.10s -> 2111.48s]  is this other arrow over here.
+[2111.48s -> 2114.52s]  Now, I wanna embed this sequence we know that
+[2114.52s -> 2116.92s]  and I look at the word we and no.
+[2116.92s -> 2117.76s]  So how do I do that?
+[2117.76s -> 2119.60s]  Well, we is in position zero
+[2119.60s -> 2122.20s]  so I'm not gonna rotate that guy at all.
+[2122.20s -> 2125.36s]  No is in position one so I'm gonna rotate him
+[2125.36s -> 2128.36s]  by one unit of rotation
+[2128.36s -> 2131.72s]  and so now I have this embedding for we know.
+[2131.72s -> 2134.12s]  And now, let's say I wanna embed this sequence,
+[2134.12s -> 2135.48s]  of course we know.
+[2135.48s -> 2138.26s]  Now, we and no have the same relative positioning
+[2138.26s -> 2140.82s]  to each other and so let's look at what happens.
+[2140.82s -> 2142.64s]  We get shifted by two positions,
+[2142.68s -> 2146.44s]  I rotate we by, I start in this vertical position
+[2146.44s -> 2148.88s]  and I rotate them twice, one and two.
+[2148.88s -> 2151.56s]  And then I rotate no by three positions
+[2151.56s -> 2153.52s]  because it's one, two, three, sorry,
+[2153.52s -> 2156.16s]  zero, one, two, third position.
+[2156.16s -> 2158.72s]  And so now if you look at these two arrows,
+[2158.72s -> 2160.24s]  they have the same relative angle.
+[2160.24s -> 2162.20s]  So their inner products are preserved.
+[2162.20s -> 2165.10s]  And so this is kind of the nice fun idea about rope.
+[2165.10s -> 2167.12s]  You just rotate the vectors
+[2167.12s -> 2169.40s]  and the rotation angle is determined
+[2169.40s -> 2171.68s]  by the position of each word
+[2171.68s -> 2173.68s]  and rotations, the inner products
+[2173.68s -> 2176.64s]  don't care about relative rotations
+[2176.64s -> 2179.40s]  and so these inner products are only gonna look at
+[2179.40s -> 2181.28s]  sort of the difference in distance.
+[2182.40s -> 2184.08s]  Now, it's easy to think about in 2D
+[2184.08s -> 2187.04s]  because rotations are kind of obvious in 2D.
+[2187.04s -> 2189.60s]  There's only one way to rotate a vector.
+[2189.60s -> 2192.16s]  But in high dimensional spaces where we operate,
+[2192.16s -> 2193.60s]  it's not obvious at all
+[2193.60s -> 2195.80s]  how we are going to do this rotation.
+[2195.80s -> 2198.20s]  So the rope folks came up with,
+[2198.20s -> 2199.36s]  in some ways the simplest
+[2199.36s -> 2201.60s]  but also effective way of doing this
+[2202.40s -> 2203.32s]  and the way to do it is you take
+[2203.32s -> 2205.72s]  your high dimensional vector, in this case D,
+[2205.72s -> 2209.00s]  and I'm just gonna cut it up into blocks of two dimensions
+[2209.00s -> 2212.80s]  and every two dimension is gonna be rotated by some theta
+[2212.80s -> 2215.40s]  so there's gonna be a rotation speed
+[2215.40s -> 2219.32s]  and I'm gonna rotate the pairs of dimensions.
+[2219.32s -> 2222.40s]  And so now every pair of dimensions is encoding
+[2222.40s -> 2224.10s]  all these relative positions
+[2224.10s -> 2226.40s]  and much like in sine and cosine embeddings,
+[2226.40s -> 2228.48s]  I'm gonna pick some set of thetas
+[2228.48s -> 2231.24s]  such that some embeddings are rotated quickly
+[2231.76s -> 2233.56s]  and others are rotated much more slowly.
+[2233.56s -> 2236.08s]  So they can capture both high frequency information
+[2236.08s -> 2238.14s]  or close by information
+[2238.14s -> 2239.94s]  and very far away,
+[2239.94s -> 2242.60s]  sort of lower frequency positioning information.
+[2244.80s -> 2247.44s]  And the actual rope math here is,
+[2247.44s -> 2249.04s]  if you're gonna think about rotations,
+[2249.04s -> 2250.40s]  it's just gonna be multiplying
+[2250.40s -> 2252.72s]  with various sine and cosine rotation matrices.
+[2252.72s -> 2253.72s]  Hopefully you remember this
+[2253.72s -> 2256.44s]  kind of from linear algebra and trig.
+[2256.44s -> 2258.80s]  And so you can think about this as an operation
+[2258.80s -> 2261.52s]  where you multiply your embedding vectors
+[2261.52s -> 2265.92s]  with these block, two by two block matrices
+[2265.92s -> 2268.38s]  and there's no sort of additive or cross terms
+[2268.38s -> 2269.60s]  that sort of appear here.
+[2269.60s -> 2271.80s]  This is all purely relative.
+[2274.30s -> 2276.24s]  One thing that is different
+[2276.24s -> 2278.84s]  if you're used to sort of absolute position embeddings
+[2278.84s -> 2280.96s]  or sine and cosine embeddings here
+[2280.96s -> 2283.56s]  is that the rope is gonna operate
+[2283.56s -> 2285.00s]  at the actual attention layer.
+[2285.00s -> 2287.52s]  You're not gonna add position embeddings at the bottom
+[2287.52s -> 2290.00s]  whenever these attention computations are gonna be done,
+[2290.00s -> 2292.00s]  you're gonna intervene on that layer
+[2292.00s -> 2295.16s]  and then that's gonna give you your position information.
+[2295.16s -> 2296.64s]  And so I pulled this from,
+[2296.64s -> 2298.80s]  I think the llama implementation of rope.
+[2298.80s -> 2300.88s]  You've got the initial normal attention stuff
+[2300.88s -> 2303.12s]  at the very top like query, keys and values.
+[2303.12s -> 2305.44s]  These are your normal linear projections.
+[2306.28s -> 2308.28s]  And then you're gonna come up
+[2308.28s -> 2310.00s]  with cosine and sine angles.
+[2310.00s -> 2311.64s]  These are rotation angles
+[2311.64s -> 2314.42s]  telling you how much to rotate different blocks
+[2314.42s -> 2317.24s]  of the query and key.
+[2317.80s -> 2319.64s]  And so you take your query and your key
+[2319.64s -> 2322.30s]  and you're gonna rotate them by the cosines and sines
+[2322.30s -> 2325.20s]  and now you've gotten rotated query and rotated key
+[2325.20s -> 2326.64s]  and that's gonna be what's gonna go in
+[2326.64s -> 2328.62s]  to the rest of your attention computation.
+[2328.62s -> 2330.02s]  So you don't do this at the bottom,
+[2330.02s -> 2332.60s]  you do it whenever you generate your queries and keys.
+[2332.60s -> 2334.44s]  Hopefully that's clear.
+[2334.44s -> 2336.80s]  That's really critical to enforcing
+[2336.80s -> 2340.20s]  kind of this relative positioning only information.
+[2342.16s -> 2343.00s]  Good.
+[2344.82s -> 2347.12s]  So one of the things I wanna highlight
+[2348.04s -> 2349.44s]  is that rope is actually one of the things
+[2349.44s -> 2351.68s]  that it seems like everyone has conversion on.
+[2351.68s -> 2355.74s]  I went through all 19 of those papers over the weekend
+[2355.74s -> 2358.44s]  and basically all of them now use rope
+[2358.44s -> 2360.62s]  for various different reasons.
+[2360.62s -> 2363.46s]  The reason that rope has now many different algorithms
+[2363.46s -> 2365.16s]  for extrapolating context length
+[2365.16s -> 2366.16s]  and that's an important part
+[2366.16s -> 2368.84s]  of sort of the modern productionized language model
+[2369.76s -> 2371.92s]  but also it seems to be empirically quite effective
+[2371.92s -> 2374.48s]  even at fairly small scales and small context length.
+[2374.48s -> 2377.80s]  So it's kind of won out on this, what's it called?
+[2377.80s -> 2379.12s]  Position embedding battle.
+[2380.92s -> 2382.20s]  Any questions before I move on
+[2382.20s -> 2383.72s]  to some of the hyperparameter stuff?
+[2383.72s -> 2384.56s]  Yes.
+[2384.56s -> 2386.08s]  Is the rate of rotation consistent
+[2386.08s -> 2388.02s]  across all of these models?
+[2388.02s -> 2389.18s]  I don't think they're all the same.
+[2389.18s -> 2391.04s]  There's some variation in the thetas.
+[2393.72s -> 2394.56s]  Oh, yes.
+[2394.56s -> 2397.40s]  Are the thetas for each pair,
+[2398.80s -> 2401.64s]  are those hyperparameters or are they training?
+[2401.64s -> 2404.32s]  So the thetas that determine the rotation angles,
+[2405.16s -> 2405.98s]  they're not hyperparameters.
+[2405.98s -> 2409.76s]  Much like in the sines and cosines here,
+[2409.76s -> 2412.40s]  there's kind of a schedule to the rotation angles
+[2412.40s -> 2414.76s]  that are determined and it's in the same intuition
+[2414.76s -> 2416.20s]  as the sines and cosines.
+[2416.20s -> 2418.48s]  You want to cover different frequency ranges
+[2418.48s -> 2422.44s]  in order to get higher or lower frequency information.
+[2424.24s -> 2425.08s]  Yes.
+[2425.08s -> 2427.04s]  Do the rotations create any difficulty
+[2427.04s -> 2428.52s]  with that training, I wonder?
+[2428.52s -> 2431.56s]  Like this like angular rotations?
+[2431.56s -> 2434.00s]  The rotations themselves don't really create any issues
+[2434.56s -> 2435.64s]  because one way of thinking about a rotation
+[2435.64s -> 2437.84s]  is that it's just a matrix multiply, right?
+[2437.84s -> 2441.08s]  Since thetas are fixed and the m's here are fixed,
+[2441.08s -> 2442.88s]  this is really just a fixed matrix
+[2442.88s -> 2444.46s]  that multiplies your vector
+[2444.46s -> 2446.32s]  and so in that sense, it's not really an issue.
+[2446.32s -> 2447.40s]  If you were learning the thetas,
+[2447.40s -> 2448.40s]  then maybe you have issues
+[2448.40s -> 2450.90s]  because you're maybe differentiating through trig functions
+[2450.90s -> 2452.80s]  but you're not doing that here, so.
+[2454.04s -> 2454.94s]  Okay, cool.
+[2456.80s -> 2459.56s]  So now I think we go even one more level
+[2459.56s -> 2460.92s]  into the details here
+[2460.92s -> 2463.92s]  and we're going to talk about hyperparameters.
+[2463.92s -> 2466.44s]  I feel like when you have to, you're dropped in
+[2466.44s -> 2469.60s]  and you're asked to train a new language model,
+[2469.60s -> 2470.78s]  there's a lot of questions you have
+[2470.78s -> 2471.80s]  about hyperparameters
+[2471.80s -> 2473.60s]  because there's quite a few of them
+[2473.60s -> 2475.12s]  and one of the things that I've realized
+[2475.12s -> 2476.80s]  is that actually only a few of these
+[2476.80s -> 2479.92s]  really get changed across different successful models.
+[2479.92s -> 2482.00s]  There's actually like fairly clear rules of thumb
+[2482.00s -> 2483.56s]  and fairly clear guidelines
+[2483.56s -> 2485.94s]  that people seem to be following.
+[2485.94s -> 2487.48s]  So there are some things
+[2487.48s -> 2489.92s]  like how much bigger should the feet forward size be
+[2489.92s -> 2491.50s]  or how many heads should I have
+[2491.50s -> 2493.24s]  or what should my vocab size be?
+[2494.12s -> 2496.06s]  And so we'll talk about each of those things
+[2496.06s -> 2497.88s]  and we'll try to constrain the space
+[2497.88s -> 2500.88s]  of hyperparameters that people have.
+[2501.74s -> 2503.74s]  So the starting point,
+[2503.74s -> 2506.36s]  we're going to look at a simple feet forward layer,
+[2506.36s -> 2508.96s]  just with the bias, let's say.
+[2508.96s -> 2510.68s]  This is a ReLU version of it.
+[2510.68s -> 2512.94s]  And so there's two hyperparameters here.
+[2512.94s -> 2515.76s]  There's dmodel, which is the dimensionality of x,
+[2515.76s -> 2518.16s]  that's the input coming into your MLP.
+[2518.16s -> 2519.88s]  And then you've got dff,
+[2519.88s -> 2521.42s]  so this is the feet forward dimension,
+[2521.46s -> 2525.22s]  this is kind of the output hidden dimension of your MLP.
+[2525.22s -> 2528.14s]  And from there, you're gonna project back onto dmodel.
+[2528.14s -> 2531.10s]  So what should dff be?
+[2531.10s -> 2535.26s]  In general, these things are gonna be up projections.
+[2535.26s -> 2537.02s]  You're gonna have more hidden units
+[2537.02s -> 2538.78s]  than there were inputs.
+[2538.78s -> 2539.76s]  But how much bigger?
+[2539.76s -> 2542.96s]  Well, there is actually just like a consensus.
+[2542.96s -> 2547.10s]  Almost everybody that uses ReLU style MLPs
+[2547.10s -> 2551.46s]  are gonna pick dff is equal to four times dmodel.
+[2552.90s -> 2555.12s]  I will show you some empirical evidence
+[2555.12s -> 2557.74s]  for why this is a sane number later,
+[2557.74s -> 2559.38s]  but as far as I can tell,
+[2559.38s -> 2563.26s]  there's no law of nature that says you have to pick four.
+[2563.26s -> 2565.78s]  This is a convention that has really held up.
+[2565.78s -> 2569.74s]  Now, there are a few exceptions to this rule.
+[2569.74s -> 2572.02s]  Remember that the GLU variants
+[2572.02s -> 2575.34s]  are gonna scale this down by a factor of 2 thirds, right?
+[2575.34s -> 2578.30s]  And if you scale it down by a factor of 2 thirds,
+[2578.30s -> 2582.42s]  you're gonna have roughly the same number of parameters.
+[2582.42s -> 2583.60s]  You can do a little bit of math,
+[2583.60s -> 2585.82s]  and if you scale the GLU variants
+[2585.82s -> 2587.18s]  down by a factor of 2 thirds,
+[2587.18s -> 2588.66s]  you'll come to the conclusion
+[2588.66s -> 2589.58s]  that the way to do that
+[2589.58s -> 2593.24s]  is to set dff equal to eight over three dmodel, right?
+[2593.24s -> 2594.98s]  That's gonna be the number that you end up at,
+[2594.98s -> 2596.22s]  and you can sort of convince yourself
+[2596.22s -> 2598.30s]  that that will give you the same number of parameters,
+[2598.30s -> 2599.62s]  and that's the ratio that you would get
+[2599.62s -> 2602.62s]  if you started with a ratio of four.
+[2602.62s -> 2604.42s]  So if you look at many of the models,
+[2604.42s -> 2607.06s]  they actually do follow this rule of thumb.
+[2607.06s -> 2609.90s]  POM, for example, you know,
+[2609.90s -> 2611.90s]  POM, Mistral, and LAMA are slightly larger.
+[2611.90s -> 2613.86s]  These are GLU models, but they don't follow
+[2613.86s -> 2616.10s]  this 2.6 rule, but if you look at, for example,
+[2616.10s -> 2619.36s]  LAMA, you know, one, QAN, DeepSeq, E, and T5,
+[2619.36s -> 2624.10s]  they all roughly follow this like kind of 2.6-ish rule,
+[2624.10s -> 2627.06s]  and I can sort of put up the big table of LLMs
+[2627.06s -> 2628.92s]  that I made later with hyperparameters.
+[2628.92s -> 2630.22s]  Many, many, many of them
+[2630.22s -> 2632.76s]  fall into this roughly 2.6 range,
+[2632.80s -> 2636.96s]  and that's the standard parametrization of a GLU unit.
+[2638.54s -> 2640.24s]  I'll go through one other exception.
+[2640.24s -> 2644.00s]  I really like this exception because I think in many ways,
+[2644.00s -> 2647.22s]  you know, big, large language model training
+[2647.22s -> 2649.92s]  is a game of copying hyperparameters from other people,
+[2649.92s -> 2651.48s]  and so we don't learn very much, right?
+[2651.48s -> 2653.28s]  Like, it's very conservative,
+[2653.28s -> 2655.84s]  but T5, I really like,
+[2655.84s -> 2657.98s]  because in some sense, it's really bold,
+[2657.98s -> 2658.82s]  and I think Google people
+[2658.82s -> 2661.16s]  actually do some pretty bold stuff,
+[2661.16s -> 2665.28s]  and so if you look at the 11 billion parameter T5 model,
+[2665.28s -> 2668.10s]  they have a pretty incredible setting.
+[2668.10s -> 2670.52s]  Their hidden DIMM is 1024,
+[2670.52s -> 2673.76s]  but their DFF, you know, their up projected dimension,
+[2673.76s -> 2675.26s]  is 65,000, right?
+[2676.44s -> 2679.76s]  And so that's gonna give you a 64 times multiplier
+[2679.76s -> 2682.76s]  on the ratio of DFF to D model,
+[2682.76s -> 2684.66s]  and of course, you know, you compare to this,
+[2684.66s -> 2686.00s]  where POM is like a factor of four,
+[2686.00s -> 2687.80s]  and everyone else is, you know, much smaller,
+[2687.80s -> 2690.84s]  this is a very large difference,
+[2691.36s -> 2692.36s]  and there's some other recent examples
+[2692.36s -> 2695.44s]  of using much bigger, you know, multipliers.
+[2695.44s -> 2697.76s]  Like, Gemma2 kind of follows in these footsteps,
+[2697.76s -> 2699.32s]  and does a factor of eight,
+[2699.32s -> 2701.96s]  and I'll talk a little bit about this exception later.
+[2701.96s -> 2703.92s]  Of course, T5 was a totally fine model,
+[2703.92s -> 2705.32s]  so this should tell you,
+[2705.32s -> 2707.18s]  it is possible to train a model
+[2707.18s -> 2710.26s]  with, you know, such a much larger ratio.
+[2711.46s -> 2712.90s]  So one of the things that I think is,
+[2712.90s -> 2714.18s]  you know, quantitative evidence,
+[2714.18s -> 2715.92s]  you know, I saw that 4X multiplier,
+[2715.92s -> 2719.00s]  and I thought, is that really the right thing to do,
+[2719.00s -> 2721.12s]  or is there some more quantitative experiment
+[2721.12s -> 2723.92s]  someone's done to convince me that that is a good idea?
+[2724.80s -> 2727.92s]  So one of the figures from Jared Kaplan's
+[2727.92s -> 2729.16s]  sort of scaling law paper,
+[2729.16s -> 2730.32s]  and most people know this paper
+[2730.32s -> 2732.16s]  for the scaling law component,
+[2732.16s -> 2734.04s]  but actually there's also some really useful
+[2734.04s -> 2736.62s]  hyperparameter components in this paper.
+[2736.62s -> 2738.52s]  You'll actually see that they do exactly
+[2738.52s -> 2739.48s]  this thing that I'm talking about,
+[2739.48s -> 2741.88s]  the DFF to D model ratio,
+[2741.88s -> 2745.20s]  and they plot essentially how much the loss increases
+[2745.20s -> 2746.64s]  as you vary this,
+[2746.64s -> 2750.40s]  and you kind of see that there's kind of a sweet spot.
+[2750.40s -> 2754.04s]  This is, you know, a ratio of one, two, three, four,
+[2754.04s -> 2756.24s]  and then up to like 10 or so here, right?
+[2756.24s -> 2758.72s]  And so there's a pretty wide base in here,
+[2758.72s -> 2761.86s]  anywhere between one to maybe up to 10,
+[2761.86s -> 2763.38s]  where, you know, you can pick
+[2763.38s -> 2765.76s]  whatever feed-forward ratio you want,
+[2765.76s -> 2767.82s]  and it'll be roughly optimal,
+[2767.82s -> 2770.56s]  and four is not too far off
+[2770.56s -> 2772.48s]  from your optimal choices over here.
+[2772.48s -> 2774.80s]  It's like one, two, three, four.
+[2774.80s -> 2776.68s]  It's like right here or maybe right here, right?
+[2776.68s -> 2778.52s]  So that's a pretty reasonable choice.
+[2781.76s -> 2784.96s]  So what can we learn from all this hyperparameter stuff?
+[2784.96s -> 2786.84s]  I think a lot of the evidence point stores,
+[2786.84s -> 2789.20s]  you know, you can pick the same defaults of,
+[2789.20s -> 2790.84s]  you know, if you're not using a GLU,
+[2790.84s -> 2791.94s]  you can multiply by four.
+[2791.94s -> 2795.64s]  If you're using a GLU, you can use roughly 2.66,
+[2795.64s -> 2797.22s]  and they can work pretty well
+[2797.22s -> 2800.28s]  for mostly all the modern LMs.
+[2800.28s -> 2802.44s]  T5, once again, does show that
+[2802.44s -> 2804.04s]  you don't have to follow these rules, right?
+[2804.12s -> 2806.96s]  You can be a rule breaker and do whatever you'd like.
+[2806.96s -> 2808.88s]  There's no hyperparameter choice written in stone.
+[2808.88s -> 2812.54s]  You can get reasonable LMs at many other hyperparameters.
+[2812.54s -> 2814.68s]  That said, I think the really funny epilogue
+[2814.68s -> 2817.68s]  to this story, right, is that P5 has a follow-up model
+[2817.68s -> 2821.36s]  called P5v1.1 that's improved,
+[2821.36s -> 2822.72s]  and it uses a much more standard
+[2822.72s -> 2824.76s]  2.5 multiplier on GEGLU, right?
+[2824.76s -> 2826.56s]  So, you know, you can read between the lines
+[2826.56s -> 2828.46s]  and say, like, maybe they looked at, you know,
+[2828.46s -> 2830.28s]  the original P5 and said, actually,
+[2830.28s -> 2833.16s]  maybe we wanna walk back that 64 times multiplier
+[2833.16s -> 2834.64s]  and pick a more standard one,
+[2834.64s -> 2836.24s]  and they did end up with a better model.
+[2836.24s -> 2838.16s]  So, cool.
+[2838.16s -> 2840.40s]  What is the relationship between the ratio
+[2840.40s -> 2843.90s]  and the model of efficiency in the model?
+[2845.80s -> 2848.04s]  Yeah, okay, so I think that's a good question.
+[2848.04s -> 2850.78s]  So, the question was, what's the ratio,
+[2850.78s -> 2852.48s]  or sorry, what's the relationship between, you know,
+[2852.48s -> 2854.56s]  this ratio that I'm talking about here
+[2854.56s -> 2857.12s]  and generally the impact on the model, right?
+[2857.12s -> 2861.56s]  And so, if we go all the way back here,
+[2863.84s -> 2865.74s]  you know, the ratio is controlling essentially
+[2865.74s -> 2870.08s]  how wide, you know, the hidden part of this MLP is.
+[2870.08s -> 2872.96s]  And so, the original justification in the P5 paper
+[2872.96s -> 2875.68s]  for picking 64 was to say, actually,
+[2875.68s -> 2878.44s]  we can get bigger and fatter matrix multiplies
+[2878.44s -> 2880.68s]  if we make that dimension really, really large.
+[2880.68s -> 2882.68s]  And while that is kind of a true statement,
+[2882.68s -> 2884.62s]  you know, the wider it is, you know,
+[2884.62s -> 2887.60s]  you're getting more parallel computation, so to speak,
+[2887.60s -> 2888.90s]  rather than serial computation.
+[2888.90s -> 2890.96s]  So, you're spending your flops and your parameters
+[2890.96s -> 2892.02s]  in a slightly different way
+[2892.02s -> 2893.80s]  than if you made your hidden units bigger,
+[2893.80s -> 2895.58s]  which would let you pass more information,
+[2895.58s -> 2897.86s]  or using more units, which would give you
+[2897.86s -> 2899.66s]  sort of more serial computation, right?
+[2899.66s -> 2901.50s]  So, you're spending your parameters and your flops
+[2901.50s -> 2904.90s]  in a slightly suboptimal way from expressive power,
+[2904.90s -> 2907.42s]  but you might get it, get systems gains
+[2907.42s -> 2909.86s]  if sort of your matrices are wide enough.
+[2911.82s -> 2914.16s]  Okay, excellent.
+[2916.10s -> 2918.74s]  So, another thing that is a surprising,
+[2918.74s -> 2920.30s]  or maybe not surprising,
+[2920.30s -> 2924.06s]  consensus hyperparameter is the ratio
+[2924.06s -> 2926.80s]  between the model dimension and the head dimension
+[2926.80s -> 2928.78s]  times the number of heads.
+[2928.78s -> 2931.54s]  So, I clipped this from 224n, right?
+[2931.54s -> 2935.10s]  But really, the basically canonical choice
+[2935.10s -> 2938.02s]  is to pick things so that the dimension D,
+[2938.02s -> 2939.32s]  that's the hidden dimension,
+[2939.32s -> 2941.34s]  and if you have multiple heads,
+[2941.34s -> 2943.18s]  you're just gonna split up the number
+[2943.18s -> 2944.94s]  of dimensions each head gets, right?
+[2944.94s -> 2947.28s]  So, you're gonna keep the dimensions fixed
+[2947.28s -> 2948.90s]  as you add more heads.
+[2948.90s -> 2950.18s]  And you don't have to do that, right?
+[2951.02s -> 2951.98s]  As you add more heads, you could just keep
+[2951.98s -> 2953.70s]  the same number of dimensions per head,
+[2953.70s -> 2955.48s]  and you could just let the attention part
+[2955.48s -> 2957.30s]  take more and more parameters, right?
+[2957.30s -> 2959.78s]  You could do that, that's an option that you have.
+[2959.78s -> 2963.46s]  But most models, once again, do follow this guideline.
+[2963.46s -> 2966.64s]  We see GPT-3, T5, Lambda-Palm, and Lambda-2,
+[2966.64s -> 2969.96s]  they all have a ratio of one or almost exactly one.
+[2970.82s -> 2973.46s]  T5 is the one exception that breaks this rule.
+[2973.46s -> 2976.94s]  They tried the big ratio of 16,
+[2976.94s -> 2981.18s]  but otherwise, it is all fairly following this consensus.
+[2981.18s -> 2982.70s]  There's been a couple papers
+[2982.70s -> 2985.82s]  that have argued against this one-to-one ratio.
+[2985.82s -> 2988.02s]  There's a notable one by,
+[2988.02s -> 2988.84s]  I don't know how to pronounce this,
+[2988.84s -> 2991.24s]  Boja Peneli et al, 2020,
+[2991.24s -> 2995.02s]  who have argued that if you have more and more heads,
+[2995.02s -> 2997.18s]  they're gonna have lower and lower rank.
+[2997.18s -> 2999.76s]  And if you have very few dimensions per head,
+[2999.76s -> 3001.94s]  that's gonna start affecting the expressiveness
+[3001.94s -> 3003.82s]  of the attention operation.
+[3003.82s -> 3005.86s]  But in practice, it doesn't really seem like
+[3005.86s -> 3008.62s]  we see too many significant low-rank bottlenecks
+[3008.62s -> 3010.88s]  in practice, and most of the models
+[3010.88s -> 3013.70s]  with this ratio of one seem to do just fine.
+[3013.70s -> 3016.22s]  This is really a parameter that's generally been
+[3016.22s -> 3019.54s]  held constant by most of the models that we've seen.
+[3019.54s -> 3021.30s]  If I have time, I'll talk a little bit about
+[3021.30s -> 3023.42s]  different optimizations that people have made
+[3023.42s -> 3025.86s]  on this multi-head component,
+[3025.86s -> 3027.10s]  but hyperparameter rise,
+[3027.10s -> 3029.36s]  things have stayed fairly similar.
+[3031.10s -> 3033.70s]  I think one of the big ones,
+[3033.70s -> 3037.42s]  in terms of hyperparameters, is the aspect ratio.
+[3037.42s -> 3039.86s]  So, we can think about deep networks,
+[3039.86s -> 3041.34s]  we can have more and more layers,
+[3041.34s -> 3043.34s]  or we can have wide networks.
+[3043.34s -> 3045.62s]  And generally, if you want one knob to control the width,
+[3045.62s -> 3048.38s]  that would be sort of the hidden dimension
+[3048.38s -> 3049.50s]  of the residual street.
+[3049.50s -> 3050.68s]  That would control essentially the width
+[3050.68s -> 3053.62s]  of almost all the operations at once.
+[3053.62s -> 3057.18s]  And so, this seems like a pretty critical thing to tune.
+[3057.18s -> 3058.54s]  You might think that deeper networks
+[3058.54s -> 3059.94s]  are smarter and more expressive,
+[3059.94s -> 3062.58s]  or wider networks are more efficient.
+[3062.58s -> 3064.38s]  There is generally a sweet spot
+[3064.38s -> 3067.46s]  of ratios that people have picked.
+[3067.46s -> 3069.02s]  There have been outliers.
+[3069.02s -> 3072.70s]  Some of the early models used much smaller ratios here.
+[3072.70s -> 3074.50s]  So, what that means is that
+[3075.74s -> 3079.10s]  they were much wider than they were deep.
+[3079.10s -> 3082.22s]  And then some models have gone really deep,
+[3082.22s -> 3085.10s]  where they had way more, sorry, the other way around,
+[3085.10s -> 3086.98s]  really wide, where they had way more
+[3086.98s -> 3088.72s]  d-model than n-layer.
+[3088.72s -> 3090.78s]  And there's been generally a sweet spot
+[3090.78s -> 3095.58s]  of saying we want about 128 hidden dimensions per layer.
+[3095.58s -> 3098.46s]  And that has been generally stuck to
+[3098.46s -> 3101.94s]  by a lot of the GPT-3 and LAMA variant models.
+[3101.94s -> 3104.30s]  And I'll talk a little bit about evidence
+[3104.30s -> 3105.50s]  for that in a second.
+[3107.00s -> 3109.18s]  There's considerations about aspect ratio
+[3109.18s -> 3111.14s]  that are quite important.
+[3111.14s -> 3114.62s]  They will control the amount of parallelism
+[3114.62s -> 3115.46s]  that we can do.
+[3115.46s -> 3119.34s]  So, if you're doing something called pipeline parallel,
+[3119.34s -> 3120.58s]  what you're often gonna do
+[3121.22s -> 3122.46s]  is you're gonna take your different layers
+[3122.46s -> 3123.66s]  and you're gonna cut them up
+[3123.66s -> 3125.30s]  and you're gonna put them on different devices
+[3125.30s -> 3126.70s]  or different blocks of devices
+[3126.70s -> 3129.86s]  because you'll parallelize within each layer as well.
+[3129.86s -> 3134.06s]  And so, there's going to be certain kinds of constraints
+[3134.06s -> 3135.76s]  that you're gonna put on your model.
+[3135.76s -> 3138.30s]  And also, if you have really wide models,
+[3138.30s -> 3140.30s]  then you can do something called tensor parallel
+[3140.30s -> 3142.02s]  where you slice up the matrices
+[3142.02s -> 3144.22s]  and then you distribute those on GPUs.
+[3144.22s -> 3146.38s]  And one thing that we'll learn in, I think,
+[3146.38s -> 3148.82s]  one, two, three, four, or five lectures
+[3148.82s -> 3151.38s]  is that these different parallelism paradigms
+[3151.38s -> 3153.14s]  are gonna have different constraints.
+[3153.14s -> 3156.66s]  You need really fast networking for tensor parallel
+[3156.66s -> 3159.86s]  and you can maybe get away with slower networking
+[3159.86s -> 3162.66s]  or higher latency networking for pipeline parallel.
+[3162.66s -> 3165.58s]  And so, your networking constraints might, in turn,
+[3165.58s -> 3168.98s]  drive some of these width-depth considerations.
+[3168.98s -> 3172.42s]  But setting that aside, you might abstractly ask,
+[3172.42s -> 3175.18s]  what is the impact of aspect ratio model performance?
+[3175.18s -> 3178.14s]  And once again, Kaplan et al.
+[3178.14s -> 3180.70s]  have a really nice visual sort of aid
+[3180.70s -> 3183.54s]  showing how aspect ratio impacts performance.
+[3183.54s -> 3185.22s]  And so, this is three different scales,
+[3185.22s -> 3189.82s]  50 million, 274 million, and 1.5 billion parameters.
+[3189.82s -> 3192.42s]  And the x-axis is the aspect ratio,
+[3192.42s -> 3196.86s]  y-axis is sort of loss difference in percentage change.
+[3196.86s -> 3199.38s]  And you see that around 100, right,
+[3199.38s -> 3201.22s]  which is, once again, I told you,
+[3201.22s -> 3203.58s]  around the consensus choice of hyperparameters
+[3203.58s -> 3205.70s]  is the minimum across different scales, right?
+[3205.70s -> 3209.74s]  So this is kind of backed by some of this large-scale
+[3209.74s -> 3211.94s]  hyperparameter data that's been published
+[3211.94s -> 3212.78s]  by Kaplan et al.
+[3212.78s -> 3214.42s]  And it roughly matches that intuition.
+[3214.42s -> 3215.82s]  And the really nice thing here
+[3215.82s -> 3218.94s]  is it seems to be the case that aspect ratio optima
+[3218.94s -> 3220.70s]  does not shift too much
+[3220.70s -> 3223.58s]  across several orders of magnitude here.
+[3223.58s -> 3226.02s]  So if this holds up even more, that's very good news.
+[3226.02s -> 3229.62s]  You can keep training on one fixed aspect ratio.
+[3230.62s -> 3234.82s]  One thing I will note that is quite an interesting result
+[3234.82s -> 3237.90s]  is EK and others at Google
+[3237.90s -> 3239.70s]  had this very interesting paper
+[3239.70s -> 3241.42s]  sort of studying impact of depth
+[3241.42s -> 3244.70s]  versus width, both upstream and downstream.
+[3244.70s -> 3246.54s]  And one of the things that they found
+[3246.54s -> 3249.86s]  was that if you're looking at losses,
+[3249.86s -> 3251.46s]  then it doesn't really matter.
+[3251.46s -> 3253.22s]  Parameter is the only thing that matters.
+[3253.22s -> 3255.50s]  Deeper models don't help you.
+[3255.50s -> 3257.26s]  But the story is less clear
+[3257.26s -> 3258.82s]  if you're looking at downstream accuracy.
+[3258.86s -> 3260.02s]  At the time they were looking at
+[3260.02s -> 3262.10s]  sort of fine-tuned superglue accuracy,
+[3262.10s -> 3264.30s]  they were arguing that for the same amount of flops,
+[3264.30s -> 3265.58s]  deeper models might be better.
+[3265.58s -> 3267.58s]  So I'll sort of just leave it at that.
+[3267.58s -> 3270.06s]  There's not quite as much follow-up to this work
+[3270.06s -> 3271.38s]  at least in the open that I've seen,
+[3271.38s -> 3272.86s]  but downstream performance
+[3272.86s -> 3274.38s]  may actually be slightly different
+[3274.38s -> 3276.90s]  in terms of the aspect ratio considerations here.
+[3279.42s -> 3280.26s]  Okay.
+[3282.18s -> 3283.02s]  Cool.
+[3283.90s -> 3286.38s]  The final thing that I want to talk about
+[3286.42s -> 3289.14s]  in this sort of very low-level hyperparameter world
+[3289.14s -> 3291.34s]  is what are kind of the vocabulary sizes
+[3291.34s -> 3293.34s]  that you might want to pick.
+[3293.34s -> 3296.90s]  And in general, vocabulary sizes have been trending upwards
+[3297.86s -> 3299.58s]  and I think a big part of why
+[3299.58s -> 3302.86s]  is because LLMs are being deployed out in the wild,
+[3302.86s -> 3304.70s]  they're becoming more useful services,
+[3304.70s -> 3306.46s]  and when that happens, you're gonna interact
+[3306.46s -> 3308.54s]  with people speaking different languages,
+[3308.54s -> 3311.50s]  people using emojis, all sorts of other kinds of
+[3311.50s -> 3316.06s]  almost modalities or languages than what you might expect.
+[3316.78s -> 3318.74s]  I think some of the earlier models,
+[3318.74s -> 3321.14s]  and especially monolingual models,
+[3321.14s -> 3326.14s]  ranged around in the 30 to 50,000 token vocabulary range.
+[3326.14s -> 3329.54s]  You can kind of see this in GPTs, the early llamas,
+[3329.54s -> 3331.50s]  but if you look at the multilingual
+[3331.50s -> 3335.02s]  or I would call production systems that have come out,
+[3335.02s -> 3336.42s]  they've all sort of been shifting
+[3336.42s -> 3339.86s]  towards the 100 to 250,000 range
+[3339.86s -> 3341.58s]  for their vocabulary sizes.
+[3342.58s -> 3345.78s]  I looked at Command A, which is one of Cohere's models.
+[3346.66s -> 3347.50s]  They're a company that emphasizes
+[3347.50s -> 3348.82s]  a lot of multilingual stuff.
+[3348.82s -> 3352.42s]  You see very large vocab sizes from them.
+[3352.42s -> 3354.86s]  Even with GPT-4 and many others
+[3354.86s -> 3356.90s]  that have copied the GPT-4 tokenizer
+[3356.90s -> 3359.30s]  are gonna be around the 100K tokens.
+[3359.30s -> 3361.86s]  And so that's kind of the standard
+[3361.86s -> 3363.30s]  that a lot of people are operating at,
+[3363.30s -> 3367.86s]  roughly at 100K to 200K token size.
+[3367.86s -> 3369.30s]  And I think there's been work showing
+[3369.30s -> 3371.10s]  that as models get bigger,
+[3371.10s -> 3373.34s]  these models can in some sense handle more and more
+[3373.34s -> 3377.70s]  or make good use of more and more vocab elements.
+[3377.70s -> 3380.22s]  And so you might see increasing trends
+[3380.22s -> 3382.50s]  to token counts as models get scaled up
+[3382.50s -> 3384.38s]  or more data is used to train them.
+[3386.42s -> 3387.58s]  Cool.
+[3387.58s -> 3391.74s]  Okay, so the last thing,
+[3391.74s -> 3395.10s]  this is no longer sort of specific hyperparameters,
+[3395.10s -> 3396.66s]  but sort of two other things
+[3396.66s -> 3397.50s]  that you might need to do
+[3397.50s -> 3400.22s]  before you sort of set your model to run,
+[3400.22s -> 3403.02s]  which is dropout and other kinds of regularization.
+[3403.90s -> 3405.78s]  And I think this one was really interesting to me
+[3405.78s -> 3407.74s]  when I was originally doing kind of the research
+[3407.74s -> 3410.06s]  for putting this lecture together.
+[3410.06s -> 3411.90s]  If you sort of think about pre-training,
+[3411.90s -> 3413.70s]  pre-training is about the furthest place
+[3413.70s -> 3416.02s]  that you might think of from regularization.
+[3417.02s -> 3420.02s]  Because pre-training, you do usually like one epoch.
+[3420.02s -> 3421.74s]  You can't even go through all of your data
+[3421.74s -> 3422.90s]  because you have too much of it.
+[3422.90s -> 3425.46s]  So you're gonna do one epoch training
+[3425.46s -> 3427.78s]  and you're almost certainly not overfitting the data
+[3427.82s -> 3430.22s]  in that one pass that you're doing.
+[3430.22s -> 3431.46s]  And so you might think, all right,
+[3431.46s -> 3433.54s]  we don't need regularization for pre-training.
+[3433.54s -> 3435.30s]  Let's just set your optimizer loose.
+[3435.30s -> 3437.06s]  It's all about minimizing loss.
+[3438.42s -> 3441.38s]  And this is really good arguments
+[3441.38s -> 3444.50s]  for why you shouldn't need to regularize.
+[3444.50s -> 3446.74s]  But then if you look at what people do,
+[3447.82s -> 3450.54s]  the story is actually kind of mixed.
+[3451.48s -> 3454.14s]  And this story actually is maybe even more mixed
+[3454.14s -> 3456.54s]  than what has turned out to be.
+[3456.54s -> 3460.18s]  But early days, people did a lot of dropout.
+[3460.18s -> 3462.54s]  And then there's a lot of weight decay
+[3462.54s -> 3464.14s]  that also seems to be happening.
+[3465.24s -> 3466.34s]  And these days, I think,
+[3466.34s -> 3468.78s]  a lot of the people have stopped publishing details
+[3468.78s -> 3471.20s]  on precisely their training hyperparameters,
+[3471.20s -> 3474.26s]  but dropout has sort of gone out of fashion.
+[3474.26s -> 3476.54s]  But weight decay has really been something
+[3476.54s -> 3478.42s]  that a lot of people continue to do.
+[3479.46s -> 3480.48s]  And why is that?
+[3480.48s -> 3483.18s]  That's like a really odd thing to be doing.
+[3483.18s -> 3484.02s]  So I'll give you a moment
+[3484.02s -> 3486.30s]  to just kind of think about the state of affairs.
+[3486.90s -> 3489.66s]  If you're doing training a really large neural network
+[3489.66s -> 3493.06s]  for one pass on SGD on vast amounts of data,
+[3493.06s -> 3495.14s]  why would you use weight decay
+[3495.14s -> 3497.34s]  when you're doing that, right?
+[3497.34s -> 3498.78s]  So maybe some of you know the answer,
+[3498.78s -> 3500.62s]  but I think that's a kind of interesting thing
+[3500.62s -> 3501.46s]  to think about.
+[3501.46s -> 3505.26s]  It's very intuition sort of violating,
+[3505.26s -> 3507.10s]  at least for me.
+[3509.10s -> 3513.88s]  So the reason is because it's not to control overfitting
+[3513.88s -> 3516.68s]  in the sense that if you look at weight decay,
+[3516.68s -> 3518.24s]  different amounts of weight decay
+[3518.24s -> 3520.72s]  don't really seem to change the ratio
+[3520.72s -> 3523.36s]  of training loss to validation loss, right?
+[3523.36s -> 3525.70s]  So you can train with different amounts of weight decay
+[3525.70s -> 3526.96s]  if you train for long enough
+[3526.96s -> 3529.34s]  where you control your hyperparameters appropriately,
+[3529.34s -> 3532.24s]  you'll end up with the same train-to-val loss gap.
+[3532.24s -> 3534.52s]  So overfitting, nothing's happening here,
+[3534.52s -> 3536.20s]  even with zero weight decay.
+[3536.20s -> 3538.44s]  But what is interesting is that
+[3538.44s -> 3541.28s]  the weight decay seems to be interacting
+[3541.28s -> 3543.24s]  somewhat in a strange way
+[3543.24s -> 3547.12s]  with the learning rate schedules of the optimizers.
+[3547.12s -> 3549.40s]  And so what's happening is that
+[3549.40s -> 3553.56s]  if you look at sort of a constant learning rate,
+[3553.56s -> 3556.12s]  so this is a model trained on constant learning rate,
+[3556.12s -> 3559.16s]  and then you suddenly decrease the learning rate
+[3559.16s -> 3560.92s]  into near zero, so you see this drop off
+[3560.92s -> 3563.74s]  as you decrease the learning rate.
+[3563.74s -> 3567.36s]  And then let's look at different kinds of weight decay
+[3567.36s -> 3568.42s]  that you could do.
+[3568.42s -> 3570.50s]  And what happens is with weight decay,
+[3570.50s -> 3572.22s]  the model's not training very well
+[3572.22s -> 3573.50s]  at this high learning rate,
+[3573.50s -> 3575.26s]  and then when you decrease the learning rate,
+[3575.26s -> 3577.50s]  it'll very rapidly drop off.
+[3577.50s -> 3580.66s]  And when you look at sort of cosine learning rate decay,
+[3580.66s -> 3584.50s]  what happens is that the models with high weight decay
+[3584.50s -> 3587.02s]  start out very slow, but then as they cool down,
+[3587.02s -> 3588.90s]  that is their learning rate decreases,
+[3588.90s -> 3591.62s]  they very rapidly optimize.
+[3591.62s -> 3595.14s]  So there's some very complex sort of interaction
+[3595.14s -> 3599.40s]  happening here between the optimizer and the weight decay
+[3599.40s -> 3601.80s]  and some sort of implicit acceleration
+[3601.80s -> 3603.80s]  that happens near the tail end of training
+[3603.80s -> 3606.40s]  that ends up giving you better models.
+[3606.40s -> 3609.24s]  And so the answer to the question I posed you is
+[3609.24s -> 3610.40s]  you don't weight decay
+[3610.40s -> 3612.18s]  because you want to regularize the model,
+[3612.18s -> 3613.98s]  which is kind of what it was defined for.
+[3613.98s -> 3616.56s]  You're weight decaying in order to get actually
+[3616.56s -> 3619.84s]  better training losses, and you end up doing that
+[3619.84s -> 3622.00s]  because of the various learning dynamics
+[3622.00s -> 3623.32s]  at the tail end of training
+[3623.32s -> 3625.12s]  as you decrease your learning rates to zero.
+[3625.12s -> 3628.92s]  It's a very sort of, very interesting and complex
+[3629.28s -> 3632.84s]  and in some ways troubling thing to be doing
+[3632.84s -> 3633.68s]  with language models.
+[3633.68s -> 3635.92s]  But now you sort of see why,
+[3635.92s -> 3637.88s]  if you look at a lot of the reports,
+[3637.88s -> 3639.20s]  you'll see we use weight decay.
+[3639.20s -> 3641.44s]  This is kind of why that ends up happening.
+[3642.52s -> 3643.36s]  Cool.
+[3645.26s -> 3648.78s]  Okay, so putting all that together,
+[3648.78s -> 3651.04s]  so there are certain things that I think
+[3651.04s -> 3652.28s]  are just kind of no-brainer.
+[3652.28s -> 3655.12s]  So if you're picking various hyperparameters for your model,
+[3655.12s -> 3657.88s]  you don't really need to think too deeply about them
+[3657.88s -> 3659.40s]  in the sense that they've been validated
+[3659.40s -> 3660.84s]  and basically everyone else does them.
+[3660.84s -> 3664.58s]  So this is things like the hidden size of the MLP,
+[3664.58s -> 3667.92s]  the head dimensions of your multi-head attention,
+[3667.92s -> 3671.60s]  your aspect ratio, and your choice of regularization
+[3671.60s -> 3672.56s]  through weight decay.
+[3672.56s -> 3675.72s]  Like all of those, there's fairly good, I think,
+[3675.72s -> 3677.74s]  consensus evidence of how to pick
+[3677.74s -> 3679.08s]  most of these hyperparameters.
+[3679.08s -> 3681.86s]  And those defaults roughly give you the kinds of things
+[3681.86s -> 3683.12s]  that we suggest in the assignment.
+[3683.12s -> 3684.16s]  So you can kind of follow along
+[3684.16s -> 3687.36s]  and they'll roughly give you something similar to this.
+[3688.08s -> 3691.84s]  Okay, any questions about the hyperparameter piece?
+[3694.16s -> 3695.00s]  Yes.
+[3695.00s -> 3698.32s]  Is there a reason why dropouts don't have a pattern?
+[3698.32s -> 3699.92s]  That's a good question.
+[3699.92s -> 3701.10s]  I don't think I've seen,
+[3701.10s -> 3704.72s]  the question was why did dropout go out of fashion?
+[3704.72s -> 3706.48s]  I haven't quite seen a deep analysis
+[3706.48s -> 3709.24s]  of why dropout is or isn't helpful.
+[3709.24s -> 3711.54s]  Like I haven't seen any result that, for example,
+[3711.54s -> 3713.44s]  shows that it helps for training loss.
+[3713.44s -> 3715.04s]  And as sort of this,
+[3715.04s -> 3717.52s]  both this paper argues and logic would dictate,
+[3718.04s -> 3720.56s]  there's not really a training overfitting issue
+[3720.56s -> 3723.04s]  with these models that can't even do one epoch
+[3723.04s -> 3724.28s]  over their training data.
+[3725.36s -> 3726.20s]  Yes.
+[3728.20s -> 3731.52s]  Do multilingual vocabularies actually contribute
+[3731.52s -> 3734.36s]  to improve performance in one language?
+[3737.12s -> 3740.12s]  Yeah, so the question was do multilingual vocabularies
+[3740.12s -> 3742.40s]  contribute to improving performance in one language?
+[3742.40s -> 3745.00s]  When you say one language, you mean do multilingual
+[3745.00s -> 3747.80s]  or larger vocabularies help performance in English?
+[3747.80s -> 3749.70s]  Is that the right question?
+[3749.70s -> 3752.64s]  Yeah, so I think in your high resource language,
+[3752.64s -> 3754.36s]  the impact is less, right?
+[3754.36s -> 3757.72s]  So if you're only thinking about English language,
+[3757.72s -> 3759.76s]  language modeling, you can get away
+[3759.76s -> 3761.40s]  with smaller vocabularies.
+[3761.40s -> 3764.00s]  This much is kind of true.
+[3764.00s -> 3767.36s]  But the place where larger vocabularies is really helpful
+[3767.36s -> 3768.88s]  is when you're starting to get at,
+[3768.88s -> 3770.70s]  I wouldn't say the tail of your distribution,
+[3770.70s -> 3772.12s]  but when you get to languages
+[3772.12s -> 3773.82s]  that are sort of more minority.
+[3773.82s -> 3775.40s]  And one great example of this,
+[3775.40s -> 3778.10s]  if you look at any of the cohere announcements
+[3778.10s -> 3780.52s]  about their models or their tokenizers,
+[3780.52s -> 3782.86s]  they basically always argue that because of the way
+[3782.86s -> 3784.62s]  they have larger vocabularies
+[3784.62s -> 3787.00s]  and the way they train their tokenizer,
+[3787.00s -> 3789.50s]  non-English and low resources languages,
+[3789.50s -> 3792.10s]  they are packed into much fewer tokens.
+[3792.10s -> 3794.60s]  And so people using those pay much fewer,
+[3796.26s -> 3798.26s]  much lower cost at inference time,
+[3798.26s -> 3800.02s]  right, which is a great benefit.
+[3801.46s -> 3803.30s]  Oh, yes, question.
+[3803.34s -> 3806.22s]  Plus, if weight decay doesn't have a significant impact
+[3806.22s -> 3808.82s]  on the vowel loss, why do we care about
+[3808.82s -> 3811.86s]  the training dynamics or the favorable optimization dynamics?
+[3811.86s -> 3813.02s]  Right, okay, so the question was,
+[3813.02s -> 3814.66s]  if it doesn't have an impact on vowel loss,
+[3814.66s -> 3816.96s]  why do we care about training dynamics?
+[3816.96s -> 3821.62s]  The goal is still, I want to get good training loss.
+[3821.62s -> 3823.18s]  This is the game that we're playing.
+[3823.18s -> 3824.94s]  And the surprising thing about weight decay
+[3824.94s -> 3827.82s]  is that somehow it gets us better training losses.
+[3827.82s -> 3829.90s]  I think the intuitive thing that makes sense is
+[3829.90s -> 3832.38s]  you do weight decay, it gives you better vowel losses.
+[3832.38s -> 3833.50s]  But that's not what happens.
+[3833.50s -> 3835.46s]  What it's getting you is better training losses,
+[3835.46s -> 3837.50s]  which are also the same as vowel losses.
+[3841.28s -> 3842.58s]  Yes.
+[3842.58s -> 3845.30s]  Are there differences in the architecture
+[3845.30s -> 3846.78s]  hyperparameter choices people make
+[3846.78s -> 3849.90s]  because they do towards like multimodal architectures
+[3849.90s -> 3852.42s]  if they're just as well as text?
+[3852.42s -> 3855.18s]  Yeah, so the question was about multimodal models.
+[3855.18s -> 3856.38s]  That is a great question.
+[3856.38s -> 3860.70s]  My survey of multimodal models is very incomplete.
+[3860.74s -> 3863.30s]  What I can say is a lot of the academic
+[3863.30s -> 3865.18s]  and open work that I've seen,
+[3865.18s -> 3869.50s]  they do what you might call shallow or later fusion
+[3869.50s -> 3871.94s]  or early fusion of the modalities.
+[3871.94s -> 3873.58s]  And the way that works is you kind of bolt
+[3873.58s -> 3876.24s]  the vision modality onto an existing language model.
+[3876.24s -> 3877.74s]  In those cases, the hyperparameter
+[3877.74s -> 3880.14s]  and architecture choices are fixed.
+[3880.14s -> 3882.12s]  One thing I will note, and I will talk about this
+[3882.12s -> 3885.98s]  in just a few slides, is that the multimodal models
+[3885.98s -> 3888.86s]  pioneered some pretty interesting techniques
+[3888.86s -> 3891.02s]  in stabilizing language model training.
+[3891.02s -> 3892.30s]  And that's been a really big theme,
+[3892.30s -> 3893.74s]  and I'll talk a little bit about those.
+[3893.74s -> 3896.50s]  So what is different is often when you bolt on
+[3896.50s -> 3898.30s]  this new kind of vision piece
+[3898.30s -> 3899.74s]  and you retrain with that,
+[3899.74s -> 3901.34s]  that's a big shock to the model.
+[3901.34s -> 3902.36s]  And so you have to think carefully
+[3902.36s -> 3904.18s]  about how to stabilize that training process.
+[3904.18s -> 3905.98s]  And those innovations have actually seeped back
+[3905.98s -> 3908.34s]  into pure text language model training.
+[3910.78s -> 3912.10s]  Okay.
+[3912.10s -> 3912.94s]  Cool.
+[3912.94s -> 3917.94s]  So, I went back through and I looked through
+[3919.46s -> 3921.86s]  all these new papers, and as I was trying to think about,
+[3921.86s -> 3924.06s]  okay, what's been new in the last year,
+[3924.06s -> 3925.66s]  and sort of what new architecture
+[3925.66s -> 3927.28s]  and related things have happened,
+[3927.28s -> 3930.38s]  actually the core architecture hasn't changed much,
+[3930.38s -> 3932.18s]  but I think the one thing that stood out
+[3932.18s -> 3935.94s]  as being very emphasized in a lot of the releases
+[3935.94s -> 3939.10s]  has been what I would call stability tricks.
+[3939.10s -> 3941.30s]  And so these are things where you would like
+[3941.34s -> 3944.32s]  to train your model in much more stable ways.
+[3945.14s -> 3946.86s]  And as you make bigger and bigger models,
+[3946.86s -> 3948.90s]  you train for longer and longer,
+[3948.90s -> 3951.28s]  these kinds of issues start to appear more and more.
+[3951.28s -> 3954.80s]  So I've taken this from the Olmo II paper,
+[3955.70s -> 3957.42s]  and actually that paper is a great
+[3957.42s -> 3962.42s]  sort of set of academic results on LLM training stability.
+[3963.02s -> 3966.52s]  And one thing they start with is kind of this figure,
+[3966.52s -> 3968.78s]  and you look at this blue curve over here,
+[3968.78s -> 3972.34s]  and you look at this L2 norm with a gradient graph,
+[3972.34s -> 3974.98s]  and this is a terrifying graph to look at, right?
+[3974.98s -> 3978.66s]  Like, your loss curve kind of seems to be behaving okay,
+[3978.66s -> 3981.42s]  but you've got some bad spikes every now and then,
+[3981.42s -> 3983.26s]  and you open up your gradient norm,
+[3983.26s -> 3986.26s]  it's this horrible plot where you've got spikes everywhere
+[3986.26s -> 3989.24s]  where your norms are completely blowing up.
+[3989.24s -> 3991.52s]  And if you're training models like this,
+[3991.52s -> 3993.26s]  you're gonna have a really tough time
+[3993.26s -> 3995.06s]  getting it to converge reasonably.
+[3995.06s -> 3998.48s]  At some point, it's gonna hit gradient norm explodes,
+[3999.06s -> 4001.12s]  and you can't do anything, and your training is done, right?
+[4001.12s -> 4003.24s]  So you can't train any further.
+[4003.24s -> 4005.28s]  And so, there's been a lot of emphasis
+[4005.28s -> 4007.36s]  basically trying to turn this blue curve
+[4007.36s -> 4009.80s]  into something that looks a lot like the orange curve.
+[4009.80s -> 4011.40s]  And of course, this loss is higher,
+[4011.40s -> 4012.70s]  but ignore that fact, because I think
+[4012.70s -> 4013.76s]  they just switch data sets
+[4013.76s -> 4015.84s]  in between these two training runs.
+[4015.84s -> 4017.72s]  But this orange curve has nice,
+[4017.72s -> 4020.20s]  low gradient norms throughout,
+[4020.20s -> 4021.48s]  and that's really the kind of plot
+[4021.48s -> 4023.12s]  that you would much rather see.
+[4024.36s -> 4027.20s]  And so, you might ask, where do stability issues
+[4027.24s -> 4028.44s]  arise in transformers?
+[4028.44s -> 4031.86s]  And of course, they can arise basically everywhere.
+[4031.86s -> 4034.08s]  But if you look at the kind of interventions
+[4034.08s -> 4036.12s]  that people are making,
+[4036.12s -> 4038.44s]  there's really one place that really stands out
+[4038.44s -> 4042.64s]  as the kind of problem child, and that's the softmaxes.
+[4042.64s -> 4043.84s]  And it can be a problem
+[4043.84s -> 4045.72s]  because you're gonna be taking exponentials,
+[4045.72s -> 4049.34s]  and those can be numerically badly behaved.
+[4049.34s -> 4050.88s]  You're also dividing two numbers,
+[4050.88s -> 4052.48s]  and so you might have a division by zero, right?
+[4052.48s -> 4054.16s]  So for many different reasons,
+[4054.16s -> 4056.76s]  this softmax piece is a part that
+[4058.08s -> 4060.52s]  you might have lots of issues with.
+[4060.52s -> 4063.30s]  And so, actually, one more thing I wanna talk about.
+[4063.30s -> 4066.12s]  So where are the softmaxes in a transformer?
+[4066.12s -> 4067.76s]  Well, there's one at the very end,
+[4067.76s -> 4070.48s]  so you've gotta be careful about that output softmax.
+[4070.48s -> 4073.96s]  And also, there's softmaxes in your self-attention.
+[4073.96s -> 4075.16s]  So there's two softmaxes
+[4075.16s -> 4076.72s]  that we're gonna think a little bit about,
+[4076.72s -> 4079.32s]  and for each one, I'm gonna mention
+[4079.32s -> 4081.56s]  stability intervention that has
+[4081.56s -> 4083.20s]  generally seemed to be effective.
+[4084.88s -> 4088.80s]  Okay, so the first one is called the z-loss.
+[4088.80s -> 4091.52s]  And in my desire to cite a paper that's older,
+[4091.52s -> 4095.10s]  I've gone back to Devlin in 2014,
+[4095.10s -> 4098.20s]  where in a machine translation paper,
+[4098.20s -> 4100.54s]  their goal was to try to make sure
+[4100.54s -> 4103.72s]  that this normalizer was near one.
+[4103.72s -> 4105.24s]  So if you look at p of x,
+[4105.24s -> 4108.02s]  that's the output softmax over here.
+[4108.02s -> 4109.64s]  The output softmax is two terms.
+[4109.64s -> 4111.28s]  You exponentiate your logits,
+[4111.28s -> 4113.76s]  and then you divide by the normalizer z, right?
+[4114.32s -> 4117.92s]  The z is just summing up the values across all the vocab.
+[4117.92s -> 4119.80s]  And so if you want this z of x,
+[4119.80s -> 4123.76s]  you wanna train the network to have a z of x close to one,
+[4123.76s -> 4125.88s]  well, then you can rewrite your loss,
+[4125.88s -> 4127.98s]  and you can add a little second term here
+[4127.98s -> 4132.40s]  to try to force log of z of xi to be close to zero.
+[4132.40s -> 4134.80s]  So you're gonna end up with an auxiliary loss term
+[4134.80s -> 4137.56s]  that's alpha log squared z of xi.
+[4137.56s -> 4140.08s]  You can kinda see that derivation on the right here.
+[4140.08s -> 4142.00s]  And this is, in some sense,
+[4142.00s -> 4144.96s]  what people often call the z loss.
+[4144.96s -> 4147.14s]  I think Jacob Devlin and others did this
+[4147.14s -> 4149.40s]  for machine translation for totally different reasons
+[4149.40s -> 4151.64s]  than what it's used for today.
+[4151.64s -> 4153.88s]  But this was, I think, the first instance
+[4153.88s -> 4156.32s]  of this in language modeling land was Palm,
+[4156.32s -> 4158.24s]  who used this as, they called it,
+[4158.24s -> 4161.32s]  auxiliary loss of z loss 10 to the negative four
+[4161.32s -> 4163.70s]  log squared z to basically encourage
+[4163.70s -> 4166.56s]  the softmax normalizer to behave nicely.
+[4166.56s -> 4169.16s]  And you can kind of reason through the behavior
+[4169.16s -> 4170.06s]  of this regularizer.
+[4170.06s -> 4173.38s]  If it succeeds, and it forces log of z of x
+[4173.38s -> 4177.38s]  to always be zero, then the log and the exponential
+[4177.38s -> 4180.56s]  cancels, and you've basically just got u of r of x.
+[4180.56s -> 4181.70s]  And that's a good place to be, right?
+[4181.70s -> 4183.92s]  That's a nice, numerically stable operation.
+[4183.92s -> 4185.98s]  So all of these sort of problematic operations
+[4185.98s -> 4188.54s]  kind of go away, and so you can think of the softmax
+[4188.54s -> 4192.76s]  as being well-behaved when z of x is close to one,
+[4192.76s -> 4195.74s]  or log of z is close to zero, right?
+[4195.74s -> 4199.08s]  And Palm, in some sense, is very much a pioneer
+[4199.08s -> 4201.76s]  because they did this z loss trick,
+[4201.76s -> 4204.40s]  and many others didn't really do it for a long time,
+[4204.40s -> 4206.90s]  or at least the ones that had open papers.
+[4206.90s -> 4209.20s]  But then there was a kind of sequence of papers
+[4209.20s -> 4210.04s]  that have done this.
+[4210.04s -> 4212.52s]  Bi-quan-2 is actually the earliest follow-up
+[4212.52s -> 4214.76s]  that I know of, and then DCLM and ALMO2
+[4214.76s -> 4218.08s]  and now several others have basically picked up on z loss.
+[4218.08s -> 4220.58s]  It was a very nice, convenient intervention
+[4220.58s -> 4222.04s]  for improving stability.
+[4223.92s -> 4226.60s]  And then the other trick that we see,
+[4226.60s -> 4231.50s]  so that was how to stabilize the output softmax,
+[4231.50s -> 4233.88s]  but we've got another softmax we've gotta deal with, right?
+[4233.88s -> 4235.84s]  The other softmax we have to deal with
+[4235.84s -> 4238.80s]  is in the attention operation.
+[4238.80s -> 4241.76s]  And so this is from a NVIDIA paper.
+[4241.76s -> 4244.38s]  I forgot to put the citation marker.
+[4244.38s -> 4248.28s]  But here, this is a block diagram of how attention works.
+[4248.28s -> 4251.00s]  You've got your layer norm at the beginning.
+[4251.00s -> 4252.64s]  You've got your QKVs.
+[4252.64s -> 4254.28s]  Ignore this for the moment.
+[4254.48s -> 4257.00s]  You might multiply your Qs and your Ks.
+[4257.00s -> 4259.56s]  You'll softmax it, you'll multiply the V,
+[4259.56s -> 4260.98s]  and then you'll project it,
+[4260.98s -> 4262.16s]  and then that's gonna give you
+[4262.16s -> 4264.00s]  your fully connected and your output.
+[4264.00s -> 4267.36s]  So if you ignore this little piece over here,
+[4267.36s -> 4269.20s]  this looks just like your normal
+[4269.20s -> 4271.36s]  multi-head attention operation.
+[4271.36s -> 4273.78s]  So what's kind of the difference here?
+[4274.84s -> 4277.72s]  So several folks came up with this idea
+[4277.72s -> 4279.88s]  or this approach called the QK norm,
+[4279.88s -> 4282.36s]  where you take the queries and the keys
+[4282.36s -> 4284.84s]  and then you pass them through a layer norm layer
+[4284.84s -> 4286.76s]  before you take their inner product
+[4286.76s -> 4288.64s]  for the softmax operation.
+[4288.64s -> 4291.72s]  And this is a very different kind of approach
+[4291.72s -> 4295.12s]  to controlling the behavior of the softmax.
+[4295.12s -> 4297.56s]  Here, you're not controlling the normalizer Z.
+[4297.56s -> 4300.12s]  Instead, you're controlling the inputs of the softmax
+[4300.12s -> 4302.08s]  to be kind of bounded in size,
+[4302.08s -> 4304.16s]  and that's gonna naturally control
+[4304.16s -> 4307.56s]  the bad behaviors of the softmax.
+[4307.56s -> 4310.46s]  And as I said before, this is originally an innovation
+[4310.46s -> 4313.62s]  from the vision and sort of multimodal model community.
+[4313.62s -> 4316.90s]  Degani in 2023, this was a paper on training
+[4316.90s -> 4319.50s]  very large vision transformers,
+[4319.50s -> 4323.54s]  and then Chameleon and Edith Feekes from Hugging Face
+[4323.54s -> 4324.72s]  sort of used these tricks
+[4324.72s -> 4327.86s]  for their multimodal training components.
+[4327.86s -> 4330.86s]  And then it got picked up by several others,
+[4330.86s -> 4333.58s]  like GEMMA2, DCLM, OMO2,
+[4333.58s -> 4337.54s]  all basically uses this kind of techniques
+[4337.54s -> 4341.46s]  in order to stabilize their training.
+[4341.46s -> 4345.46s]  And I think I'm allowed to add one joke per lecture,
+[4345.46s -> 4347.74s]  and so this is the one I'm gonna go with here.
+[4347.74s -> 4350.38s]  I think one of the things that really has stood out
+[4350.38s -> 4351.98s]  in terms of stability interventions
+[4351.98s -> 4356.06s]  has been just how strikingly effective layer norms are.
+[4356.06s -> 4358.68s]  So we've seen going from layer norms
+[4358.68s -> 4361.50s]  just in the pre part of the block
+[4361.50s -> 4364.26s]  to both the beginning and the end
+[4364.26s -> 4365.78s]  of the non-residual component,
+[4365.78s -> 4369.66s]  and now we've also thrown it into the Q and the K component.
+[4369.66s -> 4371.90s]  At least in terms of improving stability,
+[4371.90s -> 4374.62s]  layer norms have been shockingly effective
+[4374.62s -> 4376.62s]  without affecting performance too much.
+[4377.90s -> 4379.90s]  The last trick that I'll note,
+[4379.90s -> 4381.86s]  I think this one has been sort of
+[4381.86s -> 4385.02s]  not quite as frequently used,
+[4385.02s -> 4389.30s]  which is to soft cap the low jets
+[4389.30s -> 4390.62s]  that go into the softmax.
+[4390.62s -> 4392.04s]  So the other approach that you can take,
+[4392.04s -> 4393.90s]  so QK norm is in some sense
+[4393.90s -> 4396.02s]  a very heavy-handed intervention
+[4396.02s -> 4399.30s]  because we're gonna operate over the entire vector,
+[4399.30s -> 4400.42s]  but one thing you could do is
+[4400.42s -> 4403.14s]  after you take the inner products for self-attention,
+[4403.14s -> 4404.22s]  you could pass them through
+[4404.22s -> 4406.42s]  kind of like a soft maximum operation.
+[4406.42s -> 4409.20s]  So you can pass them through this equation over here.
+[4409.20s -> 4411.38s]  So you have your low jets as your input
+[4411.38s -> 4414.66s]  divided by the soft cap multiplied by the soft cap.
+[4414.66s -> 4415.68s]  What does that do?
+[4415.68s -> 4417.50s]  Well, if your low jets start exceeding
+[4417.50s -> 4419.22s]  the soft cap by a lot,
+[4419.22s -> 4421.42s]  the tanh is gonna clip them off to one,
+[4421.42s -> 4423.54s]  and so you're gonna have a maximum value
+[4424.06s -> 4425.94s]  of soft cap over here, right?
+[4425.94s -> 4427.86s]  So this is gonna control, in some sense,
+[4427.86s -> 4430.54s]  soft clipping of the low jets.
+[4430.54s -> 4434.54s]  And gamma two, and I think Olmo two also do this,
+[4434.54s -> 4438.82s]  it hasn't been, I think, quite as popular otherwise,
+[4438.82s -> 4441.86s]  and I think the other sort of evidence against this,
+[4441.86s -> 4444.46s]  the NVIDIA folks that I mentioned earlier,
+[4444.46s -> 4446.18s]  did actually quite a few different
+[4446.18s -> 4448.82s]  sort of stability-improving interventions,
+[4448.82s -> 4450.06s]  and what they find is you have
+[4450.06s -> 4451.86s]  your baseline model over here.
+[4451.86s -> 4455.58s]  This is the perplexity of the baseline model, 11.19.
+[4455.58s -> 4457.34s]  Soft capping makes it worse.
+[4457.34s -> 4458.88s]  QK norm actually makes it better,
+[4458.88s -> 4460.78s]  because you can use more aggressive learning rates
+[4460.78s -> 4462.82s]  and sort of push the optimizer further.
+[4465.70s -> 4468.66s]  Cool, okay, so that's the end of
+[4468.66s -> 4471.70s]  sort of the stability-improving intervention stuff.
+[4471.70s -> 4473.66s]  Does anyone have any questions?
+[4473.66s -> 4476.26s]  I think that's been kind of the new development
+[4476.26s -> 4477.58s]  over the last year, yes?
+[4477.58s -> 4479.50s]  So for the QKV norm,
+[4479.50s -> 4480.98s]  like understand that during training
+[4481.02s -> 4483.06s]  you have the layer norm being applied.
+[4483.06s -> 4486.54s]  At inference time, is the layer norm still being kept?
+[4486.54s -> 4487.54s]  Yes, so the question was,
+[4487.54s -> 4489.46s]  at inference time, do you still use the norm?
+[4489.46s -> 4490.68s]  And the answer is yes,
+[4490.68s -> 4493.58s]  because the layer norm has kind of learned parameters,
+[4493.58s -> 4495.86s]  like the whole action of the layer norm
+[4495.86s -> 4498.42s]  is it takes an activation, normalizes it to unit,
+[4498.42s -> 4500.00s]  and then scales them to some size.
+[4500.00s -> 4500.84s]  If you take that out,
+[4500.84s -> 4502.22s]  that's a huge change to the model.
+[4502.22s -> 4503.52s]  It will have no idea what to do
+[4503.52s -> 4505.46s]  with those unnormalized activations.
+[4508.10s -> 4510.34s]  Okay, cool.
+[4511.94s -> 4515.24s]  All right, so I have this last bit,
+[4515.24s -> 4518.10s]  last few slides that I want to end with.
+[4518.10s -> 4519.98s]  If we go over then,
+[4519.98s -> 4522.54s]  we can always push this into the MOE lecture,
+[4522.54s -> 4524.96s]  but I think we also have a lot of content next time,
+[4524.96s -> 4527.02s]  because I have to cover DeepSeq v3.
+[4528.12s -> 4529.84s]  So the last thing I want to cover
+[4529.84s -> 4532.78s]  is variations on the attention heads.
+[4532.78s -> 4533.98s]  So attention heads, I think,
+[4533.98s -> 4538.34s]  haven't had as much work done to them,
+[4538.34s -> 4540.94s]  but there have been a few, I think, important changes
+[4541.76s -> 4542.60s]  that you need to know about
+[4542.60s -> 4545.00s]  in order to understand the models that are being trained.
+[4545.00s -> 4546.56s]  So the one thing I'll talk about,
+[4546.56s -> 4549.38s]  the first thing I'll talk about is GQA and MQA,
+[4549.38s -> 4551.22s]  and these aren't really critical
+[4551.22s -> 4553.74s]  to kind of the training time behavior of the models,
+[4553.74s -> 4555.28s]  but they're very important
+[4555.28s -> 4557.28s]  in understanding the inference cost
+[4557.28s -> 4558.86s]  and inference behavior of the models,
+[4558.86s -> 4561.16s]  and because this is an important architecture change,
+[4561.16s -> 4562.78s]  I'll mention them here,
+[4562.78s -> 4564.98s]  in addition to probably being mentioned by Percy
+[4564.98s -> 4567.00s]  in some of the inference lectures.
+[4567.00s -> 4568.80s]  The other thing that's a kind of new development
+[4568.84s -> 4571.68s]  that I'll mention is how the most recent models,
+[4571.68s -> 4573.56s]  like LAMA4, if you've heard of it,
+[4573.56s -> 4576.32s]  supports supposedly 10 million tokens of context.
+[4576.32s -> 4577.38s]  How does it do that?
+[4577.38s -> 4579.38s]  Well, it does so by sort of messing
+[4579.38s -> 4582.16s]  with the attention pattern in very structured ways,
+[4582.16s -> 4584.64s]  and so I'll talk about that as well.
+[4586.96s -> 4589.52s]  So GQA and MQA,
+[4589.52s -> 4591.68s]  if you looked at some of the larger models,
+[4591.68s -> 4593.58s]  like the big LAMA models or others,
+[4593.58s -> 4596.60s]  you'll have heard or seen this term GQA or MQA,
+[4597.56s -> 4600.50s]  and I'll talk through what that sort of means.
+[4600.50s -> 4601.92s]  So to set the stage,
+[4601.92s -> 4604.08s]  let's think about the compute that you need
+[4604.08s -> 4605.44s]  to do attention, right?
+[4605.44s -> 4608.76s]  So this is, once again, 224N slides here.
+[4608.76s -> 4612.44s]  You're gonna take your XQ, your query, and your XK,
+[4612.44s -> 4614.28s]  and then you're gonna form your big
+[4614.28s -> 4616.36s]  sort of quadratic attention matrix,
+[4616.36s -> 4617.62s]  and you can sort of walk through
+[4617.62s -> 4619.12s]  each of these matrix multiplies,
+[4619.12s -> 4620.26s]  and you can convince yourself
+[4620.26s -> 4623.36s]  that the total number of arithmetic operations
+[4623.36s -> 4626.52s]  is gonna be B times N times D squared.
+[4627.48s -> 4630.04s]  So that's gonna be, B is the batch dimension,
+[4630.04s -> 4631.92s]  N is the sequence length,
+[4631.92s -> 4636.36s]  and D squared is gonna be the hidden dimension squared.
+[4637.56s -> 4640.20s]  And you can ask about the total memory accesses,
+[4640.20s -> 4642.36s]  and this is gonna be B times N times D,
+[4642.36s -> 4643.82s]  and this is gonna be, for example,
+[4643.82s -> 4646.92s]  accessing just this matrix here, this XQ,
+[4646.92s -> 4648.56s]  is gonna be that size,
+[4648.56s -> 4649.76s]  and then the softmax is gonna be
+[4649.76s -> 4651.32s]  B times H times N squared,
+[4651.32s -> 4652.82s]  and you can kind of convince yourself of that
+[4652.82s -> 4656.32s]  by just thinking about the size of the softmax matrix,
+[4656.32s -> 4658.56s]  which is gonna be batch times number of heads
+[4658.56s -> 4662.00s]  times all the different softmax activations that you have,
+[4662.00s -> 4664.08s]  so that's N squared of them, right?
+[4664.08s -> 4665.24s]  And you've got a projection,
+[4665.24s -> 4667.92s]  and you've got D squared projection operations
+[4667.92s -> 4670.24s]  at the very end over here.
+[4670.24s -> 4672.44s]  And so we could take the ratio
+[4672.44s -> 4677.16s]  of total memory accesses and arithmetic operations,
+[4677.16s -> 4678.28s]  and this is gonna be something
+[4678.28s -> 4681.06s]  that will be very important in a couple lectures,
+[4681.06s -> 4684.12s]  this idea called arithmetic intensity, right?
+[4684.12s -> 4686.64s]  So we want our arithmetic intensity to be high.
+[4686.64s -> 4689.96s]  What that means is we want to be doing a lot of compute
+[4689.96s -> 4692.64s]  for every single memory access that we do,
+[4692.64s -> 4694.56s]  and this is gonna be because memory accesses
+[4694.56s -> 4697.32s]  are very expensive on a GPU, relatively speaking,
+[4697.32s -> 4699.96s]  and compute is relatively cheap.
+[4699.96s -> 4704.00s]  And so in this batch computation that I'm showing you here
+[4704.00s -> 4705.04s]  the arithmetic intensity,
+[4705.04s -> 4706.56s]  if you take the ratio of those two things,
+[4706.56s -> 4711.40s]  is gonna be one over K plus one over BN inverse.
+[4711.40s -> 4712.82s]  And so this is gonna mean
+[4712.82s -> 4715.98s]  that we can kind of keep our GPUs running.
+[4718.48s -> 4720.62s]  Because if we have sort of large number of heads
+[4720.62s -> 4724.14s]  and we have large batch size and large sequence length,
+[4724.14s -> 4728.26s]  those are all gonna be sort of good large numbers.
+[4728.26s -> 4731.20s]  Of course this is what happens at training time, right?
+[4731.20s -> 4732.92s]  So the issue is that inference time,
+[4732.92s -> 4735.06s]  we do not have these big chunky matrices
+[4735.06s -> 4736.56s]  to multiply together.
+[4736.56s -> 4739.22s]  And so that's gonna really change the nature
+[4739.22s -> 4741.54s]  of the behavior of our algorithms.
+[4741.54s -> 4744.18s]  So when we're generating text,
+[4744.18s -> 4746.14s]  remember that we have to generate a token
+[4746.14s -> 4748.44s]  and then the transformer has to read that token
+[4748.44s -> 4750.02s]  and then it has to process it
+[4750.02s -> 4752.24s]  and now we can get the next token distribution
+[4752.24s -> 4754.02s]  and then we do the things auto-regressively
+[4754.02s -> 4755.74s]  one token at a time.
+[4755.74s -> 4756.60s]  And by doing this,
+[4756.60s -> 4758.90s]  we can't parallelize this generation process.
+[4758.90s -> 4762.30s]  We need to go step by step for every single new token.
+[4762.30s -> 4763.38s]  And when we do this,
+[4763.38s -> 4765.90s]  we're gonna need to incrementally compute attention,
+[4765.90s -> 4769.14s]  an idea that people call the KV cache.
+[4769.14s -> 4771.14s]  And so what do you do?
+[4771.58s -> 4774.46s]  This is a lovely animation of a KV cache
+[4774.46s -> 4775.30s]  that's been explained.
+[4775.30s -> 4778.78s]  So if you can sort of look at this figure,
+[4778.78s -> 4782.94s]  what you're doing is you've got a query token,
+[4782.94s -> 4785.94s]  a query token here is you've generated a new token,
+[4785.94s -> 4787.10s]  you're conditioning on it,
+[4787.10s -> 4789.22s]  and now you wanna ask what sort of information
+[4789.22s -> 4792.18s]  should I look up in the past past that query token.
+[4792.18s -> 4794.96s]  And your query tokens are shifting from one through N
+[4794.96s -> 4797.70s]  because you're generating new tokens one at a time.
+[4797.70s -> 4800.86s]  You're building up this sort of key cache over here
+[4801.42s -> 4802.82s]  where basically I'm building up
+[4802.82s -> 4804.90s]  all of the past tokens keys.
+[4804.90s -> 4806.94s]  And the past tokens keys don't change
+[4806.94s -> 4809.30s]  because they only depend on things in the past.
+[4809.30s -> 4812.08s]  And so I'm incrementally, as I generate tokens,
+[4812.08s -> 4814.58s]  building up all of these past keys.
+[4814.58s -> 4818.62s]  And each time I can compute one new element of Q dot K.
+[4818.62s -> 4820.14s]  So the big attention matrix
+[4820.14s -> 4822.98s]  is gonna be this lower triangular matrix.
+[4822.98s -> 4824.62s]  I'm computing one row at a time
+[4824.62s -> 4826.82s]  and that row is exactly what's necessary
+[4826.82s -> 4828.78s]  to generate the next token.
+[4828.78s -> 4830.66s]  So this KV cache idea,
+[4831.30s -> 4832.14s]  if you've not seen this before,
+[4832.14s -> 4834.22s]  is this idea of saying I'm gonna generate
+[4834.22s -> 4837.34s]  the Ks and the Vs incrementally as I go
+[4837.34s -> 4838.88s]  as I generate each token
+[4838.88s -> 4841.42s]  and I'm only gonna compute QK
+[4841.42s -> 4844.88s]  that's absolutely necessary to do my operations.
+[4846.22s -> 4847.94s]  And so once again, you can go through
+[4847.94s -> 4852.12s]  and do sort of the various arithmetic components
+[4852.12s -> 4854.78s]  of how many flops do we do?
+[4854.78s -> 4857.14s]  What's the total number of memory accesses?
+[4857.14s -> 4859.38s]  And if you think about the KV cache,
+[4859.38s -> 4860.74s]  I'm only multiplying
+[4860.74s -> 4863.18s]  the absolute necessary keys and values, right?
+[4863.18s -> 4866.62s]  Since I'm saving all of the intermediate computations,
+[4866.62s -> 4868.98s]  I'm not wasting any sort of matrix
+[4868.98s -> 4870.54s]  or vector vector multiplies.
+[4870.54s -> 4872.82s]  The total number of arithmetic operations
+[4872.82s -> 4876.02s]  remains exactly the same, B and D squared.
+[4876.02s -> 4879.50s]  But the memory access patterns are now different.
+[4879.50s -> 4880.38s]  Why is that?
+[4880.38s -> 4883.24s]  Because when I do this KV caching thing,
+[4883.24s -> 4886.22s]  I'm gonna have to move various kinds of parameters
+[4886.22s -> 4887.86s]  in and out of memory repeatedly.
+[4887.86s -> 4891.62s]  Whenever I multiply with a key sort of K matrix,
+[4891.62s -> 4893.62s]  I'm gonna have to put that into memory, right?
+[4893.62s -> 4894.62s]  And then multiply by K.
+[4894.62s -> 4896.42s]  And then I need to put that away
+[4896.42s -> 4897.72s]  and I need to compute some activations.
+[4897.72s -> 4900.66s]  And so I'm repeatedly loading in different matrices
+[4900.66s -> 4903.06s]  and that's gonna give me a much higher total memory access
+[4903.06s -> 4906.18s]  of B squared D plus ND squared.
+[4906.18s -> 4908.10s]  And so when you take this ratio,
+[4908.10s -> 4910.82s]  now the arithmetic intensity is not so good.
+[4910.82s -> 4915.22s]  You're gonna get N over D plus one over B inverse.
+[4915.22s -> 4917.14s]  And so if we sort of reason through this,
+[4917.34s -> 4920.42s]  so if I want arithmetic intensity to be high,
+[4920.42s -> 4922.48s]  I want this thing inside to be very small.
+[4922.48s -> 4924.66s]  So I need really large batches
+[4924.66s -> 4927.50s]  and I need N over D to be small.
+[4927.50s -> 4928.34s]  What does that mean?
+[4928.34s -> 4930.22s]  I need really short sequence lengths
+[4930.22s -> 4932.66s]  or really big model dimensions.
+[4932.66s -> 4935.78s]  And this N over D is really unfavorable
+[4935.78s -> 4937.46s]  because I don't want a bigger model
+[4937.46s -> 4939.98s]  and I don't want a shorter sequence length.
+[4939.98s -> 4941.82s]  And so this is the core in some sense
+[4941.82s -> 4944.94s]  inference cost trade off that people face.
+[4944.94s -> 4947.80s]  You have this very bad memory access pattern
+[4947.80s -> 4950.02s]  where you have this one term, N over D,
+[4950.02s -> 4951.66s]  that's kind of really killing you
+[4951.66s -> 4954.04s]  in terms of the throughput of your system.
+[4955.42s -> 4958.54s]  And so this motivates this thing called MQA.
+[4958.54s -> 4960.66s]  And the key idea here, right,
+[4960.66s -> 4964.90s]  hopefully you kind of see from this figure back here
+[4964.90s -> 4967.30s]  that really the part that's really bad
+[4967.30s -> 4969.04s]  is the keys and the values.
+[4969.04s -> 4971.42s]  They have this KV cache thing being built up
+[4971.42s -> 4973.26s]  and there's memory moving in and out.
+[4973.30s -> 4976.98s]  So what you do is you can have multiple heads for the query,
+[4976.98s -> 4980.26s]  multiple query heads, but only one dimension
+[4980.26s -> 4982.62s]  or one head for the keys and values.
+[4982.62s -> 4984.46s]  This immensely simplifies things.
+[4984.46s -> 4986.38s]  Once you do this, now you're moving
+[4986.38s -> 4988.82s]  much less information for the Ks and the Vs.
+[4988.82s -> 4993.82s]  And so K and V is shared, but query has many heads
+[4993.82s -> 4996.66s]  and so you still have multi-head attention
+[4996.66s -> 5000.18s]  or multiple queries, but only single Ks and Vs.
+[5000.18s -> 5002.80s]  So that's why it's called multi-query attention.
+[5003.28s -> 5004.96s]  And now when you do the same kind of arithmetic,
+[5004.96s -> 5006.64s]  we have fewer memory accesses,
+[5006.64s -> 5008.36s]  because we've shared the Ks and the Vs,
+[5008.36s -> 5009.84s]  and the arithmetic intensity
+[5009.84s -> 5011.70s]  is much, much better behaved, right?
+[5011.70s -> 5013.52s]  And so we can increase things like,
+[5013.52s -> 5015.98s]  you know, we've decreased the first term
+[5015.98s -> 5018.04s]  by a factor of N, so longer sequence lengths
+[5018.04s -> 5020.20s]  are now viable, and the second term
+[5020.20s -> 5021.92s]  is now divided by the number of heads.
+[5021.92s -> 5023.98s]  So this term is also not so terrible, right?
+[5023.98s -> 5026.24s]  So all the different terms are controlled now
+[5026.24s -> 5029.46s]  and MQA can give you much better behaviors.
+[5030.46s -> 5033.26s]  GQA, or group query attention,
+[5033.26s -> 5035.54s]  basically changes this slightly.
+[5035.54s -> 5038.74s]  Instead of having, you know, single query,
+[5038.74s -> 5041.78s]  or sorry, multiple query and single key,
+[5041.78s -> 5044.74s]  you can reduce the number of keys by some multiple,
+[5044.74s -> 5046.42s]  and so this will let you trade off
+[5046.42s -> 5048.94s]  between kind of the inference time behaviors
+[5048.94s -> 5050.34s]  and the expressiveness of the model,
+[5050.34s -> 5052.42s]  because maybe going from multi-head
+[5052.42s -> 5056.24s]  all the way to multi-query is a little bit too aggressive.
+[5057.08s -> 5062.08s]  You know, some works show that GQA doesn't hurt,
+[5062.20s -> 5063.48s]  but multi-head attention hurts.
+[5063.48s -> 5065.28s]  I'm not gonna get into that.
+[5065.28s -> 5068.02s]  I'm just gonna close off with this very last thing,
+[5068.02s -> 5070.34s]  which I think is a really interesting development
+[5070.34s -> 5072.48s]  in the last few months.
+[5072.48s -> 5077.32s]  So back in 2019, OpenAI had this kind of cool paper
+[5077.32s -> 5080.90s]  basically arguing how to build longer attention models,
+[5080.90s -> 5082.12s]  and they were basically arguing,
+[5082.12s -> 5085.08s]  well, one way to do that is to come up
+[5085.08s -> 5087.26s]  with sort of sparse attention patterns, right?
+[5087.26s -> 5089.68s]  So instead of paying attention to all of the sequence,
+[5089.68s -> 5090.80s]  I'm gonna pay attention to, let's say,
+[5090.80s -> 5093.20s]  a local window at each sort of chunk,
+[5093.20s -> 5096.16s]  and then I can have sort of other sort of
+[5096.16s -> 5098.32s]  attention patterns that are like diagonals
+[5098.32s -> 5100.46s]  that help propagate information across.
+[5100.46s -> 5102.40s]  So you can build sparse or structured attention
+[5102.40s -> 5103.58s]  that trades off, you know,
+[5103.58s -> 5105.92s]  various kinds of expressiveness versus runtime.
+[5105.92s -> 5108.68s]  GPT-3 uses exactly these kinds of tricks
+[5108.68s -> 5110.40s]  when they originally released it
+[5110.40s -> 5113.76s]  to get larger attention windows.
+[5113.76s -> 5116.86s]  Sliding window attention is another variant of this idea
+[5116.86s -> 5120.16s]  where at each layer, you only pay attention
+[5120.16s -> 5123.28s]  to a small region around your current position,
+[5123.28s -> 5126.88s]  and this also is gonna control the total amount
+[5126.88s -> 5128.90s]  of sort of resources that you need,
+[5130.12s -> 5131.68s]  the total amount of resources you need
+[5131.68s -> 5133.00s]  in order to do longer context.
+[5133.00s -> 5134.68s]  So your effective receptive field
+[5134.68s -> 5138.48s]  is now the local one times kind of the layers.
+[5139.96s -> 5143.48s]  The final trick, so those were kind of the older ideas,
+[5144.04s -> 5146.64s]  but the way that this has kind of been modern instantiation
+[5146.64s -> 5150.00s]  is some of the recent papers like Lama-4
+[5150.00s -> 5153.16s]  and Gemma and Cohere Command-A
+[5153.16s -> 5155.48s]  have now come up with this very clever trick
+[5155.48s -> 5158.98s]  of basically having transformer blocks
+[5158.98s -> 5161.52s]  where in this case, you have a block,
+[5161.52s -> 5163.62s]  a set of four transformer blocks.
+[5163.62s -> 5166.50s]  The very bottom one uses full self-attention
+[5166.50s -> 5167.88s]  with no position embedding.
+[5167.88s -> 5169.38s]  So there's no rope, no nothing.
+[5169.38s -> 5170.56s]  It doesn't know about position at all,
+[5170.56s -> 5172.00s]  but it's full self-attention,
+[5172.00s -> 5174.36s]  and it only happens once every four blocks,
+[5174.36s -> 5176.64s]  and then the three blocks above it
+[5176.64s -> 5179.68s]  use sliding window attention with rope,
+[5179.68s -> 5182.08s]  and so this is actually a really clever trick
+[5182.08s -> 5184.20s]  to both control the systems aspect of things
+[5184.20s -> 5186.08s]  because the full attention only happens
+[5186.08s -> 5188.32s]  every now and then,
+[5188.32s -> 5190.52s]  and also the length extrapolation aspect
+[5190.52s -> 5193.98s]  because rope only deals with local context windows
+[5193.98s -> 5196.24s]  and anything that's really, really long range
+[5196.24s -> 5197.96s]  has no position embeddings at all,
+[5197.96s -> 5201.00s]  so it could extrapolate very, very aggressively
+[5201.00s -> 5203.84s]  because you don't have to do this position extrapolation
+[5203.84s -> 5205.56s]  that you do with something like rope.
+[5205.56s -> 5206.84s]  So that's a really cool development
+[5206.84s -> 5210.40s]  that we've seen in the last couple months.
+[5210.40s -> 5212.70s]  So, all right, I think we're coming up on time.
+[5212.70s -> 5214.06s]  Feel free to ask me questions
+[5214.06s -> 5215.96s]  about architecture or hyperparameters.
+[5215.96s -> 5217.92s]  I'll be happy to answer questions after.

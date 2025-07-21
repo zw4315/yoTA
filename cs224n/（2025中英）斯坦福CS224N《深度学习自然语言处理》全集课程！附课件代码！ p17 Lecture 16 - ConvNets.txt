@@ -1,0 +1,1064 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 8.40s]  Hi, okay, let me get started for today.
+[8.40s -> 14.64s]  I guess I'm now down to the more select week eight audience of people who actually
+[14.64s -> 21.96s]  want to learn, so my welcome and my pleasure for the people who show up today.
+[21.96s -> 22.96s]  Thank you.
+[22.96s -> 23.96s]  Thank you.
+[24.92s -> 35.76s]  Okay, so what I want to do today is principally sort of talk about a couple of other neural
+[35.76s -> 40.40s]  network techniques which can be used for language.
+[40.40s -> 47.84s]  I mean, in some sense, these two techniques are, gee, ones that people aren't using very
+[47.84s -> 52.64s]  much these days, and that's partly why they get sort of stuck towards the end of
+[52.64s -> 58.60s]  the course, because we try to teach people early on in the course the most essential
+[58.60s -> 61.80s]  things that you should definitely know about.
+[61.80s -> 69.82s]  But the fact of the matter is, in any scientific field, there are different ideas and techniques
+[69.82s -> 74.44s]  that bounce around, and it's good to know a few of the different ideas that are out
+[74.44s -> 81.50s]  there because often what happens is people find new ways to reinvent things and put
+[81.54s -> 85.10s]  things together and see different insights from them.
+[85.10s -> 89.40s]  So today I'm going to tell you a little bit about using convolutional neural networks
+[89.40s -> 95.02s]  for language and then a bit about tree recursive neural networks.
+[95.02s -> 98.92s]  But before that, just course organization.
+[98.92s -> 103.46s]  This is a bit after it happened, but I guess I've never been back to say it, so thanks
+[103.46s -> 107.26s]  to everyone who filled in the mid-quarter surveys.
+[107.26s -> 111.46s]  Some people said very nice things about the lecture, fantastic lectures and really
+[111.46s -> 114.04s]  interesting content.
+[114.04s -> 118.34s]  Some people wish that we were teaching more about state space models.
+[118.34s -> 123.78s]  I guess we haven't added that lecture in yet.
+[123.78s -> 128.18s]  A couple of people thought it'd be good to have an exam in this class.
+[128.18s -> 136.66s]  Clearly they weren't people who have friends in CS 231n, from what I've heard.
+[136.66s -> 143.30s]  And then in general, people are pretty happy how it has been going, a bit less happy on
+[143.30s -> 145.54s]  how office hours have been going.
+[145.54s -> 151.14s]  I mean, honestly, it's a hard problem, I feel, to do office hours.
+[151.14s -> 154.90s]  You know, some people are saying, oh, you should just use Q status.
+[154.90s -> 159.66s]  I sort of remember badly to a year where we did everything but Q status and near the
+[159.66s -> 164.46s]  assignments due date, the Q would stretch six hours long, and that didn't seem such
+[164.46s -> 166.40s]  a good solution either.
+[166.40s -> 168.96s]  But we'll work along with it.
+[168.96s -> 176.60s]  Finally, on cloud compute, I know this is something that people variously do have issues
+[176.60s -> 177.60s]  with.
+[177.60s -> 183.80s]  So there are quite a few people that are still trying to do things with Google Colab,
+[183.80s -> 187.82s]  which I realize is sort of a very convenient, nice interface.
+[187.82s -> 193.12s]  But you sort of do suffer from access to GPUs on Google Colab.
+[193.12s -> 201.76s]  The best way to get better access to GPUs is to pay 10 bucks for a month of Colab Pro,
+[201.76s -> 207.28s]  which perhaps means that you end up paying for two months for, if it's May and June.
+[207.28s -> 213.28s]  We can't reimburse you for that, but it's not so many copies worth of money.
+[213.28s -> 219.22s]  And it does just give you better access to GPUs, encourage you to use the GCP credits
+[219.22s -> 224.74s]  and together API access that we've given to you.
+[224.74s -> 226.98s]  You're also welcome to try other things.
+[226.98s -> 233.90s]  Kaggle notebooks can actually give you better GPU access, but not all the nice features
+[233.90s -> 235.90s]  of Colabs.
+[235.90s -> 242.62s]  Some groups have started using Modal, which can also be a good way to get GPU access.
+[242.62s -> 246.30s]  Okay, that was the intro to that.
+[246.30s -> 253.18s]  And so now I wanted to sort of talk about convolutional neural networks for language.
+[253.18s -> 259.94s]  I mean, these slides are sort of positioned a bit as convolutional neural networks versus
+[259.94s -> 263.98s]  RNNs, as opposed to versus transformers.
+[263.98s -> 270.02s]  I mean, that's partly, you could say, because I haven't updated my slides enough, but in
+[270.02s -> 276.70s]  another sense, that's partly because that's how the ideas of convolutional neural networks
+[276.70s -> 278.66s]  really were explored.
+[278.66s -> 283.22s]  It was in the days when most people were using the curse of neural networks for NLP.
+[283.22s -> 287.26s]  A few people said about saying, hey, maybe we should use convolutional neural networks
+[287.26s -> 289.46s]  for language as well.
+[289.46s -> 294.54s]  Whereas in truth, in the last five years when transformers have dominated, there hasn't
+[294.54s -> 298.26s]  been much use of convolutional neural networks for NLP.
+[298.30s -> 303.94s]  So if we think back to our current neural networks, if you remember those, that they
+[303.94s -> 311.74s]  kind of gave a way of giving a representation for a sentence or part of a sentence.
+[311.74s -> 316.38s]  But they sort of computed forward through the string.
+[316.38s -> 323.86s]  And so you kind of had to get a representation included in everything that came before you
+[323.86s -> 325.06s]  and then you.
+[325.06s -> 328.78s]  So you didn't really have a representation of the ceremony.
+[328.78s -> 335.46s]  You had a representation of Monet walked into the ceremony that you could use.
+[335.46s -> 342.98s]  So in contrast to that, convolutional neural networks basically say, well, kind of like
+[342.98s -> 347.98s]  an N-gram model, that we should be able to take N-grams of words, like two grams
+[347.98s -> 349.68s]  or three grams.
+[349.68s -> 354.58s]  So for the example, tentative deal reached to keep the government open, that we can take
+[354.62s -> 361.06s]  each three-gram tentative deal reached, deal reached to, reach to keep, to keep the government.
+[361.06s -> 365.88s]  And we can make some neural representation for each of those.
+[365.88s -> 372.22s]  So notice just being done for every N-gram for a certain N. So there's nothing linguistically
+[372.22s -> 375.62s]  or cognitively especially plausible here.
+[375.62s -> 380.98s]  But we're just going to sort of form representations of multi-word units, which will then group
+[380.98s -> 384.46s]  in some form further away later on.
+[384.46s -> 390.52s]  And the standard way of doing that is with convolutional neural networks.
+[390.52s -> 395.14s]  So the classic case of convolutional neural networks is in vision.
+[395.14s -> 399.18s]  The convolutional neural networks were invented for vision, where they gave you
+[399.18s -> 405.42s]  a kind of a translation invariant model so that you could recognize your kangaroo
+[405.42s -> 407.98s]  no matter where in the frame it was.
+[408.00s -> 413.94s]  And so this little picture here, which I'll just do the lower half slide, lower half
+[413.94s -> 420.38s]  of the slide is sort of what a convolutional neural network is doing in 2D vision.
+[420.38s -> 426.50s]  So the convolution is like a mask that you're sliding over the image.
+[426.50s -> 431.66s]  And the mask is defined by weights, which are the little things shown in red.
+[431.86s -> 440.30s]  And so for each place you slide your masks to, you're then calculating a score by taking
+[440.30s -> 446.50s]  what's effectively a dot product of the mask terms by the elements in that patch.
+[446.50s -> 451.82s]  And that's then filling in the matrix on the right that's shown in pink.
+[451.82s -> 459.14s]  And so that's then calculating our convolved feature from the image.
+[459.14s -> 460.42s]  That makes sense?
+[460.42s -> 461.42s]  Yeah.
+[462.18s -> 466.42s]  Well, what happens if we then want to do that for language?
+[466.42s -> 472.94s]  Well, for language we don't have a 2D picture, we've got a 1D picture, we've got a sequence
+[472.94s -> 473.94s]  of words.
+[473.94s -> 477.74s]  So we can have tentative deal reach to keep government open.
+[477.74s -> 480.82s]  So each of our words will have a word vector.
+[480.82s -> 485.78s]  I'm using four dimensional in my examples to keep it compact on my slide.
+[485.78s -> 492.98s]  And so then we can apply a filter that applies to an n-gram.
+[492.98s -> 497.14s]  So this is going to be a filter for a trigram.
+[497.14s -> 503.38s]  And so then we're going to slide that downwards in exactly the same way as for the vision
+[503.38s -> 506.68s]  case, apart from we're just sliding in one dimension.
+[506.68s -> 513.58s]  So I calculate the dot product of the filter and this 3 gram.
+[513.58s -> 519.06s]  And that gives me a value minus one if I did my arithmetic right, then I slide it down
+[519.06s -> 525.62s]  to the next position and work it out and I get minus 0.5, slide it down and get the
+[525.62s -> 527.14s]  other values.
+[527.14s -> 530.90s]  And then typically I can add on a bias term.
+[530.90s -> 535.50s]  So my bias is plus one in this example, and then I'll stick it through a non-linearity
+[535.50s -> 537.98s]  like a sigmoid or something like that.
+[537.98s -> 545.40s]  And so I'll be calculating a vector for a term for each of these three grams.
+[545.40s -> 550.10s]  And so that is a convolution for a single filter.
+[550.10s -> 555.26s]  And then commonly what I'm doing after that is deciding that I'm going to have more
+[555.26s -> 559.50s]  than one filter and I'll show that in a minute.
+[559.50s -> 566.64s]  In this example and in my vision example earlier, we sort of had shrinkage because we
+[566.64s -> 574.40s]  started off with seven words, but because we sort of slid these, you know, trigram
+[574.40s -> 579.60s]  over it, we only sort of had space for five trigrams.
+[579.60s -> 583.76s]  And so we ended up with something smaller than our input sentence.
+[583.76s -> 588.52s]  Often people want to keep it the same size and the way you can keep it the same size
+[588.52s -> 589.96s]  is by having padding.
+[589.96s -> 595.88s]  So if I put a zero padding at each end, well now I'm going to get seven trigrams
+[596.12s -> 600.76s]  coming out as corresponding to my original seven words.
+[600.76s -> 605.46s]  And normally I'll just sort of pad it with zeros like that.
+[605.46s -> 612.20s]  You can actually increase the size of things because if you add padding of two at each
+[612.20s -> 615.08s]  end, you can then have a wide convolution.
+[615.08s -> 618.28s]  And so seven will then go to nine different things.
+[618.28s -> 619.36s]  Okay.
+[619.36s -> 624.56s]  So if we only had one filter, things are pretty limiting.
+[624.56s -> 631.92s]  And so commonly as in the vision case, what we're going to do is define multiple filters
+[631.92s -> 636.68s]  and then we're going to be calculating a value for each of these filters over each
+[636.68s -> 638.44s]  of these trigrams.
+[638.44s -> 644.62s]  And so then we're getting out a new representation as a vector and, you know, depending on how
+[644.62s -> 649.68s]  many filters we have relative to what the word dimensionality is, we might end up with
+[649.68s -> 655.64s]  something that's shorter as in this example, the same length, or actually longer than
+[655.64s -> 661.34s]  what our input was in terms of word vectors.
+[661.34s -> 670.12s]  But commonly when we do that, we then in some way want to summarize all of these
+[670.12s -> 671.74s]  filters.
+[671.74s -> 678.36s]  And the most common way of doing that is to do something that's called max pooling.
+[678.36s -> 683.80s]  And max pooling is something you see quite a bit in neural networks in general.
+[683.80s -> 688.56s]  And the way to think of max pooling that I think makes sense is that you can think
+[688.56s -> 695.84s]  of max pooling as doing what you want if you want to run something that's like a
+[695.84s -> 697.68s]  feature detector.
+[697.68s -> 706.80s]  So you know, if you imagined that you learned these functions that will look at word vectors
+[707.04s -> 710.44s]  and that they will look for evidence of something particular.
+[710.44s -> 717.60s]  So you know, maybe this filter looks for the person is using I language, so it matches
+[717.60s -> 722.60s]  the words I, my, we, our, something like this.
+[722.60s -> 728.48s]  And you know, maybe this is a filter that matches, you know, speech verbs like or thinking
+[728.48s -> 734.24s]  verbs like think, say, said, told, et cetera like that.
+[734.24s -> 739.44s]  And so each of these is sort of some kind of feature of the text that you might want
+[739.44s -> 740.44s]  to detect.
+[740.44s -> 745.62s]  Well, if that's your model of it, when you sort of slide your feature detector down
+[745.62s -> 750.80s]  the piece of text, you sort of want to know, does this match anywhere in this piece
+[750.80s -> 757.04s]  of text is somewhere using an I word regardless of whether it's in the first, second, third
+[757.04s -> 758.80s]  or fourth position.
+[758.80s -> 763.94s]  And so that's effectively what you're getting out with max pooling, that a feature is counting
+[763.94s -> 769.90s]  as firing to the extent that it fires strongly in any position in the text that you could
+[769.90s -> 771.98s]  match.
+[771.98s -> 774.82s]  That's not the only way you can think of doing it.
+[774.82s -> 780.02s]  An alternative way you could do it is you could think of your feature detector
+[780.02s -> 786.94s]  as sort of measuring some quality of the text like casualness or learnedness or something
+[786.94s -> 788.02s]  like that.
+[788.02s -> 792.98s]  And then you might think, oh, well, for overall wanting to know how casual the text
+[793.02s -> 799.30s]  is, maybe I want to know the average of how casual it is in different parts of the text.
+[799.30s -> 803.06s]  And so then you can do the alternative of average pooling.
+[803.06s -> 805.26s]  And sometimes people do that as well.
+[805.26s -> 806.26s]  You can do both.
+[806.26s -> 811.02s]  You can both work on average pool and a max pool and put both of them into the feature
+[811.02s -> 812.18s]  detector.
+[812.18s -> 816.86s]  In general, for the kind of features people learn in neural networks, if you're just doing
+[816.86s -> 822.42s]  one or the other, the result does seem to be that max pooling is the most effective,
+[822.42s -> 830.58s]  that kind of does the feature fire metaphor tends in general to be the best way of thinking
+[830.58s -> 831.98s]  about things.
+[831.98s -> 832.98s]  Okay.
+[832.98s -> 840.90s]  So if you want to do all of this in PyTorch, conv1d, right, so that I guess the one-dimensional
+[840.90s -> 843.58s]  convolutions aren't the most common case.
+[843.58s -> 850.28s]  And so you're using conv1d and all these kind of things that you can then be specifying.
+[850.28s -> 853.84s]  So the output channels is the number of filters you have.
+[853.84s -> 859.92s]  The kernel size is saying the size is how big it is, which for my example was three.
+[859.92s -> 863.84s]  And then you can sort of just collapse things with the max pooling.
+[863.84s -> 865.96s]  Okay.
+[865.96s -> 872.00s]  There's a space of other things that you can also do with convolutional neural networks,
+[872.00s -> 879.18s]  which I think are sort of less useful and less used in language cases, but I can sort
+[879.18s -> 881.26s]  of say them quickly.
+[881.26s -> 886.98s]  So one thing you can do is sort of have a stride.
+[886.98s -> 893.70s]  Because when we sort of did every trigram of sort of zero tentative deal, then tentative
+[893.70s -> 898.56s]  deal reach, then deal reach two, you could feel like, well, they're overlapping each
+[898.56s -> 899.56s]  other a lot.
+[899.56s -> 902.26s]  So they've actually got very similar stuff in them.
+[902.26s -> 906.66s]  And that would be even more so if we weren't using three grams, we were using something
+[906.66s -> 908.22s]  like five grams.
+[908.26s -> 912.88s]  So something that you can do is the stride is sort of how much you move along.
+[912.88s -> 919.06s]  So if you move along two, you'd have one trigram that's padding tentative deal.
+[919.06s -> 922.10s]  And then the next one would then be deal reach two.
+[922.10s -> 926.36s]  And then the next one would be to keep government so that they're overlapping by
+[926.36s -> 930.76s]  less as you go through it.
+[930.80s -> 940.00s]  Another thing that you can then do that's sort of stride-like is rather than doing
+[940.00s -> 947.58s]  max pooling over the entire thing, you could do more of a local max pool.
+[947.58s -> 953.48s]  So you could think that, well, I want to have this feature detector for something
+[953.48s -> 955.48s]  like use of eye language.
+[955.48s -> 959.96s]  But if it's a big long sentence and there's eye language at four different points, maybe
+[959.96s -> 963.60s]  you should get four points for that rather than just sort of the one point that you're
+[963.60s -> 965.52s]  going to get from max pooling.
+[965.52s -> 970.78s]  So you could sort of do local max pooling sensitive to the stride.
+[970.78s -> 976.08s]  So here I could look at the first two of these and max pool those two, then the next
+[976.08s -> 981.64s]  two and max pool those, the next two and max pool those, and the next two and max pool
+[981.64s -> 982.64s]  those.
+[982.64s -> 987.20s]  And you could sort of then end up with this sort of local max pooling as you go
+[987.20s -> 989.64s]  along.
+[989.64s -> 992.60s]  Okay.
+[992.60s -> 1001.12s]  And then one other idea that's sort of related that you can do is, well, another way of
+[1001.12s -> 1007.80s]  capturing sort of does something match in multiple places is rather than only keeping
+[1007.80s -> 1013.46s]  the one max in each column, maybe you could just do a K max so you could keep the two
+[1013.46s -> 1015.90s]  maximum things in a column.
+[1015.90s -> 1021.50s]  And that might be also be a way of seeing whether something is detected in two places
+[1021.50s -> 1023.50s]  or not.
+[1023.50s -> 1024.50s]  Okay.
+[1024.50s -> 1029.74s]  Then I've got lots of notions here.
+[1029.74s -> 1030.74s]  Okay.
+[1030.74s -> 1042.50s]  So dilation is then the notion that what we'd like to do is sort of form our trigrams
+[1042.50s -> 1047.42s]  not only as adjacent things, but things that are spaced out.
+[1047.42s -> 1053.92s]  So after having done our first layer of convolutional filters that took trigrams that
+[1053.92s -> 1060.24s]  got us to that sort of top right part here, we could then do a dilated trigram
+[1060.24s -> 1066.78s]  convolution, which means that we're going to take the first, third and fifth things
+[1066.78s -> 1072.30s]  and combine them in a convolutional filter.
+[1072.30s -> 1078.30s]  And then we'll take the second, fourth and sixth things and combine them in a convolutional
+[1078.30s -> 1079.30s]  filter.
+[1079.30s -> 1085.14s]  And so we've then got a trigram filter, but it sort of has a bigger range of size
+[1085.14s -> 1087.26s]  that it can see.
+[1087.26s -> 1093.10s]  And that's sometimes used more commonly used in places like speech than a natural language.
+[1093.10s -> 1094.36s]  Okay.
+[1094.36s -> 1100.34s]  So those are the kind of tools we have for calculating things with these convolutions
+[1100.34s -> 1101.66s]  over text.
+[1101.66s -> 1107.46s]  And so next what I want to do is tell you about a couple of pieces of work that made
+[1107.46s -> 1110.70s]  use of convolutions for natural language processing.
+[1110.70s -> 1116.82s]  I guess this is a decade old now because this is from 2014.
+[1116.82s -> 1122.94s]  This is the single most famous piece of work that made use of convolutional neural
+[1122.94s -> 1126.26s]  networks for natural language processing.
+[1126.26s -> 1130.30s]  And Yoon Kim is now an assistant professor at MIT.
+[1130.30s -> 1135.52s]  I mean, in retrospect, it's sort of actually pretty simple.
+[1135.52s -> 1140.74s]  But I guess, you know, he got in early with the idea of, hey, maybe we could use
+[1140.74s -> 1149.02s]  convolutions for NLP and do kind of a clear example of that that worked pretty well.
+[1149.02s -> 1153.98s]  And so this piece of work is very well known.
+[1153.98s -> 1158.36s]  So this was writing a sentiment classifier.
+[1158.36s -> 1164.28s]  So looking at a sentence and deciding whether it's positive or negative.
+[1164.28s -> 1167.96s]  And actually, for both the kind of models that I'm going to talk about today, we're
+[1167.96s -> 1173.60s]  going to use examples that are doing sentiments classification.
+[1173.60s -> 1179.08s]  He also considered other tasks, subjective or objective language, question classification
+[1179.08s -> 1184.36s]  as to what they were about, but the main application was doing sentiment analysis.
+[1184.36s -> 1192.48s]  So what you're going to be doing, this paper shows things more in his notation, but it's
+[1192.48s -> 1197.74s]  exactly the same as we've just been talking about, that you're taking n-grams of word
+[1197.74s -> 1199.16s]  vectors.
+[1199.16s -> 1206.88s]  You're going to be multiplying them by a convolution and calculating new vectors.
+[1206.88s -> 1212.04s]  And it's going to be done in his model for different sizes of n-grams.
+[1212.04s -> 1218.44s]  So he's going to have some convolutional filters that look at bigrams, some at trigrams,
+[1218.44s -> 1224.56s]  and some of them that look at fourgrams.
+[1224.56s -> 1229.58s]  And then those just slid across the positions in the sentence.
+[1229.58s -> 1237.04s]  Then having done that, it then does max pooling, as we've been talking about, which gives
+[1237.04s -> 1241.84s]  a single number coming out of each filter.
+[1241.84s -> 1247.24s]  And those max pooled numbers from each filter are then going to be used as a classifier
+[1247.24s -> 1254.06s]  in a final, simple, softmax layer to give the full answers.
+[1254.06s -> 1259.20s]  There's one other thing that came up in this paper, which is kind of just an interesting
+[1259.20s -> 1265.98s]  general idea to be aware of, and it was something he sort of pioneered, which is
+[1265.98s -> 1276.94s]  the following, that it's a very common case for when you're sort of, I guess this again
+[1276.94s -> 1283.36s]  occurs less with huge pre-trained transformers, but for sort of the classic case of models
+[1283.36s -> 1289.70s]  where you had word vectors, and then you were training some neural network model on
+[1289.70s -> 1297.58s]  some supervised data, there was this following pitfall of what happened when you fine-tuned
+[1297.58s -> 1299.32s]  word vectors.
+[1299.32s -> 1306.14s]  And so the setting is, you know, we've started off with our pre-trained word vectors from
+[1306.14s -> 1313.10s]  GloVe or Word2Vec or whatever it is, and then we've got a smaller sentiment analysis
+[1313.10s -> 1321.14s]  data set, and that we're going to train a sentiment classifier, and that will involve
+[1321.14s -> 1327.50s]  not only learning the parameters of our sentiment classifier, but also we can backprop
+[1327.50s -> 1331.60s]  into the word vector representations.
+[1331.60s -> 1337.06s]  And if you do that, I mean, it seems like that should be a good idea, because, you
+[1337.06s -> 1344.42s]  know, normal word vectors aren't, you know, especially attuned to predicting sentiment
+[1344.42s -> 1352.02s]  correctly, they're sort of more attuned to meaning of words, as to sort of just what
+[1352.02s -> 1353.66s]  words are about.
+[1353.66s -> 1360.62s]  And so it seems like it should help you if you could backprop into the word vectors
+[1360.62s -> 1363.10s]  and change them as you go along.
+[1363.14s -> 1367.02s]  But if you do that, there tends to be a problem.
+[1367.02s -> 1374.02s]  And the problem is, what you'll find is that some words will be in your sentiment
+[1374.02s -> 1382.78s]  training data set, and when you learn with backprop, these word vectors will move,
+[1382.78s -> 1388.06s]  but some words just won't be in your training data, and they're going to stay exactly
+[1388.06s -> 1393.90s]  where they were in the word-to-vec vectors, because there's nothing to move them around.
+[1393.90s -> 1400.22s]  So what tends to happen is you sort of started off like this, where all of tedious, dull,
+[1400.22s -> 1405.86s]  and plotting were close by each other as having similar meanings, and they're indicators
+[1405.86s -> 1407.82s]  of something negative.
+[1407.82s -> 1414.12s]  But after you've done your training, tedious and dull, as part of backprop, have moved
+[1414.16s -> 1420.00s]  over here, where they're part of the negative land, and the classification boundaries moved
+[1420.00s -> 1423.16s]  over here, but plotting wasn't in the training set.
+[1423.16s -> 1428.88s]  So it's just sitting exactly where it was at the start of the process, and now it's
+[1428.88s -> 1432.72s]  being treated as a positive word, which is completely wrong.
+[1432.72s -> 1441.44s]  And so that's tended to have the result that when people sort of train language neural
+[1441.44s -> 1449.76s]  network on a small supervised data set, you've got kind of ambivalent results, that sometimes
+[1449.76s -> 1454.76s]  doing backprop into the word vectors would help, because you could specialize your word
+[1454.76s -> 1459.80s]  vectors to your task, but sometimes it would hurt you because of this kind of effect
+[1459.80s -> 1465.56s]  that you sort of messed up the semantic relations that applied over the, that were
+[1465.56s -> 1470.40s]  captured reasonably well in the initial word vectors.
+[1470.40s -> 1476.48s]  So the way that Yoon Kim dealt with that was a fairly simple way.
+[1476.48s -> 1485.40s]  He just doubled his number of channels, and so he made two copies of each channel, each
+[1485.40s -> 1491.84s]  filter in his convolutional neural network, and for one of them it used the fine-tuned
+[1491.84s -> 1496.92s]  word vectors, and for one of them it kept the original word vectors, and then he could
+[1496.92s -> 1500.20s]  have the best of both worlds.
+[1500.20s -> 1509.72s]  Okay, so this picture captures the sort of whole of his network, and this picture actually
+[1509.72s -> 1514.90s]  comes from a follow-on paper, which produced this nice picture.
+[1514.90s -> 1520.44s]  So we start off with a sentence, I like this movie very much, which should be classified
+[1520.44s -> 1522.04s]  positive.
+[1522.04s -> 1528.00s]  So we have words and their word vectors, and so then you're going to have convolutional
+[1528.00s -> 1535.72s]  filters that are both bigram filters, trigram filters, and fourgram filters, and at each
+[1535.72s -> 1541.64s]  of those sizes you're going to have ones that work on the unfine-tuned word vectors
+[1541.64s -> 1545.36s]  and the fine-tuned word vectors.
+[1545.36s -> 1554.44s]  And so you're going to put these filters and slide them over the text and get representations,
+[1554.44s -> 1560.68s]  and the way he's doing this, the filters are done without padding, so that the fourgram
+[1560.68s -> 1565.76s]  filters, you're getting smaller vectors coming out, and the bigram filters, you've
+[1565.76s -> 1568.08s]  got bigger vectors coming out.
+[1568.08s -> 1573.92s]  And so then for each of these, you're then going to max pool, so you're just getting
+[1573.92s -> 1579.56s]  the highest value from it, and then you're getting the highest value from the ones with
+[1579.56s -> 1582.76s]  the fine-tuning of the word vectors and the ones not.
+[1582.76s -> 1589.96s]  And so you're getting one feature out of each filter, you're then concatenating all
+[1589.96s -> 1596.52s]  of those max pooled outputs together, so you're getting then one vector for the entire
+[1596.52s -> 1602.48s]  sentence, which is a fixed size reflecting the number of filters, and then you're just
+[1602.48s -> 1609.32s]  sticking this as a straightforward linear classifier into a softmax that's then giving
+[1609.32s -> 1616.60s]  you a probability of a positive or negative, and that was the entire model.
+[1616.60s -> 1624.88s]  And the interesting thing was this actually worked pretty well for natural language classification
+[1624.88s -> 1625.88s]  tasks.
+[1625.88s -> 1629.60s]  So this is a big table of results from his paper.
+[1629.60s -> 1636.56s]  So there are sentiment data sets like the Stanford Sentiment Treebank, two versions
+[1636.56s -> 1638.08s]  of that.
+[1638.08s -> 1640.36s]  Movie reviews is another sentiment data set.
+[1640.36s -> 1643.88s]  There's a subjectivity classifier.
+[1643.88s -> 1647.96s]  The Trek was the kind of question type classifier.
+[1647.96s -> 1659.56s]  So various data sets, and that various people, including us at Stanford, I guess all of
+[1659.56s -> 1667.08s]  these Sotre et al. results were ones we were doing at Stanford, had built lots of
+[1667.08s -> 1670.12s]  models on various of these data sets.
+[1670.12s -> 1676.88s]  And his argument was that by using this simple convolutional neural network, you could
+[1676.88s -> 1683.60s]  do as well, sometimes better than any of these other models that were being considered
+[1683.60s -> 1686.44s]  at the time for sentiment analysis.
+[1686.44s -> 1695.84s]  Now there was at least one way in which maybe that comparison was too generous to the CNN.
+[1695.84s -> 1703.04s]  So because if you remember back when we were doing dropout, and we said dropout is
+[1703.04s -> 1709.46s]  such a good idea, I mean dropout I think came out in 2012, if I'm remembering correctly.
+[1709.46s -> 1715.84s]  So the reality is a lot of these other methods were being written before dropout appeared
+[1715.88s -> 1719.20s]  on the scene, whereas he was using dropout.
+[1719.20s -> 1723.72s]  And that gave him an advantage and sort of better experimental technique.
+[1723.72s -> 1730.64s]  Might have been to redo the other models with dropout, which he didn't.
+[1730.64s -> 1735.72s]  But nevertheless, it sort of shows that you could get strong results using convolutional
+[1735.72s -> 1740.56s]  neural networks with just a very simple architecture.
+[1740.56s -> 1742.46s]  Yeah.
+[1742.46s -> 1744.96s]  So that's one more thing that you can do.
+[1744.96s -> 1749.84s]  And so, I mean, the thing to think about here is we have this sort of toolkit of ways
+[1749.84s -> 1751.42s]  that you can do things.
+[1751.42s -> 1757.44s]  We started off with word vectors and bags of vectors, which you could use for simple
+[1757.44s -> 1759.04s]  classification.
+[1759.04s -> 1766.56s]  We talked early on about window models, and window models are sort of like what you get
+[1766.56s -> 1771.94s]  for convolutional neural networks, but sort of more ad hoc.
+[1771.94s -> 1777.58s]  Then we have convolutional neural networks, which are definitely good for classification
+[1777.58s -> 1780.90s]  and very easy to parallelize, which is good.
+[1780.90s -> 1785.74s]  Then we talked about recurrent neural networks, which seem to be cognitively plausible reading
+[1785.74s -> 1791.92s]  through sentences from left to right, but aren't easy to parallelize.
+[1791.92s -> 1798.26s]  And then we've talked about transformers, which to some extent is our best model for
+[1798.26s -> 1801.06s]  NLP and is being used everywhere.
+[1801.06s -> 1805.52s]  Then indeed, what's happening now is that things are going in reverse, and people are
+[1805.52s -> 1810.46s]  increasingly using transformers for vision as well, though there's still, I think, more
+[1810.46s -> 1816.46s]  debate in the vision world as between CNNs and transformers, with some people arguing
+[1816.46s -> 1820.38s]  that both of them have complementary advantages.
+[1820.38s -> 1822.70s]  OK.
+[1822.70s -> 1830.22s]  Couple of other just facts on the side, and then I'll show you one other bigger,
+[1830.22s -> 1834.36s]  fancier convolutional neural network model for language.
+[1834.36s -> 1841.42s]  So we talked about, for transformer models, the use of layer normalization, which sort
+[1841.42s -> 1848.06s]  of keeps the size of the numbers in the middle layers of the neural network about
+[1848.06s -> 1854.50s]  the same by giving zero mean and unit variance.
+[1854.50s -> 1857.64s]  There are slightly different ways that you can do that.
+[1857.64s -> 1863.68s]  For convolutional neural networks, a standard thing to be using is batch normalization.
+[1863.68s -> 1869.48s]  And indeed, batch normalization was the thing that was invented first.
+[1869.48s -> 1875.24s]  And sort of layer normalization and batch normalization are sort of doing the same
+[1875.24s -> 1881.48s]  thing of sort of scaling numbers to give them zero mean and unit variance.
+[1881.80s -> 1888.68s]  The way that they differ is sort of under what dimensions they're doing their calculations.
+[1888.68s -> 1894.12s]  So that layer norm is calculating statistics across the feature dimension, whereas batch
+[1894.12s -> 1901.40s]  norm is normalizing all the elements in the batch for each feature independently.
+[1901.40s -> 1903.52s]  OK.
+[1903.52s -> 1911.20s]  One other little concept that turns up, which actually sort of connects a bit to transformers
+[1911.20s -> 1915.76s]  as well, there's this sort of funny thing that you can, all of what I presented so
+[1915.76s -> 1924.16s]  far was sort of convolutions that are sum n-gram, bi-gram, tri-gram, four-gram.
+[1924.16s -> 1929.24s]  And so there are also size one convolutions.
+[1929.24s -> 1934.12s]  And at first sight, that seems to make no sense at all, because what's the point
+[1934.12s -> 1939.20s]  of doing a size one convolution because you've just got one thing and it's staying just
+[1939.20s -> 1940.60s]  one thing.
+[1940.64s -> 1947.48s]  But it actually does make sense because it corresponds to having a little fully connected
+[1947.48s -> 1952.24s]  layer that's only looking at the representation in one position.
+[1952.24s -> 1958.08s]  So in a language term is taking a word vector and putting it through a fully connected
+[1958.08s -> 1964.00s]  neural network to produce a new representation just of that word.
+[1964.00s -> 1967.72s]  And that's sort of actually what we also have with the fully connected layers and
+[1967.72s -> 1973.00s]  transformers, right, that you've got a fully connected layer that's just at one, well,
+[1973.00s -> 1978.80s]  sub-word token position and calculates a new representation for it.
+[1978.80s -> 1986.32s]  And so that allows you to sort of create new representations with actually many fewer
+[1986.32s -> 1994.00s]  parameters than if you're allowing a fully connected layer across the entire sentence.
+[1994.00s -> 1995.56s]  OK.
+[1995.56s -> 2003.12s]  And so this is then a more recent version of a convolutional neural network, still again
+[2003.12s -> 2013.96s]  used for text classification, but a much more complex one from Kano et al in 2017.
+[2013.96s -> 2020.24s]  And again, this was still at the stage in which LSTM sequence models were dominant
+[2020.24s -> 2021.00s]  in NLP.
+[2021.00s -> 2028.20s]  I guess in 2017, this is sort of the same year the first transformer paper came out.
+[2028.20s -> 2037.40s]  And the motivations were sort of comparing vision and language.
+[2037.40s -> 2044.80s]  And so at that point in time, convolutional neural network models in vision were already
+[2044.80s -> 2046.16s]  very deep models.
+[2046.16s -> 2052.80s]  So people were using things like ResNet models that had 30, 50, 100 layers in them.
+[2052.80s -> 2059.28s]  And that stood in stark contrast to what was happening in the LSTM world for sequence
+[2059.28s -> 2064.72s]  models, where commonly people were just using two-layer sequence models.
+[2064.72s -> 2070.04s]  And if you're wanting to go further, you might be using a three-layer sequence model
+[2070.04s -> 2071.84s]  or a four-layer sequence model.
+[2071.88s -> 2077.32s]  Occasionally, if you got really, really deep, people would use eight-layer sequence models
+[2077.32s -> 2078.72s]  if they had a lot of data.
+[2078.72s -> 2084.52s]  But essentially, it was always in a single digit, the number of layers.
+[2084.52s -> 2092.44s]  And then the second thing was, in some sense, the vision models were more raw signal
+[2092.44s -> 2097.96s]  models because they were operating on the individual pixel level.
+[2098.00s -> 2104.08s]  Whereas in NLP, the standard was that we were using word-level models still
+[2104.08s -> 2105.52s]  in the transformer model.
+[2105.52s -> 2110.28s]  So it sort of seemed like things were much more grouped before they began.
+[2110.28s -> 2116.52s]  And so the idea of this paper is, well, maybe we could do NLP kind of like it
+[2116.52s -> 2117.68s]  was vision.
+[2117.68s -> 2122.60s]  So we'll start with the raw characters as our signal.
+[2122.60s -> 2128.40s]  We're going to put them into a deeper convolutional neural network
+[2128.40s -> 2133.20s]  and use the same kind of architecture we use for vision
+[2133.20s -> 2137.16s]  and use that for language classification tasks.
+[2137.16s -> 2141.52s]  And so that led to this VDCNN architecture,
+[2141.52s -> 2149.44s]  which is something that looks very like a vision system in design.
+[2149.44s -> 2150.92s]  And so what do we have here?
+[2150.96s -> 2158.08s]  So at the bottom, we have individual characters.
+[2158.08s -> 2163.76s]  And the individual characters get a 16D representation.
+[2163.76s -> 2167.60s]  And then you've got some sort of size of piece of text
+[2167.60s -> 2173.64s]  that you're classifying, which for them was 1,024.
+[2173.64s -> 2181.56s]  And then at each stage, we're then going to have convolutional blocks.
+[2181.56s -> 2187.32s]  And so these convolutional blocks have a whole bunch of filters.
+[2187.32s -> 2192.28s]  But they're also then going to group stuff together
+[2192.28s -> 2198.28s]  so that we're kind of starting to collapse into multi-character units.
+[2198.36s -> 2201.60s]  So we're starting off, first of all,
+[2201.60s -> 2209.92s]  having 64 size 3 convolutional filters.
+[2209.92s -> 2212.08s]  And so that gives us a representation
+[2212.08s -> 2217.08s]  of 64 times the window size.
+[2217.08s -> 2223.44s]  And then we're going to do that again and put it
+[2223.48s -> 2227.88s]  through another set of convolutional filters of size 3
+[2227.88s -> 2232.88s]  and 64 of them, which gets us sort of up to here.
+[2232.88s -> 2236.28s]  And then at each point, we also have residual connections,
+[2236.28s -> 2238.68s]  which we also saw in transformers,
+[2238.68s -> 2241.16s]  but were pioneered in the vision space
+[2241.16s -> 2244.48s]  so that we have a path that things can just go straight through.
+[2244.48s -> 2249.80s]  But then when we get to here, we're then going to do local pooling.
+[2249.80s -> 2256.52s]  So each pair of representations here will be pooled together.
+[2256.52s -> 2259.72s]  And so at that point, we've no longer
+[2259.72s -> 2264.12s]  got a length of the initial length of 1,024.
+[2264.12s -> 2270.04s]  We've now got a length of 512.
+[2270.04s -> 2274.48s]  So now we're going to be putting it through, again,
+[2274.48s -> 2276.72s]  sort of trigram convolutions.
+[2276.72s -> 2282.72s]  But now we're going to have 128 of those channels.
+[2282.72s -> 2285.08s]  We're going to repeat that again.
+[2285.08s -> 2287.68s]  And then we go to, again, group with pooling.
+[2287.68s -> 2295.48s]  So now we're going to have 256 long sequence,
+[2295.48s -> 2299.16s]  because we've done local pooling of each pair.
+[2299.16s -> 2303.76s]  And we're going to then have 256 filters at each stage.
+[2303.76s -> 2307.20s]  And we go up, and then we do local pooling again.
+[2307.20s -> 2310.00s]  So each of them is now representing
+[2310.00s -> 2312.96s]  an 8 gram of characters.
+[2312.96s -> 2316.72s]  And we're putting trigram filters over those 8 grams.
+[2316.72s -> 2321.08s]  So really, the amount of a sentence
+[2321.08s -> 2325.12s]  that the convolutional filters is seeing at this point
+[2325.12s -> 2326.68s]  is 24 characters.
+[2326.68s -> 2330.36s]  So sort of seeing something like six word sequences
+[2330.36s -> 2331.72s]  or something like that.
+[2331.72s -> 2335.80s]  More convolutional blocks there.
+[2335.80s -> 2338.40s]  There they then do this K-max pooling.
+[2338.40s -> 2341.24s]  So some of the ideas from the beginning of the lecture
+[2341.24s -> 2342.44s]  do show up.
+[2342.44s -> 2344.86s]  So you're then doing K-max pooling
+[2344.86s -> 2349.28s]  and finding the eight highest activations in the sequence.
+[2349.28s -> 2351.16s]  And that sort of makes sense for something
+[2351.16s -> 2353.32s]  like a text classifier, because you
+[2353.32s -> 2356.12s]  want to count up the amount of evidence, right?
+[2356.12s -> 2361.00s]  If you've got some category like, is this about,
+[2361.00s -> 2364.44s]  I don't know, copper mining?
+[2364.44s -> 2365.92s]  You want to be seeing where there's
+[2365.92s -> 2367.76s]  a bunch of places in the text that's
+[2367.76s -> 2370.38s]  talking about copper mining.
+[2370.38s -> 2372.16s]  And then right at the top, they
+[2372.16s -> 2374.96s]  have several fully connected layers, which again,
+[2374.96s -> 2380.62s]  is very typical of what you are finding in vision networks,
+[2380.62s -> 2384.56s]  such as something like VGGNet, that after you've
+[2384.56s -> 2388.04s]  done a whole bunch of convolutional layers,
+[2388.04s -> 2390.50s]  you just stick it through multiple fully connected
+[2390.50s -> 2391.94s]  layers at the top.
+[2391.94s -> 2394.02s]  And so that's what they're doing as well.
+[2394.02s -> 2397.94s]  And this is your architecture for doing text understanding.
+[2400.86s -> 2404.58s]  OK, I think I talked through that in a lot of detail.
+[2404.58s -> 2407.06s]  So I'll skip this slide.
+[2407.06s -> 2412.24s]  Yeah, so their experiments were done on text classification
+[2412.24s -> 2418.18s]  data sets, so various news classification data sets,
+[2418.18s -> 2422.94s]  DBpedia ontology, then doing sentiment analysis on Yelp
+[2422.94s -> 2426.58s]  reviews and Amazon reviews.
+[2426.58s -> 2431.98s]  And here are results from their ones.
+[2431.98s -> 2436.94s]  So they're taking the previous known best published results,
+[2436.94s -> 2441.02s]  which are shown here in table 4.
+[2441.02s -> 2445.74s]  And then they're considering whether they can do better
+[2445.74s -> 2451.30s]  by using their architecture, and that they used architectures
+[2451.30s -> 2455.78s]  of different lengths in terms of the number of layers,
+[2455.78s -> 2459.18s]  of nine layers, 17, and 29 layers.
+[2459.18s -> 2463.22s]  And the result of the paper is in all cases,
+[2463.22s -> 2466.38s]  they got the best results by their deepest network, which
+[2466.38s -> 2469.34s]  was a 29 layer model, which is sort of then
+[2469.34s -> 2473.36s]  sort of similar to what people were doing in vision.
+[2473.40s -> 2477.12s]  And then there's some variation as to which
+[2477.12s -> 2480.68s]  was best by using the max pooling or the kmax pooling.
+[2480.68s -> 2483.34s]  But in general, it was always the deep model,
+[2483.34s -> 2487.80s]  and it varied a bit according to the data set.
+[2487.80s -> 2489.52s]  But at least sometimes they were
+[2489.52s -> 2492.08s]  able to produce the best results that were known.
+[2492.08s -> 2495.28s]  So I mean, I guess for these text classification,
+[2495.28s -> 2499.48s]  previous results were slightly better than their results.
+[2499.48s -> 2501.44s]  But for some of the other ones,
+[2501.44s -> 2505.88s]  like the DBP and the Yelp, their results
+[2505.88s -> 2508.68s]  are all simple for both the Yelp data sets.
+[2508.68s -> 2510.64s]  Their results were better than the best known
+[2510.64s -> 2513.32s]  previous results.
+[2513.32s -> 2517.00s]  The Amazon ones, one was better, one was worse.
+[2517.00s -> 2519.56s]  But to a first approximation, this
+[2519.56s -> 2522.64s]  meant that they could basically reach the state of the art
+[2522.64s -> 2526.16s]  of a text classification system with something
+[2526.16s -> 2530.84s]  that was just a deep convolutional neural network
+[2530.84s -> 2533.36s]  starting from a character level with none
+[2533.36s -> 2536.36s]  of the sort of having learned word vectors in advance
+[2536.36s -> 2537.84s]  or anything like that.
+[2537.84s -> 2540.18s]  And so that was a pretty cool achievement,
+[2540.18s -> 2544.88s]  which showed that you could go a fair way in doing things
+[2544.88s -> 2547.52s]  with just this sort of raw character level
+[2547.52s -> 2549.72s]  convolutional neural networks, sort of more
+[2549.72s -> 2550.80s]  like a vision system.
+[2553.48s -> 2554.52s]  OK.
+[2554.52s -> 2556.04s]  So that's that.
+[2556.04s -> 2559.46s]  And then for the final piece of the class,
+[2559.50s -> 2562.34s]  I then want to tell you about something
+[2562.34s -> 2566.22s]  in the other extreme, which is about tree
+[2566.22s -> 2568.06s]  recursive neural networks.
+[2568.06s -> 2570.46s]  So tree recursive neural networks
+[2570.46s -> 2573.98s]  is a framework that me and students
+[2573.98s -> 2575.54s]  developed at Stanford.
+[2575.54s -> 2580.06s]  So I mean, really, when I first
+[2580.06s -> 2583.78s]  got into neural networks in 2010,
+[2583.78s -> 2587.62s]  that sort of for about the first five years
+[2587.62s -> 2589.82s]  that what me and students worked on
+[2589.82s -> 2592.38s]  was doing these tree recursive neural networks.
+[2592.38s -> 2596.54s]  And so they were sort of the Stanford brand.
+[2596.54s -> 2603.26s]  Ultimately, they didn't prove as successful as other things
+[2603.26s -> 2604.74s]  that came along.
+[2604.74s -> 2607.50s]  But I think they're linguistically interesting.
+[2607.50s -> 2611.04s]  And I think there's a clear idea here, which is still
+[2611.04s -> 2612.62s]  an idea that exists.
+[2612.62s -> 2615.88s]  And I think there may be still some things to do with,
+[2615.88s -> 2617.54s]  which I'll come back to.
+[2617.54s -> 2619.78s]  But the starting point is essentially
+[2619.78s -> 2624.02s]  being motivated by structure of human language.
+[2624.02s -> 2626.50s]  And so most of this slide is sort of
+[2626.50s -> 2631.42s]  filled by a paper from Noam Chomsky and colleagues
+[2631.42s -> 2635.62s]  discussing their views of the human faculty of language,
+[2635.62s -> 2639.64s]  what it is, who has it, and how did it evolve.
+[2639.64s -> 2644.70s]  And I don't want to dwell on this in too much detail.
+[2644.70s -> 2648.02s]  But essentially, in this paper, what they argue
+[2648.02s -> 2652.66s]  is that the defining property of human language that's
+[2652.66s -> 2657.02s]  not observed in other things that humans do
+[2657.02s -> 2661.18s]  is having that language has this recursive structure,
+[2661.18s -> 2663.94s]  that you have this hierarchical nesting where
+[2663.94s -> 2667.54s]  the same structure repeats inside itself.
+[2667.54s -> 2671.40s]  So if you have an example like the person standing
+[2671.40s -> 2673.06s]  next to the man from the company that
+[2673.06s -> 2677.38s]  purchased the firm that you used to work at, what you have
+[2677.38s -> 2682.76s]  is the whole of this is a noun phrase,
+[2682.76s -> 2685.54s]  the person headed by the person.
+[2685.54s -> 2687.54s]  And then it's standing next to,
+[2687.54s -> 2689.82s]  then the first square brackets here
+[2689.82s -> 2693.26s]  is another noun phrase, the man from.
+[2693.26s -> 2695.26s]  Then inside that prepositional phrase
+[2695.26s -> 2697.10s]  is another noun phrase, the company
+[2697.10s -> 2700.58s]  that purchased the firm.
+[2700.62s -> 2703.90s]  And then the firm is another noun phrase
+[2703.90s -> 2707.26s]  that has the relative clause modifier of the firm
+[2707.26s -> 2708.74s]  that you used to work at.
+[2708.74s -> 2710.86s]  So we have these embedded layers
+[2710.86s -> 2715.46s]  of noun phrases with the same syntactic structure
+[2715.46s -> 2716.94s]  underneath them.
+[2716.94s -> 2719.00s]  And so for the kind of formalisms
+[2719.00s -> 2723.46s]  that we use in linguistics of context-free grammar,
+[2723.46s -> 2726.10s]  it permits the kind of infinite embedding
+[2726.10s -> 2728.86s]  of nesting, which is the same kind of nesting
+[2728.86s -> 2732.38s]  that you get in programming languages, where you can sort
+[2732.38s -> 2736.54s]  of use if statements and nest them as deeply as you want
+[2736.54s -> 2739.02s]  to because you just have the same repeating
+[2739.02s -> 2740.58s]  recursive structure.
+[2740.58s -> 2742.70s]  Now, of course, human beings can't actually
+[2742.70s -> 2746.34s]  understand recursive, infinite recursion.
+[2746.34s -> 2749.70s]  And people don't actually produce infinite recursion
+[2749.70s -> 2752.26s]  that you could sort of say, oh, in practice,
+[2752.26s -> 2754.62s]  no one's going to go more than eight deep when
+[2754.62s -> 2756.18s]  they're saying a sentence.
+[2756.18s -> 2760.34s]  But in terms of the structure of what the language looks like,
+[2760.34s -> 2764.08s]  it seems like you should be able to do it infinitely deep.
+[2764.08s -> 2765.84s]  And when you actually start looking
+[2765.84s -> 2768.68s]  at the structures of sentences, they
+[2768.68s -> 2772.30s]  do sort of repeat over the same structure quite deeply.
+[2772.30s -> 2776.46s]  So this is an example of a Penn Treebank tree, which
+[2776.46s -> 2781.78s]  is sort of the best known constituency treebank.
+[2781.78s -> 2783.70s]  And so here's my random sentence.
+[2783.70s -> 2789.34s]  Analyst said, Mr. Stronach wants to resume a more influential role
+[2789.34s -> 2791.46s]  in running the company.
+[2791.46s -> 2795.86s]  And well, what we end up with, if we have these nested things
+[2795.86s -> 2800.22s]  of verb phrases, so running the company is a verb phrase,
+[2800.22s -> 2804.02s]  resume a more influential role in running
+[2804.02s -> 2807.10s]  the company is a bigger verb phrase,
+[2807.10s -> 2811.52s]  wants to resume a bigger role in running the company
+[2811.52s -> 2814.00s]  is an even bigger verb phrase.
+[2814.00s -> 2816.92s]  And then said, Mr. Stronach wants
+[2816.92s -> 2821.84s]  to resume a more influential role in running the company
+[2821.84s -> 2824.00s]  is an even bigger verb phrase.
+[2824.00s -> 2830.08s]  And so we have sort of one, two, three, four verb phrases
+[2830.08s -> 2832.88s]  all nested inside each other.
+[2832.88s -> 2835.96s]  And so the idea was, well, maybe we
+[2835.96s -> 2839.34s]  should be thinking of sentences as having this kind of tree
+[2839.34s -> 2842.82s]  structure and computing representations
+[2842.82s -> 2847.30s]  of meanings of sentences in terms of this tree structure.
+[2847.30s -> 2851.82s]  So we have words that have representations
+[2851.82s -> 2855.50s]  in word vector space like we saw right
+[2855.50s -> 2857.22s]  at the beginning of the class.
+[2857.22s -> 2861.50s]  But then we can have a phrase like the country of my birth.
+[2861.50s -> 2864.34s]  And the classic linguistic answer
+[2864.34s -> 2867.94s]  that you find both in linguistic semantics classes
+[2867.98s -> 2870.70s]  or philosophy of language is that we
+[2870.70s -> 2873.86s]  should construct representations of phrases
+[2873.86s -> 2877.10s]  using the principle of compositionality, which
+[2877.10s -> 2880.06s]  says that the meaning of a phrase or sentence
+[2880.06s -> 2883.02s]  is determined by the meanings of its words, which
+[2883.02s -> 2887.02s]  are our word vectors, and the rules that combine them.
+[2887.02s -> 2889.94s]  So maybe we could take the phrase structure
+[2889.94s -> 2895.34s]  tree of a sentence and combine the word vectors together
+[2895.34s -> 2896.86s]  by some means.
+[2896.86s -> 2899.74s]  And then we can construct a representation
+[2899.74s -> 2903.58s]  of the meaning of phrases in a more linguistic way,
+[2903.58s -> 2905.22s]  giving us a vector representation
+[2905.22s -> 2908.02s]  of the meaning of the phrase, which we could also
+[2908.02s -> 2910.02s]  put into our vector space.
+[2910.02s -> 2913.14s]  And we'd hope that a phrase like the country of my birth
+[2913.14s -> 2916.46s]  would appear in the vector space in a similar place
+[2916.46s -> 2921.70s]  to where words representing locations appeared.
+[2921.70s -> 2925.44s]  So what we want is to be able to start with word vectors
+[2925.44s -> 2928.92s]  and parse up a sentence.
+[2928.92s -> 2931.56s]  And as we parse the sentence, we're
+[2931.56s -> 2934.96s]  then going to be computing representations
+[2934.96s -> 2937.00s]  for the different phrases of the sentence.
+[2939.84s -> 2943.12s]  And so the difference here is now,
+[2943.12s -> 2949.20s]  you know, the difference between recursive and recurrent
+[2949.20s -> 2951.04s]  is sort of a fake difference, right?
+[2951.04s -> 2955.04s]  They both come from the same recur word.
+[2955.12s -> 2958.48s]  But rather than having the recursion just happening
+[2958.48s -> 2961.88s]  along a sequence as in a recurrent neural network,
+[2961.88s -> 2964.52s]  we're going to have the recursion happening
+[2964.52s -> 2966.28s]  up a tree structure.
+[2966.28s -> 2968.40s]  So we're computing representations
+[2968.40s -> 2972.28s]  for linguistically meaningful phrases.
+[2972.28s -> 2975.92s]  And so there are sort of, what
+[2975.92s -> 2978.92s]  we're going to do with that is, you know,
+[2978.92s -> 2984.20s]  the easy case is if we know the phrase structure tree,
+[2984.20s -> 2989.24s]  we can take the representations of the child nodes,
+[2989.24s -> 2991.72s]  put them into a neural network, which
+[2991.72s -> 2994.56s]  could give us the representation of the parent
+[2994.56s -> 2995.52s]  node.
+[2995.52s -> 2999.20s]  But we'd also like to find the tree structure.
+[2999.20s -> 3002.44s]  And so a way we could do that is then get a second thing
+[3002.44s -> 3004.04s]  out of the neural network.
+[3004.04s -> 3007.68s]  We could get a score for how plausible something
+[3007.68s -> 3009.84s]  is as a constituent.
+[3009.84s -> 3013.96s]  Does it make sense to combine these two nodes together
+[3013.96s -> 3016.20s]  to form a larger constituent?
+[3016.20s -> 3019.20s]  And then we can use that in a parser.
+[3019.20s -> 3024.60s]  So formally, the very simplest kind of tree neural network
+[3024.60s -> 3029.00s]  and the first one we explored was when we had two child
+[3029.00s -> 3034.04s]  vectors, we're going to be representing the parent
+[3034.04s -> 3038.20s]  vector by concatenating the two children,
+[3038.20s -> 3041.56s]  multiplying them by a matrix, adding a bias,
+[3041.56s -> 3043.56s]  putting it through a non-linearity
+[3043.56s -> 3046.64s]  to get a parent representation p.
+[3046.64s -> 3049.92s]  And then we'd score whether it was a good constituent
+[3049.92s -> 3057.16s]  by taking another vector of learned parameters, which
+[3057.16s -> 3060.60s]  would do a dot product with p.
+[3060.60s -> 3063.04s]  And that would give us a score as
+[3063.04s -> 3065.00s]  to whether this was a good constituent
+[3065.00s -> 3067.16s]  to include in your parse tree.
+[3067.16s -> 3071.04s]  And the same w parameters were used
+[3071.04s -> 3073.36s]  at all nodes of the tree in the same way
+[3073.36s -> 3079.40s]  as a recurrent neural network kept using the same parameters.
+[3079.40s -> 3085.88s]  OK, so if we had that, we could build a greedy parser.
+[3085.88s -> 3088.20s]  Because what we could do is we could start with all
+[3088.20s -> 3093.24s]  the word vectors, and we could just take every pair of words
+[3093.24s -> 3095.60s]  and put it through this system
+[3095.60s -> 3099.36s]  and calculate what the representation of that pair
+[3099.36s -> 3103.28s]  would be as a constituent and then get a score
+[3103.28s -> 3106.20s]  as to whether it seemed a good constituent or not.
+[3106.20s -> 3109.52s]  And then we could just greedily decide
+[3109.52s -> 3112.44s]  this is the best constituent, the cat.
+[3112.44s -> 3116.72s]  And so if we do a greedy parser, we can commit to that.
+[3116.72s -> 3119.08s]  And then, well, we already still
+[3119.08s -> 3121.92s]  know the possibilities of combining
+[3121.92s -> 3123.48s]  other pairs of words.
+[3123.48s -> 3127.00s]  And we could just additionally score
+[3127.00s -> 3130.52s]  how good the cat combined with sat
+[3130.52s -> 3135.72s]  is so that we're producing binary parse structures.
+[3135.72s -> 3139.92s]  So now the best pair to combine greedily is the mat.
+[3139.92s -> 3144.12s]  So we could combine them together and commit to those.
+[3144.12s -> 3147.20s]  We can score combining on with the mat.
+[3147.20s -> 3149.44s]  And now that seems the best thing.
+[3149.44s -> 3151.16s]  So we'll commit to that.
+[3151.16s -> 3153.12s]  And we just sort of keep on up.
+[3153.12s -> 3156.12s]  And we produce the binary parse of the sentence.
+[3156.12s -> 3161.60s]  And this gives us our sentence representation,
+[3161.60s -> 3164.36s]  which is like that.
+[3164.36s -> 3168.60s]  And so that gives us our simple RNN.
+[3168.60s -> 3174.08s]  And so back in 2011, we got some pretty decent results
+[3174.08s -> 3177.72s]  of showing that you could use this as a sentence parser that
+[3177.72s -> 3179.32s]  worked pretty well.
+[3179.32s -> 3183.44s]  But beyond that, the representations
+[3183.52s -> 3187.20s]  that we calculated for sentences and phrases
+[3187.20s -> 3189.64s]  were good enough representations
+[3189.64s -> 3191.60s]  that you would use it for tasks
+[3191.60s -> 3195.20s]  like sentence classification, sentiment analysis.
+[3195.20s -> 3199.96s]  And it works reasonably well.
+[3199.96s -> 3204.88s]  It only works reasonably well.
+[3204.88s -> 3208.48s]  Because if you start thinking about it further,
+[3208.48s -> 3211.56s]  there sort of were strong limitations
+[3211.56s -> 3216.04s]  of having this single W matrix that's used at all points
+[3216.04s -> 3218.32s]  to combine things.
+[3218.32s -> 3221.12s]  If you sort of have that architecture,
+[3221.12s -> 3223.56s]  you sort of can't have different forms
+[3223.56s -> 3226.24s]  of interaction between the different words.
+[3226.24s -> 3229.28s]  You're sort of just uniformly computing things.
+[3229.28s -> 3232.40s]  And that sort of stands in distinction to the fact
+[3232.40s -> 3235.16s]  that different kinds of things in natural language
+[3235.16s -> 3236.48s]  seem kind of different.
+[3236.48s -> 3241.04s]  You have different properties with verbs and their objects
+[3241.08s -> 3243.80s]  versus an adjective modifying a noun,
+[3243.80s -> 3246.00s]  just in terms of what the roles of the different words
+[3246.00s -> 3246.68s]  were.
+[3246.68s -> 3250.00s]  So we started to see limitations
+[3250.00s -> 3251.64s]  of this architecture.
+[3251.64s -> 3255.80s]  And so in following years, we started exploring other ways
+[3255.80s -> 3258.96s]  to build tree recursive neural networks, which
+[3258.96s -> 3263.36s]  had more flexibility as to how things were combined together.
+[3263.36s -> 3266.44s]  And I'm not going to show you all the details of all
+[3266.44s -> 3272.20s]  of that, but I will show you one more model
+[3272.20s -> 3275.76s]  that we used for building tree recursive neural networks
+[3275.76s -> 3279.16s]  and that was used in some of our sentiment analysis
+[3279.16s -> 3284.24s]  work called the Recursive Neural Tensor Network.
+[3284.24s -> 3287.32s]  It wasn't actually the final net version that we did.
+[3287.32s -> 3290.88s]  After that, we sort of started taking LSTM ideas
+[3290.88s -> 3294.32s]  and extending those to the tree-structured case.
+[3294.32s -> 3296.00s]  And we worked on tree LSTMs.
+[3296.00s -> 3298.92s]  But I'm not going to show that this year.
+[3298.92s -> 3303.04s]  But the idea of recursive neural tensor networks
+[3303.04s -> 3308.12s]  is when pairs of words or phrases combine together
+[3308.12s -> 3314.24s]  in linguistic semantics terms, depending on the pairs of words
+[3314.24s -> 3316.52s]  they modify each other in different ways.
+[3316.52s -> 3321.20s]  So if you have an adjective and noun like a red ball,
+[3321.20s -> 3323.84s]  sort of red is giving attributes of the noun.
+[3323.88s -> 3327.92s]  Whereas if you have something like a verb and its object,
+[3327.92s -> 3331.04s]  like kick the ball, you've got a very different role
+[3331.04s -> 3333.80s]  for the object as the right-hand side
+[3333.80s -> 3335.08s]  versus the red ball.
+[3335.08s -> 3336.84s]  It's sort of the opposite way around.
+[3336.84s -> 3339.84s]  So we want to have more flexibility
+[3339.84s -> 3343.12s]  in the way we can calculate meanings of phrases
+[3343.12s -> 3344.92s]  depending on what's in it.
+[3344.92s -> 3347.72s]  And the way we came up with doing that
+[3347.72s -> 3351.96s]  is to come up with what we call this neural tensor layer.
+[3351.96s -> 3354.80s]  And so the idea in the neural tensor layer
+[3354.80s -> 3364.36s]  is that we had the representations of the child
+[3364.36s -> 3366.40s]  words or phrases.
+[3366.40s -> 3375.68s]  And so rather than directly concatenating them and then
+[3375.68s -> 3378.60s]  putting it through a sort of a linear transformation
+[3378.60s -> 3380.92s]  like a regular neural network layer,
+[3380.92s -> 3384.20s]  instead what we could do is that we could
+[3384.20s -> 3388.52s]  learn in between matrices.
+[3388.52s -> 3390.72s]  And if we put several of those together,
+[3390.72s -> 3394.00s]  we're then getting a three-dimensional tensor.
+[3394.00s -> 3401.68s]  And we could multiply a vector by a tensor times a vector.
+[3401.68s -> 3407.44s]  And then we'll end up getting out vectors for each one.
+[3407.44s -> 3409.16s]  And we'll have multiple such vectors.
+[3415.92s -> 3419.24s]  And the place that we applied this model
+[3419.24s -> 3421.76s]  is for this task of sentiment analysis.
+[3421.76s -> 3424.08s]  So let me just tell you a little bit more
+[3424.08s -> 3426.20s]  of what we did here.
+[3426.20s -> 3428.32s]  And this is sort of, in fact, going backwards
+[3428.32s -> 3431.80s]  to the Stanford Sentiment Treebank that was already
+[3431.80s -> 3433.64s]  used in the Yoon Kim work.
+[3433.64s -> 3435.80s]  So the goal of sentiment analysis
+[3435.80s -> 3437.48s]  is to say whether a piece of text
+[3437.48s -> 3440.48s]  is positive, negative, or neutral.
+[3440.48s -> 3443.52s]  So a lot of the time, doing sentiment analysis
+[3443.52s -> 3446.44s]  is pretty easy.
+[3446.44s -> 3450.44s]  In the 2010s and probably even today,
+[3450.44s -> 3453.76s]  quite a few people's sentiment analysis systems
+[3453.76s -> 3458.64s]  are essentially just keyword matching, right?
+[3458.64s -> 3463.12s]  If you see great, marvelous, wonderful, positive sentiment,
+[3463.12s -> 3468.16s]  if you see something of poor, bad, negative sentiment.
+[3468.16s -> 3471.68s]  And so lots of the time, you can sort of effectively
+[3471.68s -> 3473.92s]  do a kind of dictionary matching
+[3473.92s -> 3478.28s]  and get pretty good sentiment, especially on longer documents.
+[3478.28s -> 3481.48s]  But on the other hand, people use language
+[3481.48s -> 3483.68s]  in lots of interesting ways.
+[3483.68s -> 3485.76s]  And it's not always that easy.
+[3485.76s -> 3488.28s]  So if you look at something like movie reviews,
+[3488.28s -> 3492.20s]  such as the snippets you get on Rotten Tomatoes,
+[3492.20s -> 3495.28s]  you get snippets like this and Rotten Tomatoes.
+[3495.28s -> 3497.80s]  With this cast and this subject matter,
+[3497.80s -> 3501.56s]  the movie should have been funnier and more entertaining.
+[3501.56s -> 3504.12s]  And if you just think of it as, OK, we're
+[3504.12s -> 3508.20s]  doing dictionary matching, there's the word entertaining.
+[3508.20s -> 3510.40s]  That's definitely positive.
+[3510.40s -> 3512.96s]  And funnier, that's positive.
+[3512.96s -> 3515.24s]  So there are two positive words.
+[3515.24s -> 3517.24s]  So this should be a positive review.
+[3517.24s -> 3519.52s]  But of course, it's not a positive review.
+[3519.52s -> 3524.36s]  This is a negative review because it's saying,
+[3524.36s -> 3526.12s]  well, I'm just reading it out again.
+[3526.12s -> 3528.00s]  With this cast and subject matter,
+[3528.00s -> 3530.64s]  the movie should have been funnier and more
+[3530.64s -> 3531.60s]  entertaining, right?
+[3531.60s -> 3535.24s]  So the compositional structure of human language
+[3535.24s -> 3540.80s]  goes together to mean that these, because it's
+[3540.80s -> 3545.56s]  buried under should have been, the funnier and entertaining
+[3545.56s -> 3547.60s]  are actually lacking.
+[3547.60s -> 3549.76s]  And so it's a negative review.
+[3549.76s -> 3551.72s]  And so these were the kind of examples
+[3551.72s -> 3554.04s]  that we were interested in and saying,
+[3554.04s -> 3557.68s]  could we actually understand the structure of sentences
+[3557.68s -> 3561.56s]  more and do a better job at sentiment analysis?
+[3561.56s -> 3566.32s]  And so up until this time, people had just
+[3566.32s -> 3570.56s]  had pieces of text and a classification judgment
+[3570.56s -> 3572.40s]  of positive and negative.
+[3572.40s -> 3574.96s]  So we decided we were going to do more than that
+[3575.00s -> 3578.36s]  and come up with the Stanford Sentiment Treebank, where
+[3578.36s -> 3583.04s]  what we did was passed up a whole lot of sentences,
+[3583.04s -> 3585.48s]  almost 12,000 of them.
+[3585.48s -> 3587.92s]  And then what we were going to do
+[3587.92s -> 3594.00s]  is put sentiment judgments on every linguistic phrase
+[3594.00s -> 3595.36s]  of the sentence.
+[3595.36s -> 3597.88s]  So for something like this example,
+[3597.88s -> 3601.20s]  with this cast as a phrase, no sentiment.
+[3601.20s -> 3603.92s]  So that would just be neutral.
+[3603.92s -> 3607.92s]  Entertaining is a phrase, a one-word phrase.
+[3607.92s -> 3609.68s]  Its sentiment is positive.
+[3613.24s -> 3617.40s]  Funnier and more entertaining, that's a phrase.
+[3617.40s -> 3619.84s]  Very positive.
+[3619.84s -> 3622.52s]  But then by the time we get embedded under
+[3622.52s -> 3624.76s]  should have been funnier and more entertaining,
+[3624.76s -> 3626.12s]  that's a bigger phrase.
+[3626.12s -> 3628.48s]  Its sentiment is now negative.
+[3628.48s -> 3629.88s]  And the movie should have been
+[3629.88s -> 3631.72s]  funnier and more entertaining.
+[3631.72s -> 3633.28s]  That's an even bigger phrase.
+[3633.28s -> 3634.52s]  It's negative.
+[3634.52s -> 3638.44s]  And so we were passing up trees like that.
+[3638.44s -> 3641.40s]  And these examples are very small.
+[3641.40s -> 3643.88s]  I'll show you a big examples later.
+[3643.88s -> 3647.24s]  But you can sort of just see that in the trees,
+[3647.24s -> 3650.20s]  there are blue nodes and orange nodes corresponding
+[3650.20s -> 3652.16s]  to positive and negative sentiment,
+[3652.16s -> 3655.04s]  reflecting units of the different sizes.
+[3655.04s -> 3657.68s]  And so the interesting thing is then
+[3657.68s -> 3661.24s]  this gave us a richer annotated data set,
+[3661.24s -> 3664.84s]  because it's not only sort of whole sentences
+[3664.84s -> 3668.08s]  or whole articles that were annotated for sentiment.
+[3668.08s -> 3672.28s]  We had annotations for different phrases.
+[3672.28s -> 3675.72s]  And simply the fact that you were annotating phrases
+[3675.72s -> 3678.92s]  meant that you could learn more from the examples.
+[3678.92s -> 3681.56s]  So even if you were using something very simple
+[3681.56s -> 3683.88s]  like a naive Bayes classifier,
+[3683.88s -> 3689.04s]  because there are annotations on words and smaller phrases,
+[3689.04s -> 3691.84s]  you could learn a bit more about which were positive
+[3691.84s -> 3693.36s]  and which were negative.
+[3693.36s -> 3697.64s]  And so that was the first result that we could.
+[3697.64s -> 3702.44s]  People, a baseline method of a bigram naive Bayes
+[3702.44s -> 3706.04s]  classifier, which is a very common sentiment classifier,
+[3706.04s -> 3708.88s]  that if you just trained with sentiment classifiers,
+[3708.88s -> 3711.56s]  you got 79% on this data set.
+[3711.56s -> 3719.00s]  If you trained using every node of the tree bank,
+[3719.00s -> 3720.40s]  you got 83%.
+[3720.40s -> 3722.08s]  So you got a 4% lift.
+[3722.08s -> 3724.88s]  And so that was kind of good.
+[3724.88s -> 3730.20s]  These other two lines show two of our early tree RNNs.
+[3730.20s -> 3731.76s]  And the negative part of the result
+[3731.76s -> 3736.72s]  is they weren't really better than a bigram naive Bayes
+[3736.72s -> 3737.60s]  classifier.
+[3737.60s -> 3740.48s]  They were better than a unigram naive Bayes classifier.
+[3740.48s -> 3744.24s]  But a lot of sort of the extra information
+[3744.24s -> 3747.96s]  that you want to capture for sentiment analysis,
+[3747.96s -> 3751.00s]  you can get from bigrams, because that can already
+[3751.00s -> 3755.44s]  tell you sort of not good, somewhat interesting,
+[3755.44s -> 3759.04s]  and things like that.
+[3759.04s -> 3761.40s]  But then, so the other hope was
+[3761.40s -> 3763.44s]  to have a more powerful model.
+[3763.44s -> 3767.56s]  And so that then led into use of this recursive neural tensor
+[3767.56s -> 3771.68s]  network, which allowed sort of the mediated multiplicative
+[3771.68s -> 3774.68s]  interactions between word or phrase vectors.
+[3778.28s -> 3780.36s]  And so we built that.
+[3780.36s -> 3783.40s]  And so then here are the results of that model
+[3783.40s -> 3785.52s]  that's shown in red.
+[3785.52s -> 3789.64s]  So by having our recursive neural tensor network,
+[3789.64s -> 3795.20s]  we were able to build a somewhat better neural network
+[3795.20s -> 3800.12s]  that performed at least reasonably better
+[3800.12s -> 3803.40s]  than a bigram naive Bayes model, right?
+[3803.40s -> 3806.64s]  That we were getting sort of about 2.5% better
+[3806.64s -> 3809.36s]  than a bigram naive Bayes model.
+[3809.36s -> 3811.12s]  So that was progress.
+[3811.12s -> 3813.52s]  But I think perhaps the more interesting thing
+[3813.52s -> 3816.68s]  isn't sort of the aggregate results, but the fact
+[3816.68s -> 3821.48s]  that because we were building up this model,
+[3821.48s -> 3827.20s]  the computed representations over a constituency tree,
+[3827.20s -> 3831.88s]  that it actually made judgments of different parts of sentences
+[3831.88s -> 3833.64s]  and how they combined.
+[3833.64s -> 3837.08s]  So here's the movie review sentence.
+[3837.08s -> 3839.96s]  There are slow and repetitive parts,
+[3839.96s -> 3843.44s]  but it has just enough spice to keep it interesting.
+[3843.44s -> 3845.20s]  So I hope you'll agree with the judgment
+[3845.20s -> 3849.00s]  that overall that's a positive statement about the movie.
+[3849.00s -> 3853.56s]  And so the recursive neural tensor network
+[3853.56s -> 3856.68s]  builds the tree structure of this sentence.
+[3856.68s -> 3860.68s]  And it says, slow and repetitive, that's negative.
+[3860.68s -> 3863.36s]  There are slow and repetitive parts.
+[3863.36s -> 3865.32s]  It's all negative to here.
+[3865.32s -> 3869.20s]  But for the part over to the right, interesting.
+[3869.20s -> 3871.52s]  Spice, they're both positive.
+[3871.52s -> 3874.64s]  And spice to keep it interesting, that's positive.
+[3874.64s -> 3878.16s]  It has just enough spice to keep it interesting, positive.
+[3878.16s -> 3879.80s]  And it correctly predicts that when
+[3879.80s -> 3883.04s]  you put these two halves of these sentences together,
+[3883.04s -> 3888.12s]  the overall judgment is that this remains a positive review
+[3888.12s -> 3891.08s]  and it gives a positive judgment overall.
+[3891.12s -> 3894.56s]  So that was kind of cool.
+[3894.56s -> 3897.52s]  And in particular, the fact that we
+[3897.52s -> 3900.32s]  are building these phrase judgments
+[3900.32s -> 3902.52s]  meant that it seemed like we could actually
+[3902.52s -> 3906.48s]  do a better job of sentence understanding
+[3906.48s -> 3910.44s]  in the way that any linguist doing linguistic semantics
+[3910.44s -> 3913.48s]  would like to see sentence understanding.
+[3913.48s -> 3916.00s]  So one of the things that neural networks,
+[3916.00s -> 3920.44s]  when looking at language, have often been faulted for
+[3920.48s -> 3925.00s]  and are still faulted for to this day using transformer
+[3925.00s -> 3930.40s]  models is you often find the result that neural network
+[3930.40s -> 3933.80s]  models just don't pay attention to negation,
+[3933.80s -> 3937.16s]  that you can be having some sentence
+[3937.16s -> 3941.04s]  and you can compare the sentence of, you know,
+[3941.04s -> 3945.08s]  a lot of students are studying for their final exams
+[3945.08s -> 3948.80s]  versus a lot of students aren't studying for their final exams
+[3948.80s -> 3950.72s]  and the negation just gets lost,
+[3950.72s -> 3954.84s]  that it doesn't produce the differences in representation
+[3954.84s -> 3957.92s]  and meaning that you'd like it to.
+[3957.92s -> 3963.32s]  So somewhat interestingly, with this model,
+[3963.32s -> 3966.52s]  it seemed like because we were modeling
+[3966.52s -> 3970.04s]  the curse of building up of sentence structure,
+[3970.04s -> 3973.80s]  that we actually could do interesting things
+[3973.80s -> 3976.76s]  with modeling negation, right?
+[3976.76s -> 3984.88s]  So in particular, the results that you'd like to get
+[3984.88s -> 3988.40s]  is if you have something like it's just incredibly dull.
+[3988.40s -> 3991.68s]  So dull is a very negative word.
+[3991.68s -> 3995.04s]  Incredible is a positive word by itself.
+[3995.04s -> 3997.92s]  But when you're sort of saying incredibly dull,
+[3997.92s -> 4000.88s]  it's definitely still negative.
+[4000.88s -> 4006.36s]  And this, the curse of neural tensor network
+[4006.36s -> 4009.60s]  is correctly modeling.
+[4009.60s -> 4012.52s]  It's just incredibly dull is very negative,
+[4012.52s -> 4016.00s]  despite incredible being a sort of positive word.
+[4016.00s -> 4021.28s]  So you know, actually in this model,
+[4021.28s -> 4023.44s]  there was five-way classification.
+[4023.44s -> 4025.48s]  So there was very negative, somewhat negative,
+[4025.48s -> 4029.20s]  neutral, somewhat positive, very positive.
+[4029.20s -> 4030.96s]  So there's sort of some bouncing around
+[4030.96s -> 4033.88s]  as to whether it's giving classification very negative
+[4033.88s -> 4035.52s]  versus somewhat negative.
+[4035.56s -> 4038.08s]  I can't really explain why in the middle
+[4038.08s -> 4039.60s]  it goes to somewhat negative and then
+[4039.60s -> 4041.16s]  goes back to very negative.
+[4041.16s -> 4044.36s]  But that's the results that came out of the network.
+[4044.36s -> 4047.28s]  And at any rate, it all stays negative.
+[4047.28s -> 4050.68s]  The fact that incredible by itself incredibly
+[4050.68s -> 4055.60s]  is a positive word, it's seen in the modification of dull
+[4055.60s -> 4058.20s]  as that keeps it negative.
+[4058.20s -> 4062.24s]  But on the other hand, if you put a negation in here,
+[4062.24s -> 4065.20s]  it's definitely not dull.
+[4065.20s -> 4067.08s]  Well, then what happens?
+[4067.08s -> 4071.76s]  Now interestingly, the word not by itself is a negative word.
+[4071.76s -> 4076.28s]  That if you just sort of do the raw statistics of it,
+[4076.28s -> 4080.84s]  not occurs much more often in negative sentiment
+[4080.84s -> 4085.28s]  sentences than it does in positive sentiment sentences.
+[4085.28s -> 4088.04s]  So you know, if you want to be a more positive person,
+[4088.04s -> 4090.68s]  use negation less.
+[4090.68s -> 4093.24s]  So not by itself is negative.
+[4093.28s -> 4096.76s]  But if you then combine it together not dull,
+[4096.76s -> 4101.36s]  or in this case definitely not dull, well,
+[4101.36s -> 4104.80s]  not dull is you have two negations
+[4104.80s -> 4107.08s]  so that they cancel each other out
+[4107.08s -> 4109.24s]  and you get something that's positive.
+[4109.24s -> 4111.64s]  And so it's definitely not dull comes out
+[4111.64s -> 4114.16s]  as a positive sentence.
+[4114.16s -> 4117.64s]  And so the interesting result here
+[4117.64s -> 4126.04s]  is that if you compare what happens between,
+[4126.04s -> 4129.84s]  you know, if you have negated positive sentences,
+[4129.84s -> 4133.04s]  so you know it's definitely not good,
+[4133.04s -> 4135.80s]  various models can model that correctly
+[4135.80s -> 4138.96s]  because not is a negative word.
+[4138.96s -> 4143.00s]  And so therefore, it weakens the positivity
+[4143.00s -> 4144.72s]  of the positive word.
+[4144.72s -> 4148.16s]  And so putting a not in front of a positive
+[4148.16s -> 4152.04s]  into a positive sentence makes it less positive.
+[4152.04s -> 4156.68s]  And even not very well, but even a naive Bayes model
+[4156.68s -> 4158.80s]  can do that because not by itself
+[4158.80s -> 4161.12s]  is seen as a negative word.
+[4161.12s -> 4163.68s]  But the hard case is what happens
+[4163.68s -> 4166.08s]  if you negate a negative sentence?
+[4166.08s -> 4168.36s]  Well, the result that you should get
+[4168.36s -> 4170.60s]  is it becomes more positive.
+[4170.60s -> 4174.48s]  And neither a bigram-naive Bayes model
+[4174.48s -> 4177.72s]  or our earlier attempts at recursive models
+[4177.72s -> 4182.04s]  can capture that, whereas this RNTN structure
+[4182.04s -> 4184.48s]  was able to correctly modify, capture
+[4184.48s -> 4187.88s]  this sort of semantic modification structure
+[4187.88s -> 4191.88s]  and say, hey, that's made the sentence much more positive.
+[4191.88s -> 4194.88s]  So that was a cool result. And to some extent,
+[4194.88s -> 4196.52s]  you know, this result, I think,
+[4196.52s -> 4198.88s]  still isn't captured as well by any
+[4198.88s -> 4201.88s]  of the current transformer models,
+[4201.88s -> 4204.40s]  even though they have many other advantages
+[4204.40s -> 4209.48s]  and are much better than a tree recursive neural network.
+[4209.48s -> 4213.72s]  So I mean, yeah, so just to say a couple of,
+[4213.72s -> 4216.52s]  this is basically the end, to just say
+[4216.52s -> 4218.64s]  a couple of final remarks about these tree
+[4218.64s -> 4221.00s]  recursive neural networks.
+[4221.00s -> 4227.08s]  You know, the reason that they became uncompetitive
+[4227.08s -> 4234.96s]  is because they just didn't allow the kind of associations
+[4234.96s -> 4239.20s]  and information flow that you have in a transformer, right?
+[4239.20s -> 4244.80s]  These models had a strictly context-free backbone.
+[4244.80s -> 4247.16s]  And the only information flow was
+[4247.16s -> 4251.92s]  tree-structured following the context-free backbone.
+[4251.92s -> 4254.80s]  Whereas in the transformer, you've
+[4254.80s -> 4257.56s]  got this attention function where in every position
+[4257.56s -> 4259.64s]  you're looking at every other position.
+[4259.64s -> 4263.16s]  And so you would have much more general information flow.
+[4263.16s -> 4266.04s]  And in general, that is just good.
+[4266.04s -> 4268.76s]  And transformers are much more powerful.
+[4268.76s -> 4271.20s]  But you know, on the other hand,
+[4271.20s -> 4272.64s]  to the extent that you actually
+[4272.64s -> 4277.92s]  want to model the sort of semantics of human language
+[4277.92s -> 4281.36s]  carefully as to sort of what modifies what
+[4281.36s -> 4285.24s]  and how does negation or quantifiers in a sentence
+[4285.24s -> 4289.44s]  behave, in some sense, these models were more right.
+[4289.44s -> 4292.28s]  And so one of the things I'm still kind of interested in
+[4292.28s -> 4295.04s]  is, are there any opportunities
+[4295.04s -> 4297.64s]  to combine together some of the benefits of both
+[4297.64s -> 4300.08s]  of these ways of thinking and have something
+[4300.08s -> 4303.76s]  that's a bit more tree-structured while still
+[4303.76s -> 4306.88s]  more flexible like a transformer?
+[4306.88s -> 4308.68s]  OK, that's it for today.
+[4308.68s -> 4310.52s]  Thanks a lot.

@@ -1,0 +1,45 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.12s]  Internet routers can have many links, so they have many options for which direction to forward
+[6.12s -> 7.44s]  or receive packet.
+[7.44s -> 11.40s]  To select which link to forward a packet over, routers today typically use an algorithm
+[11.40s -> 13.92s]  called Longest Prefix Match.
+[13.92s -> 18.72s]  In this example, a client wants to open a TCP connection to a server on port 80,
+[18.72s -> 20.40s]  the typical port for web servers.
+[20.40s -> 23.92s]  The packets to set up the connection and transfer data take many hops between the
+[23.92s -> 25.24s]  client and server.
+[25.24s -> 31.36s]  On each hop of each packet, a router decides which link to forward the packet over.
+[31.36s -> 33.24s]  How does a router make this decision?
+[33.24s -> 36.68s]  It does so through something called a forwarding table, shown here on the right.
+[36.68s -> 40.06s]  A forwarding table consists of a set of partial IP addresses.
+[40.06s -> 42.40s]  The Xs show that the addresses are partial.
+[42.40s -> 44.12s]  The Xs represent wildcards.
+[44.12s -> 50.24s]  For example, the second entry reading 171.33.x.x means any IP address whose first byte is
+[50.24s -> 53.00s]  171 and whose second byte is 33.
+[53.00s -> 61.10s]  This particular entry, for example, includes 171.33.5.245 as well as 171.33.1.1.
+[61.10s -> 65.44s]  When a packet arrives, the router checks which forwarding table best matches the packet
+[65.44s -> 69.34s]  and forwards the packet along the link associated with that forwarding table entry.
+[69.34s -> 71.76s]  By best, I mean most specific.
+[71.76s -> 73.92s]  The default route is effectively all wildcards.
+[73.92s -> 75.60s]  It matches any IP address.
+[75.60s -> 79.16s]  If, when a packet arrives, there isn't a more specific route than the default route,
+[79.16s -> 81.92s]  the router will just use the default one.
+[81.92s -> 86.88s]  Longest prefix match, or LPM, is the algorithm IP routers use to decide how to forward a
+[86.88s -> 87.88s]  packet.
+[87.88s -> 90.08s]  Every router has the forwarding table.
+[90.08s -> 93.88s]  Entries in this forwarding table have two parts, a CIDR entry describing a block
+[93.88s -> 97.96s]  of addresses and a next hop for packets that match that CIDR entry.
+[97.96s -> 100.92s]  An address might belong to multiple CIDR entries.
+[100.92s -> 104.44s]  For example, in this routing table on the right, there are two entries, one for the
+[104.44s -> 111.46s]  default route, which has a prefix of length 0, and one for 171.33.0.0.16.
+[111.50s -> 115.78s]  By default, all packets will match the top entry and go over link 1.
+[115.78s -> 120.02s]  However, the first 16 bits, or two octets, of the packet destination address matches
+[120.02s -> 123.88s]  171.33, the router will send it over link 5.
+[123.88s -> 127.68s]  This is because a 16-bit prefix is a longer prefix than 0 bits.
+[127.68s -> 128.68s]  It's more specific.
+[128.68s -> 132.22s]  So let's go back to our earlier example, where we showed a forwarding table with Xs
+[132.22s -> 133.70s]  denoting wildcards.
+[133.70s -> 136.40s]  Here's the router and its forwarding table.
+[136.40s -> 140.26s]  If we represent this forwarding table as CIDR entries, this is what it looks like.
+[140.26s -> 144.82s]  Since in this simple example, all the prefixes are in terms of bytes, all of the prefixes
+[144.82s -> 148.22s]  have length 0, 8, 16, or 24 bits.

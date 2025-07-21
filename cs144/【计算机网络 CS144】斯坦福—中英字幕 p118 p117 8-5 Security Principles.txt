@@ -1,0 +1,130 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 9.28s]  So, it's a dangerous world out there.
+[9.28s -> 14.56s]  We want to keep our computer systems secure, but exactly what does this mean?
+[14.56s -> 18.32s]  Every system and protocol is different, but when talking about security, we generally
+[18.32s -> 26.96s]  talk about three properties—confidentiality, integrity, and availability.
+[26.96s -> 30.36s]  Recall our threat model based on all the attacks we've covered.
+[30.36s -> 36.16s]  An adversary can snoop on all of your traffic, suppress any of your packets, replay packets,
+[36.16s -> 41.52s]  and even generate new packets that seem to come from your host and or application.
+[41.52s -> 44.64s]  To defend against this, we're going to use two approaches.
+[44.64s -> 49.60s]  The first, cryptography, is a way to communicate securely end-to-end, despite the fact that
+[49.60s -> 52.44s]  the network in between isn't secure.
+[52.44s -> 55.68s]  Cryptography literally means the study of codes—it's a set of mathematical tools
+[55.68s -> 60.40s]  focused on the idea of secrets and the computational difficulty of understanding data without the
+[60.40s -> 61.66s]  secret.
+[61.66s -> 65.34s]  Using cryptography as a building block, it turns out that we can actually build end-to-end
+[65.34s -> 70.56s]  secure communication despite the fact that the adversary might control and own the entire
+[70.56s -> 71.56s]  network.
+[71.56s -> 76.20s]  By secure, I mean the adversary can't rewrite our messages, generate new messages, or snoop
+[76.20s -> 78.72s]  our messages.
+[78.72s -> 82.74s]  The second approach is to prevent an adversary from blocking your messages.
+[82.78s -> 86.78s]  Even if two hosts can communicate securely, an adversary could prevent them from communicating
+[86.78s -> 88.02s]  at all.
+[88.02s -> 92.26s]  The general approach for this is to design systems to be scalable.
+[92.26s -> 94.26s]  Take, for example, DNS.
+[94.26s -> 98.66s]  The fact that there are so many root servers, some of which are highly replicated, means
+[98.66s -> 101.86s]  that it's very hard to launch a denial-of-service attack against it.
+[101.86s -> 106.50s]  I'm not going to talk much about scalable system design—it's a complex topic worthy
+[106.50s -> 108.46s]  of a whole course in and of itself.
+[108.46s -> 113.66s]  Instead, I'm going to focus on the networking part of the problem, secure communication.
+[117.18s -> 122.22s]  Cryptography is a set of mathematical principles and ideas for securing communication.
+[122.22s -> 125.74s]  The most important thing to know about cryptography is that it can be very subtle
+[125.74s -> 127.54s]  and details-oriented.
+[127.54s -> 130.54s]  If there's a single flaw in your system, then it's not secure.
+[130.54s -> 135.18s]  So just taking cryptography and applying it without care is unlikely to make your system
+[135.18s -> 137.86s]  secure.
+[137.86s -> 144.46s]  Instead of inventing your own whole new security system, it's much, much safer to use existing,
+[144.46s -> 147.46s]  tested, well-understood ones.
+[147.46s -> 151.90s]  It's often the case that ideas from security are misused or misunderstood, such as people
+[151.90s -> 156.74s]  thinking a message authentication code—a security primitive—has the same error detection
+[156.74s -> 160.90s]  properties as CRC.
+[160.90s -> 163.70s]  Cryptography can give us three valuable things.
+[163.70s -> 165.70s]  The first is confidentiality.
+[165.74s -> 169.54s]  This is the ability to communicate with another party privately, such that no one else can
+[169.54s -> 170.94s]  read it.
+[170.94s -> 175.62s]  Cryptography provides confidentiality through something called encryption.
+[175.62s -> 177.62s]  The second is integrity.
+[177.62s -> 181.42s]  This is the ability to know if our messages have been tampered with.
+[181.42s -> 185.58s]  There are many ways to provide integrity, depending on the exact needs and the kind
+[185.58s -> 187.50s]  of cryptography used.
+[187.50s -> 192.14s]  There are three basic mechanisms, which future videos will cover, in depth.
+[192.14s -> 197.78s]  And there are cryptographic hashes, cryptographic signatures, and message authentication codes
+[197.78s -> 199.26s]  or MACs.
+[199.26s -> 202.54s]  Finally, there is authenticity.
+[202.54s -> 206.62s]  This is the ability for the party to prove they are who they say they are.
+[206.62s -> 211.34s]  The three basic mechanisms for authenticity, which future videos will cover in depth,
+[211.34s -> 217.14s]  are certificates, message authentication codes, and cryptographic signatures.
+[218.14s -> 222.14s]  Again, I really can't stress it enough.
+[222.14s -> 226.74s]  Cryptography can make your system secure, but if and only if you use it carefully
+[226.74s -> 227.74s]  and correctly.
+[227.74s -> 230.86s]  It's very, very easy to make a mistake.
+[230.86s -> 234.94s]  Don't trust systems that seem to have tax security on later, and don't think making
+[234.94s -> 240.10s]  a system secure is easy.
+[240.10s -> 242.58s]  The first property is confidentiality.
+[242.58s -> 246.22s]  The idea is that two parties should be able to exchange information secretly, so no one
+[246.22s -> 250.14s]  else can understand what they're sending, even if they can read the messages.
+[250.14s -> 253.06s]  This is really useful if you want to send your credit card number.
+[253.06s -> 258.56s]  A crypto system that has perfect confidentiality is something called a one-time pad.
+[258.56s -> 264.06s]  The idea is that you and I can share a perfectly random key of zeros and ones.
+[264.06s -> 266.98s]  No one else has this key, this one-time pad.
+[266.98s -> 271.86s]  To send you a message, I just XOR the message M with the key K, producing a confidential
+[271.86s -> 272.86s]  message C.
+[273.50s -> 274.86s]  I then send C to you.
+[274.86s -> 278.98s]  To reconstruct M, you just XOR C with K.
+[278.98s -> 283.78s]  A one-time pad is an example of perfectly secure confidentiality.
+[283.78s -> 289.58s]  If the one-time pad is perfectly random, then given any C, any M is equally likely.
+[289.58s -> 291.22s]  It's also very fast.
+[291.22s -> 293.98s]  All you have to do is XOR.
+[293.98s -> 296.86s]  But a one-time pad isn't very practical.
+[296.86s -> 301.94s]  K has to be at least as long as M. If I want to exchange 100MB with you, I need
+[302.02s -> 304.34s]  a 100MB K.
+[304.34s -> 308.42s]  So in practice, crypto systems that provide confidentiality try to provide algorithms
+[308.42s -> 313.82s]  in which we can exchange a much smaller K, say 128 bits or 256 bits, such that they're
+[313.82s -> 321.46s]  2 to the 128th or 2 to the 256th possible confidential messages, possible Cs.
+[321.46s -> 325.02s]  The second property is integrity.
+[325.02s -> 329.26s]  Integrity is the ability to exchange messages and be sure they are not tampered with or
+[329.26s -> 330.46s]  changed.
+[330.46s -> 334.26s]  For example, when I download software, I want to know it's the real version and not a hacked
+[334.26s -> 337.78s]  version that installs malware on my machine.
+[337.78s -> 341.86s]  Some forms of integrity also allow you to know that the other party sent the message.
+[341.86s -> 346.22s]  If the two of you share a secret key, then there are forms of integrity which only
+[346.22s -> 350.90s]  someone with the secret key can perform correctly.
+[350.90s -> 355.02s]  Two very common forms of integrity are cryptographic hashes and message authentication
+[355.02s -> 356.76s]  codes.
+[356.76s -> 360.96s]  Cryptographic hashes are functions that turn arbitrary-length data into a fixed-length hash,
+[360.96s -> 363.34s]  just like a normal hash function.
+[363.34s -> 368.48s]  But cryptographic hashes have the additional property that they are collision-resistant.
+[368.48s -> 374.64s]  If I have a message x with a hash h of x, then it's intractable for someone to find
+[374.64s -> 379.24s]  a message y different from x, which has the same hash.
+[379.24s -> 383.40s]  This means, for example, if I know a cryptographic hash of a program I want to download, then
+[383.40s -> 388.42s]  it's intractable for someone to hack the software in a way that has the same hash.
+[388.42s -> 393.08s]  Message authentication codes, MACs, are like cryptographic hashes, except they use a key
+[393.08s -> 396.16s]  k to both generate and check the MAC.
+[396.16s -> 400.76s]  Anyone can generate a cryptographic hash, but only someone with k can compute the correct
+[400.76s -> 401.96s]  MAC.
+[401.96s -> 405.78s]  With a MAC, it's intractable to generate the correct MAC of a message unless you have
+[405.78s -> 406.96s]  the key k.
+[406.96s -> 412.56s]  So if we've exchanged the key k beforehand, and I receive a message with a correct MAC,
+[412.60s -> 416.44s]  then I know that nobody tampered with the message and you generated the MAC.
+[416.44s -> 418.24s]  There's authenticity.
+[418.24s -> 422.88s]  This is the ability to verify someone is who they say they are.
+[422.88s -> 427.32s]  For example, you receive a message supposedly from the provost and want to be sure the
+[427.32s -> 429.88s]  provost actually sent it.
+[429.88s -> 434.26s]  If you and the provost have exchanged a secret beforehand, then you can do this with message
+[434.26s -> 436.12s]  authentication codes.
+[436.12s -> 440.00s]  If you receive a message that has a correct MAC computed with the secret you've shared
+[440.44s -> 443.68s]  with the provost, you know that the provost sent it.
+[443.68s -> 447.90s]  If you don't have a secret, then you can use a chain of trust.
+[447.90s -> 452.16s]  If you trust one party, then that party can vouch for someone else, this second
+[452.16s -> 455.52s]  party can then vouch for a third party, and so on.
+[455.52s -> 462.32s]  So, for example, suppose we have some information that lets us check VeriSign's authenticity.
+[462.32s -> 467.32s]  VeriSign can then vouch for Stanford, and Stanford can vouch for the provost.
+[471.00s -> 475.32s]  Finally, there's how you design computer systems for high availability, so they are
+[475.32s -> 479.04s]  resistant to denial of service and distributed denial of service attacks.
+[479.04s -> 482.22s]  There are tons of kinds of attacks out there, replication attacks, resource use
+[482.22s -> 485.32s]  attacks, ping attacks, botnets attacks, etc.
+[485.32s -> 488.68s]  Generally speaking, you can either scale out your system so it distributes the load
+[488.68s -> 492.84s]  and can handle it, or at some point you can filter the traffic upstream.
+[492.84s -> 496.24s]  For example, if someone is DDoSing your cable modem, you could possibly contact
+[496.24s -> 498.48s]  your ISP to filter out traffic coming at it.

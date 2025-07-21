@@ -1,0 +1,228 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.84s]  All right, next let's talk about some actual exploration algorithms that we
+[4.84s -> 9.88s]  could use in deep reinforcement learning. So to recap, the classes of exploration
+[9.88s -> 13.88s]  methods that we have are optimistic exploration, which basically say that
+[13.88s -> 18.80s]  visiting a new state is a good thing. This requires estimating some kind
+[18.80s -> 22.00s]  of state visitation frequency or novelty, just like we had to count the
+[22.00s -> 25.86s]  number of times that we took each action in the bandit setting. And this
+[25.86s -> 30.54s]  is typically realized by means of some kind of exploration bonus. We have
+[30.54s -> 33.74s]  Thompson sampling style algorithms. So these are algorithms that learn a
+[33.74s -> 38.50s]  distribution over something, either a model, a Q-function, or a policy, just
+[38.50s -> 42.94s]  like we learned this distribution over bandit parameters before. And then they
+[42.94s -> 47.02s]  sample and act according to that sample. And then we have information
+[47.02s -> 50.34s]  gain style algorithms, which reason about the information gained from
+[50.34s -> 54.42s]  visiting new states, and then actually choose the transitions that lead to
+[54.42s -> 59.36s]  large information gain. So let's start with the optimistic exploration methods.
+[59.36s -> 64.74s]  So in the bandit world, we saw that one rule that we could use to balance
+[64.74s -> 68.94s]  exploitation and exploration is to select an action based on the argmax of
+[68.94s -> 73.22s]  its average expected value, empirical estimate based on what we've seen before,
+[73.22s -> 79.14s]  plus the square root of 2 times log t divided by NA. And the important
+[79.14s -> 82.50s]  thing here is really the denominator. So you're basically assigning bonuses
+[82.58s -> 86.46s]  based on some function of the inverse of the number of times you've pulled that
+[86.46s -> 92.86s]  arm. So this is essentially a kind of exploration bonus. And the intuition in
+[92.86s -> 95.54s]  reinforcement learning is that we're going to construct an exploration
+[95.54s -> 99.26s]  bonus that is not just for different actions, but actually also for
+[99.26s -> 104.78s]  different states. And the thing is, lots of different functions will work for
+[104.78s -> 108.50s]  this exploration bonus, as long as they decrease with N of A. So don't
+[108.50s -> 112.26s]  worry too much about the fact that it's a square root, or that it has a 2 times
+[112.42s -> 116.34s]  log t in the numerator. The important thing is that it's some quantity that
+[116.34s -> 123.74s]  decreases rapidly as N of A increases. Okay, so can we use this idea with
+[123.94s -> 130.34s]  MDPs? One thing we could do is essentially extend it to the MDP
+[130.34s -> 135.22s]  setting and create what is called count-based exploration. So instead of
+[135.22s -> 138.58s]  counting the number of times you've pulled some arm, which is N of A, you
+[138.58s -> 142.18s]  would count the number of times you've visited some state action
+[142.18s -> 145.42s]  tuple S comma A, or even just the number of times you visited some
+[145.42s -> 150.14s]  state, N of S, and use it to add an exploration bonus to your
+[150.14s -> 154.10s]  reward. So the UCB estimate in the bandit case is estimating the
+[154.10s -> 158.30s]  reward with an additional exploration bonus. In the MDP case, we'll
+[158.30s -> 162.26s]  also estimate reward with an exploration bonus. So what that
+[162.26s -> 165.78s]  means is that we will define a new reward function, R+, which is
+[165.78s -> 170.94s]  the original reward plus this bonus function applied to N of S.
+[171.70s -> 174.98s]  And the bonus function is just some function that decreases with
+[174.98s -> 178.50s]  N of S. So maybe it's the square root of 1 over N of S.
+[179.46s -> 183.42s]  And then we would simply use R+, instead of R, as our reward
+[183.42s -> 189.62s]  function for any other algorithm that we'd care to use. And of
+[189.62s -> 193.10s]  course, in this case, R+, will change as our policy changes.
+[193.10s -> 197.34s]  So maybe every episode it would update R+, so we need to
+[197.34s -> 200.26s]  make sure that our RL algorithm doesn't get too confused by the
+[200.26s -> 202.74s]  fact that our rewards are constantly changing. But other
+[202.74s -> 205.66s]  than that, this is a perfectly reasonable way to kind of
+[205.66s -> 208.58s]  extend this UCB idea into the MDP setting.
+[210.58s -> 212.86s]  So it's a simple addition to any RL algorithm. It's very
+[212.86s -> 217.58s]  modular. But you do need to tune a weight on this bonus
+[217.58s -> 221.10s]  because, you know, if you do 1 million divided by N of S,
+[221.10s -> 224.78s]  that'll work very differently than if you do, you know, 0.001
+[224.82s -> 227.98s]  divided by N of S. So you need to decide how important the
+[227.98s -> 231.14s]  bonus is relative to the reward. And of course, you need
+[231.14s -> 234.54s]  to figure out how to actually do the counting. So let's talk
+[234.54s -> 236.78s]  about that second problem. What's the trouble with
+[236.78s -> 240.86s]  counts? The trouble with counts is that the notion of a
+[240.86s -> 245.34s]  count, while it makes sense in small discrete MDPs, doesn't
+[245.34s -> 249.02s]  necessarily make sense in more complex MDPs. So let's look
+[249.02s -> 253.10s]  at this frame for Montezuma's revenge. So clearly, if I find
+[253.10s -> 257.22s]  myself seeing the same exact image 10 times, then the count
+[257.22s -> 261.02s]  for that image should be 10. But what if only one thing
+[261.02s -> 264.70s]  in the image varies? So what if, for example, the guy
+[264.70s -> 267.14s]  here just stands in the same spot, but the skull moves
+[267.14s -> 270.14s]  around? Every location for the skull is now a totally
+[270.14s -> 273.54s]  different state. Now, if the guy is moving and the
+[273.54s -> 275.66s]  skull is moving, what are the chances that they would ever
+[275.66s -> 280.06s]  be in the same exact combination of locations twice? So
+[280.06s -> 282.70s]  maybe they'll be in very similar states, but they might
+[282.70s -> 287.02s]  not be in exactly the same spot twice. And in
+[287.02s -> 289.66s]  general, if you have many different factors of
+[289.66s -> 292.54s]  variation, you get combinatorially many states, which
+[292.54s -> 294.86s]  means the probability of visiting the same exact state
+[294.86s -> 299.74s]  a second time becomes very low. So all these moving
+[299.74s -> 304.22s]  elements will cause issues. What about continuous spaces?
+[304.22s -> 306.62s]  There, the situation is even more dire. So if you imagine
+[306.62s -> 309.66s]  that robotic hand example from before, now the space is
+[309.66s -> 314.06s]  continuous, so no two states are going to be the same.
+[314.06s -> 316.62s]  So the trouble is, in these large RL problems, we
+[316.62s -> 320.06s]  basically never see the same thing twice, which makes
+[320.06s -> 325.50s]  counting kind of useless. So how can we extend counts
+[325.50s -> 328.94s]  to this complex setting where you either have a very
+[328.94s -> 333.50s]  large number of states or even continuous states?
+[333.50s -> 336.70s]  Well, the notion that we want to exploit is that some states are more similar
+[336.70s -> 339.34s]  than others, so even though we never visit the same
+[339.34s -> 342.38s]  exact state twice, there's still a lot of similarity between
+[342.38s -> 345.02s]  those states, and we can take advantage of that
+[345.02s -> 349.66s]  by using a generative model or a density estimator.
+[349.66s -> 353.10s]  So here's the idea. We're going to fit some density model
+[353.10s -> 357.02s]  to p theta of s or p theta of s comma a, depending on whether we want state
+[357.02s -> 361.42s]  counts or state action counts. So a density model could be something
+[361.42s -> 364.54s]  simple, like a Gaussian, or it could be something really complicated.
+[364.54s -> 367.98s]  We'll talk about the particular choice of density model later, but for now we
+[367.98s -> 372.06s]  just need it to be something that produces an answer to the question,
+[372.06s -> 377.82s]  what is the density or the likelihood of this state?
+[379.34s -> 384.62s]  Now, if you learn a density model as, for example, some highly expressive
+[384.62s -> 389.02s]  model like a neural network, then p theta of s might be high, even for
+[389.02s -> 391.34s]  totally new states that you've never seen before,
+[391.34s -> 395.50s]  if they're very similar to states that you have seen before.
+[395.50s -> 399.50s]  So maybe you've never seen the guy and the skull in precisely this position,
+[399.50s -> 401.98s]  but you've seen the guy in that position, and you've seen the skull in
+[401.98s -> 405.26s]  that position, just not together, so that state will probably have a
+[405.26s -> 408.30s]  higher density than if something totally weird happened, like
+[408.30s -> 411.18s]  if, for example, you suddenly picked up the key. You know, if in all prior
+[411.18s -> 414.14s]  states the key is always present, now suddenly it's absent,
+[414.14s -> 417.58s]  that'll have a very low density.
+[418.54s -> 422.30s]  So the question that we could ask then is, can we somehow use
+[422.30s -> 426.22s]  p theta of s as a sort of pseudo-count?
+[426.22s -> 429.02s]  Now, it's not a count because it's not literally telling you how many
+[429.02s -> 433.26s]  times you visited a particular state, but it kind of looks a little bit like
+[433.26s -> 436.14s]  a count in that, you know, if you take p of s and you
+[436.14s -> 440.30s]  multiply it by the total number of states you've seen, that will be a kind
+[440.30s -> 444.14s]  of a density for that state.
+[444.78s -> 452.94s]  So if you have a small MDP where practical counting is doable,
+[452.94s -> 456.30s]  then the probability of a state is just the count on that state
+[456.30s -> 459.74s]  divided by the total number of states you've seen. So it's n of s divided by
+[459.74s -> 463.98s]  n. So the probability relates to the count
+[463.98s -> 467.82s]  and the total number of states you visited,
+[467.90s -> 472.54s]  which means that after you see the state s, your new probability
+[472.54s -> 475.82s]  is the old count plus one divided by the old
+[475.82s -> 478.62s]  n plus one.
+[481.26s -> 487.42s]  So here's the question. Can you get p of theta of s and p of theta prime of
+[487.42s -> 491.42s]  s to obey these equations? So instead of keeping track of counts,
+[491.42s -> 495.34s]  we keep track of p of s's, but we will update theta when we see
+[495.34s -> 498.94s]  s to get a new theta prime, meaning we'll update our density model,
+[498.94s -> 502.94s]  we'll change its parameters. So can we look at how p theta of s and p theta
+[502.94s -> 507.18s]  prime of s have changed and recover something that also obeys these
+[507.18s -> 509.42s]  equations, that essentially looks like a count?
+[509.42s -> 512.94s]  It's not a count, but it looks like a count and it acts like a count,
+[512.94s -> 516.14s]  so it could be used as a count.
+[516.30s -> 520.30s]  So this is based on a paper called Unifying Count-Based Exploration by
+[520.30s -> 526.30s]  Belmar et al. The idea is this. We're going to fit a model p theta of s
+[526.30s -> 529.98s]  to all the states that we've seen so far in our data set D.
+[529.98s -> 534.30s]  Then we will take a step i and observe the new state s i.
+[534.30s -> 537.74s]  Then we will fit a new model p theta prime of s
+[537.74s -> 543.50s]  to D with the new state appended to it.
+[543.50s -> 547.42s]  And then we'll use p theta s i and p theta prime of s i
+[547.42s -> 551.98s]  to estimate a pseudo-count, which I'm going to call n hat of s.
+[551.98s -> 555.58s]  And then we'll set r plus to be r plus some
+[555.58s -> 562.86s]  bonus determined by n hat of s. So this n hat of s is a pseudo-count.
+[562.86s -> 566.94s]  And then we repeat this process. So how do you get the pseudo-count? Well,
+[566.94s -> 569.98s]  we'll use the equations from the previous slide. So the equations in the
+[569.98s -> 572.78s]  previous slide describe how counts relate to
+[572.78s -> 575.90s]  probabilities. So we'll say that we want our pseudo-counts
+[575.90s -> 580.70s]  to also relate to probabilities in the same way. So we know p theta of s
+[580.70s -> 583.90s]  and we know p theta prime of s, because that's what we get by updating our
+[583.90s -> 588.22s]  density model. We don't know n hat of s and we don't
+[588.22s -> 591.82s]  know little n hat. However, we have two equations and two
+[591.82s -> 594.62s]  unknowns. So we could actually solve the system
+[594.62s -> 600.46s]  of equations and recover n hat of s and little n hat.
+[600.46s -> 604.14s]  So we have two equations and two unknowns. If we do a bit of algebra,
+[604.14s -> 607.58s]  here's what the solution looks like. n hat of s
+[607.58s -> 611.02s]  is equal to little n hat times p theta of s.
+[611.02s -> 614.62s]  That's kind of the obvious statement. And if you manipulate the algebra,
+[614.62s -> 617.82s]  you can solve for n hat and find that it's equal to 1
+[617.82s -> 623.02s]  over p theta prime of s divided by p theta prime of s minus p theta of s.
+[623.02s -> 627.18s]  And that whole thing multiplied by p theta of s. It's a little bit of an
+[627.18s -> 629.82s]  opaque expression, but it's pretty easy to solve for.
+[629.82s -> 631.42s]  You basically take that expression for
+[631.42s -> 635.50s]  n hat of s, substitute that in in place of n hat of s
+[635.50s -> 638.62s]  for the top two equations, so you can get two equations
+[638.62s -> 642.38s]  that are both expressed in terms of little n hat, and then you solve them
+[642.38s -> 645.98s]  for little n hat and you get the solution at the bottom.
+[645.98s -> 649.58s]  So now every time step you just use these equations
+[649.58s -> 655.02s]  to figure out big N hat of s and use that to calculate your bonus.
+[655.02s -> 659.50s]  And now your bonus will be aware of similarity between states.
+[659.82s -> 662.94s]  Now there are a few technical issues left. We have to resolve what
+[662.94s -> 667.58s]  kind of bonus to use and what kind of density model to use.
+[667.58s -> 670.62s]  Now there are lots of bonus functions that are used in the literature,
+[670.62s -> 674.06s]  and they're all basically inspired by methods that are known to be optimal
+[674.06s -> 680.54s]  for bandits or for small MDPs. So, for example, the classic UCB bonus
+[680.54s -> 684.70s]  would be 2 times log little n divided by big N, and then you take the square
+[684.70s -> 689.18s]  root of that whole thing. Another bonus in this paper by Strel and
+[689.18s -> 692.46s]  Littman is to just use the square root of 1 over n of s.
+[692.46s -> 696.14s]  That's a little simpler. Another one is to use 1
+[696.14s -> 701.42s]  over n of s. They're all pretty good. They could all work. This is the one
+[701.42s -> 704.22s]  used by Bellemare et al., but you could choose whichever one you
+[704.22s -> 706.54s]  prefer.
+[707.26s -> 710.86s]  Does this algorithm work? Well, here's the evaluation
+[710.86s -> 715.18s]  that's used in the pseudocounts paper.
+[715.18s -> 720.22s]  So in this paper they are comparing different methods. The
+[720.22s -> 723.90s]  important curves to pay attention to are the green curve and black curve.
+[723.90s -> 726.22s]  So the black curve is basically Q-learning the way that you're
+[726.22s -> 729.90s]  implementing it right now, and the green curve is their method
+[729.90s -> 735.02s]  with a 1 over square root of n bonus. And you can see here that, you know, on
+[735.02s -> 736.94s]  some games it makes very little difference, like
+[736.94s -> 740.46s]  hero. On some games it makes a little bit of a difference.
+[740.46s -> 743.34s]  And on some games, like Montezuma's Revenge, it makes an enormous
+[743.34s -> 746.78s]  difference, where there's almost no progress without it.
+[746.78s -> 750.54s]  The pictures at the bottom illustrate the rooms that you visited, and so
+[750.54s -> 753.42s]  as I mentioned before in Montezuma's Revenge, the rooms are arranged in a kind
+[753.42s -> 755.50s]  of pyramid, and you start at the top of the
+[755.50s -> 758.38s]  pyramid. And you can see that without the bonus
+[758.38s -> 761.74s]  you only visit two rooms. With the bonus you actually visit
+[761.74s -> 764.54s]  more than half of the pyramid. So the method is doing something pretty
+[764.54s -> 768.06s]  sensible. What kind of model should you use for
+[768.06s -> 772.62s]  P-theta of s? Well, there are a few choices to be
+[772.62s -> 774.78s]  made about this model that are a little peculiar
+[774.78s -> 778.14s]  than the trade-offs we typically consider for density
+[778.14s -> 782.14s]  modeling and generative modeling. Usually when we want to train a generative
+[782.14s -> 785.66s]  model, like a GAN or a VAE, what we care about is being able to
+[785.66s -> 790.62s]  sample from that model. But for pseudocounts all you really
+[790.62s -> 793.42s]  want is a model that will produce a density score.
+[793.42s -> 796.14s]  You don't really need to sample from it, and you don't even really need
+[796.14s -> 799.82s]  those scores to be normalized. So as long as the number goes up, as the
+[799.82s -> 802.62s]  state has higher density, you're happy with it.
+[802.62s -> 805.82s]  So that means that the trade-offs for these density models are sometimes
+[805.82s -> 808.46s]  a little different than what we're used to from the world of generative
+[808.46s -> 811.90s]  modeling. In fact, they're often the opposite
+[811.90s -> 815.02s]  of the considerations for many popular generative models in the literature, like
+[815.02s -> 817.66s]  GANs, which can produce great samples but
+[817.66s -> 822.06s]  don't produce densities. The particular model that Belmar et al.
+[822.06s -> 825.34s]  uses is a little peculiar. So it's a CTS model.
+[825.34s -> 829.42s]  It's actually a very simple model. It just models the probability of each pixel
+[829.42s -> 833.02s]  condition on its upper and left neighbors. So you can think of it as a
+[833.02s -> 836.46s]  directed graphical model, where there are edges from the
+[836.46s -> 839.50s]  upper and left neighbors of each pixel pointing to that pixel.
+[839.50s -> 842.86s]  It's a little weird, but it's very simple, and it produces these scores.
+[842.86s -> 846.38s]  It's not a good density model, and there are much better choices,
+[846.38s -> 849.82s]  but that's the one they use in the paper. So
+[849.82s -> 853.66s]  other papers have used stochastic neural networks, compression length,
+[853.66s -> 857.26s]  and something called EX2, which I'll cover shortly.
+[857.26s -> 861.10s]  But in general, you could use any density model you want, so long as
+[861.10s -> 866.30s]  it produces good probability scores without caring about whether it
+[866.30s -> 872.54s]  produces good samples or not.

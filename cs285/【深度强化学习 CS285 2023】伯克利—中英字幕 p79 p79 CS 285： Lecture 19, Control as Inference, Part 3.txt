@@ -1,0 +1,249 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.24s]  All right, so so far we saw how we could frame control as inference in a
+[6.24s -> 10.68s]  particular graphical model, and then we talked about how we could do exact
+[10.68s -> 15.52s]  inference in that graphical model and understand three possible inference
+[15.52s -> 19.92s]  problems, computing backward messages, computing policies which uses those
+[19.92s -> 24.52s]  backward messages, and computing forward messages which, as I've alluded to, will
+[24.52s -> 29.16s]  be useful later on when we talk about inverse reinforcement learning. Now
+[29.20s -> 32.68s]  all of the inference procedures we've discussed so far have been exact
+[32.68s -> 38.32s]  inference, but of course in complex high-dimensional or continuous state
+[38.32s -> 42.20s]  spaces or settings where the dynamics are not known, where the transition
+[42.20s -> 45.90s]  probabilities are not available to us, and we can only sample from them by
+[45.90s -> 50.18s]  performing rollouts, we need to do approximate inference. And that's what
+[50.18s -> 53.52s]  I'm going to talk about in the next section. I'll actually use the tools that
+[53.52s -> 57.48s]  we learned about from last week, the tools of variational inference, to show
+[57.52s -> 61.88s]  how model-free reinforcement learning procedures can be derived from this
+[61.88s -> 68.80s]  control as inference framework. Now in the course of designing these
+[68.80s -> 73.04s]  approximate algorithms, we're also going to see how we can devise a solution to
+[73.04s -> 76.58s]  a particular problem that I raised previously, and that's the optimism
+[76.58s -> 80.28s]  problem that I mentioned. So if you recall from the previous part of the
+[80.28s -> 85.56s]  lecture, we talked about how the state backward message and the state
+[85.60s -> 90.64s]  action backward message, their logarithms can be interpreted as being very similar
+[90.64s -> 94.32s]  to value functions and Q functions, and when we write out these
+[94.32s -> 99.60s]  equations in log space, we derive an algorithm that looks very similar to
+[99.60s -> 103.64s]  value iteration, except the max over the actions is replaced with a softmax,
+[103.64s -> 110.84s]  and the Bellman backup has a log expected value exponential form. Now
+[110.84s -> 114.44s]  the softmax is not really that much of a problem. That's actually where we get
+[115.04s -> 119.80s]  this notion of soft optimality, so we actually want that, but this kind of
+[119.80s -> 125.08s]  backup is a little bit problematic. The trouble with this backup is that the log
+[125.08s -> 129.72s]  of the expected value of the exponentiated next state values is
+[129.72s -> 134.48s]  going to be dominated by the luckiest state. The easiest way to see
+[134.48s -> 139.44s]  this is to imagine that the action corresponds to buying a lottery ticket, so
+[139.52s -> 146.08s]  you have a one in a thousand chance of getting an extremely large payoff and a
+[146.08s -> 153.96s]  999 in a thousand chance of getting nothing. Now the effect of this will be
+[153.96s -> 162.64s]  that the expected value is, you know, 0 times 0.9999 and 1 million times
+[162.64s -> 169.36s]  0.001, so that means that it's just 1 million times 0.001. When you
+[169.36s -> 176.12s]  take the exponential of that and then the logarithm, the zeros, their effect
+[176.12s -> 180.88s]  will essentially disappear and the final value will be dominated by that
+[180.88s -> 186.20s]  positive outcome. And that's really bad news because, of course, buying the
+[186.20s -> 190.60s]  lottery ticket is not a good idea and its expected value is not high, but its
+[190.60s -> 197.28s]  log expected exponentiated value is high. So essentially this kind of backup
+[197.32s -> 205.52s]  results in a kind of optimism bias. Now why does this happen? Well the inference
+[205.52s -> 211.08s]  problem that we're solving is to infer the most likely trajectory given
+[211.08s -> 216.92s]  optimality. And then marginalizing and conditioning this, we get the policy P
+[216.92s -> 223.32s]  of a t given S t comma 0 1 through capital T. The question intuitively that
+[223.36s -> 227.72s]  this inference problem is asking is, given that you obtained high reward, what
+[227.72s -> 233.84s]  was your action probability? Now think back to the lottery example. If you know
+[233.84s -> 238.44s]  that you got a million dollars, that makes it more likely that you played
+[238.44s -> 244.16s]  the lottery. That doesn't mean that playing the lottery is a good idea. So
+[244.16s -> 248.36s]  fundamentally the tension here is that the inference question we're asking is
+[248.36s -> 252.72s]  not quite the question to which we really want the answer. What we want to
+[252.72s -> 260.04s]  know is what would you have done if you were trying to be optimal, not what
+[260.04s -> 267.96s]  do I think you did given that you got a million bucks. The issue that this
+[267.96s -> 272.16s]  really stems from is that the posterior probability of S t plus 1
+[272.16s -> 276.72s]  given S t, A t, and O 1 through capital T is not the same as its prior
+[276.72s -> 282.84s]  probability. So when we perform this inference process, we're actually altering
+[282.84s -> 288.80s]  the dynamics to agree with our evidence. Again, the intuition here
+[288.80s -> 294.00s]  follows very nicely from the lottery example. If you know that you got a
+[294.00s -> 300.12s]  million bucks and you bought the lottery ticket, there's a higher
+[300.12s -> 304.48s]  probability that you won the lottery, because the evidence that you got a million bucks
+[304.52s -> 310.44s]  increases the belief that you actually won the lottery. But of course the dynamics
+[310.44s -> 314.48s]  are not allowed to change in reality. In reality, we'd like to figure out what
+[314.48s -> 323.68s]  is a approximately optimal thing to do in the actual original dynamics. So
+[323.68s -> 327.24s]  this question is given that you obtained higher reward, what was your
+[327.24s -> 330.64s]  transition probability, but in a sense we don't care about this question.
+[330.64s -> 337.36s]  Your transition probability should remain fixed. So let's think about how we can
+[337.36s -> 343.20s]  address this optimism problem. So what we want is we want the policy, but we
+[343.20s -> 348.16s]  don't want our process of inferring the policy to allow us to change the
+[348.16s -> 355.68s]  dynamics. So intuitively what we want is given that you obtained high reward, what
+[355.68s -> 359.84s]  was your action probability given that your transition probabilities did not
+[359.84s -> 367.68s]  change? So one of the ways that we could approach this is we could say, can
+[367.68s -> 376.28s]  we find another distribution Q over states and actions that is close to the
+[376.28s -> 381.24s]  posterior over states and actions given O1 through T, but has the same
+[381.24s -> 390.56s]  original dynamics. So in this approximate posterior Q, we want the dynamics to be
+[390.56s -> 396.36s]  the same as they were originally, unaffected by your knowledge of the
+[396.36s -> 401.88s]  reward, but we want the action probabilities to change. So where have
+[401.88s -> 405.32s]  we seen this before? Where have we seen the notion of approximating one
+[405.32s -> 414.64s]  probability distribution with another one that has some constraints? So if for
+[414.64s -> 421.48s]  a minute we say that X is O1 through capital T and Z is S1 through T
+[421.48s -> 427.52s]  and A1 through T, then this problem is equivalent to saying, find Q of Z to
+[427.52s -> 433.16s]  approximate P of Z given X. Basically find an approximate distribution that
+[433.16s -> 439.60s]  accurately approximates the posterior over unobserved variables. And that is
+[439.60s -> 444.10s]  basically the problem that variational inference solves. So can we shoehorn this
+[444.10s -> 448.76s]  problem? Can we find another distribution Q S1 through T, A1 through T
+[448.76s -> 453.68s]  that is close to the posterior P but has the dynamics P of Sd plus 1 given
+[453.68s -> 459.16s]  Sd8t? Can we shoehorn this into the framework of variational inference?
+[459.16s -> 465.00s]  Take a few moments to think about this. Think about how you could use variational
+[465.00s -> 470.52s]  inference to address this. Maybe pause the video and think about it, and then
+[470.52s -> 475.76s]  check your answer against what I'm going to tell you on the next slide.
+[475.76s -> 481.04s]  All right, so what we're going to do in order to perform control using
+[481.04s -> 486.24s]  variational inference is we'll define a somewhat peculiar distribution class for
+[486.44s -> 494.84s]  Q. We'll define Q of S1 through T and A1 through T as the product of P of S1, the
+[494.84s -> 498.92s]  product of the transition probabilities P of Sd plus 1 given Sd8t at
+[498.92s -> 505.48s]  every time step, and an action distribution Q of A t given Sd. Now
+[505.48s -> 509.68s]  this definition for the variational distribution is quite
+[509.68s -> 514.00s]  peculiar, because typically when we use variational inference, we learn the
+[514.00s -> 518.56s]  entire variational distribution. But here we're actually fixing some parts of the
+[518.56s -> 522.96s]  variational distribution to be the same as P, and only learning the action
+[522.96s -> 528.44s]  conditional. So we're going to have the same dynamics and the same initial
+[528.44s -> 534.32s]  state as P, and that's going to be important for combating this optimism bias.
+[534.32s -> 539.80s]  So the only thing that we learned for learning this approximate posterior is
+[539.92s -> 547.40s]  Q of A t given Sd. We can represent this graphically as follows. The real
+[547.40s -> 550.36s]  graphical model that we are in which we're trying to do inference is shown
+[550.36s -> 555.52s]  here. So we have the observed variables O1 through capital T, and the
+[555.52s -> 560.76s]  unobserved variables the S's and the A's. So we have the initial state, the
+[560.76s -> 567.52s]  transition probabilities, and the optimality variable probabilities. The
+[567.56s -> 572.24s]  approximation corresponds to this graphical model. So remember, in
+[572.24s -> 576.76s]  variational inference, the variational distribution does not contain the
+[576.76s -> 580.24s]  observed variables, so it makes sense that the O's are removed, only the S's
+[580.24s -> 585.04s]  and A's remain. And we have the same initial state distribution, the same
+[585.04s -> 590.24s]  transition probabilities. We no longer have the O's, but instead we have Q of A t
+[590.24s -> 595.04s]  given Sd, and that's the only part that we're going to learn. By the way, as
+[595.08s -> 598.80s]  an aside, I should mention that all of these derivations are presented for the
+[598.80s -> 604.52s]  case where S1 is unobserved. Oftentimes, you might actually know S1, in which
+[604.52s -> 608.56s]  case P of S1 goes away, the S1 node will be shaded everywhere, and it will
+[608.56s -> 612.64s]  not actually be represented as part of your variational distribution. It's very
+[612.64s -> 615.72s]  straightforward to derive that. It just adds a little bit more clutter to
+[615.72s -> 619.92s]  the notation, which is why I omit that on these slides and treat S1 as a
+[619.92s -> 623.52s]  latent variable. But keep in mind that if you are in a situation where you
+[623.52s -> 626.88s]  know the current state, and you just want to figure out future states and
+[626.88s -> 630.56s]  actions, then S1 will be observed. But it's pretty easy to extend this to that
+[630.56s -> 634.32s]  setting, and I would encourage you to do that as a exercise on your own
+[634.32s -> 641.36s]  time. Okay, so now to tie this back to the variational inference discussion
+[641.36s -> 646.28s]  from last week, again we're going to say x, our observed variables, is just O1
+[646.28s -> 650.96s]  through t, z, our latent variables, correspond to S1 through t and A1
+[650.96s -> 656.80s]  through t. So the first graphical model is P of z given x, the second one is Q
+[656.80s -> 661.70s]  of z, and then we're going to write out a variational lower bound in terms of
+[661.70s -> 665.76s]  these things, and then we will optimize that variational lower bound, and we'll see
+[665.76s -> 669.60s]  that actually corresponds very closely to a lot of RL algorithms that we've
+[669.60s -> 675.20s]  already learned about. Okay, so here's the variational lower bound that we saw
+[675.32s -> 680.96s]  in the lecture last week. The log of probability of x is greater than or
+[680.96s -> 686.40s]  equal to the expected value under Q of z of log P of x comma z and minus
+[686.40s -> 691.44s]  log Q of z. And this is actually true for any Q of z, but of course, as we
+[691.44s -> 697.12s]  learned last week, the closer Q of z is to the posterior P of z given x, the
+[697.12s -> 702.04s]  tighter this bound becomes. And this last term is just the
+[702.04s -> 707.96s]  entropy of Q. So substituting in our definitions for x and z from the
+[707.96s -> 712.96s]  previous slide, we can say let Q be equal to this thing, and then we can
+[712.96s -> 718.52s]  write out log P of O1 through t, the log probability of our evidence, S being
+[718.52s -> 724.60s]  greater than or equal to the expected value under S1 through t and A1
+[724.60s -> 729.72s]  through t distributed according to Q of all of the probabilities in our
+[729.72s -> 735.32s]  graphical model, log P of S1 plus the sum of the log probabilities of
+[735.32s -> 739.80s]  transitions plus the sum of the log probabilities of the optimality
+[739.80s -> 746.88s]  variables minus the entropy, which is going to be minus log P of S1. So
+[746.88s -> 752.88s]  this S1 comes from our definition for Q minus the log probabilities
+[752.88s -> 756.64s]  of the transitions. Again, this comes from our definition for Q and then
+[756.64s -> 762.12s]  minus the log Q of At given St. So now we can see why we made this
+[762.12s -> 767.04s]  particular choice for Q. We chose Q so that the initial state probabilities
+[767.04s -> 773.16s]  and the transition probabilities very conveniently cancel out, which means
+[773.16s -> 777.20s]  that our bound now just corresponds to the sum of the log probabilities of
+[777.20s -> 782.72s]  the optimality variables minus the log probabilities of the actions under Q.
+[782.76s -> 788.92s]  Substituting in the definition for P of Ot given StAt, we get this expression.
+[788.92s -> 793.20s]  The lower bound on our likelihood is just the expected value of the total
+[793.20s -> 802.48s]  reward minus log Q At given St at every time step. And I can move the
+[802.48s -> 806.48s]  sum outside of the expectation by linearity of expectation and replace
+[806.48s -> 811.60s]  the log Q term with an entropy, and now we can see that this lower bound is
+[811.60s -> 816.48s]  exactly equivalent to maximizing the reward and maximizing the action
+[816.48s -> 821.92s]  entropy. And remember that Q has the same initial state distribution and
+[821.92s -> 825.92s]  transition probabilities as the original problem, which means that this
+[825.92s -> 830.08s]  is precisely the expected reward, our original reinforcement learning objective,
+[830.08s -> 834.68s]  plus these additional entropy terms, and the additional entropy terms serve
+[834.68s -> 839.20s]  to justify why you don't want just the single optimal solution, but why
+[839.20s -> 842.48s]  you might want some stochastic behavior that also models things that
+[842.48s -> 846.68s]  are slightly suboptimal. Thinking back to the suboptimal monkey, this is
+[846.68s -> 850.76s]  optimizing the subjective will basically give us the suboptimal monkey.
+[850.76s -> 854.64s]  So the cool thing about this is just by applying the variational lower
+[854.64s -> 858.72s]  bound, we recovered an objective that looks very much like the original
+[858.72s -> 862.60s]  reinforcement learning objective, but with the addition of these additional
+[862.60s -> 869.80s]  entropy terms. Okay, so how can we optimize this variational lower bound?
+[869.80s -> 875.44s]  So there's our Q, there's our bound from the last slide. Take a moment to
+[875.44s -> 879.84s]  think about how we could optimize it. Can we, for example, employ some of the
+[879.84s -> 886.76s]  algorithms that we already learned about from the previous lectures? So one
+[886.76s -> 891.48s]  of the things we could do is we could employ a dynamic programming approach. So
+[891.56s -> 896.12s]  similarly to, you know, the value iteration style methods we learned about,
+[896.12s -> 903.44s]  we could solve for the last time step, which just has the single reward
+[903.44s -> 911.24s]  function, and when solving for the last time step, we can group the terms.
+[911.24s -> 916.42s]  So we have the expected value of S capital T under Q of S capital T, of the
+[916.42s -> 923.46s]  expected value of A capital T of the reward plus the entropy, and you could
+[923.46s -> 927.34s]  actually show that anytime you have a maximization objective which has the
+[927.34s -> 933.50s]  form of the expected value under a distribution of some quantity minus the
+[933.50s -> 937.90s]  log probability of that distribution, the solution always has the form of the
+[937.90s -> 942.78s]  exponential of that quantity. It's pretty easy to show this by just
+[942.78s -> 946.18s]  setting the derivatives to, you know, taking the derivative, setting the
+[946.18s -> 950.98s]  derivative to 0, and solving for Q A capital T given S capital T. But in
+[950.98s -> 953.96s]  general, it's a good rule of thumb that if your objective is the expected
+[953.96s -> 958.18s]  value of something minus the log probability of the thing under which
+[958.18s -> 962.22s]  you're taking the expected value, the solution is always the
+[962.22s -> 968.26s]  exponentiation of that quantity. So the last time step is always optimized
+[968.46s -> 972.86s]  when Q of A capital T given S T is proportional to the exponential of the
+[972.86s -> 980.90s]  last time step reward. And in particular, if we write out the normalization, you
+[980.90s -> 984.10s]  can see that the denominator is just the integral for all actions of the
+[984.10s -> 989.40s]  exponentiated reward, which of course is exactly the exponentiation of the Q
+[989.40s -> 992.90s]  function minus the value function. Of course, on the last time step, the Q
+[992.90s -> 996.26s]  function is kind of trivial, the Q function is just the reward, and the
+[996.30s -> 1000.58s]  value function is just the log integral exponentiation of the Q
+[1000.58s -> 1005.82s]  function, which is the normalizing constant. All right, so that's the value
+[1005.82s -> 1021.14s]  function. Now, if I were to then substitute it in this expression for Q,
+[1021.14s -> 1032.02s]  then I know that the difference between R and log Q is just the value,
+[1032.02s -> 1040.06s]  right? Because log Q, log little Q is going to be big Q minus V, so big Q
+[1040.06s -> 1046.62s]  here is R, so R minus R plus V, I end up with the expression on the right side.
+[1046.98s -> 1051.38s]  So this is somewhat analogous to what we did in LQR. We're starting at the back,
+[1051.38s -> 1054.74s]  solving for the optimal policy, and then substituting the corresponding
+[1054.74s -> 1061.18s]  expression. So what this tells us is that for the last time step, the
+[1061.18s -> 1064.78s]  contribution this last time step makes to the overall objective is V of S
+[1064.78s -> 1071.56s]  capital T, where little q of A T given S T is given by this expression. And
+[1071.56s -> 1075.34s]  then we can proceed with the recursive case. We can say that at any
+[1075.38s -> 1081.18s]  given time step, the q of a little t given S T at that time step is the arg
+[1081.18s -> 1085.90s]  max of the expected value under q of S T, of the expected value under q of A T
+[1085.90s -> 1089.94s]  given S T, of the reward at that time step, plus the expected value of the
+[1089.94s -> 1095.78s]  value function at the next time step, plus the entropy of q of A T given S T. And
+[1095.78s -> 1101.02s]  of course, if we do that, we can always say that we have this quantity
+[1101.02s -> 1106.70s]  q T, S T, A T, which is R plus next V. That's just the regular Bellman backup,
+[1106.70s -> 1111.50s]  which is not optimistic anymore. And we substitute that into this equation, and
+[1111.50s -> 1115.34s]  again we get an expression that looks like the expected value under q
+[1115.34s -> 1120.38s]  of A T, S T, of some quantity minus log q. So we know that again the solution
+[1120.38s -> 1125.18s]  is the exponentiated q value, and the normalizer is again the value function.
+[1125.18s -> 1130.30s]  So again we get the same expression for q of A T given S T, and we can repeat
+[1130.30s -> 1134.02s]  this recursion backwards in time. So this gives us a dynamic programming
+[1134.02s -> 1141.78s]  solution. And of course we can formalize this as a backward pass, and here is a
+[1141.78s -> 1146.98s]  summary of that backward pass. From the last time step until the beginning, set
+[1146.98s -> 1150.58s]  your q function to be R plus the expected value of next V. So this is
+[1150.58s -> 1155.86s]  the regular Bellman backup. Set your V to be the soft max, so this is the soft
+[1155.90s -> 1160.82s]  maximum. And just like in the regular value iteration algorithm, we would
+[1160.82s -> 1164.70s]  repeat these backups. Now we have a soft value iteration algorithm where
+[1164.70s -> 1169.22s]  everything is exactly the same except that V is a soft max rather than a hard
+[1169.22s -> 1175.70s]  max, and the final policy is the exponential of q minus V. Okay, so to
+[1175.70s -> 1180.18s]  summarize this, we have our original model. We made a variational
+[1180.18s -> 1185.62s]  approximation. Our value functions at every step are the log integral of the
+[1185.62s -> 1189.90s]  exponentiated q values. Our q values are backed up normally, like in the
+[1189.90s -> 1194.58s]  regular Bellman backup, and you can read more about this in this tutorial
+[1194.58s -> 1198.06s]  article from 2018 called Reinforced Learning and Control as Problemistic
+[1198.06s -> 1201.82s]  Inference Tutorial and Review. But this basically gets us a dynamic
+[1201.82s -> 1207.34s]  programming algorithm that is a soft analog to value iteration. Now there are
+[1207.34s -> 1210.94s]  many variants of this. You could, for example, construct a discounted variant
+[1210.94s -> 1215.50s]  where you put a gamma in front of the expected value of the next value
+[1215.50s -> 1219.66s]  function, and that just corresponds to changing your dynamics to have a 1
+[1219.66s -> 1224.78s]  minus gamma probability of death. You could also add an explicit temperature,
+[1224.78s -> 1229.22s]  so when you perform this value function computation, you can add an alpha where
+[1229.22s -> 1233.22s]  you multiply your q value by 1 over alpha and then multiply the result by
+[1233.22s -> 1240.90s]  alpha at the end. And as alpha goes to 0, this will approach a hard max. Of
+[1240.90s -> 1243.66s]  course, you can also construct an infinite horizon formulation from this,
+[1243.66s -> 1246.54s]  where instead of literally doing dynamic programming from the end of the
+[1246.54s -> 1249.90s]  structure to the beginning, you actually run an infinite horizon soft
+[1249.90s -> 1253.70s]  value iteration procedure, and that's also a perfectly reasonable, perfectly
+[1253.70s -> 1257.30s]  correct thing to do for the infinite horizon case. It basically works
+[1257.30s -> 1261.54s]  exactly as you would expect, exactly according to the procedure outlined on
+[1261.54s -> 1269.98s]  the slide. Okay, so that's the dynamic programming way of doing control as
+[1269.98s -> 1276.90s]  variational inference. In the next part, I'm going to talk about how to
+[1276.90s -> 1281.06s]  instantiate this idea as well as some other ideas to design some practical
+[1281.06s -> 1286.34s]  RL algorithms that utilize this variational inference formulas.

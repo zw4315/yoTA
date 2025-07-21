@@ -1,0 +1,1731 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 9.32s]  Hi everyone, welcome to CS224n.
+[9.32s -> 12.94s]  We're about two minutes in, so let's get started.
+[12.94s -> 17.28s]  So today we've got what I think is quite an exciting lecture topic.
+[17.28s -> 21.84s]  We're going to talk about self-attention and transformers.
+[21.84s -> 27.46s]  So these are some ideas that are sort of the foundation of most of the modern
+[27.50s -> 33.74s]  advances in natural language processing, and actually sort of AI systems in a broad range
+[33.74s -> 34.74s]  of fields.
+[34.74s -> 37.84s]  So it's a very, very fun topic.
+[37.84s -> 49.34s]  Before we get into that, we're going to have a couple of reminders.
+[49.34s -> 51.30s]  So there are brand new lecture notes!
+[51.30s -> 52.30s]  Woo!
+[52.30s -> 57.06s]  Nice, thank you, yeah.
+[57.06s -> 59.34s]  I'm very excited about them.
+[59.34s -> 66.02s]  They pretty much follow along with what I'll be talking about today, but go into considerably
+[66.02s -> 68.14s]  more detail.
+[68.14s -> 72.26s]  Assignment four is due a week from today.
+[72.26s -> 75.58s]  So the issues with Azure continue.
+[75.58s -> 85.42s]  Thankfully our TAs especially have tested that this works on Colab, and the amount
+[85.42s -> 92.42s]  of training is such that a Colab session will allow you to train your machine translation
+[92.42s -> 93.42s]  system.
+[93.42s -> 95.22s]  So if you don't have a GPU, use Colab.
+[95.22s -> 101.22s]  We're continuing to work on getting access to more GPUs for assignment five in the final
+[101.22s -> 102.22s]  project.
+[102.22s -> 108.54s]  We'll continue to update you as we're able to, but the usual systems this year are
+[108.54s -> 113.42s]  no longer holding because companies are changing their minds about things.
+[113.42s -> 115.74s]  So our final project proposal.
+[115.74s -> 120.50s]  You have a proposal of what you want to work on for your final project.
+[120.50s -> 125.18s]  We will give you feedback on whether we think it's a feasible idea or how to change
+[125.18s -> 126.18s]  it.
+[126.18s -> 128.38s]  So this is very important because we want you to work on something that we think has
+[128.38s -> 131.26s]  a good chance of success for the rest of the quarter.
+[131.26s -> 132.30s]  That's going to be out tonight.
+[132.30s -> 136.94s]  We'll have an ad announcement when it is out, and we want to get you feedback on that
+[136.94s -> 142.30s]  pretty quickly because you'll be working on this after assignment five is done.
+[142.30s -> 148.74s]  Basically the major core component of the course after that is the final project.
+[148.74s -> 152.66s]  Okay, any questions?
+[152.66s -> 156.94s]  Cool, okay.
+[156.94s -> 162.06s]  So let's kind of take a look back into what we've done so far in this course and
+[162.06s -> 167.34s]  sort of see what we were doing in natural language processing.
+[167.34s -> 168.34s]  What was our strategy?
+[168.34s -> 172.28s]  If you had a natural language processing problem and you wanted to, say, take your best out
+[172.28s -> 176.16s]  effort, attempt at it without doing anything too fancy, you would have said, okay, I'm
+[176.16s -> 182.88s]  going to have a bidirectional LSTM instead of a simple RNN, I'm going to use an LSTM
+[182.88s -> 187.92s]  to encode my sentences, I get bidirectional context, and if I have an output that I'm
+[187.92s -> 193.96s]  trying to generate, I'll have a unidirectional LSTM that I was going to generate one by
+[193.96s -> 194.96s]  one.
+[194.96s -> 198.32s]  So you have a translation or a parse or whatever, and so maybe I've encoded in a
+[198.32s -> 204.20s]  bidirectional LSTM the source sentence, and I'm sort of one by one decoding out the target
+[204.20s -> 206.56s]  with my unidirectional LSTM.
+[206.56s -> 211.92s]  And then also I was going to use something like attention to give flexible access to
+[211.92s -> 217.48s]  memory if I felt like I needed to do this sort of look back and see where I want to
+[217.48s -> 218.64s]  translate from.
+[218.64s -> 222.08s]  Okay, and this was just working exceptionally well.
+[222.08s -> 227.10s]  And we motivated attention through wanting to do machine translation, and you have this
+[227.10s -> 231.14s]  bottleneck where you don't want to have to encode the whole source sentence in a single
+[231.14s -> 232.14s]  vector.
+[232.14s -> 235.42s]  Okay, and in this lecture, we have the same goal, so we're going to be looking
+[235.42s -> 239.82s]  at a lot of the same problems that we did previously, but we're going to use different
+[239.82s -> 240.82s]  building blocks.
+[240.82s -> 247.68s]  We're going to say, you know, if 2014 to 2017-ish I was using recurrence through
+[247.68s -> 252.62s]  lots of trial and error years later, we had these brand new building blocks that
+[252.62s -> 259.02s]  we could plug in, sort of direct replacement for LSTMs, and they're going to allow for
+[259.02s -> 265.02s]  just a huge range of much more successful applications.
+[265.02s -> 269.90s]  And so what are the issues with the recurrent neural networks we used to use, and what
+[269.90s -> 274.02s]  are the new systems that we're going to use sort of from this point moving forward?
+[274.02s -> 279.46s]  Okay, so one of the issues with a recurrent neural network is what we're going to
+[279.46s -> 281.80s]  call linear interaction distance.
+[281.80s -> 287.56s]  So as we know, you know, RNNs are unrolled left to right or right to left, depending
+[287.56s -> 291.52s]  on the language and the direction, okay, but it encodes the sort of notion of linear
+[291.52s -> 296.32s]  locality, which is useful, because if two words occur right next to each other, sometimes
+[296.32s -> 297.44s]  they're actually quite related.
+[297.44s -> 298.76s]  So tasty, pizza.
+[298.76s -> 303.36s]  They're nearby, and in the recurrent neural network, right, you sort of encode, you
+[303.36s -> 308.84s]  know, tasty, and then you sort of walk one step and you encode pizza.
+[308.88s -> 314.68s]  So nearby words do often affect each other's meanings, but, you know, you have this problem
+[314.68s -> 318.96s]  where very long distance dependencies can take a very long time to interact.
+[318.96s -> 323.44s]  So if I have the sentence, the chef, so those are nearby, those interact with each
+[323.44s -> 325.32s]  other.
+[325.32s -> 330.80s]  And then who, and then a bunch of stuffs, like the chef who went to the stores and
+[330.80s -> 337.28s]  picked up the ingredients and, you know, loves garlic, and then was, right, like
+[337.28s -> 342.92s]  actually have an RNN step, right, this sort of application of the recurrent weight matrix
+[342.92s -> 347.72s]  and some element-wise nonlinearities once, twice, three times, right, sort of as many
+[347.72s -> 353.88s]  times as there is potentially the length of the sequence between chef and was, right,
+[353.88s -> 357.72s]  and it's the chef who was, so this is a long distance dependency, should feel kind
+[357.72s -> 361.94s]  of, you know, related to the stuff that we did in dependency syntax, but, you know,
+[361.94s -> 369.22s]  it's quite difficult to learn potentially that these words should be related.
+[369.22s -> 380.22s]  So if you have sort of a lot of steps between, between words, you know, it can be difficult
+[380.22s -> 383.86s]  to learn the dependencies between them, you know, we talked about all these gradient
+[383.86s -> 389.82s]  problems, LSTMs do a lot better at modeling the gradients across long distances than
+[389.82s -> 394.98s]  simple recurrent neural networks, but it's not perfect, and we already know sort of
+[394.98s -> 400.42s]  that this linear order isn't sort of the right way to think about, about sentences,
+[400.42s -> 409.30s]  so if I wanted to learn that it's the chef who was, then, you know, I might have a hard
+[409.30s -> 413.90s]  time doing it because the gradients have to propagate from was to chef, and, you know,
+[413.90s -> 418.50s]  really I'd like more direct connection between words that might be related in the sentence,
+[419.06s -> 421.74s]  or in a document even, right, if these are going to get much longer.
+[421.74s -> 426.10s]  So this is this linear interaction distance problem.
+[426.10s -> 430.22s]  We would like words that might be related to be able to interact with each other in
+[430.22s -> 437.70s]  the neural network's computation sort of graph more easily than sort of being linearly far
+[437.70s -> 441.90s]  away, yeah, so that we can learn these long distance dependencies better.
+[441.90s -> 446.38s]  And there's a related problem, too, that again comes back to the recurrent neural
+[446.38s -> 451.54s]  network's dependence on the index, on the index into the sequence, often call it a dependence
+[451.54s -> 453.02s]  on time.
+[453.02s -> 459.02s]  So in a recurrent neural network, the forward and backward passes have O of sequence length
+[459.02s -> 464.42s]  many, so that means just roughly, in this case, just sequence length many unparalyzable
+[464.42s -> 465.42s]  operations.
+[465.42s -> 470.82s]  So, you know, we know GPUs are great, they can do a lot of operations at once, as long
+[470.82s -> 474.82s]  as there's no dependency between the operations in terms of time, that you have to compute
+[474.82s -> 480.06s]  one, and then compute the other, right, but in a recurrent neural network, you can't
+[480.06s -> 484.94s]  actually compute the RNN hidden state for time step five before you compute the RNN
+[484.94s -> 489.34s]  hidden state for time step four, or time step three, right, and so you get this
+[489.34s -> 493.10s]  graph that looks very similar, where if I want to compute this hidden state, so
+[493.10s -> 497.94s]  I've got some word, I have zero operations I need to do before I can compute this
+[497.94s -> 503.30s]  state, I have one operation I can do before I can compute this state, and as my sequence
+[503.30s -> 508.30s]  length grows, right, I've got, okay, here, I've got three operations I need to do before
+[508.30s -> 512.38s]  I can compute this state with the number three, because I need to compute this, and
+[512.38s -> 517.34s]  this, and that, so there's sort of three unparalyzable operations, and I'm sort
+[517.34s -> 520.54s]  of glomming, you know, all the matrix multiplies and stuff into a single one, so
+[520.54s -> 525.38s]  one, two, three, and of course this grows with the sequence length as well.
+[525.38s -> 530.58s]  So down over here, so as the sequence length grows, I can't parallelize, you know,
+[530.58s -> 535.06s]  I can't just have a big GPU, just, you know, kachanka, with the matrix multiply
+[535.06s -> 538.66s]  to compute this state, because I need to compute all the previous states
+[538.66s -> 545.10s]  beforehand. Okay, any questions about that? So these are these two sort
+[545.10s -> 548.50s]  of related problems, both with the dependence on time, yeah.
+[548.50s -> 552.62s]  So I have a question on the linear interaction issues. I thought that was the whole point of the
+[552.62s -> 558.38s]  attention network, and then how maybe you want, during the training, of the
+[558.38s -> 562.42s]  actual cells that depend more on each other. Can't we do something like the
+[562.42s -> 569.10s]  attention, and then work our way around that? So the question is, with the linear interaction distance, wasn't this
+[569.10s -> 572.38s]  sort of the point of attention that sort of gets around that, can't we use
+[572.38s -> 575.40s]  something with attention to sort of help, or does that just help? So it
+[575.44s -> 579.16s]  won't solve the parallelizability problem, and in fact everything we do in
+[579.16s -> 581.84s]  the rest of the lecture will be attention-based. But we'll get rid of
+[581.84s -> 585.50s]  the recurrence and just do attention, more or less. So, well, yeah, it's a
+[585.50s -> 597.24s]  great intuition. Any other questions? Okay, so if not recurrence, what
+[597.24s -> 602.76s]  about attention? See, I'm just going to slide back. And so, you know, just, we're
+[602.76s -> 606.40s]  going to get deep into attention today, but just for the second, right, attention
+[606.40s -> 610.44s]  treats each word's representation as a query to access and incorporate
+[610.44s -> 614.80s]  information from a set of values. So previously, right, we were in a decoder,
+[614.80s -> 618.76s]  we were decoding out a translation of a sentence, and we attended to the encoder
+[618.76s -> 621.96s]  so that we didn't have to store the entire representation of the source
+[621.96s -> 625.76s]  sentence into a single vector. And here, today, we'll think about
+[625.76s -> 628.90s]  attention within a single sentence. So I've got this sort of sentence
+[628.90s -> 633.86s]  written out here with a, you know, word 1 through word t in this case, and right
+[633.86s -> 636.86s]  on these sort of integers in the boxes, I'm writing out the number of
+[636.86s -> 641.54s]  unparalleled operations that you need to do before you can compute these.
+[641.54s -> 645.62s]  So for each word, you can independently compute its embedding without doing
+[645.62s -> 648.34s]  anything else previously, right, because the embedding just depends on the
+[648.34s -> 653.94s]  word identity. And then, with attention, right, if I wanted to build an
+[653.94s -> 656.90s]  attention representation of this word by looking at all the other words in
+[656.90s -> 661.14s]  the sequence, that's sort of one big operation, and I can do them in parallel
+[661.14s -> 665.58s]  for all the words. So the attention for this word, I can do for the attention for
+[665.58s -> 668.38s]  this word. I don't need to sort of walk left to right like I did for an
+[668.38s -> 673.42s]  RNN. Again, we'll get much deeper into this. But this, you should have the
+[673.42s -> 677.10s]  intuition that it solves the linear interaction problem and the
+[677.10s -> 681.02s]  non-parallelizability problem. Because now, no matter how far away words are
+[681.02s -> 684.70s]  from each other, I am potentially interacting, right, I might just attend
+[684.70s -> 688.86s]  to you even if you're very, very far away, sort of independent of how far
+[688.86s -> 693.58s]  away you are, and I also don't need to sort of walk along the sequence linearly
+[693.58s -> 699.14s]  long. So I'm treating the whole sequence at once. All right, so
+[699.14s -> 701.82s]  the intuition is that attention allows you to look very far away at
+[701.82s -> 704.78s]  once, and it doesn't have this dependence on the sequence index that
+[704.78s -> 708.58s]  keeps us from parallelizing operations. And so now the rest of the lecture will
+[708.62s -> 717.06s]  talk in great depth about attention. So maybe let's just move on. Okay, so let's
+[717.06s -> 721.86s]  think more deeply about attention. One thing that you might think of
+[721.86s -> 725.74s]  with attention is that it's sort of performing kind of a fuzzy lookup in a
+[725.74s -> 729.86s]  key-value store. So you have a bunch of keys, a bunch of values, and it's
+[729.86s -> 734.14s]  going to help you sort of access that. So in an actual lookup table,
+[734.14s -> 738.78s]  just like a dictionary in Python, for example, very simple. You have a
+[738.78s -> 742.94s]  table of keys that each key maps to a value, and then you give it a
+[742.94s -> 747.22s]  query, and the query matches one of the keys, and then you return the
+[747.22s -> 752.54s]  value. So I've got a bunch of keys here, and my query matches the
+[752.54s -> 759.94s]  key, so I return the value. Simple, fair, easy, okay, good. And in
+[759.94s -> 765.42s]  attention, just like we saw before, the query matches all keys
+[765.42s -> 770.78s]  softly. There's no exact match. You compute some sort of similarity
+[770.78s -> 774.98s]  between the query and all of the keys, and then you
+[774.98s -> 778.06s]  sort of weight their results. So you've got a query again, you've got a
+[778.06s -> 783.30s]  bunch of keys. The query, to different extents, is similar to each of the keys,
+[783.30s -> 788.70s]  and you will measure that similarity between 0 and 1 through a
+[788.74s -> 794.62s]  softmax, and then you get the values out. You average them via the
+[794.62s -> 798.98s]  weights of the similarity between the key and the query and the keys. You do
+[798.98s -> 802.10s]  a weighted sum with those weights, and you get an output. So it
+[802.10s -> 806.34s]  really is quite a bit like a lookup table, but in this sort of soft vector
+[806.34s -> 811.46s]  space, mushy sort of sense. So I'm really doing some kind of
+[811.46s -> 816.10s]  accessing into this information that's stored in the key value store, but I'm
+[816.14s -> 822.22s]  sort of softly looking at all of the results. Okay, any questions there?
+[822.22s -> 830.06s]  Cool. So what might this look like, right? So if I was trying to represent
+[830.06s -> 834.70s]  this sentence, I went to Stanford CS224N and learned, so I'm trying to
+[834.70s -> 841.70s]  build a representation of learned. You know, I have a key for each word, so this
+[841.70s -> 845.38s]  is this self-attention thing that we'll get into. I have a key for each word,
+[845.38s -> 848.82s]  a value for each word, I've got the query for learned, and I've got these
+[848.82s -> 853.62s]  sort of teal-ish bars up top, which sort of might say how much you're
+[853.62s -> 857.78s]  going to try to access each of the words. Like, so maybe 224N is not
+[857.78s -> 860.66s]  that important CS, maybe that determines what I learned, you know,
+[860.66s -> 865.14s]  Stanford, right? And then learned, maybe that's important to representing
+[865.14s -> 867.86s]  itself, right? So you sort of look across at the whole sentence and
+[867.86s -> 871.86s]  build up this sort of soft accessing of information across the sentence in
+[871.86s -> 878.66s]  order to represent learned in context. Okay, so this is just a toy diagram.
+[878.66s -> 883.38s]  So let's get into the math. So we're going to look at a sequence of words,
+[883.38s -> 887.22s]  so that's W1 to N, a sequence of words in a vocabulary, so this is like,
+[887.22s -> 890.82s]  you know, Zuko made his Uncle T. That's a good sequence. And for each
+[890.82s -> 894.34s]  word, we're going to embed it with this embedding matrix, just like
+[894.34s -> 897.62s]  we've been doing in this class, right? So I have this embedding matrix
+[897.62s -> 902.74s]  that goes from the vocabulary size to the dimensionality D. So that's
+[902.74s -> 906.18s]  each word has a non-contextual, right, only dependent on itself,
+[906.18s -> 910.74s]  word embedding. And now I'm going to transform each word with
+[910.74s -> 913.70s]  one of three different weight matrices. So this is often called
+[913.70s -> 917.94s]  key query value self-attention. So right, so I have a matrix Q,
+[917.94s -> 922.50s]  which is an RD to D, so this maps Xi to, which is a vector of
+[922.50s -> 925.06s]  dimensionality D to another vector of dimensionality D.
+[925.70s -> 930.18s]  And so that's going to be a query vector, right? So it takes an Xi and it sort of,
+[930.18s -> 932.90s]  you know, rotates it, shuffles it around, stretches it, squishes it,
+[933.78s -> 938.34s]  makes it different, and now it's a query. And now for a different learnable parameter K,
+[938.34s -> 940.74s]  so that's another matrix, I'm going to come up with my keys,
+[941.78s -> 946.90s]  and with a different learnable parameter V, I'm going to come up with my values, right?
+[946.90s -> 950.98s]  So I'm taking each of the non-contextual word embeddings, each of these Xi's,
+[950.98s -> 955.54s]  and I'm transforming each of them to come up with my query for that word,
+[955.54s -> 958.34s]  my key for that word, and my value for that word.
+[960.10s -> 962.34s]  So every word is doing each of these roles.
+[963.70s -> 968.10s]  Next, I'm going to compute all pairs of similarities between the keys and queries.
+[968.10s -> 971.70s]  So in the toy example we saw, I was computing sort of the similarity
+[971.70s -> 976.34s]  between a single query for the word learned and all of the keys for the entire sentence.
+[977.22s -> 982.42s]  In this context, I'm computing all pairs of similarities between all keys and all values,
+[982.42s -> 985.06s]  because I want to represent sort of all of these sums.
+[985.06s -> 987.94s]  So I've got this sort of dot product,
+[987.94s -> 990.26s]  I'm just going to take the dot product between these two vectors, right?
+[990.26s -> 995.94s]  So I've got Qi, so this is saying the query for word i dotted with the key for word j,
+[995.94s -> 999.70s]  and I get this score, which is, you know, a real value,
+[1000.98s -> 1003.86s]  might be very large and negative, might be zero, might be very large and positive.
+[1004.42s -> 1008.58s]  And so that's like, how much should I look at j in this lookup table?
+[1009.94s -> 1011.14s]  And then I do the softmax, right?
+[1011.14s -> 1016.58s]  So I softmax, so I say that, you know, the actual weight that I'm going to look at j from i
+[1017.14s -> 1020.74s]  is softmax of this over all of the possible indices, right?
+[1020.74s -> 1023.14s]  So it's like the affinity between i and j,
+[1023.70s -> 1028.26s]  normalized by the affinity between i and all of the possible j prime in the sequence.
+[1028.26s -> 1033.86s]  And then my output is just the weighted sum of values.
+[1033.86s -> 1038.26s]  So I've got this output for word i, so maybe i is like one for Zuko,
+[1038.26s -> 1042.98s]  and I'm representing it as the sum of these weights for all j,
+[1042.98s -> 1046.02s]  so Zuko and maid and his and uncle and tea,
+[1046.02s -> 1050.02s]  and the value vector for that word j.
+[1050.02s -> 1053.54s]  I'm looking from i to j as much as alpha ij.
+[1053.54s -> 1059.30s]  What's the dimension of wi?
+[1059.30s -> 1064.82s]  Oh, wi, you can either think of it as a symbol in vocab v,
+[1064.82s -> 1067.14s]  so that's like, you could think of it as a one-hot vector.
+[1069.54s -> 1071.14s]  Yeah, in this case we are, I guess, thinking of this.
+[1071.14s -> 1074.26s]  So one-hot vector in dimensionality, size of vocab.
+[1074.26s -> 1081.70s]  So in the matrix e, you see that it's r d by bars around v, that's size of the vocabulary.
+[1081.70s -> 1087.30s]  So when I do e multiplied by wi, that's taking e, which is d by v,
+[1088.02s -> 1092.42s]  multiplying it by w, which is v, and returning a vector that's dimensionality d.
+[1092.98s -> 1100.34s]  So w in that first line, like w1n, that's a matrix where it has like
+[1100.34s -> 1104.66s]  maybe like a column for every word in that sentence, and each column is a length v?
+[1105.78s -> 1107.70s]  Yeah, usually I guess we think of it as having a,
+[1108.34s -> 1111.62s]  I mean, if I'm putting the sequence length index first,
+[1111.62s -> 1113.46s]  you might think of it as having a row for each word.
+[1113.46s -> 1116.90s]  But similarly, yeah, it's n, which is the sequence length,
+[1116.90s -> 1120.58s]  and then the second dimension would be v, which is the vocabulary size.
+[1120.58s -> 1123.86s]  And then that gets mapped to this thing, which is sequence length by d.
+[1126.26s -> 1133.06s]  Why do we learn two different matrices, q and k, when q transpose, qi transpose kj
+[1133.06s -> 1135.46s]  is really just one matrix in the middle?
+[1136.02s -> 1136.90s]  That's a great question.
+[1136.98s -> 1141.94s]  It ends up being, because this will end up being a low-rank approximation to that matrix,
+[1141.94s -> 1144.90s]  so it is for computational efficiency reasons,
+[1145.46s -> 1150.02s]  although it also, I think, feels kind of nice in the presentation.
+[1150.02s -> 1154.18s]  But yeah, what we'll end up doing is having a very low-rank approximation to qk transpose,
+[1154.74s -> 1157.22s]  and so you actually do do it like this.
+[1157.22s -> 1157.86s]  It's a good question.
+[1159.78s -> 1165.46s]  This is pii, so the query would be different from any specific?
+[1166.02s -> 1167.30s]  Sorry, could you repeat that for me?
+[1167.30s -> 1173.22s]  This eii, so the query of the word dotted with the key by itself,
+[1173.22s -> 1177.62s]  does it look like an identity, or does it look like anything particular?
+[1177.62s -> 1178.26s]  That's a good question.
+[1178.26s -> 1180.34s]  Okay, let me remember to repeat questions.
+[1180.34s -> 1184.66s]  So does eii for j equal to i, so looking at itself,
+[1184.66s -> 1187.54s]  look like anything in particular, does it look like the identity?
+[1187.54s -> 1188.74s]  Is that the question?
+[1188.74s -> 1192.90s]  Okay, so right, it's unclear, actually.
+[1192.90s -> 1196.34s]  This question of should you look at yourself for representing yourself,
+[1196.34s -> 1199.94s]  well, it's going to be encoded by the matrices q and k.
+[1200.66s -> 1204.82s]  If I didn't have q and k in there, if those were the identity matrices,
+[1204.82s -> 1206.90s]  if q is identity, k is identity,
+[1206.90s -> 1208.90s]  then this would be sort of dot product with yourself,
+[1208.90s -> 1211.54s]  which is going to be high on average,
+[1211.54s -> 1213.70s]  like you're pointing in the same direction as yourself.
+[1213.70s -> 1220.98s]  But it could be that qxi and kxi might be arbitrarily different from each other,
+[1220.98s -> 1223.62s]  because q could be the identity,
+[1223.62s -> 1227.62s]  and k could map you to the negative of yourself, for example,
+[1227.62s -> 1228.82s]  so that you don't look at yourself.
+[1228.82s -> 1230.82s]  So this is all learned in practice,
+[1230.82s -> 1235.78s]  so you end up, it can sort of decide by learning
+[1235.78s -> 1238.34s]  whether you should be looking at yourself or not.
+[1238.34s -> 1242.66s]  And that's some of the flexibility that parameterizing it as q and k gives you,
+[1242.66s -> 1247.38s]  that wouldn't be there if I just used xi's everywhere in this equation.
+[1247.38s -> 1253.30s]  I'm going to try to move on, I'm afraid, because there's a lot to get on,
+[1253.30s -> 1255.46s]  but we'll keep talking about self-attention,
+[1255.46s -> 1259.38s]  and so as more questions come up, I can also potentially return back.
+[1261.38s -> 1265.06s]  Okay, so this is our basic building block,
+[1265.06s -> 1270.26s]  but there are a bunch of barriers to using it as a replacement for LSTMs.
+[1270.26s -> 1272.90s]  And so what we're going to do for this portion of the lecture
+[1272.90s -> 1275.62s]  is talk about the minimal components that we need
+[1275.62s -> 1281.46s]  in order to use self-attention as this very fundamental building block.
+[1281.46s -> 1284.34s]  So we can't use it as it stands, as I've presented it,
+[1285.14s -> 1289.22s]  but because there are a couple of things that we need to solve or fix.
+[1289.22s -> 1293.38s]  One of them is that there's no notion of sequence order in self-attention.
+[1293.38s -> 1297.46s]  So what does this mean?
+[1297.46s -> 1302.26s]  If I have a sentence like, I'm going to move over here to the whiteboard briefly,
+[1302.26s -> 1305.30s]  and hopefully I'll write quite large.
+[1306.66s -> 1308.10s]  If I have a sentence like,
+[1308.10s -> 1314.02s]  Zucco made his uncle,
+[1315.62s -> 1324.66s]  and let's say, his uncle made Zucco,
+[1325.54s -> 1329.78s]  if I were to embed each of these words using its embedding matrix,
+[1329.78s -> 1334.74s]  the embedding matrix isn't dependent on the index of the word.
+[1334.74s -> 1337.94s]  So this is the word at index 1, 2, 3, 4,
+[1337.94s -> 1341.78s]  versus now his is over here, and uncle, right?
+[1341.78s -> 1343.78s]  And so when I compute the self-attention,
+[1343.78s -> 1346.58s]  and there's a lot more on this in the lecture notes that goes through a full example,
+[1349.70s -> 1353.46s]  the actual self-attention operation will give you exactly the same
+[1353.46s -> 1356.42s]  representations for this sequence, Zucco made his uncle,
+[1356.42s -> 1359.22s]  as for this sequence, his uncle made Zucco.
+[1359.86s -> 1362.58s]  And that's bad, because there are sentences that mean different things.
+[1363.70s -> 1368.26s]  And so it's sort of this idea that self-attention is an operation on sets,
+[1368.26s -> 1372.50s]  like you have a set of vectors that you're going to perform self-attention on,
+[1372.50s -> 1376.66s]  and nowhere does the exact position of the words come into play directly.
+[1378.98s -> 1381.78s]  So we're going to encode the position of words
+[1382.58s -> 1385.14s]  through the keys, queries, and values that we have.
+[1386.02s -> 1389.38s]  So consider now representing each sequence index
+[1389.94s -> 1392.74s]  our sequences are going from 1 to n as a vector.
+[1393.30s -> 1397.06s]  So don't worry so far about how it's being made,
+[1397.06s -> 1400.02s]  but you can imagine representing sort of the number 1,
+[1400.02s -> 1402.66s]  like the position 1, the position 2, the position 3,
+[1403.46s -> 1405.54s]  as a vector in the dimensionality D,
+[1405.54s -> 1408.50s]  just like we're representing our keys, queries, and values.
+[1409.14s -> 1411.14s]  And so these are position vectors.
+[1412.98s -> 1419.70s]  If you were to want to incorporate the information represented by these positions,
+[1419.78s -> 1424.42s]  into our self-attention, you could just add these vectors,
+[1424.42s -> 1427.14s]  these PI vectors, to the inputs.
+[1428.02s -> 1432.82s]  So if I have this xi embedding of a word,
+[1432.82s -> 1434.58s]  which is the word at position i,
+[1434.58s -> 1437.70s]  but really just represents, oh, the word Zucco is here,
+[1437.70s -> 1439.86s]  now I can say, oh, it's the word Zucco,
+[1439.86s -> 1444.58s]  and it's at position 5, because this vector represents position 5.
+[1444.58s -> 1450.42s]  Okay, so how do we do this?
+[1451.14s -> 1452.58s]  And we might only have to do this once, right?
+[1452.58s -> 1456.34s]  So we can do it once at the very input to the network,
+[1456.34s -> 1458.10s]  and then that sort of is sufficient,
+[1458.10s -> 1459.78s]  we don't have to do it at every layer,
+[1459.78s -> 1462.10s]  because it sort of knows from the input.
+[1463.54s -> 1465.94s]  So one way in which people have done this
+[1465.94s -> 1469.38s]  is look at these sinusoidal position representations.
+[1469.38s -> 1471.30s]  So this looks a little bit like this,
+[1471.30s -> 1472.66s]  where you have, so these are,
+[1472.66s -> 1475.94s]  this is a vector PI, which is in dimensionality d, right?
+[1475.94s -> 1479.70s]  And each one of the dimensions, you take the value i,
+[1480.34s -> 1483.22s]  you modify it by some constant,
+[1483.22s -> 1487.38s]  and you pass it to the sine or cosine function,
+[1487.38s -> 1489.22s]  and you get these sort of values
+[1489.22s -> 1492.98s]  that vary according to the differing periods,
+[1492.98s -> 1494.26s]  depending on the dimensionality's d.
+[1494.26s -> 1497.38s]  So I've got this sort of a representation of a matrix
+[1497.38s -> 1499.46s]  where d is the vertical dimension,
+[1499.46s -> 1501.46s]  and then n is the horizontal,
+[1501.46s -> 1503.06s]  and you can see that there's sort of like,
+[1503.06s -> 1505.86s]  oh, as I walk along,
+[1505.86s -> 1508.10s]  you see the period of the sine function going up and down,
+[1508.10s -> 1511.06s]  and each of the dimensions d has a different period,
+[1511.06s -> 1512.58s]  and so together you can represent
+[1512.58s -> 1515.06s]  a bunch of different sort of position indices.
+[1515.06s -> 1518.74s]  And it gives this intuition that,
+[1518.74s -> 1521.38s]  oh, maybe sort of the absolute position of a word
+[1521.38s -> 1522.58s]  isn't as important,
+[1522.58s -> 1523.94s]  you've got this sort of periodicity
+[1523.94s -> 1525.06s]  of the sines and cosines,
+[1526.10s -> 1527.70s]  and maybe that allows you to extrapolate
+[1527.70s -> 1528.82s]  to longer sequences,
+[1529.38s -> 1530.74s]  but in practice, that doesn't work.
+[1531.86s -> 1534.10s]  But this is sort of like an early notion
+[1534.10s -> 1535.54s]  that is still sometimes used
+[1535.54s -> 1538.10s]  for how to represent position in transformers
+[1539.46s -> 1541.14s]  and self-attention networks in general.
+[1541.94s -> 1544.34s]  So that's one idea.
+[1545.06s -> 1547.06s]  You might think it's a little bit complicated,
+[1548.50s -> 1550.10s]  a little bit unintuitive.
+[1550.10s -> 1551.14s]  Here's something that feels
+[1551.14s -> 1552.50s]  a little bit more deep learning.
+[1554.42s -> 1556.10s]  So we're just going to say,
+[1556.10s -> 1557.22s]  oh, you know,
+[1557.22s -> 1558.98s]  I've got a maximum sequence length of n,
+[1559.78s -> 1561.38s]  and I'm just going to learn a matrix
+[1561.38s -> 1563.62s]  that's dimensionality d by n,
+[1563.62s -> 1565.38s]  and that's going to represent my positions.
+[1565.38s -> 1566.82s]  I'm going to learn it as a parameter,
+[1566.82s -> 1568.90s]  just like I learn every other parameter.
+[1568.90s -> 1569.70s]  And what do they mean?
+[1569.70s -> 1570.58s]  Oh, I have no idea,
+[1570.58s -> 1572.02s]  but it represents position.
+[1575.78s -> 1577.38s]  So you just sort of add this matrix
+[1578.34s -> 1579.30s]  to the xi's,
+[1579.30s -> 1580.42s]  your input embeddings,
+[1582.02s -> 1584.02s]  and it learns to fit to data.
+[1584.02s -> 1586.98s]  So whatever representation of position that's linear,
+[1587.78s -> 1590.18s]  sort of index space that you want,
+[1590.18s -> 1591.30s]  you can learn.
+[1591.30s -> 1592.66s]  And the cons are that,
+[1592.66s -> 1595.14s]  well, you definitely now can't represent anything
+[1595.14s -> 1597.86s]  that's longer than n words long.
+[1597.86s -> 1600.18s]  No sequence longer than n you can handle
+[1600.18s -> 1602.58s]  because you only learned a matrix
+[1602.58s -> 1604.26s]  of this many positions.
+[1604.26s -> 1605.06s]  And so in practice,
+[1605.06s -> 1607.54s]  you'll get a model error
+[1607.54s -> 1609.70s]  if you pass a self-attention model
+[1609.70s -> 1611.46s]  something longer than length n,
+[1611.46s -> 1613.54s]  it will just sort of crash and say,
+[1613.54s -> 1614.66s]  I can't do this.
+[1615.54s -> 1618.90s]  And so this is sort of what most systems nowadays use.
+[1619.54s -> 1622.10s]  There are more flexible representations of position,
+[1622.10s -> 1623.70s]  including a couple in the lecture notes.
+[1624.74s -> 1626.18s]  You might want to look at sort of like
+[1626.18s -> 1627.86s]  the relative linear position
+[1627.86s -> 1629.70s]  or words before or after each other,
+[1629.70s -> 1631.30s]  but not their absolute position.
+[1631.30s -> 1633.14s]  There's also some sort of representations
+[1633.14s -> 1636.50s]  that hearken back to our dependency syntax
+[1636.50s -> 1638.26s]  because like, oh, maybe words that are close
+[1638.26s -> 1639.54s]  in the dependency parse tree
+[1639.54s -> 1641.46s]  should be the things that are sort of close
+[1641.46s -> 1643.86s]  in the self-attention operation.
+[1644.90s -> 1645.86s]  Okay, questions.
+[1648.26s -> 1649.14s]  In practice,
+[1649.14s -> 1652.34s]  do we typically just make n large enough
+[1652.34s -> 1654.10s]  that we don't run into the issue of like
+[1655.70s -> 1658.50s]  having something that can be input longer than n?
+[1659.14s -> 1660.34s]  So the question is in practice,
+[1660.34s -> 1661.78s]  do we just make n long enough
+[1661.78s -> 1663.06s]  that we don't run into the problem
+[1663.06s -> 1666.50s]  where we're going to look at a text longer than n?
+[1666.50s -> 1667.22s]  No, in practice,
+[1667.22s -> 1668.34s]  it's actually quite a problem.
+[1669.54s -> 1670.26s]  Even today,
+[1670.26s -> 1672.42s]  even in the largest biggest language models
+[1672.42s -> 1677.94s]  and can I fit this prompt into chat GPT or whatever
+[1677.94s -> 1679.46s]  is a thing that you might see on Twitter.
+[1679.46s -> 1681.22s]  I mean, these continue to be issues.
+[1681.86s -> 1684.90s]  And part of it is because the self-attention operation,
+[1684.90s -> 1686.82s]  and we'll get into this later in the lecture,
+[1686.82s -> 1689.94s]  it's quadratic complexity in the sequence length.
+[1689.94s -> 1694.10s]  So you're going to spend n squared sort of memory budget
+[1694.10s -> 1695.54s]  in order to make sequence lengths longer.
+[1695.54s -> 1696.26s]  So in practice,
+[1697.22s -> 1699.30s]  this might be on a large model,
+[1699.30s -> 1701.30s]  say 4,000 or so,
+[1701.30s -> 1702.10s]  n is 4,000,
+[1702.18s -> 1703.62s]  so you can fit 4,000 words,
+[1703.62s -> 1704.50s]  which feels like a lot,
+[1704.50s -> 1706.02s]  but it's not going to fit a novel.
+[1706.02s -> 1707.54s]  It's not going to fit a Wikipedia page.
+[1709.70s -> 1712.66s]  And there are models that do longer sequences for sure.
+[1713.94s -> 1715.14s]  And again, we'll talk a bit about it,
+[1715.14s -> 1716.42s]  but no, this actually is an issue.
+[1720.26s -> 1724.74s]  How do you know that the P you learned is the position
+[1724.74s -> 1729.06s]  which is not any other interest?
+[1729.06s -> 1729.62s]  Yeah.
+[1729.62s -> 1731.46s]  So how do you know that the P that you've learned,
+[1731.46s -> 1732.42s]  this matrix that you've learned,
+[1732.42s -> 1735.38s]  is representing position as opposed to anything else?
+[1735.38s -> 1737.70s]  And the reason is the only thing that correlates is position.
+[1738.66s -> 1740.74s]  So when I see these vectors,
+[1740.74s -> 1743.54s]  I'm adding this P matrix to my X matrix,
+[1743.54s -> 1744.58s]  the word embeddings,
+[1745.30s -> 1746.58s]  I'm adding them together,
+[1746.58s -> 1748.74s]  and the words that show up at each index will vary
+[1748.74s -> 1752.26s]  depending on what word actually showed up there in the example,
+[1752.26s -> 1753.78s]  but the P matrix never differs.
+[1753.78s -> 1756.26s]  It's always exactly the same at every index.
+[1756.26s -> 1759.22s]  And so it's the only thing in the data that it correlates with.
+[1759.22s -> 1760.74s]  So you're sort of learning it implicitly,
+[1761.14s -> 1763.62s]  this vector at index one is always at index one
+[1763.62s -> 1766.18s]  for every example, for every gradient update,
+[1766.18s -> 1770.34s]  and nothing else co-occurs like that.
+[1771.86s -> 1772.18s]  Yeah.
+[1772.18s -> 1773.14s]  So what you end up learning,
+[1773.70s -> 1774.66s]  I don't know, it's unclear,
+[1774.66s -> 1776.58s]  but it definitely allows you to know,
+[1776.58s -> 1779.22s]  oh, this word is with this index of this, yeah.
+[1781.62s -> 1782.18s]  Okay, yeah.
+[1783.14s -> 1785.62s]  Just quickly, when you say quadratic in space,
+[1787.22s -> 1789.54s]  is the sequence right now defined as a sequence?
+[1789.54s -> 1791.06s]  Is that a sequence of words?
+[1791.06s -> 1795.22s]  Or I'm trying to figure out what the unit is.
+[1797.22s -> 1798.50s]  Okay, so the question is,
+[1798.50s -> 1799.86s]  this is quadratic in this sequence,
+[1799.86s -> 1801.30s]  is that a sequence of words?
+[1801.30s -> 1802.90s]  Yeah, think of it as a sequence of words.
+[1803.70s -> 1805.94s]  Sometimes there'll be pieces that are smaller than words,
+[1805.94s -> 1808.26s]  which we'll go into in the next lecture.
+[1808.26s -> 1809.94s]  But yeah, think of this as a sequence of words,
+[1809.94s -> 1811.94s]  but not necessarily just for a sentence.
+[1811.94s -> 1813.86s]  Maybe for an entire paragraph,
+[1813.86s -> 1816.10s]  or an entire document, or something like that.
+[1819.70s -> 1821.86s]  Yeah, the tension is based words to words.
+[1823.54s -> 1825.38s]  Okay, cool, I'm gonna move on.
+[1826.90s -> 1830.42s]  Okay, so we have another problem.
+[1830.42s -> 1833.22s]  Another is that based on the presentation
+[1833.22s -> 1834.98s]  of self-attention that we've done,
+[1834.98s -> 1836.90s]  there's really no non-linearities
+[1836.90s -> 1838.74s]  for deep learning magic.
+[1838.74s -> 1841.30s]  We're just computing weighted averages of stuff.
+[1841.94s -> 1846.42s]  So if I apply self-attention,
+[1846.42s -> 1848.50s]  and then apply self-attention again,
+[1848.50s -> 1850.50s]  and then again, and again, and again,
+[1850.50s -> 1852.74s]  you should look at the next lecture notes
+[1852.74s -> 1853.46s]  if you're interested in this.
+[1853.46s -> 1854.42s]  It's actually quite cool.
+[1854.42s -> 1855.70s]  But what you end up doing
+[1855.70s -> 1858.10s]  is you're just re-averaging value vectors together.
+[1858.10s -> 1860.82s]  So you're computing averages of value vectors,
+[1860.82s -> 1862.90s]  and it ends up looking like one big self-attention.
+[1863.54s -> 1865.06s]  But there's an easy fix to this
+[1865.06s -> 1867.86s]  if you want the traditional deep learning magic,
+[1867.86s -> 1870.10s]  and you can just add a feed-forward network
+[1870.10s -> 1871.86s]  to post-process each output vector.
+[1871.86s -> 1873.30s]  So I've got a word here
+[1873.30s -> 1875.30s]  that's sort of the output of self-attention,
+[1875.30s -> 1876.58s]  and I'm going to pass it through,
+[1877.38s -> 1880.26s]  in this case, I'm calling it a multilayer perceptron MLP.
+[1880.26s -> 1881.86s]  So this is a vector in RD
+[1881.86s -> 1882.66s]  that's going to be,
+[1883.62s -> 1885.78s]  and it's taking in as input a vector in RD.
+[1886.34s -> 1890.26s]  And you do the usual sort of multilayer perceptron thing
+[1890.26s -> 1891.06s]  where you have the output,
+[1891.06s -> 1892.42s]  and you multiply it by a matrix,
+[1892.42s -> 1893.70s]  pass it through a non-linearity,
+[1894.34s -> 1895.62s]  multiply it by another matrix.
+[1895.62s -> 1898.18s]  Okay, and so what this looks like in self-attention
+[1898.18s -> 1899.70s]  is that I've got this sort of sentence,
+[1899.86s -> 1903.78s]  chef, food, and I've got my embeddings for it.
+[1903.78s -> 1906.42s]  I pass it through this whole big self-attention block,
+[1906.42s -> 1907.70s]  which looks at the whole sequence
+[1907.70s -> 1910.34s]  and sort of incorporates contexts and all that.
+[1910.34s -> 1912.50s]  And then I pass each one individually
+[1912.50s -> 1915.38s]  through a feed-forward layer.
+[1915.38s -> 1916.26s]  So this embedding,
+[1916.26s -> 1918.26s]  that's sort of the output of the self-attention
+[1918.26s -> 1919.06s]  for the word the,
+[1919.62s -> 1920.98s]  is passed independently
+[1920.98s -> 1922.82s]  through a multilayer perceptron here.
+[1924.02s -> 1927.30s]  You can think of it as sort of combining together
+[1927.62s -> 1930.58s]  or processing the result of attention.
+[1930.58s -> 1933.38s]  So there's a number of reasons why we do this.
+[1934.50s -> 1936.26s]  One of them also is that you can actually stack
+[1936.26s -> 1940.02s]  a ton of computation into these feed-forward networks
+[1940.02s -> 1941.46s]  very, very efficiently,
+[1941.46s -> 1942.50s]  very parallelizable,
+[1942.50s -> 1943.78s]  very good for GPUs,
+[1943.78s -> 1945.38s]  but this is what's done in practice.
+[1945.38s -> 1946.74s]  So you do self-attention,
+[1946.74s -> 1948.98s]  and then you can pass it through this
+[1948.98s -> 1951.70s]  sort of position-wise feed-forward layer.
+[1951.70s -> 1953.94s]  Every word is processed independently
+[1953.94s -> 1955.94s]  by this feed-forward network
+[1956.90s -> 1958.02s]  to process the result.
+[1960.26s -> 1962.26s]  So that's adding our sort of classical
+[1962.26s -> 1964.58s]  deep learning nonlinearities for self-attention.
+[1965.94s -> 1968.18s]  And that's an easy fix for this sort of
+[1968.18s -> 1970.82s]  no nonlinearities problem in self-attention.
+[1970.82s -> 1972.34s]  And then we have a last issue
+[1972.34s -> 1974.10s]  before we have our final,
+[1974.10s -> 1976.18s]  minimal self-attention building block
+[1976.18s -> 1978.02s]  with which we can replace RNNs.
+[1979.62s -> 1980.26s]  And that's that,
+[1981.30s -> 1983.22s]  well, when I've been writing out
+[1983.22s -> 1984.90s]  all of these examples of self-attention,
+[1984.90s -> 1986.66s]  you can sort of look at the entire sequence.
+[1987.94s -> 1989.22s]  And in practice,
+[1989.86s -> 1990.66s]  for some tasks,
+[1990.66s -> 1993.38s]  such as machine translation or language modeling,
+[1993.38s -> 1994.50s]  whenever you want to define
+[1994.50s -> 1996.58s]  a probability distribution over a sequence,
+[1996.58s -> 1998.74s]  you can't cheat and look at the future.
+[2001.46s -> 2003.70s]  So at every time step,
+[2003.70s -> 2006.90s]  I could define the set of keys and queries and values
+[2006.90s -> 2009.14s]  to only include past words,
+[2009.14s -> 2010.26s]  but this is inefficient.
+[2011.22s -> 2011.70s]  Bear with me.
+[2011.70s -> 2014.50s]  It's inefficient because you can't parallelize it so well.
+[2014.50s -> 2015.54s]  So instead,
+[2015.54s -> 2017.78s]  we compute the entire n by n matrix,
+[2017.78s -> 2019.38s]  just like I showed in the slide
+[2019.38s -> 2020.98s]  discussing self-attention,
+[2020.98s -> 2022.82s]  and then I mask out words in the future.
+[2022.82s -> 2024.58s]  So for this score, eij,
+[2025.38s -> 2029.70s]  and I computed eij for all n by n pairs of words,
+[2029.70s -> 2031.94s]  is equal to whatever it was before
+[2032.98s -> 2036.50s]  if the word that you're looking at, index j,
+[2037.14s -> 2039.22s]  is an index that is less than or equal to
+[2039.22s -> 2040.98s]  where you are, index i,
+[2041.54s -> 2043.46s]  and it's equal to negative infinity-ish
+[2044.10s -> 2045.94s]  otherwise, if it's in the future.
+[2045.94s -> 2047.62s]  And when you softmax the eij,
+[2047.62s -> 2049.94s]  negative infinity gets mapped to zero.
+[2051.06s -> 2054.10s]  So now my attention is weighted zero.
+[2054.10s -> 2056.26s]  My weighted average is zero on the future,
+[2056.26s -> 2057.30s]  so I can't look at it.
+[2058.50s -> 2059.78s]  What does this look like?
+[2059.78s -> 2062.34s]  So in order to encode these words,
+[2062.34s -> 2063.30s]  the, chef, who,
+[2063.94s -> 2065.54s]  maybe the start symbol there,
+[2067.70s -> 2069.54s]  I can look at these words,
+[2069.54s -> 2071.38s]  right, that's all pairs of words,
+[2071.38s -> 2072.58s]  and then I just gray out,
+[2072.90s -> 2075.70s]  I sort of negative infinity out the words I can't look at.
+[2075.70s -> 2077.14s]  So encoding the start symbol,
+[2077.14s -> 2079.06s]  I can just look at the start symbol.
+[2079.06s -> 2080.42s]  When encoding the,
+[2080.42s -> 2082.34s]  I can look at the start symbol and the.
+[2082.98s -> 2083.86s]  When encoding chef,
+[2083.86s -> 2086.02s]  I can look at start the chef,
+[2086.02s -> 2088.82s]  but I can't look at who, right?
+[2088.82s -> 2090.98s]  And so with this representation of chef,
+[2092.18s -> 2095.30s]  that is only looking at start the chef,
+[2096.18s -> 2098.98s]  I can define a probability distribution using this vector
+[2098.98s -> 2100.90s]  that allows me to predict who
+[2100.90s -> 2101.94s]  without having cheated
+[2101.94s -> 2103.78s]  by already looking ahead and seeing that,
+[2103.78s -> 2105.54s]  well, who is the next word.
+[2109.22s -> 2109.72s]  Questions?
+[2111.70s -> 2113.62s]  So it says for using it in decoders,
+[2114.82s -> 2116.98s]  do we do this for both the encoding layer
+[2116.98s -> 2117.94s]  and the decoding layer,
+[2117.94s -> 2119.14s]  or for the encoding layer,
+[2119.14s -> 2120.98s]  are we allowing ourselves to look for?
+[2121.54s -> 2122.10s]  The question is,
+[2122.74s -> 2124.42s]  it says here that we're using this in a decoder.
+[2124.42s -> 2126.50s]  Do we also use it in the encoder?
+[2126.50s -> 2128.74s]  So this is the distinction between
+[2128.74s -> 2130.82s]  sort of like a bi-directional LSTM
+[2130.82s -> 2133.06s]  and a unidirectional LSTM, right?
+[2133.06s -> 2136.02s]  So wherever you don't need this constraint,
+[2137.06s -> 2138.02s]  you probably don't use it.
+[2138.02s -> 2139.54s]  So if you're using an encoder, right?
+[2139.54s -> 2142.26s]  On the source sentence of your machine translation problem,
+[2142.26s -> 2144.26s]  you probably don't do this masking
+[2144.26s -> 2145.38s]  because it's probably good
+[2145.38s -> 2147.14s]  to let everything look at each other.
+[2147.14s -> 2148.74s]  And then whenever you do need to use it
+[2148.74s -> 2150.42s]  because you have this auto aggressive
+[2150.42s -> 2152.34s]  sort of probability of word one,
+[2152.34s -> 2153.94s]  probability of two given one,
+[2153.94s -> 2155.30s]  you know, three given two and one,
+[2155.30s -> 2156.26s]  then you would use this.
+[2156.26s -> 2157.30s]  So traditionally, yes,
+[2157.30s -> 2158.58s]  in decoders, you will use it.
+[2158.58s -> 2160.02s]  In encoders, you will not.
+[2161.78s -> 2162.34s]  Yes.
+[2164.18s -> 2166.34s]  My question is a little bit philosophical.
+[2167.38s -> 2170.74s]  How humans actually generate sentences
+[2170.74s -> 2173.94s]  by having some notion of the probability
+[2173.94s -> 2175.86s]  of future words before they say
+[2178.10s -> 2178.90s]  the words that,
+[2178.90s -> 2182.58s]  or before they choose the words that they are currently
+[2184.50s -> 2186.90s]  speaking or generating?
+[2186.90s -> 2187.46s]  Good question.
+[2187.46s -> 2188.66s]  So the question is,
+[2188.66s -> 2190.34s]  isn't, you know, looking ahead a little bit
+[2190.42s -> 2192.66s]  and sort of predicting or getting an idea
+[2192.66s -> 2194.26s]  of the words that you might say in the future,
+[2194.26s -> 2196.34s]  sort of how humans generate language
+[2196.34s -> 2198.26s]  instead of the sort of strict constraint
+[2198.26s -> 2199.62s]  of not seeing into the future.
+[2199.62s -> 2200.66s]  Is that what you're...
+[2200.66s -> 2201.14s]  Okay.
+[2201.14s -> 2201.94s]  So, right.
+[2202.58s -> 2204.74s]  You know, trying to plan ahead
+[2204.74s -> 2206.34s]  to see what I should do
+[2206.34s -> 2207.94s]  is definitely an interesting idea.
+[2208.74s -> 2210.82s]  But when I am training the network,
+[2210.82s -> 2211.62s]  right, I can't,
+[2212.42s -> 2215.38s]  if I'm teaching it to try to predict the next word,
+[2215.38s -> 2216.82s]  and if I give it the answer,
+[2216.82s -> 2218.34s]  it's not going to learn anything useful.
+[2218.34s -> 2221.62s]  So in practice, when I'm generating text,
+[2221.62s -> 2222.82s]  maybe it would be a good idea
+[2222.82s -> 2225.22s]  to make some guesses far into the future
+[2225.22s -> 2227.62s]  or have a high-level plan or something.
+[2227.62s -> 2228.82s]  But in training the network,
+[2229.46s -> 2231.06s]  I can't encode that intuition
+[2231.06s -> 2232.34s]  about how humans build,
+[2233.54s -> 2235.30s]  like, generate sequences of language
+[2235.30s -> 2237.38s]  by just giving it the answer of the future directly,
+[2237.38s -> 2237.78s]  at least,
+[2237.78s -> 2239.54s]  because then it's just too easy.
+[2239.54s -> 2240.58s]  Like, there's nothing to learn.
+[2241.94s -> 2242.26s]  Yeah.
+[2242.26s -> 2243.62s]  But there might be interesting ideas
+[2243.62s -> 2245.54s]  about maybe giving the network like a hint
+[2245.54s -> 2247.54s]  as to what kind of thing could come next,
+[2247.54s -> 2248.10s]  for example.
+[2248.34s -> 2249.46s]  But that's out of scope for this.
+[2251.14s -> 2251.86s]  Yeah, question over here.
+[2251.86s -> 2254.98s]  So I understand why we would want to mask
+[2254.98s -> 2256.58s]  the future for stuff like language models,
+[2256.58s -> 2258.74s]  but how does it apply to machine translation?
+[2260.42s -> 2260.66s]  Yeah.
+[2260.66s -> 2261.86s]  So in machine translation,
+[2263.30s -> 2265.86s]  I'm going to come over to this board
+[2265.86s -> 2267.46s]  and hopefully get a better marker.
+[2269.30s -> 2269.86s]  Nice.
+[2269.86s -> 2270.90s]  In machine translation,
+[2271.70s -> 2273.06s]  I have a sentence like,
+[2273.94s -> 2278.34s]  I like pizza,
+[2279.30s -> 2282.42s]  and I want to be able to translate it,
+[2284.82s -> 2287.94s]  j'aime moi pizza.
+[2288.74s -> 2289.24s]  Nice.
+[2289.86s -> 2294.90s]  And so when I'm looking at the I like pizza,
+[2294.90s -> 2296.26s]  I get this as the input.
+[2296.26s -> 2297.62s]  And so I want self-attention
+[2300.66s -> 2301.62s]  without masking,
+[2301.94s -> 2305.86s]  because I want I to look at like,
+[2305.86s -> 2307.06s]  and I to look at pizza,
+[2307.06s -> 2308.18s]  and like to look at pizza,
+[2308.18s -> 2308.90s]  and I want it all.
+[2308.90s -> 2310.34s]  And then when I'm generating this,
+[2310.98s -> 2314.02s]  if my tokens are like j'aime moi pizza,
+[2315.86s -> 2317.54s]  in encoding this word,
+[2317.54s -> 2320.50s]  I want to be able to look only at myself.
+[2320.50s -> 2323.06s]  And we'll talk about encoder-decoder architectures
+[2323.06s -> 2325.62s]  in this later in the lecture.
+[2326.18s -> 2327.62s]  But I want to be able to look at myself,
+[2327.62s -> 2328.42s]  none of the future,
+[2328.42s -> 2329.22s]  and all of this.
+[2329.94s -> 2331.38s]  And so what I'm talking about right now
+[2331.38s -> 2332.74s]  in this masking case
+[2332.74s -> 2333.62s]  is masking out,
+[2335.46s -> 2336.74s]  with like negative infinity,
+[2337.70s -> 2338.82s]  all of these words.
+[2339.38s -> 2340.90s]  So that sort of attention score
+[2340.90s -> 2342.50s]  from j'aime moi to everything else
+[2342.50s -> 2345.70s]  should be negative infinity.
+[2345.70s -> 2346.10s]  Yeah.
+[2346.10s -> 2347.06s]  Does that answer your question?
+[2347.70s -> 2348.20s]  Great.
+[2349.30s -> 2349.70s]  Okay.
+[2349.70s -> 2350.34s]  Let's move ahead.
+[2351.38s -> 2351.88s]  Okay.
+[2352.74s -> 2354.34s]  So that was our last big
+[2355.38s -> 2357.46s]  building block issue with self-attention.
+[2357.46s -> 2359.06s]  So this is what I would call,
+[2359.06s -> 2360.26s]  and this is my personal opinion,
+[2360.26s -> 2362.82s]  a minimal self-attention building block.
+[2362.82s -> 2363.94s]  You have self-attention,
+[2363.94s -> 2365.62s]  the basis of the method.
+[2365.62s -> 2368.26s]  So that's sort of here in the red.
+[2369.14s -> 2371.86s]  And maybe we had the inputs to the sequence here.
+[2371.86s -> 2374.50s]  And then you embed it with that embedding matrix E.
+[2374.50s -> 2376.10s]  And then you add position embeddings.
+[2376.66s -> 2378.82s]  And then these three arrows represent using
+[2380.02s -> 2382.74s]  the key, the value, and the query
+[2382.74s -> 2384.02s]  that's sort of stylized there.
+[2384.02s -> 2386.10s]  This is often how you see these diagrams.
+[2387.22s -> 2389.14s]  And so you pass it to self-attention
+[2390.02s -> 2392.98s]  with the position representation, right?
+[2392.98s -> 2394.90s]  So that specifies the sequence order
+[2394.90s -> 2396.50s]  because otherwise you have no idea
+[2396.50s -> 2397.94s]  what order the words showed up in.
+[2399.06s -> 2400.34s]  You have the non-linearities
+[2400.34s -> 2402.58s]  in sort of the teal feed forward network there
+[2403.38s -> 2405.78s]  to sort of provide that sort of squashing
+[2405.78s -> 2408.74s]  and sort of deep learning expressivity.
+[2408.74s -> 2410.18s]  And then you have masking
+[2410.18s -> 2413.22s]  in order to have parallelizable operations
+[2413.22s -> 2414.42s]  that don't look at the future.
+[2415.06s -> 2415.38s]  Okay.
+[2415.38s -> 2418.02s]  So this is sort of our minimal architecture.
+[2418.02s -> 2419.38s]  And then up at the top above here,
+[2420.02s -> 2420.82s]  so you have this thing,
+[2420.82s -> 2423.06s]  maybe you repeat this sort of self-attention
+[2423.06s -> 2424.34s]  and feed forward many times.
+[2424.34s -> 2426.26s]  So self-attention, feed forward,
+[2426.26s -> 2427.22s]  self-attention, feed forward,
+[2427.22s -> 2428.74s]  self-attention, feed forward, right?
+[2428.74s -> 2429.94s]  That's what I'm calling this block.
+[2430.98s -> 2432.26s]  And then maybe at the end of it,
+[2432.26s -> 2433.38s]  you predict something.
+[2433.38s -> 2433.78s]  I don't know.
+[2433.78s -> 2434.98s]  We haven't really talked about that,
+[2434.98s -> 2436.82s]  but you have these representations
+[2436.82s -> 2438.34s]  and then you predict the next word
+[2438.34s -> 2439.46s]  or you predict the sentiment
+[2439.46s -> 2440.42s]  or you predict whatever.
+[2440.42s -> 2442.98s]  So this is like a self-attention architecture.
+[2444.90s -> 2445.14s]  Okay.
+[2445.14s -> 2446.58s]  We're going to move on to the transformer next.
+[2446.58s -> 2447.62s]  So if there are any questions, yeah.
+[2448.26s -> 2452.10s]  I remember using masking for decoders.
+[2452.10s -> 2452.66s]  Other way around.
+[2453.22s -> 2456.10s]  We will use masking for decoders
+[2456.10s -> 2458.50s]  where I want to decode out a sequence
+[2459.86s -> 2461.78s]  where I have an informational constraint
+[2461.78s -> 2464.26s]  where to represent this word properly,
+[2464.26s -> 2466.26s]  I cannot have the information of the future.
+[2466.26s -> 2468.50s]  And masking is what you do with the other stuff, right?
+[2468.50s -> 2468.66s]  Yeah.
+[2468.66s -> 2468.90s]  Okay.
+[2473.62s -> 2473.94s]  Okay.
+[2475.14s -> 2475.38s]  Great.
+[2476.26s -> 2477.70s]  So now let's talk about the transformer.
+[2477.70s -> 2480.26s]  So what I've pitched to you
+[2480.26s -> 2483.22s]  is what I call a minimal self-attention architecture.
+[2484.66s -> 2488.82s]  And I quite like pitching it that way,
+[2488.82s -> 2490.66s]  but really no one uses the architecture
+[2490.66s -> 2492.02s]  that was just up on the slide,
+[2492.02s -> 2493.78s]  the previous slide.
+[2494.34s -> 2495.94s]  It doesn't work quite as well as it could.
+[2495.94s -> 2498.50s]  And there's a bunch of sort of important details
+[2498.50s -> 2499.94s]  that we'll talk about now
+[2499.94s -> 2501.54s]  that goes into the transformer.
+[2501.54s -> 2502.90s]  What I would hope, though,
+[2502.90s -> 2506.18s]  to sort of have you take away from that
+[2506.18s -> 2507.94s]  is that the transformer architecture,
+[2507.94s -> 2509.54s]  as I'll present it now,
+[2509.54s -> 2513.38s]  is not necessarily the endpoint of our search
+[2513.38s -> 2516.18s]  for better and better ways of representing language,
+[2516.18s -> 2517.86s]  even though it's now ubiquitous
+[2517.86s -> 2519.46s]  and has been for a couple of years.
+[2519.46s -> 2521.38s]  So think about these sort of ideas
+[2521.38s -> 2523.70s]  of the problems of using self-attention
+[2524.90s -> 2526.74s]  and maybe ways of fixing some of the issues
+[2526.74s -> 2527.62s]  with transformers.
+[2528.82s -> 2529.46s]  Okay.
+[2529.46s -> 2532.42s]  So a transformer decoder
+[2532.42s -> 2534.34s]  is how we'll build systems like language models.
+[2534.34s -> 2535.54s]  And so we've discussed this.
+[2535.54s -> 2536.66s]  It's like our decoder
+[2537.22s -> 2540.10s]  with our self-attention only sort of minimal architecture.
+[2540.10s -> 2541.78s]  It's got a couple of extra components,
+[2541.78s -> 2543.06s]  some of which I've grayed out here,
+[2543.06s -> 2544.50s]  that we'll go over one by one.
+[2545.06s -> 2548.02s]  The first that's actually different
+[2548.74s -> 2552.66s]  is that we'll replace our self-attention with masking
+[2552.66s -> 2555.62s]  with masked multi-head self-attention.
+[2555.62s -> 2556.82s]  This ends up being crucial.
+[2556.82s -> 2559.70s]  It's probably the most important distinction
+[2559.70s -> 2560.74s]  between the transformer
+[2560.74s -> 2562.10s]  and this sort of minimal architecture
+[2562.10s -> 2562.82s]  that I've presented.
+[2563.62s -> 2566.58s]  So let's come back to our toy example of attention,
+[2566.58s -> 2568.98s]  where we've been trying to represent the word learned
+[2568.98s -> 2570.58s]  in the context of the sequence.
+[2570.58s -> 2573.78s]  I went to Stanford CS224N and learned.
+[2574.58s -> 2577.46s]  And I was sort of giving these teal bars to say,
+[2577.46s -> 2580.90s]  oh, maybe intuitively you look at various things
+[2580.90s -> 2582.98s]  to build up your representation of learned.
+[2584.18s -> 2586.42s]  But really there are varying ways
+[2586.42s -> 2588.66s]  in which I want to look back at the sequence
+[2589.54s -> 2593.54s]  to see varying sort of aspects of information
+[2593.54s -> 2596.18s]  that I want to incorporate into my representation.
+[2596.18s -> 2598.50s]  So maybe in this way,
+[2598.50s -> 2601.54s]  I sort of want to look at Stanford CS224N
+[2603.06s -> 2604.66s]  because like, oh, it's like entities,
+[2604.66s -> 2608.18s]  like you learn different stuff at Stanford CS224N
+[2608.18s -> 2609.30s]  than you do at other courses
+[2609.30s -> 2611.86s]  or other universities or whatever, right?
+[2611.86s -> 2614.10s]  And so maybe I want to look here for this reason.
+[2615.06s -> 2617.22s]  And maybe in another sense,
+[2617.22s -> 2619.14s]  I actually want to look at the word learned,
+[2619.14s -> 2620.50s]  and I want to look at I,
+[2620.50s -> 2623.22s]  you know, I went and learned, right?
+[2623.22s -> 2626.10s]  As you sort of like maybe syntactically relevant words,
+[2626.10s -> 2627.54s]  right, like it's very different reasons
+[2627.54s -> 2629.22s]  for which I might want to look at different things
+[2629.22s -> 2629.86s]  in the sequence.
+[2630.74s -> 2632.66s]  And so trying to sort of average it all out
+[2632.66s -> 2634.90s]  with a single operation of self-attention
+[2634.90s -> 2637.86s]  ends up being maybe somewhat too difficult
+[2637.86s -> 2640.10s]  in a way that will make precise in assignment five.
+[2640.10s -> 2641.46s]  Nice, we'll do a little bit more math.
+[2641.70s -> 2647.94s]  Okay, so any questions about this intuition?
+[2654.26s -> 2656.98s]  Yeah, so it should be an application of attention
+[2656.98s -> 2658.98s]  just as I presented it, right?
+[2658.98s -> 2660.34s]  So one independent,
+[2660.90s -> 2662.26s]  define the keys, define the queries,
+[2662.26s -> 2662.82s]  define the values.
+[2662.82s -> 2664.74s]  I'll define it more precisely here,
+[2664.74s -> 2666.50s]  but think of it as I do attention once,
+[2667.30s -> 2670.02s]  and then I do it again with different,
+[2670.10s -> 2671.46s]  like different parameters,
+[2671.46s -> 2673.62s]  being able to look at different things, etc.
+[2673.62s -> 2675.94s]  So if we have like two separate sets of weights
+[2675.94s -> 2676.42s]  that we learn,
+[2676.42s -> 2678.58s]  how do we ensure that they learn different things?
+[2678.58s -> 2679.30s]  We do not, okay,
+[2679.30s -> 2679.94s]  so the question is,
+[2679.94s -> 2681.22s]  if we have two separate sets of weights
+[2681.22s -> 2683.54s]  trying to learn, say, to do this and to do that,
+[2683.54s -> 2685.78s]  how do we ensure that they learn different things?
+[2685.78s -> 2687.46s]  We do not ensure that they hope
+[2687.46s -> 2688.42s]  that they learn different things,
+[2688.98s -> 2690.18s]  and in practice they do,
+[2691.06s -> 2692.02s]  although not perfectly.
+[2692.74s -> 2694.02s]  So it ends up being the case
+[2694.02s -> 2695.46s]  that you have some redundancy,
+[2695.46s -> 2697.30s]  and you can sort of like cut out some of these,
+[2697.30s -> 2698.98s]  but that's sort of out of scope for this.
+[2698.98s -> 2699.94s]  But we sort of hope,
+[2699.94s -> 2702.26s]  just like we hope that different sort of dimensions
+[2702.26s -> 2704.42s]  in our feed-forward layers will learn different things
+[2704.42s -> 2706.66s]  because of lack of symmetry and whatever,
+[2706.66s -> 2709.22s]  that we hope that the heads will start to specialize,
+[2709.22s -> 2711.38s]  and that will mean they'll specialize even more,
+[2711.38s -> 2711.88s]  and yeah.
+[2714.26s -> 2714.76s]  Okay.
+[2716.18s -> 2716.50s]  All right,
+[2716.50s -> 2719.62s]  so in order to discuss multi-head self-attention well,
+[2719.62s -> 2721.94s]  we really need to talk about the matrices,
+[2721.94s -> 2725.06s]  how we're going to implement this in GPUs efficiently.
+[2725.06s -> 2728.90s]  We're going to talk about the sequence-stacked form of attention.
+[2729.38s -> 2731.62s]  We've been talking about each word sort of individually
+[2731.62s -> 2734.10s]  as a vector in dimensionality D,
+[2734.10s -> 2736.10s]  but really we're going to be working on these
+[2736.10s -> 2738.90s]  as big matrices that are stacked.
+[2738.90s -> 2740.98s]  So I take all of my word embeddings,
+[2740.98s -> 2742.26s]  X1 to Xn,
+[2742.26s -> 2743.78s]  and I stack them together,
+[2743.78s -> 2745.22s]  and now I have a big matrix
+[2745.22s -> 2747.30s]  that is in dimensionality Rn by D.
+[2749.86s -> 2755.14s]  Okay, and now with my matrices K, Q, and V,
+[2755.14s -> 2758.18s]  I can just multiply them sort of on this side of X,
+[2758.18s -> 2760.18s]  so X is Rn by D,
+[2760.18s -> 2762.34s]  K is Rd by D,
+[2762.34s -> 2766.98s]  so n by d times d by d gives you n by d again.
+[2766.98s -> 2770.42s]  So I can just compute a big matrix multiply
+[2770.42s -> 2771.78s]  on my whole sequence
+[2771.78s -> 2773.30s]  to multiply each one of the words
+[2773.30s -> 2776.98s]  of my key query and value matrices very efficiently.
+[2776.98s -> 2778.74s]  So this is sort of this vectorization idea.
+[2778.74s -> 2780.66s]  I don't want a for loop over the sequence.
+[2780.66s -> 2782.74s]  I represent the sequence as a big matrix,
+[2783.38s -> 2785.30s]  and I just do one big matrix multiply.
+[2785.30s -> 2788.90s]  Okay, then the output is defined
+[2788.90s -> 2790.58s]  as this sort of inscrutable bit of math,
+[2791.30s -> 2792.58s]  which I'm going to go over visually.
+[2795.22s -> 2798.18s]  So first, we're going to take the key query dot products
+[2798.18s -> 2799.38s]  in one matrix.
+[2799.38s -> 2802.98s]  So we've got X, Q,
+[2802.98s -> 2805.78s]  which is Rn by D,
+[2806.90s -> 2808.66s]  and I've got X, K transpose,
+[2808.66s -> 2810.58s]  which is Rd by n.
+[2810.58s -> 2813.06s]  So n by d, d by n.
+[2813.06s -> 2815.38s]  This is computing all of the eij's,
+[2815.38s -> 2817.38s]  these scores for self-attention.
+[2818.02s -> 2820.58s]  So this is all pairs of attention scores
+[2820.58s -> 2823.30s]  computed in one big matrix multiply.
+[2825.62s -> 2828.34s]  Okay, so this is this big matrix here.
+[2828.34s -> 2830.98s]  Next, I use the softmax.
+[2831.70s -> 2835.62s]  So I softmax this over the second dimension,
+[2835.62s -> 2836.66s]  the second n dimension,
+[2837.78s -> 2840.82s]  and I get my sort of normalized scores,
+[2840.82s -> 2842.50s]  and then I multiply with xv.
+[2842.50s -> 2847.06s]  So this is an n by n matrix multiplied by an n by d matrix.
+[2847.78s -> 2848.42s]  And what do I get?
+[2848.42s -> 2850.34s]  Well, this is just doing the weighted average.
+[2851.06s -> 2854.18s]  So this is one big weighted average contribution
+[2854.18s -> 2855.06s]  on the whole matrix,
+[2855.06s -> 2858.26s]  giving me my whole self-attention output in Rn by d.
+[2859.14s -> 2861.46s]  So I've just restated identically
+[2861.46s -> 2863.14s]  the self-attention operations,
+[2863.14s -> 2865.86s]  but computed in terms of matrices
+[2865.86s -> 2867.78s]  so that you could do this efficiently on a GPU.
+[2867.78s -> 2873.38s]  Okay, so multi-headed attention.
+[2874.02s -> 2875.38s]  This is going to give us,
+[2875.38s -> 2877.38s]  and it's going to be important to compute this
+[2877.38s -> 2878.98s]  in terms of the matrices, which we'll see,
+[2879.62s -> 2880.90s]  this is going to give us the ability
+[2880.90s -> 2884.10s]  to look in multiple places at once for different reasons.
+[2884.10s -> 2885.78s]  So sort of, you know,
+[2885.78s -> 2889.46s]  for self-attention looks where this dot product here is high,
+[2890.26s -> 2893.78s]  right, this xi, the q matrix, the q matrix.
+[2894.34s -> 2897.86s]  But maybe we want to look in different places
+[2897.86s -> 2899.14s]  for different reasons.
+[2899.14s -> 2903.78s]  So we actually define multiple query key and value matrices.
+[2904.34s -> 2906.58s]  So I'm going to have a bunch of heads.
+[2906.58s -> 2910.02s]  I'm going to have H self-attention heads.
+[2910.02s -> 2910.82s]  And for each head,
+[2910.82s -> 2913.30s]  I'm going to define an independent query key
+[2913.30s -> 2914.66s]  and value matrix.
+[2914.66s -> 2916.90s]  And I'm going to say that its shape
+[2916.90s -> 2919.22s]  is going to map from the model dimensionality
+[2919.22s -> 2921.38s]  to the model dimensionality over H.
+[2921.38s -> 2922.90s]  So each one of these is doing projection
+[2922.90s -> 2924.42s]  down to a lower dimensional space.
+[2925.14s -> 2927.62s]  This is going to be for computational efficiency.
+[2927.62s -> 2930.82s]  And I'll just apply self-attention
+[2930.82s -> 2932.98s]  sort of independently for each output.
+[2932.98s -> 2935.54s]  So this equation here is identical
+[2935.54s -> 2938.42s]  to the one we saw for single-headed self-attention,
+[2938.42s -> 2941.06s]  except we've got these sort of L indices everywhere.
+[2942.90s -> 2944.34s]  So we've got this lower dimensional thing.
+[2944.34s -> 2946.34s]  I'm mapping to a lower dimensional space.
+[2946.34s -> 2949.46s]  And then I do have my lower dimensional value vector there.
+[2949.46s -> 2951.70s]  So my output is an R d by H.
+[2951.70s -> 2954.66s]  But really you're doing exactly the same kind of operation.
+[2954.66s -> 2957.46s]  I'm just doing it H different times.
+[2957.46s -> 2959.54s]  And then you combine the outputs.
+[2959.54s -> 2961.94s]  So I've done sort of look in different places
+[2961.94s -> 2964.74s]  with the different key query and value matrices.
+[2964.74s -> 2966.90s]  And then I get each of their outputs.
+[2968.26s -> 2970.02s]  And then I concatenate them together.
+[2970.90s -> 2972.74s]  So each one is dimensionality d by H.
+[2973.30s -> 2974.98s]  And I concatenate them together
+[2974.98s -> 2976.50s]  and then sort of mix them together
+[2976.50s -> 2978.18s]  with the final linear transformation.
+[2978.18s -> 2982.90s]  And so each head gets to look at different things
+[2982.90s -> 2985.22s]  and construct their value vectors differently.
+[2985.22s -> 2987.70s]  And then I sort of combine the result all together at once.
+[2989.14s -> 2990.98s]  Okay, let's go through this visually
+[2990.98s -> 2992.50s]  because it's at least helpful for me.
+[2993.70s -> 2998.42s]  So it's actually not more costly to do this really
+[2998.42s -> 3000.90s]  than it is to compute a single-headed self-attention.
+[3000.90s -> 3002.10s]  And we'll see through the pictures.
+[3004.90s -> 3007.78s]  So in single-headed self-attention,
+[3007.86s -> 3009.30s]  we computed xq.
+[3009.30s -> 3010.98s]  And in multi-headed self-attention,
+[3010.98s -> 3012.98s]  we'll also compute xq the same way.
+[3013.70s -> 3016.02s]  So xq is Rn by d.
+[3019.30s -> 3022.98s]  And then we can reshape it into Rn,
+[3022.98s -> 3024.42s]  that's sequence length,
+[3024.42s -> 3025.62s]  times the number of heads,
+[3026.66s -> 3029.30s]  times the model dimensionality
+[3029.30s -> 3030.18s]  over the number of heads.
+[3030.18s -> 3032.02s]  So I've just reshaped it to say,
+[3032.02s -> 3035.46s]  now I've got a big three-axis tensor.
+[3035.46s -> 3037.70s]  The first axis is the sequence length.
+[3037.70s -> 3039.06s]  The second one is the number of heads.
+[3039.06s -> 3041.30s]  The third is this reduced model dimensionality.
+[3041.86s -> 3042.98s]  And that costs nothing.
+[3043.70s -> 3044.98s]  And do the same thing for x and v.
+[3045.78s -> 3048.90s]  And then I transpose so that I've got the head axis
+[3048.90s -> 3050.02s]  as the first axis.
+[3050.66s -> 3053.30s]  And now I can compute all my other operations
+[3053.30s -> 3055.78s]  with the head axis kind of like a batch.
+[3057.86s -> 3061.06s]  So what does this look like in practice?
+[3061.70s -> 3064.82s]  Instead of having one big xq matrix
+[3064.82s -> 3066.82s]  that's model dimensionality d,
+[3066.82s -> 3070.42s]  I've got, in this case, three xq matrices
+[3070.42s -> 3072.02s]  of model dimensionality d by three,
+[3072.02s -> 3073.70s]  d by three, d by three.
+[3073.70s -> 3075.46s]  Same thing with the key matrix here.
+[3076.26s -> 3078.34s]  So everything looks almost identical.
+[3078.34s -> 3080.82s]  It's just a reshaping of the tensors.
+[3080.82s -> 3082.98s]  And now, at the output of this,
+[3082.98s -> 3085.94s]  I've got three sets of attention scores
+[3086.82s -> 3088.26s]  just by doing this reshape.
+[3088.90s -> 3090.66s]  And the cost is that,
+[3090.66s -> 3093.30s]  well, each of my attention heads
+[3093.30s -> 3095.46s]  has only a d by h vector to work with
+[3095.46s -> 3097.86s]  instead of a d dimensional vector to work with.
+[3097.86s -> 3098.74s]  So I get the output.
+[3098.74s -> 3102.02s]  I get these three sets of pairs of scores.
+[3103.14s -> 3105.54s]  I compute the softmax independently
+[3105.54s -> 3106.90s]  for each of the three.
+[3106.90s -> 3110.58s]  And then I have three value matrices there as well,
+[3110.58s -> 3111.94s]  each of them lower dimensional.
+[3112.50s -> 3116.58s]  And then finally, I get my three different output vectors,
+[3116.58s -> 3118.34s]  and I have a final linear transformation
+[3118.34s -> 3120.90s]  to sort of mush them together,
+[3120.90s -> 3121.78s]  and I get an output.
+[3122.50s -> 3124.50s]  And in summary, what this allows you to do
+[3124.50s -> 3127.86s]  is exactly what I gave in the toy example,
+[3127.86s -> 3130.10s]  which was I can have each of these heads
+[3130.10s -> 3132.02s]  look at different parts of a sequence
+[3132.02s -> 3132.90s]  for different reasons.
+[3137.46s -> 3140.90s]  So this is at a given block, right?
+[3140.90s -> 3142.10s]  All of these attention heads
+[3142.10s -> 3143.62s]  are for a given transformer block.
+[3143.62s -> 3146.82s]  A next block could also have three attention heads.
+[3146.82s -> 3147.86s]  The question is,
+[3147.86s -> 3150.18s]  are all of these for a given block?
+[3150.18s -> 3151.62s]  And we'll talk about a block again,
+[3151.62s -> 3154.90s]  but this block was this sort of pair of self-attention
+[3154.90s -> 3156.10s]  and feed-forward network.
+[3156.10s -> 3157.54s]  So you do self-attention, feed-forward.
+[3157.54s -> 3158.58s]  That's one block.
+[3158.58s -> 3160.02s]  Another block is another self-attention,
+[3160.02s -> 3161.14s]  another feed-forward.
+[3161.14s -> 3161.78s]  And the question is,
+[3161.78s -> 3164.34s]  are the parameters shared between the blocks or not?
+[3164.90s -> 3166.02s]  Generally, they are not shared.
+[3166.02s -> 3168.50s]  You'll have independent parameters at every block,
+[3168.50s -> 3169.78s]  although there are some exceptions.
+[3173.22s -> 3174.02s]  Voting on that,
+[3174.02s -> 3176.82s]  is it typically the case that you have the same number
+[3176.82s -> 3178.66s]  of heads at each block,
+[3178.74s -> 3180.82s]  or do you vary the number of heads across blocks?
+[3182.58s -> 3183.94s]  You definitely could vary it.
+[3183.94s -> 3185.46s]  People haven't found reason to vary.
+[3185.46s -> 3186.10s]  So the question is,
+[3186.10s -> 3187.38s]  do you have different numbers of heads
+[3187.38s -> 3188.50s]  across the different blocks,
+[3189.30s -> 3191.46s]  or do you have the same number of heads
+[3191.46s -> 3192.26s]  across all blocks?
+[3193.14s -> 3195.06s]  The simplest thing is to just have it be the same
+[3195.06s -> 3196.82s]  everywhere, which is what people have done.
+[3196.82s -> 3199.14s]  I haven't yet found a good reason to vary it,
+[3199.14s -> 3201.78s]  but it could be interesting.
+[3201.78s -> 3204.42s]  It's definitely the case that after training
+[3204.42s -> 3205.38s]  these networks,
+[3205.38s -> 3207.86s]  you can actually just totally zero out,
+[3207.86s -> 3210.18s]  remove some of the attention heads.
+[3210.74s -> 3215.14s]  And I'd be curious to know if you could remove more
+[3215.14s -> 3218.02s]  or less depending on the layer index,
+[3218.02s -> 3219.30s]  which might then say,
+[3219.30s -> 3220.50s]  oh, we should just have fewer,
+[3220.50s -> 3221.14s]  but again,
+[3221.14s -> 3223.06s]  it's not actually more expensive to have a bunch.
+[3223.62s -> 3226.58s]  So people tend to instead set the number of heads
+[3226.58s -> 3230.34s]  to be roughly so that you have a reasonable number
+[3230.34s -> 3232.02s]  of dimensions per head,
+[3232.02s -> 3235.30s]  given the total model dimensionality D that you want.
+[3235.30s -> 3236.66s]  So for example,
+[3236.66s -> 3240.10s]  I might want at least 64 dimensions per head,
+[3240.10s -> 3243.06s]  which if D is 128,
+[3243.06s -> 3245.30s]  that tells me how many heads I'm going to have roughly.
+[3245.94s -> 3247.94s]  So people tend to scale the number of heads up
+[3247.94s -> 3249.54s]  with the model dimensionality.
+[3252.34s -> 3252.84s]  Yeah.
+[3253.46s -> 3255.70s]  XQ by slicing it in different columns,
+[3255.70s -> 3258.98s]  you're reducing the rank of the final matrix, right?
+[3258.98s -> 3259.48s]  Yeah.
+[3259.78s -> 3261.62s]  But that doesn't really have any effect
+[3261.62s -> 3262.90s]  from the results.
+[3262.90s -> 3263.70s]  So the question is,
+[3263.70s -> 3266.34s]  by having these sort of reduced XQ
+[3266.34s -> 3269.86s]  and XK matrices,
+[3269.86s -> 3270.02s]  right,
+[3270.02s -> 3272.82s]  this is a very low rank approximation.
+[3272.82s -> 3274.74s]  This little sliver in this little sliver
+[3275.30s -> 3276.82s]  defining this whole big matrix,
+[3276.82s -> 3277.94s]  it's very low rank.
+[3277.94s -> 3280.18s]  Is that not bad in practice?
+[3280.18s -> 3280.82s]  No.
+[3280.82s -> 3281.22s]  I mean,
+[3281.22s -> 3281.54s]  again,
+[3281.54s -> 3284.02s]  it's sort of the reason why we limit the number of heads
+[3284.74s -> 3286.50s]  depending on the model dimensionality.
+[3286.50s -> 3286.98s]  Cause you,
+[3286.98s -> 3287.62s]  you know,
+[3287.62s -> 3291.14s]  you want intuitively at least some number of dimensions.
+[3291.14s -> 3291.62s]  So,
+[3291.62s -> 3291.86s]  you know,
+[3291.86s -> 3293.30s]  64 is sometimes done,
+[3293.30s -> 3294.18s]  128,
+[3294.18s -> 3294.82s]  something like that.
+[3295.78s -> 3296.26s]  But you know,
+[3296.26s -> 3298.18s]  if you're not giving each head too much to do,
+[3298.18s -> 3300.10s]  and it's got sort of a simple job,
+[3300.10s -> 3300.98s]  you've got a lot of heads,
+[3300.98s -> 3302.74s]  it ends up sort of being okay.
+[3304.18s -> 3305.94s]  All we really know is that empirically,
+[3305.94s -> 3309.22s]  it's way better to have more heads than like one.
+[3312.42s -> 3312.92s]  Yes.
+[3314.10s -> 3314.74s]  I'm wondering,
+[3314.74s -> 3319.38s]  have there been studies to see if information
+[3319.38s -> 3322.58s]  in one of the sets of the attention scores,
+[3323.46s -> 3325.78s]  like information that one of them learns,
+[3325.78s -> 3329.54s]  is consistent and related to each other,
+[3329.54s -> 3332.26s]  or how are they related?
+[3332.26s -> 3333.22s]  So the question is,
+[3333.22s -> 3336.10s]  have there been studies to see if there's sort of consistent
+[3336.10s -> 3338.74s]  information encoded by the attention heads?
+[3338.74s -> 3339.30s]  And,
+[3339.30s -> 3340.10s]  you know,
+[3340.10s -> 3340.66s]  yes,
+[3340.66s -> 3342.50s]  actually there's been quite a lot of sort of study
+[3342.50s -> 3344.90s]  and interpretability and analysis of these models
+[3344.90s -> 3346.42s]  to try to figure out what roles,
+[3346.42s -> 3350.10s]  what sort of mechanistic roles each of these heads takes on.
+[3350.10s -> 3352.18s]  And there's quite a bit of exciting
+[3352.26s -> 3354.42s]  results there around some attention heads,
+[3354.42s -> 3355.06s]  you know,
+[3355.06s -> 3357.38s]  learning to pick out sort of the,
+[3357.38s -> 3357.62s]  you know,
+[3357.62s -> 3359.70s]  it's like syntactic dependencies,
+[3359.70s -> 3362.74s]  or maybe doing like a sort of a global averaging of context.
+[3363.70s -> 3365.38s]  The question is quite nuanced though,
+[3365.38s -> 3366.98s]  because in a deep network,
+[3366.98s -> 3368.10s]  it's unclear,
+[3368.10s -> 3369.46s]  and we should talk about this more offline,
+[3369.46s -> 3371.70s]  but it's unclear if you look at a word
+[3371.70s -> 3373.30s]  10 layers deep in a network,
+[3373.30s -> 3374.82s]  what you're really looking at,
+[3374.82s -> 3377.94s]  because it's already incorporated context from everyone else,
+[3377.94s -> 3380.10s]  and it's a little bit unclear.
+[3380.10s -> 3381.22s]  Active area of research,
+[3381.22s -> 3386.66s]  but I think I should move on now to keep discussing transformers.
+[3386.66s -> 3386.90s]  But yeah,
+[3386.90s -> 3387.78s]  if you want to talk more about it,
+[3387.78s -> 3388.34s]  I'm happy to.
+[3390.58s -> 3391.06s]  Okay,
+[3391.06s -> 3394.74s]  so another sort of hack that I'm going to toss in here,
+[3394.74s -> 3395.06s]  I mean,
+[3395.06s -> 3396.18s]  maybe they wouldn't call it hack,
+[3396.18s -> 3396.58s]  but you know,
+[3396.58s -> 3399.46s]  it's a nice little method to improve things.
+[3399.46s -> 3401.94s]  It's called scaled dot product attention.
+[3401.94s -> 3405.38s]  So one of the issues with this sort of key query value
+[3405.38s -> 3408.82s]  self-attention is that when the model dimensionality becomes large,
+[3408.82s -> 3410.58s]  the dot products between vectors,
+[3410.58s -> 3411.62s]  even random vectors,
+[3411.62s -> 3413.94s]  tend to become large.
+[3414.90s -> 3415.86s]  And when that happens,
+[3415.86s -> 3419.86s]  the inputs to the softmax function can be very large,
+[3419.86s -> 3421.22s]  making the gradients small.
+[3421.22s -> 3422.02s]  So intuitively,
+[3422.02s -> 3424.50s]  if you have two random vectors and model dimensionality D,
+[3425.22s -> 3427.14s]  and you just dot product them together,
+[3427.14s -> 3428.18s]  as D grows,
+[3428.18s -> 3431.38s]  their dot product grows in expectation to be very large.
+[3431.38s -> 3432.26s]  And so,
+[3432.26s -> 3432.58s]  you know,
+[3432.58s -> 3435.06s]  you sort of want to start out with everyone's attention
+[3435.06s -> 3436.10s]  being very uniform,
+[3436.10s -> 3436.74s]  very flat,
+[3436.74s -> 3437.78s]  sort of look everywhere.
+[3438.58s -> 3440.50s]  But if some dot products are very large,
+[3441.46s -> 3442.66s]  then learning will be inhibited.
+[3443.54s -> 3445.46s]  And so what you end up doing is you just sort of,
+[3446.18s -> 3447.14s]  for each of your heads,
+[3448.02s -> 3450.50s]  you just sort of divide all the scores by this constant
+[3450.50s -> 3452.90s]  that's determined by the model dimensionality.
+[3452.90s -> 3455.54s]  So as the vectors grow very large,
+[3455.54s -> 3457.06s]  their dot products don't,
+[3457.78s -> 3460.34s]  at least at an initialization time.
+[3460.34s -> 3461.70s]  So this is sort of like a nice little,
+[3463.54s -> 3464.34s]  you know,
+[3464.34s -> 3465.22s]  important,
+[3465.22s -> 3465.86s]  but maybe not,
+[3466.74s -> 3468.74s]  like,
+[3468.74s -> 3468.98s]  yeah,
+[3469.78s -> 3470.58s]  it's important to know.
+[3472.18s -> 3475.46s]  And so that's called scale dot product attention.
+[3475.46s -> 3476.66s]  From here on out,
+[3476.66s -> 3478.02s]  we'll just assume that we do this.
+[3478.02s -> 3478.26s]  You know,
+[3478.26s -> 3481.06s]  it's quite easy to implement and just do a little division
+[3481.06s -> 3482.82s]  in all of your computations.
+[3484.90s -> 3485.38s]  Okay,
+[3485.38s -> 3487.14s]  so now in the transformer decoder,
+[3487.14s -> 3488.66s]  we've got a couple of other things
+[3488.66s -> 3491.54s]  that I have unfaded out here.
+[3492.50s -> 3494.42s]  We have two big optimization tricks
+[3494.42s -> 3495.62s]  or optimization methods,
+[3495.62s -> 3496.42s]  I should say really,
+[3496.42s -> 3497.70s]  because these are quite important,
+[3497.70s -> 3499.86s]  that end up being very important.
+[3499.86s -> 3502.74s]  We've got residual connections and layer normalization.
+[3502.74s -> 3505.38s]  And in transformer diagrams that you see
+[3505.38s -> 3506.82s]  sort of around the web,
+[3506.82s -> 3512.26s]  they're often written together as this add and norm box.
+[3512.26s -> 3514.42s]  And in practice in the transformer decoder,
+[3514.42s -> 3515.46s]  I'm going to,
+[3515.46s -> 3515.78s]  you know,
+[3515.78s -> 3518.42s]  apply mask multi-head attention
+[3518.42s -> 3520.18s]  and then do this sort of optimization,
+[3520.18s -> 3521.14s]  add a norm.
+[3521.14s -> 3523.22s]  Then I'll do a feed forward application
+[3523.22s -> 3524.66s]  and then add a norm.
+[3524.66s -> 3525.14s]  So,
+[3525.14s -> 3525.54s]  you know,
+[3525.54s -> 3527.46s]  this is quite important.
+[3527.46s -> 3530.42s]  So let's go over these two individual components.
+[3531.70s -> 3533.14s]  The first is residual connections.
+[3533.14s -> 3533.38s]  I mean,
+[3533.38s -> 3533.94s]  we've,
+[3533.94s -> 3535.78s]  I think we've talked about residual connections before,
+[3535.78s -> 3536.18s]  right?
+[3536.18s -> 3536.98s]  It's worth doing it again.
+[3538.02s -> 3538.18s]  But,
+[3538.18s -> 3538.42s]  you know,
+[3538.42s -> 3540.98s]  it's really a good trick to help models train better.
+[3541.78s -> 3543.22s]  So just to recap,
+[3543.22s -> 3543.38s]  right,
+[3543.38s -> 3544.58s]  we're going to take,
+[3544.58s -> 3546.02s]  instead of having this sort of,
+[3546.02s -> 3546.82s]  you have a layer,
+[3547.70s -> 3549.14s]  layer I minus one,
+[3549.14s -> 3550.42s]  and you pass it through a thing,
+[3550.42s -> 3551.38s]  maybe it's self-attention,
+[3551.38s -> 3552.98s]  maybe it's a feed forward network,
+[3552.98s -> 3554.50s]  now you've got layer I,
+[3556.26s -> 3558.82s]  I'm going to add the result of layer I
+[3560.58s -> 3561.62s]  to this sort of,
+[3561.62s -> 3562.98s]  to its input here.
+[3562.98s -> 3563.86s]  So now I'm saying,
+[3563.86s -> 3565.22s]  I'm just going to compute the layer
+[3565.22s -> 3567.62s]  and I'm going to add in the input to the layer
+[3567.62s -> 3570.66s]  so that I only have to learn the residual
+[3570.66s -> 3572.02s]  from the previous layer,
+[3572.02s -> 3572.26s]  right?
+[3572.26s -> 3573.54s]  So I've got this sort of connection here.
+[3573.54s -> 3574.50s]  It's often written as this,
+[3574.50s -> 3575.06s]  this sort of like,
+[3576.18s -> 3576.66s]  connection,
+[3578.02s -> 3578.58s]  okay,
+[3578.58s -> 3578.82s]  right?
+[3578.82s -> 3579.94s]  Goes around.
+[3579.94s -> 3582.34s]  And you should think that the gradient is just really great
+[3582.34s -> 3583.46s]  through the residual connection,
+[3583.46s -> 3583.70s]  right?
+[3583.70s -> 3583.94s]  Like,
+[3583.94s -> 3584.50s]  ah,
+[3584.50s -> 3584.98s]  you know,
+[3584.98s -> 3586.82s]  if I've got vanishing or exploding gradient,
+[3586.82s -> 3589.30s]  or vanishing gradients through this layer,
+[3589.30s -> 3589.54s]  well,
+[3589.54s -> 3591.62s]  I can at least learn everything behind it
+[3591.62s -> 3593.22s]  because I've got this residual connection
+[3593.22s -> 3595.22s]  where the gradient is one,
+[3595.22s -> 3596.42s]  because it's the identity.
+[3597.86s -> 3599.06s]  This is really nice.
+[3599.06s -> 3599.46s]  And,
+[3599.46s -> 3600.02s]  you know,
+[3600.02s -> 3601.38s]  it also maybe is like a,
+[3601.38s -> 3602.74s]  at least at initialization,
+[3603.46s -> 3606.02s]  everything looks a little bit like the identity function now,
+[3606.02s -> 3606.50s]  right?
+[3606.50s -> 3609.94s]  Because if the contribution of the layer is somewhat small,
+[3609.94s -> 3611.54s]  because all of your weights are small,
+[3611.54s -> 3613.86s]  and I have the addition from the input,
+[3613.86s -> 3616.66s]  maybe the whole thing looks a little bit like the identity,
+[3616.66s -> 3618.74s]  which might be a good sort of place to start.
+[3620.10s -> 3620.34s]  And,
+[3620.34s -> 3620.50s]  you know,
+[3620.50s -> 3621.94s]  there are really nice visualizations.
+[3621.94s -> 3623.30s]  I just love this visualization,
+[3624.42s -> 3624.66s]  right?
+[3624.66s -> 3626.18s]  So this is your like lost landscape,
+[3626.18s -> 3626.34s]  right?
+[3626.34s -> 3627.62s]  So you're gradient descent,
+[3627.62s -> 3630.74s]  and you're trying to traverse the mountains of the lost landscape.
+[3630.74s -> 3632.42s]  This is like the parameter space,
+[3632.42s -> 3634.50s]  and down is better in your loss function.
+[3634.50s -> 3635.30s]  And it's really hard.
+[3635.30s -> 3637.94s]  So you get stuck in some local optima,
+[3637.94s -> 3641.06s]  and you can't sort of find your way to get out.
+[3641.06s -> 3643.06s]  And then this is with residual connections.
+[3643.06s -> 3643.86s]  I mean,
+[3643.86s -> 3644.18s]  come on,
+[3644.18s -> 3646.02s]  you just sort of walk down.
+[3646.90s -> 3647.22s]  I mean,
+[3647.22s -> 3647.94s]  that's not actually,
+[3647.94s -> 3648.18s]  I guess,
+[3648.82s -> 3650.26s]  really how it works all the time,
+[3650.26s -> 3651.38s]  but I really love this.
+[3652.18s -> 3652.42s]  Great.
+[3655.70s -> 3655.94s]  Okay.
+[3658.66s -> 3658.98s]  So yeah,
+[3658.98s -> 3660.10s]  we've seen residual connections.
+[3660.10s -> 3661.70s]  We should move on to layer normalization.
+[3662.74s -> 3663.78s]  So layer norm
+[3664.82s -> 3666.98s]  is another thing to help your model train faster.
+[3668.26s -> 3668.58s]  And,
+[3668.58s -> 3668.90s]  you know,
+[3669.78s -> 3670.02s]  there's
+[3671.46s -> 3673.38s]  the intuitions around layer normalization
+[3674.66s -> 3676.98s]  and sort of the empiricism of it working very well,
+[3676.98s -> 3678.18s]  maybe aren't perfectly,
+[3678.18s -> 3678.42s]  like,
+[3679.78s -> 3680.42s]  let's say,
+[3680.42s -> 3680.98s]  connected,
+[3680.98s -> 3681.14s]  but,
+[3682.18s -> 3682.58s]  you know,
+[3682.58s -> 3683.62s]  you should imagine,
+[3683.62s -> 3684.34s]  I suppose,
+[3685.62s -> 3687.62s]  that we want to say,
+[3687.62s -> 3687.86s]  you know,
+[3687.86s -> 3689.70s]  this variation within each layer,
+[3689.70s -> 3691.06s]  things can get very big.
+[3691.06s -> 3692.18s]  Things can get very small.
+[3692.98s -> 3695.62s]  That's not actually informative because of,
+[3695.62s -> 3695.94s]  you know,
+[3695.94s -> 3697.14s]  variations between
+[3698.10s -> 3699.86s]  maybe the gradients,
+[3699.86s -> 3700.10s]  or,
+[3700.82s -> 3701.06s]  you know,
+[3701.06s -> 3704.98s]  I've got sort of weird things going on in my layers that I can't totally control.
+[3704.98s -> 3708.18s]  I haven't been able to sort of make everything behave sort of nicely,
+[3708.18s -> 3710.26s]  where everything stays roughly the same norm.
+[3710.26s -> 3711.54s]  Maybe some things explode,
+[3711.54s -> 3712.58s]  maybe some things shrink.
+[3714.50s -> 3717.94s]  And I want to cut down on sort of uninformative variation
+[3719.54s -> 3720.74s]  between layers.
+[3720.74s -> 3724.50s]  So I'm going to let x and rd be an individual word vector in the model.
+[3725.06s -> 3725.62s]  So this is like,
+[3725.62s -> 3727.62s]  I have a single index,
+[3727.62s -> 3728.26s]  one vector,
+[3729.06s -> 3731.22s]  and what I'm going to try to do is just normalize it.
+[3732.66s -> 3733.78s]  Normalize it in the sense of,
+[3733.78s -> 3735.46s]  it's got a bunch of variation,
+[3735.46s -> 3737.62s]  and I'm going to cut out on everything.
+[3737.62s -> 3740.90s]  I'm going to normalize it to unit mean and standard deviation.
+[3740.90s -> 3742.18s]  So I'm going to estimate the mean
+[3744.82s -> 3745.70s]  here across.
+[3746.66s -> 3750.10s]  So for all of the dimensions in the vector,
+[3750.10s -> 3752.50s]  so j equals one to the model dimensionality,
+[3752.50s -> 3753.78s]  I'm going to sum up the value.
+[3753.86s -> 3755.70s]  So I've got this one big word vector,
+[3755.70s -> 3757.38s]  and I sum up all the values.
+[3757.38s -> 3758.66s]  Division by d here,
+[3759.22s -> 3760.02s]  that's the mean.
+[3760.02s -> 3762.58s]  I'm going to have my estimate of the standard deviation.
+[3763.38s -> 3764.90s]  Again, these should say estimates.
+[3764.90s -> 3767.14s]  This is my simple estimate of the standard deviation
+[3767.14s -> 3768.74s]  of the values within this one vector.
+[3770.42s -> 3771.86s]  And I'm just going to,
+[3773.62s -> 3774.66s]  and then possibly,
+[3774.66s -> 3780.26s]  I guess I can have learned parameters to try to scale back out
+[3780.26s -> 3784.42s]  in terms of multiplicatively and additively here.
+[3784.42s -> 3785.38s]  That's optional.
+[3785.38s -> 3788.34s]  We're going to compute this standardization.
+[3788.34s -> 3789.94s]  I'm going to take my vector x,
+[3789.94s -> 3791.22s]  subtract out the mean,
+[3791.22s -> 3792.74s]  divide by the standard deviation,
+[3792.74s -> 3794.98s]  plus this epsilon constant.
+[3794.98s -> 3796.26s]  If there's not a lot of variation,
+[3796.26s -> 3797.78s]  I don't want things to explode.
+[3797.78s -> 3799.70s]  So I'm going to have this epsilon there
+[3799.70s -> 3801.62s]  that's close to zero.
+[3801.62s -> 3803.14s]  So this part here,
+[3803.14s -> 3806.42s]  x minus mu over square root sigma plus epsilon
+[3806.42s -> 3808.42s]  is saying take all the variation
+[3808.42s -> 3811.30s]  and normalize it to unit mean and standard deviation.
+[3812.50s -> 3814.66s]  And then maybe I want to scale it,
+[3814.66s -> 3815.70s]  stretch it back out,
+[3816.98s -> 3820.74s]  and then maybe add an offset beta that I've learned.
+[3820.74s -> 3822.42s]  Although in practice actually this part,
+[3822.42s -> 3823.94s]  and we'll discuss this in the lecture notes,
+[3824.50s -> 3826.82s]  in practice this part maybe isn't actually that important.
+[3828.02s -> 3829.14s]  So layer normalization,
+[3831.14s -> 3832.50s]  you can think of this as
+[3832.50s -> 3834.82s]  when I get the output of layer normalization,
+[3834.82s -> 3837.62s]  it's going to look nice and look similar
+[3837.62s -> 3838.82s]  to the next layer
+[3838.82s -> 3840.50s]  independent of what's gone on
+[3840.50s -> 3842.50s]  because it's going to be unit mean and standard deviation.
+[3842.50s -> 3844.58s]  So maybe that makes for a better thing
+[3844.58s -> 3846.18s]  to learn off of for the next layer.
+[3849.38s -> 3852.34s]  Okay, any questions for residual or layer norm?
+[3852.34s -> 3852.84s]  Yes.
+[3852.84s -> 3857.22s]  What would you mean to subtract the scalar mu from the vector x?
+[3857.22s -> 3858.02s]  Yeah, that's a good question.
+[3858.66s -> 3861.46s]  When I subtract the scalar mu from the vector x,
+[3861.46s -> 3863.94s]  I broadcast mu to dimensionality d
+[3863.94s -> 3867.22s]  and remove mu from all d.
+[3867.78s -> 3868.50s]  Yeah, good point.
+[3869.46s -> 3870.42s]  Thank you, that was unclear.
+[3875.22s -> 3886.10s]  In the fourth bullet point when you're calculating the mean,
+[3887.06s -> 3890.18s]  is it divided by d or maybe I'm just...
+[3890.98s -> 3892.02s]  I think it is divided by d.
+[3892.10s -> 3892.98s]  Yeah, cool.
+[3895.54s -> 3898.26s]  So this is the average deviation from the mean
+[3898.26s -> 3899.14s]  of all of the, yeah.
+[3900.18s -> 3900.68s]  Yes.
+[3900.68s -> 3904.66s]  So if you have five words in the sentence by their norm,
+[3904.66s -> 3909.30s]  do you normalize based on the statistics of these five words
+[3909.30s -> 3911.62s]  or one word by one?
+[3911.62s -> 3912.34s]  So the question is,
+[3912.34s -> 3914.34s]  if I have five words in the sequence,
+[3914.34s -> 3917.86s]  do I normalize by sort of aggregating the statistics
+[3917.86s -> 3919.70s]  to estimate mu and sigma
+[3919.70s -> 3922.02s]  across all the five words, share their statistics,
+[3922.02s -> 3924.02s]  or do it independently for each word?
+[3924.02s -> 3925.30s]  This is a great question,
+[3925.30s -> 3928.10s]  which I think in all the papers that discuss transformers
+[3928.10s -> 3930.02s]  is under specified.
+[3930.02s -> 3932.74s]  You do not share across the five words,
+[3932.74s -> 3934.34s]  which is somewhat confusing to me.
+[3935.38s -> 3938.02s]  So each of the five words is done completely independently.
+[3939.06s -> 3941.22s]  You could have shared across the five words
+[3941.22s -> 3943.22s]  and said that my estimate of the statistics
+[3943.22s -> 3945.30s]  are just based on all five,
+[3946.42s -> 3947.14s]  but you do not.
+[3949.70s -> 3951.30s]  I can't pretend I understand totally why.
+[3951.30s -> 3952.82s]  How do you make sense of that,
+[3952.82s -> 3955.22s]  if you have a batch, for example,
+[3955.22s -> 3960.02s]  per batch, or per output from the same position?
+[3961.38s -> 3962.82s]  So similar question.
+[3962.82s -> 3965.94s]  The question is, if you have a batch of sequences,
+[3967.30s -> 3970.02s]  just like we were doing batch-based training,
+[3970.02s -> 3971.86s]  do you for a single word,
+[3971.86s -> 3973.70s]  now we don't share across the sequence index
+[3973.70s -> 3974.66s]  for sharing the statistics,
+[3974.66s -> 3976.58s]  but do you share across the batch?
+[3976.58s -> 3977.62s]  And the answer is no.
+[3977.62s -> 3979.46s]  You also do not share across the batch.
+[3980.18s -> 3982.50s]  Layer normalization was sort of invented
+[3982.50s -> 3985.06s]  as a replacement for batch normalization,
+[3985.06s -> 3986.34s]  which did just that.
+[3986.34s -> 3987.78s]  And the issue with batch normalization
+[3987.78s -> 3990.42s]  is that now your forward pass sort of depends
+[3990.42s -> 3991.62s]  in a way that you don't like
+[3991.62s -> 3995.30s]  on examples that should be not related to your example.
+[3995.30s -> 3997.54s]  And so yeah, you don't share statistics across the batch.
+[4000.66s -> 4001.78s]  Okay, cool.
+[4004.10s -> 4008.50s]  Okay, so now we have our full transformer decoder,
+[4008.50s -> 4010.42s]  and we have our blocks.
+[4010.42s -> 4012.82s]  So in the sort of slightly grayed out thing here
+[4012.82s -> 4017.54s]  that says repeat for number of decoder blocks,
+[4018.50s -> 4020.42s]  each block consists of,
+[4020.42s -> 4022.26s]  I pass it through self-attention,
+[4022.26s -> 4024.58s]  and then my add and norm,
+[4024.58s -> 4026.34s]  so I've got this residual connection here
+[4026.34s -> 4028.18s]  that goes around, add,
+[4028.18s -> 4030.34s]  I've got the layer normalization there,
+[4030.34s -> 4031.94s]  and then a feed-forward layer,
+[4031.94s -> 4035.14s]  and then another add and norm.
+[4035.14s -> 4037.94s]  And so that sort of set of four operations
+[4037.94s -> 4040.74s]  I apply for some number of times,
+[4040.74s -> 4041.62s]  number of blocks,
+[4041.62s -> 4043.86s]  so that whole thing is called a single block,
+[4043.86s -> 4044.82s]  and that's it.
+[4044.82s -> 4048.82s]  That's the transformer decoder as it is.
+[4051.78s -> 4053.86s]  Cool, so that's the whole architecture right there.
+[4053.86s -> 4056.58s]  We've solved things like needing to represent position.
+[4056.58s -> 4057.70s]  We've solved things like
+[4059.46s -> 4060.98s]  not being able to look into the future.
+[4061.62s -> 4063.94s]  We've solved a lot of different optimization problems.
+[4063.94s -> 4064.82s]  You had a question, yes?
+[4064.90s -> 4065.70s]  Yes?
+[4065.70s -> 4068.02s]  Can you hear the multi-headed attention?
+[4068.02s -> 4071.62s]  Yes, yes, that's multi-headed attention, yeah.
+[4072.74s -> 4074.42s]  With the dot product scaling,
+[4074.42s -> 4077.06s]  with the square root d over h as well, yeah.
+[4083.30s -> 4084.18s]  So the question is,
+[4084.82s -> 4087.38s]  how do these models handle variable length inputs?
+[4088.98s -> 4089.78s]  Yeah, so
+[4089.86s -> 4093.86s]  if you have,
+[4093.86s -> 4098.10s]  so the input to the GPU forward pass
+[4098.10s -> 4100.66s]  is going to be a constant length.
+[4100.66s -> 4104.66s]  So you're going to maybe pad to a constant length,
+[4104.66s -> 4107.22s]  and in order to not look at the future,
+[4107.22s -> 4109.86s]  the stuff that's sort of happening in the future,
+[4109.86s -> 4112.66s]  you can mask out the pad tokens,
+[4112.66s -> 4114.34s]  just like the masking that we showed
+[4114.34s -> 4116.42s]  for not looking at the future in general.
+[4116.42s -> 4119.06s]  You can just say set all of the attention weights
+[4119.62s -> 4122.18s]  to zero or the scores to negative infinity
+[4122.18s -> 4123.38s]  for all of the pad tokens.
+[4127.54s -> 4128.18s]  Yeah, exactly.
+[4128.18s -> 4132.10s]  So you can set everything to this maximum length.
+[4132.10s -> 4133.62s]  Now in practice, so the question was,
+[4133.62s -> 4135.46s]  do you set this length that you have everything be,
+[4135.46s -> 4136.82s]  be that maximum length?
+[4136.82s -> 4138.90s]  I mean, yes, often,
+[4138.90s -> 4140.74s]  although you can save computation
+[4140.74s -> 4142.58s]  by setting it to something smaller,
+[4143.30s -> 4146.02s]  and everything, the math all still works out.
+[4146.02s -> 4148.50s]  You just have to code it properly so it can handle,
+[4148.50s -> 4150.10s]  so you set everything instead of the n,
+[4150.10s -> 4151.70s]  you set it all to five,
+[4151.70s -> 4153.30s]  if everything is shorter than like five,
+[4153.30s -> 4155.22s]  and you save a lot of computation.
+[4155.22s -> 4157.46s]  All of the self-attention operations just work.
+[4159.30s -> 4160.50s]  So, yeah.
+[4165.46s -> 4166.82s]  There's one hidden layer in the feed forward.
+[4167.70s -> 4168.20s]  Yeah.
+[4168.90s -> 4169.94s]  Okay, I should move on.
+[4169.94s -> 4170.90s]  We've got a couple more things,
+[4170.90s -> 4172.42s]  and not very much time.
+[4172.42s -> 4175.38s]  Okay, but I'll be here after the class as well.
+[4175.38s -> 4176.58s]  So in the encoder,
+[4176.58s -> 4179.38s]  so the transformer encoder is almost identical,
+[4179.38s -> 4181.78s]  but again, we want bi-directional context,
+[4181.78s -> 4184.34s]  and so we just don't do the masking, right?
+[4184.34s -> 4186.66s]  So I've got in my multi-hat attention here,
+[4186.66s -> 4188.42s]  I've got no masking,
+[4188.42s -> 4191.38s]  and so it's that easy to make the model bi-directional, okay?
+[4193.22s -> 4193.86s]  So that's easy.
+[4193.86s -> 4195.54s]  So that's called the transformer encoder.
+[4195.54s -> 4197.94s]  It's almost identical, but no masking.
+[4197.94s -> 4198.66s]  And then finally,
+[4198.66s -> 4201.94s]  we've got the transformer encoder decoder,
+[4201.94s -> 4203.22s]  which is actually how the transformer
+[4203.22s -> 4205.62s]  was originally presented in this paper.
+[4205.70s -> 4206.90s]  Attention is all you need.
+[4207.78s -> 4209.14s]  And this is when we want to have
+[4209.14s -> 4210.58s]  sort of a bi-directional network.
+[4210.58s -> 4211.46s]  Here's the encoder.
+[4211.46s -> 4213.38s]  It takes in, say, my source sentence
+[4213.38s -> 4214.90s]  for machine translation.
+[4214.90s -> 4216.98s]  Its multi-headed attention is not masked.
+[4217.54s -> 4222.02s]  And I have a decoder to decode out my sentence.
+[4222.02s -> 4222.66s]  Now, but you'll see
+[4222.66s -> 4224.58s]  that this is slightly more complicated.
+[4224.58s -> 4226.82s]  I have my masked multi-head self-attention,
+[4227.46s -> 4229.94s]  just like I had before in my decoder,
+[4229.94s -> 4232.82s]  but now I have an extra operation,
+[4232.82s -> 4234.82s]  which is called cross-attention,
+[4234.82s -> 4238.82s]  where I'm going to use my decoder vectors
+[4238.82s -> 4241.30s]  as my queries.
+[4241.30s -> 4243.78s]  But then I'll take the output of the encoder
+[4243.78s -> 4245.78s]  as my keys and values.
+[4245.78s -> 4247.94s]  So now for every word in the decoder,
+[4247.94s -> 4250.50s]  I'm looking at all the possible words
+[4250.50s -> 4253.38s]  in the output of all of the blocks of the encoder.
+[4253.38s -> 4253.62s]  Yes?
+[4253.62s -> 4264.26s]  How do we get a key and value separated from the output?
+[4264.26s -> 4266.42s]  Because didn't we collapse that into the single output?
+[4270.58s -> 4272.26s]  How will we get the keys and values out?
+[4273.62s -> 4274.98s]  Because when we have the output,
+[4274.98s -> 4277.22s]  didn't we collapse the keys and values
+[4277.22s -> 4278.74s]  into a single output?
+[4281.38s -> 4282.10s]  Yeah, the question is,
+[4282.10s -> 4283.46s]  how do you get the keys and values
+[4284.02s -> 4285.62s]  out of this sort of single collapsed output?
+[4285.62s -> 4287.86s]  Now remember, the output for each word
+[4287.86s -> 4290.58s]  is just this weighted average of the value vectors
+[4290.58s -> 4292.98s]  for the previous words, right?
+[4292.98s -> 4295.70s]  And then from that output for the next layer,
+[4295.70s -> 4298.58s]  we apply a new key, query, and value transformation
+[4298.58s -> 4301.54s]  to each of them for the next layer of self-attention.
+[4302.42s -> 4305.78s]  So it's not actually that you're key and the value to the output.
+[4305.78s -> 4308.50s]  It's not the output itself when you're picking from the input.
+[4308.50s -> 4310.74s]  Yeah, you apply the key matrix, the query matrix,
+[4310.74s -> 4312.50s]  to the output of whatever came before it.
+[4312.58s -> 4315.54s]  Yeah, and so just in a little bit of math,
+[4316.18s -> 4319.78s]  we have these vectors h1 through hn.
+[4319.78s -> 4322.50s]  I'm going to call them the output of the encoder.
+[4323.30s -> 4326.26s]  And then I've got vectors that are the output of the decoder.
+[4327.94s -> 4330.74s]  So I've got these z's I'm calling the output of the decoder.
+[4330.74s -> 4335.30s]  And then I simply define my keys and my values
+[4335.30s -> 4338.26s]  from the encoder vectors, these h's.
+[4339.30s -> 4341.22s]  So I take the h's, I apply a key matrix
+[4341.22s -> 4342.74s]  and a value matrix.
+[4342.74s -> 4346.42s]  And then I define the queries from my decoder.
+[4346.42s -> 4347.38s]  So my queries here.
+[4347.38s -> 4350.34s]  So this is why two of the arrows come from the encoder
+[4350.34s -> 4352.42s]  and one of the arrows comes from the decoder.
+[4352.42s -> 4354.74s]  I've got my z's here, get my queries,
+[4354.74s -> 4357.46s]  my keys and values from the encoder.
+[4359.86s -> 4364.58s]  Okay, so that is it.
+[4364.58s -> 4365.46s]  I've got a couple of minutes.
+[4365.46s -> 4368.50s]  I want to discuss some of the sort of results of transformers.
+[4368.50s -> 4369.78s]  And I'm happy to answer more questions
+[4369.78s -> 4372.02s]  about transformers after class.
+[4372.02s -> 4376.26s]  So really the original results of transformers,
+[4376.26s -> 4378.42s]  they had this big pitch for like, oh, look,
+[4378.42s -> 4380.66s]  you can do way more computation
+[4380.66s -> 4382.18s]  because of parallelization.
+[4382.18s -> 4384.66s]  They got great results in machine translation.
+[4384.66s -> 4392.98s]  So you had transformers sort of doing quite well,
+[4392.98s -> 4395.30s]  although not like astoundingly better
+[4395.94s -> 4398.02s]  than existing machine translation systems.
+[4398.66s -> 4402.18s]  But they were significantly more efficient to train.
+[4402.18s -> 4405.22s]  Because you don't have this parallelization problem,
+[4405.22s -> 4407.46s]  you could compute on much more data much faster
+[4407.46s -> 4410.50s]  and you could make use of faster GPUs much more.
+[4412.02s -> 4414.90s]  After that, there were things like document generation
+[4414.90s -> 4416.66s]  where you had the sort of old standard
+[4416.66s -> 4418.90s]  of sequence-to-sequence models, the LSTMs,
+[4418.90s -> 4422.34s]  and eventually everything became sort of transformers
+[4422.34s -> 4423.30s]  all the way down.
+[4424.26s -> 4428.42s]  Transformers also enabled this revolution into pre-training,
+[4428.42s -> 4430.90s]  which we'll go over in next year's next class.
+[4431.94s -> 4434.58s]  And sort of the efficiency, the parallelizability
+[4434.58s -> 4438.18s]  allows you to compute on tons and tons of data.
+[4438.18s -> 4441.22s]  And so after a certain point, sort of on standard,
+[4441.22s -> 4444.66s]  large benchmarks, everything became transformer-based.
+[4444.66s -> 4447.46s]  This ability to make use of lots and lots of data,
+[4447.46s -> 4450.10s]  lots and lots of compute, just put transformers
+[4450.10s -> 4452.90s]  head and shoulders above LSTMs in,
+[4452.90s -> 4456.02s]  let's say, almost every sort of modern advancement
+[4456.02s -> 4457.86s]  in natural language processing.
+[4459.78s -> 4463.22s]  There are many sort of drawbacks and variants
+[4463.22s -> 4464.50s]  to transformers.
+[4464.50s -> 4466.34s]  The clearest one that people have tried to work on
+[4466.34s -> 4468.98s]  quite a bit is this quadratic compute problem.
+[4468.98s -> 4471.94s]  So this all pairs of interactions means
+[4471.94s -> 4474.42s]  that our sort of total computation for each block
+[4474.42s -> 4476.10s]  grows quadratically with a sequence length.
+[4476.10s -> 4479.38s]  And in a student's question, we heard that,
+[4479.38s -> 4481.46s]  well, as the sequence length becomes long,
+[4481.54s -> 4484.18s]  if I want to process a whole Wikipedia article,
+[4484.18s -> 4488.18s]  a whole novel, that becomes quite unfeasible.
+[4488.18s -> 4490.74s]  And actually, that's a step backwards in some sense,
+[4490.74s -> 4492.58s]  because for recurrent neural networks,
+[4492.58s -> 4494.58s]  it only grew linearly with the sequence length.
+[4495.86s -> 4497.30s]  Other things people have tried to work on
+[4497.30s -> 4499.78s]  are sort of better position representations,
+[4499.78s -> 4502.02s]  because the absolute index of a word
+[4502.02s -> 4504.66s]  is not really the best way maybe
+[4504.66s -> 4506.66s]  to represent its position in a sequence.
+[4508.18s -> 4509.30s]  And just to give you an intuition
+[4509.30s -> 4510.74s]  of quadratic sequence length,
+[4510.74s -> 4513.54s]  remember that we had this big matrix multiply here
+[4513.54s -> 4516.74s]  that resulted in this matrix of n by n.
+[4516.74s -> 4520.26s]  And computing this is a big cost.
+[4520.26s -> 4521.30s]  It costs a lot of memory.
+[4524.18s -> 4526.18s]  And so if you think of the model dimensionality
+[4526.18s -> 4529.30s]  as like 1,000, although today it gets much larger,
+[4529.30s -> 4532.34s]  then for a short sequence of n is roughly 30,
+[4532.34s -> 4535.94s]  maybe if you're computing n squared times d,
+[4536.74s -> 4537.86s]  30 isn't so bad.
+[4538.50s -> 4541.06s]  But if you had something like 50,000,
+[4541.94s -> 4545.62s]  then n squared becomes huge and totally infeasible.
+[4546.42s -> 4548.82s]  So people have tried to map things
+[4548.82s -> 4550.42s]  down to a lower dimensional space
+[4550.42s -> 4553.30s]  to get rid of the quadratic computation.
+[4554.42s -> 4557.38s]  But in practice, as people have gone to things
+[4557.38s -> 4559.62s]  like GPT-3, ChatGPT,
+[4559.62s -> 4561.38s]  most of the computation doesn't show up
+[4561.38s -> 4562.34s]  in the self-attention.
+[4563.14s -> 4566.34s]  So people are wondering is it even necessary
+[4566.42s -> 4568.82s]  to get rid of the self-attention operations
+[4568.82s -> 4570.18s]  quadratic constraint?
+[4570.18s -> 4572.42s]  It's an open form of research,
+[4572.42s -> 4574.66s]  whether this is sort of necessary.
+[4574.66s -> 4577.38s]  And then finally, there've been a ton of modifications
+[4577.38s -> 4581.94s]  for the transformer over the last five, four-ish years.
+[4581.94s -> 4585.06s]  And it turns out that the original transformer
+[4585.06s -> 4587.78s]  plus maybe a couple of modifications
+[4587.78s -> 4590.82s]  is pretty much the best thing there is still.
+[4591.54s -> 4592.50s]  There've been a couple of things
+[4592.50s -> 4593.94s]  that end up being important,
+[4593.94s -> 4595.46s]  changing out the non-linearities
+[4596.26s -> 4598.66s]  and the feedforward network ends up being important.
+[4598.66s -> 4602.26s]  But it's had lasting power so far.
+[4603.06s -> 4605.62s]  But I think it's ripe for people to come through
+[4605.62s -> 4609.22s]  and think about how to improve it in various ways.
+[4609.22s -> 4611.22s]  So pre-training is on Tuesday.
+[4611.94s -> 4613.22s]  Good luck on assignment four.
+[4613.22s -> 4615.38s]  And then we'll have the project proposal documents
+[4615.38s -> 4617.78s]  out tonight for you to talk about.

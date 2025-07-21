@@ -1,0 +1,152 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.30s]  The Address Resolution Protocol, or ARP, is the mechanism by which the network layer
+[5.30s -> 9.16s]  can discover the link address associated with the network address it directly connected
+[9.16s -> 10.16s]  to.
+[10.16s -> 15.06s]  Put another way, it's how a device gets an answer to the question, I have an IP packet
+[15.06s -> 17.46s]  whose next hop is this address.
+[17.46s -> 20.30s]  What link address should I send it to?
+[20.30s -> 24.94s]  ARP is needed because each protocol layer has its own names and addresses.
+[24.94s -> 27.46s]  An IP address is a network-level address.
+[27.46s -> 31.24s]  It describes a host, a unique destination, at the network layer.
+[31.24s -> 35.62s]  A link address, in contrast, describes a particular network card, a unique device that sends
+[35.62s -> 37.46s]  and receives link layer frames.
+[37.46s -> 40.70s]  Ethernet, for example, has 48-bit addresses.
+[40.70s -> 43.98s]  Whenever you buy an Ethernet card, it's been pre-configured with a unique Ethernet
+[43.98s -> 44.98s]  address.
+[44.98s -> 51.82s]  So while an IP address says this host, an Ethernet address says this Ethernet card.
+[52.24s -> 56.94s]  48-bit Ethernet addresses are usually written as a colon-delimited set of six octets in
+[56.94s -> 66.34s]  hexadecimal, such as 0 colon 13 colon 72 colon 4C colon D9 colon 6A, as in A in
+[66.34s -> 73.70s]  this example, or 999999 as in the destination B.
+[73.70s -> 77.14s]  One thing that can be confusing is that while these link layer and network layer
+[77.14s -> 81.74s]  addresses are completely decoupled with respect to the protocol layers, in terms of
+[81.78s -> 84.74s]  assignment and management, they might not be.
+[84.74s -> 88.94s]  For example, it's very common for a single host to have multiple IP addresses, one for
+[88.94s -> 90.72s]  each of its interfaces.
+[90.72s -> 93.30s]  It needs to because of the concept of a netmask.
+[93.30s -> 97.14s]  For example, look at this hypothetical setup with A, B, and a gateway.
+[97.14s -> 103.06s]  The gateway, in the middle, has a single IP address, 192.168.0.1.
+[103.06s -> 109.14s]  It has two network cards, one connecting it to destination 171.43.22.5, one connecting
+[109.14s -> 115.78s]  it to the source, 192.168.0.5.
+[115.78s -> 122.78s]  Now the gateway's address, 192.168.0.1, can really only be in one of these networks,
+[122.78s -> 128.34s]  the network on the left, the source network A. The netmask needed for 192.168.0.1 to
+[128.34s -> 138.10s]  be in the same network as 171.43.22.5 is 128.0.0.0, or just one bit of netmask.
+[138.10s -> 142.46s]  It can't be that all IP addresses whose first bit is one are in the same network as
+[142.46s -> 144.46s]  171.43.22.5.
+[144.46s -> 152.98s]  192.168.0.5, for example, needs to be reached through the gateway.
+[152.98s -> 157.06s]  So instead, we often see setups like this, where the gateway or router has multiple
+[157.06s -> 161.54s]  interfaces, each with their own link layer address to identify the card, and also each
+[161.54s -> 164.86s]  with their own network layer address to identify the host within the network that
+[164.86s -> 166.82s]  that card is a part of.
+[166.82s -> 173.54s]  For the gateway, the left interface has IP address 192.168.0.1, while the right interface
+[173.54s -> 178.70s]  has IP address 171.43.22.8.
+[178.70s -> 182.24s]  The fact that link layer and network layer addresses are decoupled logically, but coupled
+[182.24s -> 185.52s]  in practice, is in some ways a historical artifact.
+[185.52s -> 188.10s]  When the internet started, there were many link layers, and it wanted to be able to
+[188.10s -> 189.90s]  run on top of all of them.
+[189.90s -> 193.02s]  These link layers weren't suddenly going to start using IP addresses instead of their
+[193.02s -> 194.42s]  own addressing scheme.
+[194.62s -> 197.78s]  Furthermore, there turns out to be a bunch of situations where having a separate link
+[197.78s -> 199.62s]  layer address is very valuable.
+[199.62s -> 202.54s]  For example, when I register a computer with Stanford's network, I've registered
+[202.54s -> 205.86s]  its link layer address, the address of the network card.
+[205.86s -> 207.46s]  So what does this mean in practice?
+[207.46s -> 211.22s]  Let's say node A on the left wants to send a packet to node B on the right.
+[211.22s -> 216.78s]  It's going to generate an IP packet with source address 192.168.0.5 and destination
+[216.78s -> 221.54s]  address 171.43.22.5.
+[221.54s -> 225.06s]  Node A checks whether the destination address is in the same network.
+[225.06s -> 231.98s]  The netmask tells it that the destination address is in a different network, 255.255.255.
+[231.98s -> 238.50s]  This means node A needs to send the packet through the gateway or 192.168.0.1.
+[238.50s -> 246.46s]  To do this, it sends a packet whose network layer destination is 171.43.22.5, but whose
+[246.46s -> 249.70s]  link layer destination is the link layer address of the gateway.
+[250.34s -> 262.58s]  The packet has a network layer destination 171.43.22.5 and a link layer destination 0.18.e7.f3.ce1a.
+[262.58s -> 274.98s]  The network layer source is 192.168.0.5 and the link layer source is 0.13.72.4c.d9.6a.
+[274.98s -> 280.82s]  So we have an IP packet from A to B encapsulated inside a link layer frame from A to the left
+[280.82s -> 282.62s]  gateway interface.
+[282.62s -> 286.06s]  When the packet reaches the gateway, the gateway looks up the next hop, decides it's
+[286.06s -> 291.18s]  node B, and puts the IP packet inside a link layer frame to B. So this second
+[291.18s -> 296.26s]  IP packet from A to B is inside a link layer frame from the right gateway interface
+[296.26s -> 297.18s]  to B.
+[301.94s -> 304.78s]  So here we get to the problem ARP solves.
+[304.78s -> 311.78s]  My client knows it needs to send a packet through the gateway that has IP address 192.168.0.1.
+[311.78s -> 317.90s]  To do so, however, it needs to have the link layer address associated with 192.168.0.1.
+[317.90s -> 319.46s]  How does it get this address?
+[319.46s -> 324.42s]  We somehow need to be able to map a layer 3 network layer address to its corresponding
+[324.42s -> 326.54s]  layer 2 link layer address.
+[326.54s -> 331.22s]  We do this with a protocol called ARP, or the Address Resolution Protocol.
+[331.22s -> 333.86s]  ARP is a simple request-reply protocol.
+[333.86s -> 337.98s]  Every node keeps a cache of mappings from IP addresses on its network to link layer
+[337.98s -> 339.42s]  addresses.
+[339.42s -> 342.46s]  If a node needs to send a packet to an IP address it doesn't have a mapping for,
+[342.46s -> 343.70s]  it sends a request.
+[343.70s -> 345.94s]  Who has network address X?
+[345.94s -> 351.70s]  The node that has that network address responds, saying, I have network address X.
+[351.70s -> 354.06s]  The response includes the link layer address.
+[354.06s -> 358.26s]  On receiving the response, the requester can generate the mapping and send the packet.
+[358.26s -> 362.30s]  So that every node hears the request, a node sends a request to a link layer
+[362.30s -> 364.06s]  broadcast address.
+[364.06s -> 366.34s]  Every node in the network will hear the packet.
+[366.34s -> 370.38s]  Furthermore, ARP is structured so that it contains redundant data.
+[370.38s -> 374.06s]  The request contains the network and link layer addresses of the requester.
+[374.06s -> 378.70s]  That way, when nodes hear a request, since it's a broadcast, they can insert or refresh
+[378.70s -> 380.76s]  a mapping in their cache.
+[380.76s -> 383.70s]  Nodes only respond to requests for themselves.
+[383.70s -> 388.14s]  This means, assuming nobody is generating packets incorrectly, the only way you can generate
+[388.14s -> 392.90s]  a mapping for another node is in response to a packet that node sends.
+[392.90s -> 397.06s]  So if another node crashes or disconnects, it will inevitably leave the network when
+[397.06s -> 399.10s]  all of the cache mappings expire.
+[399.10s -> 402.46s]  This makes debugging and troubleshooting ARP much easier.
+[402.46s -> 405.06s]  So how long do these dynamically discovered mappings last?
+[405.06s -> 406.46s]  It depends on the device.
+[406.46s -> 410.10s]  Some versions of Mac OS X, for example, keep them for around 20 minutes, while some
+[410.10s -> 412.58s]  Cisco devices use timeouts of 4 hours.
+[412.58s -> 415.74s]  The assumption is that these mappings do not change very frequently.
+[415.74s -> 418.10s]  This is what an ARP packet actually looks like.
+[418.10s -> 419.70s]  It has 10 fields.
+[419.70s -> 423.70s]  The hardware field states what link layer this request or response is for.
+[423.70s -> 428.04s]  The protocol field states what network protocol this request or response is for.
+[428.04s -> 432.86s]  The link fields specify how many bytes long the link layer network addresses are.
+[432.86s -> 436.96s]  The opcode specifies whether the packet is a request or response.
+[436.96s -> 441.22s]  The four address fields are for requesting and specifying the mappings.
+[441.22s -> 444.94s]  Remember, all of these fields are stored in network order, or big-endian, so if you
+[444.94s -> 450.62s]  have an opcode of 15, it will be stored as 0x000F in the opcode field.
+[450.62s -> 454.10s]  So let's say our client wants to send a packet to the broader Internet through its gateway,
+[454.10s -> 456.66s]  but it doesn't have the gateway's Ethernet address.
+[456.66s -> 461.22s]  The ARP request will specify that the hardware is Ethernet, which is value 1, the protocol
+[461.22s -> 468.18s]  is IP, which is value 0x0800, the hardware address length is 6, and the protocol
+[468.18s -> 470.14s]  length is 4.
+[470.14s -> 473.54s]  The opcode will be request, whose value is 1.
+[473.58s -> 482.30s]  The ARP's source hardware field will be the requester's Ethernet address, 68A860058522.
+[482.30s -> 488.06s]  The source protocol field is the requester's IP address, 192.168.0.5.
+[488.06s -> 493.06s]  The destination address can be set to anything, it's what the packet is trying to discover.
+[493.06s -> 496.74s]  The destination protocol address is the address the client is trying to find a mapping
+[496.74s -> 499.94s]  for, 192.168.0.1.
+[499.94s -> 502.78s]  The client sends this frame on the Ethernet.
+[502.82s -> 507.02s]  Every node in the network receives it and refreshes the mapping between the sender's
+[507.02s -> 516.26s]  link layer address, 68A860058522, and its network layer address, 192.168.0.5, or it
+[516.26s -> 519.18s]  inserts a mapping if it doesn't already have one.
+[519.18s -> 523.70s]  The client will generate an ARP request whose link layer source address is its address,
+[523.70s -> 528.30s]  68A860058222.
+[528.30s -> 536.30s]  The destination link layer address is the broadcast address, FFFFFFFFFFFFFFF, all ones.
+[536.30s -> 541.86s]  The gateway sees that the request is for its IP address, and so generates a reply.
+[541.86s -> 544.82s]  Like the request, the ARP reply will specify that the hardware's Ethernet, which is
+[544.82s -> 550.22s]  value 1, the protocol's IP, which is value 0x0800, the hardware address's length
+[550.22s -> 552.90s]  is 6, and the protocol length is 4.
+[552.90s -> 555.90s]  The opcode will be reply, whose value is 2.
+[555.90s -> 563.38s]  The ARP source hardware field will be the repliers Ethernet address, 0x018E7F3CEA1A.
+[563.38s -> 568.42s]  The source protocol field is the answer, 192.168.0.1.
+[568.42s -> 575.58s]  The destination address is the source address of the request, 68A860058522.
+[575.58s -> 582.30s]  The destination protocol address is the source protocol address of the request, 192.168.0.5.
+[582.30s -> 585.52s]  It's an open question what link layer address you send the response to.
+[585.52s -> 589.16s]  The original ARP specification stated that the repliers should send it to the requester's
+[589.16s -> 591.64s]  link layer address, so unicast.
+[591.64s -> 594.80s]  It's common today to broadcast it, however, as doing so can more aggressively replace
+[594.80s -> 597.84s]  cache entries if the mapping needs to change.
+[597.84s -> 601.68s]  Nodes also can send what are called gratuitous ARP packets, requesting non-existent mappings
+[601.68s -> 604.96s]  in order to advertise themselves on the network.
+[604.96s -> 608.72s]  So we've seen how, in order to route packets, one needs to be able to map network layer
+[608.72s -> 611.06s]  addresses to link layer addresses.
+[611.06s -> 615.34s]  The address resolution protocol, or ARP, provides the service through a simple request reply
+[615.34s -> 616.34s]  exchange.
+[616.34s -> 620.44s]  If a node needs to send a packet to or through an IP address whose link layer address
+[620.44s -> 623.22s]  it does not have, it can request the address through ARP.

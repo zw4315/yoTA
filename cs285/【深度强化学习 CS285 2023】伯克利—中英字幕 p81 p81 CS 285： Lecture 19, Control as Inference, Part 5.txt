@@ -1,0 +1,146 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.96s]  Okay, in the last portion of today's lecture I'm going to talk about some
+[4.96s -> 10.52s]  previous research papers that actually utilize this variational inference or
+[10.52s -> 14.08s]  soft optimality framework to instantiate some algorithms with some
+[14.08s -> 19.36s]  interesting properties. So first I'll talk about fine-tuning exploration
+[19.36s -> 26.04s]  and robustness. So let's say that we run a, for instance, a policy
+[26.08s -> 32.28s]  gradient algorithm to train this humanoid robot to walk. So we can get them to walk
+[32.28s -> 35.64s]  and it'll look pretty cool, pretty compelling, but if you run the same
+[35.64s -> 40.72s]  algorithm twice we might get a very different gate. So on the second attempt
+[40.72s -> 45.92s]  the humanoid still walks, but walks very differently. And in fact we see this
+[45.92s -> 49.44s]  all the time in deep RL, running the same algorithm multiple times doesn't
+[49.44s -> 57.80s]  necessarily lead to two identical solutions. Intuitively, this issue is just
+[57.80s -> 61.68s]  kind of a more complex, more general version of a specific local optimum
+[61.68s -> 66.24s]  problem. This is maybe best illustrated with a simple example. Let's
+[66.24s -> 70.26s]  say that you have this environment where this little ant robot needs to
+[70.26s -> 75.16s]  walk to the location indicated by the blue square. Early on when it starts
+[75.16s -> 79.16s]  learning it can choose to explore either the upper passage or the lower
+[79.20s -> 83.12s]  passage. Both of them bring it closer to the goal, so it doesn't know which one is
+[83.12s -> 87.84s]  the better one. But with a conventional reinforcement learning algorithm, it would
+[87.84s -> 91.12s]  probably end up committing to one of the two passages, and if it commits to
+[91.12s -> 94.36s]  the wrong one randomly, then it will get stuck and it won't be able to reach
+[94.36s -> 98.96s]  the destination. Intuitively, if you want to solve problems like this, you have
+[98.96s -> 103.36s]  to track both hypotheses, basically explore both passages, until you figure out
+[103.48s -> 109.28s]  that one is significantly better than the other. So this is where soft Q
+[109.28s -> 111.80s]  learning can actually be very effective, and what I'm going to discuss is based
+[111.80s -> 116.84s]  on this paper by Thomas Harnoia and Haran Tan, called Reinforcement Learning
+[116.84s -> 122.56s]  with Deep Energy-Based Policies. So we have our Q function, which maps from
+[122.56s -> 129.56s]  states and actions to continuous values, and early on in training, the
+[129.96s -> 134.12s]  agent here will see that it's getting larger Q values for both the upper passage
+[134.12s -> 139.32s]  and the lower passage. So you can kind of think of this picture as a crude
+[139.32s -> 142.44s]  cartoon illustration of the Q function at the initial state. It has these two
+[142.44s -> 147.12s]  peaks, one corresponding to the upper passage and one to the lower one. And
+[147.12s -> 151.68s]  which peak is taller is largely arbitrary. It depends mostly on how far
+[151.68s -> 155.68s]  the agent got along each passage. So if it got a little further along the
+[155.68s -> 158.88s]  upper passage, it'll look a little bit better because it got closer to the
+[158.88s -> 162.68s]  goal. So that peak might be just a little bit higher, and when it's a little
+[162.68s -> 166.84s]  bit higher, the agent will commit a disproportionate amount of its
+[166.84s -> 171.00s]  exploration energy to explore that upper passage, and the corresponding
+[171.00s -> 178.32s]  peak will get even higher. If we instead choose our policy according to
+[178.32s -> 181.24s]  this variational inference framework, if we choose it to be proportional to the
+[181.24s -> 185.08s]  exponentiated Q value, we'll put probability mass on both peaks and
+[185.32s -> 189.72s]  actually explore both passages. And of course, as I said before, the normalizer
+[189.72s -> 193.40s]  here is just the value function, so it has this appealing interpretation as the
+[193.40s -> 199.00s]  exponential of the advantage. So this leads us directly to the soft Q-learning
+[199.00s -> 202.80s]  procedure, and it turns out that it has this nice appealing property that
+[202.80s -> 207.00s]  will explore both hypotheses until we figure out which one is the best one.
+[207.00s -> 210.64s]  It turns out that this approach is actually very nice for pre-training,
+[210.64s -> 214.04s]  because if you use it for pre-training in an underspecified task,
+[214.28s -> 217.96s]  then you will learn to solve that task in a wide variety of different ways, and
+[217.96s -> 221.64s]  then when the environment changes and you have to specialize your skill, then
+[221.64s -> 225.68s]  you simply have to remove all the wrong ways of solving it rather than
+[225.68s -> 231.00s]  relearn it. So to illustrate this with an example, you know, I'm recording
+[231.00s -> 235.16s]  this on October 31st, it's Halloween, so it's very suitable. We're going to have an explosion of
+[235.16s -> 241.80s]  spiders. On the left here, you can see the standard, in this case, DDPG
+[241.84s -> 247.60s]  deterministic RL algorithm with a reward function that says run very fast in any
+[247.60s -> 253.08s]  direction. On the right, you can see the soft Q-learning approach. Now when the
+[253.08s -> 256.44s]  soft Q-learning approach is given a reward that is high for running in any
+[256.44s -> 260.04s]  direction, it'll try to run in as many directions as possible, because that
+[260.04s -> 263.68s]  increases entropy, and also produces a video very suitable for Halloween
+[263.68s -> 269.44s]  with this terrifying explosion of spiders. Now you might say, well, why is this
+[269.48s -> 275.16s]  useful? Why do we want ants that run in random directions? Well, the reason this
+[275.16s -> 279.12s]  is useful is that if you pre-train the policy in this way and then put it in
+[279.12s -> 282.56s]  an environment like this hallway, where it has to fine-tune to run in a
+[282.56s -> 286.60s]  single particular direction, the policy that has been pre-trained with soft Q-
+[286.60s -> 292.24s]  learning can find too much faster. So initially, the DDPG policy runs in a
+[292.24s -> 296.20s]  specific but incorrect direction. The soft Q-learning policy runs in a random
+[296.32s -> 300.48s]  direction on every episode. With a little bit of fine-tuning, the soft Q-
+[300.48s -> 303.40s]  learning policy essentially needs to learn not to run in the incorrect
+[303.40s -> 308.12s]  directions and retain only the correct one, whereas the DDPG policy has to
+[308.12s -> 311.56s]  unlearn how to run in the wrong direction and then relearn how to run
+[311.56s -> 314.64s]  in the correct one, which means that it's going to fine-tune much much
+[314.64s -> 319.16s]  more slowly. And of course we see this quantitatively here. The blue line
+[319.16s -> 324.32s]  shows fine-tuning from soft Q-learning, the green line shows fine-tuning from
+[324.44s -> 329.92s]  the deterministic DDPG algorithm. Now, besides producing hilarious
+[329.92s -> 334.64s]  explosions of spiders for Halloween and enabling better fine-tuning, the
+[334.64s -> 337.96s]  framework of soft optimality can also simply lead to more performant,
+[337.96s -> 341.88s]  more effective, reinforced learning algorithms. In fact, one of the most
+[341.88s -> 346.08s]  widely used off-policy continuous control algorithms to date is
+[346.08s -> 349.12s]  something called soft actor-critic, which is based on the principle of
+[349.12s -> 353.44s]  soft optimality. Soft actor-critic is essentially the actor-critic
+[353.44s -> 357.88s]  counterpart of soft Q-learning. So in soft actor-critic, there's a Q-function
+[357.88s -> 361.52s]  update, but it's not a soft max, it's actually trying to learn the Q-function
+[361.52s -> 365.16s]  for a given policy. You can think of this as basically message
+[365.16s -> 370.88s]  passing in the variational family, and it looks exactly the same as the
+[370.88s -> 375.12s]  regular actor-critic Q-function update with the addition of this minus
+[375.12s -> 380.44s]  log pi term to account for entropy. And in the policy update, it's just like
+[380.44s -> 385.12s]  that policy gradient objective that I showed before, but using this Q-function,
+[385.12s -> 388.56s]  and because this algorithm uses a Q-function, it can learn from off-policy
+[388.56s -> 394.20s]  data. And then of course every time it updates the Q-function and it updates
+[394.20s -> 397.76s]  the policy, it interacts with the world and collects more data to add to
+[397.76s -> 403.60s]  its replay buffer. So you can think of step one as in the parlance of
+[403.60s -> 407.64s]  RL updating the Q-function, but in the parlance of variational inference, it's
+[407.72s -> 414.84s]  doing inference in the graphical model corresponding to the variational family to do message
+[414.84s -> 418.48s]  passing, and then the update to the policy fits the variational
+[418.48s -> 421.76s]  distribution to be a better approximation to the approximate
+[421.76s -> 427.44s]  posterior from the original graphical model. So the justification for the
+[427.44s -> 430.36s]  algorithm is somewhat involved in terms of variational inference, but the
+[430.36s -> 433.48s]  practical instantiation is actually very simple. It's an off-policy
+[433.48s -> 437.60s]  algorithm involving a Q-function where we subtract the entropy from future
+[437.60s -> 446.04s]  Q-values. This algorithm turns out to work very well. This is a video of a
+[446.04s -> 450.68s]  soya robotic arm learning a Lego block stacking task, and it's actually
+[450.68s -> 454.24s]  learning directly in the real world. What's interesting about this experiment
+[454.24s -> 457.44s]  is not just that it learns to stack a Lego block, but actually that once
+[457.44s -> 462.48s]  learning is completed, you can actually go in and perturb the robot, and because
+[462.48s -> 465.12s]  it learned to perform the task in a wide variety of different ways because
+[465.20s -> 469.00s]  of that entry-return, it actually remains quite robust, so it can respond to the
+[469.00s -> 476.96s]  perturbation, recover, and still stack the Lego block. So it's very robust
+[476.96s -> 482.84s]  at this task. Thomas Harnoy also ran some really interesting experiments to
+[482.84s -> 486.76s]  use this algorithm to learn some locomotion tasks. So here this is
+[486.76s -> 490.92s]  called the Minotaur robot. It learned to walk forward directly in the real world
+[491.04s -> 495.88s]  using soft actor critic, so initially it just kind of moves around randomly, but
+[495.88s -> 499.08s]  after a fair bit of training, it can actually figure out a pretty decent
+[499.08s -> 507.32s]  forward gait. This is sped up 5x, but now we're going to fast forward a
+[507.32s -> 511.04s]  little bit at 18 minutes. You can see it has like kind of a gradual crawl
+[511.04s -> 518.48s]  where it's able to move forward, but only a little bit. At 36 minutes,
+[518.52s -> 522.12s]  sometimes it falls, but sometimes it moves forward quite a bit faster. It's kind of
+[522.12s -> 528.16s]  skittering a little bit, kind of like a cockroach, and then at 54
+[528.16s -> 531.72s]  minutes it has a pretty nice and reliable gait. And of course, as before,
+[531.72s -> 536.04s]  the gait has a degree of robustness, so we can put it on flat ground and it
+[536.04s -> 539.80s]  can sort of demonstrate what it learned, but we can also put some obstacles in front of
+[539.80s -> 543.84s]  it and see how it reacts. So the robot, of course, was not trained on slopes,
+[543.84s -> 546.88s]  but when it's put on a slope, it actually reacts somewhat intelligently.
+[546.88s -> 554.44s]  Here it's walking downstairs. It can't quite walk up the stairs, but it can walk down the
+[554.44s -> 564.96s]  stairs reliably. And it can also play Django, but very badly. All right, so that concludes
+[564.96s -> 568.36s]  the lecture. If you're interested in learning more about control as inference and soft
+[568.36s -> 573.08s]  optimality, here are some suggested readings. Much of the material that I discussed today is
+[573.32s -> 576.96s]  derived from a body of previous work on something called linearly solvable Markov
+[576.96s -> 581.00s]  decision problems. So if you're interested in that, check out some of the work by Immanuel
+[581.00s -> 585.68s]  Todorov on this topic. Immanuel Todorov's group, also a pioneer of research into how
+[585.68s -> 592.08s]  soft optimality provides a plausible explanation for motor control in humans. Bert Kappen is
+[592.08s -> 595.52s]  another researcher that has done a lot of foundational work in this area, so if you're
+[595.52s -> 598.60s]  interested in that, check out the paper, Optimal Control as a Graphical Model
+[598.60s -> 603.12s]  Inference Problem. And of course, Brian Zebard was one of the pioneers in this area,
+[603.12s -> 607.20s]  particularly in application of this principle to inverse reinforcement learning, which we'll
+[607.20s -> 612.52s]  talk about a lot more on Wednesday. Another kind of interesting paper on this topic is
+[612.52s -> 617.28s]  this paper by Rolik et al. that uses similar mathematical tools to develop a kind of
+[617.28s -> 621.76s]  iterative actor-critic style method. And then of course, there are the more recent papers,
+[621.76s -> 626.68s]  Soft Q-Learning. This is a paper that also uses a very similar framework for an
+[626.68s -> 632.80s]  actor-critic style approach. This paper additionally also discusses the relationship
+[632.80s -> 637.00s]  between policy gradients and Q-Learning, and this is the soft actor-critic paper that
+[637.00s -> 641.00s]  describes what is now one of the most widely used off-policy continuous
+[641.00s -> 646.68s]  reinforcement learning methods based on the principle of soft optimality. And then if you
+[646.68s -> 650.88s]  want kind of a tutorial or survey overview, I actually wrote a tutorial on this topic in
+[650.88s -> 655.12s]  2018, which you can check out if you want to get a more complete coverage of the literature.
+[655.12s -> 657.88s]  Thank you.

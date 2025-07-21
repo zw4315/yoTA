@@ -1,0 +1,1455 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 7.32s]  Okay. Hi, everyone.
+[7.32s -> 9.56s]  Okay. So, for today,
+[9.56s -> 16.24s]  we're going to do a 180 from where we were on Tuesday.
+[16.24s -> 23.16s]  So, today, I'm going to talk about syntactic structure,
+[23.16s -> 26.16s]  linguistic structure of human language sentences,
+[26.20s -> 30.36s]  dependency parsing, and dependency grammars,
+[30.36s -> 33.60s]  and then how you go about building dependency parsers.
+[33.60s -> 40.12s]  So, we're solidly into linguistic zone today.
+[40.12s -> 44.32s]  How many people in the audience have done a linguistics class?
+[44.32s -> 45.08s]  Yay.
+[45.08s -> 45.56s]  Okay.
+[45.56s -> 47.88s]  There are some people who have done linguistics classes.
+[47.88s -> 50.04s]  Okay, great.
+[50.04s -> 51.56s]  And for the rest of you, well,
+[51.56s -> 53.96s]  this is your chance to see a little bit of human language
+[53.96s -> 54.80s]  structure.
+[54.80s -> 57.52s]  And if you like it, you can enroll in the linguistics class
+[57.52s -> 59.36s]  later on.
+[59.36s -> 68.00s]  Yeah, so assignment two, we handed out on Tuesday.
+[68.00s -> 70.88s]  So, in the second half of assignment two,
+[70.88s -> 74.76s]  what your job to do is to build a neural dependency
+[74.76s -> 77.56s]  parser using PyTorch.
+[77.56s -> 80.08s]  As we'll sort of come to later on,
+[80.08s -> 82.04s]  really, the bit that you have to build
+[82.20s -> 85.64s]  is just the machine learning bit of making decisions.
+[85.64s -> 87.36s]  And really, we give you most of the rest
+[87.36s -> 89.60s]  of the neural dependency parser.
+[89.60s -> 92.44s]  But this is also then a chance to remind you
+[92.44s -> 94.96s]  that assignment two in that second half
+[94.96s -> 97.84s]  uses PyTorch, one of the leading deep learning
+[97.84s -> 99.36s]  frameworks.
+[99.36s -> 101.00s]  So, if you're not familiar with that,
+[101.00s -> 103.68s]  it would be a really good idea to also go along
+[103.68s -> 107.68s]  to the Friday PyTorch tutorial.
+[107.68s -> 109.88s]  Though we have tried to make assignment two,
+[109.88s -> 113.36s]  so it's a fairly good place for learning PyTorch
+[113.36s -> 115.40s]  as you go along.
+[115.40s -> 118.40s]  We'll say more soon about final projects,
+[118.40s -> 120.28s]  but you're certainly already encouraged
+[120.28s -> 123.76s]  to come and meet with TAs or me about final projects.
+[123.76s -> 125.88s]  And we're putting up information about the TAs
+[125.88s -> 131.36s]  so you can know more about them on the office hours page.
+[131.36s -> 133.48s]  OK, so let's get straight into it
+[133.48s -> 136.80s]  and start looking at linguistic structure.
+[136.80s -> 144.76s]  So in thinking about linguistic structure of human languages,
+[144.76s -> 149.88s]  there are two primary ways that people have thought about it.
+[149.88s -> 155.12s]  So one way is using the idea that linguists normally
+[155.12s -> 158.44s]  call phrase structure, which is then represented
+[158.44s -> 162.68s]  in terms of what computer scientists normally
+[162.68s -> 165.12s]  know as context-free grammars.
+[165.12s -> 168.24s]  So I'm going to spend a couple of minutes going
+[168.24s -> 170.36s]  over that view of things.
+[170.36s -> 172.20s]  But actually, it's not the main one
+[172.20s -> 174.16s]  that I'm going to talk about in this class.
+[174.16s -> 176.68s]  I'm going to spend most of this class talking
+[176.68s -> 179.84s]  about an alternative way of thinking about things
+[179.84s -> 181.92s]  called dependency grammars.
+[181.92s -> 183.76s]  There are actually some correspondences
+[183.76s -> 186.48s]  you can make between the two ways of thinking about things,
+[186.48s -> 190.08s]  but I'm not going to go through into those here today.
+[190.08s -> 194.32s]  So for the constituency grammar or phrase structure
+[194.32s -> 196.68s]  version of things, the way that you
+[196.68s -> 200.00s]  go about thinking about the structure of human languages
+[200.00s -> 201.76s]  is, well, there are words.
+[201.76s -> 205.60s]  Languages have lots of words, hundreds of thousands of words.
+[205.60s -> 209.64s]  But it seems like a lot of the words, nearly all
+[209.64s -> 214.84s]  the words, in fact, fall into a few basic classes that
+[214.84s -> 219.72s]  represent their nature and how they behave in sentences.
+[219.72s -> 224.00s]  So for words like the examples here, we have nouns.
+[224.00s -> 225.92s]  So cat is a noun.
+[225.92s -> 227.52s]  Door is a noun.
+[227.52s -> 230.92s]  But something like linguistics is also a noun.
+[230.92s -> 233.76s]  So we have nouns.
+[233.76s -> 235.72s]  And then we have other kinds of words.
+[235.72s -> 238.36s]  So something like cuddly is an adjective,
+[238.36s -> 241.34s]  a word that can modify nouns.
+[241.34s -> 246.48s]  And then we have the the for the cuddly cat.
+[246.48s -> 250.16s]  The is sort of a slightly more complex one
+[250.16s -> 252.32s]  as to how to name.
+[252.36s -> 255.16s]  Normally, in modern linguistics, referred to words
+[255.16s -> 257.08s]  like that as a determiner.
+[257.08s -> 259.48s]  You might also see the name article.
+[259.48s -> 265.12s]  And sometimes when people try to shoehorn human language
+[265.12s -> 266.88s]  into eight part of speech categories,
+[266.88s -> 269.00s]  that they say it's an adjective that doesn't really
+[269.00s -> 271.12s]  behave like regular adjectives.
+[271.12s -> 274.28s]  And then we have words like by or through or on and to
+[274.28s -> 275.64s]  and ones like that.
+[275.64s -> 278.00s]  And so they're then prepositions.
+[278.00s -> 280.92s]  So we have these classes and with lots of words
+[280.96s -> 282.44s]  fitting into each class.
+[282.44s -> 284.36s]  And so they're referred to conventionally
+[284.36s -> 285.92s]  as parts of speech.
+[285.92s -> 287.82s]  But then once we've got words, we
+[287.82s -> 290.48s]  start putting them into bigger units.
+[290.48s -> 293.82s]  So the cuddly cat is some kind of unit.
+[293.82s -> 299.60s]  And so it seems like this is an explication of a noun,
+[299.60s -> 300.60s]  a cat.
+[300.60s -> 304.64s]  And so this gets referred to as a noun phrase.
+[304.64s -> 308.68s]  And then by the door, well, this is a phrase.
+[308.72s -> 311.92s]  But actually, it has inside it this the door.
+[311.92s -> 314.24s]  And that's a noun phrase.
+[314.24s -> 317.24s]  But this bigger unit here of by the door
+[317.24s -> 320.28s]  is then a prepositional phrase.
+[320.28s -> 324.04s]  And we can continue to build bigger units.
+[324.04s -> 328.76s]  So inside, we have this phrase that we've already
+[328.76s -> 331.88s]  looked at with a noun phrase and a prepositional phrase.
+[331.88s -> 336.84s]  But then we can have another noun phrase, the cuddly cat.
+[336.84s -> 341.32s]  And we can put them together and build a bigger noun phrase,
+[341.32s -> 344.32s]  the cuddly cat by the door.
+[344.32s -> 346.32s]  And so to represent this, you can
+[346.32s -> 350.64s]  start to write a phrase structure grammar or a context
+[350.64s -> 353.20s]  free grammar that represents what
+[353.20s -> 356.52s]  are the possibilities for building up sentences here
+[356.52s -> 357.28s]  in English.
+[357.28s -> 359.68s]  Those similar kinds of phrase structure grammars
+[359.68s -> 362.18s]  can be written for other languages.
+[362.18s -> 365.96s]  So this is sort of starting to give you possible structures
+[365.96s -> 367.60s]  for a noun phrase.
+[367.60s -> 372.56s]  So you can have a noun phrase just goes to a determiner
+[372.56s -> 374.40s]  followed by a noun.
+[374.40s -> 376.96s]  But then as well as the cat and our dog,
+[376.96s -> 380.04s]  you can have the large cats.
+[380.04s -> 382.36s]  So you might say that, OK, rather than that,
+[382.36s -> 384.72s]  I might want to have as a better rule
+[384.72s -> 388.92s]  that a noun phrase goes to a determiner, an optional
+[388.92s -> 392.14s]  adjective, and then a noun.
+[392.14s -> 394.30s]  If you think about it, you can sort of
+[394.30s -> 396.02s]  have multiple adjectives.
+[396.02s -> 404.66s]  So you can have the large green cat or something like that.
+[404.66s -> 406.78s]  So you can really get multiple adjectives
+[406.78s -> 410.02s]  that are here, and that sort of star, the clean star
+[410.02s -> 413.02s]  says you can have lots of them,
+[413.02s -> 416.18s]  the large cuddly green cat.
+[416.18s -> 420.26s]  But then you can stick things after the noun phrase.
+[420.30s -> 422.50s]  So you can put these prepositional phrases
+[422.50s -> 423.82s]  like in a crate.
+[423.82s -> 427.06s]  So we might also want to say that a noun phrase can
+[427.06s -> 429.78s]  be rewritten as a noun phrase followed
+[429.78s -> 434.46s]  by a prepositional phrase, where a prepositional phrase
+[434.46s -> 437.06s]  can be represented by a preposition followed
+[437.06s -> 438.70s]  by a noun phrase.
+[438.70s -> 442.50s]  And somewhere we're also going to want to represent our parts
+[442.50s -> 444.06s]  of speech membership.
+[444.10s -> 450.90s]  So a determiner can go to words like a or the,
+[450.90s -> 458.10s]  and an adjective can go to words like large, cuddly,
+[458.10s -> 461.94s]  or many other words that I'm not going to write down.
+[461.94s -> 469.50s]  And a preposition can go to words like in, on, under,
+[469.50s -> 471.18s]  et cetera after that.
+[471.58s -> 475.54s]  So now I've got a little grammar here.
+[475.54s -> 478.42s]  And this little grammar here could sort of
+[478.42s -> 481.94s]  make everything I've got in these sentences.
+[481.94s -> 483.46s]  Well, I actually can do this one too.
+[483.46s -> 487.18s]  I can do the large barking one where there are multiple ones.
+[487.18s -> 491.42s]  But then if I start going beyond these noun phrases
+[491.42s -> 496.86s]  and say, think of sentences like talk to the cat
+[496.90s -> 502.70s]  or talk to the large, cuddly dog by the door,
+[502.70s -> 505.66s]  well, now I've got here a verb, talk,
+[505.66s -> 508.34s]  and I've again got a preposition.
+[508.34s -> 511.42s]  So I might then have more rules that
+[511.42s -> 514.02s]  says I can have a verb phrase.
+[514.02s -> 517.78s]  And the verb phrase can go to a verb and then
+[517.78s -> 519.86s]  a prepositional phrase.
+[519.86s -> 523.82s]  And then that could explain these two sentences as well.
+[523.82s -> 525.98s]  And in this kind of way, I can start
+[525.98s -> 530.74s]  to build up a grammar of the structure of English sentences
+[530.74s -> 533.30s]  as a context-free grammar.
+[533.30s -> 534.78s]  Make sense?
+[534.78s -> 537.42s]  Yeah, OK.
+[537.42s -> 543.78s]  And so that's what is being quite commonly done
+[543.78s -> 548.02s]  in linguistics and elsewhere.
+[548.02s -> 552.74s]  OK, yeah.
+[552.74s -> 557.58s]  So let me just do that once more behind in this one.
+[557.58s -> 563.14s]  So one thing I can do here is say, oh, I have,
+[563.14s -> 566.70s]  I'm going to look at this with its phrase structure.
+[566.70s -> 569.46s]  And if I write it upside down to give myself
+[569.46s -> 574.98s]  some space for later, I could start
+[574.98s -> 580.26s]  making a phrase structure that is of this sentence.
+[580.30s -> 582.70s]  And I'll start to run out of space.
+[582.70s -> 586.98s]  But I can sort of start to make this phrase
+[586.98s -> 588.78s]  structure of the sentence.
+[588.78s -> 592.26s]  So that's phrase structure.
+[592.26s -> 595.54s]  But there's another form of representation
+[595.54s -> 598.42s]  that has been fairly widely used in linguistics.
+[598.42s -> 601.78s]  And we're going to, and it's been commonly used in NLP.
+[601.78s -> 604.26s]  And we're going to use for the parses we build.
+[604.26s -> 606.02s]  And that's dependency structure.
+[606.02s -> 608.62s]  So dependency structure represents things
+[608.66s -> 610.70s]  in a slightly different way.
+[610.70s -> 614.62s]  It thinks about words that are the main word or head
+[614.62s -> 618.02s]  or something, and then which words they take
+[618.02s -> 620.30s]  as modifiers or arguments.
+[620.30s -> 624.58s]  So for look in the large crate in the kitchen by the door,
+[624.58s -> 628.54s]  well, this is describing a looking command.
+[628.54s -> 632.94s]  So the head of the whole thing is looking.
+[632.94s -> 637.54s]  And then looking is taking one or more arguments
+[637.54s -> 639.14s]  or modifiers.
+[639.14s -> 642.62s]  And well, what the looking is saying here
+[642.62s -> 646.90s]  is, well, what you want to do is look in the large crate.
+[646.90s -> 651.34s]  So we are looking in something.
+[651.34s -> 654.70s]  And then what we're looking in is a crate.
+[654.70s -> 657.54s]  And then the crate has some modifiers.
+[657.54s -> 659.58s]  It's a large crate.
+[659.58s -> 661.66s]  It's the large crate.
+[661.66s -> 667.38s]  And then the crate is also placed somewhere.
+[667.42s -> 670.78s]  It's placed in the kitchens.
+[670.78s -> 675.66s]  So that in the kitchen is also modifying crate.
+[675.66s -> 679.54s]  And then we've got over here the by the door.
+[679.54s -> 685.90s]  Well, the by the door is also modifying crate.
+[685.90s -> 689.26s]  So we've also got a link down over to here.
+[689.26s -> 692.06s]  And that gives us our piece of structure here,
+[692.06s -> 693.66s]  which having filled that in makes
+[693.74s -> 697.70s]  me realize I actually got it wrong when I was doing
+[697.70s -> 700.30s]  the constituency representation.
+[700.30s -> 701.54s]  Whoopsie.
+[701.54s -> 704.46s]  So I should get my, because in the constituency
+[704.46s -> 707.62s]  representation, I made the kitchen by the door
+[707.62s -> 709.58s]  into a phrase, and that was actually wrong.
+[709.58s -> 711.74s]  Whoops, bad me.
+[711.74s -> 715.54s]  So what I should have actually had
+[715.54s -> 719.74s]  was we had another prepositional phrase that
+[719.74s -> 723.30s]  went to a noun phrase of in the kitchen.
+[723.34s -> 731.50s]  And then both of those were coming off a bigger noun phrase
+[731.50s -> 732.26s]  like that.
+[732.26s -> 733.18s]  Whoopsie.
+[733.18s -> 736.78s]  OK, I get it right most of the time.
+[736.78s -> 740.34s]  OK, so this idea of dependency structure
+[740.34s -> 744.14s]  is that we're sort of finding what is the head word,
+[744.14s -> 747.74s]  and then we're saying which things modify the head word.
+[747.74s -> 750.18s]  And either of these representations
+[750.18s -> 754.02s]  we can be using to sort of work out
+[754.02s -> 756.62s]  what the structure of sentences is
+[756.62s -> 759.06s]  in terms of which words go together
+[759.06s -> 761.78s]  and which words modify other words.
+[761.78s -> 766.30s]  And so the basic idea is, so when humans communicate,
+[766.30s -> 769.54s]  we communicate in a linear stream, right?
+[769.54s -> 773.98s]  So that if it's conventional writing systems,
+[773.98s -> 777.18s]  it's a linear stream of words that you're reading.
+[777.22s -> 780.30s]  If it's spoken language like you're understanding me
+[780.30s -> 784.26s]  speaking right now, it's not a linear stream of words.
+[784.26s -> 786.78s]  It's a linear sound stream.
+[786.78s -> 791.06s]  And when people speak, there isn't
+[791.06s -> 794.34s]  white space between words when people speak.
+[794.34s -> 796.26s]  Occasionally, people pause at the end
+[796.26s -> 798.42s]  of a clause or sentence or something.
+[798.42s -> 801.30s]  But in general, I'm just speaking continuous words
+[801.30s -> 803.14s]  that run one into each other so
+[803.14s -> 808.26s]  that there's a linear sequence of sounds coming out my mouth,
+[808.26s -> 810.82s]  and you have to do all of it like that.
+[810.82s -> 815.14s]  But if you're then thinking, oh, gee,
+[815.14s -> 819.06s]  I can actually understand Chris talking,
+[819.06s -> 822.98s]  then somehow you're taking that linear stream
+[822.98s -> 827.38s]  and you're turning it into a meaning where certain words are
+[827.38s -> 831.74s]  modifying other words, and you have these bigger units
+[831.78s -> 833.78s]  like constituents that are understanding
+[833.78s -> 835.38s]  the meaning of the sentence.
+[835.38s -> 839.58s]  And so human listeners need to work out
+[839.58s -> 843.94s]  what modifies what to be able to understand sentences
+[843.94s -> 846.02s]  correctly.
+[846.02s -> 849.18s]  And so similarly, our models need
+[849.18s -> 851.94s]  to be able to understand sentence structure in order
+[851.94s -> 854.62s]  to be able to interpret language correctly.
+[854.62s -> 856.94s]  And so for what we're going to be doing for building
+[856.94s -> 859.14s]  dependency parsers is we're going
+[859.14s -> 863.38s]  to be explicitly building a neural network
+[863.38s -> 868.94s]  model that says, let's find the structure of these sentences.
+[868.94s -> 871.66s]  In a way, we actually move away from that later on,
+[871.66s -> 876.14s]  because when we move into transformer language models,
+[876.14s -> 879.54s]  they just take in the sequence of words.
+[879.54s -> 881.86s]  But actually, inside the parameters
+[881.86s -> 885.22s]  of the neural network, they're recognizing and building
+[885.22s -> 886.94s]  the same kind of structural units.
+[886.94s -> 889.70s]  And we'll talk about that later in the class.
+[889.70s -> 894.46s]  To give you more of a sense of how these understanding what
+[894.46s -> 898.58s]  modifies what is important for interpretation,
+[898.58s -> 902.38s]  here are a few funny examples from newspaper headlines.
+[902.38s -> 908.10s]  And they're funny examples because sentences don't just
+[908.10s -> 911.18s]  have one way of interpreting them.
+[911.18s -> 913.42s]  When you have a sequence of words,
+[913.42s -> 917.06s]  commonly in human languages, sequence of words
+[917.06s -> 918.54s]  are ambiguous.
+[918.54s -> 921.38s]  And it's relying on human interpretation
+[921.38s -> 924.06s]  of what makes sense and what goes together
+[924.06s -> 926.10s]  to work out how to read them.
+[926.10s -> 929.42s]  So here's a first example.
+[929.42s -> 933.14s]  Scientists count whales from space.
+[933.14s -> 936.10s]  Now, that's ambiguous.
+[936.10s -> 938.66s]  And you can give this two possible readings.
+[938.74s -> 944.62s]  So how can you give this headline two possible readings?
+[944.62s -> 945.58s]  Yeah?
+[945.58s -> 948.58s]  One is that they are in space counting whales.
+[948.58s -> 951.30s]  And the other one is that they're whales from in space.
+[951.30s -> 954.54s]  Yeah, so one possibility is, so we've
+[954.54s -> 956.42s]  got this prepositional phrase.
+[956.42s -> 958.58s]  This is a prepositional phrase here.
+[958.58s -> 962.94s]  One possibility is that this prepositional phrase
+[963.02s -> 970.54s]  is modifying whales.
+[970.54s -> 973.06s]  So they're whales from space.
+[973.06s -> 976.94s]  And the other possibility is that it's the counting
+[976.94s -> 978.54s]  that's happening from space.
+[978.54s -> 981.34s]  So the scientists are counting it from space.
+[981.34s -> 984.82s]  OK, so that corresponds to my two pictures here.
+[984.82s -> 989.14s]  So in one picture, it's the counting
+[989.14s -> 992.90s]  that is happening from space.
+[992.90s -> 995.02s]  Which is actually the right interpretation
+[995.02s -> 996.90s]  of what the article is about.
+[996.90s -> 1000.74s]  But in the other interpretation, we have space whales.
+[1000.74s -> 1003.86s]  And the scientists are counting the space whales
+[1003.86s -> 1006.22s]  that are arriving or something like that.
+[1006.22s -> 1010.18s]  And so then we have the from space
+[1010.18s -> 1012.58s]  that are modifying the whales.
+[1012.58s -> 1018.26s]  OK, so what we have here is a prepositional phrase, which
+[1018.26s -> 1019.88s]  comes after a noun phrase.
+[1019.88s -> 1022.34s]  It's just a one word noun phrase here, whales.
+[1023.30s -> 1025.62s]  And then before that is a verb.
+[1025.62s -> 1029.98s]  And so one place in English where
+[1029.98s -> 1032.62s]  you get a lot of ambiguities is from
+[1032.62s -> 1034.50s]  these prepositional phrases.
+[1034.50s -> 1036.90s]  Because whenever you get prepositional phrases,
+[1036.90s -> 1039.58s]  and prepositional phrases are really common in English
+[1039.58s -> 1042.74s]  if you think about it, whenever you get them like this,
+[1042.74s -> 1051.02s]  it's always ambiguous as to what earlier
+[1051.06s -> 1055.54s]  thing in the sentence they're dependent of.
+[1055.54s -> 1062.66s]  And so you can put in another prepositional phrase
+[1062.66s -> 1065.06s]  in the morning or something like that.
+[1065.06s -> 1069.74s]  And so then the ambiguities just multiply.
+[1069.74s -> 1073.02s]  And so the important thing to notice here
+[1073.02s -> 1077.98s]  about human language is human language
+[1077.98s -> 1081.58s]  is, in syntactic terms, globally ambiguous.
+[1081.58s -> 1084.54s]  So in programming languages, you
+[1084.54s -> 1088.62s]  have local ambiguities as interpretation.
+[1088.62s -> 1090.62s]  How many people have done a compilers class?
+[1090.62s -> 1091.86s]  I think very few these days.
+[1091.86s -> 1094.06s]  Anyone done a compilers class?
+[1094.06s -> 1096.38s]  OK, it looks like less people have done a compilers
+[1096.38s -> 1097.94s]  class than a linguistics class.
+[1097.94s -> 1099.82s]  That's interesting.
+[1099.82s -> 1103.22s]  OK, well, I won't make too many analogies
+[1103.22s -> 1105.02s]  to compilers classes then.
+[1105.02s -> 1108.82s]  When I was young, that was still the old days kind
+[1108.82s -> 1112.70s]  of CS curriculum where writing interpreters and compilers
+[1112.70s -> 1116.06s]  were seen as the mainstay of computer science education.
+[1116.06s -> 1118.10s]  But no more, I guess.
+[1118.10s -> 1121.46s]  Yeah, so in programming languages,
+[1121.46s -> 1123.74s]  you could have a local ambiguity.
+[1123.74s -> 1126.98s]  But ambiguities are always resolved, right?
+[1126.98s -> 1130.06s]  So we have simple rules in programming languages
+[1130.10s -> 1135.66s]  that else has construed with the nearest if.
+[1135.66s -> 1138.22s]  It's a bit different in Python because there's indentation.
+[1138.22s -> 1140.86s]  But there are rules that, so there's never
+[1140.86s -> 1145.22s]  global ambiguity in a programming language.
+[1145.22s -> 1148.78s]  But human languages just aren't like that, right?
+[1148.78s -> 1152.98s]  That there's nothing that resolves which of these two
+[1152.98s -> 1154.34s]  readings is correct.
+[1154.34s -> 1157.58s]  If I made it a bigger sentence, they'd still be ambiguous.
+[1157.58s -> 1159.70s]  You're just sort of meant to read it and use
+[1159.70s -> 1164.10s]  context and your intelligence to decide what's going on.
+[1164.10s -> 1169.98s]  And so to take a bigger but real example,
+[1169.98s -> 1171.94s]  this is the kind of boring sentence
+[1171.94s -> 1176.10s]  that you can read in the Wall Street Journal most mornings.
+[1176.10s -> 1177.94s]  The board approved its acquisition
+[1177.94s -> 1181.30s]  by Royal Trust Co., Ltd. of Toronto for $27
+[1181.30s -> 1184.50s]  a share at its monthly meeting.
+[1184.50s -> 1189.42s]  So what you can see in this sentence is we've got a verb,
+[1189.42s -> 1191.46s]  and then we've got a noun phrase.
+[1191.46s -> 1196.18s]  And then after that, we have four prepositional phrases
+[1196.18s -> 1197.38s]  in a row.
+[1197.38s -> 1201.22s]  OK, so what do these prepositional phrases modify?
+[1201.22s -> 1205.06s]  So what does by Royal Trust Co., Ltd. modify?
+[1207.78s -> 1208.94s]  The acquisition, right?
+[1208.94s -> 1212.18s]  So it's the acquisition by Royal Trust Co.
+[1212.18s -> 1216.78s]  Then of Toronto modifies?
+[1216.78s -> 1220.74s]  So it's Royal Trust Co., Ltd. of Toronto.
+[1220.74s -> 1223.74s]  So yeah, later on prepositional phrases
+[1223.74s -> 1227.30s]  can also modify earlier prepositional phrases,
+[1227.30s -> 1230.02s]  or at least the noun phrase inside the Royal Trust Co.,
+[1230.02s -> 1231.06s]  Ltd.
+[1231.06s -> 1240.18s]  OK, for $27 a share is back to modifying the acquisition
+[1240.22s -> 1244.94s]  at its monthly meeting is the approval.
+[1244.94s -> 1249.14s]  So it's gone way back up to there, right?
+[1249.14s -> 1253.94s]  But you know, yeah, so if you start
+[1253.94s -> 1258.66s]  having sentences with a whole bunch of prepositional phrases
+[1258.66s -> 1262.02s]  like this, you can start getting more and more
+[1262.02s -> 1264.26s]  ambiguities of attachment.
+[1264.26s -> 1267.74s]  I mean, you don't get the full,
+[1267.74s -> 1271.98s]  you don't get the full free choice factorial number
+[1271.98s -> 1275.66s]  of attachment points, because there is a restriction
+[1275.66s -> 1279.34s]  that these dependencies don't cross.
+[1279.34s -> 1281.10s]  So once you've gone back further,
+[1281.10s -> 1283.02s]  you have to stay equally far back
+[1283.02s -> 1285.22s]  or go even back further back again.
+[1285.22s -> 1288.30s]  But nevertheless, so the number of readings you get
+[1288.30s -> 1290.26s]  is the Catalan series, which is
+[1290.26s -> 1292.66s]  the series you see in a whole bunch of other places
+[1292.66s -> 1295.74s]  if you've done any graph theory or anything like that.
+[1295.78s -> 1297.78s]  So if you're doing triangulations,
+[1297.78s -> 1301.82s]  you get Catalans, because you get the same property
+[1301.82s -> 1302.90s]  that things don't cross.
+[1302.90s -> 1305.50s]  So it's an exponentially growing
+[1305.50s -> 1308.02s]  sequence of possible readings.
+[1308.02s -> 1311.06s]  And so it quickly gets very big.
+[1311.06s -> 1315.98s]  So I think when you've got four prepositional phrases,
+[1315.98s -> 1317.50s]  you get 13 readings.
+[1317.50s -> 1319.54s]  And if you have five, you get 27.
+[1319.54s -> 1321.42s]  And it grows up from there.
+[1321.42s -> 1323.74s]  So you get a lot of ambiguities.
+[1323.74s -> 1325.18s]  But the crucial thing to notice
+[1325.18s -> 1330.94s]  is human beings read sentences like this every morning,
+[1330.94s -> 1333.10s]  or at least people who work in banking do,
+[1333.10s -> 1335.46s]  while having their corn flakes.
+[1335.46s -> 1338.62s]  And their brain doesn't explode trying
+[1338.62s -> 1341.10s]  to think about the 13 different readings
+[1341.10s -> 1342.66s]  and which one is correct.
+[1342.66s -> 1345.46s]  We just sort of do this as we go along,
+[1345.46s -> 1347.98s]  and it's sort of obvious.
+[1347.98s -> 1350.06s]  Let's just do a couple more examples
+[1350.06s -> 1352.06s]  of where we get ambiguities.
+[1352.06s -> 1357.18s]  And in human language, so a different one you get
+[1357.18s -> 1359.98s]  is coordination scope ambiguity.
+[1359.98s -> 1364.10s]  So shuttle veteran and longtime NASA executive Fred Gregory
+[1364.10s -> 1365.50s]  appointed to board.
+[1365.50s -> 1368.26s]  How is this sentence ambiguous?
+[1368.26s -> 1371.74s]  I think you mean two people or one person.
+[1371.74s -> 1372.54s]  Yeah.
+[1372.54s -> 1376.30s]  So there can either be one person, Fred Gregory,
+[1376.30s -> 1381.30s]  and they're both a shuttle veteran and a NASA executive,
+[1381.30s -> 1384.74s]  or it can be that there are two people.
+[1384.74s -> 1389.86s]  There's a shuttle veteran and there's a longtime NASA
+[1389.86s -> 1392.34s]  executive, Fred Gregory.
+[1392.34s -> 1392.94s]  OK, yeah.
+[1392.94s -> 1395.86s]  So we'd be kind of capturing those
+[1395.86s -> 1398.98s]  by having extra grammar rules where a noun phrase
+[1398.98s -> 1404.26s]  can go to a noun phrase, a conjunction, and a noun phrase.
+[1404.26s -> 1407.90s]  But then another thing that you get in English
+[1407.90s -> 1409.74s]  is apposition.
+[1409.74s -> 1412.26s]  So you can have a noun phrase that's
+[1412.26s -> 1415.22s]  a descriptive noun phrase of another noun phrase,
+[1415.22s -> 1422.14s]  like a name, the author Fred Gregory or something like that.
+[1422.14s -> 1427.22s]  Saying the word English again, I meant to comment.
+[1427.22s -> 1431.58s]  So I'm only going to give English examples here.
+[1431.58s -> 1434.38s]  In different languages, you don't
+[1434.38s -> 1437.18s]  get all the same ambiguities.
+[1437.22s -> 1441.62s]  So if you're familiar with, say, Chinese,
+[1441.62s -> 1444.94s]  you might have thought about the prepositional phrase example
+[1444.94s -> 1447.38s]  of, wait a minute, we don't have that one
+[1447.38s -> 1451.30s]  because the prepositional phrase modifying the verb
+[1451.30s -> 1453.70s]  would appear before the verb, and the object noun
+[1453.70s -> 1454.70s]  would be afterwards.
+[1454.70s -> 1458.14s]  So it would be completely unambiguous, and that's true.
+[1458.14s -> 1462.10s]  But that doesn't mean that Chinese is unambiguous.
+[1462.10s -> 1466.50s]  Chinese has lots of very bad ambiguities.
+[1467.50s -> 1468.02s]  Yeah.
+[1468.02s -> 1470.38s]  It's just that different languages have
+[1470.38s -> 1472.50s]  different syntactic structures.
+[1472.50s -> 1474.50s]  OK.
+[1474.50s -> 1478.66s]  So sometimes in English, especially when
+[1478.66s -> 1480.58s]  you're sort of in a more written form,
+[1480.58s -> 1484.82s]  rather than having an explicit coordination word,
+[1484.82s -> 1489.02s]  you can just sort of use juxtaposition with a comma
+[1489.02s -> 1492.14s]  to have the idea of coordination.
+[1492.14s -> 1498.70s]  So here's a fun example from the first Trump administration
+[1498.70s -> 1502.50s]  of how we can have a coordination scope ambiguity.
+[1502.50s -> 1507.42s]  Doctor, no heart, cognitive issues.
+[1507.42s -> 1511.94s]  So again, this is the same kind of coordination scope ambiguity
+[1511.94s -> 1516.78s]  that it can either be kind of no heart and cognitive issues
+[1516.78s -> 1518.94s]  being conjoined together like that,
+[1518.94s -> 1524.46s]  or else it could be that it's no heart or cognitive issues
+[1524.46s -> 1527.10s]  being conjoined together like that.
+[1527.10s -> 1530.30s]  You make the choice.
+[1530.30s -> 1532.14s]  OK.
+[1532.14s -> 1534.10s]  Let's see.
+[1534.10s -> 1537.46s]  Oh, this is my risque one for a different kind
+[1537.46s -> 1539.30s]  of ambiguity.
+[1539.30s -> 1541.22s]  Trigger warning.
+[1541.22s -> 1546.10s]  Students get first-hand job experience.
+[1546.14s -> 1551.02s]  So this one is also an ambiguity
+[1551.02s -> 1556.94s]  as to whether you're having the first-hand, and then
+[1556.94s -> 1561.46s]  both the job and the first-hand are modifying
+[1561.46s -> 1564.34s]  experience, or there's this other reading
+[1564.34s -> 1568.82s]  if you have a smutty mind that might come to you.
+[1568.82s -> 1569.34s]  OK.
+[1569.34s -> 1571.14s]  One more fun one.
+[1571.14s -> 1571.98s]  OK.
+[1571.98s -> 1574.78s]  Mutilated body washes up on Rio Beach
+[1574.78s -> 1577.74s]  to be used for Olympic speech volleyball.
+[1577.74s -> 1578.42s]  OK.
+[1578.42s -> 1583.14s]  So what are the two possible readings of this sentence?
+[1583.14s -> 1584.58s]  You know, these are real examples
+[1584.58s -> 1588.18s]  from quality newspapers.
+[1588.18s -> 1590.54s]  OK, what are the two readings of this sentence?
+[1590.54s -> 1591.02s]  Yeah.
+[1591.02s -> 1593.06s]  The real read just goes to the newspaper.
+[1593.06s -> 1593.98s]  It's quite volatile.
+[1593.98s -> 1595.10s]  You've got to embody it.
+[1595.10s -> 1595.62s]  Yeah.
+[1595.62s -> 1596.10s]  Yeah.
+[1596.10s -> 1603.62s]  So we've got, so here we have one of these infinitable,
+[1603.62s -> 1608.10s]  so an infinitable verb phrase to be used for Olympic beach
+[1608.10s -> 1609.22s]  volleyball.
+[1609.22s -> 1612.86s]  And for these as well, you know,
+[1612.86s -> 1615.02s]  they kind of have the same effect
+[1615.02s -> 1618.10s]  as prepositional phrases that they
+[1618.10s -> 1621.78s]  can modify different things.
+[1621.78s -> 1624.70s]  So it can either be the Rio Beach that's
+[1624.70s -> 1628.06s]  going to be used for the Olympic beach volleyball,
+[1628.06s -> 1630.50s]  or it's going to be the mutilated body that gets
+[1630.54s -> 1633.86s]  used for the beach volleyball.
+[1633.86s -> 1635.10s]  OK.
+[1635.10s -> 1637.82s]  Yeah, so these are the kind of ways
+[1637.82s -> 1640.34s]  in which we sort of want to use
+[1640.34s -> 1642.90s]  the structure of the sentence to understand
+[1642.90s -> 1644.02s]  what they're meaning.
+[1644.02s -> 1646.58s]  We also use it in lots of sort
+[1646.58s -> 1650.82s]  of just sort of mundane practical ways
+[1650.82s -> 1653.58s]  when we're building various kinds of natural language
+[1653.58s -> 1655.34s]  processing systems.
+[1655.34s -> 1658.34s]  So you know, a kind of thing that people often
+[1658.34s -> 1661.62s]  in practical systems do is that they want to get out
+[1661.62s -> 1663.70s]  facts of various kinds.
+[1663.70s -> 1667.22s]  So for people who do stuff with bioinformatics
+[1667.22s -> 1670.26s]  that they commonly want to get out things like protein-protein
+[1670.26s -> 1671.90s]  interaction facts.
+[1671.90s -> 1675.66s]  And so commonly, you can get those kind of facts
+[1675.66s -> 1677.74s]  out by looking for patterns.
+[1677.74s -> 1680.18s]  So you know, have a verb, interacts,
+[1680.18s -> 1684.06s]  that's going to be indicating an interaction pattern.
+[1684.06s -> 1686.74s]  And well, it's going to be taking arguments,
+[1686.74s -> 1689.22s]  so it's going to be taking a subject
+[1689.22s -> 1692.62s]  and interacts with the prepositional argument.
+[1692.62s -> 1696.58s]  And so that will be an interaction that CHI-C,
+[1696.58s -> 1699.26s]  whatever that is, interacts with SAS-A.
+[1699.26s -> 1701.78s]  But in this case, the SAS-A is coordinated
+[1701.78s -> 1703.86s]  with the CHI-A and the CHI-B.
+[1703.86s -> 1707.58s]  So it's also going to end up interacting with those two
+[1707.58s -> 1709.18s]  other things as well.
+[1709.18s -> 1711.78s]  And so you can use the sort of sentence structure patterns
+[1711.78s -> 1714.46s]  of a dependency parse to be getting out
+[1714.46s -> 1717.34s]  the kind of facts and events that you're
+[1717.34s -> 1720.86s]  interested in for something like an event understanding
+[1720.86s -> 1721.82s]  system.
+[1721.82s -> 1727.58s]  People do these kind of analyses over biomedical text
+[1727.58s -> 1730.22s]  to build up the kind of structured databases
+[1730.22s -> 1732.78s]  of known protein-protein interactions
+[1732.78s -> 1736.02s]  and things of that sort.
+[1736.02s -> 1740.14s]  So linguistic structure is useful.
+[1740.14s -> 1744.46s]  And it's syntactically very ambiguous.
+[1744.46s -> 1749.66s]  And so you think of humans as active interpreters
+[1749.66s -> 1752.42s]  that are using their contextual knowledge,
+[1752.42s -> 1754.38s]  both of earlier stuff in the text,
+[1754.38s -> 1756.02s]  knowledge of the world around them,
+[1756.02s -> 1760.06s]  how the world works to work out the right structure.
+[1760.06s -> 1763.26s]  So now I want to go on and show you
+[1763.26s -> 1766.34s]  a bit more about sort of dependency grammars, which
+[1766.34s -> 1768.14s]  is what we're going to be using.
+[1768.14s -> 1772.26s]  So for dependency syntax, it postulates
+[1772.26s -> 1776.62s]  that you can capture the structure of a sentence
+[1776.62s -> 1781.30s]  by having these sort of asymmetric dependent
+[1781.30s -> 1785.02s]  relations, which we might just call arrows, which are
+[1785.02s -> 1786.94s]  going from heads to dependents.
+[1786.94s -> 1791.42s]  So here the sentence is, bills on ports and immigration
+[1791.42s -> 1794.22s]  were submitted by Senator Brownback,
+[1794.22s -> 1796.02s]  Republican of Kansas.
+[1796.02s -> 1798.82s]  And we're sort of picking out heads.
+[1798.82s -> 1802.58s]  And then we've got things that depend on them,
+[1802.58s -> 1805.58s]  that modify them.
+[1805.58s -> 1806.14s]  Yeah.
+[1806.14s -> 1809.62s]  So if you're on the video audience
+[1809.62s -> 1813.06s]  and you are educated in the United States
+[1813.06s -> 1816.58s]  and you're over the age of 50, or if you
+[1816.58s -> 1819.78s]  happen to go to one of those kind of private schools
+[1819.78s -> 1822.78s]  where they also teach Latin, you
+[1822.78s -> 1826.46s]  might have seen sentence diagramming.
+[1826.46s -> 1829.90s]  So Reed Kellogg sentence diagramming
+[1829.90s -> 1833.02s]  was something that was actually very widespread
+[1833.02s -> 1838.14s]  in American education, which really was a something.
+[1838.14s -> 1839.74s]  It was really dependency grammar.
+[1839.74s -> 1842.54s]  It was sort of a somewhat quirky form of dependency
+[1842.54s -> 1845.66s]  grammar, where you had to write lines at different angles
+[1845.66s -> 1846.86s]  and stuff like that.
+[1846.86s -> 1848.98s]  But basically, you're writing sort
+[1848.98s -> 1851.34s]  of heads and their dependents underneath them
+[1851.34s -> 1854.18s]  with different funny shaped lines.
+[1854.18s -> 1856.90s]  It also was dependency grammar.
+[1856.90s -> 1857.74s]  OK.
+[1857.74s -> 1861.06s]  So this is the start of a dependency grammar.
+[1861.06s -> 1865.62s]  But just like the funny angled lines of sentence diagramming,
+[1865.62s -> 1870.66s]  normally people want to add some more information than that.
+[1870.66s -> 1874.86s]  And so most commonly, that the arrows are then
+[1874.86s -> 1878.74s]  typed by giving the name of some grammatical relation.
+[1878.74s -> 1884.14s]  So something can be the noun subject, or an oblique,
+[1884.14s -> 1888.02s]  or an oppositional modifier, or a case mark,
+[1888.02s -> 1890.94s]  or things like that.
+[1890.94s -> 1894.46s]  And I'm just trying to give you
+[1894.46s -> 1896.90s]  the idea of dependency grammars.
+[1896.90s -> 1900.46s]  I'm not expecting you to master all of these names
+[1900.46s -> 1903.34s]  and ways of doing things.
+[1903.34s -> 1906.22s]  And there are different systems of deciding
+[1906.26s -> 1907.78s]  what's heads and dependents.
+[1907.78s -> 1911.34s]  And not all the details are important.
+[1911.34s -> 1912.90s]  What you should get into your head
+[1912.90s -> 1916.42s]  is just sort of the basic idea of what one of these does.
+[1916.42s -> 1920.22s]  And some sense of, oh, it should be at the phrase level,
+[1920.22s -> 1923.14s]  it should be representing what's modifying what.
+[1923.14s -> 1928.14s]  So we do actually ask some questions on the assignment.
+[1928.14s -> 1931.50s]  And so for the cases like the prepositional phrase,
+[1931.50s -> 1933.46s]  what is it modifying, you should
+[1933.50s -> 1937.70s]  be able to give the right answer to that.
+[1937.70s -> 1940.50s]  OK.
+[1940.50s -> 1941.94s]  Yeah.
+[1941.94s -> 1946.46s]  OK, so this is just a little bit more vocabulary.
+[1946.46s -> 1949.74s]  So yeah, we have these arrows or dependencies.
+[1949.74s -> 1951.90s]  And so I'm going to say that they connect
+[1951.90s -> 1953.38s]  between a head and a dependent.
+[1953.38s -> 1956.42s]  But sometimes people use other words like governor,
+[1956.42s -> 1959.70s]  and modifier, and things like that.
+[1959.78s -> 1963.54s]  And so dependencies are generally taken
+[1963.54s -> 1966.42s]  and we'll be taking them as forming a tree.
+[1966.42s -> 1970.10s]  So you've got something that's connected, acyclic,
+[1970.10s -> 1971.94s]  and has a single root to it.
+[1971.94s -> 1977.22s]  So our single root is the top of the sentence here.
+[1977.22s -> 1983.86s]  So dependency, so although what you see most often these days,
+[1983.86s -> 1986.10s]  either in a linguistics class or when
+[1986.14s -> 1991.94s]  you get taught CS 103 at Stanford or computer science,
+[1991.94s -> 1995.90s]  what you see there is normally context-free grammars
+[1995.90s -> 1997.78s]  or free structure grammars.
+[1997.78s -> 2000.98s]  I mean, really, it is dependency grammars
+[2000.98s -> 2003.94s]  that have the really long history.
+[2003.94s -> 2007.62s]  So really, the predominant way of representing
+[2007.62s -> 2011.42s]  the structure of human languages throughout human history
+[2011.42s -> 2013.34s]  is dependency grammar.
+[2013.34s -> 2018.22s]  So who linguists herald as the first dependency grammarian
+[2018.22s -> 2020.54s]  or really the first person who tried
+[2020.54s -> 2024.22s]  to write the grammar of a human language period
+[2024.22s -> 2025.54s]  was Parnani.
+[2025.54s -> 2028.46s]  So Parnani was working with Sanskrit.
+[2028.46s -> 2031.46s]  Parnani lived so long ago that actually people don't
+[2031.46s -> 2032.98s]  really know when he lived.
+[2032.98s -> 2035.82s]  I mean, he lived somewhere between about the fourth
+[2035.82s -> 2038.26s]  and eighth century before the common era.
+[2038.26s -> 2040.82s]  But really, no one knows when.
+[2040.86s -> 2044.90s]  But he lived sort of up in part of actually what's
+[2044.90s -> 2046.78s]  now Afghanistan.
+[2046.78s -> 2052.82s]  And for motivated for largely religious reasons,
+[2052.82s -> 2056.22s]  he set about developing a grammar of Sanskrit.
+[2056.22s -> 2059.26s]  And the way he represented the syntax of Sanskrit
+[2059.26s -> 2061.70s]  was using a dependency grammar.
+[2061.70s -> 2064.14s]  So there was a lot of work on grammar in Arabic
+[2064.14s -> 2065.54s]  in the first millennium.
+[2065.54s -> 2068.34s]  They used dependency grammars.
+[2068.34s -> 2073.98s]  In contrast, the idea of sort of having context-free grammars,
+[2073.98s -> 2075.78s]  that's really, really recent.
+[2075.78s -> 2078.82s]  So the first work on phrase structure grammars
+[2078.82s -> 2081.58s]  dates to the 40s and then was sort
+[2081.58s -> 2087.18s]  of canonicalized by the work of Chomsky in the 1950s.
+[2087.18s -> 2091.74s]  Yeah, so it's a fact for the computer science part
+[2091.74s -> 2093.42s]  of people in the audience.
+[2093.42s -> 2097.70s]  So dear computer scientists, if you know about Chomsky,
+[2097.70s -> 2101.18s]  computer scientists normally know two things about Chomsky.
+[2101.18s -> 2103.66s]  One is they hate on the Chomsky hierarchy
+[2103.66s -> 2106.94s]  that they are forced to learn in CS 103
+[2106.94s -> 2108.50s]  or equivalent classes.
+[2108.50s -> 2112.66s]  And the second one is he's a very left politician.
+[2112.66s -> 2115.46s]  But if I only deal with the first one of the two
+[2115.46s -> 2119.26s]  now, the Chomsky hierarchy was not
+[2119.26s -> 2124.34s]  invented either to torture elementary computer scientists
+[2124.34s -> 2128.78s]  or to explain fundamental facts about formal language
+[2128.78s -> 2129.54s]  theory.
+[2129.54s -> 2131.26s]  The Chomsky hierarchy was actually
+[2131.26s -> 2135.34s]  invented in thinking about human languages.
+[2135.34s -> 2140.26s]  Because at that time, and in stuff that's come more often,
+[2140.26s -> 2144.14s]  it was commonly the case that people
+[2144.14s -> 2150.78s]  were modeling human languages with regular finite state
+[2150.78s -> 2153.14s]  grammar equivalent mechanisms.
+[2153.18s -> 2155.98s]  And Chomsky wanted to argue that that
+[2155.98s -> 2160.34s]  was a completely inadequate formalism to represent
+[2160.34s -> 2163.10s]  the complexity of human language.
+[2163.10s -> 2165.06s]  And so it was in the context of arguments
+[2165.06s -> 2168.22s]  about human language was why he developed the Chomsky
+[2168.22s -> 2169.82s]  hierarchy.
+[2169.82s -> 2171.10s]  OK.
+[2171.10s -> 2175.22s]  Yeah, so anyway, that's enough of the history of that.
+[2175.22s -> 2178.82s]  Here's my picture, a part of Panini's grammar.
+[2178.82s -> 2181.46s]  But actually, or a version of it,
+[2181.46s -> 2185.50s]  actually, this is really, really misleading.
+[2185.50s -> 2187.34s]  And because one of the astounding facts
+[2187.34s -> 2189.50s]  about Panini's grammar, and part
+[2189.50s -> 2192.18s]  of why no one knows what century he lived in,
+[2192.18s -> 2196.54s]  was Panini's grammar was composed orally.
+[2196.54s -> 2199.58s]  So this sort of kind of blows my mind.
+[2199.58s -> 2202.94s]  You know, it seems, you know, some
+[2202.94s -> 2207.82s]  of the famous things in the West, like Homer's works,
+[2207.82s -> 2210.22s]  right, The Odyssey and The Iliad, right,
+[2210.22s -> 2212.50s]  they were originally oral works that
+[2212.50s -> 2216.14s]  were passed down in oral form.
+[2216.14s -> 2219.14s]  You know, that seems hard to do,
+[2219.14s -> 2222.18s]  but you can kind of believe, if you did plays in high school
+[2222.18s -> 2225.78s]  or something, that someone could memorize The Odyssey,
+[2225.78s -> 2227.14s]  perhaps.
+[2227.14s -> 2230.62s]  But the idea that people could memorize
+[2230.62s -> 2234.50s]  a grammar of a language, passing it down
+[2234.50s -> 2238.26s]  for hundreds of years, kind of blows my mind.
+[2238.30s -> 2243.06s]  But that's exactly what happened with Panini's grammar.
+[2243.06s -> 2245.90s]  So you know, really, although this
+[2245.90s -> 2248.22s]  is sort of an old birch bark manuscript,
+[2248.22s -> 2249.74s]  you know that really, it probably
+[2249.74s -> 2253.14s]  dates from about a millennium after Panini
+[2253.14s -> 2254.98s]  composed his grammar.
+[2254.98s -> 2259.10s]  OK, getting back to the modern days.
+[2259.10s -> 2262.94s]  Yeah, so for things to know about, yeah.
+[2262.94s -> 2265.98s]  So I mean, we don't want you to fixate
+[2265.98s -> 2268.98s]  on the sort of details of dependency grammar structure,
+[2268.98s -> 2270.50s]  providing you have the rough idea.
+[2270.50s -> 2275.10s]  But just one thing that you can possibly be confused about
+[2275.10s -> 2279.46s]  is, you know, people do things in different ways.
+[2279.46s -> 2281.42s]  One way in which they don't agree
+[2281.42s -> 2284.54s]  is even which way to draw the arrows.
+[2284.54s -> 2288.86s]  So some people draw arrows from the head pointing
+[2288.86s -> 2290.26s]  at the dependents.
+[2290.26s -> 2292.22s]  And there are other people who draw the arrows
+[2292.22s -> 2295.88s]  starting at the dependent and pointing back at the heads.
+[2296.42s -> 2299.20s]  So for modern dependency grammar,
+[2299.20s -> 2306.80s]  largely follows the work of Lucien Tenier, a French linguist.
+[2306.80s -> 2309.92s]  He did the arrows pointing from the head
+[2309.92s -> 2311.04s]  to the dependent.
+[2311.04s -> 2313.20s]  And so that's what I'm doing today.
+[2313.20s -> 2315.72s]  But you'll see both.
+[2315.72s -> 2317.66s]  We sort of said that, you know,
+[2317.66s -> 2319.80s]  normally you assume that you have
+[2319.80s -> 2321.76s]  a tree with a single root.
+[2321.76s -> 2323.32s]  It's kind of common.
+[2323.32s -> 2326.08s]  And it works out more easily for the parsing
+[2326.08s -> 2328.20s]  if you sort of add to a sentence
+[2328.20s -> 2330.24s]  a sort of a fake root node.
+[2330.24s -> 2333.00s]  So you know that that's going to be the starting point.
+[2333.00s -> 2335.16s]  And it's going to take one dependent, which
+[2335.16s -> 2338.02s]  is the word that's the head of the sentence.
+[2338.02s -> 2341.32s]  And then you're going to work down from there.
+[2341.32s -> 2342.68s]  OK.
+[2342.68s -> 2347.28s]  So before getting more into doing dependency parsing,
+[2347.28s -> 2351.20s]  I just wanted to sort of take a little detour
+[2351.20s -> 2356.64s]  to tell you about the importance that
+[2356.64s -> 2361.02s]  happened with sort of the rise of annotated data
+[2361.02s -> 2364.40s]  in natural language processing.
+[2364.40s -> 2367.72s]  And this is sort of an interesting flip-flop
+[2367.72s -> 2368.52s]  that's occurred.
+[2368.52s -> 2371.16s]  But we're going to sort of today go in one direction.
+[2371.16s -> 2374.68s]  And later class, we'll go in the other direction.
+[2374.68s -> 2378.32s]  So in early natural language processing,
+[2378.32s -> 2384.28s]  people started to see, oh, human languages have structure.
+[2384.28s -> 2388.28s]  So what we should do is start writing rules
+[2388.28s -> 2390.36s]  for the structure of human languages.
+[2390.36s -> 2391.64s]  And you know, I started writing
+[2391.64s -> 2393.80s]  a few context-free grammar rules
+[2393.80s -> 2396.54s]  for the structure of English on that early slide.
+[2396.54s -> 2398.88s]  And you could also write dependency grammar structure
+[2398.88s -> 2399.64s]  rules.
+[2399.64s -> 2403.64s]  So people tried to do natural language processing
+[2403.64s -> 2407.28s]  by having rules, grammar rules, dictionaries
+[2407.32s -> 2409.60s]  of parts of speech and things like that.
+[2409.60s -> 2412.40s]  And that gave you parsers.
+[2412.40s -> 2418.40s]  That, in retrospect, worked out pretty badly.
+[2418.40s -> 2422.08s]  And it worked out pretty badly for a number of reasons.
+[2422.08s -> 2424.92s]  One reason is that although there
+[2424.92s -> 2427.84s]  are these sort of very canonical, clear structures
+[2427.84s -> 2432.44s]  in human languages, there's a very long tail of messy stuff
+[2432.44s -> 2436.24s]  where all kinds of weird usages start
+[2436.24s -> 2440.72s]  to emerge in human languages, which sort of means
+[2440.72s -> 2441.72s]  you've just got this.
+[2441.72s -> 2443.76s]  It's just really hard to get coverage
+[2443.76s -> 2446.24s]  for a handwritten language.
+[2446.24s -> 2450.92s]  And that's because humans use language creatively, right?
+[2450.92s -> 2455.44s]  So you can start thinking of some of the things
+[2455.44s -> 2457.56s]  that you've probably come.
+[2457.56s -> 2461.16s]  I'm probably not very good at young person's slang usages
+[2461.16s -> 2465.08s]  of grammar these days, but the kind of ones
+[2465.08s -> 2467.24s]  that you might be still familiar with, right?
+[2467.24s -> 2468.20s]  Star Wars.
+[2468.20s -> 2471.12s]  You have Yoda talk where you rearrange the sentences,
+[2471.12s -> 2473.12s]  but people still understand them, right?
+[2473.12s -> 2475.52s]  So that's changing the word order.
+[2475.52s -> 2477.40s]  And earlier on than that, there
+[2477.40s -> 2481.48s]  was sort of a little bit of a fad of putting not
+[2481.48s -> 2483.96s]  at the end of the sentences.
+[2483.96s -> 2487.00s]  That's a really great idea, not.
+[2487.00s -> 2491.24s]  And well, people learn to understand that,
+[2491.24s -> 2493.24s]  but it's different to regular grammar, right?
+[2493.24s -> 2496.72s]  So it's really hard to write a full grammar,
+[2496.72s -> 2499.96s]  but the bigger reason actually is the problem of ambiguity
+[2499.96s -> 2501.40s]  I talked about, right?
+[2501.40s -> 2506.00s]  That if you just write a grammar, well,
+[2506.00s -> 2508.28s]  my sentence with the prepositional phrases
+[2508.28s -> 2511.76s]  had 13 different parsers, and you didn't have much reason
+[2511.76s -> 2513.40s]  to choose between them.
+[2513.40s -> 2517.84s]  But if you had information about how often words modify
+[2517.84s -> 2521.72s]  other words, then you could get some statistics
+[2521.72s -> 2524.96s]  and start to predict in which order which
+[2524.96s -> 2526.92s]  things modify other things.
+[2526.92s -> 2528.88s]  And so people wanted to start to be
+[2528.88s -> 2532.12s]  able to do that prediction that underlies probabilistic
+[2532.12s -> 2533.92s]  or machine learning models.
+[2533.92s -> 2536.52s]  And so to be able to do that,
+[2536.52s -> 2541.64s]  that led sort of earliest antecedents in the 60s,
+[2541.64s -> 2545.44s]  but really starting in the late 80s and into the 90s,
+[2545.44s -> 2548.32s]  that people decide the way to make progress
+[2548.32s -> 2553.16s]  in natural language processing, natural language understanding
+[2553.16s -> 2556.76s]  is to build annotated data resources.
+[2556.76s -> 2561.60s]  And so all through the 90s and the 2000s decades,
+[2561.60s -> 2563.68s]  the name of the game for a lot of natural language
+[2563.68s -> 2568.00s]  processing was people building annotated data resources
+[2568.00s -> 2570.88s]  and then building machine learning systems on top
+[2570.88s -> 2572.68s]  using those resources.
+[2572.68s -> 2574.44s]  Now, that's kind of gone into reverse
+[2574.44s -> 2577.12s]  and gone away again with large language models, which we'll
+[2577.12s -> 2579.32s]  get to in another week or so.
+[2579.32s -> 2581.08s]  But here's an example.
+[2581.08s -> 2583.48s]  So this is the universal dependencies tree
+[2583.48s -> 2587.04s]  banks, which I've actually been heavily involved with.
+[2587.04s -> 2589.80s]  And it's a cool resource for all kinds of purposes
+[2589.80s -> 2594.76s]  because it's actually a wide cross-linguistic database where
+[2594.76s -> 2598.36s]  there's over 100 different languages with sentences
+[2598.36s -> 2602.40s]  parsed with a uniform dependency formalism.
+[2602.40s -> 2604.04s]  So it's actually really good for things
+[2604.04s -> 2607.56s]  like cross-linguistic work and psycholinguistic work.
+[2607.56s -> 2611.80s]  But what these are is taking sentences.
+[2611.80s -> 2616.12s]  I think Muramar was a famous goat trainer or something,
+[2616.12s -> 2618.92s]  and putting a dependency structure on it.
+[2618.92s -> 2622.24s]  It's sort of all written there, sort of very squished down.
+[2622.24s -> 2626.24s]  And human beings are producing these dependency structures.
+[2626.24s -> 2628.56s]  And then this is giving us data that we
+[2628.56s -> 2632.48s]  can learn things like dependency parsers from.
+[2632.48s -> 2635.52s]  And indeed, for what you do in homework 2,
+[2635.52s -> 2639.96s]  this is precisely what you'll be using is data of this sort
+[2639.96s -> 2642.16s]  to build a dependency parser.
+[2642.16s -> 2647.28s]  And it's going to learn that you have goat trainers,
+[2647.28s -> 2649.22s]  and you have famous trainers.
+[2649.22s -> 2652.52s]  And so it'll build up sort of statistics and information
+[2652.52s -> 2656.68s]  to predict what kinds of things are likely.
+[2656.68s -> 2663.92s]  Yeah, so starting off building a tree bank like that
+[2663.92s -> 2667.72s]  feels kind of like, oh, this is going to be slow, hard work.
+[2667.72s -> 2670.92s]  And it is actually slow, hard work.
+[2670.92s -> 2674.44s]  But it proved to be a very effective strategy
+[2674.44s -> 2678.28s]  because it gave wonderful reusable resources
+[2678.28s -> 2682.04s]  that once people had done it once, all sorts of people
+[2682.04s -> 2686.32s]  could use it to build parsers, part of speech taggers,
+[2686.32s -> 2690.16s]  to do psycholinguistic models and all kinds of things.
+[2690.16s -> 2692.64s]  You'd get the sort of distributional frequency
+[2692.64s -> 2695.12s]  information that's good for machine learning.
+[2695.12s -> 2699.00s]  It also provided one other thing that's crucial
+[2699.00s -> 2702.20s]  is it gave a method to evaluate systems,
+[2702.20s -> 2707.08s]  to say how good they are at producing parsers.
+[2707.08s -> 2711.76s]  I mean, this may seem kind of comical to you
+[2711.76s -> 2714.18s]  in the modern era of machine learning.
+[2714.18s -> 2715.60s]  But the fact of the matter is when
+[2715.60s -> 2719.40s]  people did natural language processing in the 50s, 60s,
+[2719.40s -> 2725.22s]  70s, nobody had evaluation methods.
+[2725.22s -> 2728.04s]  The way you showed people you had a good parser
+[2728.04s -> 2730.28s]  is you ran the program.
+[2730.28s -> 2733.04s]  You said, type in a sentence, look at what it looked like.
+[2733.04s -> 2734.20s]  It's worked.
+[2734.20s -> 2737.12s]  It's a really good parser.
+[2737.12s -> 2741.04s]  There was no systematic evaluation of NLP systems
+[2741.04s -> 2742.60s]  whatsoever.
+[2742.60s -> 2748.02s]  So actually saying, look, here's 1,000 hand-passed sentences.
+[2748.02s -> 2751.92s]  Let's evaluate how well your parser does on those.
+[2751.92s -> 2755.40s]  That was actually a revolutionary new development
+[2755.40s -> 2759.20s]  that happened in the end of the 80s,
+[2759.20s -> 2760.36s]  but especially in the 90s.
+[2764.08s -> 2768.16s]  So now that we have all of those knowledge,
+[2768.16s -> 2773.96s]  we're going to want to start building dependency parsers.
+[2773.96s -> 2778.20s]  And so I'm going to show a particular way of dependency
+[2778.20s -> 2780.04s]  parsing, which is the one you're going
+[2780.04s -> 2781.76s]  to use in the assignment.
+[2781.76s -> 2784.68s]  But just first off, it's sort of worth
+[2784.68s -> 2788.80s]  just thinking for a moment, what kind of information
+[2788.80s -> 2792.16s]  should a dependency parser have to make decisions?
+[2792.16s -> 2794.72s]  So these are kind of the four factors,
+[2794.88s -> 2798.76s]  sort of the obvious things that are useful for dependency parsing.
+[2798.76s -> 2802.28s]  I mean, the first one is sort of thinking
+[2802.28s -> 2804.52s]  of the two words at the ends of the arrow
+[2804.52s -> 2807.16s]  as to whether they are plausible, right?
+[2807.16s -> 2813.68s]  So that for discussion of the outstanding issues was completed.
+[2813.68s -> 2819.78s]  So to have discussion of issues, right, that's
+[2819.78s -> 2822.80s]  a plausible dependency.
+[2822.80s -> 2826.00s]  To have, you know, what's a silly one?
+[2826.00s -> 2831.52s]  To have something like the being a dependent of completed,
+[2831.52s -> 2833.52s]  that makes no sense at all.
+[2833.52s -> 2838.16s]  So you know what words there are involved.
+[2838.16s -> 2840.96s]  The second one is dependency distance.
+[2840.96s -> 2843.88s]  So you can have long distance dependencies
+[2843.88s -> 2849.24s]  that go a long way, but most dependencies are short distance.
+[2849.24s -> 2851.44s]  You know, a lot of words are depending
+[2851.44s -> 2854.52s]  on their neighboring words at a very short distance.
+[2854.52s -> 2857.80s]  So that's a good preference to have.
+[2857.80s -> 2860.52s]  As well as just the distance, it's
+[2860.52s -> 2863.68s]  somewhat informative knowing what's in between.
+[2863.68s -> 2870.68s]  So it's rare for dependencies to span verbs or punctuation.
+[2870.68s -> 2872.88s]  And then there's a final one, which
+[2872.88s -> 2875.92s]  is to think of the valency of heads.
+[2875.92s -> 2879.52s]  And that's how many arguments they take.
+[2879.56s -> 2885.36s]  So if you have sort of something like a verb broke,
+[2885.36s -> 2890.64s]  well, it probably has something to the left,
+[2890.64s -> 2893.88s]  because it probably has who did the breaking.
+[2893.88s -> 2897.96s]  And it probably has something to the right,
+[2897.96s -> 2901.80s]  because there might be the cup or something like that.
+[2901.80s -> 2904.20s]  But you know, it doesn't have to be that,
+[2904.20s -> 2906.84s]  because it could be the cup broke.
+[2906.84s -> 2911.80s]  So you can have something to the left, but nothing to the right.
+[2911.80s -> 2914.40s]  But you sort of have to have something to the left.
+[2914.40s -> 2917.48s]  And conversely, you can't have any number of things.
+[2917.48s -> 2923.64s]  You can't just say, he broke the cup, the saucer, the dish.
+[2923.64s -> 2926.32s]  So it doesn't take just lots of arguments to the left.
+[2926.32s -> 2931.04s]  So you've got a notion of valency like that.
+[2931.04s -> 2931.72s]  Yeah.
+[2931.72s -> 2934.48s]  There's one other tricky little notion
+[2934.48s -> 2941.48s]  on dependency parsing, which is normally dependencies kind
+[2941.48s -> 2944.20s]  of nest like this.
+[2944.20s -> 2948.32s]  And nesting dependencies corresponds to a tree structure
+[2948.32s -> 2950.56s]  as you'd have in a context-free grammar.
+[2950.56s -> 2951.32s]  Yeah.
+[2951.32s -> 2952.80s]  I have a question.
+[2952.80s -> 2956.40s]  Can you explain to me why I wrote this whole book
+[2956.40s -> 2958.16s]  into a word?
+[2958.16s -> 2962.80s]  Because in a sense, when I read the sentence, which is four,
+[2962.80s -> 2965.72s]  I felt that the most important thing was discussion.
+[2965.72s -> 2972.64s]  So if I could see your arrows, I would be happy to hear your question.
+[2972.64s -> 2975.52s]  So fair enough.
+[2975.52s -> 2981.64s]  I will assert that this is a sentence.
+[2981.64s -> 2988.76s]  And discussion is the subject of the verb completed.
+[2988.80s -> 2993.72s]  And normally for a sentence, we say the main thing
+[2993.72s -> 2996.00s]  in the sentence is its verb.
+[2996.00s -> 3000.16s]  And so, yeah, so that's why the root is heading to completed.
+[3000.16s -> 3004.04s]  And the subject of the verb is also an important thing.
+[3004.04s -> 3007.04s]  But the arguments of the verb, like the subject of the verb,
+[3007.04s -> 3009.72s]  the object of the verb, if there is one prepositional phrase
+[3009.72s -> 3015.60s]  modifiers, they're all taken as dependence of the verb.
+[3015.60s -> 3016.48s]  Yeah.
+[3016.48s -> 3018.36s]  Sorry, follow up.
+[3018.36s -> 3020.92s]  Following up on that, is it safe to see the verb?
+[3020.92s -> 3024.92s]  Like, when is it not the verb that you start with?
+[3024.92s -> 3027.48s]  Oh, sorry.
+[3027.48s -> 3033.96s]  If you have a sentence with a verb like this,
+[3033.96s -> 3036.00s]  that is always the answer.
+[3036.00s -> 3040.00s]  I mean, some of the details here depend on languages.
+[3040.00s -> 3041.56s]  But there are languages in which
+[3041.56s -> 3044.52s]  you don't have to have a verb in a sentence.
+[3044.52s -> 3050.56s]  And you can get things like, I mean,
+[3050.56s -> 3055.08s]  you can do it in sort of very restricted ways in English.
+[3055.08s -> 3060.28s]  So if you just sort of say, easy as pie, there's no verb.
+[3060.28s -> 3063.52s]  And so then you'll say, easy, the adjective,
+[3063.52s -> 3065.68s]  which is sort of the predicate adjective,
+[3065.68s -> 3067.00s]  is then the head of the sentence.
+[3071.20s -> 3074.28s]  It's like a question, like, what is the story?
+[3074.28s -> 3075.40s]  Is that where it is?
+[3075.40s -> 3078.20s]  Like, we would still look at that as the.
+[3078.20s -> 3079.84s]  That one is complicated.
+[3079.84s -> 3082.72s]  Some people would say it is.
+[3082.72s -> 3086.44s]  And some people would say it isn't.
+[3086.44s -> 3088.96s]  And in particular, in universal dependency,
+[3088.96s -> 3091.64s]  we don't actually say that is is the head of the sentence.
+[3091.64s -> 3093.56s]  But I don't want to get too far into this.
+[3093.56s -> 3095.40s]  If you want, you could sort of look more
+[3095.40s -> 3097.16s]  at how things are done.
+[3097.16s -> 3101.92s]  But I want to fully admit that dependency grammar isn't
+[3101.92s -> 3104.20s]  sort of one uniquely defined theory.
+[3104.20s -> 3106.28s]  People have had different ideas of which
+[3106.28s -> 3110.24s]  things to take as the head in various circumstances.
+[3110.24s -> 3111.68s]  And they argue about it.
+[3111.68s -> 3113.92s]  Linguists argue about what the right structure
+[3113.92s -> 3116.24s]  is to put over all sorts of sentences.
+[3116.24s -> 3119.72s]  But the fact that people do things different ways
+[3119.72s -> 3121.76s]  doesn't mean that everybody doesn't
+[3121.76s -> 3124.16s]  agree that there are units, there
+[3124.16s -> 3127.68s]  are phrases, and modifiers, and ambiguities,
+[3127.68s -> 3129.76s]  and so on between them.
+[3129.76s -> 3133.28s]  OK, yeah, so normally we get this sort of nesting
+[3133.28s -> 3136.28s]  that corresponds to what you can build with context-free
+[3136.28s -> 3137.64s]  grammar structure.
+[3137.64s -> 3140.96s]  But sometimes in human languages, you
+[3140.96s -> 3144.32s]  get dependencies that don't nest.
+[3144.32s -> 3148.08s]  So you get sentences like, I'll give a talk tomorrow
+[3148.08s -> 3153.24s]  on neural networks, where actually the on neural networks
+[3153.24s -> 3159.16s]  is modifying the talk, where the yesterday is an argument
+[3159.16s -> 3162.28s]  of, sorry, the tomorrow is an argument of give.
+[3162.32s -> 3165.52s]  And so you get these crossing dependencies,
+[3165.52s -> 3170.04s]  which are referred to as non-projective dependencies.
+[3170.04s -> 3173.68s]  You also get them when you form questions.
+[3173.68s -> 3177.60s]  So who did Bill buy the coffee from yesterday?
+[3177.60s -> 3182.20s]  That the who is the object of the preposition from,
+[3182.20s -> 3184.24s]  that it's been moved out the front.
+[3184.24s -> 3189.48s]  And so that, again, gives us non-projectivity.
+[3189.48s -> 3194.80s]  If you think about it, yeah, you
+[3194.80s -> 3199.12s]  can still say that you have a dependency tree,
+[3199.12s -> 3201.92s]  but it's got the words in different orders.
+[3201.92s -> 3203.72s]  And so one of the things that you
+[3203.72s -> 3207.04s]  have to cope with for full dependency parsing
+[3207.04s -> 3209.28s]  is dealing with this non-projectivity.
+[3209.28s -> 3211.40s]  But I mean, actually, we're not going to deal with it
+[3211.40s -> 3212.36s]  in our parsers.
+[3212.36s -> 3216.36s]  We're only going to do projective dependency parsing.
+[3216.36s -> 3220.04s]  OK, so there are various ways that people
+[3220.04s -> 3222.00s]  do dependency parsing.
+[3222.00s -> 3225.08s]  People have done it by dynamic programming.
+[3225.08s -> 3228.56s]  People who've done it using graph algorithms.
+[3228.56s -> 3231.88s]  If I have enough time at the end, I might mention that again.
+[3231.88s -> 3234.76s]  People have done it with constraint satisfaction methods,
+[3234.76s -> 3237.84s]  if you saw those in CS221.
+[3237.84s -> 3242.52s]  But the most common way in practice that's emerged
+[3242.52s -> 3247.72s]  has been this transition-based parsing, which
+[3247.72s -> 3251.20s]  is kind of sort of interesting as well
+[3251.20s -> 3253.84s]  and gives us sort of a very simple machine learning
+[3253.84s -> 3255.52s]  mechanism.
+[3255.52s -> 3258.64s]  So it makes it good for assignment two.
+[3258.64s -> 3262.96s]  And so that's what we're going to explore here.
+[3262.96s -> 3270.28s]  OK, so what we do in greedy decision-based parsing
+[3270.28s -> 3273.60s]  and transition-based parsing is this
+[3273.60s -> 3276.44s]  is where it's unfortunate that only two people in the class
+[3276.44s -> 3280.32s]  have done a compilers class.
+[3280.32s -> 3282.56s]  So a simple form of parsing that's
+[3282.56s -> 3285.20s]  also used in compilers class is something
+[3285.20s -> 3290.32s]  called shift-reduce parsing, where you start bottom up
+[3290.32s -> 3293.40s]  and you start putting little units together and build
+[3293.40s -> 3294.60s]  bigger constituents.
+[3294.60s -> 3297.24s]  But if most people haven't seen it,
+[3297.24s -> 3300.96s]  that's not going to be very much help.
+[3300.96s -> 3303.60s]  So I'm going to give you a concrete example.
+[3303.60s -> 3307.16s]  So the things to know is we'd have two data structures.
+[3307.16s -> 3309.12s]  Well, we have more than two, I guess.
+[3309.12s -> 3312.40s]  For dealing with the sentence, we have two data structures.
+[3312.40s -> 3315.84s]  We have a buffer, which has the words of our input
+[3315.84s -> 3317.00s]  sentence.
+[3317.00s -> 3321.44s]  And then we start building pieces of sentence structure,
+[3321.44s -> 3323.44s]  which we put on a stack.
+[3323.44s -> 3326.24s]  And the little trick to know that for the buffer,
+[3326.24s -> 3327.96s]  the top is written to the left.
+[3327.96s -> 3331.48s]  And for the stack, the top is written to the right.
+[3331.48s -> 3333.84s]  And so we take actions, which are
+[3333.84s -> 3336.28s]  like shift-reduce actions.
+[3336.28s -> 3339.92s]  And when we take arc-building actions,
+[3339.92s -> 3342.24s]  we build up a set of dependency arcs,
+[3342.24s -> 3343.76s]  which are going to be the dependency
+[3343.76s -> 3345.92s]  structure of our sentence.
+[3345.92s -> 3348.76s]  And that's all incredibly abstract.
+[3348.76s -> 3352.96s]  And so I'm going to show an example, which hopefully
+[3352.96s -> 3357.12s]  will a bit give the idea.
+[3357.12s -> 3358.72s]  So here's an example.
+[3358.72s -> 3365.16s]  So I want to do this very simple example of passing up
+[3365.16s -> 3368.88s]  the sentence, I ate fish.
+[3368.88s -> 3374.36s]  So the way I do this is I have my stack.
+[3374.36s -> 3379.38s]  And so I start by putting the root symbol on my stack.
+[3379.42s -> 3383.54s]  And then I have in my buffer all the words of the sentence.
+[3383.54s -> 3385.58s]  And so that's the sort of start condition
+[3385.58s -> 3388.26s]  I've written in very small print there.
+[3388.26s -> 3391.14s]  Then for each step of processing,
+[3391.14s -> 3393.98s]  I have a choice of three operations.
+[3393.98s -> 3398.34s]  I can either shift, which moves the top word
+[3398.34s -> 3401.18s]  on the buffer onto the stack.
+[3401.18s -> 3404.82s]  Or I can do left arc or right arc.
+[3404.82s -> 3407.26s]  And these are my two reduce operations
+[3407.26s -> 3409.90s]  that build a little bit of syntactic structure
+[3409.90s -> 3413.38s]  by saying that one word is a dependent of another word
+[3413.38s -> 3416.46s]  in either a left or a right direction.
+[3416.46s -> 3419.58s]  So here a sequence of operations I can take.
+[3419.58s -> 3425.34s]  And so starting off, the first thing I can do is shift.
+[3425.34s -> 3429.82s]  So then I've moved i onto the stack.
+[3429.82s -> 3432.82s]  I can decide that I want to shift again.
+[3432.82s -> 3436.34s]  And so then I'd take 8 and also move it
+[3436.38s -> 3437.90s]  onto the stack.
+[3437.90s -> 3442.02s]  And so I've now got three things on my stack.
+[3442.02s -> 3447.50s]  So at this point, I can do other things.
+[3447.50s -> 3449.90s]  I mean, in particular, a left arc
+[3449.90s -> 3452.86s]  is going to say, well, I can take the top two
+[3452.86s -> 3460.34s]  things on the stack and make the thing on the top the head
+[3460.34s -> 3463.90s]  and the thing one down on the stack a dependent of it.
+[3463.94s -> 3467.90s]  So if I do a left arc operation, I'm effectively
+[3467.90s -> 3471.34s]  saying that the i is a dependent of 8.
+[3471.34s -> 3473.54s]  And then I pop both of them.
+[3473.54s -> 3476.74s]  I pop the dependent off the stack.
+[3476.74s -> 3480.94s]  But I add on that I've built a dependency that I
+[3480.94s -> 3483.50s]  made i a dependent of 8.
+[3483.50s -> 3486.58s]  I could then do another shift operation.
+[3486.58s -> 3491.78s]  So I shift fish from the buffer onto the stack.
+[3491.78s -> 3495.82s]  And then I can do a right arc, which says, OK,
+[3495.82s -> 3498.98s]  I'm going to have fish as a dependent of 8.
+[3498.98s -> 3501.86s]  So then fish disappears from the stack.
+[3501.86s -> 3505.18s]  And I add in this new dependency saying
+[3505.18s -> 3508.34s]  fish is a dependent of 8.
+[3508.34s -> 3515.02s]  I then do right arc again, which is then saying that 8
+[3515.02s -> 3516.74s]  is a dependent of root.
+[3516.74s -> 3519.54s]  So I'm left with just root on my stack.
+[3519.58s -> 3521.50s]  And I've built a new dependent saying
+[3521.50s -> 3523.30s]  8 is a dependent of root.
+[3523.30s -> 3526.22s]  And at this point, I've gone to the finishing condition.
+[3526.22s -> 3529.94s]  My finishing condition is that my buffer is empty
+[3529.94s -> 3535.62s]  and my stack contains just the word root.
+[3535.62s -> 3540.34s]  And so this gives me a little set of operations
+[3540.34s -> 3543.86s]  referred to as the transitions of transition-based parsing.
+[3543.86s -> 3547.58s]  And by making a sequence of these different transitions,
+[3547.58s -> 3550.06s]  I can build sentence structure.
+[3550.06s -> 3555.06s]  And I've got choices of when to shift and when to reduce
+[3555.06s -> 3558.86s]  and whether to reduce left or reduce right, the arc left,
+[3558.86s -> 3559.88s]  arc right.
+[3559.88s -> 3563.66s]  And so by making different ones of those choices,
+[3563.66s -> 3567.98s]  I could make any structure for the sentence that I wanted to.
+[3567.98s -> 3572.34s]  So if I somehow thought that this sentence should
+[3572.34s -> 3575.98s]  have a different structure and that i should be the head
+[3575.98s -> 3580.82s]  and 8 is a dependent of that and fish is a dependent of that,
+[3580.82s -> 3585.10s]  well, I could achieve this by making some different choices
+[3585.10s -> 3590.46s]  as to I'd now be saying I was doing a right arc operation so
+[3590.46s -> 3593.38s]  that 8 would become a dependent of i rather than
+[3593.38s -> 3594.50s]  the other way around.
+[3594.50s -> 3598.02s]  So the choices of which operations I take determine
+[3598.02s -> 3601.50s]  the syntactic structure, the set of dependencies
+[3601.54s -> 3606.14s]  that I have built, which are my set of dependencies down here.
+[3606.14s -> 3608.62s]  Now, the sense of dependencies I built
+[3608.62s -> 3611.64s]  were exactly the right ones because at each step,
+[3611.64s -> 3615.38s]  I took the right operation.
+[3615.38s -> 3623.26s]  And so the essential idea of transition-based parsing
+[3623.26s -> 3629.66s]  and where it came to the fore was there was a particular guy
+[3629.98s -> 3633.18s]  who I've got a photo of him somewhere in a bit, I thought.
+[3633.18s -> 3638.82s]  So Joakim Nivre is a Swedish NLP person.
+[3638.82s -> 3643.22s]  And in the early 2000s, he came up
+[3643.22s -> 3646.82s]  with the idea of rather than doing
+[3646.82s -> 3650.62s]  the kind of dynamic programming and chart parsing and things
+[3650.62s -> 3654.16s]  that people commonly used to do with parsers,
+[3654.16s -> 3656.90s]  these days we have machine learning.
+[3656.90s -> 3661.34s]  So maybe we could build a fast, efficient parser.
+[3661.34s -> 3663.42s]  And the way we're going to build it
+[3663.42s -> 3668.34s]  is with this making a sequence of transitions.
+[3668.34s -> 3671.10s]  And it'll be the job of the machine learning
+[3671.10s -> 3674.46s]  to predict what is the right transition at each point
+[3674.46s -> 3675.66s]  in time.
+[3675.66s -> 3679.86s]  So if you do that, at each point,
+[3679.86s -> 3683.06s]  you're dealing with one thing.
+[3683.06s -> 3685.20s]  And so the number of operations you're
+[3685.24s -> 3688.00s]  doing to parse a sentence is linear.
+[3688.00s -> 3692.12s]  So this gives a linear time parsing algorithm,
+[3692.12s -> 3696.20s]  whereas if you've seen context-free grammars
+[3696.20s -> 3699.52s]  and stuff like that in CS103, and you'd
+[3699.52s -> 3702.84s]  want to do anything where you're fully considering
+[3702.84s -> 3706.04s]  the parsers and structures of context-free grammars,
+[3706.04s -> 3708.44s]  you've then got a cubic time algorithm,
+[3708.44s -> 3712.72s]  which is much less pleasant to be dealing with.
+[3712.76s -> 3716.12s]  So for the simplest form of transition-based parsing,
+[3716.12s -> 3718.64s]  you do no search whatsoever.
+[3718.64s -> 3722.48s]  At each step, you're just predicting the next transition.
+[3722.48s -> 3724.52s]  And so you're doing this sort of sequence
+[3724.52s -> 3728.68s]  of transition predictions as machine learning operations.
+[3728.68s -> 3730.96s]  And that sequence gives you the parse structure
+[3730.96s -> 3732.32s]  of the sentence.
+[3732.32s -> 3736.14s]  And the central result that Nivla was able to show
+[3736.14s -> 3740.30s]  is that machine learning is good enough
+[3740.34s -> 3744.54s]  that you can do this and get a very accurate parser,
+[3744.54s -> 3747.90s]  despite the fact that it does no search whatsoever.
+[3747.90s -> 3750.58s]  It's just doing predictions in this way.
+[3756.26s -> 3759.26s]  So when he did it in 2005, that
+[3759.26s -> 3762.42s]  was before neural networks came to the fore.
+[3762.42s -> 3764.62s]  And so the way he was doing it
+[3764.62s -> 3769.22s]  was by using a sort of an older style, symbolic,
+[3769.26s -> 3772.74s]  feature-based machine learning system.
+[3772.74s -> 3774.86s]  So he had a big classifier,
+[3774.86s -> 3777.78s]  which might have been a logistic regression classifier,
+[3777.78s -> 3780.54s]  or something else like a support vector machine.
+[3780.54s -> 3785.34s]  And so to power that, he was using indicator features.
+[3785.34s -> 3788.06s]  So the kind of features you'd use is that
+[3788.06s -> 3791.08s]  the word on the top of the stack is the word good,
+[3791.08s -> 3794.02s]  and it's part of speech as an adjective.
+[3794.02s -> 3799.02s]  Or the word on the top of the stack
+[3799.02s -> 3804.46s]  is good, but the word that's sort of second on the stack
+[3804.46s -> 3806.58s]  is the verb has, right?
+[3806.58s -> 3808.46s]  You'd get these sort of combinations
+[3808.46s -> 3810.90s]  of matching functions, and they would
+[3810.90s -> 3813.66s]  be used as features in a machine learning
+[3813.66s -> 3816.06s]  system to predict the parse.
+[3816.06s -> 3818.50s]  But the problem is that once you started
+[3818.50s -> 3821.30s]  building these features that were
+[3821.30s -> 3823.92s]  conjunctions of multiple terms, you
+[3823.92s -> 3826.86s]  ended up with millions and millions of features, right?
+[3826.86s -> 3830.30s]  Because you're putting particular words and features,
+[3830.30s -> 3833.10s]  and then you're combining choices of multiple words.
+[3833.10s -> 3835.62s]  So they're just millions and millions of features.
+[3835.62s -> 3837.06s]  So you had to deal with millions
+[3837.06s -> 3838.94s]  and millions of features.
+[3838.94s -> 3841.22s]  And furthermore, individual features
+[3841.22s -> 3844.14s]  were exceedingly sparse, that you barely ever saw them,
+[3844.14s -> 3844.62s]  right?
+[3844.62s -> 3847.82s]  That you'd have a feature that only turned up
+[3847.82s -> 3851.34s]  10 times in a million sentences because you were matching
+[3851.34s -> 3853.42s]  these very precise systems.
+[3853.42s -> 3858.22s]  So on the one hand, by making these feature conjunctions,
+[3858.22s -> 3859.90s]  parsing got more accurate.
+[3859.90s -> 3862.90s]  And indeed, people produced pretty accurate parsers
+[3862.90s -> 3864.06s]  in those days.
+[3864.06s -> 3867.30s]  But they had sort of these unappealing characteristics
+[3867.30s -> 3869.94s]  of this sort.
+[3869.94s -> 3873.70s]  Yeah, so before going on further,
+[3873.70s -> 3879.74s]  I should just explain how we evaluate dependency parsers.
+[3879.74s -> 3883.22s]  So to evaluate dependency parsers,
+[3883.22s -> 3885.74s]  we're basically assessing, are you
+[3885.74s -> 3891.50s]  getting the dependency arcs, arrows you're proposing right?
+[3891.50s -> 3894.94s]  So here is someone's dependency pars.
+[3894.94s -> 3896.98s]  She saw the video lecture.
+[3900.26s -> 3902.58s]  Well, actually, sorry, that's the gold pars.
+[3902.58s -> 3904.34s]  OK, that's the correct pars.
+[3904.34s -> 3906.42s]  OK, she saw the video lecture.
+[3906.42s -> 3907.94s]  That's the correct pars.
+[3907.98s -> 3913.34s]  So you can write out what are the different dependencies,
+[3913.34s -> 3913.82s]  right?
+[3913.82s -> 3918.10s]  So one's head is two, two's head is zero,
+[3918.10s -> 3922.14s]  word three's head is five, word four's head is five,
+[3922.14s -> 3924.18s]  word five's head is two.
+[3924.18s -> 3929.02s]  So these pairs of numbers represent our dependencies.
+[3929.02s -> 3932.78s]  Then if someone proposes a pars of the sentence,
+[3932.78s -> 3935.38s]  you can literally say, OK, which of these
+[3935.38s -> 3936.38s]  did they get right?
+[3936.42s -> 3939.54s]  So they didn't get this one right.
+[3939.54s -> 3941.38s]  They got the rest of them right.
+[3941.38s -> 3943.78s]  So their accuracies are 80%.
+[3943.78s -> 3948.42s]  And so sometimes people just assess the arcs unlabeled.
+[3948.42s -> 3952.50s]  And so that's referred to as unlabeled dependency accuracy.
+[3952.50s -> 3955.48s]  But sometimes people also want to label them
+[3955.48s -> 3959.94s]  with subject, determiner, object, et cetera,
+[3959.94s -> 3962.78s]  and say, also, are you getting the labels right?
+[3962.82s -> 3966.70s]  So in this case, only two of the five labels are right.
+[3966.70s -> 3970.58s]  So the labeled accuracy of the dependency parses is 40%.
+[3978.14s -> 3985.54s]  So that was sort of what people did until the mid-2010s.
+[3985.54s -> 3987.90s]  And I sort of already started saying this.
+[3987.90s -> 3990.98s]  The problems with indicator features
+[3991.70s -> 3994.34s]  were they were sparse.
+[3994.34s -> 3996.10s]  You didn't see them often.
+[3996.10s -> 3997.94s]  They were incomplete because there
+[3997.94s -> 4000.18s]  are some words and combinations you'd seen
+[4000.18s -> 4002.70s]  and some you just didn't see in the training data.
+[4002.70s -> 4005.10s]  So you're missing features.
+[4005.10s -> 4007.38s]  But the final problem is actually
+[4007.38s -> 4011.02s]  just computing all those symbolic features
+[4011.02s -> 4012.30s]  was just expensive.
+[4012.30s -> 4015.02s]  It turns out that if you did runtime analysis,
+[4015.02s -> 4017.34s]  most of the time in the parsing
+[4017.34s -> 4020.42s]  wasn't in doing the machine learning decisions.
+[4020.42s -> 4022.74s]  It was just simply in computing the features
+[4022.74s -> 4025.30s]  that you put into this dependency parser.
+[4025.30s -> 4028.42s]  So as neural nets started to show
+[4028.42s -> 4030.74s]  that they are successful for things,
+[4030.74s -> 4034.92s]  that suggested that maybe you could build a better dependency
+[4034.92s -> 4040.06s]  parser by using a neural net transition-based dependency
+[4040.06s -> 4043.06s]  parser, which would benefit from the kind of dense
+[4043.06s -> 4047.78s]  and compact feature vector representations
+[4047.82s -> 4050.58s]  that we've already started to see.
+[4050.58s -> 4053.94s]  And so that's what started to be explored.
+[4053.94s -> 4060.50s]  And in particular, who was then a PhD student of mine
+[4060.50s -> 4066.52s]  and was head TA of 224N twice, actually, in the earlier days.
+[4066.52s -> 4071.66s]  So she built a neural transition-based dependency
+[4071.66s -> 4076.22s]  parser and showed the success of this method.
+[4076.26s -> 4080.66s]  So this was Nivre's transition-based dependency
+[4080.66s -> 4081.94s]  parser.
+[4081.94s -> 4085.92s]  People had also explored other methods of dependency parsing.
+[4085.92s -> 4089.18s]  So these were two graph-based dependency parsers.
+[4089.18s -> 4095.44s]  And essentially, for the kind of symbolic feature machine
+[4095.44s -> 4100.22s]  learning methods, Nivre's parser was really fast
+[4100.22s -> 4104.28s]  because it was using this linear transition-based parsing
+[4104.28s -> 4105.34s]  idea.
+[4106.34s -> 4111.26s]  The graph-based dependency parsers were way, way slower.
+[4111.26s -> 4113.90s]  They're about, what, 50 times slower.
+[4113.90s -> 4115.86s]  But they were slightly more accurate.
+[4115.86s -> 4119.18s]  You can see here that you're getting a bit better numbers.
+[4119.18s -> 4121.96s]  So essentially, what Nivre was able to show
+[4121.96s -> 4124.62s]  was you could build something that
+[4124.62s -> 4128.74s]  was basically as accurate as the best-known graph-based
+[4128.74s -> 4132.26s]  dependency parsers, but it was fast
+[4132.26s -> 4135.60s]  like other transition-based parsers.
+[4135.60s -> 4139.74s]  Indeed, despite the fact that you might think that, oh, now
+[4139.74s -> 4142.18s]  I've got real numbers and matrices and stuff,
+[4142.18s -> 4144.54s]  surely that should be slowing me down,
+[4144.54s -> 4148.46s]  the reality was that the symbolic model spent
+[4148.46s -> 4152.00s]  so much time in feature computation
+[4152.00s -> 4155.46s]  that actually you could make it faster at the same time
+[4155.46s -> 4158.14s]  by using the neural network.
+[4158.14s -> 4160.66s]  So how did that work?
+[4160.66s -> 4163.50s]  Well, so we've already seen word embedding.
+[4163.50s -> 4165.74s]  So it's going to exploit word embedding.
+[4165.74s -> 4169.48s]  So it can use word representations.
+[4169.48s -> 4171.06s]  And that has the advantage that even
+[4171.06s -> 4172.86s]  if you haven't seen particular words
+[4172.86s -> 4176.98s]  and particular configurations, you've seen similar words.
+[4176.98s -> 4180.02s]  And so it can exploit what's likely in terms
+[4180.02s -> 4181.74s]  of word similarity.
+[4181.74s -> 4183.44s]  But it went a bit further than that
+[4183.44s -> 4185.94s]  because why only have distributed representations
+[4185.94s -> 4186.98s]  of words?
+[4186.98s -> 4189.16s]  We also have parts of speech.
+[4189.16s -> 4193.20s]  And although I sort of said just noun, verb, adjective,
+[4193.20s -> 4197.52s]  most actual systems in NLP of parts of speech
+[4197.52s -> 4199.32s]  are much more fine-grained.
+[4199.32s -> 4201.52s]  So they have different parts of speech
+[4201.52s -> 4204.28s]  for plural nouns versus singular nouns.
+[4204.28s -> 4206.14s]  So they're sort of different symbols,
+[4206.14s -> 4208.20s]  but they're very similar to each other.
+[4208.20s -> 4211.08s]  So we might give them distributed representation
+[4211.08s -> 4213.36s]  so they're also close to each other.
+[4213.36s -> 4217.88s]  And the same for the types of our labels for dependencies.
+[4217.88s -> 4220.56s]  Some of them are pretty closely related as well.
+[4220.56s -> 4222.48s]  So all of these were being given
+[4222.48s -> 4225.10s]  distributed representations.
+[4225.10s -> 4230.04s]  And so then to represent the state of the dependency parser
+[4230.04s -> 4233.72s]  for predicting transitions, what you were doing
+[4233.72s -> 4237.24s]  is you had the same kind of stack and buffer.
+[4237.24s -> 4239.64s]  And you were taking the key elements
+[4239.64s -> 4242.22s]  of the stack and the buffer, which are essentially
+[4242.22s -> 4244.44s]  the first thing on the buffer, the word
+[4244.44s -> 4247.44s]  that you would be shifting if you're going to do a shift,
+[4247.48s -> 4250.12s]  and the two things at the top of the stack.
+[4250.12s -> 4252.64s]  So these are the things that if you're either doing a left
+[4252.64s -> 4255.64s]  arc or a right arc, they're things that you're
+[4255.64s -> 4257.72s]  considering combining.
+[4257.72s -> 4260.12s]  So for those, you're going to be taking
+[4260.12s -> 4263.64s]  the distributed representations of the word
+[4263.64s -> 4266.08s]  and their parts of speech, and also
+[4266.08s -> 4269.48s]  with a bit more complexity for dependencies you've already
+[4269.48s -> 4272.36s]  constructed if maybe something on the stack
+[4272.36s -> 4274.60s]  is already involved in the dependency.
+[4274.60s -> 4276.36s]  Each of those, we're going to take
+[4276.36s -> 4278.80s]  their distributed representations,
+[4278.80s -> 4281.36s]  and we're going to just concatenate them together
+[4281.36s -> 4286.40s]  to produce a big vector in the same way we're concatenating
+[4286.40s -> 4289.32s]  together the five words in the last class
+[4289.32s -> 4292.72s]  for predicting whether something was the location or not.
+[4292.72s -> 4298.80s]  And then we're going to feed that into our neural network.
+[4298.80s -> 4303.68s]  So our input layer is our concatenated distributed
+[4303.68s -> 4305.48s]  representations.
+[4305.48s -> 4308.56s]  We are going to put that through a hidden layer, which
+[4308.56s -> 4312.16s]  is like we were talking about last time, WX plus B,
+[4312.16s -> 4315.08s]  then put through a ReLU non-linearity.
+[4315.08s -> 4319.28s]  And then we are going to put above that the same kind
+[4319.28s -> 4323.04s]  of another multiply by a matrix.
+[4323.04s -> 4327.40s]  So we've got a second layer of neural network, UH plus B2.
+[4327.40s -> 4329.76s]  And we're going to take the output of that,
+[4329.76s -> 4332.28s]  and then we're going to put that through a softmax that
+[4332.28s -> 4337.80s]  gives a probability distribution over whether to shift or do
+[4337.80s -> 4341.96s]  a left arc or a right arc operation.
+[4341.96s -> 4346.44s]  And so the other way that this crucially gave us more power
+[4346.44s -> 4350.76s]  is that other people's dependency parsers were still
+[4350.76s -> 4354.40s]  using linear classifiers, things like support vector
+[4354.40s -> 4357.64s]  machines or logistic regressions,
+[4357.64s -> 4360.08s]  where we had a deep neural network that gave us
+[4360.08s -> 4363.96s]  a non-linear classifier and so that's why we can be more
+[4363.96s -> 4369.04s]  accurate than other previous transition-based parsers.
+[4369.04s -> 4374.60s]  And so this essentially showed that you could build
+[4374.60s -> 4378.84s]  this very accurate neural dependency parser and that it
+[4378.84s -> 4385.36s]  outperformed symbolic probabilistic representations and basically
+[4385.36s -> 4389.40s]  was as good as any other dependency parser that was known.
+[4389.40s -> 4393.92s]  So back a decade ago, this was a big hit.
+[4393.92s -> 4396.60s]  People got very excited about it.
+[4396.60s -> 4399.04s]  People at Google got very excited about it
+[4399.04s -> 4401.92s]  because this gave a scalable way.
+[4401.92s -> 4405.00s]  Remember, it's linear time in which you could efficiently
+[4405.00s -> 4408.28s]  go off and parse the entire web.
+[4408.28s -> 4413.80s]  So they did some further work on taking that model
+[4413.80s -> 4418.24s]  and proving it so that they made a deeper neural network
+[4418.24s -> 4423.44s]  version with bigger vectors and better tuned hyperparameters.
+[4423.44s -> 4425.88s]  And they added onto a beam search.
+[4425.88s -> 4428.12s]  I've just presented the greedy version where you
+[4428.12s -> 4431.32s]  always just immediately make the best choice.
+[4431.32s -> 4435.40s]  But you can improve these parsers by doing some amount of search.
+[4435.40s -> 4437.36s]  That does help.
+[4437.36s -> 4445.00s]  And so they pushed that up and so rather than our kind of 92 UAS here,
+[4445.00s -> 4449.16s]  they got it to 94, 94.6.
+[4449.16s -> 4459.00s]  And I mean, you're probably all too young to remember this.
+[4459.00s -> 4464.44s]  But really at the time of 2016, Google
+[4464.44s -> 4470.08s]  did their kind of typical big PR splash for dependency parser,
+[4470.08s -> 4472.52s]  which kind of blew my mind since I didn't ever
+[4472.56s -> 4475.80s]  think that anyone was really going to be writing articles
+[4475.80s -> 4480.36s]  in Wired and VentureBeat and those kind of tech blogs.
+[4480.36s -> 4484.20s]  But you know, Google had it all over the place of the world's
+[4484.20s -> 4486.04s]  most accurate parser.
+[4486.04s -> 4489.28s]  And they gave it a silly name, Parsi McParseface,
+[4489.28s -> 4494.04s]  which really worked well for getting lots of media pickup.
+[4494.04s -> 4500.16s]  And so that was then a very successful parser.
+[4500.16s -> 4502.44s]  I've still got a couple of minutes left.
+[4502.88s -> 4507.12s]  Let me just do the last three slides
+[4507.12s -> 4509.72s]  to show you sort of another way of doing things,
+[4509.72s -> 4512.48s]  which is also actually also a powerful parsing
+[4512.48s -> 4515.20s]  method that is commonly used.
+[4515.20s -> 4517.96s]  So that was transition-based parsing,
+[4517.96s -> 4520.68s]  and that's what you will use in assignment two.
+[4520.68s -> 4524.92s]  Another way of doing things with dependencies and parsing
+[4524.92s -> 4527.20s]  that can be done neural is what's referred to
+[4527.20s -> 4529.88s]  as graph-based dependency parsers.
+[4529.88s -> 4532.96s]  And in graph-based dependency parsers,
+[4532.96s -> 4540.40s]  what you do is for each word, you sort of ask for each word,
+[4540.40s -> 4543.40s]  what am I a dependent of?
+[4543.40s -> 4547.88s]  So if the sentence is the big cat sat, each word,
+[4547.88s -> 4551.32s]  for example, big, has to be a dependent of one
+[4551.32s -> 4553.92s]  of the other four words in this sentence,
+[4553.92s -> 4555.96s]  including this possibility of root.
+[4555.96s -> 4558.40s]  So we ask, am I a dependent of that?
+[4558.40s -> 4559.60s]  Am I a dependent of root?
+[4559.60s -> 4561.24s]  Am I a dependent of cat?
+[4561.24s -> 4562.92s]  Am I a dependent of sat?
+[4562.92s -> 4566.08s]  And we want to score each of those possibilities.
+[4566.08s -> 4569.56s]  And so hopefully, we decide the most likely one
+[4569.56s -> 4572.04s]  is the big as a dependent of cat.
+[4572.04s -> 4575.00s]  And then we're going to do the same for every other word.
+[4575.00s -> 4579.88s]  So sat could be a dependent of any of these words.
+[4579.88s -> 4583.80s]  And so we could start asking, OK, which of these words
+[4583.80s -> 4587.08s]  is it most likely a dependent of?
+[4587.08s -> 4591.52s]  L, B to sat, cat to sat.
+[4591.52s -> 4593.12s]  Sorry, that's unreadable now.
+[4593.12s -> 4598.64s]  But hopefully, we decide that sat most likely as the verb
+[4598.64s -> 4600.20s]  is a dependent of root.
+[4600.20s -> 4606.40s]  So we're sort of scoring the n squared possible dependencies
+[4606.40s -> 4607.28s]  of the sentence.
+[4607.28s -> 4609.36s]  Each one is given a score.
+[4609.36s -> 4612.48s]  And then once we've done that, our job
+[4612.48s -> 4615.28s]  is let me go to this one's cleaner.
+[4615.28s -> 4617.40s]  OK, we've decided the good one there.
+[4617.40s -> 4621.12s]  And so we're going to do this using some of the same features
+[4621.12s -> 4624.16s]  we talked about, looking at the words at each end,
+[4624.16s -> 4626.44s]  looking at what occurs between them,
+[4626.44s -> 4632.24s]  looking at what occurs around them, thinking about things.
+[4632.24s -> 4633.56s]  And then once we've done that,
+[4633.56s -> 4635.96s]  the only other thing that's a constraint
+[4635.96s -> 4640.28s]  is, well, we want the dependencies to form a tree
+[4640.28s -> 4644.92s]  so that we need to do something like a minimum spanning tree
+[4644.92s -> 4648.96s]  algorithm to sort of find the minimum cost tree.
+[4648.96s -> 4651.44s]  Because we don't want to find a solution where
+[4651.44s -> 4654.64s]  there are cycles or the parts of the sentence
+[4654.64s -> 4657.40s]  end up disconnected with each other.
+[4657.40s -> 4660.80s]  And so that's graph-based dependency parsers.
+[4660.80s -> 4664.56s]  And so just as in the older symbolic parsing days
+[4664.56s -> 4667.56s]  where the graph-based dependency parsers were more
+[4667.56s -> 4671.16s]  accurate than the transition-based parsers,
+[4671.16s -> 4673.32s]  that we then started doing some work
+[4673.32s -> 4676.20s]  on neural graph-based dependency parsing.
+[4676.20s -> 4678.60s]  And so here's our neural graph-based dependency
+[4678.60s -> 4683.76s]  parsing, which was then a bit over a percent more
+[4683.76s -> 4686.60s]  accurate than Parsi McParseface, the world's
+[4686.60s -> 4690.48s]  best dependency parser.
+[4690.48s -> 4693.28s]  So that got us to 2017.
+[4693.28s -> 4695.68s]  I mean, obviously, this is still a few years ago.
+[4695.68s -> 4700.32s]  But to get further into the latest parsing stories,
+[4700.32s -> 4702.88s]  we then need to sort of get into the era of large language
+[4702.88s -> 4705.20s]  models, which I'm not doing today.
+[4705.20s -> 4707.76s]  But it's this neural graph-based dependency
+[4707.76s -> 4713.28s]  parser that's in Stanza, our open source parsing
+[4713.28s -> 4715.52s]  software that's available and that you
+[4715.52s -> 4717.92s]  can see it's using this algorithm as the more
+[4717.92s -> 4719.12s]  accurate one.
+[4719.12s -> 4721.24s]  OK, so now you hopefully know everything
+[4721.24s -> 4724.20s]  about syntactic structure, constituents,
+[4724.24s -> 4726.76s]  dependency parsing, and are fully qualified
+[4726.76s -> 4728.52s]  to do an assignment too.
+[4728.52s -> 4729.64s]  So good luck with that.
+[4729.64s -> 4731.20s]  Thanks.

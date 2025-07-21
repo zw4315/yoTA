@@ -1,0 +1,162 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.16s]  The end-to-end principle holds a very special place in the design of the
+[4.16s -> 8.50s]  Internet. This is because it really refers to two different principles. The
+[8.50s -> 11.76s]  first deals with correctness. If you don't follow the end-to-end principle
+[11.76s -> 15.70s]  when you design your network system, then chances are it has a flaw and might
+[15.70s -> 19.84s]  transfer data incorrectly. The second, which we call the strong end-to-end
+[19.84s -> 25.28s]  principle, is much broader and general. So let's say we want to transfer a
+[25.28s -> 29.72s]  file from one computer to another. Our application opens a connection between A
+[29.72s -> 38.76s]  and B. It reads a file on computer A and writes it to the TCP connection. B reads
+[38.76s -> 44.00s]  the data from the socket and writes the data to a file on computer B. The
+[44.00s -> 47.52s]  network in this case does very little. It just forwards packets from A to B. A
+[47.52s -> 52.72s]  and B set up the connection and the application reads and writes the data.
+[52.72s -> 56.96s]  Why doesn't the network do more? It turns out there are a lot of things it
+[56.96s -> 60.88s]  could do to make the file transfer faster. The network could automatically
+[60.88s -> 65.28s]  compress packets between A and B. If the file is plain English text, this could
+[65.28s -> 70.96s]  reduce the transfer size tenfold. The network could reformat or improve
+[70.96s -> 75.48s]  requests. Let's say A wants to transfer two files to B. The network
+[75.48s -> 80.12s]  could see this and combine the two transfers into a single request. Or it
+[80.12s -> 84.84s]  could be that A's files already stored on another computer C that's closer and
+[84.84s -> 89.64s]  faster to B than A is. The network could transfer the file from C rather than A.
+[89.64s -> 94.32s]  Or the network could automatically add security, encrypting the data so bad
+[94.32s -> 97.84s]  guys can't read the file. If the network does this for us, then we don't have to
+[97.84s -> 102.48s]  worry about it in our application. The network could add mobility support such
+[102.48s -> 106.72s]  that as computer A moves through a network, routes automatically update and packets
+[106.72s -> 110.72s]  continue to flow to it. With this support, we could even possibly migrate connections
+[110.72s -> 114.36s]  across the network, moving something like a Skype video stream from our phone to
+[114.36s -> 119.08s]  our laptop. It turns out that there are many things the network could do to
+[119.08s -> 122.40s]  improve our application and make designing it easier. But generally
+[122.40s -> 129.72s]  speaking, it doesn't. Why? The reason is the end-to-end principle. The
+[129.72s -> 132.84s]  end-to-end principle was first described by Seltzer, Reed, and Clark in
+[132.84s -> 136.68s]  a 1984 paper. You'll meet David Clark later in the course when he gives a
+[136.68s -> 143.64s]  guest lecture. The end-to-end principle as they describe it is shown here. The
+[143.64s -> 148.52s]  function in question can completely and correctly be implemented only with the
+[148.52s -> 152.12s]  knowledge and help of the application standing at the end points of the
+[152.12s -> 157.00s]  communication system. Therefore, providing that question function as a feature of
+[157.00s -> 161.72s]  the communication itself is not possible. Sometimes an incomplete version
+[161.72s -> 164.92s]  of the function provided by the communication system may be useful as a
+[164.92s -> 169.32s]  performance enhancement. We call this line of reasoning the end-to-end
+[169.32s -> 175.40s]  argument. Put another way, the network could possibly do all kinds of things to
+[175.40s -> 179.40s]  help. But that's all it can do. Help. If the system is going to work
+[179.40s -> 183.16s]  correctly, then the end points need to be responsible for making sure it
+[183.16s -> 187.56s]  does. Nobody else has the information necessary to do this correctly. The
+[187.56s -> 191.48s]  network can help you, but you can't depend on it. For example, if you want
+[191.48s -> 195.48s]  to be sure your application is secure, you need to have end-to-end security
+[195.48s -> 198.84s]  implemented in the application. The network might add additional
+[198.84s -> 202.36s]  security, but end-to-end security can only be correctly done by the
+[202.36s -> 206.44s]  application itself. So making security a feature of the network so that
+[206.44s -> 212.84s]  applications don't have to worry about it is not possible.
+[212.84s -> 216.28s]  Let's go back to our example of transferring a file between two
+[216.28s -> 221.08s]  computers. It was this exact problem, along with others, that led
+[221.08s -> 225.24s]  Seltzer, Clark, and Reed to formulate the end-to-end argument. You
+[225.24s -> 228.28s]  want to make sure the file arrives completely and uncorrupted. The
+[228.28s -> 231.00s]  file data is going to pass through several computers between the
+[231.00s -> 235.16s]  source and the destination. So the file, coming from the source, passes
+[235.16s -> 241.56s]  through computers C, D, and E before arriving at the destination.
+[241.56s -> 246.44s]  Each link, source to C, C to D, D to E, and E to destination, has
+[246.44s -> 250.52s]  error detection. If a packet of data is corrupted in transmission, then
+[250.52s -> 254.44s]  the recipient can detect this and reject the packet. The sender
+[254.44s -> 257.16s]  will figure out the packet didn't arrive successfully, for example
+[257.16s -> 261.56s]  through TCP acknowledgments, and resend it. Now one could say,
+[261.56s -> 265.08s]  look, I know the packet won't be corrupted on any link because I
+[265.08s -> 268.44s]  have my checks. Since it won't be corrupted on any link, it won't
+[268.44s -> 271.88s]  be corrupted at all. Therefore, if it arrives successfully at the
+[271.88s -> 274.92s]  destination, there's no corruption, and the file has arrived
+[274.92s -> 280.36s]  successfully. This is exactly what some programmers at MIT did.
+[280.36s -> 283.32s]  Since the network provided error detection, they assumed it would
+[283.32s -> 286.44s]  detect all errors.
+[287.00s -> 290.20s]  This assumption turned out to be wrong, and because of this mistake, the
+[290.20s -> 293.32s]  developers ended up losing a lot of their source code.
+[293.32s -> 297.00s]  This is what happened. One of the computers on the transfer path,
+[297.00s -> 301.72s]  let's say computer D, had buggy memory, such that sometimes some bits would be
+[301.72s -> 308.36s]  flipped. D received packets of data, checked them, and found them correct.
+[308.36s -> 311.56s]  It would then move them into main memory, at which point they would become
+[311.56s -> 314.92s]  corrupted. D would then forward the packet, but
+[314.92s -> 317.48s]  because error detection occurs in the link,
+[317.48s -> 320.68s]  from the link's perspective, the packet looked fine,
+[320.68s -> 325.64s]  and it would pass each check. The link error detection was designed for errors
+[325.64s -> 330.36s]  in transmission, not errors in storage.
+[330.36s -> 333.72s]  The only way to be sure the file arrives correctly
+[333.72s -> 338.92s]  is to perform an end-to-end check. When the source sends the file, it
+[338.92s -> 341.64s]  includes some error detection information.
+[341.64s -> 346.04s]  When the destination reassembles the file, it checks whether the file,
+[346.04s -> 349.56s]  in its entirety, has any errors. This is the
+[349.56s -> 353.80s]  only way one can be sure it arrived correctly. The network can help,
+[353.80s -> 357.48s]  but it can't be responsible for correctness.
+[357.48s -> 361.80s]  As another concrete example, think of TCP. TCP provides a service of a reliable
+[361.80s -> 364.84s]  byte stream, but the reliability isn't perfect.
+[364.84s -> 368.28s]  There's a chance that TCP delivers some bad data to you, for example,
+[368.28s -> 370.20s]  because there's a bug in your TCP stack,
+[370.20s -> 374.12s]  or some error creeps in somewhere. So while it's very unlikely
+[374.12s -> 377.16s]  TCP will give you corrupted data, it might,
+[377.16s -> 380.12s]  and so you need to perform an end-to-end check on the data that it
+[380.12s -> 383.32s]  sends. So if you transfer a file with TCP, do
+[383.32s -> 385.80s]  an end-to-end check that arrives successfully.
+[385.80s -> 390.20s]  BitTorrent does this, for example. It uses TCP to transfer chunks,
+[390.20s -> 394.20s]  and after each chunk is complete, it checks that it arrived successfully
+[394.20s -> 397.08s]  using a hash.
+[398.28s -> 401.72s]  So let's go back to TCP and reliability.
+[401.72s -> 405.08s]  If you want end-to-end reliable data transfer, then you need an
+[405.08s -> 410.36s]  end-to-end reliable protocol like TCP. But following the end-to-end argument,
+[410.36s -> 413.56s]  while you must have end-to-end functionality for correctness,
+[413.56s -> 417.00s]  the network can include an incomplete version of a feature as a performance
+[417.00s -> 420.84s]  enhancement. Wireless link layers provide such a
+[420.84s -> 424.12s]  performance enhancement. Today, wired link layers are highly,
+[424.12s -> 428.04s]  highly reliable, unless your wire connector is bad. But
+[428.04s -> 430.12s]  wireless ones aren't, for a lot of reasons.
+[430.12s -> 434.68s]  So while usually 99.999 percent of packets sent on a wired link arrive
+[434.68s -> 437.72s]  successfully at the next hop, wireless links can sometimes be more
+[437.72s -> 444.20s]  like 50 percent or 80 percent. And it turns out TCP doesn't work well
+[444.20s -> 448.12s]  when you have low reliability. So wireless link layers improve their
+[448.12s -> 451.16s]  reliability by retransmitting at the link layer.
+[451.16s -> 455.08s]  When your laptop sends a packet to an access point, if the access point
+[455.08s -> 458.44s]  receives the packet, it immediately, just a few microseconds
+[458.44s -> 462.04s]  later, sends a link layer acknowledgement to tell your laptop the packet was
+[462.04s -> 465.56s]  received successfully. If the laptop doesn't receive a link
+[465.56s -> 471.40s]  layer acknowledgement, it retransmits. It does this several times. Using these
+[471.40s -> 474.92s]  link layer acknowledgements can boost a poor link with, say, only 80 percent
+[474.92s -> 482.12s]  reliability to 99 percent or higher. This lets TCP work much better.
+[482.12s -> 486.12s]  TCP will work correctly. It will reliably transfer data
+[486.12s -> 489.72s]  without this link layer help. But the link layer help
+[489.72s -> 494.20s]  greatly improves TCP's performance. So that's the end-to-end principle.
+[494.20s -> 498.52s]  For something to work correctly, it has to be done end-to-end.
+[498.60s -> 501.48s]  You can do stuff in the middle to help us performance improvements,
+[501.48s -> 504.68s]  but if you don't rely on end-to-end, then at some point
+[504.68s -> 507.32s]  it will break.
+[508.68s -> 512.20s]  There's a second version of the end-to-end principle described in the
+[512.20s -> 517.56s]  IETF request for comments number 1958, the architectural principles of the
+[517.56s -> 520.44s]  internet. We call it the strong end-to-end
+[520.44s -> 524.20s]  principle and it says, the network's job is to transmit
+[524.20s -> 527.40s]  datagrams as efficiently and flexibly as possible.
+[527.40s -> 530.92s]  Everything else should be done at the fringes.
+[530.92s -> 534.12s]  This end-to-end principle is stronger than the first one. The first one said
+[534.12s -> 536.92s]  that you have to implement something end-to-end at the fringes,
+[536.92s -> 540.52s]  but that you can also implement it in the middle for performance improvements.
+[540.52s -> 543.72s]  This principle says to not implement it in the middle,
+[543.72s -> 548.44s]  only implement it at the fringes. The reasoning for the strong principle is
+[548.44s -> 552.20s]  flexibility and simplicity. If the network implements a piece of
+[552.20s -> 554.68s]  functionality to try to help the endpoints,
+[554.68s -> 557.72s]  then it is assuming what the endpoints do.
+[557.72s -> 560.92s]  For example, when a wireless link layer uses retransmissions
+[560.92s -> 564.36s]  to improve reliability so TCP can work better,
+[564.36s -> 567.56s]  it's assuming that the increased latency of the retransmissions is worth
+[567.56s -> 570.76s]  the reliability. This isn't always true. There are
+[570.76s -> 574.68s]  protocols other than TCP where reliability isn't so important,
+[574.68s -> 578.12s]  which might rather send a new different packet than retry sending an old
+[578.12s -> 580.20s]  one. But because the link layer has
+[580.20s -> 584.60s]  incorporated improved reliability, these other protocols are stuck with it.
+[585.24s -> 589.08s]  This can and does act as an impediment to an innovation and progress.
+[589.08s -> 592.68s]  As the layers start to add optimizations, assuming what the layers above and
+[592.68s -> 594.92s]  below them do, it becomes harder and harder to
+[594.92s -> 598.92s]  redesign the layers. In the case of Wi-Fi, it's a link layer
+[598.92s -> 602.12s]  that assumes certain behavior at the network and transport layers.
+[602.12s -> 605.40s]  If you invent a new transport or network layer, it's likely going to
+[605.40s -> 608.36s]  assume how Wi-Fi behaves so it can perform well.
+[608.36s -> 612.76s]  In this way, the network design becomes calcified and ossified and really hard
+[612.76s -> 616.92s]  to change. In terms of long-term design and
+[616.92s -> 619.80s]  network evolution, the strong end-to-end argument is
+[619.80s -> 622.60s]  tremendously valuable. The tension is that in terms of
+[622.60s -> 626.12s]  short-term design and performance, network engineers and operators often
+[626.12s -> 628.92s]  don't follow it. So over time the network performs
+[628.92s -> 632.60s]  better and better, but becomes harder and harder to change.

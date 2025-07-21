@@ -1,0 +1,2093 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 11.12s]  Alright, so today's going to be the second of the basic systems lectures, and now we're
+[11.12s -> 15.32s]  going to move on to sort of multi-machine optimization.
+[15.32s -> 21.84s]  And so the focus today is going to be all about parallelism across machines.
+[21.84s -> 27.52s]  And so the goal today is going to move from optimizing a single GPU's throughput
+[27.52s -> 32.32s]  to being able to understand the complexities and the details that are required to train
+[32.32s -> 34.48s]  really large models, right?
+[34.48s -> 39.04s]  When models get large, they no longer fit on a single GPU, so you've got to split up your
+[39.04s -> 43.96s]  models across different machines, but also you've got to be able to leverage all the
+[43.96s -> 48.44s]  different servers that you have in order to train these models quickly.
+[48.44s -> 53.24s]  So we've got both compute and memory concerns that we're going to have to deal with.
+[53.24s -> 57.22s]  And communication across different machines, it's going to be quite heterogeneous.
+[57.22s -> 61.98s]  You have different kinds of communication across GPUs at different levels of hierarchy.
+[61.98s -> 65.58s]  And so this is going to lead to different parallelization paradigms.
+[65.58s -> 69.90s]  People use many different parallelization strategies all together at once, and we're
+[69.90s -> 74.18s]  going to talk through each one of the very popular ones, and then we'll talk about
+[74.18s -> 78.78s]  how you combine them together in order to efficiently train a very large model.
+[78.78s -> 83.28s]  And then I'm going to end the lecture with sort of looking at some examples of how people
+[83.32s -> 90.32s]  are actually using these parallelization strategies to run their large-scale distributed training runs.
+[92.32s -> 95.92s]  And so that's going to roughly map to the different parts of this lecture.
+[95.92s -> 99.20s]  We're just going to talk about the basics of networking first, and then we're going
+[99.20s -> 104.88s]  to talk about how do each of these sort of networking hardware concepts map to different
+[104.88s -> 110.04s]  parallelization strategies, and then finally some case studies to close off with to show
+[110.04s -> 112.68s]  you how it all comes together, right?
+[113.28s -> 119.04s]  I told you about GPU scaling last week, and it's quite impressive seeing this super
+[119.04s -> 123.48s]  exponential curve of flops per GPU going way, way up.
+[123.48s -> 130.52s]  But if we want to rapidly scale out both our compute and memory, a single GPU isn't enough, right?
+[130.52s -> 135.72s]  We're going to have to wait for another couple years for this curve to continue
+[135.72s -> 137.24s]  going upwards and upwards and upwards.
+[137.24s -> 142.12s]  So if we want to train a really powerful language model here and now today,
+[142.16s -> 145.28s]  well, we have to rely on multi-machine parallelism.
+[145.28s -> 149.36s]  So if we look at the world's fastest supercomputers, that's what's being shown
+[149.36s -> 154.96s]  on the right here, the fastest supercomputers have exa-flops and exa-flops of compute.
+[154.96s -> 158.12s]  Those are kind of the green lines that you see over there.
+[158.12s -> 162.00s]  That's what you're really going to have to rely on if you're going to try to train the biggest,
+[162.00s -> 165.08s]  baddest language models today.
+[165.08s -> 170.32s]  And so that's the compute side of why you want to think about multi-machine parallelism.
+[170.32s -> 173.88s]  But we've also got a memory angle for thinking about the same thing, right?
+[173.88s -> 178.56s]  So these two are really the core resources and the core concerns that you're going to have to think about.
+[178.56s -> 182.20s]  So in terms of memory, right, many of the models are getting quite big.
+[182.20s -> 186.48s]  And of course, you know, memory on GPUs is also growing but not quite as quickly.
+[186.48s -> 190.04s]  And a single GPU is not going to be able to fit these models, right?
+[190.04s -> 193.96s]  Maybe eventually in the distant future, we won't have to worry about a lot of these.
+[193.96s -> 197.20s]  But we've got, you know, billions and billions of parameters.
+[197.20s -> 200.04s]  They're not going to fit very nicely into a single GPU.
+[200.04s -> 204.60s]  So we have to be very respectful of the memory constraints that we have.
+[204.60s -> 207.48s]  So those are kind of the realities that we have to deal with.
+[207.48s -> 211.32s]  And what are kind of the tools that we have to have to be able to handle these?
+[211.32s -> 217.20s]  Well, you know, GPUs, I'm sure you've noticed in the class cluster, don't come in sort of singletons, right?
+[217.20s -> 223.28s]  A single machine will have multiple GPUs within the same sort of physical rack.
+[223.28s -> 224.40s]  And so here's an example.
+[224.40s -> 228.32s]  I took this, I think, from the GPT NeoX paper.
+[228.76s -> 235.20s]  But this is an old example, but the same lesson applies to the H100 machines that you have in class.
+[235.20s -> 237.52s]  So here, there's eight different GPUs, right?
+[237.52s -> 242.52s]  They're connected to the various CPUs through, you know, fast interconnects.
+[242.52s -> 245.36s]  Within each GPUs, you see this NV switch thing at the bottom.
+[245.36s -> 249.16s]  This is very, very fast connections across these eight GPUs.
+[249.16s -> 253.16s]  But if these eight GPUs want to talk to GPUs on a different machine,
+[253.16s -> 255.64s]  they're going to have to go through a networking switch.
+[255.68s -> 258.48s]  And you see this purple line that says HDR InfiniBand,
+[258.48s -> 261.08s]  you know, that's a much slower connection
+[261.08s -> 262.84s]  compared to the NV link connection, right?
+[262.84s -> 264.96s]  You can sort of see the difference in the throughput.
+[264.96s -> 268.24s]  That's like about eight times slower per lane.
+[268.24s -> 271.36s]  And so this kind of hardware hierarchy that we have
+[271.36s -> 273.16s]  is going to have big implications
+[273.16s -> 274.20s]  for how we're going to end up
+[274.20s -> 276.64s]  paralyzing our models in practice, right?
+[276.64s -> 279.40s]  And so you can kind of keep this mental model with you
+[279.40s -> 280.84s]  as I talk through these things.
+[280.84s -> 283.24s]  You know, we have very, very fast connections
+[283.24s -> 284.48s]  within a single machine.
+[284.52s -> 287.48s]  And then when we go across machines, it's going to get slower.
+[287.48s -> 290.84s]  And then depending on the kind of hardware we're using,
+[290.84s -> 293.32s]  there might even be another level of slowness
+[293.32s -> 297.12s]  once we go beyond, let's say, 256 GPUs network together.
+[299.24s -> 301.28s]  Many of you may already know this,
+[301.28s -> 303.40s]  having taken systems or networking classes,
+[303.40s -> 305.96s]  but here's a very, very brief refresher
+[305.96s -> 308.72s]  on collective communication operations.
+[308.72s -> 310.60s]  And the reason why I'm going to bring this up
+[310.60s -> 313.84s]  is there is one particular important sort of identity
+[314.04s -> 316.24s]  or equivalence that you will kind of need to know
+[316.24s -> 318.60s]  to really understand some of the finer points
+[318.60s -> 320.40s]  of the performance characteristics
+[320.40s -> 322.40s]  of the parallelization algorithms, right?
+[322.40s -> 323.96s]  So I'll talk through these,
+[323.96s -> 326.48s]  and then I'll talk through one important
+[326.48s -> 328.24s]  sort of performance implication.
+[328.24s -> 330.36s]  So the first one, which all of you
+[330.36s -> 332.12s]  probably have heard of, is all reduced, right?
+[332.12s -> 335.32s]  So you have four machines, four ranks in this case,
+[335.32s -> 337.64s]  each one having its own sort of piece of data.
+[337.64s -> 338.48s]  And what you'd like to do
+[338.48s -> 340.20s]  is perform some sort of reduction operation.
+[340.20s -> 342.76s]  Let's say I want to sum all these inputs.
+[342.76s -> 345.56s]  And then I want the output to be sort of copied over
+[345.56s -> 348.08s]  to every single machine, right?
+[348.08s -> 350.36s]  And this is gonna have roughly the cost
+[350.36s -> 352.64s]  of like two times the total number of things
+[352.64s -> 354.16s]  that you're already using.
+[355.24s -> 356.88s]  You have a broadcast operation,
+[356.88s -> 360.04s]  and here I'm taking a single sort of input from rank two,
+[360.04s -> 361.48s]  and I'd like to copy it out
+[361.48s -> 363.12s]  to all of the remaining ranks, right?
+[363.12s -> 365.24s]  And this is gonna have roughly on the order
+[365.24s -> 368.52s]  of one times the total number of sort of outputs
+[368.52s -> 370.28s]  in terms of the communication cost.
+[370.28s -> 371.76s]  And then we've got reduction,
+[371.76s -> 372.92s]  where we got different inputs,
+[372.92s -> 374.16s]  and that's gonna be summed up
+[374.16s -> 375.92s]  and then sent only to one machine.
+[375.92s -> 378.28s]  And then the two that are quite important,
+[378.28s -> 380.48s]  even though these may not be quite as common,
+[380.48s -> 382.48s]  is gonna be the all-gather and scatter, right?
+[382.48s -> 384.64s]  So all-gather is an operation
+[384.64s -> 387.96s]  where I'm taking a single sort of subcomponent
+[387.96s -> 390.20s]  of let's say my parameters from rank zero,
+[390.20s -> 392.96s]  and I'm copying it over to all the ranks.
+[392.96s -> 394.32s]  Same thing with rank one, two, three.
+[394.32s -> 396.12s]  So each of these are handling different parts
+[396.12s -> 397.28s]  of let's say the parameters,
+[397.28s -> 399.16s]  and they're copied over to the rest of the machines.
+[399.16s -> 402.48s]  So that's sort of copying what I have to everyone else.
+[402.48s -> 404.84s]  And the reduced scatter, which is,
+[404.84s -> 408.40s]  I'm taking each of the rows, let's say,
+[408.40s -> 410.48s]  I'm summing them up, and then I'm sending the result
+[410.48s -> 412.40s]  only to rank zero, right?
+[412.40s -> 415.04s]  So this is a partial version of an all-reduce,
+[415.04s -> 417.56s]  and hopefully this diagram makes it clear
+[417.56s -> 419.84s]  how sort of reduced scatter works.
+[419.84s -> 421.80s]  And so all-gather and reduced scatter
+[421.80s -> 424.68s]  are quite important, because in some sense,
+[424.68s -> 426.68s]  they are the primitive by which
+[426.68s -> 429.48s]  many of the parallelization algorithm are gonna be built.
+[429.48s -> 433.20s]  And so this is kind of an important sort of equivalence
+[433.20s -> 436.36s]  or an identity, I will refer to it one or two times
+[436.36s -> 438.36s]  as sort of key points in this lecture.
+[438.36s -> 440.08s]  If you wanna do an all-reduce, right,
+[440.08s -> 444.22s]  let's say I've got different GPUs, right, A, B, C, D,
+[444.22s -> 446.04s]  and each of the GPUs are handling
+[446.04s -> 447.50s]  a different data point, right?
+[447.50s -> 448.92s]  And so I've got different gradients
+[448.92s -> 450.24s]  for each of these data points,
+[450.24s -> 452.00s]  and I'm gonna need to sum those gradients,
+[452.00s -> 453.76s]  and then I need to pass all of those gradients
+[453.76s -> 454.88s]  back to the GPUs, right?
+[454.92s -> 457.12s]  This is a classic data parallel operation
+[457.12s -> 459.36s]  that I might need to do across my four GPUs.
+[459.36s -> 461.40s]  So that would be an all-reduce.
+[461.40s -> 464.80s]  One important thing, though, is this could be replaced
+[464.80s -> 467.56s]  with two operations, a reduced scatter and an all-gather,
+[467.56s -> 470.48s]  where a reduced scatter is going to sum
+[470.48s -> 472.04s]  sort of each of the rows,
+[472.04s -> 474.40s]  and then leave the result of the rows
+[474.40s -> 476.08s]  in, let's say, GPUs zero, one, two, three,
+[476.08s -> 477.64s]  respectively, right?
+[477.64s -> 479.72s]  And then I'm gonna do an all-gather
+[479.72s -> 483.16s]  to sort of copy those back out to the remaining GPUs.
+[483.16s -> 486.32s]  So each GPU now is getting a full sum
+[486.32s -> 488.60s]  of a part of the parameters,
+[488.60s -> 490.12s]  and then it's gonna copy it back
+[490.12s -> 491.52s]  to the remaining workers.
+[493.00s -> 495.04s]  And in the bandwidth-limited regime,
+[495.04s -> 497.08s]  this is basically the best that you can do, right?
+[497.08s -> 498.44s]  All-reduce, the best that you can do
+[498.44s -> 501.46s]  is roughly matching the bandwidth
+[501.46s -> 503.60s]  that you can get out of a reduced scatter and all-gather,
+[503.60s -> 504.76s]  and you can convince yourself this
+[504.76s -> 506.06s]  by writing out how many
+[506.06s -> 507.92s]  sort of communication operations happen
+[507.92s -> 510.34s]  in both all-reduce and the right-hand side.
+[513.24s -> 516.24s]  The final thing that I want to sort of briefly touch on
+[516.24s -> 518.20s]  before I sort of move on to talking about
+[518.20s -> 519.68s]  the parallelization algorithms,
+[519.68s -> 520.72s]  and this is like the one place
+[520.72s -> 523.08s]  I'll talk about GPU versus TPU.
+[523.08s -> 524.56s]  Most of the discussion today
+[524.56s -> 527.62s]  can actually abstract out the underlying hardware,
+[527.62s -> 529.66s]  but there is actually sort of one important thing
+[529.66s -> 530.84s]  that I'll mention up front
+[530.84s -> 533.64s]  so that I can refer to it later as I talk through this.
+[534.96s -> 537.24s]  How do we network together different machines
+[537.24s -> 540.16s]  or different sort of accelerators in sort of GPUs?
+[540.16s -> 544.12s]  Well, as I showed you in the GPT NeoX slide here,
+[544.12s -> 546.46s]  how in the GPU world this generally works
+[546.46s -> 549.06s]  is you've got nodes, single machines,
+[549.06s -> 550.68s]  that contain, let's say, eight GPUs,
+[550.68s -> 552.42s]  and then you've got these switches
+[552.42s -> 555.76s]  that connect fairly quickly to each other.
+[555.76s -> 558.00s]  And these machines are connected all to all
+[558.00s -> 560.60s]  up to about 256 GPUs.
+[560.60s -> 562.60s]  So that's an important threshold,
+[562.60s -> 564.40s]  up until which you have very fast,
+[564.40s -> 567.08s]  arbitrary communication between machines.
+[567.08s -> 569.84s]  And then, above that, you're actually gonna need
+[570.36s -> 572.84s]  much more slow communication,
+[572.84s -> 574.90s]  these sort of leaf switches and spine switches,
+[574.90s -> 576.66s]  once you go beyond sort of roughly
+[576.66s -> 578.96s]  a single rack's worth of GPU.
+[578.96s -> 580.88s]  On the other hand, if you look at
+[580.88s -> 582.74s]  sort of TPU design from Google,
+[582.74s -> 584.66s]  they actually take a very different approach
+[584.66s -> 587.60s]  to networking their machines.
+[587.60s -> 589.60s]  You've got a single sort of TPU chip,
+[589.60s -> 593.04s]  and they all talk to their neighbors very, very quickly.
+[593.04s -> 596.00s]  And so this is a very sort of easily expandable,
+[596.00s -> 597.60s]  what they call toroidal mesh,
+[597.60s -> 599.72s]  but you can only talk to your neighbors.
+[600.60s -> 602.00s]  And the reason why I'm talking about this
+[602.00s -> 603.82s]  right after the all-reduce slide
+[603.82s -> 605.72s]  is if you think about doing these kinds
+[605.72s -> 606.84s]  of collective communications,
+[606.84s -> 609.52s]  like all-reduce or reduced scatter,
+[609.52s -> 611.04s]  you can implement them just as efficiently
+[611.04s -> 612.88s]  on a toroidal mesh than you can
+[612.88s -> 614.74s]  on an all-to-all connection.
+[614.74s -> 616.12s]  And so if you're optimizing purely
+[616.12s -> 617.78s]  for collective communications,
+[617.78s -> 620.76s]  it makes sense to think about things like TPU networking
+[620.76s -> 621.92s]  rather than GPU networking.
+[621.92s -> 624.16s]  I'll talk a little bit about pros and cons of this
+[624.16s -> 627.80s]  later as I go through different parallelization operations.
+[628.76s -> 631.68s]  Okay, so just to put this together,
+[631.68s -> 633.00s]  now we're gonna start talking about
+[633.00s -> 634.76s]  a new unit of sort of compute.
+[634.76s -> 637.50s]  Instead of the GPU, the new unit is the data center.
+[637.50s -> 638.88s]  The whole data center is gonna be
+[638.88s -> 640.92s]  the thing that we're gonna be doing.
+[640.92s -> 643.56s]  And now we're gonna try to come up with algorithms
+[643.56s -> 644.82s]  and sort of sharding strategies
+[644.82s -> 647.10s]  that get us two different things.
+[647.10s -> 649.68s]  The first one is linear memory scaling.
+[649.68s -> 652.28s]  So as I scale up the number of GPUs,
+[652.32s -> 654.36s]  the sort of biggest model that I can train
+[654.36s -> 656.12s]  is gonna scale linearly with that.
+[656.12s -> 657.36s]  So I can train bigger and bigger models
+[657.36s -> 659.12s]  if I really want to.
+[659.12s -> 661.24s]  I also want linear compute scale.
+[661.24s -> 662.84s]  As I get more and more GPUs,
+[662.84s -> 665.04s]  the useful computation that I'm doing
+[665.04s -> 667.82s]  to train the model scales linearly.
+[669.00s -> 670.56s]  And then finally, a lot of this,
+[670.56s -> 672.52s]  these algorithms are gonna be implemented
+[672.52s -> 674.04s]  by just calling these very simple
+[674.04s -> 676.64s]  collective communications primitives in various ways.
+[676.64s -> 677.80s]  And so when we think about
+[677.80s -> 681.88s]  the performance characteristics of these parallel algorithms,
+[682.48s -> 684.92s]  it suffices to reason about basically counting
+[684.92s -> 686.60s]  the collective communications primitives.
+[686.60s -> 688.72s]  So that's kind of an important way to think about these.
+[688.72s -> 690.16s]  We don't go all the way down
+[690.16s -> 693.48s]  to the low-level implementation of these algorithms here.
+[693.48s -> 696.46s]  Okay, any questions, part one?
+[696.46s -> 697.30s]  Yes.
+[697.30s -> 699.72s]  All right, after that, but from the previous slide,
+[699.72s -> 700.92s]  does it mean that's better to do
+[700.92s -> 702.40s]  reduced-scatter than the small-gatherer
+[702.40s -> 704.62s]  rather than the all-reduced algorithm?
+[704.62s -> 705.88s]  Right, so this slide, right?
+[705.88s -> 706.72s]  Yeah.
+[706.72s -> 707.54s]  So the conclusion of this slide
+[707.54s -> 708.76s]  is that they're equivalent, right?
+[708.76s -> 710.32s]  And I think if you think about something
+[710.32s -> 714.44s]  like parallel, doing gradient descent in parallel,
+[715.30s -> 717.76s]  all-reduced is a very natural operation to do
+[717.76s -> 719.56s]  because you'll scatter your, sorry,
+[719.56s -> 722.32s]  you'll distribute your data to different machines
+[722.32s -> 723.56s]  and then you'll have to all reduce
+[723.56s -> 725.40s]  your gradients together, right?
+[725.40s -> 727.84s]  But what I'm saying is this very natural thing to do
+[727.84s -> 729.80s]  of all-reduced can actually be written
+[729.80s -> 732.76s]  as a sum of two different operations and they're equivalent.
+[732.76s -> 735.64s]  So there's no performance sort of hit
+[735.64s -> 737.94s]  by going from this left representation to this right one,
+[737.94s -> 739.14s]  at least in bandwidth.
+[739.14s -> 741.66s]  And that's gonna have important implications
+[741.66s -> 743.20s]  in maybe like five slides.
+[743.20s -> 746.10s]  So you can wait a little bit to see why I mentioned this.
+[747.34s -> 750.86s]  Okay, any other questions?
+[750.86s -> 752.50s]  Good, okay.
+[753.92s -> 755.34s]  So now we're gonna get started.
+[755.34s -> 757.86s]  In some sense, this is kind of the exciting
+[757.86s -> 760.70s]  algorithmic meat of the lecture.
+[760.70s -> 765.46s]  And there's three kinds of parallelism strategies,
+[765.46s -> 766.62s]  parallelism things that we should
+[766.62s -> 767.82s]  really be thinking about.
+[767.82s -> 770.26s]  So the first one is data parallelism.
+[770.26s -> 774.06s]  So data parallelism at a high level is the idea of
+[774.06s -> 776.42s]  I'm gonna roughly copy the parameters
+[776.42s -> 777.90s]  across my different GPUs.
+[777.90s -> 780.54s]  I'm not gonna worry about splitting my parameters up,
+[780.54s -> 783.66s]  but I will take my batch and I will split my batch up
+[783.66s -> 785.70s]  and different GPUs or different machines
+[785.70s -> 788.82s]  will get different slices of my batch, right?
+[788.82s -> 790.14s]  So that's data parallelism.
+[790.14s -> 793.28s]  There's lots of subtleties in how we execute that.
+[793.28s -> 795.86s]  Model parallelism now is starting to say,
+[795.86s -> 798.02s]  okay, I don't want all my GPUs
+[798.02s -> 800.10s]  to have all the different parts of my model.
+[800.10s -> 801.46s]  As my models get bigger,
+[801.46s -> 802.90s]  that's gonna be a very big problem.
+[802.90s -> 805.46s]  So I need to cut up my model in very clever ways
+[805.46s -> 808.26s]  and I need my GPU to handle different parts of my model.
+[808.26s -> 810.70s]  So that's gonna be model parallelism.
+[810.70s -> 815.02s]  And then the final piece is kind of activation parallelism.
+[815.02s -> 817.26s]  We don't really think too much about activations
+[817.26s -> 818.26s]  in our day-to-day lives
+[818.26s -> 821.94s]  because the PyTorch handles it very transparently.
+[821.94s -> 824.22s]  But as the models get bigger
+[824.22s -> 826.60s]  and the sequence lengths get longer,
+[826.60s -> 829.70s]  the activation memory starts to be a really big problem.
+[829.70s -> 831.68s]  So if you want to train these really big models
+[831.68s -> 833.42s]  with big, big batch sizes,
+[833.42s -> 835.00s]  you have to somehow manage
+[835.00s -> 837.00s]  the memory footprint of your activations.
+[837.00s -> 838.62s]  And so we have to split those up too.
+[838.62s -> 840.96s]  So there's some ways to handle that, right?
+[840.96s -> 842.78s]  And when we put all these together,
+[842.78s -> 844.52s]  we will have all the tools we need
+[844.52s -> 847.62s]  in order to scale up both compute and memory gracefully
+[847.62s -> 849.86s]  as we have lots and lots of machines.
+[850.18s -> 853.14s]  So these are kind of the core conceptual objects
+[853.14s -> 854.86s]  and now we're gonna talk about implementing
+[854.86s -> 856.50s]  each of these ideas efficiently.
+[858.98s -> 860.90s]  So the starting point of data parallelism
+[860.90s -> 863.30s]  is just sort of SGD, right?
+[863.30s -> 867.20s]  If we're doing very naive batch stochastic gradient descent
+[867.20s -> 870.50s]  the formula for doing this looks like this equation
+[870.50s -> 873.86s]  that I have right here on the slide right here.
+[873.86s -> 876.26s]  I'm taking a batch size capital B
+[876.26s -> 878.04s]  and I'm gonna sum up all those gradients
+[878.04s -> 880.48s]  and I'm gonna update my parameters, right?
+[880.48s -> 883.08s]  So naive data parallelism is just saying,
+[883.08s -> 885.04s]  all right, take your batch size B,
+[885.04s -> 887.72s]  split that up and send that to different machines.
+[887.72s -> 891.24s]  Each machine will compute some part of the sum
+[891.24s -> 894.00s]  and then I will exchange all of my gradients together
+[894.00s -> 896.44s]  to synchronize after each sort of,
+[896.44s -> 898.72s]  before each gradient step I will synchronize my gradients
+[898.72s -> 901.60s]  and then I will take a parameter update, right?
+[901.60s -> 903.96s]  So now I've been talking to you about compute
+[903.96s -> 905.36s]  and memory scaling and all these things
+[905.36s -> 907.20s]  so let's just talk through
+[907.24s -> 909.68s]  what it looks like for each of these, right?
+[909.68s -> 913.96s]  So for compute scaling, data parallelism is pretty great.
+[913.96s -> 917.64s]  Each machine, each GPU is gonna get B over M examples
+[917.64s -> 919.96s]  and if my batch size is big enough,
+[919.96s -> 923.00s]  each GPU is gonna get a pretty decent batch size,
+[923.00s -> 926.04s]  micro batch size and it's able to hopefully
+[926.04s -> 929.12s]  saturate its compute, okay, so that's good.
+[929.12s -> 930.92s]  What's the communication overhead?
+[930.92s -> 933.96s]  Well, I'm gonna have to transmit twice the number
+[933.96s -> 936.00s]  of my parameters every batch.
+[936.04s -> 938.32s]  Remember, an all reduce is gonna roughly be
+[938.32s -> 940.68s]  twice the amount of stuff that you're all reducing
+[940.68s -> 943.16s]  in terms of communication cost.
+[943.16s -> 945.40s]  And so this is okay if the batch size is big, right?
+[945.40s -> 947.00s]  If my batch sizes are really big,
+[947.00s -> 949.36s]  I can mask the communication overhead
+[949.36s -> 953.24s]  of having to synchronize my gradients every now and then.
+[953.24s -> 955.96s]  Memory scaling, I'm not touching this at all, right?
+[955.96s -> 959.00s]  Every GPU needs to replicate the number of parameters
+[959.00s -> 961.24s]  it needs to replicate, the optimizer state,
+[961.24s -> 964.40s]  it's pretty bad for memory scaling, right?
+[964.48s -> 968.00s]  So if we didn't have to worry about memory at all,
+[968.00s -> 970.08s]  this is an okay strategy.
+[971.52s -> 975.12s]  But I think in practice, memory is a problem, right?
+[975.12s -> 976.68s]  Like I think everyone of you sitting here
+[976.68s -> 979.80s]  has experienced trying to put a big model onto a GPU
+[979.80s -> 982.60s]  and PyTorch telling you, oh, you're out of memory.
+[982.60s -> 985.68s]  And this is really a problem with your training as well
+[985.68s -> 988.48s]  because if you can fit more and more batch sizes,
+[988.48s -> 992.00s]  that's gonna make the data parallel more efficient.
+[992.04s -> 995.44s]  And so ideally, you'd like to save on memory.
+[995.44s -> 998.16s]  So let's take a closer look at the memory usage
+[998.16s -> 1001.24s]  of naive data parallel, right?
+[1001.24s -> 1004.36s]  And the memory situation is actually worse than it looks,
+[1004.36s -> 1006.72s]  it's actually quite terrible.
+[1006.72s -> 1009.92s]  Because you've done this in assignment one,
+[1009.92s -> 1012.92s]  but we can sort of think about how many copies
+[1012.92s -> 1015.20s]  of our model we need to sort of store,
+[1015.20s -> 1016.52s]  and it's very large, right?
+[1016.52s -> 1018.24s]  Depending on the precision by which we're doing
+[1018.24s -> 1021.16s]  some of our training, you're gonna need to store
+[1021.20s -> 1025.20s]  something like 16 bytes of data per parameter.
+[1025.20s -> 1027.20s]  And in fact, you need to store something like five copies
+[1027.20s -> 1028.44s]  of your weights.
+[1028.44s -> 1031.20s]  And this is really quite bad
+[1031.20s -> 1032.76s]  because if you just wanna think about
+[1032.76s -> 1034.28s]  your model parameters, technically,
+[1034.28s -> 1035.72s]  you only need two bytes, right?
+[1035.72s -> 1038.08s]  So where did that factor of eight come from?
+[1038.08s -> 1039.88s]  Well, at least you need gradients.
+[1039.88s -> 1042.04s]  And if you're computing your gradients in BF16,
+[1042.04s -> 1043.56s]  that's another two bytes.
+[1043.56s -> 1045.72s]  But then your optimizer state kind of shows up,
+[1045.72s -> 1047.92s]  and that's a really big problem
+[1047.92s -> 1050.80s]  because you've got four bytes of sort of master weights,
+[1051.28s -> 1052.92s]  the things that you're kind of accumulating into SGD,
+[1052.92s -> 1055.92s]  like these intermediate sort of sums that you're doing.
+[1055.92s -> 1058.72s]  You need four or two bytes for Adam's
+[1058.72s -> 1060.28s]  first moment estimates because remember,
+[1060.28s -> 1062.84s]  Adam keeps track of historical gradients.
+[1062.84s -> 1064.96s]  And then Adam also needs second moment estimates,
+[1064.96s -> 1067.48s]  kind of like the variance of the gradients
+[1067.48s -> 1068.64s]  that you've gotten in the past.
+[1068.64s -> 1071.68s]  And that's gonna need another four or two bytes.
+[1071.68s -> 1073.80s]  And so what originally looked fine
+[1073.80s -> 1076.36s]  is actually now looking quite grim.
+[1077.32s -> 1082.32s]  And so the 16x, if I just sort of draw it as a picture,
+[1082.68s -> 1085.16s]  you realize that most of your memory usage,
+[1085.16s -> 1087.60s]  at least in terms of kind of parameter memory,
+[1087.60s -> 1091.20s]  is really being dominated by the optimizer states
+[1091.20s -> 1093.36s]  of your Adam optimizer, right?
+[1093.36s -> 1097.52s]  So your memory consumed is gonna be a function
+[1097.52s -> 1101.64s]  of how many bytes are being used for your optimizer state
+[1101.64s -> 1104.32s]  and that's generally gonna be even more
+[1104.32s -> 1107.64s]  than the core parameter and gradient memory usage.
+[1107.64s -> 1111.60s]  And so for a simple example of like a 7.5B model
+[1111.60s -> 1114.24s]  distributed over 64 accelerators,
+[1114.24s -> 1116.36s]  you're using a ton of memory, right?
+[1116.36s -> 1118.88s]  And this memory scales linearly upwards,
+[1118.88s -> 1121.42s]  total memory at least, scales linearly upwards
+[1121.42s -> 1122.68s]  with the number of GPUs.
+[1122.68s -> 1125.48s]  So that's no good at all.
+[1125.48s -> 1127.60s]  But once we sort of look at this picture,
+[1127.60s -> 1129.76s]  we get some very simple ideas.
+[1129.76s -> 1134.00s]  You might wonder, clearly, or maybe not clearly,
+[1134.52s -> 1135.80s]  do I need the parameters and gradients
+[1135.80s -> 1137.40s]  to be copied across devices?
+[1137.40s -> 1140.36s]  That seems necessary to do data parallel.
+[1140.36s -> 1143.06s]  But do I really need all the optimizer states
+[1143.06s -> 1145.44s]  to be on every single machine, right?
+[1145.44s -> 1147.12s]  And once you ask that question,
+[1147.12s -> 1149.16s]  you can maybe get to the second row here
+[1149.16s -> 1153.14s]  and this is gonna be called optimizer state sharding.
+[1153.14s -> 1155.44s]  And if we could do that, then at least in this case,
+[1155.44s -> 1158.80s]  we can go from 120 gigabytes of total memory usage
+[1158.80s -> 1162.72s]  down to 31.4 and then maybe we can start sharding
+[1162.72s -> 1166.22s]  the gradients and then now we can get to 16.6 gigabytes
+[1166.22s -> 1167.06s]  of memory usage.
+[1167.06s -> 1169.34s]  And then if we also shard the parameters,
+[1169.34s -> 1171.96s]  we can go all the way down to 1.9 gigabytes
+[1171.96s -> 1172.80s]  of memory usage.
+[1172.80s -> 1174.86s]  And that would be a pretty good place to be
+[1174.86s -> 1177.32s]  because now we sort of fully sharded out
+[1177.32s -> 1179.52s]  all of sort of the optimizer state and parameter
+[1179.52s -> 1181.08s]  and gradient memory that we need.
+[1181.08s -> 1181.92s]  Yes.
+[1181.92s -> 1184.88s]  Sorry, why could we shard the optimizer state
+[1184.88s -> 1189.40s]  if we're doing, I guess, the gradient computation
+[1189.40s -> 1191.76s]  on each of them and then scatter them
+[1191.76s -> 1192.88s]  through the same model?
+[1192.88s -> 1193.72s]  Right.
+[1193.72s -> 1195.96s]  How can we add them?
+[1195.96s -> 1197.60s]  That is a very good question and the question is,
+[1197.60s -> 1199.38s]  how can we shard the optimizer state?
+[1199.38s -> 1201.56s]  You know, when we're doing data parallel, right,
+[1201.56s -> 1204.96s]  GPU zero has to be responsible for data point one.
+[1204.96s -> 1207.60s]  So clearly it needs to know about all the parameters
+[1207.60s -> 1208.44s]  and update it.
+[1208.44s -> 1211.48s]  So how can it possibly shard the optimizer state?
+[1211.48s -> 1213.80s]  And in a way, I think zero, which is what this is,
+[1213.80s -> 1218.36s]  this is the zero overhead data parallel sort of optimizer.
+[1218.36s -> 1220.44s]  This is a very, in some ways, clever idea
+[1220.44s -> 1222.52s]  because it shows you that even when you're doing
+[1222.52s -> 1225.72s]  data parallel, you don't actually need to copy everything
+[1225.72s -> 1226.76s]  onto every machine, right?
+[1226.76s -> 1228.76s]  You can be really clever about how you do
+[1228.76s -> 1231.20s]  sort of communications to avoid all of this.
+[1231.20s -> 1233.44s]  So I will talk through exactly this.
+[1233.44s -> 1234.80s]  This is a great question.
+[1236.28s -> 1237.86s]  So what we're gonna do is we're gonna split up
+[1237.86s -> 1239.20s]  the optimizer states, as I said.
+[1239.20s -> 1241.84s]  So the first and second moments are now split up
+[1241.84s -> 1243.80s]  across all of the GPUs.
+[1243.80s -> 1246.14s]  But everyone has the parameters and the gradients, right?
+[1246.14s -> 1247.98s]  So why is this important, right?
+[1247.98s -> 1249.56s]  If I have the parameters and gradients,
+[1249.60s -> 1251.80s]  let's say I'm GPU zero, I have the parameters
+[1251.80s -> 1253.38s]  and gradients for everything.
+[1253.38s -> 1256.12s]  That's enough information for me to compute
+[1256.12s -> 1257.20s]  the full gradient, right?
+[1257.20s -> 1259.22s]  Like the full gradient update for this example
+[1259.22s -> 1260.40s]  can be computed.
+[1260.40s -> 1263.20s]  The only thing I can't do is I can't take
+[1263.20s -> 1265.00s]  that gradient and take an atom step, right?
+[1265.00s -> 1267.60s]  I can't update my parameters unless I see
+[1267.60s -> 1269.24s]  all of the optimizer states, right?
+[1269.24s -> 1271.36s]  So that's kind of the key idea.
+[1271.36s -> 1275.24s]  And so now what's gonna happen is GPU zero
+[1275.24s -> 1277.60s]  is gonna compute the gradients for everything,
+[1277.60s -> 1279.92s]  but GPU zero is now only responsible
+[1279.92s -> 1283.64s]  for updating the parameters for the shard that they own.
+[1283.64s -> 1285.12s]  And that's kind of the key idea, right?
+[1285.12s -> 1286.84s]  We're gonna distribute the work
+[1286.84s -> 1288.56s]  of updating the parameters and then we're gonna
+[1288.56s -> 1290.74s]  synchronize the parameters back.
+[1290.74s -> 1294.10s]  So let me show you in sort of much more gory detail
+[1294.10s -> 1296.64s]  how this works and sort of the reason
+[1296.64s -> 1298.80s]  why it's called zero overhead.
+[1298.80s -> 1300.90s]  So step one, right?
+[1300.90s -> 1304.48s]  Every GPU gets a different data point, let's say, right?
+[1304.48s -> 1306.44s]  I'm just gonna simplify all this batch computation.
+[1306.44s -> 1308.52s]  I have GPU zero through, let's say, four.
+[1308.52s -> 1310.68s]  And every GPU gets a single example
+[1310.68s -> 1312.10s]  and they compute a full gradient
+[1312.10s -> 1314.40s]  on the example that they own.
+[1314.40s -> 1316.96s]  Now what I'm going to do next is I'm going
+[1316.96s -> 1319.22s]  to reduce, scatter the gradients, right?
+[1319.22s -> 1322.76s]  So I'm gonna send the gradients that, you know,
+[1322.76s -> 1324.12s]  I'm gonna collect, in some sense,
+[1324.12s -> 1326.28s]  the gradients that each GPU owns.
+[1326.28s -> 1328.92s]  So GPU zero, let's say, is responsible
+[1328.92s -> 1331.38s]  for this first quarter of the parameters, right?
+[1331.38s -> 1333.98s]  So the parameters are the y-axis here
+[1333.98s -> 1336.08s]  and the x-axis here is GPUs.
+[1336.68s -> 1338.76s]  What we're gonna do is we're gonna reduce scatter
+[1338.76s -> 1341.68s]  to make sure that GPU zero has all
+[1341.68s -> 1344.44s]  of the gradient information from all of the other GPUs
+[1344.44s -> 1347.44s]  for the subset of parameters that it is responsible for.
+[1347.44s -> 1350.12s]  So now it gets this gradient information
+[1350.12s -> 1352.52s]  from GPU one and GPU two and GPU three
+[1352.52s -> 1355.04s]  and that's all reduced into GPU zero.
+[1355.04s -> 1357.04s]  Hopefully that's clear.
+[1357.04s -> 1360.84s]  Now GPU zero has all the information it needs
+[1360.84s -> 1362.56s]  to update its own parameters
+[1362.56s -> 1365.20s]  because it has the optimizer state corresponding
+[1365.24s -> 1366.28s]  to this first part.
+[1366.28s -> 1369.64s]  It has a full summed gradient for this first part
+[1369.64s -> 1372.08s]  and now, so it's gonna take a gradient update
+[1372.08s -> 1374.16s]  on their part of the parameters
+[1374.16s -> 1376.14s]  using gradient and state, right?
+[1376.14s -> 1379.12s]  And so that now, I have the full updated parameters
+[1379.12s -> 1381.92s]  for this subset in my GPU zero
+[1381.92s -> 1383.88s]  and all I need to do is all gather
+[1383.88s -> 1388.50s]  all of the updated parameters back in to all the ranks.
+[1388.50s -> 1390.14s]  Okay, so there's many questions here.
+[1390.14s -> 1390.98s]  I'll start here.
+[1390.98s -> 1391.80s]  Yes?
+[1391.80s -> 1396.40s]  So the question was whether the number of prams communication
+[1396.40s -> 1398.80s]  cost was per machine or it's total.
+[1398.80s -> 1401.20s]  Here it's gonna be total because,
+[1401.20s -> 1404.48s]  so this is gonna be like one fourth of the parameter
+[1404.48s -> 1407.12s]  is gonna be sent three times to this machine
+[1407.12s -> 1409.32s]  and then you repeat that four times.
+[1409.32s -> 1410.16s]  Right?
+[1422.44s -> 1424.24s]  Was that the machine?
+[1424.24s -> 1425.36s]  That was also total.
+[1425.36s -> 1426.20s]  Okay.
+[1426.20s -> 1427.36s]  Yeah, two times number of parameters is total
+[1427.36s -> 1430.20s]  because each block is gonna have to be sent
+[1430.20s -> 1432.14s]  to every other kind of machine.
+[1434.60s -> 1435.82s]  Okay, yes?
+[1435.82s -> 1437.48s]  So this question is not unique
+[1437.48s -> 1439.80s]  to what you're showing here but made me think of it.
+[1439.80s -> 1442.52s]  So Adam and WL, the ones that we showed,
+[1442.52s -> 1445.32s]  seems to assume like largely assume
+[1445.32s -> 1447.36s]  independence of parameters.
+[1447.36s -> 1451.36s]  We've drawn all these like diagrams
+[1451.36s -> 1453.12s]  that show the opposite, you know,
+[1453.12s -> 1455.88s]  like we have connected nodes and all that
+[1455.88s -> 1458.08s]  and it seems especially interesting when we have,
+[1458.08s -> 1459.24s]  when we're trying to split these
+[1459.24s -> 1460.80s]  and update them separately.
+[1461.72s -> 1463.10s]  Does that create any issues?
+[1463.10s -> 1464.98s]  Okay, so the question was Adam W
+[1464.98s -> 1466.96s]  seems to assume parameters operate independently.
+[1466.96s -> 1468.68s]  I'm assuming because you're saying like we track
+[1468.68s -> 1471.76s]  like gradient sums like and then we diagonally
+[1471.76s -> 1473.80s]  sort of update the parameters, right?
+[1473.80s -> 1476.60s]  But we know that that's not fully diagonal
+[1476.60s -> 1478.16s]  and so is there a problem?
+[1478.16s -> 1481.40s]  There have been, you know, better attempts
+[1481.40s -> 1484.88s]  at improving sort of Adam W to not just be diagonal.
+[1484.88s -> 1486.84s]  There's things like K-FAC and all these other
+[1486.84s -> 1489.06s]  like second order style optimizers
+[1489.06s -> 1490.64s]  that people have come up with.
+[1490.64s -> 1491.96s]  They haven't dethroned Adam
+[1491.96s -> 1493.96s]  even though they do have their advantages
+[1493.96s -> 1495.48s]  and there's some really interesting things
+[1495.48s -> 1497.88s]  that you can do with these kinds of improved
+[1497.88s -> 1500.28s]  second order preconditioning methods.
+[1501.14s -> 1502.28s]  Yes?
+[1502.28s -> 1504.96s]  What is the rows that we're reducing over?
+[1504.96s -> 1508.04s]  What is the rows that we're reducing over?
+[1508.88s -> 1511.04s]  So you're asking like what is the rows of this picture?
+[1511.04s -> 1514.80s]  Yeah, so imagine this is like parameters here in the rows.
+[1514.80s -> 1516.96s]  So like GPU zero is responsible
+[1516.96s -> 1518.26s]  for some number of parameters.
+[1518.26s -> 1520.62s]  So this is a block of parameters up top.
+[1520.62s -> 1522.76s]  And so when we do reduce scatter,
+[1522.76s -> 1526.44s]  we're saying take the gradients for example zero
+[1526.44s -> 1527.60s]  for this block of parameters.
+[1527.60s -> 1529.16s]  Take the gradients for example one
+[1529.16s -> 1530.96s]  for this same block of parameters
+[1530.96s -> 1533.50s]  and then sum them all and put them in rank zero.
+[1533.50s -> 1535.36s]  That's kind of what we're saying here.
+[1536.88s -> 1537.72s]  Cool, okay.
+[1538.56s -> 1540.62s]  And kind of the key thing here
+[1540.62s -> 1544.40s]  is we're doing a reduce scatter and an all gather, right?
+[1544.40s -> 1547.40s]  And if you kind of remember what I was saying before,
+[1547.40s -> 1549.84s]  well a reduce scatter and an all gather
+[1549.84s -> 1552.56s]  has the same cost as an all reduce, right?
+[1552.56s -> 1555.46s]  And so there's a little bit of a surprising magic thing
+[1555.46s -> 1557.02s]  that happened here which is that,
+[1557.02s -> 1559.72s]  well we were doing an all reduce before
+[1559.72s -> 1561.08s]  on all the gradients to make sure
+[1561.08s -> 1562.60s]  everyone's gradients were synchronized
+[1562.60s -> 1565.16s]  and that cost us two times the number of parameters.
+[1565.16s -> 1567.44s]  But if we're kind of clever about
+[1567.44s -> 1569.04s]  how we're doing the updates,
+[1569.04s -> 1571.52s]  well we can do a reduce scatter and an all gather
+[1571.52s -> 1574.98s]  and in between the two steps we can do some computation.
+[1574.98s -> 1576.32s]  And that gives us the same amount
+[1576.32s -> 1578.24s]  of compute communication cost
+[1578.24s -> 1579.92s]  but now at least for the optimizer state
+[1579.92s -> 1583.16s]  we fully sharded the optimizer state across the model.
+[1583.16s -> 1585.90s]  So zero stage one is in some sense free
+[1585.90s -> 1588.24s]  in the bandwidth limited regime
+[1588.24s -> 1589.78s]  and gives you memory wins.
+[1590.76s -> 1591.60s]  Yes.
+[1592.44s -> 1595.60s]  So since we can suppress the memory contribution
+[1595.60s -> 1599.00s]  for higher notes, will people modify Adam
+[1599.00s -> 1603.48s]  to do higher moments because it seems like it's free?
+[1603.48s -> 1605.32s]  Wait, what do you mean by
+[1605.32s -> 1608.32s]  you can suppress the higher order contributions?
+[1608.32s -> 1611.32s]  Right, so for the first and second moments
+[1611.32s -> 1616.32s]  the amount of memory per GPU is divided
+[1618.10s -> 1619.26s]  by the number of GPUs?
+[1619.26s -> 1620.58s]  Yes.
+[1620.58s -> 1621.98s]  So it seems like you might as well
+[1621.98s -> 1624.02s]  shove in more moments in there.
+[1624.02s -> 1626.18s]  I see, so you're roughly saying like
+[1626.18s -> 1628.02s]  you could track way more optimizer state
+[1628.02s -> 1628.98s]  to rephrase what you're saying.
+[1628.98s -> 1631.46s]  You could have even more complicated optimizer state
+[1631.46s -> 1634.70s]  because you could divide that by the number of GPUs.
+[1634.70s -> 1637.62s]  While this is true, what we're gonna do next
+[1637.62s -> 1639.42s]  is we're actually gonna make the other components
+[1639.42s -> 1640.90s]  scale with NGPUs.
+[1640.90s -> 1642.34s]  So that's gonna make things in some sense
+[1642.34s -> 1643.50s]  not free anymore, right?
+[1643.50s -> 1645.74s]  Like optimizer state will continue to be the bottleneck
+[1645.74s -> 1647.70s]  if we can divide everything by the number of GPUs.
+[1647.70s -> 1650.40s]  So hopefully that's a reasonable, convincing answer.
+[1651.86s -> 1654.06s]  Okay, so we're gonna build up stage by stage
+[1654.06s -> 1657.50s]  to zero stage three which is more complicated.
+[1657.50s -> 1660.08s]  Zero stage two is still relatively simple.
+[1660.08s -> 1663.50s]  So now hopefully that optimizer state sharding trick
+[1663.50s -> 1665.94s]  made sense, I think that's very cool.
+[1665.94s -> 1668.46s]  So now we wanna shard even more stuff.
+[1668.46s -> 1671.74s]  So I wanna shard the gradients across the machines.
+[1671.74s -> 1675.02s]  So roughly we can do the same kinds of trick
+[1675.02s -> 1679.30s]  as stage one, but there is one additional complexity.
+[1679.30s -> 1681.42s]  And so what's the additional complexity?
+[1681.42s -> 1685.22s]  Well, we can never instantiate a full gradient vector.
+[1685.22s -> 1687.30s]  If I ever do the full backwards pass
+[1687.30s -> 1690.56s]  and I try to compute a full gradient vector,
+[1690.56s -> 1691.94s]  I might go out of memory.
+[1691.94s -> 1694.02s]  So I want my maximum memory usage
+[1694.02s -> 1696.38s]  to basically be bounded by this,
+[1696.38s -> 1698.70s]  which is like full parameters, sharded gradient,
+[1698.70s -> 1700.42s]  sharded optimizer state.
+[1700.42s -> 1702.34s]  And so what we're gonna have to do
+[1702.34s -> 1704.54s]  is when we do the backwards pass,
+[1704.90s -> 1706.26s]  as we're computing the gradient vector,
+[1706.26s -> 1708.26s]  we can't instantiate the full gradient first
+[1708.26s -> 1709.66s]  and then do communication.
+[1709.66s -> 1711.46s]  What we have to do is as we compute
+[1711.46s -> 1713.32s]  the gradients backwards, as soon as we compute
+[1713.32s -> 1714.90s]  like a layer's worth of gradient,
+[1714.90s -> 1716.42s]  we're gonna have to send that over
+[1716.42s -> 1719.56s]  to the corresponding sort of GPU that it belongs to.
+[1721.00s -> 1723.50s]  So this is kind of how it works.
+[1723.50s -> 1724.86s]  It's roughly the same idea.
+[1724.86s -> 1728.36s]  So now everyone has their own batch component.
+[1728.36s -> 1730.02s]  Everyone incrementally goes backwards
+[1730.02s -> 1731.42s]  on the computation graph.
+[1731.42s -> 1733.38s]  And let's say we're gonna operate layer by layer.
+[1733.38s -> 1736.82s]  So layers are sharded atomically to different GPUs.
+[1737.66s -> 1739.50s]  So what we're gonna do then
+[1739.50s -> 1741.94s]  is as we go backwards on the computation graph,
+[1741.94s -> 1744.12s]  after we compute a layer's gradients,
+[1744.12s -> 1745.94s]  immediately call a reduction operation
+[1745.94s -> 1747.50s]  to send this to the right worker.
+[1747.50s -> 1749.10s]  So a layer belongs to some worker,
+[1749.10s -> 1751.38s]  maybe it's like GPU number two in this case.
+[1751.38s -> 1753.62s]  So we're just gonna immediately reduce that,
+[1753.62s -> 1756.94s]  send that to the worker at that point.
+[1756.94s -> 1759.58s]  And gradients are now no longer needed.
+[1759.58s -> 1760.86s]  I don't need to store the gradients
+[1760.86s -> 1762.48s]  on ranks zero, one, and three.
+[1762.48s -> 1764.66s]  So I can immediately free that.
+[1764.66s -> 1766.54s]  And then now we continue this process.
+[1766.54s -> 1767.74s]  And so all the machines
+[1767.74s -> 1769.54s]  have their fully updated gradients.
+[1769.54s -> 1771.42s]  And now they have a full gradient
+[1771.42s -> 1772.96s]  for their share of the parameters.
+[1772.96s -> 1774.42s]  They have a full optimizer state
+[1774.42s -> 1775.84s]  for their share of the parameters.
+[1775.84s -> 1777.80s]  Each machine can update their parameters.
+[1777.80s -> 1780.34s]  And it'll all gather the parameters back together.
+[1781.38s -> 1783.10s]  This looks like it's maybe more communication
+[1783.10s -> 1784.94s]  because you're doing this kind of like
+[1786.18s -> 1788.58s]  reduction operation every layer.
+[1788.58s -> 1790.94s]  But this is only for a small amount of parameters.
+[1790.94s -> 1791.78s]  It's sharded.
+[1791.78s -> 1794.78s]  And so the full communication remains the same.
+[1794.78s -> 1797.32s]  So zero stage two has some more overhead
+[1797.32s -> 1799.66s]  because we have to synchronize layer by layer
+[1799.66s -> 1801.14s]  and make sure that the gradients
+[1801.14s -> 1803.84s]  are properly sent to the right workers.
+[1803.84s -> 1805.62s]  But the overhead is pretty minimal.
+[1805.62s -> 1808.66s]  It's still very simple, fairly straightforward.
+[1808.66s -> 1810.74s]  Now, the last one of these,
+[1810.74s -> 1814.32s]  zero stage three is more complicated for sure.
+[1814.32s -> 1816.18s]  But it allows you the greatest win of all,
+[1816.18s -> 1818.66s]  which is now essentially everything
+[1818.66s -> 1821.50s]  is divided by the number of GPUs that you have.
+[1821.50s -> 1824.50s]  You can get the maximum savings possible.
+[1824.50s -> 1827.10s]  And if you've heard of FSDP,
+[1827.10s -> 1829.66s]  you've probably used that in some aspect
+[1829.66s -> 1831.42s]  of your life in the past.
+[1831.42s -> 1833.54s]  FSDP is exactly zero stage three.
+[1833.54s -> 1834.90s]  So now you'll kind of hopefully today
+[1834.90s -> 1838.58s]  know how FSDP works.
+[1838.58s -> 1840.78s]  So the same idea applies.
+[1840.78s -> 1843.54s]  We're gonna shard everything including the parameters.
+[1843.54s -> 1845.54s]  We're gonna do the same thing as zero stage two,
+[1845.54s -> 1847.58s]  which is we're gonna incrementally communicate
+[1847.58s -> 1849.58s]  and compute things so that we don't keep
+[1849.58s -> 1852.74s]  these big vectors of gradients lying around.
+[1852.74s -> 1855.62s]  And we're gonna send and request parameters on demand
+[1855.62s -> 1857.98s]  while we're stepping through the compute graph,
+[1857.98s -> 1860.14s]  both for the forward and backward passes.
+[1860.14s -> 1862.30s]  As we go through, we're gonna send things around
+[1862.30s -> 1863.30s]  on demand.
+[1863.30s -> 1865.30s]  And of course the key is to do this
+[1865.30s -> 1868.06s]  with as low overhead as possible.
+[1868.06s -> 1870.94s]  I think the thing that's really surprising about FSDP
+[1870.94s -> 1872.70s]  is not that this is possible,
+[1872.70s -> 1876.14s]  but that this is possible with relatively low overhead.
+[1876.14s -> 1877.86s]  You'll see kind of why it's low overhead
+[1877.86s -> 1880.34s]  in the next slide.
+[1881.46s -> 1885.54s]  I admit that this is maybe not the most friendly
+[1885.54s -> 1887.42s]  graphic to start with, but this is, I promise,
+[1887.42s -> 1889.62s]  the baby version of FSDP.
+[1890.66s -> 1893.10s]  The next slide is a little bit more involved.
+[1893.10s -> 1895.30s]  But conceptually, this actually explains everything.
+[1895.30s -> 1899.34s]  So what we're doing is we're gonna have model weights
+[1899.34s -> 1901.42s]  and we're going to be all gathering
+[1901.42s -> 1902.54s]  the model weights as we go.
+[1903.42s -> 1906.06s]  So for each layer, no single GPU
+[1906.06s -> 1907.74s]  is gonna have all of the parameters.
+[1907.74s -> 1909.42s]  So I can't do the normal thing of saying,
+[1909.42s -> 1911.86s]  oh, GPU zero, go ahead and run the forward pass.
+[1911.86s -> 1913.14s]  That's not possible.
+[1913.14s -> 1917.86s]  So GPU zero, let's say, only owns the bottom-most layer.
+[1917.86s -> 1920.54s]  So it does that computation and then it stops and says,
+[1920.54s -> 1922.50s]  it requests all of the parameters
+[1922.50s -> 1923.42s]  from all the other workers.
+[1923.42s -> 1924.90s]  So it stops and it does an all-gather,
+[1924.90s -> 1926.06s]  which is right here.
+[1926.06s -> 1927.82s]  You see, there's the all-gather step.
+[1927.82s -> 1929.26s]  It gathers all the parameters.
+[1929.26s -> 1931.38s]  Now it has the parameters that it needs
+[1931.42s -> 1933.62s]  to do a forward.
+[1933.62s -> 1936.62s]  So it can step forward and sort of compute the layer
+[1936.62s -> 1938.14s]  that it didn't have before.
+[1938.14s -> 1939.82s]  And then now it can free the weights.
+[1939.82s -> 1941.94s]  It doesn't need the weights anymore, get rid of it.
+[1941.94s -> 1943.82s]  Now I can all gather the next layer.
+[1943.82s -> 1945.72s]  I can do another forward, free the weights.
+[1945.72s -> 1946.86s]  And I can repeat this.
+[1946.86s -> 1948.34s]  The activations have to be stored.
+[1948.34s -> 1950.94s]  So the activation memory here is growing.
+[1950.94s -> 1953.26s]  So that's gonna be an eventual problem.
+[1953.26s -> 1954.94s]  But if we ignore activations for the moment,
+[1954.94s -> 1956.90s]  this is great because I load a layer,
+[1956.90s -> 1958.70s]  I do a forward, I free it.
+[1958.70s -> 1960.50s]  The memory overhead is very low here.
+[1960.50s -> 1962.76s]  Once I get kind of to the end,
+[1962.76s -> 1964.54s]  now I can do the same thing with a backward pass.
+[1964.54s -> 1967.22s]  I can call backwards, and every time I move backwards
+[1967.22s -> 1969.26s]  through the neural network,
+[1969.26s -> 1972.14s]  I all gather for the parameters that I need.
+[1972.14s -> 1974.86s]  I can do a reduced scatter to update
+[1974.86s -> 1977.06s]  after the gradients that have been computed,
+[1977.06s -> 1978.34s]  and now I can free the weights.
+[1978.34s -> 1980.58s]  I can free both the gradients that I don't need
+[1980.58s -> 1981.42s]  and the parameters.
+[1981.42s -> 1985.02s]  And at the very end, I've got a fully updated model.
+[1985.02s -> 1986.82s]  And so we've got three different operations
+[1986.82s -> 1987.94s]  that we've gotta worry about here.
+[1987.94s -> 1990.26s]  We've got an all-gather, we've got another all-gather,
+[1990.86s -> 1991.98s]  and then we've got another reduced scatter
+[1991.98s -> 1994.38s]  basically to update the model
+[1994.38s -> 1997.62s]  after we take the gradient update step.
+[1997.62s -> 2000.94s]  So conceptually, this is just a single step
+[2000.94s -> 2005.36s]  beyond zero stage two, but you do kind of see
+[2005.36s -> 2007.54s]  that there is sort of more overhead.
+[2007.54s -> 2010.26s]  So the total communication cost is now higher.
+[2010.26s -> 2012.46s]  We were kind of, before, we had two times
+[2012.46s -> 2013.30s]  the number of parameters.
+[2013.30s -> 2015.32s]  Everything was kind of free in some sense.
+[2015.32s -> 2016.26s]  Now it's not.
+[2016.26s -> 2017.70s]  There's a total of three times
+[2017.70s -> 2019.86s]  the number of parameter communication costs,
+[2020.40s -> 2023.10s]  and there's gonna be cost associated with waiting
+[2023.10s -> 2025.16s]  for these communication things to finish.
+[2027.90s -> 2030.74s]  But I think the really cool thing about FSDP
+[2030.74s -> 2033.60s]  is it's actually surprisingly low overhead.
+[2034.48s -> 2036.62s]  You might imagine that because we're doing
+[2036.62s -> 2039.76s]  this crazy thing of asking for and sending parameters
+[2039.76s -> 2041.42s]  back and forth all the time,
+[2041.42s -> 2043.62s]  that things will be really slow.
+[2043.62s -> 2045.38s]  We have to be communicating all the time.
+[2045.38s -> 2047.52s]  But you can do this core idea
+[2047.52s -> 2050.26s]  of overlapping communication and computation.
+[2050.26s -> 2052.78s]  So you want both your sort of,
+[2052.78s -> 2054.56s]  you want your GPU to be working
+[2054.56s -> 2056.84s]  while also the communication's happening in the background,
+[2056.84s -> 2059.50s]  almost like prefetching so that by the time
+[2059.50s -> 2061.04s]  you need some piece of information,
+[2061.04s -> 2062.32s]  it's already loaded up.
+[2062.32s -> 2063.66s]  It's already been communicated to you,
+[2063.66s -> 2065.48s]  and you're good to go.
+[2065.48s -> 2068.68s]  And so I'll talk through this example at the bottom here,
+[2068.68s -> 2071.04s]  but this is kind of the key to making FSDP
+[2071.04s -> 2073.84s]  actually somewhat efficient.
+[2073.84s -> 2075.84s]  So let's imagine we have a computation graph
+[2075.84s -> 2077.10s]  that looks something like this.
+[2077.70s -> 2082.10s]  W1, W0, plus W2, W0 times X, some input let's say is Y.
+[2082.10s -> 2085.10s]  So some very simple computation graph like this.
+[2085.10s -> 2087.90s]  And then you might run FSDP,
+[2087.90s -> 2090.18s]  and you will get actually a computation
+[2090.18s -> 2092.62s]  and communication that looks like this block diagram
+[2092.62s -> 2093.80s]  at the very end here.
+[2095.14s -> 2097.54s]  So the CPU, it's nice that we did
+[2097.54s -> 2100.16s]  the insight systems example last week
+[2100.16s -> 2102.58s]  because hopefully this diagram will now be clear.
+[2102.58s -> 2106.86s]  The CPU is going to basically dispatch a bunch of commands
+[2107.72s -> 2110.62s]  asking the communication part of the GPU
+[2110.62s -> 2113.62s]  to basically go and fetch some parameters.
+[2113.62s -> 2115.76s]  It's gonna dispatch things to the GPU to say,
+[2115.76s -> 2117.66s]  okay, all right, do some matrix multiplies,
+[2117.66s -> 2121.30s]  and it's gonna run far ahead in some sense of the GPU.
+[2121.30s -> 2122.74s]  We've seen this when we were looking
+[2122.74s -> 2125.36s]  at the profiler last week.
+[2125.36s -> 2128.06s]  Now let's look at the sequence of both communication
+[2128.06s -> 2131.58s]  and computation that happens on device now.
+[2131.58s -> 2134.18s]  Remember that I need to sort of gather things on demand.
+[2134.18s -> 2136.00s]  So at the very beginning, I have to make sure
+[2136.00s -> 2140.52s]  that everyone has the weights for layer zero, or W0 here.
+[2140.52s -> 2142.56s]  So I do all gather zero,
+[2142.56s -> 2144.12s]  and I'm gonna wait for that to complete.
+[2144.12s -> 2148.12s]  And once that's completed, I can do a forward step on W0.
+[2148.12s -> 2151.64s]  I can sort of compute X times W0, let's say, right?
+[2151.64s -> 2154.28s]  At this point, all gather one starts
+[2154.28s -> 2157.04s]  at the same time that all gather zero ends.
+[2157.04s -> 2159.36s]  So as I'm doing this matrix multiply,
+[2159.36s -> 2160.68s]  I'm basically already starting
+[2160.68s -> 2162.56s]  to load the next parameters that I need.
+[2162.56s -> 2164.64s]  Of course, my communication's slower,
+[2164.64s -> 2168.08s]  and so there is some gap, but I end much quicker
+[2168.08s -> 2169.36s]  than sort of the initial load.
+[2169.36s -> 2171.28s]  So now forward one can happen,
+[2171.28s -> 2172.44s]  and in the background, once again,
+[2172.44s -> 2175.62s]  I've started to load parameter number two.
+[2175.62s -> 2178.46s]  And this yellow slice here, I'm now freeing
+[2178.46s -> 2180.52s]  the parameters associated with forward one,
+[2180.52s -> 2182.06s]  and then now the other thing here
+[2182.06s -> 2183.24s]  is I'm repeating computation.
+[2183.24s -> 2185.64s]  W0 is used twice, and so I don't need
+[2185.64s -> 2186.88s]  to communicate this again.
+[2186.88s -> 2188.52s]  This happens very quickly,
+[2188.52s -> 2191.64s]  and I can sort of do this very quickly, right?
+[2191.64s -> 2194.04s]  I have forward two now already loaded
+[2194.28s -> 2195.80s]  before sort of I needed it,
+[2195.80s -> 2197.28s]  and so there's no bubble here,
+[2197.28s -> 2198.28s]  and then I can free number two.
+[2198.28s -> 2199.86s]  That's the entirety of the forward pass,
+[2199.86s -> 2202.12s]  and you see that the gaps are relatively small here,
+[2202.12s -> 2204.24s]  and we were able to do a lot of loads
+[2204.24s -> 2206.56s]  before the compute needed to happen.
+[2206.56s -> 2208.48s]  And so by doing this very clever thing
+[2208.48s -> 2211.58s]  of kind of queuing the requests for weights
+[2211.58s -> 2213.52s]  before you actually need them,
+[2213.52s -> 2215.14s]  you can avoid a lot of the overhead
+[2215.14s -> 2217.72s]  associated with communication.
+[2217.72s -> 2222.48s]  And then now, at this point of forward two,
+[2222.48s -> 2223.62s]  I'm done with the forward pass.
+[2224.22s -> 2225.06s]  I can free weight number two,
+[2225.06s -> 2226.66s]  and I start on the backward pass,
+[2226.66s -> 2228.46s]  and you see that all gathered two
+[2228.46s -> 2230.26s]  for the backward pass is already done,
+[2230.26s -> 2232.02s]  and so I can start on backward two,
+[2232.02s -> 2233.98s]  backward zero, weight zero is already stored,
+[2233.98s -> 2236.34s]  so that's done, and then the high overhead here
+[2236.34s -> 2237.62s]  happens in the backward pass
+[2237.62s -> 2239.34s]  because I need to do reduced scatters
+[2239.34s -> 2241.26s]  and then all gathers and so on and so forth.
+[2241.26s -> 2242.30s]  Hopefully you see this picture,
+[2242.30s -> 2244.54s]  and you say, wow, it's kind of surprising
+[2244.54s -> 2246.78s]  that even though we're doing this crazy sharding,
+[2246.78s -> 2248.42s]  like if you go back to this picture,
+[2248.42s -> 2250.42s]  we fully sharded the parameters, gradients,
+[2250.42s -> 2252.38s]  and optimizer states,
+[2252.38s -> 2254.06s]  but the total bandwidth that we need
+[2254.06s -> 2256.38s]  is only three times rather than two times,
+[2256.38s -> 2257.62s]  so that doesn't seem too bad,
+[2257.62s -> 2260.42s]  and sort of the actual bubbles that we see
+[2260.42s -> 2261.46s]  are not horrendous, right?
+[2261.46s -> 2265.06s]  The communication is almost fully being utilized,
+[2265.06s -> 2267.64s]  and the computation is installing for very long,
+[2267.64s -> 2269.74s]  so we're actually making pretty efficient use
+[2269.74s -> 2272.18s]  of the resources that we do have, which is cool.
+[2273.86s -> 2274.70s]  Okay, yes?
+[2275.66s -> 2277.70s]  Where do the weights get pre-patched to?
+[2277.70s -> 2278.94s]  It's like, to my understanding,
+[2278.94s -> 2281.46s]  like let's see the GPU and memory's cool.
+[2281.46s -> 2284.78s]  Where does the weights get pre-patched to?
+[2284.78s -> 2286.02s]  Yeah, so you need a buffer
+[2286.02s -> 2287.22s]  in which you can store these weights,
+[2287.22s -> 2290.86s]  and so this picture is not quite right.
+[2290.86s -> 2292.98s]  You will have some overhead that you need
+[2292.98s -> 2294.50s]  associated with reading these weights
+[2294.50s -> 2295.54s]  for the current layer,
+[2295.54s -> 2297.30s]  and also the other big elephant in the room
+[2297.30s -> 2299.32s]  is I haven't talked at all about activation.
+[2299.32s -> 2300.54s]  That's gonna be like a big chunk
+[2300.54s -> 2302.22s]  because you've got a big set of activations
+[2302.22s -> 2304.38s]  for a full model that are sort of living here
+[2304.38s -> 2305.54s]  in some sense.
+[2305.54s -> 2306.46s]  Yeah, cool.
+[2308.00s -> 2309.10s]  Right, okay.
+[2309.10s -> 2311.74s]  So this is kind of distributed data parallel,
+[2311.74s -> 2314.90s]  like zero is in some ways the way
+[2314.90s -> 2318.22s]  that people do distributed data parallel efficiently,
+[2318.22s -> 2319.98s]  and so there's different stages,
+[2319.98s -> 2323.94s]  and stage one, it's basically free.
+[2323.94s -> 2327.22s]  It's doing the same communication pattern
+[2327.22s -> 2329.94s]  as naive data parallel,
+[2329.94s -> 2331.66s]  but you get to shard your optimizer state.
+[2331.66s -> 2333.62s]  That's great, you might as well always do it.
+[2333.62s -> 2336.54s]  Zero stage two is twice the number of parameters,
+[2336.54s -> 2338.86s]  so the total bandwidth consumption's the same,
+[2339.50s -> 2340.66s]  but there is additional overhead
+[2340.66s -> 2343.18s]  in having to do this incremental freeing
+[2343.18s -> 2345.74s]  of the gradients as you go backwards.
+[2345.74s -> 2347.32s]  Zero stage three is more involved.
+[2347.32s -> 2350.22s]  You do three times number of param communication costs,
+[2350.22s -> 2351.70s]  but it's not so bad.
+[2351.70s -> 2353.98s]  We did have some overhead in the diagram
+[2353.98s -> 2355.00s]  that we saw before,
+[2355.00s -> 2356.66s]  but if you really cleverly mask
+[2356.66s -> 2358.12s]  your communication patterns,
+[2358.12s -> 2359.62s]  it's actually pretty good,
+[2359.62s -> 2361.26s]  and so people use data parallel
+[2361.26s -> 2364.70s]  even for fairly slow sort of links
+[2364.70s -> 2366.16s]  in your networking pattern.
+[2366.88s -> 2369.16s]  Okay, and this is also conceptually very simple.
+[2369.16s -> 2372.08s]  One of the advantages here is,
+[2372.08s -> 2373.20s]  especially data parallel,
+[2373.20s -> 2375.12s]  it doesn't care too much about the architecture.
+[2375.12s -> 2376.48s]  I didn't talk at all about
+[2376.48s -> 2378.88s]  how we actually implement a transformer in any of this.
+[2378.88s -> 2380.32s]  It's all very abstracted,
+[2380.32s -> 2381.64s]  and so this is one of the reasons
+[2381.64s -> 2384.32s]  why, for example, FSDP is so popular.
+[2384.32s -> 2386.20s]  It's very easy to write a wrapper
+[2386.20s -> 2389.40s]  that parallelizes sort of arbitrary neural networks
+[2389.40s -> 2392.80s]  without having deep knowledge or deep introspection
+[2392.80s -> 2395.04s]  of what the architecture is actually doing,
+[2395.96s -> 2397.72s]  and so here's some examples.
+[2397.72s -> 2399.00s]  I worked out some examples
+[2399.00s -> 2400.56s]  because I'm always sort of running out of memory
+[2400.56s -> 2402.28s]  on my GPUs,
+[2402.28s -> 2404.52s]  and you kind of see what's the maximum size
+[2404.52s -> 2405.80s]  of the model that I can fit
+[2405.80s -> 2410.44s]  on a eight times A100 80 gig node,
+[2410.44s -> 2412.28s]  and so for baseline, you might end up with like,
+[2412.28s -> 2416.26s]  oh, I can fit barely a six billion parameter model,
+[2416.26s -> 2418.36s]  whereas I think if I use zero stage three,
+[2418.36s -> 2419.24s]  I'm able to fit something
+[2419.24s -> 2421.02s]  like a 50 billion parameter model.
+[2421.02s -> 2424.44s]  There's big savings in my ability
+[2424.80s -> 2426.32s]  to fit larger and larger models
+[2426.32s -> 2430.76s]  by doing things like FSDP to cleverly save on memory.
+[2431.76s -> 2434.36s]  So, okay, oh, sorry, there's a question, yes.
+[2435.60s -> 2436.80s]  I guess I'm a little on the fears
+[2436.80s -> 2438.08s]  to like, where are the difference then?
+[2438.08s -> 2439.40s]  Once you sharpen parameters,
+[2439.40s -> 2441.68s]  what's the advantage from that model, though?
+[2441.68s -> 2445.44s]  Yeah, so model parallelism is really fundamentally
+[2445.44s -> 2447.96s]  about making sure that the parameters
+[2447.96s -> 2451.04s]  just like live in separate,
+[2451.04s -> 2452.36s]  let me see if I can find.
+[2452.36s -> 2454.28s]  So, will they never be communicated across?
+[2455.00s -> 2455.84s]  Yeah, yeah, yeah, yeah.
+[2455.84s -> 2457.64s]  So, in some ways, it's true
+[2457.64s -> 2458.96s]  that we have sharded the parameters,
+[2458.96s -> 2461.92s]  so you could call this a kind of parallelism,
+[2461.92s -> 2463.68s]  but the whole point of model parallelism
+[2463.68s -> 2465.00s]  is to make sure that the parameters
+[2465.00s -> 2466.84s]  just live entirely in one machine.
+[2466.84s -> 2468.72s]  We're not gonna try to ship them across
+[2468.72s -> 2469.56s]  in various ways.
+[2469.56s -> 2472.68s]  Only the activations are gonna get shipped across,
+[2472.68s -> 2474.38s]  and so you'll see very different discussions
+[2474.38s -> 2475.68s]  in the model parallelism section.
+[2475.68s -> 2478.26s]  Like, the focus there will be on communicating activations
+[2478.26s -> 2480.80s]  rather than communicating parameters,
+[2480.80s -> 2481.88s]  and that'll be a big difference.
+[2481.88s -> 2483.20s]  Yes.
+[2483.20s -> 2488.20s]  So, you're asking about this step.
+[2496.84s -> 2499.22s]  Why are we doing all-gather-to-gather weights
+[2499.22s -> 2500.60s]  onto all the machines?
+[2500.60s -> 2502.92s]  When they're only on one machine, is that right?
+[2502.92s -> 2505.96s]  Yeah, so we need to basically put,
+[2505.96s -> 2507.72s]  we need to take the weights that live on one machine
+[2507.72s -> 2510.24s]  and scatter, or is it gather or scatter?
+[2510.24s -> 2512.56s]  Sorry, I wanna make sure I get this right.
+[2513.20s -> 2518.20s]  The terminology is a little bit sketchy for me,
+[2519.68s -> 2523.00s]  so I wanna make sure I get, sorry.
+[2524.48s -> 2527.80s]  Yeah, so what we wanna do is the same as this, right?
+[2527.80s -> 2531.60s]  So, each machine is gonna have some parameter
+[2531.60s -> 2535.28s]  that I wanna gather across all the machines
+[2535.28s -> 2537.56s]  in order to make sure that each layer
+[2537.56s -> 2542.56s]  is sort of properly replicated across all the GPUs.
+[2542.72s -> 2544.38s]  Is that the right question that you're asking,
+[2544.38s -> 2547.52s]  or are you saying, like, is there a simpler primitive
+[2547.52s -> 2549.00s]  that we could have invoked?
+[2549.00s -> 2551.16s]  Like, are you saying broadcast is the right object
+[2551.16s -> 2553.16s]  rather than all-gather?
+[2553.16s -> 2554.52s]  I think maybe it's written that way
+[2554.52s -> 2556.44s]  because of some exceptions about layers
+[2556.44s -> 2559.52s]  not living on individual GPUs, but I'm not 100% sure.
+[2559.52s -> 2561.48s]  I agree with you that, like, broadcast should be able
+[2561.48s -> 2564.36s]  to do the same thing if the parameters
+[2564.36s -> 2565.72s]  live on only one machine.
+[2568.12s -> 2569.76s]  Okay, cool.
+[2569.76s -> 2571.24s]  Alrighty.
+[2571.72s -> 2573.04s]  Let me make sure.
+[2575.84s -> 2578.60s]  Okay, got it, okay, right.
+[2578.60s -> 2581.88s]  So, there is a key resource in data parallel,
+[2581.88s -> 2584.46s]  and this is actually an important idea
+[2584.46s -> 2586.68s]  that I want you to remember.
+[2586.68s -> 2588.98s]  With data parallel, batch size is actually
+[2588.98s -> 2591.46s]  a really critical resource in the sense
+[2591.46s -> 2594.52s]  that you can't parallelize greater than your number,
+[2594.52s -> 2595.84s]  sorry, than your batch size, right,
+[2595.84s -> 2599.44s]  because you can have almost one example on each machine.
+[2599.44s -> 2602.48s]  You can't go to fractional examples per machine.
+[2602.48s -> 2605.88s]  And so this means that if there's limits
+[2605.88s -> 2608.56s]  to your batch size, right, you stop being able
+[2608.56s -> 2612.04s]  to use data parallel, and there's diminishing returns
+[2612.04s -> 2614.62s]  to batch sizes, so in your assignment one,
+[2614.62s -> 2616.74s]  you may have played with varying batch sizes,
+[2616.74s -> 2618.48s]  but you kind of know that as you crank up
+[2618.48s -> 2620.68s]  the batch size past a certain point,
+[2620.68s -> 2624.80s]  you start to see sort of fairly rapid diminishing returns
+[2624.80s -> 2629.14s]  to your optimization rates, and there's lots of papers
+[2629.68s -> 2630.52s]  that have been written on this.
+[2630.52s -> 2632.22s]  OpenAI has a really nice one on something
+[2632.22s -> 2635.42s]  called critical batch sizes, where they basically argue
+[2635.42s -> 2637.84s]  that past a certain point, you have very rapid
+[2637.84s -> 2640.86s]  diminishing returns in how much each example
+[2640.86s -> 2643.22s]  is contributing to your ability to optimize.
+[2643.22s -> 2645.92s]  Like basically the intuition is that below a certain point,
+[2645.92s -> 2647.46s]  you have a lot of gradient noise,
+[2647.46s -> 2649.14s]  and reducing that is very valuable,
+[2649.14s -> 2651.54s]  but at a certain point, you're really fundamentally
+[2651.54s -> 2654.24s]  limited by the number of gradient steps you're taking
+[2654.24s -> 2656.42s]  rather than variance reduction.
+[2656.42s -> 2658.98s]  And so that basically means data parallel alone
+[2659.68s -> 2661.78s]  isn't gonna get you to arbitrarily large parallelism,
+[2661.78s -> 2665.40s]  and this batch size thing is a really important resource.
+[2665.40s -> 2667.74s]  Essentially, you have a fixed maximum batch size,
+[2667.74s -> 2670.56s]  and you can spend it in different ways,
+[2670.56s -> 2671.66s]  and I'll talk about that later,
+[2671.66s -> 2674.02s]  because other kinds of parallelism also benefit
+[2674.02s -> 2676.38s]  from having sort of bigger batches,
+[2676.38s -> 2679.14s]  and so you use your batch size in certain parts.
+[2679.14s -> 2683.78s]  Okay, and issues are gonna remain with data parallel.
+[2683.78s -> 2686.38s]  Zero stages one and two don't let you scale memory.
+[2686.38s -> 2688.70s]  Zero stage three is nice in principle,
+[2689.26s -> 2691.34s]  but it can be slow, and maybe more importantly,
+[2691.34s -> 2693.62s]  and this relates to the earlier question,
+[2693.62s -> 2696.58s]  it does not reduce activation memory, right?
+[2696.58s -> 2699.50s]  I ideally want to cut up my model entirely
+[2699.50s -> 2701.14s]  and make them live totally separately,
+[2701.14s -> 2702.86s]  because then the activation memory
+[2702.86s -> 2705.30s]  would also sort of be reduced.
+[2705.30s -> 2708.42s]  And so now I want better ways to split up the model
+[2708.42s -> 2713.34s]  so I can fit these really big models in these GPUs.
+[2714.26s -> 2718.54s]  And so that's gonna bring us to model parallelism.
+[2718.54s -> 2720.26s]  We want to scale up the memory
+[2721.22s -> 2722.46s]  without changing the batch size,
+[2722.46s -> 2724.46s]  and we want an alternative access
+[2724.46s -> 2725.90s]  where we don't need to spend
+[2725.90s -> 2730.14s]  or basically have big batch sizes in order to parallelize.
+[2730.14s -> 2732.46s]  And so what we're gonna do is it's gonna split up
+[2732.46s -> 2734.26s]  the parameters across GPUs,
+[2734.26s -> 2737.06s]  and in some ways that's like zero three,
+[2737.06s -> 2738.94s]  but we're not gonna communicate parameters anymore.
+[2738.94s -> 2740.70s]  We're gonna pass activations around,
+[2740.70s -> 2742.46s]  and that's gonna be different.
+[2742.46s -> 2744.70s]  And sometimes activations are gonna be much smaller
+[2744.70s -> 2747.98s]  than parameters, and that'll be very good for us.
+[2747.98s -> 2750.38s]  So we'll cover two different types of parallelism.
+[2750.38s -> 2752.22s]  I'm gonna talk about pipeline parallel,
+[2752.22s -> 2754.30s]  which is conceptually simpler,
+[2754.30s -> 2756.74s]  but much more horrible implementation-wise,
+[2756.74s -> 2758.66s]  and tensor parallel, which is conceptually
+[2758.66s -> 2763.10s]  maybe less obvious, but honestly much nicer to implement
+[2763.10s -> 2764.86s]  and more commonly used.
+[2764.86s -> 2767.30s]  And they're gonna correspond to two different ways
+[2767.30s -> 2769.38s]  of cutting up the model.
+[2769.38s -> 2773.42s]  So I think pipeline parallel is maybe the most obvious way
+[2773.42s -> 2775.58s]  to cut up a neural network, right?
+[2775.58s -> 2778.30s]  You know that a deep neural network comes in layers, right?
+[2778.30s -> 2780.54s]  So if I have layers, a very natural place
+[2780.54s -> 2783.82s]  to cut a network is to cut it up at the layer boundaries.
+[2783.82s -> 2786.82s]  And so each GPU is gonna handle some subset
+[2786.82s -> 2789.66s]  of the layers, and I'm gonna pass activations around.
+[2789.66s -> 2791.98s]  In this case, each layer belongs to a GPU,
+[2791.98s -> 2794.58s]  and GPUs are gonna pass activations
+[2794.58s -> 2796.90s]  from one to the other, when in the backwards case,
+[2796.90s -> 2800.46s]  it's gonna pass the backwards gradients backwards
+[2800.46s -> 2802.98s]  from GPU three to zero, right?
+[2802.98s -> 2805.30s]  Okay, so that's cool.
+[2805.30s -> 2806.62s]  That's great.
+[2806.62s -> 2808.50s]  What's wrong with this picture?
+[2808.50s -> 2811.38s]  Well, I think you should see that most of your GPUs
+[2811.38s -> 2812.98s]  are idle most of the time.
+[2812.98s -> 2816.02s]  This is actually quite terrible utilization.
+[2816.02s -> 2818.54s]  And so if I do this naive kind of parallelism
+[2818.54s -> 2819.90s]  that I described before, right?
+[2819.90s -> 2823.26s]  So if I have each layer having a forward,
+[2823.26s -> 2824.94s]  and let's say I have a single example,
+[2824.94s -> 2827.10s]  that's gonna result in a diagram that looks like this.
+[2827.10s -> 2831.54s]  So different rows in this picture are different layers
+[2832.78s -> 2834.10s]  and also different GPUs.
+[2834.10s -> 2835.94s]  And the x-axis here is time,
+[2835.94s -> 2837.86s]  where I'm going from left to right.
+[2837.86s -> 2838.90s]  So what do you see?
+[2838.90s -> 2841.16s]  Well, I first compute my first layer
+[2841.16s -> 2842.14s]  at the very left here,
+[2842.14s -> 2844.10s]  and then the activations get past the second layer.
+[2844.10s -> 2845.14s]  GPU two wakes up and it's like,
+[2845.14s -> 2847.14s]  all right, it's my turn, it does its job,
+[2847.14s -> 2849.86s]  passes to GPU three, and then GPU four,
+[2849.86s -> 2851.84s]  and now the backwards passes can begin,
+[2851.84s -> 2853.14s]  and so on and so forth.
+[2853.14s -> 2854.74s]  And you see kind of this gigantic,
+[2854.74s -> 2855.96s]  what people call bubble.
+[2855.96s -> 2857.42s]  This is a big overhead
+[2857.42s -> 2859.34s]  where you're doing absolutely nothing.
+[2859.34s -> 2861.18s]  And you see that the GPUs are active
+[2861.18s -> 2863.34s]  one over n of the time.
+[2863.34s -> 2866.02s]  So in some sense, this is the worst possible parallelism
+[2866.02s -> 2867.34s]  of I've added four GPUs,
+[2867.34s -> 2869.34s]  but I get the throughput of a single GPU.
+[2870.62s -> 2873.90s]  And so one thing you can do is
+[2875.22s -> 2878.24s]  you can be a little bit more clever about what you do,
+[2878.24s -> 2880.42s]  and you can say, all right, I'm gonna have a pipeline.
+[2880.42s -> 2882.42s]  I'm not just gonna cut things up in layers.
+[2882.42s -> 2884.34s]  I'm gonna have a sequence of things
+[2884.34s -> 2886.34s]  that need to be processed by each GPU.
+[2886.34s -> 2889.42s]  So now let's say I have a micro-batch.
+[2889.42s -> 2892.70s]  So each machine is gonna handle sort of four examples.
+[2893.62s -> 2897.54s]  And what I'm gonna do is I can finish my first example,
+[2897.54s -> 2899.78s]  my first data point,
+[2899.78s -> 2902.14s]  and I can send off the activations for that
+[2902.14s -> 2904.58s]  to my second GPU as soon as I finish,
+[2904.58s -> 2906.56s]  and then I can then get started working
+[2906.56s -> 2908.38s]  on my second data point.
+[2908.38s -> 2910.78s]  And so now I've overlapped sort of
+[2910.78s -> 2912.02s]  communication and computation.
+[2912.02s -> 2914.06s]  The second GPU can start working
+[2914.06s -> 2916.26s]  while the first GPU continues to work,
+[2916.26s -> 2917.74s]  and now the size of the bubble
+[2917.74s -> 2921.34s]  can potentially be reduced by having bigger batch sizes.
+[2921.34s -> 2924.06s]  And you can hopefully see why I said before
+[2924.06s -> 2925.62s]  that batch sizes are a resource.
+[2925.62s -> 2927.30s]  If you have a finite batch size
+[2927.30s -> 2928.54s]  and you have pipeline parallel,
+[2928.54s -> 2930.10s]  you can use that same batch size
+[2930.10s -> 2932.98s]  to make your pipeline bubble size smaller, for example,
+[2932.98s -> 2935.54s]  or you could use it to do data parallel, right?
+[2935.54s -> 2936.66s]  So there's many different ways
+[2936.66s -> 2938.74s]  that you can take your single batch size
+[2938.74s -> 2941.58s]  and then split it up into different ways.
+[2941.58s -> 2944.38s]  Okay, so now your micro-batch size
+[2944.38s -> 2946.54s]  can control the bubble time,
+[2946.54s -> 2950.42s]  and in fact, the ratio of your overhead
+[2950.42s -> 2952.10s]  to the useful compute that you have
+[2952.10s -> 2954.42s]  is the number of stages minus one
+[2954.42s -> 2956.42s]  over the number of micro-batches.
+[2956.42s -> 2958.62s]  So if you have big, big batch sizes,
+[2958.62s -> 2960.88s]  pipeline parallel could potentially be efficient.
+[2960.88s -> 2964.38s]  But as we said before, batch sizes are finite.
+[2964.38s -> 2965.78s]  We can't just crank that up
+[2965.78s -> 2968.20s]  to whatever value that we want.
+[2968.20s -> 2972.02s]  So in general, pipelines seem really horrible.
+[2973.30s -> 2974.22s]  Why do we do it?
+[2974.22s -> 2977.10s]  Why do we incur this cost of a bubble
+[2977.10s -> 2978.94s]  in order to parallelize?
+[2978.94s -> 2980.58s]  Well, there's a couple of reasons.
+[2980.58s -> 2984.38s]  Pipelines help save memory compared to data parallel.
+[2984.38s -> 2987.18s]  I mean, 03 will also shard the parameters,
+[2987.18s -> 2990.76s]  but this also shards the activations, which is nice.
+[2990.76s -> 2991.78s]  Pipelines can also have
+[2991.78s -> 2993.50s]  good communication properties, right?
+[2993.50s -> 2995.18s]  It only depends on activations.
+[2995.18s -> 2996.56s]  It's also point-to-point,
+[2996.56s -> 2998.82s]  so it's possible that depending on your topology
+[2998.82s -> 3000.22s]  and depending on what you have,
+[3000.22s -> 3002.38s]  pipelines might actually be very favorable
+[3002.38s -> 3004.74s]  for the slower parts of your network.
+[3005.74s -> 3008.86s]  And so pipeline parallel is often gonna be used
+[3008.86s -> 3010.42s]  on your slower network links.
+[3010.42s -> 3013.42s]  So inter-node, or even sometimes
+[3013.42s -> 3015.78s]  across different sort of racks
+[3015.78s -> 3017.30s]  or across different data centers,
+[3017.30s -> 3018.82s]  you might do, actually not data centers,
+[3018.82s -> 3021.46s]  across different racks, you might do pipeline parallel.
+[3022.70s -> 3024.30s]  One of the examples of a thing
+[3024.30s -> 3026.94s]  that I was recently told by some Google folks
+[3026.94s -> 3029.18s]  is they were saying actually one of the big advantages
+[3029.18s -> 3031.10s]  of TPUs is that we don't have to do
+[3031.10s -> 3032.70s]  pipeline parallel very much
+[3032.74s -> 3035.62s]  because all of our connections are much bigger, right?
+[3035.62s -> 3037.18s]  Like they have this big toroidal mesh.
+[3037.18s -> 3039.38s]  They don't have this limit at 256 GPUs
+[3039.38s -> 3040.54s]  where they're suddenly going towards
+[3040.54s -> 3041.78s]  a slower network link
+[3041.78s -> 3043.98s]  where you might want to switch to pipeline parallel, right?
+[3043.98s -> 3045.78s]  So that's a real-world kind of example
+[3045.78s -> 3049.06s]  of when you would start to think about pipeline parallel.
+[3049.06s -> 3051.24s]  And so this is an example from an NVIDIA paper.
+[3051.24s -> 3054.98s]  I'll talk about this paper in much greater detail later.
+[3054.98s -> 3056.50s]  They've done some really nice work
+[3056.50s -> 3058.18s]  showing sort of performance characteristics
+[3058.18s -> 3059.66s]  of different kinds of parallelism,
+[3059.66s -> 3061.68s]  but you kind of see with batch size eight,
+[3061.68s -> 3063.56s]  as you increase the pipeline parallel size,
+[3063.56s -> 3065.40s]  the number of devices,
+[3065.40s -> 3069.34s]  your utilization per GPU sort of starts to really drop off.
+[3069.34s -> 3071.88s]  Whereas if you have a big, big batch size of 128,
+[3071.88s -> 3075.16s]  you can get away with pretty good utilization
+[3075.16s -> 3077.84s]  for reasonably sized pipeline parallel, right?
+[3077.84s -> 3079.30s]  So batch sizes are really key
+[3079.30s -> 3080.84s]  to hiding the size of the bubble.
+[3080.84s -> 3083.38s]  Otherwise, you have issues.
+[3085.58s -> 3089.54s]  Of course, you can do different kinds of pipeline,
+[3089.58s -> 3092.00s]  sort of pipeline strategies.
+[3092.00s -> 3096.16s]  So instead of having these sort of like standard patterns
+[3098.60s -> 3100.10s]  for scheduling the bubble,
+[3100.10s -> 3103.68s]  you can sort of cut things up into finer pieces
+[3103.68s -> 3106.38s]  where you're sort of assigning different stages,
+[3106.38s -> 3108.40s]  assigning different sublayers to different device,
+[3108.40s -> 3110.56s]  and you're doing different computations at different parts.
+[3110.56s -> 3114.02s]  You can then sort of interleave the pipeline better.
+[3114.02s -> 3115.94s]  And sort of an advanced version of this
+[3115.94s -> 3118.08s]  that I want to spend a moment talking about,
+[3118.10s -> 3120.28s]  and this is very, very clever,
+[3120.28s -> 3121.78s]  is zero-bubble pipelining,
+[3121.78s -> 3123.90s]  or I think in DeepSeek's lingo,
+[3123.90s -> 3125.54s]  I think they call it dual pipe,
+[3125.54s -> 3128.78s]  but the core single trick is the same.
+[3129.78s -> 3132.56s]  So here, if you think about it,
+[3132.56s -> 3134.36s]  let's say we're doing the backwards pass
+[3134.36s -> 3136.26s]  to compute gradients.
+[3136.26s -> 3139.58s]  You can split this up into two different components.
+[3139.58s -> 3144.26s]  The first part is about backpropagating the activations.
+[3144.26s -> 3147.38s]  So this is, as I go down sort of the residual connections
+[3147.52s -> 3149.90s]  I need to compute essentially the derivative
+[3149.90s -> 3151.36s]  with respect to the activations.
+[3151.36s -> 3154.40s]  And then, as I sort of get to a parameter,
+[3154.40s -> 3156.32s]  I also want to compute the gradient itself,
+[3156.32s -> 3157.90s]  like how I'm gonna update the parameters,
+[3157.90s -> 3159.90s]  not just how do the activation change
+[3159.90s -> 3162.12s]  with respect to sort of the previous layers.
+[3162.12s -> 3163.92s]  And so to give you a concrete example,
+[3163.92s -> 3166.36s]  let's look at this bottom left diagram over here.
+[3166.36s -> 3169.28s]  So in this diagram, you see the forward pass.
+[3169.28s -> 3170.68s]  This is a single MLP,
+[3170.68s -> 3173.56s]  so we've got multiply by a weight.
+[3173.56s -> 3174.92s]  I do a non-linearity,
+[3174.92s -> 3176.64s]  and then I'm just gonna output the non-linearity.
+[3176.74s -> 3180.42s]  So this is kind of a naive single part of the MLP.
+[3180.42s -> 3182.10s]  Now let's look at the backwards.
+[3182.10s -> 3185.06s]  I have sort of the derivative with respect to the loss.
+[3185.06s -> 3187.26s]  It comes in, and then I can compute
+[3187.26s -> 3190.34s]  how that's going to change the x's,
+[3190.34s -> 3191.44s]  the inputs to my MLP.
+[3191.44s -> 3192.56s]  So this is, in some sense,
+[3192.56s -> 3195.22s]  the derivatives with respect to the activations here.
+[3195.22s -> 3196.78s]  And then, as I compute these,
+[3196.78s -> 3199.56s]  of course I can use them to compute the gradients
+[3199.56s -> 3201.98s]  that I need to update my weights.
+[3201.98s -> 3204.58s]  But the important thing is this part,
+[3204.60s -> 3207.20s]  this part of computing the gradients for the weights,
+[3207.20s -> 3208.62s]  this can be done whenever, right?
+[3208.62s -> 3211.04s]  There's no sort of dependence of this.
+[3211.04s -> 3214.58s]  And so I can rearrange the scheduling for this computation
+[3214.58s -> 3216.80s]  to any part of the computation graph.
+[3216.80s -> 3218.04s]  And so what you can do
+[3218.04s -> 3220.96s]  is you can sort of do your standard pipeline parallel
+[3220.96s -> 3223.12s]  for the parts that are serially dependent,
+[3223.12s -> 3225.76s]  but anytime you have to do these computations
+[3225.76s -> 3227.44s]  just for updating the parameters,
+[3227.44s -> 3229.32s]  you can sort of reschedule them wherever.
+[3229.32s -> 3230.60s]  And so the key idea is
+[3230.60s -> 3232.72s]  when you start with sort of a nice,
+[3232.72s -> 3234.28s]  what's called 1F1B pipeline,
+[3234.98s -> 3238.42s]  this is a nice optimized reducing the bubble size schedule.
+[3238.42s -> 3240.02s]  And then you can take this,
+[3240.02s -> 3243.54s]  and what you can do is you can separate this B,
+[3243.54s -> 3246.22s]  which is this computation of the backwards part,
+[3246.22s -> 3249.38s]  and then W, which is the computation necessary
+[3249.38s -> 3251.22s]  to compute the gradients of the weights,
+[3251.22s -> 3254.40s]  and now I can do the computation of the weights, the Ws,
+[3254.40s -> 3256.42s]  where I would have originally had a bubble, right?
+[3256.42s -> 3259.64s]  So the parts where I originally had these white,
+[3259.64s -> 3262.36s]  white sort of idle utilization components,
+[3262.36s -> 3265.34s]  I can now fill them in with these Ws, right?
+[3265.34s -> 3266.54s]  And so by thinking carefully
+[3266.54s -> 3270.04s]  about what the serial dependencies actually are,
+[3270.04s -> 3272.04s]  I can now have something really nice
+[3272.04s -> 3275.56s]  where I'm getting actually good utilization out of my GPUs.
+[3275.56s -> 3279.66s]  To be clear, this is horrendously complicated, right?
+[3279.66s -> 3282.54s]  Like if you actually want to implement pipeline parallel
+[3282.54s -> 3285.54s]  in this way, you're gonna have to intervene
+[3285.54s -> 3290.18s]  in how your auto diff is actually calculating these things.
+[3290.18s -> 3292.02s]  You have to have a queue that can track
+[3292.56s -> 3293.40s]  where things go.
+[3294.36s -> 3297.72s]  I heard a funny anecdote in a conversation recently
+[3297.72s -> 3300.16s]  from someone in a Frontier Labs sort of training LMs,
+[3300.16s -> 3301.64s]  and they said, you know, actually,
+[3301.64s -> 3304.44s]  there's two people in the group that understand
+[3304.44s -> 3306.36s]  how the pipeline parallel in our infra works.
+[3306.36s -> 3308.80s]  One person left, and so there's a single load-bearing
+[3308.80s -> 3310.98s]  person in our training infra.
+[3310.98s -> 3313.10s]  There are stories like this.
+[3313.10s -> 3315.78s]  Pipeline parallel is infrastructurally
+[3315.78s -> 3317.44s]  very, very complicated, right?
+[3317.44s -> 3319.02s]  It looks simple here.
+[3319.02s -> 3321.08s]  If you're interested, I encourage you to try
+[3321.08s -> 3322.62s]  and implement it.
+[3322.62s -> 3324.78s]  It does get pretty hairy pretty fast.
+[3325.66s -> 3328.10s]  And I think that's a good note on which
+[3328.10s -> 3331.34s]  to switch to the other kind of model parallelism,
+[3331.34s -> 3334.18s]  because this is much simpler, and this is often
+[3334.18s -> 3336.54s]  very cleanly utilized by a lot of frameworks
+[3336.54s -> 3338.42s]  and a lot of sort of, even people training
+[3338.42s -> 3340.46s]  really big models rely very, very heavily
+[3340.46s -> 3343.62s]  or primarily on this kind of model parallelism.
+[3343.62s -> 3347.02s]  So what other way can we split up a model, right?
+[3347.02s -> 3350.18s]  So if we think about it, most of what we do
+[3350.18s -> 3351.72s]  is matrix multiplies, right?
+[3351.72s -> 3353.52s]  In a big model, most of the computation
+[3353.52s -> 3355.22s]  is matrix multiplies, most of the parameters
+[3355.22s -> 3357.12s]  are matrix multiplies or matrices.
+[3357.12s -> 3358.86s]  And so what can we do?
+[3358.86s -> 3362.00s]  Well, if we can parallelize just the matmoles,
+[3362.00s -> 3363.88s]  that would be pretty good.
+[3363.88s -> 3366.40s]  And so tensor parallel is this idea
+[3366.40s -> 3368.68s]  that we can take a big matrix multiply
+[3368.68s -> 3371.08s]  and split it up into a set of submatrices
+[3371.08s -> 3372.40s]  that can be multiplied, right?
+[3372.40s -> 3375.64s]  So if I have this matrix multiply at the top,
+[3375.70s -> 3380.20s]  we have X and sort of X times A equals Y,
+[3380.20s -> 3384.26s]  what I can do instead is I can cut up A into half, right?
+[3384.26s -> 3387.22s]  And then I can also cut up X into half,
+[3387.22s -> 3389.30s]  and I can compute the submatrices,
+[3389.30s -> 3391.74s]  I can sum them up, and then I will get my answer
+[3391.74s -> 3392.58s]  at the end, right?
+[3392.58s -> 3395.34s]  So conceptually, pipeline parallel is cutting
+[3395.34s -> 3398.18s]  along the depth dimension, like the layers.
+[3398.18s -> 3400.04s]  Tensor parallel, which is what this is,
+[3400.04s -> 3402.22s]  is cutting up along the width dimension
+[3402.22s -> 3403.54s]  of your matrix multiplies.
+[3403.54s -> 3406.08s]  And so we're gonna decompose into submatrices
+[3406.08s -> 3407.32s]  and then do partial sums.
+[3408.52s -> 3412.72s]  So here's an example of what it might look like in a MLP.
+[3412.72s -> 3417.44s]  We have each GPU handling a different submatrix
+[3417.44s -> 3420.52s]  of let's say a big MLP matrix multiply,
+[3420.52s -> 3422.76s]  and then we're gonna have collective communications
+[3422.76s -> 3426.94s]  to synchronize the activations as we kind of need them.
+[3426.94s -> 3428.82s]  So what are we going to do?
+[3428.82s -> 3431.98s]  So this is a MLP, and sort of the top half
+[3431.98s -> 3434.36s]  and the bottom half, there's two different paths.
+[3434.36s -> 3436.54s]  These are splitting up the matrices.
+[3436.54s -> 3441.54s]  So I wanna do this operation, Y equals del U X times A.
+[3441.62s -> 3444.90s]  I'm gonna split up my matrix A into A one and A two.
+[3444.90s -> 3446.54s]  And then on the right-hand side,
+[3446.54s -> 3448.90s]  I wanna drop out Y B, right?
+[3448.90s -> 3451.10s]  And then I wanna return the result as Z.
+[3451.10s -> 3452.86s]  So I'm gonna also cut up B, right?
+[3452.86s -> 3455.74s]  So I've cut up both of my big parameter matrices
+[3455.74s -> 3457.38s]  into two parts, A and B.
+[3458.58s -> 3460.62s]  And in the forward pass, what I'm gonna do
+[3460.62s -> 3462.34s]  is I'm gonna take my inputs X,
+[3462.34s -> 3464.02s]  and I'm just gonna copy them twice, right?
+[3464.02s -> 3466.38s]  So each GPU's gonna get the same inputs,
+[3466.38s -> 3469.78s]  and they're gonna operate on it with A one and A two.
+[3469.78s -> 3471.46s]  They have the same kind of, oh, sorry,
+[3471.46s -> 3473.74s]  they're the same row dimensions,
+[3473.74s -> 3476.42s]  so it's gonna be fine operating on them.
+[3476.42s -> 3478.70s]  So X A one and X A two is gonna give you
+[3478.70s -> 3480.74s]  some activations, Y one and Y two.
+[3480.74s -> 3482.38s]  Those are gonna go into B one and B two,
+[3482.38s -> 3484.58s]  and then I'm gonna do an all reduce to sum them up.
+[3484.58s -> 3486.94s]  That's exactly the figure I showed you before, right?
+[3486.94s -> 3489.22s]  So you copy, and then you all reduce,
+[3489.22s -> 3491.06s]  and you get the answer Z.
+[3491.06s -> 3494.06s]  In the backwards pass, now it's actually the reverse.
+[3494.06s -> 3495.70s]  As sort of the gradients come backwards
+[3495.70s -> 3500.34s]  in the backwards steps, this G is going to be the identity.
+[3500.34s -> 3502.90s]  So I'm gonna copy sort of the derivatives on both sides,
+[3502.90s -> 3504.74s]  and I'm gonna do sort of the backwards operation
+[3504.74s -> 3505.70s]  all the way through.
+[3505.70s -> 3508.38s]  And once I get to F, this is an all reduce, right?
+[3508.38s -> 3510.66s]  Because I've got sort of two derivatives
+[3510.66s -> 3512.30s]  sort of coming in from both paths,
+[3512.30s -> 3513.66s]  and then I sum them back up, right?
+[3513.66s -> 3516.02s]  So this F and G are synchronization barriers.
+[3516.02s -> 3519.14s]  In the forward pass, I do a single all reduce
+[3519.14s -> 3521.14s]  on the backwards pass, I do a single all reduce
+[3521.14s -> 3524.86s]  just at two different places in the convocation graph.
+[3524.86s -> 3526.38s]  So now you can hopefully see how
+[3526.38s -> 3527.78s]  this is a very nice way of
+[3527.78s -> 3529.70s]  wherever you have a matrix multiply,
+[3529.70s -> 3531.62s]  you can just cut up the matrix multiply
+[3531.62s -> 3535.34s]  and sort of parallelize them across different devices.
+[3536.26s -> 3538.74s]  Okay, and as you might imagine,
+[3538.74s -> 3540.62s]  this is actually somewhat expensive.
+[3540.62s -> 3542.46s]  We have a synchronization barrier
+[3542.46s -> 3544.22s]  that lives kind of per layer.
+[3544.22s -> 3547.50s]  It needs to communicate an activation,
+[3547.50s -> 3550.38s]  sort of like the residual activation worth of stuff
+[3550.38s -> 3552.50s]  twice in a forward-backward pass.
+[3552.50s -> 3555.98s]  And so tensor parallel, this very simple idea,
+[3555.98s -> 3559.26s]  is gonna require very high speed interconnects.
+[3559.26s -> 3560.26s]  And so there's a rule of thumb,
+[3560.26s -> 3562.22s]  it's a very simple rule of thumb to remember,
+[3562.22s -> 3564.18s]  which is that tensor parallel is applied
+[3564.18s -> 3566.46s]  within a single node, right?
+[3566.46s -> 3570.34s]  So a single box of, let's say, Nvidia GPUs
+[3570.34s -> 3572.22s]  is gonna ship with eight different GPUs
+[3572.22s -> 3573.94s]  that live in that same box, right?
+[3573.94s -> 3575.30s]  And as I showed you at the sort of
+[3575.30s -> 3576.78s]  beginning of lecture today,
+[3576.82s -> 3578.78s]  they're very, very high speed connected, right?
+[3578.78s -> 3582.14s]  So those eight GPUs can talk to each other very quickly.
+[3582.14s -> 3585.38s]  And so it makes sense to use something like tensor parallel
+[3585.38s -> 3589.94s]  that's very bandwidth hungry between those eight devices.
+[3589.94s -> 3591.66s]  So what you will typically see
+[3591.66s -> 3594.06s]  is that tensor parallel is applied up to eight GPUs
+[3594.06s -> 3597.14s]  where the eight GPUs live in the same machine
+[3597.14s -> 3597.98s]  because that gives you
+[3597.98s -> 3599.70s]  the least sort of drop in performance.
+[3599.70s -> 3601.38s]  And so this is an example
+[3601.38s -> 3604.58s]  from Hugging Face's sort of parallelization tutorial
+[3604.58s -> 3606.86s]  showing you sort of the throughput decreases
+[3606.86s -> 3609.90s]  of different levels of tensor parallelism.
+[3609.90s -> 3611.42s]  You see that there are hits, right?
+[3611.42s -> 3614.58s]  10 and 12% hits to throughput
+[3614.58s -> 3616.42s]  as you do tensor parallelism.
+[3616.42s -> 3618.58s]  But up until eight, well, maybe this is manageable.
+[3618.58s -> 3620.10s]  This is kind of the price you pay
+[3620.10s -> 3622.34s]  for just being able to paralyze more nicely.
+[3622.34s -> 3624.14s]  But then you go to 16 devices
+[3624.14s -> 3626.02s]  and you get this like kind of astounding
+[3626.02s -> 3628.34s]  42% drop in performance.
+[3628.34s -> 3630.14s]  You go to 32 and you see another
+[3630.14s -> 3633.02s]  sort of 65% drop in throughput, right?
+[3633.06s -> 3634.86s]  And so you see hopefully visually here
+[3634.86s -> 3637.42s]  that you really want to stop at eight for tensor parallelism.
+[3637.42s -> 3638.70s]  That's really the sweet spot
+[3638.70s -> 3641.38s]  because of the kinds of hardware interconnects
+[3641.38s -> 3642.78s]  you can get your hands on.
+[3643.78s -> 3645.06s]  Okay.
+[3645.06s -> 3648.66s]  So how do things now compare to pipeline parallel, right?
+[3648.66s -> 3650.38s]  Well, compared to pipeline parallel,
+[3650.38s -> 3652.78s]  we don't really have to deal with this bubble thing
+[3652.78s -> 3653.86s]  that we had before.
+[3653.86s -> 3656.74s]  We don't need to consume sort of larger batch sizes
+[3656.74s -> 3659.66s]  in order to reduce the bubble, which is nice.
+[3659.66s -> 3662.14s]  And there's very relatively, I wouldn't say very,
+[3662.14s -> 3664.14s]  there's relatively low complexity
+[3664.14s -> 3665.62s]  in applying tensor parallel, right?
+[3665.62s -> 3667.26s]  All you really need to know about are
+[3667.26s -> 3668.98s]  where are the big matrix multiplies?
+[3668.98s -> 3669.82s]  Can I split them up
+[3669.82s -> 3671.58s]  and make them live on different devices, right?
+[3671.58s -> 3673.34s]  The forwards and backwards operations
+[3673.34s -> 3674.58s]  still remain the same, right?
+[3674.58s -> 3677.86s]  Compared to implementing something like zero overhead
+[3677.86s -> 3679.98s]  or dual pipeline parallel,
+[3679.98s -> 3683.86s]  you're gonna be in much, much better shape doing this.
+[3683.86s -> 3685.18s]  So the con is that
+[3685.18s -> 3687.80s]  it's much larger communication overhead.
+[3687.80s -> 3690.08s]  You've got in pipeline parallel,
+[3690.08s -> 3691.72s]  batch size and sequence length
+[3691.72s -> 3693.12s]  and sort of residual dimension,
+[3693.12s -> 3695.92s]  point-to-point communications per micro-batch.
+[3695.92s -> 3699.68s]  In tensor parallel, you've got eight times that per layer
+[3699.68s -> 3702.02s]  and you've got all reduced communication.
+[3702.02s -> 3704.58s]  It's potentially a very large amount of communication
+[3704.58s -> 3706.06s]  that needs to be done.
+[3706.06s -> 3708.38s]  So the rule of thumb, as I said before,
+[3708.38s -> 3710.00s]  is tensor parallel is used
+[3710.00s -> 3711.52s]  whenever you have low latency,
+[3711.52s -> 3713.10s]  high bandwidth interconnects,
+[3713.10s -> 3715.92s]  you're gonna see two to like 16
+[3715.92s -> 3718.58s]  depending on what kinds of machines you have
+[3718.82s -> 3720.46s]  of tensor parallel out in the wild.
+[3720.46s -> 3722.36s]  And I'll show you examples
+[3722.36s -> 3724.24s]  as I talk through at the very end here
+[3724.24s -> 3726.72s]  of examples of tensor parallel.
+[3726.72s -> 3730.36s]  Okay, any questions on pipeline or tensor parallel
+[3730.36s -> 3732.54s]  before we move on to the kind of third kind,
+[3732.54s -> 3735.80s]  like sequence parallel and activation sharding?
+[3735.80s -> 3736.64s]  Yes.
+[3736.64s -> 3741.14s]  Are these, can they both be used simultaneously
+[3741.14s -> 3742.48s]  or are they used before?
+[3742.48s -> 3745.10s]  Yeah, so the question was can they be used simultaneously?
+[3745.10s -> 3748.12s]  The answer is that yeah, you do use them both.
+[3748.82s -> 3750.74s]  We'll get to examples later,
+[3750.74s -> 3752.86s]  but I think the typical thing that you see
+[3752.86s -> 3755.34s]  is for large scale runs,
+[3755.34s -> 3757.90s]  you very often see tensor parallel.
+[3757.90s -> 3760.42s]  Pipeline parallel is often used on top of that.
+[3760.42s -> 3763.38s]  I think the only example I know of
+[3763.38s -> 3765.38s]  that does pipeline but not tensor parallel
+[3765.38s -> 3768.94s]  would be DeepSeq v3 as far as I know.
+[3768.94s -> 3771.50s]  So within a single machine, I guess you have like,
+[3771.50s -> 3773.46s]  say if you have like five different machines,
+[3773.46s -> 3775.56s]  you have like maybe the first 20% of the parameters
+[3775.62s -> 3779.34s]  are across the each of the first machine,
+[3779.34s -> 3780.94s]  but you can use tensor parallel as one,
+[3780.94s -> 3782.58s]  and then that pipeline parallels
+[3782.58s -> 3784.62s]  into the second machine.
+[3784.62s -> 3786.96s]  Yeah, so the question was there,
+[3786.96s -> 3788.44s]  do you do tensor parallel within machine
+[3788.44s -> 3790.22s]  and like pipeline parallel across machine, for example?
+[3790.22s -> 3792.18s]  Yeah, so you would do something like
+[3792.18s -> 3793.54s]  tensor parallel within machine
+[3793.54s -> 3795.50s]  and a combination of data and pipeline parallel
+[3795.50s -> 3797.54s]  across machines, for example, right?
+[3797.54s -> 3799.34s]  And I'll show you the rule of thumb later,
+[3799.34s -> 3801.68s]  but basically you do pipeline parallel
+[3801.68s -> 3803.46s]  because your models won't fit.
+[3803.46s -> 3805.46s]  Like if you could fit your entire model,
+[3806.28s -> 3807.52s]  you just do data parallel plus tensor parallel,
+[3807.52s -> 3809.52s]  or just maybe even data parallel.
+[3811.26s -> 3814.04s]  Great, okay, excellent.
+[3814.04s -> 3816.08s]  So then we've been talking about memory,
+[3816.08s -> 3817.68s]  and memory is in some sense
+[3817.68s -> 3819.92s]  a very important part of parallelization
+[3819.92s -> 3822.12s]  because we're gonna be training big models.
+[3822.12s -> 3825.34s]  And so when you look at your memory,
+[3825.34s -> 3827.72s]  you realize that actually activations
+[3827.72s -> 3830.02s]  are a really big part of your memory usage.
+[3830.02s -> 3833.68s]  So if you look at standard kind of forward, backward,
+[3833.90s -> 3837.18s]  I think this was from one of the PyTorch tutorials,
+[3837.18s -> 3839.90s]  you see that memory usage is very dynamic, right?
+[3839.90s -> 3841.80s]  So I'll just talk through this
+[3841.80s -> 3844.74s]  because I think it's an interesting plot in general, right?
+[3844.74s -> 3846.90s]  You always have your parameters as you're training,
+[3846.90s -> 3848.38s]  right, because that's static.
+[3848.38s -> 3850.42s]  But in iteration zero,
+[3850.42s -> 3852.66s]  you don't still have optimizer state at all.
+[3852.66s -> 3855.02s]  So actually you don't have that part of your memory use.
+[3855.02s -> 3857.10s]  But as you do your forward and backwards,
+[3857.10s -> 3859.76s]  you see activation grows, grows, grows, grows, grows
+[3859.76s -> 3862.26s]  as you accumulate all the activations.
+[3862.38s -> 3864.56s]  And as you start your backwards pass,
+[3864.56s -> 3866.48s]  your activation goes down because you're freeing it
+[3866.48s -> 3868.20s]  as you use up your activations,
+[3868.20s -> 3869.96s]  and then you're accumulating your gradients
+[3869.96s -> 3871.88s]  so your gradient memory usage goes up.
+[3871.88s -> 3873.96s]  And the peak is actually somewhere
+[3873.96s -> 3875.84s]  partially through your backwards pass
+[3875.84s -> 3878.48s]  where you haven't freed all your activations yet
+[3878.48s -> 3880.32s]  and you're still building up your gradients.
+[3880.32s -> 3881.16s]  And so in iteration two,
+[3881.16s -> 3883.24s]  you kind of see the same thing here, right?
+[3883.24s -> 3885.92s]  So the point of this diagram is to say,
+[3885.92s -> 3888.06s]  well, we've thought about all the other pieces.
+[3888.06s -> 3889.34s]  We've thought about the parameters,
+[3889.34s -> 3891.12s]  we've thought about optimizer state,
+[3891.14s -> 3893.58s]  we've thought about the gradients,
+[3893.58s -> 3895.06s]  but we have not thought about,
+[3895.06s -> 3897.22s]  very deeply at least, the activations.
+[3897.22s -> 3899.06s]  And so let's do that, right?
+[3899.06s -> 3901.68s]  So the final complexity that I want to talk you through
+[3901.68s -> 3904.22s]  is the activation memory.
+[3904.22s -> 3905.94s]  So tensor and pipeline parallel
+[3905.94s -> 3908.42s]  can linearly reduce basically most things,
+[3908.42s -> 3910.16s]  but it can't actually reduce
+[3910.16s -> 3912.78s]  all of the activation memory usage.
+[3912.78s -> 3916.38s]  And so this is an example from one of the Nvidia papers
+[3916.38s -> 3919.94s]  that's talking about how do you reduce activation memory.
+[3919.96s -> 3921.72s]  And I think one thing that's really interesting to see
+[3921.72s -> 3923.24s]  is if you make your models bigger and bigger,
+[3923.24s -> 3924.64s]  so going from left to right,
+[3924.64s -> 3927.68s]  you see that a parameter and optimizer state memory
+[3927.68s -> 3931.04s]  can remain the same if we parallelize aggressively.
+[3931.04s -> 3933.60s]  But activation memory just kind of continues to grow
+[3933.60s -> 3936.48s]  because some parts of it don't parallelize very cleanly.
+[3936.48s -> 3939.04s]  So no matter the number of devices you have,
+[3939.04s -> 3940.86s]  actually you can't really get rid
+[3940.86s -> 3943.00s]  of the growth of activation memory per device.
+[3943.00s -> 3945.00s]  And I'll show you why in a moment here.
+[3945.00s -> 3947.16s]  Whereas I think if you do some slightly more clever things
+[3947.18s -> 3948.94s]  like recomputation,
+[3948.94s -> 3951.18s]  you can keep the activation memory low.
+[3951.18s -> 3953.22s]  And that's really key to parallelizing
+[3953.22s -> 3954.62s]  some of the biggest models.
+[3956.30s -> 3960.58s]  Okay, so what's the activation memory per layer?
+[3960.58s -> 3963.38s]  You've kind of done some of this transformer math
+[3963.38s -> 3964.66s]  and calculus before,
+[3964.66s -> 3968.42s]  so hopefully you're now familiar with all of this.
+[3968.42s -> 3970.66s]  But we can compute what's the amount of activation memory
+[3970.66s -> 3971.66s]  we need per layer.
+[3971.66s -> 3973.26s]  And there's a handy formula here.
+[3973.26s -> 3974.66s]  And this is the amount of memory you need.
+[3974.66s -> 3979.28s]  It's SBH times 34 plus five AS over H.
+[3979.28s -> 3981.20s]  And some of these numbers are mystifying,
+[3981.20s -> 3983.24s]  but actually they're not so mystifying.
+[3984.20s -> 3986.88s]  You can very much see that there's a left term
+[3986.88s -> 3988.16s]  and then there's a right term.
+[3988.16s -> 3991.68s]  The left term comes from the MLP
+[3991.68s -> 3993.60s]  and other point-wise operations.
+[3993.60s -> 3995.76s]  That's where SBH times 34 comes from.
+[3995.76s -> 4000.28s]  These depend on the size of your residual stream, the H.
+[4000.28s -> 4001.16s]  On the right side,
+[4001.16s -> 4003.32s]  you have a term that's actually if you multiply this out,
+[4003.32s -> 4006.76s]  AS squared B, because the H's cancel.
+[4006.76s -> 4009.86s]  That's the memory that you need for the softmax term
+[4009.86s -> 4012.66s]  and other sort of quadratic terms in your attention.
+[4013.66s -> 4015.94s]  Of course, if you use flash attention,
+[4015.94s -> 4019.26s]  you can drastically reduce and use recomputation.
+[4019.26s -> 4022.06s]  We know that we can drastically reduce that second term.
+[4023.52s -> 4026.26s]  So then, let's say we do tensor parallel.
+[4026.26s -> 4027.92s]  We do tensor parallel everywhere we can.
+[4027.92s -> 4029.50s]  So we do it in the MLPs.
+[4029.52s -> 4032.32s]  We do it in the KQ computations,
+[4032.32s -> 4036.48s]  in the attention computation.
+[4036.48s -> 4039.08s]  We will end up with something that looks like this.
+[4039.08s -> 4041.68s]  And this is looking pretty good, but not quite there.
+[4041.68s -> 4045.12s]  So activation memory per layer divided by T,
+[4045.12s -> 4048.08s]  which is the number of devices
+[4048.08s -> 4049.64s]  that we're tensor paralleling over.
+[4049.64s -> 4051.88s]  So if we're dividing by eight,
+[4051.88s -> 4055.26s]  ideally we would divide all the activation memory by eight.
+[4055.26s -> 4058.88s]  But you see, there's this straggler term, SBH times 10,
+[4058.90s -> 4061.40s]  that has not been reduced down.
+[4062.90s -> 4064.38s]  If you think about what these are,
+[4064.38s -> 4066.58s]  these are the non-map-mole components.
+[4066.58s -> 4068.50s]  So the layer norm, the dropouts,
+[4068.50s -> 4071.34s]  the inputs to the attention, and the MLP.
+[4071.34s -> 4073.90s]  All of these terms will unfortunately continue
+[4073.90s -> 4075.02s]  to grow with size,
+[4075.02s -> 4077.30s]  and they will not be paralyzed very nicely.
+[4079.38s -> 4082.20s]  The very last thing that we need to think about
+[4082.20s -> 4084.66s]  is to take those simple point-wise operations,
+[4084.66s -> 4087.18s]  which thus far we have not paralyzed,
+[4087.56s -> 4090.08s]  and we just need to split them up.
+[4090.08s -> 4091.88s]  And there's a very simple way to split them up,
+[4091.88s -> 4095.16s]  which is to say, well, if we're doing a layer norm,
+[4095.16s -> 4097.44s]  these layer norms across different positions
+[4097.44s -> 4100.36s]  in the sequence do not interact at all with each other.
+[4100.36s -> 4103.36s]  They just don't care about anything else.
+[4103.36s -> 4105.16s]  And so what we are going to do is,
+[4105.16s -> 4107.32s]  let's say we have a 1024 long sequence,
+[4107.32s -> 4108.68s]  we're gonna cut that up,
+[4108.68s -> 4110.90s]  and then each device will handle
+[4110.90s -> 4112.56s]  a different part of that layer norm,
+[4112.56s -> 4114.20s]  or a different part of that dropout.
+[4114.20s -> 4115.60s]  Those point-wise operations can now be
+[4115.60s -> 4119.18s]  completely split up across the sequence dimension.
+[4119.18s -> 4121.26s]  And because now we're cutting things up
+[4121.26s -> 4122.78s]  across the sequence dimension,
+[4122.78s -> 4124.74s]  we're gonna have to do some synchronization
+[4124.74s -> 4128.54s]  to make sure the parallel computations that we did
+[4128.54s -> 4130.62s]  can get aggregated back again.
+[4130.62s -> 4132.50s]  And so in the forward pass, these Gs,
+[4132.50s -> 4133.90s]  they're gonna be all gathers,
+[4133.90s -> 4136.10s]  and G bars are gonna be reduced scatters,
+[4136.10s -> 4138.26s]  and in the backwards pass, the two are reversed.
+[4138.26s -> 4140.38s]  In some sense, there's sort of a duality here
+[4140.38s -> 4141.92s]  between the two.
+[4141.92s -> 4143.24s]  And what we're doing here is,
+[4143.24s -> 4146.78s]  for the layer norm, we've kind of scattered things around,
+[4146.78s -> 4149.50s]  and so we're gonna have to gather them back together
+[4149.50s -> 4151.86s]  so that we can do sort of our standard computation.
+[4151.86s -> 4153.66s]  And then now, whenever we get to the dropout,
+[4153.66s -> 4155.18s]  we wanna scatter them back out
+[4155.18s -> 4157.26s]  into the sort of parallel components that we have.
+[4157.26s -> 4158.38s]  And in the backwards pass,
+[4158.38s -> 4160.74s]  we're kind of doing that in the reverse, right?
+[4161.58s -> 4164.62s]  Okay, so hopefully that is clear.
+[4164.62s -> 4166.06s]  This is a very simple idea, right?
+[4166.06s -> 4168.88s]  We're just parallelizing sort of the very last components
+[4168.88s -> 4171.26s]  that we failed to parallelize before.
+[4171.28s -> 4172.84s]  And so now, we can sort of put
+[4172.84s -> 4174.56s]  all of these different pieces together
+[4174.56s -> 4176.20s]  and sort of get to sort of the end,
+[4176.20s -> 4178.76s]  which is, we started up here, which is no parallelism
+[4178.76s -> 4180.52s]  at all, we did tensor parallel,
+[4180.52s -> 4182.40s]  which allows us to divide everything
+[4182.40s -> 4184.82s]  that's not a point-wise op by T,
+[4184.82s -> 4188.24s]  and then if we apply the sequence parallelism idea,
+[4188.24s -> 4191.40s]  we can divide this component by T once more.
+[4191.40s -> 4194.72s]  And then we can do things like activation recomputation,
+[4194.72s -> 4196.60s]  which is the flash attention trick
+[4196.60s -> 4198.12s]  to remove the second term,
+[4198.12s -> 4200.36s]  and the minimal memory that you can kind of
+[4200.38s -> 4202.86s]  easily get away with is gonna be this thing on the bottom,
+[4202.86s -> 4205.50s]  which is SB8H34 over T.
+[4205.50s -> 4207.80s]  And this is often used,
+[4207.80s -> 4209.38s]  if you're looking at different formulas
+[4209.38s -> 4210.54s]  for transformer arithmetic
+[4210.54s -> 4212.78s]  on how much activation memory do I use,
+[4212.78s -> 4215.54s]  you often see something like SBH34,
+[4215.54s -> 4218.42s]  and then if you have T tensor parallel divide by T,
+[4218.42s -> 4220.70s]  because this is the sort of easy minimum
+[4220.70s -> 4223.56s]  that you can get for that kind of a memory.
+[4223.56s -> 4228.56s]  Okay, any questions on sequence parallel and activations?
+[4228.56s -> 4229.40s]  Yes.
+[4229.44s -> 4231.22s]  What would the test transformers
+[4231.22s -> 4232.78s]  like stack and pull off each other?
+[4232.78s -> 4234.30s]  I suppose a computational graph
+[4234.30s -> 4236.10s]  would go more and more like a problem,
+[4236.10s -> 4237.40s]  for you to imagine that your type
+[4237.40s -> 4240.94s]  works in a computational graph as like a DAG, right?
+[4240.94s -> 4242.26s]  A DAG would be called a model
+[4242.26s -> 4245.30s]  that would be the communication between DAG and use.
+[4245.30s -> 4246.58s]  You're saying if we have something
+[4246.58s -> 4248.94s]  that's a more complicated computation graph
+[4248.94s -> 4250.62s]  than like a single linear chain,
+[4250.62s -> 4252.02s]  will that become a problem?
+[4253.38s -> 4254.68s]  It's a good question.
+[4254.68s -> 4256.14s]  I haven't thought about that.
+[4256.14s -> 4257.42s]  I would guess not.
+[4257.42s -> 4258.90s]  Like at least for tensor parallel,
+[4259.44s -> 4260.40s]  this operates purely layer-wise.
+[4260.40s -> 4262.08s]  It doesn't really care about the dependencies.
+[4262.08s -> 4263.24s]  Maybe for pipeline parallel,
+[4263.24s -> 4265.68s]  there's opportunities for increased parallelization
+[4265.68s -> 4267.08s]  if there's more than one branch,
+[4267.08s -> 4268.68s]  but I'm not too sure.
+[4268.68s -> 4270.96s]  But it's for like a general library model,
+[4270.96s -> 4273.92s]  so just like a one-off test for the layer system,
+[4273.92s -> 4275.60s]  usually like a linear here.
+[4275.60s -> 4276.44s]  Right.
+[4276.44s -> 4277.76s]  Just the computation graph.
+[4277.76s -> 4278.66s]  Yes, right.
+[4280.08s -> 4282.60s]  Okay, cool, all right.
+[4282.60s -> 4285.66s]  So there's a few other parallelism strategies
+[4285.66s -> 4287.88s]  that I'm not gonna talk about,
+[4287.90s -> 4290.40s]  just because in the interest of sort of time
+[4290.40s -> 4292.72s]  and sort of fatiguing you,
+[4292.72s -> 4294.26s]  because I think I've already dragged you
+[4294.26s -> 4296.40s]  through a whole bunch of low-level details
+[4296.40s -> 4298.90s]  about how to do parallelization.
+[4298.90s -> 4300.74s]  So the first one I wanna talk about
+[4300.74s -> 4303.44s]  is context parallel or ring attention.
+[4303.44s -> 4305.90s]  You may have heard the term ring attention before.
+[4305.90s -> 4308.54s]  This is a way of essentially splitting up
+[4308.54s -> 4311.58s]  both the computation and the activation cost
+[4311.58s -> 4314.36s]  of computing really large attention,
+[4314.36s -> 4317.02s]  where essentially you're just gonna pass
+[4317.02s -> 4319.36s]  keys and values around different machines.
+[4319.36s -> 4322.14s]  So each machine is responsible for a different query,
+[4322.14s -> 4324.36s]  and then keys and values are gonna sort of travel
+[4324.36s -> 4327.46s]  from machine to machine in a sort of ring-like fashion
+[4327.46s -> 4330.96s]  in order to compute your KQV inner products.
+[4330.96s -> 4332.16s]  And the cool thing here is
+[4332.16s -> 4334.04s]  you already kind of know how to do this
+[4334.04s -> 4336.04s]  because you've done the tiling for flash attention.
+[4336.04s -> 4340.00s]  So you know that attention can be computed
+[4340.00s -> 4342.36s]  in this kind of online tile-by-tile way,
+[4342.36s -> 4345.38s]  and that's kind of what's happening in ring attention.
+[4345.42s -> 4348.20s]  The other thing, which now that you know tensor parallel
+[4348.20s -> 4351.50s]  is pretty straightforward, is expert parallelism.
+[4351.50s -> 4353.34s]  Expert parallelism you can kind of think of
+[4353.34s -> 4355.14s]  as almost like tensor parallel
+[4355.14s -> 4358.02s]  in the sense that you're splitting up one big MLP
+[4358.02s -> 4361.26s]  into smaller expert MLPs, let's say,
+[4361.26s -> 4363.18s]  and then scattering them across different machines.
+[4363.18s -> 4365.38s]  The key difference with expert parallelism
+[4365.38s -> 4367.94s]  is that the experts are sparsely activated,
+[4367.94s -> 4370.02s]  and so you have to think a little bit about routing,
+[4370.02s -> 4374.14s]  and the routing is not going to be sort of as predictable,
+[4374.14s -> 4377.58s]  let's say, as the all-to-all communication that we had
+[4377.58s -> 4378.86s]  before in tensor parallel,
+[4378.86s -> 4381.48s]  because now maybe one expert is overloaded,
+[4381.48s -> 4382.58s]  your networking is going to be
+[4382.58s -> 4383.82s]  a little bit more complicated.
+[4383.82s -> 4385.14s]  But otherwise, conceptually,
+[4385.14s -> 4386.82s]  you're living in kind of the same world
+[4386.82s -> 4389.42s]  as tensor parallel for expert parallelism.
+[4393.34s -> 4396.88s]  So just to recap all the things we talked about,
+[4396.88s -> 4398.68s]  I've made a little small table
+[4398.68s -> 4401.22s]  of the different kinds of strategies that we have.
+[4401.22s -> 4403.78s]  We have DDP and 01.
+[4404.30s -> 4407.06s]  This is kind of the naive data parallelism thing that you do.
+[4407.06s -> 4409.78s]  Here, you have some overhead per batch,
+[4409.78s -> 4413.64s]  you have no memory scaling, reasonable bandwidth properties,
+[4413.64s -> 4415.32s]  but you consume batch size
+[4415.32s -> 4416.68s]  in order to be able to do this.
+[4416.68s -> 4419.82s]  You need big batch sizes to have big data parallelism.
+[4419.82s -> 4422.94s]  You have FSPP, which is kind of like a nicer version
+[4422.94s -> 4426.58s]  of 01 in the sense that you can get memory scaling,
+[4426.58s -> 4428.70s]  but you're going to pay overhead
+[4428.70s -> 4430.62s]  across sort of different layers.
+[4430.62s -> 4433.72s]  And so now you've got higher communication cost
+[4434.52s -> 4436.04s]  and you've got potentially synchronization barriers
+[4436.04s -> 4438.08s]  that lead to poor utilization.
+[4438.08s -> 4442.80s]  Pipeline parallel is nice in that we no longer
+[4442.80s -> 4446.96s]  have this dependence on this per batch aspects,
+[4446.96s -> 4449.40s]  and we can get linear memory scaling,
+[4449.40s -> 4450.96s]  but we have sort of another issue,
+[4450.96s -> 4452.96s]  which is this also consumes batch size
+[4452.96s -> 4455.24s]  and it's horrendous to sort of set up and use.
+[4455.24s -> 4456.64s]  And so a lot of people like to avoid
+[4456.64s -> 4459.08s]  pipeline parallelism if it's possible.
+[4459.08s -> 4462.12s]  And then finally, tensor parallelism is very high cost
+[4462.12s -> 4464.64s]  in terms of bandwidth and the amount of synchronization
+[4464.64s -> 4465.48s]  you need to do.
+[4466.72s -> 4469.14s]  But this has this really nice property
+[4469.14s -> 4471.00s]  that has no impact on batch sizes.
+[4471.00s -> 4472.76s]  So it's like kind of the one parallelism strategy
+[4472.76s -> 4475.20s]  you can use that has no cost
+[4475.20s -> 4477.56s]  in terms of your global batch size, which is nice.
+[4477.56s -> 4480.96s]  So we have to balance a number of limited resources.
+[4480.96s -> 4483.18s]  We have memory, which is one resource.
+[4483.18s -> 4486.42s]  We have bandwidth and compute, which is another resource.
+[4486.42s -> 4487.96s]  And then we have batch size,
+[4487.96s -> 4489.94s]  which is kind of an unconventional resource,
+[4489.94s -> 4491.26s]  but one that you should really think of
+[4491.26s -> 4493.10s]  as a limited thing that you can spend
+[4493.10s -> 4496.14s]  on different aspects of these to improve your efficiency.
+[4498.00s -> 4501.04s]  And there's a very nice TPU parallelism,
+[4501.04s -> 4502.74s]  or TPU book, let's call it,
+[4502.74s -> 4505.74s]  from Google that I referred to last week,
+[4505.74s -> 4506.82s]  but also actually they have
+[4506.82s -> 4508.58s]  a really nice parallelism section,
+[4508.58s -> 4509.82s]  and they have this great figure
+[4509.82s -> 4511.38s]  that I wanted to show you
+[4511.38s -> 4514.10s]  before I moved on to some of the examples.
+[4514.10s -> 4516.70s]  So the key quantity, as I was saying before,
+[4516.70s -> 4517.94s]  is the batch size.
+[4517.94s -> 4520.94s]  And depending on the ratio of batch size
+[4521.46s -> 4522.86s]  to the number of GPUs you have,
+[4522.86s -> 4526.04s]  different kinds of parallelism become optimal.
+[4526.04s -> 4528.18s]  And so they use sort of certain formula
+[4528.18s -> 4530.46s]  on how much communication and computation
+[4530.46s -> 4533.74s]  you end up doing for each of these models,
+[4533.74s -> 4535.82s]  so this is a simplified formula,
+[4535.82s -> 4537.02s]  to sort of generate this plot.
+[4537.02s -> 4540.46s]  And you can kind of see if your batch size is too small,
+[4540.46s -> 4544.58s]  you have lots of GPUs and really tiny batch sizes,
+[4544.58s -> 4547.66s]  then there is no way for you to be efficient.
+[4547.66s -> 4549.00s]  You're always communication bound,
+[4549.00s -> 4550.30s]  which is this bottom half here,
+[4550.50s -> 4551.74s]  and in fact you're spending
+[4551.74s -> 4554.12s]  most of your time on communication.
+[4554.12s -> 4556.28s]  As you sort of get more and more batch size,
+[4556.28s -> 4558.46s]  eventually you can get to a point
+[4558.46s -> 4562.14s]  where if you mix both FSDP, so zero stage three,
+[4562.14s -> 4564.86s]  and MP, which in this case is tensor parallel,
+[4564.86s -> 4567.18s]  you can actually get basically to a place
+[4567.18s -> 4568.02s]  where you're compute bound.
+[4568.02s -> 4570.90s]  So now you're not spending,
+[4570.90s -> 4574.10s]  sort of wasting your flops waiting for communication.
+[4574.10s -> 4576.44s]  And then finally, if you get to a point
+[4576.44s -> 4578.10s]  where your batch sizes are big,
+[4578.10s -> 4581.96s]  then you can just get away with pure data parallel.
+[4581.96s -> 4585.46s]  Like pure FSDP is gonna get you into a regime
+[4585.46s -> 4588.46s]  where the time you spend doing computation
+[4588.46s -> 4591.06s]  is higher than the time you spend in communication.
+[4591.06s -> 4592.38s]  So if your batch size is big enough,
+[4592.38s -> 4594.34s]  you can just get away with FSDP.
+[4594.34s -> 4596.94s]  So this is kind of a cool illustration of this idea
+[4596.94s -> 4599.94s]  of why would you mix these, when would you mix these,
+[4599.94s -> 4601.42s]  why is batch size a resource?
+[4601.42s -> 4602.44s]  Hopefully this kind of shows you
+[4602.44s -> 4605.68s]  in a very visual way what this is.
+[4605.68s -> 4608.58s]  Okay, and so when you put these all together,
+[4608.58s -> 4612.20s]  you end up with what people call 3D or 4D parallelism.
+[4612.20s -> 4615.16s]  I think I've heard the term 5D parallelism recently.
+[4615.16s -> 4618.16s]  I wasn't quite sure what the fifth dimension was yet.
+[4618.16s -> 4619.96s]  I'll have to read up on that.
+[4619.96s -> 4621.48s]  But now you can put it all together, right?
+[4621.48s -> 4623.44s]  The different dimensions of parallelism.
+[4623.44s -> 4626.52s]  And this is a really simple rule of thumb.
+[4626.52s -> 4628.06s]  I originally sort of looked it up
+[4628.06s -> 4629.16s]  and put this together last year,
+[4629.16s -> 4631.60s]  but turns out it's still the same this year.
+[4631.60s -> 4633.88s]  So you can sort of follow this now.
+[4633.88s -> 4636.46s]  So the first thing you have to do
+[4636.46s -> 4637.78s]  is you have to fit your model
+[4637.78s -> 4639.18s]  and your activations in memory, right?
+[4639.18s -> 4641.24s]  If you don't do that, you just cannot train.
+[4641.24s -> 4642.44s]  So this is a requirement, right?
+[4642.44s -> 4644.28s]  So until your model fits in memory,
+[4644.28s -> 4645.76s]  we have to split up our model.
+[4645.76s -> 4647.64s]  So we're gonna do tensor parallelism,
+[4647.64s -> 4650.32s]  and we know that up to the number of GPUs per machine,
+[4650.32s -> 4651.78s]  that's very efficient, that's very fast.
+[4651.78s -> 4654.24s]  So we're gonna do tensor parallel up to that point.
+[4654.24s -> 4656.48s]  Now, after that, depending on things
+[4656.48s -> 4659.74s]  like your desire to deal with pipeline parallel
+[4659.74s -> 4662.44s]  and or your bandwidth constraints,
+[4662.44s -> 4664.22s]  you're either gonna use zero three
+[4664.22s -> 4666.88s]  or pipeline parallel across the machines, right?
+[4666.88s -> 4668.94s]  Until you can fit your model in memory.
+[4668.94s -> 4670.76s]  Now, after that point,
+[4670.76s -> 4673.28s]  well, until you sort of run out of GPUs,
+[4673.28s -> 4674.96s]  you can now run the whole thing,
+[4674.96s -> 4676.92s]  and your only goal is to increase the amount
+[4676.92s -> 4679.04s]  of total flops that you have on hand.
+[4679.04s -> 4680.72s]  So you're gonna scale the rest of the way
+[4680.72s -> 4681.92s]  with data parallel,
+[4681.92s -> 4684.44s]  because data parallel, it works well
+[4684.44s -> 4687.16s]  on low bandwidth communication channels,
+[4687.16s -> 4689.36s]  and it is very simple, right?
+[4689.36s -> 4691.64s]  And so that's gonna give you a way
+[4691.68s -> 4694.48s]  of sort of using all of your GPUs.
+[4694.48s -> 4696.92s]  Now, if your batch size is really small,
+[4696.92s -> 4701.48s]  then there is a way of trading batch sizes
+[4701.48s -> 4702.92s]  for better communication efficiency.
+[4702.92s -> 4705.20s]  Like if you haven't consumed all of your batch size
+[4705.20s -> 4707.16s]  as a resource, what you can do
+[4707.16s -> 4710.76s]  is you can use gradient accumulation on your devices, right?
+[4710.76s -> 4712.20s]  And that'll let you basically have
+[4712.20s -> 4715.44s]  effectively larger batch sizes
+[4715.44s -> 4716.80s]  even if you're memory constrained.
+[4716.80s -> 4718.56s]  And that will let you trade your batch size
+[4718.56s -> 4720.04s]  for better communication efficiency
+[4720.04s -> 4723.64s]  since you're synchronizing less often across machines.
+[4723.64s -> 4725.28s]  Okay, simple rule of thumb,
+[4725.28s -> 4728.60s]  this'll let you train models with reasonable efficiency
+[4728.60s -> 4730.48s]  no matter what you're doing.
+[4730.48s -> 4732.44s]  And so to sort of make this concrete,
+[4732.44s -> 4735.36s]  I'll talk through a few examples at the very end here.
+[4735.36s -> 4738.04s]  A flash through, both this really lovely paper
+[4738.04s -> 4741.44s]  back in 2021 from Megatron LM,
+[4741.44s -> 4744.64s]  basically showing you exactly these things in pictures,
+[4744.64s -> 4745.84s]  and also a lot of ablations,
+[4745.84s -> 4749.40s]  as well as some of the models from last year.
+[4749.44s -> 4753.12s]  So this is a big table of how they trained models
+[4753.12s -> 4756.52s]  going from 1.7 billion parameters to one trillion parameters.
+[4756.52s -> 4759.64s]  And they get great utilization on all of these, right?
+[4759.64s -> 4762.92s]  You see percentage of theoretical peak flops that they get
+[4762.92s -> 4765.44s]  and it ranges from 40 to 52%.
+[4765.44s -> 4767.48s]  It's pretty good, right?
+[4767.48s -> 4770.60s]  And so you can see tensor parallel starts at one,
+[4770.60s -> 4772.40s]  and then they eventually go up to eight,
+[4772.40s -> 4774.28s]  and then it caps out at eight, right?
+[4774.28s -> 4777.08s]  And so they are using tensor parallelism first.
+[4777.08s -> 4778.84s]  And then pipeline parallel stays at one,
+[4779.12s -> 4780.64s]  but once the models get big enough,
+[4780.64s -> 4782.20s]  they can't fit these big models,
+[4782.20s -> 4784.96s]  so pipeline parallel has to increase
+[4784.96s -> 4787.36s]  in order to compensate.
+[4787.36s -> 4789.64s]  And then the data parallel size
+[4789.64s -> 4791.72s]  basically starts out as big as possible,
+[4791.72s -> 4794.08s]  and then slowly kind of goes down, right?
+[4794.08s -> 4797.00s]  Because as we increase the amount of pipeline parallel,
+[4797.00s -> 4800.56s]  this is now consuming, in some sense, the batch sizes,
+[4800.56s -> 4804.08s]  and so you can't have effectively as big of a batch size
+[4804.08s -> 4805.84s]  if they're being used, in some sense,
+[4805.84s -> 4807.04s]  for pipeline parallel.
+[4809.48s -> 4812.88s]  Okay, so careful 3D parallelism is gonna give you
+[4812.88s -> 4816.96s]  sort of linear gains in aggregate flops.
+[4816.96s -> 4820.96s]  So you see, if you do careful 3D parallelism,
+[4820.96s -> 4825.24s]  you see sort of very flat, overall achieved flops per GPU,
+[4825.24s -> 4828.04s]  which is giving you, if you add more GPUs,
+[4828.04s -> 4830.20s]  linear scaling in the total aggregate throughput,
+[4830.20s -> 4831.04s]  that's great.
+[4831.96s -> 4834.72s]  Tensor parallel eight is often optimal.
+[4834.72s -> 4836.72s]  You see, this is the pipeline parallel size,
+[4836.72s -> 4838.04s]  and the tensor parallel size,
+[4838.08s -> 4841.04s]  you see going to eight eight with a batch size of 30,
+[4841.04s -> 4843.20s]  or sorry, batch size of 128 is optimal.
+[4843.20s -> 4845.28s]  Even if you have a smaller batch size,
+[4845.28s -> 4848.40s]  tensor parallel size of eight remains optimal.
+[4849.28s -> 4853.84s]  And activation recomputation enables larger batch sizes,
+[4853.84s -> 4856.60s]  and remember that larger batches can, in turn,
+[4856.60s -> 4859.60s]  help you sort of mask overhead for pipeline parallel,
+[4859.60s -> 4861.24s]  so activation recomputation,
+[4861.24s -> 4863.96s]  even though it's more flops, can pay for itself, right?
+[4863.96s -> 4868.96s]  We've seen that story play out already in flash attention.
+[4869.36s -> 4871.64s]  All right, so the last part of this
+[4871.64s -> 4874.40s]  is recent language models, like what do they do?
+[4874.40s -> 4876.32s]  So I've gone through a few papers
+[4876.32s -> 4877.68s]  to look at examples of what
+[4877.68s -> 4879.70s]  people's parallelization strategy is.
+[4880.80s -> 4882.56s]  Olmo, in the Dolma paper,
+[4882.56s -> 4886.28s]  they do FSDP for a seven billion parameter model.
+[4886.28s -> 4889.88s]  DeepSeq, the first paper does zero stage one
+[4889.88s -> 4891.72s]  with tensor sequence and pipeline parallel.
+[4891.72s -> 4895.24s]  This is the vanilla thing that I told you.
+[4895.24s -> 4897.68s]  V3 actually does something slightly different.
+[4897.68s -> 4900.92s]  They do 16-way pipeline parallel,
+[4900.92s -> 4902.44s]  64-way expert parallel,
+[4902.44s -> 4904.48s]  which is kind of like tensor parallel,
+[4904.48s -> 4908.38s]  and then zero stage one for their data parallelism strategy.
+[4909.60s -> 4911.52s]  Yi, which is another Chinese model,
+[4911.52s -> 4913.16s]  does, once again, zero stage one,
+[4913.16s -> 4915.28s]  tensor and pipeline parallel.
+[4915.28s -> 4917.00s]  And Yi Lightning, because they're doing MOEs,
+[4917.00s -> 4921.36s]  replaces tensor parallelism with expert parallelism.
+[4921.40s -> 4922.72s]  The final thing, if you're interested
+[4922.72s -> 4926.16s]  in kind of state-of-the-art distributed training
+[4926.16s -> 4927.96s]  with lots of details,
+[4927.96s -> 4931.12s]  LAMA3's report is actually really interesting to read.
+[4931.12s -> 4932.08s]  They have a lot of detail
+[4932.08s -> 4933.60s]  about how they do their networking,
+[4933.60s -> 4935.60s]  what sort of things happen.
+[4935.60s -> 4937.16s]  And you see sort of, once again,
+[4937.16s -> 4938.68s]  the kinds of things I said before.
+[4938.68s -> 4941.28s]  You see a tensor parallel of eight.
+[4941.28s -> 4945.10s]  You see CP, or this is context parallel.
+[4945.10s -> 4947.24s]  This is only relevant for long context training,
+[4947.24s -> 4949.80s]  which is this very last step, so you can ignore that.
+[4949.84s -> 4951.84s]  And you've got pipeline parallel and data parallel
+[4951.84s -> 4954.92s]  happening in these sort of first two phases.
+[4954.92s -> 4956.68s]  You can also even ignore the first stage here,
+[4956.68s -> 4958.88s]  because that's kind of the small batch size training
+[4958.88s -> 4961.20s]  that they did in order to be stable.
+[4961.20s -> 4963.60s]  And if you look at kind of their rationale
+[4963.60s -> 4965.80s]  for how they do their parallelism strategy,
+[4965.80s -> 4968.92s]  you see exactly what I had said before of basically,
+[4968.92s -> 4971.80s]  all right, you want to do TP, CP,
+[4971.80s -> 4973.72s]  pipeline parallel, and DP in that order
+[4973.72s -> 4975.88s]  in terms of the amount of bandwidth that you need,
+[4975.88s -> 4977.86s]  where data parallel can tolerate
+[4977.86s -> 4979.64s]  these long network latencies
+[4980.52s -> 4982.36s]  because you can do this sort of asynchronous fetching
+[4982.36s -> 4983.68s]  of sharded model weights, right?
+[4983.68s -> 4985.48s]  And so they're using kind of a strategy
+[4985.48s -> 4987.04s]  that I told you in order to train
+[4987.04s -> 4988.48s]  some of the biggest models.
+[4989.56s -> 4991.68s]  The funny side note about WAMA3,
+[4991.68s -> 4993.62s]  and you may have heard this sort of in,
+[4993.62s -> 4996.06s]  sort of not rumors, but sort of casual conversation
+[4996.06s -> 5000.16s]  with your friends, is there's lots of GPU failures
+[5000.16s -> 5002.84s]  when you train models at a huge scale, right?
+[5002.84s -> 5007.16s]  They had 148 interruptions from faulty GPUs,
+[5007.16s -> 5010.28s]  totaling about 30% of the total interruptions that they had.
+[5010.28s -> 5013.12s]  They had things like unplanned maintenance of machines,
+[5013.12s -> 5015.64s]  and that was 32 different things,
+[5015.64s -> 5018.24s]  32 instances of interruptions for their training.
+[5018.24s -> 5020.64s]  And so when you're training a model this big,
+[5020.64s -> 5021.92s]  I've talked about the algorithms,
+[5021.92s -> 5024.64s]  but you also need kind of fault tolerant architectures
+[5024.64s -> 5027.56s]  to be able to deal with these kinds of things.
+[5027.56s -> 5030.26s]  And I've also heard various stories of people saying
+[5030.26s -> 5032.36s]  the even scarier thing is not actually
+[5032.36s -> 5034.92s]  explicit model failures, but actually data corruption.
+[5034.92s -> 5036.68s]  Like the GPUs can silently fail on you
+[5037.12s -> 5039.80s]  and give you garbage data, completely ruining your run.
+[5039.80s -> 5043.32s]  Okay, and then the last one example is for GEMMA2,
+[5043.32s -> 5044.38s]  and I wanted to end on this,
+[5044.38s -> 5046.76s]  because this is a TPU example.
+[5046.76s -> 5049.40s]  They do 03, which is roughly FSTP,
+[5049.40s -> 5051.20s]  and then they do model parallelism
+[5051.20s -> 5052.36s]  and data parallelism, right?
+[5052.36s -> 5054.62s]  And so here, as I said before,
+[5054.62s -> 5057.30s]  the sort of TPUs allows them to sort of stretch
+[5057.30s -> 5060.18s]  model parallelism a little bit further.
+[5060.18s -> 5062.32s]  Okay, so putting it all together,
+[5062.32s -> 5064.16s]  scaling beyond a certain point's gonna require
+[5064.16s -> 5066.62s]  sort of multi-GPU, multi-node parallelism.
+[5067.50s -> 5068.34s]  There's no single solution, right?
+[5068.34s -> 5069.90s]  So you wanna combine all three approaches
+[5069.90s -> 5071.62s]  to sort of leverage strength,
+[5071.62s -> 5073.62s]  and then there's simple and interpretable rules of thumb
+[5073.62s -> 5076.30s]  for how you might execute this parallelism in practice.
+[5076.30s -> 5077.30s]  Right, thank you.

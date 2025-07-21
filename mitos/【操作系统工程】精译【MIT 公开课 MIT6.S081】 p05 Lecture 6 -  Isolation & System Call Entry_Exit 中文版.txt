@@ -1,0 +1,1663 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 10.80s]  All right, I'd like to get started.
+[10.80s -> 14.08s]  First, can anyone hear me?
+[14.08s -> 15.24s]  Yes.
+[15.24s -> 18.24s]  Good, thank you very much.
+[18.24s -> 19.78s]  All right, today I want to talk
+[19.78s -> 26.16s]  about the transition between running programs in user code
+[26.16s -> 28.36s]  and executing in the kernel.
+[28.36s -> 30.68s]  And this is the transition that has to happen whenever
+[30.68s -> 33.80s]  a program makes a system call, or if it experiences a fault,
+[33.80s -> 36.00s]  like a page fault, or divide by zero,
+[36.00s -> 38.64s]  or if a device decides to interrupt
+[38.64s -> 43.32s]  and needs to be served by a kernel device driver.
+[43.32s -> 46.68s]  There's a lot of careful design and important details
+[46.68s -> 51.88s]  that go into how these traps from user to kernel happen.
+[51.88s -> 54.96s]  And the details are pretty important for enforcing
+[54.96s -> 58.80s]  isolation, security, and also performance.
+[58.80s -> 61.60s]  There's many programs that transition to the kernel
+[61.60s -> 66.20s]  a lot, either due to system calls or page faults.
+[66.20s -> 69.84s]  And it can be super important that the trap mechanism
+[69.84s -> 72.52s]  is as streamlined as possible.
+[72.52s -> 76.68s]  All right, so the starting situation is pretty familiar.
+[79.92s -> 81.76s]  We have our user program.
+[81.76s -> 84.48s]  I'll use the shell as an example.
+[84.52s -> 89.40s]  It's running up in user space, and we have the kernel.
+[89.40s -> 92.48s]  And what the shell would like to do is make a system call
+[92.48s -> 94.04s]  into the kernel.
+[94.04s -> 95.40s]  And I'm going to use write.
+[95.40s -> 97.44s]  I'm going to use the shell writing its prompt,
+[97.44s -> 100.80s]  the very first write that happens after you boot xv6.
+[100.80s -> 103.00s]  I'm going to use the shell trying to write, make the write
+[103.00s -> 105.20s]  system call as an example.
+[105.20s -> 108.84s]  And so we need to figure out how to actually get execution
+[108.84s -> 111.92s]  to transfer from running in the shell in user space
+[111.92s -> 114.40s]  with user privileges to running in the kernel
+[114.40s -> 117.04s]  with supervisor privileges.
+[117.04s -> 120.16s]  The state of the hardware is going to be very important
+[120.16s -> 122.32s]  because a lot of what we're doing is changing
+[122.32s -> 125.40s]  the hardware state from state appropriate for running
+[125.40s -> 131.00s]  user code to state appropriate for running kernel code.
+[131.00s -> 134.56s]  The state that we care about, the biggest state
+[134.56s -> 138.44s]  is maybe the 32 user registers.
+[138.44s -> 141.80s]  As you remember this from Monday's discussion,
+[141.80s -> 143.80s]  we have all the user registers, things
+[143.80s -> 148.04s]  like A0 and A1.
+[148.04s -> 151.20s]  RISC-V has a whole lot of these, 32 in total.
+[151.20s -> 153.76s]  And we can expect user code to use all of them.
+[153.76s -> 156.76s]  It's going to get the highest performance if it uses all of them.
+[156.76s -> 159.96s]  Many of them have special purposes, a few of which we'll see.
+[159.96s -> 162.56s]  A particularly interesting one is the stack pointer
+[162.56s -> 166.12s]  is actually one of these 32 general purpose registers.
+[169.72s -> 172.80s]  We have these registers, including a stack pointer.
+[172.80s -> 177.68s]  There's a separate program counter register in the hardware.
+[177.68s -> 181.60s]  There's the current mode, either supervisor or user.
+[181.60s -> 183.92s]  And of course, it's user mode when we're
+[183.92s -> 188.08s]  executing up in the shell.
+[188.08s -> 190.60s]  And then there's a bunch of registers, special registers,
+[190.60s -> 193.08s]  that control how the CPU works.
+[193.08s -> 195.96s]  Like there's the satp register that contains a pointer
+[195.96s -> 197.56s]  to the page table.
+[197.56s -> 199.44s]  And it'll turn out there's a couple of others
+[199.44s -> 201.64s]  that are super important for this discussion.
+[201.72s -> 207.08s]  There's this stvec, which is the address of the instruction that
+[207.08s -> 210.44s]  should handle traps in the kernel.
+[210.44s -> 214.08s]  There's a register called scpc for saving the program counter
+[214.08s -> 214.76s]  during a trap.
+[214.76s -> 218.60s]  And we'll see if there's another one called sscratch,
+[218.60s -> 220.12s]  which is also very important.
+[220.12s -> 222.72s]  So this is the state of the running machine
+[222.72s -> 224.08s]  at the time of the system call.
+[224.08s -> 226.36s]  And we actually need to change a bunch of this state
+[226.36s -> 228.28s]  or do things to this state as part
+[228.32s -> 232.36s]  of getting into the kernel and setting ourselves up
+[232.36s -> 235.28s]  to run just ordinary C functions in the kernel.
+[235.28s -> 237.80s]  Certainly at the instant of the trap,
+[237.80s -> 239.34s]  all the state of the CPU is set up
+[239.34s -> 242.68s]  to run user code, not kernel code.
+[242.68s -> 244.60s]  So the things that are going to need to happen
+[244.60s -> 247.52s]  is kind of a preview of what I'll talk about.
+[247.52s -> 251.52s]  One is that we need to save all 32 registers because we
+[251.52s -> 256.24s]  want to resume the user code transparently, particularly
+[256.24s -> 258.20s]  if there's a device interrupt, which the user code
+[258.20s -> 259.40s]  isn't expecting.
+[259.40s -> 261.98s]  And we want to be able to have the kernel serve the interrupt
+[261.98s -> 264.84s]  and then resume the user code without ever noticing
+[264.84s -> 265.54s]  any difference.
+[265.54s -> 267.42s]  And that means that these 32 registers can't
+[267.42s -> 269.40s]  be disturbed by the kernel.
+[269.40s -> 271.64s]  And since the kernel needs to use the registers,
+[271.64s -> 273.40s]  it has to save them all somewhere first.
+[273.40s -> 276.04s]  These need to be saved.
+[276.04s -> 278.28s]  The program counter also needs to be saved somewhere
+[278.28s -> 281.76s]  because it's almost like a user register.
+[281.76s -> 285.00s]  So we need to continue executing the user program
+[285.00s -> 286.20s]  where it left off.
+[286.24s -> 290.76s]  We need to switch the mode to supervisor mode
+[290.76s -> 294.36s]  because we need to use various privileges in the kernel.
+[294.36s -> 297.64s]  This page table pointer is currently
+[297.64s -> 299.68s]  pointing towards the user page table, which
+[299.68s -> 303.46s]  only contains just the mappings that user programs
+[303.46s -> 305.76s]  need, plus one or two more, as we'll see.
+[305.76s -> 307.48s]  But the user page table does not
+[307.48s -> 310.40s]  contain the mappings for the bulk of the kernel data.
+[310.40s -> 312.16s]  So we need to switch page tables before we
+[312.16s -> 315.48s]  can run most kernel code.
+[315.52s -> 317.16s]  We need to switch the stack pointer
+[317.16s -> 319.24s]  to point to a stack that's in the kernel somewhere
+[319.24s -> 324.76s]  because we need a stack to call C functions on.
+[324.76s -> 326.76s]  And finally, we need to jump into,
+[326.76s -> 329.28s]  once we've set all this up and switched all these
+[329.28s -> 332.88s]  resources to be appropriate for use in the kernel,
+[332.88s -> 334.64s]  we need to jump to kernel C code.
+[334.64s -> 337.84s]  And once we're in C code, life
+[337.84s -> 341.64s]  is much more sort of business as usual.
+[341.64s -> 344.28s]  We're just running a C program in this kernel.
+[344.40s -> 346.08s]  And so for today, at least, we'll
+[346.08s -> 349.68s]  talk about what the kernel does in the C code later.
+[349.68s -> 351.56s]  But today, the discussion is really
+[351.56s -> 353.40s]  how to get from user space into the kernel
+[353.40s -> 358.92s]  into a position where we can run C code in the kernel.
+[358.92s -> 361.20s]  There's a couple of high level goals that constrain
+[361.20s -> 363.52s]  our design options for this.
+[363.52s -> 365.80s]  One is that for security and isolation,
+[365.80s -> 368.72s]  we really don't want to let the user code interfere
+[368.72s -> 371.72s]  with this user kernel transition in a way that
+[371.72s -> 373.44s]  could be damaging to security.
+[373.44s -> 377.84s]  And so that means that the sort of hardware and kernel
+[377.84s -> 379.80s]  mechanisms that are involved in traps
+[379.80s -> 383.32s]  really can't count on anything from user space.
+[383.32s -> 385.44s]  We can't just do anything about these registers.
+[385.44s -> 389.24s]  They could be just filled with terribly malicious values.
+[389.24s -> 391.12s]  So basically, the XV6 trap handler
+[391.12s -> 392.96s]  doesn't really even look at these registers.
+[392.96s -> 394.04s]  It just saves them away.
+[396.68s -> 400.32s]  So we're going to want to be careful to preserve isolation
+[400.32s -> 403.24s]  during this trap mechanism against intentionally
+[403.24s -> 405.00s]  malicious user code.
+[405.00s -> 406.44s]  And the other thing that's important
+[406.44s -> 409.12s]  is that we want to be transparent to user code.
+[409.12s -> 411.28s]  We'd like to be able to take the trap
+[411.28s -> 413.68s]  and do our business in the kernel and resume the user
+[413.68s -> 416.08s]  code without it ever having to notice that anything funny
+[416.08s -> 416.96s]  happened.
+[416.96s -> 419.12s]  And that's just to make it easier to write user code.
+[421.64s -> 426.24s]  And something to note, we care about isolation and security
+[426.24s -> 426.92s]  here today.
+[426.92s -> 430.44s]  We're just going to talk about the sort of aspect
+[430.44s -> 432.56s]  of security that involves getting into the kernel.
+[432.60s -> 435.08s]  But of course, the system called implementations,
+[435.08s -> 437.84s]  the actual write implementation in the kernel,
+[437.84s -> 440.28s]  also everything in the kernel has to be careful,
+[440.28s -> 443.28s]  has to be written carefully and securely also.
+[443.28s -> 446.56s]  So even if this transition into the kernel
+[446.56s -> 448.96s]  is perfectly secure, the whole rest of the kernel
+[448.96s -> 451.80s]  has to be written securely and sort of mindful
+[451.80s -> 453.92s]  that user code may be trying to trick it.
+[456.88s -> 459.28s]  A particularly important thing I want to talk about
+[459.28s -> 464.24s]  is what it is that the mode flag controls.
+[464.24s -> 466.40s]  This mode is either user or supervisor.
+[466.40s -> 469.04s]  Of course, it's user when we're up in user space.
+[469.04s -> 471.08s]  And the mode flag is set to supervisor
+[471.08s -> 472.72s]  when we're executing in the kernel.
+[472.72s -> 476.76s]  But it's important to know exactly what privileges
+[476.76s -> 480.24s]  we gain by changing the mode from user to supervisor.
+[480.24s -> 483.36s]  And it turns out these extra privileges
+[483.36s -> 486.16s]  are fairly restrictive.
+[486.16s -> 488.16s]  That is what you can do in supervisor mode
+[488.20s -> 490.80s]  that you couldn't do in user mode
+[490.80s -> 496.00s]  is not maybe as privileged as you might think.
+[496.00s -> 499.20s]  So this is supervisor mode, exactly what it controls.
+[502.12s -> 505.68s]  One thing it does is you can now read and write
+[505.68s -> 508.00s]  the control registers.
+[508.00s -> 511.72s]  And that is, if you're in supervisor mode,
+[511.72s -> 515.52s]  you can read and write satp, the page table pointer,
+[515.52s -> 517.92s]  this stvec pointer which controls
+[517.92s -> 522.20s]  where traps go in the kernel, this register that
+[522.20s -> 524.28s]  holds the save program counter during a trap,
+[524.28s -> 527.96s]  and this sscratch register plus a few others.
+[527.96s -> 530.12s]  So a supervisor can read and write these registers,
+[530.12s -> 531.92s]  and user code could not.
+[531.92s -> 534.40s]  The only other thing supervisor code can do
+[534.40s -> 543.56s]  is it can use PTEs that have the PTEU flag set.
+[543.56s -> 545.24s]  I don't know if you remember, but there's
+[545.28s -> 547.64s]  this PTEU flag that can be set or not set
+[547.64s -> 550.88s]  in each page table entry.
+[550.88s -> 555.24s]  A flag that has this, sorry, can
+[555.24s -> 560.64s]  use PTEs that don't have the PTEU flag set.
+[560.64s -> 562.80s]  If the PTEU flag is set, it means
+[562.80s -> 565.64s]  that user code can use that page table entry.
+[565.64s -> 567.64s]  If this flag isn't set in the page table entry,
+[567.64s -> 571.48s]  it means only supervisor mode can use it.
+[571.48s -> 574.00s]  And we'll see that's important in a little bit.
+[574.00s -> 576.24s]  But these are really the only things
+[576.24s -> 577.48s]  that supervisor mode can do.
+[577.48s -> 578.64s]  It can't do anything else.
+[578.64s -> 582.48s]  In particular, for example, supervisor mode code
+[582.48s -> 586.28s]  can't just read and write arbitrary addresses,
+[586.28s -> 587.48s]  say physical addresses.
+[587.48s -> 588.40s]  No.
+[588.40s -> 591.40s]  Supervisor mode is forced to go through the page table
+[591.40s -> 593.08s]  just like any other code.
+[593.08s -> 596.64s]  If a virtual address isn't in the current page table pointed
+[596.64s -> 602.16s]  to by SAPP, or if it has the PTEU flag set, which
+[602.20s -> 605.44s]  means it's the user PTE, then supervisor mode code cannot use
+[605.44s -> 606.60s]  that address.
+[606.60s -> 609.04s]  So even in supervisor mode, we're
+[609.04s -> 614.16s]  restricted to whatever virtual addresses were set up
+[614.16s -> 615.48s]  in the current page table.
+[618.20s -> 619.08s]  And that's it.
+[619.08s -> 620.88s]  So we're just allowed to do these things.
+[620.88s -> 625.16s]  So we'll see a significant constraint
+[625.16s -> 630.28s]  on what the trap code can do when we're entering the kernel.
+[630.28s -> 632.00s]  Can't do just anything.
+[632.04s -> 633.44s]  I'm going to preview a bit.
+[633.44s -> 637.72s]  I'm going to spend most of this lecture in GDB
+[637.72s -> 641.88s]  actually tracing through the execution of a trap
+[641.88s -> 644.84s]  entry into the kernel in return.
+[644.84s -> 647.04s]  There's going to be a lot of details.
+[647.04s -> 656.24s]  In order to maybe help you see ahead to what's coming,
+[656.24s -> 661.72s]  we're going to be tracing the shell's call to write,
+[661.72s -> 663.28s]  which from the shell's point of view,
+[663.28s -> 666.80s]  it's just a C function call as part of the shell.
+[666.80s -> 670.80s]  In fact, write might use a system call
+[670.80s -> 676.36s]  by issuing the E call instruction, which
+[676.36s -> 678.44s]  switches into the kernel in supervisor mode.
+[678.44s -> 680.24s]  Where that goes immediately, that
+[680.24s -> 682.44s]  is the very first instruction that's
+[682.44s -> 685.16s]  executed in the kernel in supervisor mode,
+[685.20s -> 691.08s]  is in a function written in assembler called user-vec.
+[691.08s -> 700.36s]  And this is in the part of the trampoline in trampoline.s
+[700.36s -> 701.24s]  in the kernel source.
+[701.24s -> 703.00s]  So the very first code that's executed
+[703.00s -> 706.88s]  is this user-vec assembler function.
+[706.88s -> 709.28s]  And next, that assembler function
+[709.28s -> 711.80s]  jumps into C code, in particular a function called
+[711.80s -> 716.08s]  user-trap in trap.c.
+[716.08s -> 717.88s]  And now we're getting it to C code,
+[717.88s -> 720.48s]  so things aren't much easier to understand.
+[720.48s -> 723.92s]  User-trap sees, oh, we're executing a system call,
+[723.92s -> 728.32s]  and it calls a function called syscall, which looks up
+[728.32s -> 730.00s]  the system call number in a table
+[730.00s -> 731.96s]  and calls the particular function
+[731.96s -> 735.00s]  inside the kernel that implements that system call.
+[735.00s -> 736.88s]  And for us, it's going to be write.
+[736.88s -> 738.12s]  And write does its business.
+[738.12s -> 741.72s]  It happens to arrange for the whatever
+[741.72s -> 745.20s]  bytes were written to appear on the console.
+[745.20s -> 747.64s]  And when it's finished, it returns back up
+[747.64s -> 749.88s]  to this system call function.
+[749.88s -> 751.48s]  And then the system call function,
+[751.48s -> 753.10s]  in order to return back to user space,
+[753.10s -> 756.72s]  because we want to resume after the C call,
+[756.72s -> 759.80s]  there's a bunch of stuff we'll see that has to happen
+[759.80s -> 761.60s]  in order to return to user space that there's
+[761.60s -> 768.12s]  a separate function called user-trap-ret.
+[768.12s -> 771.20s]  It's written in C. It's in trap.c that
+[771.20s -> 773.88s]  does the part of this return to user space that's
+[773.88s -> 775.20s]  convenient to do in C code.
+[775.20s -> 777.12s]  There's some final things that really can only
+[777.12s -> 779.88s]  be done in assembly code.
+[779.88s -> 781.80s]  And the code for that is written in assembler.
+[781.80s -> 783.96s]  And it's, again, in this trampoline page
+[783.96s -> 785.36s]  in a function called user-ret.
+[789.24s -> 792.88s]  So there's some last assembly stuff that has to happen.
+[792.88s -> 796.22s]  And finally, this assembly function
+[796.22s -> 799.12s]  issues the machine instruction that returns back in user
+[799.16s -> 806.04s]  space and resume execution after the E call.
+[806.04s -> 808.04s]  Does anybody want to ask a question?
+[808.04s -> 811.80s]  I'm about to switch into looking at stuff with GDB.
+[811.80s -> 814.04s]  Any questions about the sort of high-level picture?
+[822.04s -> 822.88s]  All right.
+[822.88s -> 824.00s]  I am going to.
+[824.00s -> 825.76s]  Questions in the.
+[825.76s -> 828.44s]  Sorry, I can't.
+[828.48s -> 829.16s]  Let me see.
+[829.16s -> 833.00s]  What mode are vm.c functions run in?
+[833.00s -> 835.64s]  vm.c functions, everything in there is a part of the kernel
+[835.64s -> 837.20s]  and it's run in the supervisor mode.
+[842.64s -> 845.40s]  Yeah.
+[845.40s -> 846.00s]  OK.
+[846.00s -> 848.28s]  Somebody asked why these functions are named this way.
+[851.24s -> 852.76s]  The naming is a bit of a disaster.
+[852.76s -> 855.76s]  And for next year, I'm resolved to make them more rational.
+[858.48s -> 860.48s]  I think the naming question might have preferred
+[860.48s -> 864.08s]  to the name of the registers in the previous board.
+[864.08s -> 866.28s]  They all start with an S for supervisor.
+[869.16s -> 872.68s]  Other than that, there is five people
+[872.68s -> 875.16s]  that picked these names.
+[875.16s -> 877.32s]  Somebody's asking, don't the vm.c functions
+[877.32s -> 879.48s]  access physical memory directly?
+[879.48s -> 880.64s]  That's absolutely true.
+[880.64s -> 882.76s]  The reason why they're allowed to do that, though,
+[882.76s -> 884.84s]  is that the kernel carefully sets up
+[884.84s -> 887.56s]  direct mappings in the page table.
+[887.56s -> 889.92s]  There's been many, many PTEs in the page table which
+[889.92s -> 894.28s]  cause whenever the kernel tries to read or write
+[894.28s -> 896.60s]  a physical address, it actually is a virtual address
+[896.60s -> 899.00s]  that's translated by the kernel page
+[899.00s -> 900.88s]  table into the physical address that's
+[900.88s -> 903.72s]  equal to the virtual address that was issued.
+[903.72s -> 906.44s]  So it's super convenient in the kernel
+[906.44s -> 909.40s]  once you're using the kernel page table because the kernel
+[909.40s -> 911.36s]  has all these direct mappings.
+[911.36s -> 915.04s]  But until we've set up the current,
+[915.04s -> 917.28s]  until the trap machinery has switched
+[917.28s -> 919.56s]  to the kernel page table, none of those mappings
+[919.56s -> 920.76s]  are available.
+[920.76s -> 923.68s]  Until the kernel trap code is switched to the kernel page
+[923.68s -> 925.64s]  table, we're still using the user page table,
+[925.64s -> 928.40s]  which has none of these convenient mappings
+[928.40s -> 929.56s]  for physical addresses.
+[934.76s -> 935.24s]  OK.
+[939.80s -> 941.12s]  Can I ask a question?
+[941.12s -> 942.76s]  Please.
+[942.76s -> 946.76s]  So I don't know.
+[946.76s -> 949.00s]  This is maybe not exactly relevant to what
+[949.00s -> 953.28s]  was just said, but the read and write system calls, right?
+[953.28s -> 956.04s]  Like, those are pretty expensive compared
+[956.04s -> 958.76s]  to just a memory store because you have to actually switch
+[958.76s -> 960.60s]  modes and go back and forth.
+[960.60s -> 962.80s]  Would it be possible to just like,
+[962.80s -> 964.96s]  instead of when you open a file,
+[964.96s -> 966.96s]  instead of getting back a file descriptor
+[966.96s -> 971.36s]  that you call with a system call to get a page table
+[971.36s -> 972.88s]  mapping, and then you would just
+[972.88s -> 976.68s]  write to a certain address that's just mapped
+[976.68s -> 979.76s]  to the device, and you can set up the restrictions
+[979.76s -> 984.88s]  so that the program can only write to a file descriptor
+[984.88s -> 987.08s]  that it's allowed to, which is allowed to through
+[987.08s -> 989.56s]  the virtual page table mapping, instead of jumping
+[989.56s -> 991.20s]  to the kernel and back?
+[991.20s -> 993.04s]  Yeah, that's a good observation.
+[993.04s -> 995.52s]  And indeed, many operating systems
+[995.52s -> 998.80s]  provide this what's called memory mapped file access,
+[998.80s -> 1001.12s]  where indeed, you map pages that
+[1001.12s -> 1004.32s]  correspond to the file contents into your virtual,
+[1004.32s -> 1006.52s]  into the user virtual address space.
+[1006.52s -> 1009.80s]  So you can read or write them directly through memory.
+[1009.80s -> 1011.92s]  In fact, you'll be implementing a version of this
+[1011.92s -> 1016.12s]  in the MMAP lab in a couple of weeks.
+[1016.12s -> 1019.92s]  And indeed, as you comply, it's a good deal faster
+[1019.92s -> 1024.08s]  for many programs than calling read and write.
+[1024.16s -> 1030.68s]  OK, I'm going to switch to the GDB world.
+[1044.56s -> 1051.64s]  All right, at this point, everybody should see
+[1051.64s -> 1052.88s]  my screen share.
+[1054.08s -> 1060.24s]  We're going to watch an xv system call the write,
+[1060.24s -> 1062.92s]  the shell's write of its initial prompt
+[1062.92s -> 1064.24s]  make its way through the system.
+[1064.24s -> 1069.84s]  You can see the user code that initiates this in sh.c.
+[1069.84s -> 1073.24s]  And I'm showing that here as just making the write system
+[1073.24s -> 1076.84s]  call with this dollar sign prompt.
+[1076.84s -> 1082.76s]  Let me fire up GDB.
+[1088.32s -> 1089.12s]  Excellent.
+[1089.12s -> 1093.48s]  So what actually happens when user code, when the shell
+[1093.48s -> 1098.32s]  calls write, write is just a library function that's
+[1098.32s -> 1102.84s]  part of the, that's linked into the shell.
+[1102.88s -> 1109.64s]  And you can see the source for it in usys.s.
+[1109.64s -> 1111.52s]  So it's this couple of instructions
+[1111.52s -> 1115.36s]  here is the implementation of the write function
+[1115.36s -> 1117.16s]  that the shell is actually calling.
+[1117.16s -> 1120.16s]  And this is a very short function.
+[1120.16s -> 1124.28s]  All it's doing is loading into a7 a number sys write,
+[1124.28s -> 1126.04s]  which is just symbolically defined
+[1126.04s -> 1128.96s]  to be 16 that tells the kernel I
+[1128.96s -> 1132.08s]  want to run the 16th system call, which
+[1132.08s -> 1133.64s]  happens to be write.
+[1133.64s -> 1137.64s]  And then this little function uses the ecall instruction,
+[1137.64s -> 1140.92s]  which is what actually gets the code into the kernel.
+[1140.92s -> 1143.28s]  The kernel does its thing.
+[1143.28s -> 1144.96s]  And then when the kernel's finally done,
+[1144.96s -> 1147.68s]  it returns back into user space
+[1147.68s -> 1150.24s]  to execute the instruction after the ecall, which
+[1150.24s -> 1154.00s]  is that ret that returns back to the shell,
+[1154.00s -> 1158.00s]  returns from that write library function back into the shell.
+[1158.00s -> 1160.32s]  So what I'd like to do in order to show the system call
+[1160.32s -> 1161.76s]  part of this, I'm going to start
+[1161.76s -> 1166.68s]  by putting a breakpoint on that ecall instruction.
+[1166.68s -> 1169.36s]  And we need to know its address, of course.
+[1169.36s -> 1170.88s]  But we can find that out by looking
+[1170.88s -> 1176.52s]  in sh.asm, which the xv6 compilation process produces.
+[1176.52s -> 1181.04s]  And in sh.asm, there's an assembly code
+[1181.04s -> 1188.00s]  with addresses of the instructions for the shell.
+[1188.04s -> 1189.96s]  So I'm going to put a breakpoint on the ecall
+[1189.96s -> 1193.36s]  instruction, which is at address DE6.
+[1196.32s -> 1196.84s]  Excellent.
+[1196.84s -> 1199.60s]  I'm going to actually start xe6 running.
+[1199.60s -> 1203.68s]  And I'm hoping to have the system break in the shell
+[1203.68s -> 1207.04s]  just before executing ecall.
+[1207.04s -> 1208.84s]  All right, excellent.
+[1208.84s -> 1210.60s]  We're now, you can see from GDB,
+[1210.60s -> 1216.44s]  we're about to execute that ecall.
+[1216.44s -> 1221.92s]  Let's just check that we are where we think we are.
+[1221.92s -> 1223.40s]  We can print the program counter.
+[1223.40s -> 1225.92s]  This is 0xDE6, just what we asked for.
+[1231.00s -> 1235.08s]  We can also print the all 32 registers.
+[1235.08s -> 1238.24s]  And some of these values, whatever we don't know,
+[1238.24s -> 1239.48s]  we don't care what they are.
+[1239.48s -> 1242.96s]  But a0, a1, and a2 are the three arguments
+[1242.96s -> 1245.24s]  that the shell passed right.
+[1245.56s -> 1249.28s]  And so those arguments are file descriptor 2 in a0,
+[1249.28s -> 1251.12s]  the pointer to the buffer of characters
+[1251.12s -> 1253.68s]  that the shell wants to write in a1,
+[1253.68s -> 1257.28s]  and the number of characters it wants to write in a2.
+[1257.28s -> 1259.92s]  And we can convince ourselves that we're looking at the code
+[1259.92s -> 1265.40s]  we think we're looking at by actually printing out
+[1265.40s -> 1268.12s]  the bytes in that buffer that the shell wants to write.
+[1268.12s -> 1271.04s]  And indeed, it's a dollar sign and a space.
+[1271.04s -> 1276.36s]  So we're at the system call that we hope to be at.
+[1276.36s -> 1279.04s]  One thing to notice is that the program counter and the stack
+[1279.04s -> 1281.00s]  pointer are both at low addresses,
+[1281.00s -> 1282.36s]  addresses quite close to 0.
+[1282.36s -> 1286.40s]  And that just reinforces our belief
+[1286.40s -> 1289.32s]  that we're still executing in user and the user address
+[1289.32s -> 1291.48s]  space, where all the addresses are quite small.
+[1291.48s -> 1293.96s]  Once we get into the kernel, we see the addresses are,
+[1293.96s -> 1296.24s]  the kernel's actually loaded much, much higher in memory.
+[1296.24s -> 1304.12s]  OK, the point of the system call
+[1304.12s -> 1305.92s]  is to switch around a lot of state.
+[1305.92s -> 1307.76s]  One of the most important pieces of state
+[1307.76s -> 1309.42s]  that has to get switched and that we
+[1309.42s -> 1311.32s]  have to live with before it's switched
+[1311.32s -> 1313.56s]  is the current page table.
+[1313.56s -> 1315.88s]  Of course, we can look at satp.
+[1318.72s -> 1320.80s]  But all we get there is the address in physical memory,
+[1320.80s -> 1322.18s]  the page table, doesn't actually
+[1322.18s -> 1324.20s]  tell us much about what the mappings are,
+[1324.20s -> 1326.20s]  what the page table looks like.
+[1326.20s -> 1330.80s]  Luckily, there's a way in QEMU to ask it to print
+[1330.80s -> 1331.92s]  the current page table.
+[1331.92s -> 1337.04s]  And if I print Control-A-C, I get into the QEMU monitor
+[1337.04s -> 1338.28s]  or console.
+[1338.28s -> 1341.50s]  And if I then type info mem, it'll
+[1341.50s -> 1344.52s]  print the complete page table.
+[1344.52s -> 1345.96s]  This is a very small page table.
+[1345.96s -> 1348.68s]  It contains only six mappings.
+[1348.68s -> 1351.44s]  Of course, it's the page table for the shell.
+[1351.48s -> 1354.30s]  Shell's a pretty small program.
+[1354.30s -> 1356.96s]  And these six mappings are, in order,
+[1356.96s -> 1360.80s]  the shell's instructions, the shell's data,
+[1360.80s -> 1365.00s]  an invalid page, which accesses the stack
+[1365.00s -> 1366.84s]  a guard page in case the shell tries
+[1366.84s -> 1368.44s]  to use too much stack space.
+[1368.44s -> 1370.48s]  And we can see it's invalid because it
+[1370.48s -> 1372.40s]  doesn't have the U flag set.
+[1372.40s -> 1377.80s]  Over here in this attribute or flag column,
+[1377.80s -> 1379.84s]  these are all the PTE underscore flags.
+[1379.84s -> 1383.08s]  R, W, and X are just control whether a page can be read
+[1383.08s -> 1385.04s]  or written or executed.
+[1385.04s -> 1387.24s]  The next column is U, and that's whether or not
+[1387.24s -> 1388.60s]  the PTE U flag is set.
+[1388.60s -> 1391.56s]  And user code can only get at PDE entries
+[1391.56s -> 1392.84s]  for which the U flag is set.
+[1397.84s -> 1400.64s]  I don't know what the next column is, I have to admit.
+[1400.64s -> 1402.88s]  And the next column is A for whether the page table
+[1402.88s -> 1407.40s]  entries have ever been used, and D for whether a write has
+[1407.40s -> 1408.80s]  ever been issued for this address.
+[1409.84s -> 1414.64s]  OK, so we have this tiny page table.
+[1414.64s -> 1416.96s]  And the last two page table entries, by the way,
+[1416.96s -> 1422.32s]  are way up at enormous virtual addresses,
+[1422.32s -> 1425.52s]  very close to the top of the virtual address space.
+[1425.52s -> 1429.06s]  And these two, as you read about in the book
+[1429.06s -> 1431.72s]  and will hear much more about, are the trap frame page
+[1431.72s -> 1433.80s]  and the trampoline page.
+[1433.80s -> 1437.48s]  And as you can see, neither of them has the U bit set.
+[1437.52s -> 1440.56s]  So user code can't get at either of these,
+[1440.56s -> 1442.52s]  can't use either of these addresses.
+[1442.52s -> 1444.08s]  But once we enter supervisor mode,
+[1444.08s -> 1445.40s]  we can get at these two pages.
+[1450.12s -> 1455.00s]  All right, one thing I noticed about this page table
+[1455.00s -> 1457.76s]  is there's no mappings for anything in the kernel.
+[1457.76s -> 1459.26s]  There's no physical address mappings,
+[1459.26s -> 1461.00s]  there's no mappings for the kernel's data
+[1461.00s -> 1463.72s]  or the kernel's instructions or anything else,
+[1463.72s -> 1467.04s]  except for the last two, just the very last two pages.
+[1467.08s -> 1469.28s]  Now, this is a page table almost entirely dedicated
+[1469.28s -> 1472.88s]  to user execution and is not directly particularly useful
+[1472.88s -> 1475.36s]  for executing the kernel.
+[1475.36s -> 1476.80s]  All right.
+[1476.80s -> 1482.24s]  What's the A attribute on the page table listing on the top?
+[1482.24s -> 1485.12s]  I believe this means the page table has ever been,
+[1485.12s -> 1490.36s]  this page table entry has ever been accessed by code.
+[1490.36s -> 1494.08s]  That is, whether it's ever issued an address that
+[1494.08s -> 1497.80s]  refers to this page table entry.
+[1497.80s -> 1504.56s]  And the D is whether the program has ever done a store
+[1504.56s -> 1506.04s]  through this page table entry.
+[1506.04s -> 1508.56s]  And these are bits that the hardware
+[1508.56s -> 1511.08s]  maintains for the convenience of the operating system.
+[1511.08s -> 1515.60s]  And operating systems more sophisticated than XV6
+[1515.60s -> 1517.24s]  may need to evict pages.
+[1517.24s -> 1519.08s]  If they're running short on physical memory,
+[1519.08s -> 1523.48s]  they may need to write some pages of memory to disk.
+[1523.48s -> 1525.56s]  And invalidate the page table entries
+[1525.56s -> 1528.00s]  to free up the physical memory.
+[1528.00s -> 1530.12s]  And many policies you could imagine
+[1530.12s -> 1534.12s]  a operating system using to pick which pages to exist.
+[1534.12s -> 1536.60s]  We'll consult the A bits to see whether this page table
+[1536.60s -> 1538.60s]  entry has ever even been used.
+[1538.60s -> 1540.96s]  And if it hasn't been used or haven't been used recently,
+[1540.96s -> 1545.92s]  then that's a good candidate for evicting to disk.
+[1545.92s -> 1550.52s]  And the D tells the kernel that, oh, this page
+[1550.52s -> 1555.72s]  has actually been written since it was read from disk.
+[1555.72s -> 1557.44s]  XV6 doesn't actually use either of these.
+[1560.48s -> 1562.44s]  All right, other questions?
+[1567.40s -> 1572.28s]  All right, let's execute the, let
+[1572.28s -> 1574.16s]  me just remind us where we are.
+[1574.16s -> 1576.44s]  I'm going to print out the contents of the write.
+[1576.44s -> 1578.60s]  We're in the write library function.
+[1578.64s -> 1583.12s]  And in the shell.
+[1583.12s -> 1584.64s]  And the program counter is pointed
+[1584.64s -> 1585.80s]  at the E-call instruction.
+[1585.80s -> 1588.24s]  We're about to execute the E-call instruction.
+[1588.24s -> 1591.80s]  We're still in user space, but we won't be for long.
+[1591.80s -> 1595.32s]  Boom, I executed the E-call instruction.
+[1595.32s -> 1600.88s]  OK, so first question is, where are we after the E-call?
+[1600.88s -> 1603.60s]  We can look at the program counter.
+[1603.60s -> 1606.52s]  We see it's now used to be a very low number, DE6.
+[1606.52s -> 1607.88s]  Now it's a very high number.
+[1607.92s -> 1609.52s]  In fact, we look at the program counter
+[1609.52s -> 1612.12s]  as a virtual address, like all addresses
+[1612.12s -> 1615.20s]  that instructions use.
+[1615.20s -> 1617.40s]  And we can look in the page table.
+[1617.40s -> 1619.36s]  Actually, let's just check what the page table is.
+[1619.36s -> 1624.64s]  Just to be sure, I'm going to ask QMU for info mem again.
+[1624.64s -> 1627.20s]  It's the very same page table.
+[1627.20s -> 1628.60s]  So nothing's changed there.
+[1628.60s -> 1631.80s]  We'll look up our new current program counter there.
+[1631.80s -> 1635.52s]  The program counter is at the right
+[1635.56s -> 1637.56s]  of the beginning of this trampoline page
+[1637.56s -> 1642.56s]  that's mapped way up high in the user memory.
+[1642.56s -> 1643.92s]  So that's where we're executing.
+[1643.92s -> 1646.60s]  We can see the instructions that are there.
+[1646.60s -> 1659.68s]  I'm going to use, these are the instructions,
+[1659.68s -> 1662.36s]  the very first instructions that the kernel executes
+[1662.36s -> 1665.60s]  in supervisor mode at the very beginning of the trap.
+[1665.60s -> 1667.28s]  And through some weirdness in GDB,
+[1667.28s -> 1670.52s]  we've actually already executed the first instruction
+[1670.52s -> 1673.96s]  at the very beginning of this page.
+[1673.96s -> 1678.52s]  And we're about to execute the second instruction.
+[1678.52s -> 1682.12s]  We can look at the registers.
+[1682.12s -> 1683.92s]  I don't know if you remember these register values,
+[1683.92s -> 1685.44s]  but nothing has changed here.
+[1685.44s -> 1687.60s]  These are exactly the same register contents
+[1687.60s -> 1689.84s]  that the user program has had.
+[1689.84s -> 1691.84s]  So these are all full of user values.
+[1691.84s -> 1694.32s]  For many of them, or all of them, for all we know,
+[1694.32s -> 1696.20s]  they're the only locations these values exist.
+[1696.20s -> 1697.52s]  So we have to be very careful.
+[1697.52s -> 1701.16s]  We can't actually use any registers at this point
+[1701.16s -> 1704.08s]  without first saving those registers somewhere
+[1704.08s -> 1705.52s]  so we can restore them.
+[1705.52s -> 1707.84s]  Because if the kernel was to use any of these registers
+[1707.84s -> 1711.68s]  at this point, it would overwrite
+[1711.68s -> 1713.00s]  whatever that user value is.
+[1713.00s -> 1715.00s]  And then if we tried to resume the user program,
+[1715.00s -> 1716.96s]  we wouldn't be able to set up its registers
+[1716.96s -> 1719.80s]  with the correct values, and the user program would just
+[1719.80s -> 1722.52s]  do something totally wrong.
+[1722.52s -> 1723.32s]  Question?
+[1723.32s -> 1724.36s]  Yes.
+[1724.36s -> 1727.24s]  Could you return to the instructions panel
+[1727.24s -> 1728.28s]  that you had before?
+[1728.28s -> 1732.20s]  I'm wondering what the CRRRW instruction is doing.
+[1736.32s -> 1741.12s]  The CSRRW, OK, we'll talk about this in a few minutes.
+[1741.12s -> 1743.20s]  But the answer to your question is that instruction
+[1743.20s -> 1748.60s]  swaps A0 with the contents of the special scratch register.
+[1750.60s -> 1755.32s]  And so in, yeah, this is super important.
+[1755.32s -> 1757.80s]  And basically answers the question,
+[1757.80s -> 1760.52s]  how can this kernel trap code do anything
+[1760.52s -> 1762.52s]  if it can't use any registers?
+[1762.52s -> 1764.44s]  The answer to that question is that it really
+[1764.44s -> 1770.44s]  has to execute this CSRRW A0 scratch instruction that
+[1770.44s -> 1773.64s]  simultaneously saves A0 in scratch
+[1773.64s -> 1776.84s]  and happens to load scratch into A0.
+[1776.84s -> 1779.88s]  So now the kernel can use A0 for whatever it wants
+[1779.88s -> 1783.96s]  to after this instruction.
+[1783.96s -> 1785.00s]  OK, thanks.
+[1785.00s -> 1786.80s]  Yeah.
+[1786.80s -> 1791.32s]  OK, so we're currently, this address is 3FFFFF000.
+[1791.32s -> 1793.16s]  This last page is the trampoline page.
+[1793.16s -> 1796.44s]  And we're currently executing in the trampoline page, which
+[1796.44s -> 1799.88s]  contains the very first instructions of the kernel's
+[1799.88s -> 1803.08s]  trap handling code.
+[1803.08s -> 1805.44s]  Ecol doesn't switch page tables.
+[1805.48s -> 1807.20s]  That's a very important thing about Ecol.
+[1807.20s -> 1809.80s]  And what that means is that these very first instructions
+[1809.80s -> 1813.24s]  have to be present in every user page table.
+[1813.24s -> 1815.24s]  Because since Ecol doesn't switch page tables,
+[1815.24s -> 1817.88s]  we need to be executing the first bit of the kernel
+[1817.88s -> 1819.44s]  somewhere in the user page table.
+[1819.44s -> 1821.20s]  And it's this trampoline page,
+[1821.20s -> 1823.80s]  which the kernel carefully maps into every user page
+[1823.80s -> 1826.28s]  table, that gives the kernel a place
+[1826.28s -> 1828.36s]  to execute at the very beginning of a trap
+[1828.36s -> 1830.32s]  when we're still using the user page table.
+[1830.32s -> 1833.84s]  And the way this is controlled
+[1833.84s -> 1835.36s]  is through the STVEC register.
+[1835.36s -> 1837.92s]  This is another privileged register,
+[1837.92s -> 1841.16s]  only writable by the supervisor.
+[1841.16s -> 1843.04s]  And the kernel, before it entered user space,
+[1843.04s -> 1845.64s]  set up the STVEC to point to the place
+[1845.64s -> 1848.00s]  where the kernel wanted traps to go.
+[1848.00s -> 1850.08s]  And so as you can see, the kernel has previously
+[1850.08s -> 1854.92s]  set up this STVEC to this 3FFFFF000 address, which
+[1854.92s -> 1857.56s]  is the beginning of the trampoline page.
+[1857.56s -> 1859.56s]  And it's this STVEC register.
+[1859.56s -> 1863.16s]  That, its contents, is the reason why, after the Ecol,
+[1863.16s -> 1866.32s]  we ended up executing at this particular place.
+[1869.60s -> 1871.28s]  And finally, I just want to remind you
+[1871.28s -> 1873.60s]  that even though the trampoline and trap frame pages
+[1873.60s -> 1876.12s]  are mapped into the user page table, the user address
+[1876.12s -> 1881.16s]  space, the user code cannot write them because the PTEs
+[1881.16s -> 1883.48s]  for them don't have the PTEU flag.
+[1883.48s -> 1886.60s]  So they're protected against user code.
+[1886.60s -> 1888.72s]  And that's why this trick is, or part of the reason why
+[1888.72s -> 1889.56s]  this trick is safe.
+[1889.56s -> 1895.04s]  I've been sort of telling you and assuming
+[1895.04s -> 1896.60s]  that we're in supervisor mode.
+[1896.60s -> 1898.72s]  I don't know any way of finding out what mode
+[1898.72s -> 1901.40s]  the machine is in directly.
+[1901.40s -> 1904.20s]  But I do observe that the program counter is currently
+[1904.20s -> 1907.08s]  executing in a page, the trampoline page, that
+[1907.08s -> 1910.04s]  doesn't have a PTEU flag set.
+[1910.04s -> 1912.16s]  And that can only happen without a crash
+[1912.16s -> 1913.48s]  if we are in supervisor mode.
+[1913.48s -> 1916.88s]  So I deduce from the lack of a crash
+[1916.88s -> 1918.48s]  and the value of the program counter
+[1918.48s -> 1923.12s]  that we must be in supervisor mode.
+[1923.12s -> 1925.84s]  How we got here, of course, is through Ecol.
+[1925.84s -> 1928.76s]  Ecol really just changes three things.
+[1928.76s -> 1932.76s]  First, Ecol changes mode from user to supervisor.
+[1932.76s -> 1936.00s]  Second, Ecol saves the program counter register
+[1936.00s -> 1937.88s]  in the SEPC register.
+[1937.88s -> 1939.84s]  So we can see the effect of that
+[1939.84s -> 1942.20s]  between the program counter.
+[1942.20s -> 1944.40s]  It's certainly no longer the user program counter,
+[1944.40s -> 1947.40s]  even though all the other registers were.
+[1947.44s -> 1951.60s]  It's this value copied from STVEC.
+[1951.60s -> 1958.36s]  And we can also print the saved, it's the supervisor exception
+[1958.36s -> 1960.44s]  program counter is what that stands for.
+[1960.44s -> 1964.48s]  But this is where Ecol saves the user program counter.
+[1964.48s -> 1967.08s]  And that has the familiar value, DE6,
+[1967.08s -> 1972.16s]  which is the address in user space of the Ecol instruction.
+[1972.16s -> 1975.44s]  So we got that one register at least saved away by Ecol.
+[1975.44s -> 1977.00s]  And the final thing that Ecol does,
+[1977.00s -> 1979.88s]  the third thing it does, is jump to the instruction
+[1979.88s -> 1982.04s]  that STVEC points to.
+[1987.32s -> 1989.88s]  All right.
+[1989.88s -> 1991.08s]  So what needs to happen now?
+[1991.08s -> 1992.88s]  Ecol's done a little bit of work for us,
+[1992.88s -> 1995.52s]  but it turns out we're nowhere near ready to actually execute
+[1995.52s -> 1997.64s]  ordinary C code in the kernel.
+[1997.64s -> 1999.56s]  What has to happen now is we need
+[1999.56s -> 2003.64s]  to save the 32 user register contents so we can later
+[2003.64s -> 2006.88s]  restore them when we want to resume the user code.
+[2007.12s -> 2009.12s]  We need to switch to the kernel page table,
+[2009.12s -> 2011.80s]  because currently we're using the user page table.
+[2011.80s -> 2014.00s]  We need to create a stack or find a stack
+[2014.00s -> 2015.48s]  and set the stack pointer register
+[2015.48s -> 2018.16s]  to point to the kernel stack so we can run the C
+[2018.16s -> 2020.00s]  code, which requires a stack.
+[2020.00s -> 2023.52s]  And then we need to actually jump to some sensible place
+[2023.52s -> 2025.76s]  in the C code in the kernel.
+[2025.76s -> 2032.32s]  Now as an aside, Ecol didn't do any of these things for us.
+[2032.32s -> 2033.36s]  But you could have.
+[2033.40s -> 2035.48s]  The hardware could have defined Ecol
+[2035.48s -> 2039.88s]  to do much more, many more of these steps for us
+[2039.88s -> 2041.32s]  instead of leaving them to software.
+[2041.32s -> 2043.92s]  And as we'll see, doing them with software
+[2043.92s -> 2046.44s]  is not particularly straightforward.
+[2046.44s -> 2048.48s]  So you should ask yourself why the Ecol doesn't
+[2048.48s -> 2051.08s]  do more of the work of getting from user space
+[2051.08s -> 2052.00s]  into the kernel.
+[2052.00s -> 2055.04s]  And why doesn't it save their user registers
+[2055.04s -> 2058.96s]  or switch page table pointers to point to the kernel page
+[2058.96s -> 2061.96s]  table or automatically set the stack pointer
+[2062.00s -> 2064.00s]  to point to the kernel stack?
+[2064.00s -> 2066.60s]  Or jump right to kernel C code, jeez,
+[2066.60s -> 2069.44s]  rather than having to go through all this complicated
+[2069.44s -> 2071.88s]  assembly code.
+[2071.88s -> 2073.48s]  And there's actually been machines
+[2073.48s -> 2078.56s]  that have done all of these things in hardware
+[2078.56s -> 2080.52s]  during system calls.
+[2080.52s -> 2082.08s]  The RISC-V doesn't do any of them.
+[2082.08s -> 2084.04s]  The RISC-V, really the attitude they've taken
+[2084.04s -> 2086.84s]  is that Ecol does the absolute minimum that's
+[2086.84s -> 2089.76s]  required that it could possibly do and leave everything else up
+[2089.76s -> 2090.80s]  to software.
+[2090.84s -> 2093.68s]  And the reason for this is because the RISC-V designers
+[2093.68s -> 2097.80s]  want to allow maximum flexibility to the software, the operating
+[2097.80s -> 2100.84s]  system programmers, to design the program operating
+[2100.84s -> 2103.48s]  system however they like.
+[2103.48s -> 2106.40s]  And so you can imagine ways the XB6 really
+[2106.40s -> 2109.56s]  doesn't use this freedom, but other operating systems do.
+[2109.56s -> 2113.84s]  So some examples of things that are enabled for the
+[2113.84s -> 2119.52s]  software to do because Ecol is so simple,
+[2119.52s -> 2123.60s]  maybe some operating systems can execute some traps,
+[2123.60s -> 2126.52s]  some system calls, without switching page tables.
+[2126.52s -> 2128.68s]  The switching page table is expensive.
+[2128.68s -> 2131.20s]  If Ecol forces you to do it, that
+[2131.20s -> 2135.16s]  rules out the possibility of very streamlined implementations
+[2135.16s -> 2139.44s]  for some system calls that don't switch page tables.
+[2139.44s -> 2143.12s]  Some operating systems map both user and kernel
+[2143.12s -> 2144.92s]  virtual addresses into a single page table
+[2144.92s -> 2147.32s]  and use the same page table for both user and kernel,
+[2147.32s -> 2150.48s]  and therefore don't even have to switch page tables ever
+[2150.48s -> 2152.88s]  when transitioning between user and kernel.
+[2152.88s -> 2155.00s]  And for them also, if Ecol switched page tables,
+[2155.00s -> 2158.24s]  that would just be a waste and slow things down.
+[2158.24s -> 2162.16s]  Maybe in some circumstances, system calls, for example,
+[2162.16s -> 2164.32s]  some registers don't have to be saved.
+[2164.32s -> 2165.88s]  And which ones have to be saved,
+[2165.88s -> 2168.72s]  it depends on the software, the language, and the compiler.
+[2168.72s -> 2170.72s]  But you might be able to save a lot of time
+[2170.72s -> 2172.72s]  by saving fewer than 32 registers.
+[2172.72s -> 2175.00s]  So you don't want Ecol to force you.
+[2175.00s -> 2177.08s]  You don't necessarily want Ecol to force you
+[2177.08s -> 2179.68s]  to save all the registers.
+[2179.68s -> 2181.20s]  And finally, maybe no stack at all
+[2181.20s -> 2183.24s]  is required for some simple system calls.
+[2183.24s -> 2186.24s]  So again, for operating systems that
+[2186.24s -> 2187.64s]  care a lot about performance, it's
+[2187.64s -> 2190.68s]  good that Ecol doesn't force any particular stack policy
+[2190.68s -> 2192.80s]  on you.
+[2192.80s -> 2197.28s]  And again, there's been many clever hardware, software
+[2197.28s -> 2201.68s]  schemes for very streamlined, high-performance system calls
+[2201.68s -> 2203.80s]  and tracks, just because the performance of this stuff
+[2203.80s -> 2208.12s]  is super important and people worry about it a lot.
+[2208.12s -> 2213.36s]  OK, so back to xv6 and the RISC-V.
+[2213.36s -> 2215.52s]  The first thing we need to do is save some registers.
+[2215.52s -> 2218.32s]  We can do hardly anything on the RISC-V
+[2218.32s -> 2221.68s]  without a few registers, without being
+[2221.68s -> 2222.64s]  able to use registers.
+[2222.64s -> 2227.04s]  So what are our options for saving user registers?
+[2227.04s -> 2228.48s]  On some other machine, we might be
+[2228.48s -> 2231.12s]  able to just write the contents of the 32 registers
+[2231.16s -> 2234.00s]  somewhere convenient in physical memory.
+[2234.00s -> 2236.00s]  We can't actually really do that on the RISC-V
+[2236.00s -> 2239.24s]  because supervisor code isn't allowed to directly access
+[2239.24s -> 2240.00s]  physical memory.
+[2240.00s -> 2241.80s]  We can only use what's in the page table.
+[2241.80s -> 2245.56s]  There's not much in the page table.
+[2245.56s -> 2248.80s]  Another possibility that xv6 doesn't do
+[2248.80s -> 2253.08s]  is simply setting the SATP to the kernel page table.
+[2253.08s -> 2255.16s]  And then we could use all the kernel mappings
+[2255.16s -> 2258.96s]  and use them maybe to help us save the user registers.
+[2258.96s -> 2260.04s]  And that would be legal.
+[2260.08s -> 2263.08s]  So the supervisor can certainly change SATP.
+[2263.08s -> 2265.76s]  However, at this point in the trap handler,
+[2265.76s -> 2267.76s]  namely at the beginning, we don't even
+[2267.76s -> 2270.04s]  know the address of the kernel page table.
+[2270.04s -> 2272.04s]  And furthermore, the instruction that you
+[2272.04s -> 2275.92s]  execute to change SATP require that the address
+[2275.92s -> 2278.68s]  that you're loading into SATP come from a register.
+[2278.68s -> 2280.80s]  So to even execute the instruction
+[2280.80s -> 2285.08s]  to change page tables, we need some spare registers
+[2285.08s -> 2287.40s]  in order to put the new page table
+[2287.40s -> 2290.96s]  address in those registers so we can execute the SATP
+[2290.96s -> 2293.88s]  modifying instruction.
+[2293.88s -> 2298.40s]  All right, so we really need to save the user registers.
+[2298.40s -> 2303.04s]  There's two parts to the solution for how xv6
+[2303.04s -> 2307.24s]  does this on the RISC-V. One is part of the solution
+[2307.24s -> 2312.56s]  is that xv6 into every user address, every user page table
+[2312.56s -> 2315.96s]  maps this trap frame page.
+[2316.00s -> 2319.52s]  And every process is its own trap frame page.
+[2319.52s -> 2322.80s]  And the trap frame page actually
+[2322.80s -> 2325.08s]  contains a bunch of different kinds of data.
+[2325.08s -> 2327.12s]  But at this point, the most important data
+[2327.12s -> 2330.96s]  contains is 32 slots, empty slots,
+[2330.96s -> 2334.36s]  in memory in which to save the 32 registers.
+[2334.36s -> 2337.56s]  So the good news right now in the trap handling code
+[2337.56s -> 2338.88s]  is that we have a mapping.
+[2338.88s -> 2341.00s]  We're guaranteed to have a mapping set up
+[2341.00s -> 2344.60s]  by the kernel previously in the user page table that
+[2344.60s -> 2348.20s]  points to a place where that's prepared for us to save
+[2348.20s -> 2352.76s]  this process's user registers.
+[2352.76s -> 2360.20s]  And it's always 3FFFFFE000 virtual address.
+[2360.20s -> 2362.92s]  And if you want to see what's there actually in that trap
+[2362.92s -> 2368.56s]  frame, what xv6 puts there is defined
+[2368.56s -> 2376.76s]  in proc.h and struct frac frame, which is right here.
+[2376.76s -> 2381.24s]  So you can see what's supposed to go in each slot.
+[2381.24s -> 2386.00s]  And there's 32 slots named RA, SB, GP, whatever,
+[2386.00s -> 2387.96s]  which are places to save registers.
+[2387.96s -> 2390.80s]  There's also these five things at the beginning,
+[2390.80s -> 2393.04s]  which we'll see will come in handy very soon, which are
+[2393.04s -> 2395.88s]  values that the kernel previously placed
+[2395.92s -> 2399.00s]  in these slots in the trap frame.
+[2399.00s -> 2401.80s]  Like, for example, this very first slot in the trap frame
+[2401.80s -> 2403.92s]  contains a pointer to the kernel page table.
+[2403.92s -> 2407.76s]  And this will be the value that we're very soon going to,
+[2407.76s -> 2411.60s]  the trap handling code's going to load into satp.
+[2411.60s -> 2414.66s]  So half the answer to how to save the registers
+[2414.66s -> 2417.40s]  is that the kernel has conveniently
+[2417.40s -> 2420.60s]  mapped this trap frame into every user page table.
+[2420.60s -> 2424.00s]  The other is this instruction, this s scratch register,
+[2424.04s -> 2426.96s]  which we mentioned before.
+[2426.96s -> 2429.64s]  So there's the special s scratch register provided
+[2429.64s -> 2432.04s]  by a RISC-V for exactly the purpose
+[2432.04s -> 2435.16s]  we're about to use it for.
+[2435.16s -> 2437.16s]  The kernel, when it before goes into user space,
+[2437.16s -> 2438.84s]  puts a pointer there to the trap frame,
+[2438.84s -> 2444.80s]  basically just puts into satp this address,
+[2444.80s -> 2447.28s]  just for the convenience of the trap handling code.
+[2447.28s -> 2448.32s]  More importantly, though, there's
+[2448.32s -> 2450.16s]  an instruction in the RISC-V that it's
+[2450.16s -> 2453.48s]  going to allow us to swap any register and s scratch,
+[2453.52s -> 2458.52s]  which will save that register as well as load the value of s
+[2458.52s -> 2461.68s]  scratch into whatever register we specify.
+[2461.68s -> 2467.76s]  As you can see, if I look at the trampoline code,
+[2467.76s -> 2471.08s]  we're right at the beginning of the trampoline code here.
+[2471.08s -> 2476.92s]  The very first thing it does is this CSRRW instruction.
+[2476.92s -> 2479.04s]  This is the source in this window.
+[2479.04s -> 2481.40s]  Over in this window, we can actually see what GDB sees
+[2481.40s -> 2482.28s]  in the kernel.
+[2482.28s -> 2487.20s]  And we've actually just executed this swap instruction.
+[2487.20s -> 2489.24s]  And it swaps A0 with scratch.
+[2489.24s -> 2493.44s]  In order to see what it did, let's print out A0.
+[2493.44s -> 2498.08s]  A0 is now this 3FFFE000 value, which
+[2498.08s -> 2501.20s]  is a pointer, which is the virtual address of the trap
+[2501.20s -> 2501.84s]  frame.
+[2501.84s -> 2504.48s]  It used to be an s scratch, but we just swapped it.
+[2504.48s -> 2508.68s]  And then we can print out what's an s scratch.
+[2508.68s -> 2511.68s]  And it's 2, which is the old value of the A0 register.
+[2511.72s -> 2514.44s]  Of course, A0 held the first argument
+[2514.44s -> 2518.24s]  to the right function, which is file descriptor 2, which
+[2518.24s -> 2519.36s]  is what the shell passed.
+[2519.36s -> 2522.00s]  So we saved away A0.
+[2522.00s -> 2525.28s]  And we have a pointer to the trap frame.
+[2525.28s -> 2527.56s]  And it turns out now that we're well on our way
+[2527.56s -> 2529.00s]  to be able to save the registers.
+[2529.00s -> 2533.92s]  In fact, that's what the very next 30-odd instructions
+[2533.92s -> 2536.44s]  do in this trampoline code.
+[2536.44s -> 2540.00s]  It just systematically uses these SD instructions.
+[2540.00s -> 2543.56s]  These are just 64-bit store instructions
+[2543.56s -> 2547.96s]  to store every single register to a different offset
+[2547.96s -> 2549.04s]  in the trap frame.
+[2549.04s -> 2551.44s]  A0, if you recall, now contains,
+[2551.44s -> 2554.56s]  after the swap, contains a pointer to the trap frame.
+[2554.56s -> 2559.48s]  That is, contains the virtual address of this page.
+[2559.48s -> 2561.80s]  And we're just storing each register
+[2561.80s -> 2563.68s]  at a different offset in the trap frame.
+[2567.08s -> 2568.40s]  All these stores are a bit boring,
+[2568.44s -> 2570.02s]  so I think I'm going to skip over them.
+[2573.32s -> 2575.48s]  And let me set a breakpoint a little farther on.
+[2580.76s -> 2581.72s]  Is there a question?
+[2581.72s -> 2583.20s]  Yes.
+[2583.20s -> 2587.40s]  How did the address of the trap frame
+[2587.40s -> 2590.92s]  end up in S Scratch when we swapped it with A0?
+[2590.92s -> 2596.88s]  OK, before the kernel, before it previously transitioned
+[2596.88s -> 2605.40s]  to user space, set S Scratch to be equal to 3FFFFFFE000,
+[2605.40s -> 2607.60s]  the virtual address of the trap frame.
+[2607.60s -> 2609.80s]  So all the time when we were executing in user space
+[2609.80s -> 2614.08s]  in the shell, S Scratch had this pointer to the trap frame.
+[2614.08s -> 2621.44s]  And then the shell executes E call,
+[2621.44s -> 2623.40s]  which jumps to the beginning of the trampoline.
+[2623.40s -> 2625.32s]  And the very first instruction in the trampoline
+[2625.32s -> 2629.60s]  is the CSRW instruction, which swaps A0 and the Scratch.
+[2629.60s -> 2631.24s]  And so now the old value of the Scratch,
+[2631.24s -> 2635.16s]  namely the pointer to the trap frame, is now in A0.
+[2635.16s -> 2638.12s]  Does that answer your question?
+[2638.12s -> 2641.48s]  I guess I'm wondering, does this
+[2641.48s -> 2645.20s]  happen during the allocation of the process?
+[2645.20s -> 2647.00s]  Where does the Scratch register live?
+[2647.00s -> 2651.56s]  Well, the Scratch register itself lives on the CPU.
+[2651.56s -> 2654.24s]  It's a special register in the CPU.
+[2654.28s -> 2661.64s]  And the kernel sets it, well, it's a little bit involved.
+[2661.64s -> 2663.36s]  The actual place where it's set,
+[2663.36s -> 2665.76s]  and what I'm now showing you on the right here,
+[2665.76s -> 2672.92s]  is the last two instructions that the kernel executes
+[2672.92s -> 2675.68s]  while returning to user space.
+[2675.68s -> 2678.16s]  And what's happening is that the very last thing it
+[2678.16s -> 2682.00s]  does after the kernel restores all the user registers
+[2682.00s -> 2684.76s]  and is just about ready to return to user space,
+[2684.76s -> 2687.16s]  it actually does another one of these swaps.
+[2687.16s -> 2690.60s]  The kernel is set up A0 to be equal to the trap frame.
+[2690.60s -> 2694.96s]  And Scratch still holds the saved user A0.
+[2694.96s -> 2697.20s]  So the kernel does the swap, which ends up
+[2697.20s -> 2700.24s]  with Scratch having a pointer to the trap frame
+[2700.24s -> 2703.80s]  and A0 having the saved user A0.
+[2703.80s -> 2707.28s]  And then this Sret returns to user space.
+[2707.28s -> 2708.88s]  So you may wonder how A0 ever got
+[2708.88s -> 2713.48s]  to have the value of the address of the trap frame.
+[2713.48s -> 2718.60s]  Answer to that question is that we're now
+[2718.60s -> 2724.36s]  looking in trap.c at this last C function
+[2724.36s -> 2729.64s]  to run on the way out to user space.
+[2729.64s -> 2731.36s]  And the last thing this C function does
+[2731.36s -> 2736.48s]  is calls this function here, whatever this fn is,
+[2736.48s -> 2742.20s]  and the arguments it passes are the trap frame and the user
+[2742.20s -> 2743.64s]  page table.
+[2743.64s -> 2746.68s]  And so in C code, when you call a function,
+[2746.68s -> 2749.44s]  the first argument goes in A0, and that's
+[2749.44s -> 2754.04s]  basically why A0 held the pointer to the trap frame.
+[2754.04s -> 2756.28s]  And this function, its value is set up here
+[2756.28s -> 2760.88s]  to be in that trampoline page towards the end, that code
+[2760.88s -> 2767.12s]  showed you this code.
+[2767.12s -> 2771.00s]  Is that a good answer?
+[2771.00s -> 2773.00s]  Yes, thanks.
+[2773.00s -> 2775.52s]  Sorry, I also was confused about that.
+[2775.52s -> 2776.88s]  I was not sure.
+[2776.88s -> 2782.00s]  So when you start your process, and it's good and running,
+[2782.00s -> 2785.04s]  and then at some point it doesn't equal, I guess,
+[2785.04s -> 2789.08s]  or something, and then when did you
+[2789.08s -> 2791.24s]  call this return function?
+[2791.24s -> 2794.88s]  Because it should have been called before the call,
+[2794.88s -> 2799.40s]  but it didn't return from, it didn't return before.
+[2799.40s -> 2803.88s]  I don't understand what you call the user trap read.
+[2803.88s -> 2806.36s]  OK, maybe one answer to this question
+[2806.36s -> 2811.68s]  is that the kernel always, or the machine,
+[2811.68s -> 2814.92s]  boots up in the kernel.
+[2814.92s -> 2816.88s]  So when the machine starts, it's in the kernel.
+[2816.92s -> 2822.12s]  Any time, the only way to get into user space,
+[2822.12s -> 2826.16s]  the very first time or when returning from a system call,
+[2826.16s -> 2831.32s]  is in fact to execute this s-read instruction.
+[2831.32s -> 2835.20s]  This s-read instruction is the way that the RISC-V defines
+[2835.20s -> 2840.04s]  to transition from supervisor mode into user mode.
+[2840.04s -> 2844.00s]  And so before any user code ever executes,
+[2844.00s -> 2846.96s]  the kernel executes the code I'm showing you here
+[2846.96s -> 2851.72s]  in these two editor buffers that set up all kinds of things
+[2851.72s -> 2854.12s]  like s-scratch and stvac.
+[2858.12s -> 2859.00s]  OK, I see.
+[2859.00s -> 2860.20s]  Thank you.
+[2860.20s -> 2862.04s]  You're welcome.
+[2862.04s -> 2862.96s]  I have a question.
+[2862.96s -> 2865.92s]  I'm not sure if we touched on this or if I missed it,
+[2865.92s -> 2869.20s]  but when we called the E-call instruction in the assembly
+[2869.20s -> 2873.16s]  code, what triggers the trampoline code to start?
+[2873.24s -> 2877.56s]  Is it the switch of the CPU mode from supervisor,
+[2877.56s -> 2879.24s]  I'm sorry, from user to supervisor?
+[2879.24s -> 2880.56s]  Or is it something else?
+[2880.56s -> 2883.12s]  OK.
+[2883.12s -> 2886.00s]  So the code we're executing is this E-call.
+[2886.00s -> 2888.24s]  The shell executes it in user space.
+[2888.24s -> 2890.16s]  And E-call does a couple of things.
+[2890.16s -> 2894.36s]  The E-call instruction sets the mode to supervisor.
+[2894.36s -> 2900.00s]  And the E-call instruction saves the program counter
+[2900.00s -> 2901.28s]  in EPC.
+[2901.28s -> 2904.40s]  And the E-call instruction sets the program counter
+[2904.40s -> 2909.80s]  equal to the control register called stvac.
+[2909.80s -> 2911.40s]  And stvac is one of the many things
+[2911.40s -> 2913.60s]  which the kernel sets up before entering user space.
+[2916.64s -> 2917.84s]  And so here's stvac.
+[2917.84s -> 2920.44s]  Stvac is just the kernel set it
+[2920.44s -> 2922.52s]  to the beginning of the trampoline page.
+[2922.52s -> 2926.04s]  That is this address here.
+[2926.04s -> 2928.48s]  So that when E-call happens, E-call just
+[2928.52s -> 2931.28s]  copies stvac into the program counter and continues.
+[2931.28s -> 2933.36s]  But now, the program counter is
+[2933.36s -> 2936.32s]  executing at this address in the trampoline page.
+[2939.64s -> 2940.44s]  That clarifies it.
+[2940.44s -> 2941.92s]  Thank you.
+[2941.92s -> 2942.40s]  OK.
+[2945.68s -> 2946.64s]  I also have a question.
+[2950.28s -> 2954.52s]  So some of the registers that are saved in the trap frame
+[2954.52s -> 2961.12s]  should not are also registers that the user program had
+[2961.12s -> 2963.00s]  access to.
+[2963.00s -> 2973.92s]  Why did we need to use a new region in memory
+[2973.92s -> 2976.24s]  and not use the program stack?
+[2979.56s -> 2980.76s]  OK.
+[2980.76s -> 2982.64s]  Well, there's maybe two questions here.
+[2982.64s -> 2988.64s]  One is, maybe why do we have to save the registers at all?
+[2988.64s -> 2991.16s]  The reason why the kernel has to save the registers
+[2991.16s -> 2995.04s]  is that the kernel is about to run the C code that
+[2995.04s -> 2997.84s]  overwrites those registers.
+[2997.84s -> 3000.48s]  And if we ever want to resume the user code correctly,
+[3000.48s -> 3002.56s]  we need to resume it with its registers
+[3002.56s -> 3005.28s]  having their original values as of when
+[3005.28s -> 3007.40s]  the E-call was executed.
+[3007.40s -> 3011.92s]  So we have to save all the registers in the trap frame
+[3011.96s -> 3015.56s]  so that later on, we can restore all of their values
+[3015.56s -> 3019.08s]  just before resuming the user code.
+[3019.08s -> 3021.32s]  Maybe the other half of your question is, how come they're
+[3021.32s -> 3025.72s]  saved in the trap frame and not on the user stack?
+[3025.72s -> 3027.80s]  The answer to that is that we're not sure the user
+[3027.80s -> 3029.96s]  program even has a stack.
+[3029.96s -> 3032.56s]  There are certainly programming languages that don't have
+[3032.56s -> 3035.32s]  a stack, and the stack pointer doesn't
+[3035.32s -> 3038.28s]  point to anything in particular, might have value zero.
+[3038.28s -> 3039.78s]  There's also programming languages
+[3039.78s -> 3041.16s]  that, yeah, they have a stack,
+[3041.32s -> 3044.80s]  it's in a format that's some weird format
+[3044.80s -> 3047.08s]  that the kernel doesn't understand,
+[3047.08s -> 3049.20s]  maybe because the programming language allocates
+[3049.20s -> 3053.48s]  its stack in small blocks from the heap.
+[3053.48s -> 3055.28s]  And the programming language runtime
+[3055.28s -> 3058.04s]  understands how to use these small blocks of memory
+[3058.04s -> 3062.64s]  as a stack, but the kernel has no idea.
+[3062.64s -> 3066.16s]  So if we want to be able to run arbitrary user programs
+[3066.16s -> 3067.76s]  written in lots of different languages,
+[3067.76s -> 3069.36s]  the kernel can't make any assumptions
+[3069.36s -> 3074.56s]  about what parts of user memory it's allowed to exist,
+[3074.56s -> 3077.28s]  or valid, or it's allowed to read or write.
+[3077.28s -> 3079.48s]  And so the kernel has to be sort of self-contained
+[3079.48s -> 3082.64s]  in saving and restoring the registers.
+[3082.64s -> 3084.76s]  That's why the kernel saves this stuff
+[3084.76s -> 3086.68s]  in its own memory in the trap frame
+[3086.68s -> 3089.28s]  rather than in user memory.
+[3089.28s -> 3089.78s]  OK.
+[3089.78s -> 3090.28s]  Makes sense.
+[3094.72s -> 3096.84s]  OK.
+[3096.84s -> 3097.42s]  Anything else?
+[3099.36s -> 3099.86s]  Oops.
+[3105.12s -> 3107.12s]  OK, we're still right at the beginning
+[3107.12s -> 3113.52s]  of the code in Trampoline.
+[3113.52s -> 3116.52s]  This code is, unfortunately, we refer to it
+[3116.52s -> 3121.56s]  both as user-vec and as the Trampoline code.
+[3121.56s -> 3123.16s]  We barely started executing it.
+[3123.16s -> 3129.00s]  I think I just set a break point in this code
+[3129.12s -> 3131.24s]  after all the registers have been saved.
+[3131.24s -> 3137.12s]  I think I set a break point of this instruction.
+[3137.12s -> 3139.16s]  So we'll continue executing, skip over
+[3139.16s -> 3142.76s]  all these saves of all the user registers, the trap frame.
+[3142.76s -> 3145.96s]  OK, and now we're executing this load instruction.
+[3145.96s -> 3149.60s]  This load instruction is loading into the stack pointer
+[3149.60s -> 3150.52s]  register.
+[3150.52s -> 3152.20s]  And what it's loading is the value,
+[3152.20s -> 3155.80s]  is the eighth slot in the block of memory
+[3155.80s -> 3157.48s]  pointed to by A0.
+[3157.48s -> 3160.84s]  We remember A0 points to the trap frame
+[3160.84s -> 3165.96s]  to this virtual address, the second to last page.
+[3165.96s -> 3171.88s]  And the format of the trap page of the trap frame,
+[3171.88s -> 3173.32s]  here's the format of the trap frame.
+[3173.32s -> 3177.32s]  We've conveniently labeled each field with its offset
+[3177.32s -> 3178.44s]  in bytes.
+[3178.44s -> 3181.00s]  So that means they're loading the eighth.
+[3181.00s -> 3183.04s]  Starting at the eighth byte of the trap frame
+[3183.04s -> 3185.72s]  means we're loading the kernel stack pointer.
+[3186.20s -> 3187.92s]  One of the things the kernel sets up
+[3187.92s -> 3189.72s]  before entering user space is it
+[3189.72s -> 3192.16s]  sets this slot in the trap frame
+[3192.16s -> 3196.68s]  to be equal to this process's kernel stack.
+[3196.68s -> 3198.32s]  So what this instruction here is doing
+[3198.32s -> 3201.80s]  is initializing the stack pointer
+[3201.80s -> 3205.36s]  to point to the top of this process's kernel stack.
+[3205.36s -> 3208.44s]  It's part of what you need to do in order to run user
+[3208.44s -> 3210.92s]  code.
+[3210.92s -> 3212.04s]  All right, so what's left?
+[3212.04s -> 3213.80s]  We're within a few instructions of getting
+[3213.80s -> 3217.16s]  to the end of this trampoline code.
+[3217.16s -> 3219.60s]  We loaded the stack pointer.
+[3219.60s -> 3224.08s]  So maybe I can print the stack pointer for you, let's see.
+[3224.08s -> 3235.48s]  Yeah, this is, all right, well, this is the kernels.
+[3235.48s -> 3236.76s]  This process is kernel stack.
+[3236.76s -> 3243.24s]  It's up in high memory because xv6 treats kernel stacks
+[3243.28s -> 3245.16s]  specially so that it can put a guard
+[3245.16s -> 3249.16s]  page under each kernel stack.
+[3249.16s -> 3252.44s]  OK, so this load into TP, it turns out
+[3252.44s -> 3256.16s]  that because there's no direct way in RISC-V
+[3256.16s -> 3259.52s]  to figure out what core, which of the multiple cores
+[3259.52s -> 3263.56s]  you're running on, xv6 actually keeps
+[3263.56s -> 3267.84s]  the core number called the heart ID in the TP register.
+[3267.84s -> 3270.00s]  And this is used in a bunch of places in the kernel.
+[3270.00s -> 3273.04s]  For example, it's part of the machinery
+[3273.04s -> 3277.88s]  for kernel code to figure out what process is currently
+[3277.88s -> 3279.00s]  running on that core.
+[3281.72s -> 3286.92s]  OK, and if we execute this, hopefully TP,
+[3286.92s -> 3287.92s]  we're running on core 0.
+[3287.92s -> 3289.34s]  And that makes sense because I've
+[3289.34s -> 3293.36s]  configured QEMU to only give one core to xv6.
+[3293.36s -> 3294.84s]  So we are indeed running on core 0.
+[3295.56s -> 3305.08s]  This next thing is loading the address of, well,
+[3305.08s -> 3311.64s]  actually, the load into T0, I think,
+[3311.64s -> 3317.32s]  loaded a pointer to the first C function
+[3317.32s -> 3319.44s]  that we're going to execute, which is user trap.
+[3319.44s -> 3320.90s]  So we use that in a few instructions
+[3320.90s -> 3323.84s]  to just jump to the user trap C function.
+[3325.84s -> 3329.92s]  This load into T1 here is loading the address
+[3329.92s -> 3333.48s]  of the kernel page table.
+[3333.48s -> 3335.28s]  So we can print.
+[3335.28s -> 3337.72s]  So we're about to switch page tables.
+[3337.72s -> 3341.48s]  Turns out this thing in T1 is not actually literally
+[3341.48s -> 3343.12s]  the address of the kernel page table.
+[3343.12s -> 3347.08s]  It's the thing you need to put into satp,
+[3347.08s -> 3349.84s]  which has the address of the kernel page table
+[3349.84s -> 3352.84s]  but shifted around with some extra flag bits set.
+[3352.88s -> 3355.80s]  But as soon as the CSRW instruction executes,
+[3355.80s -> 3358.24s]  we'll switch page tables from the user page table
+[3358.24s -> 3359.52s]  to the kernel page table.
+[3359.52s -> 3362.20s]  And let me just reinforce that by looking at the current page
+[3362.20s -> 3363.96s]  table right now.
+[3363.96s -> 3366.54s]  We're still executing with this very small user page
+[3366.54s -> 3367.40s]  table.
+[3367.40s -> 3371.00s]  I'm going to run step i to execute the load into satp.
+[3375.64s -> 3377.44s]  And we'll look again at the kernel page.
+[3377.44s -> 3379.48s]  Now we're in a completely different page table.
+[3379.48s -> 3381.52s]  This is the kernel page table.
+[3381.52s -> 3383.68s]  And you can see all these different regions of memory
+[3383.68s -> 3385.76s]  and device control registers and whatnot
+[3385.76s -> 3391.84s]  that the kernel sets up in its own big kernel page table.
+[3391.84s -> 3394.56s]  So we successfully switched page tables.
+[3394.56s -> 3395.98s]  And now to the kernel page tables.
+[3395.98s -> 3398.02s]  And so we're in pretty good shape at this point
+[3398.02s -> 3399.96s]  because we have a stack.
+[3399.96s -> 3401.32s]  We have the kernel page table.
+[3401.32s -> 3402.78s]  We can read and write kernel data.
+[3402.78s -> 3408.28s]  We're really pretty much ready to execute C code in the kernel.
+[3408.32s -> 3413.52s]  One puzzle, though, is how come we didn't just crash?
+[3413.52s -> 3416.04s]  After all, we were executing somewhere in memory.
+[3416.04s -> 3418.36s]  And the program counter holds a virtual address.
+[3418.36s -> 3423.00s]  If we switch page tables, why doesn't that just
+[3423.00s -> 3426.04s]  cause some random garbage or nothing at all
+[3426.04s -> 3428.60s]  to be mapped in the new page table underfoot
+[3428.60s -> 3430.16s]  where we were executing?
+[3430.16s -> 3431.24s]  We're not crashing here.
+[3431.24s -> 3434.28s]  We're actually executing these instructions.
+[3434.28s -> 3435.44s]  Any guesses what's going on?
+[3438.28s -> 3442.64s]  I think it's because, oh, sorry.
+[3442.64s -> 3445.00s]  Because we're stealing the trampoline code
+[3445.00s -> 3448.40s]  and the trampoline is mapped at the same virtual address
+[3448.40s -> 3451.24s]  both in user and kernel.
+[3451.24s -> 3453.12s]  That's absolutely correct.
+[3453.12s -> 3455.64s]  And so I don't know if you remember what was mapped here
+[3455.64s -> 3458.18s]  in the user page table, but this mapping here
+[3458.18s -> 3459.80s]  at the end of the kernel page table
+[3459.80s -> 3463.88s]  is exactly the same mapping in the same place
+[3463.88s -> 3466.88s]  as the trampoline mapping at the end of the user page
+[3466.88s -> 3467.48s]  table.
+[3467.48s -> 3469.48s]  All the other mappings are different,
+[3469.48s -> 3470.72s]  but this mapping is the same.
+[3470.72s -> 3472.32s]  This is the mapping that holds the instructions
+[3472.32s -> 3473.08s]  we were executing.
+[3473.08s -> 3476.92s]  And because it didn't change when we switched page tables,
+[3476.92s -> 3479.12s]  we actually continue executing, and we're still
+[3479.12s -> 3485.40s]  executing the same sequence of instructions and not crashing.
+[3485.40s -> 3486.96s]  And so that's the special thing
+[3486.96s -> 3488.56s]  about the trampoline page.
+[3488.56s -> 3493.16s]  It's mapped both into user page tables
+[3493.16s -> 3496.00s]  and into the kernel page table.
+[3496.00s -> 3497.80s]  And the reason it's called a trampoline page
+[3497.80s -> 3502.00s]  is because you sort of bounce on it on the way from user
+[3502.00s -> 3505.66s]  space to kernel space.
+[3505.66s -> 3507.72s]  And with the next instruction, this jr,
+[3507.72s -> 3511.36s]  we're about to bounce right out of the trampoline
+[3511.36s -> 3513.40s]  into kernel C code.
+[3513.40s -> 3515.24s]  And to see where we're going, jr is just
+[3515.24s -> 3517.36s]  like jump to a subroutine.
+[3517.36s -> 3520.88s]  The subroutine is pointed to by register t0.
+[3520.88s -> 3522.56s]  Print t0 to see where we're going.
+[3522.56s -> 3529.08s]  Maybe we'll print some instructions there.
+[3531.48s -> 3532.86s]  OK, so these are the instructions
+[3532.86s -> 3533.86s]  we're about to jump to.
+[3533.86s -> 3538.64s]  They're in the beginning of the function called user trap.
+[3538.64s -> 3543.12s]  User trap is just a C function defined in trap.c.
+[3546.04s -> 3547.16s]  Here's user trap.
+[3547.16s -> 3549.16s]  Now we're about to jump from assembly code
+[3549.20s -> 3552.60s]  to user trap with a stack, with a kernel page table.
+[3552.60s -> 3557.00s]  Let me actually do the execute the instruction.
+[3557.00s -> 3564.84s]  And now I'm going to turn on displaying of C code and GDB
+[3564.84s -> 3568.76s]  now that we're executing C code.
+[3568.76s -> 3570.76s]  OK, so now we're in a much more sane world where just
+[3570.76s -> 3573.20s]  executing C code should be a little bit easier
+[3573.20s -> 3574.16s]  to understand.
+[3574.16s -> 3578.32s]  And we'll still spend some time reading and writing
+[3578.32s -> 3580.48s]  various interesting control registers.
+[3580.48s -> 3585.40s]  But the environment is hopefully a good deal less mysterious
+[3585.40s -> 3588.36s]  than it was in the trap frame.
+[3588.36s -> 3588.80s]  All right.
+[3593.04s -> 3595.24s]  All right, any questions at this point?
+[3599.24s -> 3600.52s]  I have a question.
+[3600.52s -> 3605.04s]  Why didn't we see with the GDB what equal does?
+[3605.04s -> 3612.96s]  Maybe I missed it, but I think we jumped directly
+[3612.96s -> 3616.88s]  into the trampoline.
+[3616.88s -> 3618.16s]  E call.
+[3618.16s -> 3621.24s]  E call did jump.
+[3621.24s -> 3627.28s]  What E call does is just changes the mode bit
+[3627.28s -> 3628.80s]  to be supervisor.
+[3628.84s -> 3635.60s]  And E call sets the program counter register
+[3635.60s -> 3638.92s]  to be equal to whatever the kernel happened
+[3638.92s -> 3641.32s]  to store in STVEC.
+[3641.32s -> 3643.12s]  Kernel stored this value that I just
+[3643.12s -> 3645.16s]  printed through the FFF000, which
+[3645.16s -> 3647.48s]  is the beginning of the trampoline page.
+[3647.48s -> 3650.08s]  The kernel stores this number in STVEC
+[3650.08s -> 3652.24s]  before entering user space.
+[3652.24s -> 3655.84s]  So where E call goes, that is where it sets the program
+[3655.88s -> 3659.64s]  counter to STVEC, which is the beginning
+[3659.64s -> 3660.72s]  of the trampoline page.
+[3663.52s -> 3667.20s]  Does that answer your question?
+[3667.20s -> 3669.32s]  Yes, I think so.
+[3669.32s -> 3669.82s]  OK.
+[3673.60s -> 3676.40s]  OK, so now we're in user trap.
+[3676.40s -> 3683.36s]  User trap is entered, actually, just like the trampoline page
+[3683.36s -> 3685.64s]  for a number of different kinds of traps.
+[3686.64s -> 3688.72s]  There's exceptions, like dividing by zero
+[3688.72s -> 3691.16s]  or using an unmapped virtual address,
+[3691.16s -> 3692.44s]  and there's device interrupts.
+[3692.44s -> 3693.92s]  And they all come here.
+[3693.92s -> 3698.56s]  And so user trap saves and restores hardware state,
+[3698.56s -> 3700.48s]  but it also needs to look at the state
+[3700.48s -> 3706.96s]  at the cause of the trap to figure out what to do with it.
+[3706.96s -> 3709.56s]  And so we're going to see both things as we execute along
+[3709.56s -> 3711.32s]  in user trap.
+[3711.36s -> 3715.72s]  Let me just run stuff in user trap.
+[3715.72s -> 3717.76s]  Let's see.
+[3717.76s -> 3719.76s]  The first thing it does here is that it
+[3719.76s -> 3723.12s]  changes that STVEC register.
+[3723.12s -> 3727.84s]  It turns out that the way xv6 handles traps
+[3727.84s -> 3730.44s]  is different depending on whether they come from user space
+[3730.44s -> 3731.64s]  or from the kernel.
+[3731.64s -> 3733.44s]  We've only been talking about what happens
+[3733.44s -> 3736.04s]  if a trap occurs from user space.
+[3736.04s -> 3739.12s]  There's a quite different sequence of events
+[3739.12s -> 3741.12s]  for traps that come from the kernel that
+[3741.16s -> 3742.28s]  occur while in the kernel.
+[3742.28s -> 3745.08s]  Because after all, for example, the kernel
+[3745.08s -> 3747.60s]  is already using the kernel page table.
+[3747.60s -> 3749.80s]  If a trap occurs while you're in the kernel,
+[3749.80s -> 3751.16s]  you already have the kernel page table.
+[3751.16s -> 3752.60s]  So there's a whole bunch of stuff
+[3752.60s -> 3755.04s]  that doesn't have to happen if the trap occurred
+[3755.04s -> 3756.80s]  while in the kernel.
+[3756.80s -> 3759.84s]  So before getting much further in the kernel code,
+[3759.84s -> 3762.16s]  we change STVEC to point to this kernel
+[3762.16s -> 3765.68s]  VEC, which is the kernel trap handler, rather than the user
+[3765.68s -> 3766.64s]  trap handler.
+[3766.64s -> 3771.08s]  We need to, for various reasons, we
+[3771.08s -> 3773.12s]  need to figure out what process we're running.
+[3773.12s -> 3775.48s]  We do that by calling this myproc function.
+[3775.48s -> 3777.68s]  And myproc actually looks at an array indexed
+[3777.68s -> 3781.20s]  by the current core number, the heart ID.
+[3781.20s -> 3785.12s]  Do you remember we put in TP?
+[3785.12s -> 3787.24s]  That's how myproc figures out what process is currently
+[3787.24s -> 3787.72s]  running.
+[3792.16s -> 3795.08s]  We need to save that saved user program counter.
+[3795.12s -> 3800.12s]  It's still sitting there in SEPC.
+[3800.12s -> 3801.80s]  But because one of the things that
+[3801.80s -> 3803.68s]  could happen while we're in the kernel
+[3803.68s -> 3806.40s]  is that we might switch to another process.
+[3806.40s -> 3811.00s]  And that other process might go into that process's user space.
+[3811.00s -> 3814.36s]  And that other process might make a system call which
+[3814.36s -> 3816.60s]  causes SEPC to be overwritten.
+[3816.60s -> 3821.60s]  We have to save our SEPC in some memory associated
+[3821.60s -> 3824.52s]  with this process so it doesn't get overwritten.
+[3825.48s -> 3828.04s]  We use this trap frame to save EPC,
+[3828.04s -> 3830.40s]  as well as lots of other stuff.
+[3830.40s -> 3834.68s]  And anyway, that's what this current line of code is doing.
+[3834.68s -> 3841.52s]  The next thing that happens, we need to figure out
+[3841.52s -> 3842.84s]  why we came here.
+[3842.84s -> 3845.96s]  The scause, the RISC-V scause register
+[3845.96s -> 3850.60s]  has a different number depending on why this trap occurred,
+[3850.60s -> 3853.64s]  some kind of exception versus system call versus device
+[3853.64s -> 3854.36s]  interrupt.
+[3854.36s -> 3857.08s]  Value eight means we're here, we took a trap
+[3857.08s -> 3860.12s]  because of a system call.
+[3860.12s -> 3862.92s]  And hopefully, indeed, scause has eight.
+[3862.92s -> 3864.68s]  It does have eight because we're here
+[3864.68s -> 3866.48s]  because of a system call.
+[3866.48s -> 3871.00s]  So we're going to execute this if statement.
+[3871.00s -> 3873.08s]  First thing is if some other process has killed
+[3873.08s -> 3874.88s]  this process, we don't want to continue.
+[3874.88s -> 3878.88s]  But that's not the case for our shell.
+[3878.88s -> 3882.56s]  It turns out that the RISC-V, the program counter that
+[3882.56s -> 3887.68s]  gets stored in SEPC is the address of the instruction that
+[3887.68s -> 3890.36s]  caused the trap.
+[3890.36s -> 3893.64s]  But when we resume, we want to resume at the next instruction
+[3893.64s -> 3895.60s]  after the E call.
+[3895.60s -> 3898.32s]  So therefore, this code for system calls
+[3898.32s -> 3904.04s]  which need to return, we add four to the saved user program
+[3904.04s -> 3907.28s]  counter so that we resume on the next instruction
+[3907.28s -> 3910.00s]  and don't just re-execute the E call.
+[3913.20s -> 3914.36s]  All right, next.
+[3914.36s -> 3918.00s]  Turns out that XV6 enables interrupts
+[3918.00s -> 3919.56s]  while it's handling system calls just
+[3919.56s -> 3922.64s]  so that interrupts can be served faster.
+[3922.64s -> 3926.64s]  Some system calls take a lot of time.
+[3926.64s -> 3929.96s]  Interrupts are always turned off by the RISC-V trap
+[3929.96s -> 3931.68s]  hardware.
+[3931.68s -> 3933.64s]  And so we have to explicitly turn them back
+[3933.64s -> 3935.44s]  on at this point.
+[3935.44s -> 3937.76s]  And the next thing that happens is
+[3937.76s -> 3939.08s]  we call this syscall function.
+[3939.12s -> 3944.08s]  On the job of syscall, I'll just enter it.
+[3944.08s -> 3947.72s]  It's defined in syscall.c.
+[3947.72s -> 3948.48s]  Here we are.
+[3948.48s -> 3950.44s]  What it does is it looks up the system call
+[3950.44s -> 3954.60s]  number in this big table of system calls
+[3954.60s -> 3957.48s]  at the top of the page.
+[3957.48s -> 3960.92s]  If you remember the shell's write function set register
+[3960.92s -> 3965.76s]  A7 to be the system call number, namely 16 for write.
+[3965.80s -> 3969.80s]  So what syscall does is it retrieves the saved A7 that
+[3969.80s -> 3975.32s]  was saved away in the trap theme by the trampoline code.
+[3975.32s -> 3978.84s]  And it uses that to index into this table of pointers
+[3978.84s -> 3982.32s]  to functions that implement each system call.
+[3982.32s -> 3986.32s]  So we're going to fish this number.
+[3986.32s -> 3987.72s]  I'm going to print num now.
+[3987.72s -> 3989.32s]  It's the saved A7.
+[3989.32s -> 3992.92s]  Indeed, it's 16, the same 16 that the shell originally
+[3992.92s -> 3993.44s]  put there.
+[3996.76s -> 4002.12s]  The system call code indexes into that syscalls table.
+[4002.12s -> 4006.00s]  We can find out what function got out of the system call
+[4006.00s -> 4008.80s]  table by stepping into it.
+[4008.80s -> 4009.96s]  Right now, we're in write.
+[4009.96s -> 4011.04s]  We're in syswrite.
+[4011.04s -> 4017.52s]  So it's in syscall.c.
+[4017.52s -> 4020.00s]  Syswrite is the kernel implementation
+[4020.00s -> 4022.68s]  of the write system call.
+[4022.68s -> 4024.08s]  I'm not going to go into this.
+[4024.08s -> 4027.68s]  It's fairly complicated what happens from here on in
+[4027.68s -> 4030.48s]  and the implementation of the system call for this lecture.
+[4030.48s -> 4032.56s]  I'm only really interested in getting into and out
+[4032.56s -> 4034.16s]  of the kernel.
+[4034.16s -> 4052.88s]  So I'm going to step over the actual implementation system
+[4052.88s -> 4053.36s]  call.
+[4053.40s -> 4056.40s]  One interesting thing to note is that the system calls
+[4056.40s -> 4057.92s]  need to find their arguments.
+[4057.92s -> 4059.84s]  So remember, the arguments to write
+[4059.84s -> 4062.60s]  were two and a buffer pointer and another two.
+[4062.60s -> 4065.16s]  And the way that the system call code gets at them
+[4065.16s -> 4074.56s]  is just looking at this, well, looking in the trap frame.
+[4074.56s -> 4077.08s]  So just like we could look in the trap frame for A7,
+[4077.08s -> 4078.56s]  we can look for A0.
+[4078.56s -> 4079.80s]  And that's the first argument.
+[4079.80s -> 4081.60s]  We look at A1, that's that buffer pointer.
+[4081.60s -> 4082.44s]  We can look at A2.
+[4082.44s -> 4090.28s]  That's the second argument, the number of bytes to write.
+[4090.28s -> 4091.92s]  OK, so the system call does its job.
+[4091.92s -> 4094.12s]  And then syscwrite finally returns.
+[4098.12s -> 4100.28s]  And we're going to watch what happens.
+[4100.28s -> 4102.12s]  The reason for this assignment here,
+[4102.12s -> 4106.44s]  the reason why we're assigning to A0 in the trap frame
+[4106.44s -> 4111.08s]  is that the system calls all have a return value.
+[4111.08s -> 4113.72s]  Like write returns the number of bytes written.
+[4113.72s -> 4116.20s]  And the convention for C code on the RISC-V
+[4116.20s -> 4120.04s]  is that return values are placed in register A0
+[4120.04s -> 4121.76s]  by whatever function you're calling.
+[4121.76s -> 4123.72s]  And so to simulate a return value,
+[4123.72s -> 4127.48s]  we just stick the return value in A0 in the trap frame.
+[4127.48s -> 4130.84s]  And we'll see by and by that when we return to user space,
+[4130.84s -> 4132.72s]  this A0 slot in the trap frame
+[4132.72s -> 4135.84s]  is restored back into the actual A0 register.
+[4135.88s -> 4143.60s]  And the shell sees that A0 value as the return value from write.
+[4143.60s -> 4148.40s]  And if we just execute through this and print P arrow trap
+[4148.40s -> 4151.92s]  frame arrow A0, we'll see it has value two.
+[4151.92s -> 4154.72s]  What that means is that write return value is two,
+[4154.72s -> 4158.92s]  saying that it actually wrote two bytes just as instructed.
+[4158.92s -> 4164.84s]  OK, at this point, we're back in trap.c
+[4164.84s -> 4169.68s]  And user trap just after the call to syscall.
+[4169.68s -> 4172.40s]  So we're now at this P arrow, which
+[4172.40s -> 4174.76s]  checking if the process has been killed,
+[4174.76s -> 4176.48s]  because we don't want to resume executing.
+[4176.48s -> 4177.56s]  It's already been killed.
+[4177.56s -> 4181.00s]  But of course, our shell has not been killed.
+[4181.00s -> 4183.32s]  Skip over this.
+[4183.32s -> 4187.92s]  And then user trap calls a separate function,
+[4187.92s -> 4191.00s]  user trap ret, in order to set up all the stuff
+[4191.00s -> 4193.44s]  that I talked about previously whenever I said,
+[4193.44s -> 4195.12s]  well, before entering user space,
+[4195.12s -> 4197.84s]  the kernel does blah, blah, blah.
+[4197.84s -> 4201.68s]  It's user trap ret that's responsible for setting
+[4201.68s -> 4202.52s]  all that stuff up.
+[4205.44s -> 4207.56s]  And so we can look at all the different things it does.
+[4214.64s -> 4219.12s]  It turns interrupts off, but they
+[4219.12s -> 4221.40s]  were turned on for the duration of a system call.
+[4221.40s -> 4225.20s]  So we're turned off now because we're about to change the STVEC
+[4225.20s -> 4230.12s]  to point to the user trap handler,
+[4230.12s -> 4231.76s]  whereas while we were in the kernel,
+[4231.76s -> 4233.80s]  it was pointing to the kernel trap handler.
+[4233.80s -> 4236.56s]  So we turn off interrupts because once we changed
+[4236.56s -> 4238.36s]  STVEC to point to the user trap handler,
+[4238.36s -> 4239.96s]  we're still executing in the kernel.
+[4239.96s -> 4242.46s]  And if an interrupt should occur, then it
+[4242.46s -> 4243.92s]  would go to the user trap handler
+[4243.92s -> 4245.76s]  even though we're executing in the kernel.
+[4245.76s -> 4249.48s]  And for various detailed reasons, that
+[4249.48s -> 4251.56s]  would cause the kernel to malfunction.
+[4251.56s -> 4254.00s]  So we turn off interrupts, and they're
+[4254.00s -> 4257.16s]  left off from between the time from the very next line
+[4257.16s -> 4261.00s]  where we set up the STVEC to point to the trampoline
+[4261.00s -> 4264.28s]  all the way through the final SRED instruction that
+[4264.28s -> 4266.00s]  returns to user space.
+[4266.00s -> 4267.62s]  It turns out that SRED instruction
+[4267.62s -> 4272.16s]  at the end of the trampoline turns interrupts back on.
+[4272.16s -> 4276.16s]  So the interrupts are on when we're executing in user code
+[4276.16s -> 4278.58s]  even though we just turned them off.
+[4278.62s -> 4282.46s]  The next couple of lines fill in those trap frame slots
+[4282.46s -> 4285.28s]  that we saw before that hold various values that
+[4285.28s -> 4288.22s]  are convenient for the trampoline code.
+[4288.22s -> 4293.78s]  So the code here stashes away a pointer to the kernel page
+[4293.78s -> 4296.14s]  table in the trap frame.
+[4296.14s -> 4302.18s]  It stashes away a pointer to this process' kernel stack.
+[4302.18s -> 4306.82s]  It stashes away in the trap frame a pointer
+[4306.82s -> 4308.18s]  with the user trap function, which
+[4308.18s -> 4312.74s]  is what the trampoline code jumped to at the very end.
+[4312.74s -> 4316.14s]  And it stashes away the current core number read
+[4316.14s -> 4320.34s]  from the TP register so that the trampoline code can just
+[4320.34s -> 4323.14s]  restore that same value because the user code may
+[4323.14s -> 4326.26s]  have disturbed it.
+[4326.26s -> 4327.26s]  I have a question.
+[4327.26s -> 4328.46s]  Yes.
+[4328.46s -> 4333.38s]  Why didn't we save the SEPC in the trampoline?
+[4333.38s -> 4336.74s]  It could have.
+[4337.54s -> 4340.14s]  The SEPC could have been, the trampoline code
+[4340.14s -> 4342.94s]  happens not to save it along with the other registers.
+[4342.94s -> 4347.26s]  We perfectly well could modify the xv6 to save it.
+[4347.26s -> 4350.82s]  I mean, where it is actually saved, as you probably remember,
+[4350.82s -> 4354.26s]  is just happened to save it in user trap in C code
+[4354.26s -> 4357.70s]  instead of in assembly code in the trampoline code.
+[4360.66s -> 4365.42s]  I can't think of a good reason to do it one way or the other.
+[4365.46s -> 4370.22s]  The user registers really have to be saved in the assembly code
+[4370.22s -> 4372.98s]  because any C code is entitled to, for all we know,
+[4372.98s -> 4374.34s]  the compiler generates code which
+[4374.34s -> 4378.86s]  modifies any user register.
+[4378.86s -> 4381.50s]  So those user registers are pretty important to save them
+[4381.50s -> 4385.50s]  in assembly code before entering C. But the EPC could have
+[4385.50s -> 4386.86s]  been saved earlier or later.
+[4389.74s -> 4392.62s]  So we're in user trap ret, sort of preparing the trap.
+[4392.62s -> 4395.18s]  We prepared the trap frame with all these values
+[4395.18s -> 4399.46s]  that are going to be needed next time there's
+[4399.46s -> 4402.14s]  a transition from user space to kernel, next trap.
+[4405.10s -> 4408.38s]  There's a couple of things we have to set up in the S status
+[4408.38s -> 4411.02s]  control register.
+[4411.02s -> 4416.78s]  It turns out this SPP bit in S status
+[4416.78s -> 4421.10s]  controls the mode that S ret returns to.
+[4421.10s -> 4423.22s]  And by clearing it, we're just saying, well, look,
+[4423.22s -> 4427.62s]  next time we execute S ret, we want to go to user mode instead
+[4427.62s -> 4429.74s]  of supervisor mode.
+[4429.74s -> 4434.02s]  And this SPI bit controls whether interrupts
+[4434.02s -> 4437.78s]  will be enabled after we execute S ret
+[4437.78s -> 4440.22s]  and after we get into user space.
+[4440.22s -> 4441.86s]  And we do want them to be enabled,
+[4441.86s -> 4444.42s]  so we're going to set that SPI bit.
+[4444.42s -> 4446.86s]  And then we're going to write this new modified S status
+[4446.86s -> 4451.62s]  into the actual hardware S status register.
+[4451.66s -> 4455.54s]  It turns out what S ret does, the S ret
+[4455.54s -> 4458.06s]  we're going to execute right at the end of the trampoline code.
+[4458.06s -> 4461.58s]  What that S ret does is sets the program counter
+[4461.58s -> 4465.02s]  equal to the SEPC register.
+[4465.02s -> 4467.50s]  So we're now going to set up the SEPC register
+[4467.50s -> 4472.70s]  to have the saved user program counter, which,
+[4472.70s -> 4475.74s]  if you recall, we recently saved in the trap frame.
+[4475.74s -> 4479.26s]  That's what's happening here.
+[4479.30s -> 4481.66s]  If you remember also, the trap frame
+[4481.66s -> 4485.98s]  contain a pointer to the kernel page table
+[4485.98s -> 4488.70s]  because the trampoline needs to switch to it.
+[4488.70s -> 4491.22s]  We need to cook up the special bit pattern
+[4491.22s -> 4495.66s]  that you need to write to SATP as done here.
+[4495.66s -> 4500.50s]  And I'm sorry, we're now preparing a pointer
+[4500.50s -> 4504.22s]  to the user page table, which we need to switch to
+[4504.22s -> 4507.30s]  on the way into user space.
+[4507.30s -> 4509.10s]  We're actually going to do that switch
+[4509.10s -> 4513.02s]  in assembly code because it has to happen in the trampoline
+[4513.02s -> 4514.82s]  because only code in the trampoline
+[4514.82s -> 4517.42s]  is mapped in both user and kernel space.
+[4517.42s -> 4519.90s]  So we can only really switch page tables
+[4519.90s -> 4521.50s]  when we're executing in the trampoline,
+[4521.50s -> 4523.86s]  but we're not executing in the trampoline yet.
+[4523.86s -> 4525.70s]  We're still just in an ordinary C function.
+[4525.70s -> 4527.94s]  So we prepare this pointer, and then
+[4527.94s -> 4530.26s]  we're going to pass it to the assembly code
+[4530.26s -> 4531.74s]  as the second argument in A1.
+[4535.74s -> 4537.30s]  What this line here doing is just
+[4537.34s -> 4539.62s]  calculating the address of where we
+[4539.62s -> 4542.98s]  want to jump to at the end of the trampoline code.
+[4542.98s -> 4548.42s]  And it turns out that where we want to go is user ret.
+[4548.42s -> 4550.54s]  User ret's the address of the instructions
+[4550.54s -> 4552.58s]  that will take us back to user space.
+[4552.58s -> 4557.46s]  And this little formula works out
+[4557.46s -> 4560.10s]  the address and the virtual address
+[4560.10s -> 4562.22s]  in the trampoline that corresponds
+[4562.22s -> 4563.42s]  to that user ret function.
+[4568.18s -> 4568.70s]  Oops.
+[4571.34s -> 4575.78s]  So we calculate the address of that user ret function.
+[4575.78s -> 4578.98s]  And then this mess, this next line,
+[4578.98s -> 4583.70s]  call uses this fn variable as a function pointer
+[4583.70s -> 4586.98s]  and jumps to that function with these two arguments
+[4586.98s -> 4589.38s]  in A0 and A1.
+[4589.38s -> 4594.54s]  We can now just go to trampoline code.
+[4598.30s -> 4603.90s]  In the trampoline code, there's first
+[4603.90s -> 4605.26s]  we switch to the user page table.
+[4605.26s -> 4606.46s]  So we may as well actually execute this,
+[4606.46s -> 4608.58s]  and we can see the page tables change.
+[4608.58s -> 4610.62s]  Just for chuckles, we're still
+[4610.62s -> 4612.42s]  using the giant kernel page table.
+[4615.74s -> 4617.38s]  I'm going to run through user trap ret
+[4617.38s -> 4619.02s]  quickly until we get to the point
+[4619.02s -> 4622.22s]  where it jumps to the trampoline.
+[4622.22s -> 4625.70s]  Oh, all right, we're in the trampoline.
+[4627.30s -> 4633.46s]  These are the instructions that we're
+[4633.46s -> 4635.30s]  about to start executing the trampoline code.
+[4635.30s -> 4636.30s]  And they're right here.
+[4636.30s -> 4641.22s]  We can now, again, let's print the page table.
+[4641.22s -> 4642.54s]  It's still the kernel page table.
+[4644.54s -> 4646.54s]  The first thing that's going to happen here,
+[4646.54s -> 4648.38s]  though, is that the trampoline code
+[4648.38s -> 4651.46s]  is going to load that pointer to the user page
+[4651.46s -> 4655.26s]  table into the satp register.
+[4655.26s -> 4656.66s]  So we switch page tables.
+[4656.66s -> 4659.90s]  If I type info mem now, we now have the much smaller user
+[4659.90s -> 4660.50s]  page table.
+[4660.50s -> 4663.14s]  But luckily, still with the trampoline page
+[4663.14s -> 4668.38s]  mapped so we don't crash on the next instruction.
+[4668.38s -> 4676.06s]  The next thing that happens is I showed you a while ago
+[4676.06s -> 4679.18s]  that the second to last thing that this sequence of code
+[4679.18s -> 4683.82s]  does on the way to user space is swaps s scratch with a0.
+[4683.82s -> 4687.42s]  So we need to set up s scratch with the saved user a0
+[4687.42s -> 4690.54s]  so that when we do that swap, a0 will end up
+[4690.54s -> 4692.46s]  having the saved user a0.
+[4692.46s -> 4695.58s]  It turns out a0 is a pointer to the trap frame
+[4695.58s -> 4699.54s]  because the C code passed that as the first argument.
+[4699.54s -> 4704.10s]  112 of a0 is the address of the saved a0 in the trap
+[4704.10s -> 4704.58s]  frame.
+[4704.58s -> 4707.30s]  So we're going to load that into t0
+[4707.30s -> 4709.62s]  and then load that into s scratch.
+[4709.62s -> 4712.86s]  At this point, we're still running the kernel stuff
+[4712.90s -> 4716.30s]  and all the registers.
+[4716.30s -> 4719.42s]  The next 32 instructions, though, load out
+[4719.42s -> 4722.58s]  of the trap frame, which a0 points to.
+[4722.58s -> 4725.42s]  Load all of the saved user registers
+[4725.42s -> 4731.50s]  out of the trap frame into the actual register.
+[4731.50s -> 4734.26s]  So we're really close to being able to the point
+[4734.26s -> 4735.54s]  where we can run user code.
+[4735.54s -> 4737.06s]  I'm going to skip over all these loads.
+[4737.90s -> 4744.14s]  Any questions before we approach closer to user space?
+[4744.14s -> 4745.90s]  I have one quick question.
+[4745.90s -> 4749.14s]  Is the value in the trap frame a0 now
+[4749.14s -> 4751.62s]  the return value of that system call that we made?
+[4756.86s -> 4757.78s]  Yeah.
+[4757.78s -> 4761.06s]  Yeah, the real a0 holds just this under the trap frame.
+[4761.06s -> 4764.34s]  But after we execute the, well,
+[4765.34s -> 4770.46s]  after we execute the, well, s, OK,
+[4770.46s -> 4775.74s]  the current location of the user saved,
+[4775.74s -> 4778.02s]  yes, I was calling it the user saved a0.
+[4778.02s -> 4780.58s]  But in fact, the system call return stuff
+[4780.58s -> 4782.90s]  overwrote it with the return value
+[4782.90s -> 4786.50s]  that we want the shell to see an a0.
+[4786.50s -> 4788.22s]  So the current location of that a0,
+[4788.22s -> 4792.62s]  which we overwrote with two as a return value, is s scratch.
+[4792.66s -> 4796.22s]  So I'm going to point s scratch and hope that it's equal to 2.
+[4796.22s -> 4797.10s]  It is equal to 2.
+[4800.90s -> 4802.86s]  Does that answer your question?
+[4802.86s -> 4803.94s]  Yes, I think so.
+[4803.94s -> 4807.82s]  OK, I'm going to skip over all these loads that
+[4807.82s -> 4811.02s]  restore the saved user values out of the trap frame
+[4811.02s -> 4813.26s]  into the registers.
+[4813.26s -> 4817.22s]  Why don't I print out the registers at this point?
+[4817.22s -> 4821.90s]  Actually, I'm going to print out
+[4822.78s -> 4824.18s]  I don't know if these look familiar,
+[4824.18s -> 4826.98s]  but they happen to be the same set of user registers
+[4826.98s -> 4829.90s]  we saw way back at the beginning of this exercise.
+[4829.90s -> 4833.82s]  For example, a1 of the stack pointer
+[4833.82s -> 4836.26s]  holds this small value appropriate for a user stack
+[4836.26s -> 4837.90s]  load memory.
+[4837.90s -> 4841.54s]  a1 is that buffer pointer that we pass to write.
+[4841.54s -> 4843.50s]  2 is that number of bytes.
+[4843.50s -> 4845.10s]  a0, however, is the exception.
+[4845.10s -> 4849.86s]  It is not a saved user value because it still
+[4849.86s -> 4854.18s]  has the pointer to our trap frame in it.
+[4854.18s -> 4858.78s]  But let's look what we're about to execute.
+[4858.78s -> 4864.30s]  What we're about to execute is this CSRRW a0 scratch
+[4864.30s -> 4867.78s]  right at the end of trampoline just before returning
+[4867.78s -> 4868.38s]  to user space.
+[4868.38s -> 4871.34s]  This is going to swap a0 and scratch.
+[4871.34s -> 4878.82s]  Scratch indeed has s scratch.
+[4880.86s -> 4883.78s]  It has 2, which is going to be the return value.
+[4883.78s -> 4892.22s]  a0 has this kernel pointer in it that points to the trap
+[4892.22s -> 4892.70s]  frame.
+[4892.70s -> 4896.66s]  But after executing the CSRRW instruction to swap them,
+[4896.66s -> 4901.74s]  hopefully we'll see that a0 holds this return value of 2
+[4901.74s -> 4908.30s]  and s scratch holds a pointer to the trap frame, which
+[4908.30s -> 4912.42s]  is the second to last page in memory.
+[4912.42s -> 4914.66s]  And that value is going to stay in s scratch
+[4914.66s -> 4917.06s]  until the user program does another trap.
+[4917.06s -> 4919.58s]  And at that point, the trap handling code
+[4919.58s -> 4921.10s]  that we talked about before will
+[4921.10s -> 4924.06s]  be able to use s scratch data at the trap frame.
+[4924.06s -> 4927.66s]  All right, we're still in the kernel.
+[4927.66s -> 4931.54s]  But this is our last instruction in the kernel.
+[4931.54s -> 4934.62s]  And when I execute this s ret, it
+[4934.62s -> 4938.66s]  will switch to user mode.
+[4938.66s -> 4943.70s]  Before I do that, let's look at it'll switch to user mode.
+[4943.70s -> 4952.54s]  It'll copy SEPC to the PC because we're still
+[4952.54s -> 4955.58s]  executing with the PC that's in the trampoline.
+[4955.58s -> 4958.58s]  So s ret is going to switch to user mode,
+[4958.58s -> 4964.50s]  copy SEPC to PC, and then resume executing.
+[4964.50s -> 4967.66s]  So I'm going to run the s ret.
+[4967.66s -> 4970.30s]  Boom.
+[4970.30s -> 4975.54s]  Now we're back at address 0xdea,
+[4975.54s -> 4979.34s]  which is a low address, likely to be user memory.
+[4979.34s -> 4983.62s]  And it's the look back at sh.asm.
+[4983.62s -> 4991.86s]  And address 0xdea is indeed the address of the return
+[4991.86s -> 4994.82s]  function at the end of write.
+[4994.82s -> 4999.74s]  And a0 is this return value that
+[4999.74s -> 5001.78s]  was supposed to be turning.
+[5001.78s -> 5003.06s]  So we're back in user space.
+[5003.06s -> 5005.86s]  And we're about to do the return back to the shell
+[5005.86s -> 5008.18s]  from the write system call, from the write library
+[5008.18s -> 5010.10s]  function that made the system call.
+[5010.10s -> 5011.22s]  OK, any questions?
+[5014.14s -> 5015.86s]  Sorry, can you repeat again what
+[5015.86s -> 5019.30s]  happened with the interrupt during s ret?
+[5022.70s -> 5024.78s]  What happened with interrupts?
+[5024.78s -> 5027.22s]  You said we are turning them off,
+[5027.22s -> 5030.74s]  but then something else turns them back on.
+[5030.74s -> 5033.46s]  s ret.
+[5033.46s -> 5035.38s]  s ret enables interrupts.
+[5035.38s -> 5038.06s]  So this s ret, the very last instruction
+[5038.06s -> 5041.58s]  that we're executing in supervisor mode in the kernel.
+[5041.58s -> 5042.94s]  I forgot to say that just now,
+[5042.94s -> 5046.54s]  but as well as setting the program counter equal to the SEPC
+[5046.54s -> 5048.90s]  and switching to user mode, s ret
+[5048.90s -> 5052.86s]  is going to re-enable interrupts.
+[5052.86s -> 5055.30s]  Does that mean?
+[5055.30s -> 5056.94s]  User programs may run for a long time.
+[5056.94s -> 5059.10s]  It would be nice to be able to take disk interrupts
+[5059.10s -> 5063.22s]  or whatever while user programs are running.
+[5063.22s -> 5063.70s]  I see.
+[5063.70s -> 5065.82s]  Thank you.
+[5065.82s -> 5067.10s]  Other questions?
+[5073.02s -> 5076.50s]  OK, to wrap up, the system calls
+[5076.50s -> 5077.98s]  sort of look like function calls
+[5077.98s -> 5080.22s]  and are kind of meant to be thought of a lot
+[5080.22s -> 5081.22s]  like function calls.
+[5081.22s -> 5083.78s]  But the user kernel transitions
+[5083.78s -> 5087.86s]  are much more complex than function calls are.
+[5087.86s -> 5090.58s]  A lot of the complexity is due to the requirement
+[5090.58s -> 5091.42s]  for isolation.
+[5091.42s -> 5094.26s]  The kernel just can't trust anything in user space.
+[5094.26s -> 5097.78s]  And also, the desire to have simple and very fast
+[5097.78s -> 5098.74s]  hardware mechanisms.
+[5098.74s -> 5101.90s]  So really, xv6 doesn't care that much about performance.
+[5101.90s -> 5104.94s]  But in general, operating system designers and CPU
+[5104.98s -> 5108.78s]  designers are very interested in the speed at which you
+[5108.78s -> 5112.98s]  can do the efficiency of traps.
+[5112.98s -> 5115.98s]  xv6 does all these things in a particular way.
+[5115.98s -> 5118.42s]  There's certainly other ways to do them.
+[5118.42s -> 5121.54s]  A few questions, a few design questions, alternatives
+[5121.54s -> 5124.02s]  you could think about.
+[5124.02s -> 5127.74s]  One is, can you think of ways to make the hardware
+[5127.74s -> 5130.38s]  or software aspects, redesign xv6,
+[5130.38s -> 5134.66s]  redesign the RISC-V to make this whole sequence simpler?
+[5134.66s -> 5137.26s]  Or could you think of ways to make the whole sequence
+[5137.26s -> 5138.26s]  faster?
+[5138.26s -> 5139.94s]  And another sort of set of questions
+[5139.94s -> 5142.74s]  to keep in the back of your head
+[5142.74s -> 5146.22s]  is whether or not malicious programs
+[5146.22s -> 5153.10s]  could abuse any of these mechanisms to break isolation.
+[5153.10s -> 5155.94s]  All right, that is all I have to say for this lecture.
+[5155.94s -> 5159.82s]  I'm happy to take questions.
+[5159.82s -> 5161.26s]  Sorry, I have another question.
+[5161.26s -> 5161.98s]  Please.
+[5161.98s -> 5167.50s]  I saw that there is a UIE register.
+[5167.50s -> 5172.30s]  Yeah, I think register in S status, but we don't use it.
+[5172.30s -> 5176.42s]  We just use S-I-E and reset it to false in user space.
+[5176.42s -> 5179.94s]  Why couldn't we use the UIE?
+[5179.94s -> 5183.50s]  Gosh, the answer is going to be I don't know.
+[5183.50s -> 5191.38s]  We are SP.
+[5191.38s -> 5195.66s]  What we set is S. What we set is S-P-I-E.
+[5195.66s -> 5199.26s]  We may actually end up setting.
+[5199.26s -> 5200.90s]  I know nothing about UIE.
+[5200.90s -> 5202.58s]  I'm going to guess.
+[5202.58s -> 5203.42s]  Let me see.
+[5203.42s -> 5207.82s]  I'm going to guess that what actually happens here
+[5207.82s -> 5213.58s]  in this code where we're OK.
+[5213.58s -> 5216.30s]  So here we are in user trap ret.
+[5216.30s -> 5221.06s]  We're returning or setting S-P-I-E in the S status.
+[5221.06s -> 5224.78s]  And I believe the S ret instruction
+[5224.78s -> 5230.26s]  will copy this S-P-I-E. The name of this
+[5230.26s -> 5233.34s]  is the supervisor previous interrupt enable.
+[5233.34s -> 5236.22s]  I suspect S ret copies that bit
+[5236.26s -> 5242.50s]  into whatever controls interrupts in user mode, which
+[5242.50s -> 5246.94s]  is possibly this UIE and S status.
+[5246.94s -> 5249.46s]  How's that for a guess?
+[5249.46s -> 5249.90s]  I see.
+[5249.90s -> 5250.42s]  Thank you.

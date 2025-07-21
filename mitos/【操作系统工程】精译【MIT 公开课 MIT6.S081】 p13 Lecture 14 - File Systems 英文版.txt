@@ -1,0 +1,777 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 8.72s]  started and everybody can see my screen that I shared and I hope everybody can hear me.
+[11.68s -> 20.72s]  I think we're good. Okay so I'm going to talk about file systems today and it's going to be
+[20.72s -> 26.08s]  actually we're going to spend three lectures on file systems, two in the context of xv6 and
+[26.08s -> 33.04s]  one in the context of Linux. In fact this is the sort of last topic that we're covering
+[34.88s -> 44.08s]  of xv6 after this week we're basically done with xv6. So you know file systems you all
+[45.28s -> 53.12s]  know them you use them they're one of the most sort of user facing aspects of an operating system
+[53.12s -> 59.36s]  in addition to the shell and so we sort of want to understand now in these set of lectures actually
+[59.36s -> 63.60s]  what really happens under the hoods and how the file system is implemented and that's sort of
+[63.60s -> 68.16s]  exciting because you know you use them all the time and maybe you know just start off as a
+[68.16s -> 76.08s]  question before diving in any of the details. In one way you know since you use file systems
+[76.08s -> 81.68s]  almost daily in what way is the xv6 file system different than the file system that you're using
+[82.64s -> 90.24s]  in the day-to-day work and maybe I'll call out some to people and see what they think for
+[90.24s -> 97.04s]  example Kendall, Kendall Garner, what did you notice anything particular about xv6 that is
+[97.04s -> 107.60s]  different or similar? I'm not sure we can hear you Kendall.
+[110.24s -> 117.12s]  There you go yeah there you go okay yeah so one of the problems is size or at least like the
+[117.12s -> 122.24s]  size of the files that xv16 support are much less than a lot of other file systems also the
+[122.32s -> 129.60s]  names for some files are relatively short yeah and another feature it's more introduced because I use
+[129.60s -> 134.00s]  butterfest is it doesn't I don't think it has copy on write for file systems.
+[135.60s -> 137.84s]  Good good good and in what ways is it similar?
+[140.16s -> 148.00s]  It's similar in the general structure so the idea of you have file names you have the inodes
+[148.00s -> 156.72s]  directories and all that. Yeah that seems good and how about Adela and Yang
+[158.80s -> 162.72s]  how do you compare xv6 file system to the file system that you use?
+[167.44s -> 172.16s]  Sorry what was that? The question is like how would you how would you compare the xv6 file
+[172.16s -> 177.68s]  system to the file system that you might be using in daily life or on your laptop or whatever
+[177.92s -> 178.56s]  computer you're using?
+[182.32s -> 192.56s]  Similarities? Yeah like the file system path system like paths in the file system are like
+[193.28s -> 202.08s]  hierarchical. Yeah that's a good point okay so you know the so let me sort of dive in a little
+[202.08s -> 205.84s]  bit and sort of talk a little bit about properties of file systems you know that you
+[206.00s -> 212.80s]  know sort of stand out and one I think you know you just mentioned here but is a user-friendly
+[219.04s -> 225.92s]  friendly names in particular path names you know how you could do hierarchy to help you know
+[225.92s -> 230.24s]  people to organize their files in directories or folders whatever term you want to use
+[231.12s -> 235.12s]  and it makes it easy for you know people to share files
+[238.16s -> 239.28s]  you know between users
+[241.76s -> 247.60s]  and processes you can name them with you know conveniently to remember names
+[249.60s -> 252.72s]  and then probably most importantly compared at least for all the
+[253.44s -> 257.44s]  subsystems that we've looked so far in xv6 and they provide persistence
+[260.88s -> 263.36s]  for something called durability
+[266.56s -> 270.64s]  with that I mean like if you turn off your computer you know you did some work you turn
+[270.64s -> 275.28s]  off your computer and you turn off your laptop and then you know a couple days later
+[275.28s -> 282.08s]  you come back and turn your computer on the files are still there and you continue working
+[282.08s -> 288.48s]  with them which is sort of different from like processes or the thing of the research that we've
+[288.48s -> 291.68s]  seen so far which basically you know if the computer reboots you know they're gone
+[292.72s -> 297.76s]  and you have to start up again but file systems can provide this persistence and so they're
+[300.24s -> 303.36s]  all you're using them and what we're going to be doing in the next couple lectures
+[303.36s -> 308.72s]  actually understanding how to actually work internally this is interesting for a number of
+[308.72s -> 323.44s]  reasons one you know the abstraction itself is just useful
+[327.12s -> 330.56s]  and so it's interesting to understand like under the hoods actually how the abstraction
+[330.56s -> 335.92s]  is actually implemented and it turns out there's sort of a couple key interesting aspects
+[335.92s -> 338.24s]  one is crash safety
+[343.12s -> 348.32s]  you'd like it to be the case that you know if for example during a file system operation
+[348.32s -> 354.80s]  the computer crashes that after reboot now basically your file system is still intact you
+[354.80s -> 359.36s]  know that you know all the variants or the file systems still hold and that you can actually
+[359.36s -> 363.36s]  get access to most of your files it would be a disaster if like the computer crashed in the
+[363.36s -> 368.24s]  middle of file system operation you reboot and there's no file system anymore or you know
+[368.24s -> 374.40s]  the data structure on disk kept being garbled and you lost them and so this is actually turns
+[374.40s -> 381.12s]  out to be a really important topic and involved and so we're going to talk about that on
+[381.12s -> 387.76s]  Wednesday this is basically the main topic for Wednesday's lecture then there's sort of
+[387.76s -> 393.36s]  the general question about like how to lay out the file system on disk
+[395.20s -> 400.72s]  you know the files the files the directories they all have to be represented in some way
+[400.72s -> 404.32s]  on the disk because like after you if you shut down your computer come back up you know
+[404.32s -> 408.72s]  the all the data still has to be there and so there's some basically on disk data structures
+[408.72s -> 413.52s]  to represent the structure of the file system or the content of the file system
+[414.16s -> 419.84s]  and uh in x86 of course you know that the representation or the data structures used are
+[419.84s -> 425.84s]  quite simple you know just to for pedagogical reasons and real file systems use more complex
+[425.84s -> 428.96s]  data structures but you just think about this as on this data structures
+[430.48s -> 436.00s]  and so we'll see a lot of that in today's lecture and then finally what makes it interesting
+[436.48s -> 437.92s]  is performance
+[441.60s -> 446.72s]  the devices typically on which you know file systems are stored you know storage devices
+[447.28s -> 448.24s]  are typically slow
+[456.00s -> 460.96s]  the meaning example to be to write a block you know on a solid state disk you know SSD disk
+[460.96s -> 465.76s]  there's about your order of a millisecond and so in a millisecond you can do a ton of ton of work
+[466.88s -> 470.80s]  and so it's important that you know you try to avoid uh going to disk
+[470.80s -> 473.44s]  and you'll see that in multiple ways so we see that for example
+[474.00s -> 477.68s]  all the file system will have something of a buffer cache or a block cache
+[481.92s -> 487.04s]  and you also see it in you know basically additional forums or more concurrency so for
+[487.04s -> 494.64s]  example if you do a path name lookup you know then that typically is an involved operation
+[494.72s -> 497.92s]  required to sending the directory hierarchy you know looking up blocks in
+[498.48s -> 502.56s]  for uh you know a directory finding the file name in the directory then going through the
+[502.56s -> 507.44s]  next directory etc etc and you want it to be the case that if like one process is doing
+[507.44s -> 512.08s]  path name lookup another process can sort of run concurrently or in parallel with the first
+[512.08s -> 517.76s]  process doing a path name lookup and so we'll see that sort of concurrency you know shows up
+[517.76s -> 524.80s]  again as a big topic in the context of file systems the other reason why it's interesting
+[524.80s -> 531.04s]  is it's going to be the topic of two labs so we're going to have the next upcoming lab is
+[531.04s -> 535.44s]  completely focused on file systems and the lab after that is a combination of virtual memory
+[535.44s -> 541.68s]  and file systems and even the lab for today or this week right has a component trying to
+[541.68s -> 543.12s]  make the buffer cache more parallel
+[545.20s -> 550.64s]  so that's why it's interesting and you know just to sort of get off the ground
+[551.92s -> 556.48s]  to understand like what the file system must provide just let's look again at the
+[556.48s -> 561.84s]  basic uh file system system calls right so the
+[566.48s -> 571.04s]  API example from looking at that you know API there's these file system calls
+[571.04s -> 574.16s]  then we can sort of deduce a couple of interesting properties that must be true
+[574.16s -> 579.44s]  about the implementation um and so the you know the file system calls
+[582.88s -> 590.08s]  we've seen them early on in uh in the semester and uh you know we've looked at most other
+[590.08s -> 595.44s]  Unix system calls how they implemented like fork and exec pipes all that stuff and basically
+[595.44s -> 599.04s]  this set of lectures is really focusing on like how to implement the file system calls
+[599.68s -> 605.68s]  so uh so first of all let's start up you know this application let's look at a simple scenario
+[607.92s -> 615.12s]  we have you know say we create a file x y uh or a file y in the directory
+[618.32s -> 618.80s]  x
+[619.28s -> 621.12s]  x um
+[633.92s -> 638.80s]  in the file x we have to provide some flags we don't really care about their flag so i'm just
+[638.80s -> 644.88s]  going to ignore them so this will create a file return a file descriptor uh you know to the
+[644.88s -> 649.52s]  caller and then the caller the user application can then actually example right you know through
+[649.52s -> 657.04s]  that file descriptor as we've seen many times before there's a right fd maybe abc you know three
+[657.04s -> 662.08s]  characters uh and one thing's actually uh i can already a couple things that we can
+[662.72s -> 671.04s]  point out right from this uh these two calls is that first of all um the path names
+[671.04s -> 679.28s]  that show up in the interface and that we're going to have to implement uh names are
+[680.08s -> 686.00s]  human readable they're not numbers you know they get selected by the user
+[689.36s -> 692.72s]  uh another interesting thing here is that in the right system call
+[693.76s -> 700.64s]  there's no offset as an argument so the offset is implicit so the file system somewhere
+[701.92s -> 707.52s]  must store you know the offset if you do a second call to right correct it will end up at you know
+[707.52s -> 713.60s]  the next set of bytes will be written at location four um you know so maybe some more
+[713.60s -> 717.44s]  interesting calls that we haven't looked at much but you know for example you know the
+[717.44s -> 725.76s]  xp6 and all unit file systems basically support calls to create uh links to have multiple names
+[725.76s -> 731.04s]  for the same file system for the same file so for example you might call a call like link that
+[731.04s -> 738.00s]  basically creates a second name for the original file so for example creates a name z for the
+[738.00s -> 745.44s]  file y that we earlier created so multiple names
+[745.44s -> 756.40s]  so the file system probably internally has to keep track you know in some way
+[756.40s -> 762.40s]  that multiple names might be pointing to the same file uh you know we might actually remove
+[764.00s -> 771.36s]  or change namespace while the file is open so for example why we could call you know
+[771.36s -> 774.96s]  user might actually call it out of process or the same process might call it unlink you know
+[774.96s -> 780.56s]  to remove a particular file um and in fact you know that will remove the file x and y that we
+[780.56s -> 784.88s]  actually opened earlier but we still have a file descriptor open and so in fact you know
+[784.88s -> 792.56s]  we can still write to it so we can still write to fd you know for example the character whatever
+[792.56s -> 802.40s]  d e and f and that actually works out fine uh so basically while you know a file file is in use
+[802.40s -> 808.72s]  you know the namespace that sort of surrounds it could actually be changed and so it has to be
+[808.72s -> 812.24s]  the case you know if you sort of look at this you know set of things that there's a bunch
+[812.24s -> 816.88s]  of interesting things going on internally in the file system so for example the file system
+[816.88s -> 824.40s]  file descriptor must be associated with some you know object that is independent of the name
+[824.40s -> 829.04s]  right you know the because you know even if the name changes you know the file descriptor still
+[829.04s -> 836.80s]  points or you know uh references the the same file object itself and uh so in fact you know
+[836.80s -> 842.88s]  if you think about this it has to be the case that basically uh there has to be some internal
+[842.88s -> 848.24s]  representation of you know the file inside of the operating system that's independent of the name
+[848.24s -> 854.00s]  itself and so we're going to look at that in a second but there's one other sort of point
+[854.00s -> 858.88s]  i wanted to make here is you know the goal of the file system is to implement an api like the
+[858.88s -> 863.84s]  ones that we're looking here which is the sort of typical file system and api now this is
+[863.84s -> 868.88s]  of course not the only way to build a storage system or you know to restore the information
+[868.88s -> 876.00s]  on disk you know we could imagine completely different apis um and um you know for example you
+[876.00s -> 881.44s]  know maybe you know the database right you know stores data persistently uh but accessing
+[881.44s -> 887.84s]  the data in uh and provides a very different programming or api user api then a file system
+[887.84s -> 894.24s]  does and so just important to keep in mind that you know that uh you know there's other ways of
+[894.24s -> 898.40s]  organizing storage systems and where our focus is going to be on the file system which is
+[898.48s -> 903.44s]  typically provided by an operating system and databases are typically you know implemented
+[903.44s -> 907.60s]  on top of the file system or in almost where work around you know the file system
+[908.32s -> 915.28s]  you can have direct access to to disk we have two questions in the chat yeah yeah good
+[916.80s -> 925.28s]  let me just gonna ask any questions uh so link increments a reference to the underlying file
+[925.28s -> 930.40s]  descriptor and unlink decremented yes that is correct yeah we'll talk a little bit more
+[930.40s -> 935.36s]  about it later uh another question here is about soft links versus hard links
+[935.36s -> 942.72s]  uh i'm probably not going to talk much about it today uh but you will be implementing soft
+[942.72s -> 950.24s]  links in the next uh in the file system lab that is upcoming so xv6 by itself implements
+[950.24s -> 956.88s]  hard links and then you will implement soft links in addition any questions other questions
+[964.64s -> 970.96s]  link operates on the i-nodes not on the file descriptors right that's correct link and then
+[970.96s -> 977.04s]  we're going to work on the i-node so let me since let's let's go there so file system
+[977.04s -> 985.92s]  structures so what structures does the file system maintain to implement uh you know this
+[985.92s -> 990.32s]  api that i just talked about so first of all the most important part probably is the i-node
+[991.92s -> 997.92s]  and so this is the object that represents a file independent of the name so file info
+[1000.72s -> 1001.60s]  independent of the name
+[1001.60s -> 1009.92s]  and in fact you know the way you know you name actually an i-node is by an i-node number
+[1009.92s -> 1014.80s]  which is literally an integer so the file system internally refers to
+[1015.36s -> 1021.36s]  uh i-nodes uh by a number instead of actually by path names and we also know
+[1021.36s -> 1026.24s]  that this is based on this discussion that you know the i-node must actually have a link count
+[1026.24s -> 1035.68s]  the to keep track of the number of um to keep track of the number of names that are pointing
+[1035.68s -> 1040.16s]  to that particular i-node and the file should only be deleted you know when the link count
+[1040.16s -> 1046.96s]  actually reaches zero no earlier uh it's actually slightly more complicated uh there must be also
+[1046.96s -> 1052.88s]  an open fd count you know number file descriptors that actually have the file open
+[1053.44s -> 1056.64s]  and then the file can only be deleted when both of these are zero
+[1063.52s -> 1066.64s]  we also know that basically based on you know the rights have no
+[1067.20s -> 1074.48s]  offset nor does reach you know that the file descriptor implicitly must maintain an offset
+[1074.48s -> 1089.12s]  okay and so basically the central wheeling data structure in a file system is the i-node
+[1089.12s -> 1095.68s]  and then uh and the file descriptor to actually interact with processes
+[1095.68s -> 1106.16s]  um so um even though like the file systems are very similar in terms of sort of their api
+[1106.16s -> 1113.60s]  you know they're all implemented differently but many of them have sort of a similar structure
+[1120.08s -> 1124.48s]  and because the file systems are quite complex you know it just helps to sort of organize them
+[1124.48s -> 1129.52s]  in they're typically organized in a sort of set of layers and you know one way to think about it
+[1129.52s -> 1135.20s]  this is at the very bottom there's the disk you know some storage device that actually holds you
+[1135.20s -> 1140.88s]  know the data and that actually provides the persistence and durability typically you know
+[1140.88s -> 1147.52s]  there's something like a buffer cache or block cache right above it so that to avoid you know
+[1147.52s -> 1153.60s]  going to disk uh many times so we're going to cache basically data inside in memory so this
+[1153.60s -> 1163.44s]  is going to be basically you know memory um and this is you know the device
+[1166.72s -> 1172.08s]  um for persistence there's something typically called the logging layer you know many many
+[1172.08s -> 1176.72s]  file systems have a form of logging and we're going to talk mostly about it Wednesday so I
+[1176.72s -> 1182.08s]  could skip that um then at the top of the logging layer at least in xv6
+[1182.80s -> 1187.92s]  there's an icache or an inode cache this is mostly for synchronization
+[1187.92s -> 1189.76s]  that's also talked about a little bit later
+[1194.48s -> 1199.44s]  so an inode is typically smaller than a disk block and then the inodes are packed into a
+[1199.44s -> 1204.96s]  single disk block that's basically provide synchronization to those individual inodes
+[1204.96s -> 1211.04s]  uh you know xv6 maintains an icache um and then typically with that you know we're gonna
+[1211.04s -> 1215.76s]  there's the inode implementation itself you know that sort of ranges for reads and writes
+[1217.12s -> 1224.48s]  bytes and then you know on top of that we have names
+[1226.48s -> 1228.48s]  like path names and file descriptor operations
+[1230.40s -> 1234.48s]  and every file system may be slightly differently organized and the layers may be slightly
+[1234.48s -> 1240.48s]  different uh and maybe layering is not always that strict and even in xv6 it's not always super
+[1240.48s -> 1245.76s]  strict uh but it's conceptually a good way to think about it and almost all file systems have
+[1245.76s -> 1249.68s]  components in their file system that correspond to the different pieces you know the buffer cache
+[1249.68s -> 1256.16s]  to the logging uh to the inodes and to uh path names and so we're basically work my
+[1256.16s -> 1262.40s]  through a little bit uh through you know these different uh file system layers let me
+[1262.40s -> 1266.32s]  talk a little bit starting with the bottom layer um
+[1269.04s -> 1270.96s]  yeah okay let's just looking at the
+[1273.20s -> 1278.32s]  chat so let me start with the talk a little bit about storage itself storage devices
+[1281.92s -> 1285.52s]  so it turns out there are many many many different types of storage devices
+[1286.16s -> 1293.20s]  uh and the differences in performance you know capacity uh and the degree of durability
+[1293.20s -> 1298.16s]  um but the two of the common ones you know are you know you're probably all familiar with
+[1298.16s -> 1306.64s]  you know an ssd and there may be you know uh some people may still be using hard disks
+[1306.72s -> 1313.92s]  or magnetic disks and you know they provide a ton of storage uh reasonable cost
+[1314.56s -> 1319.36s]  uh in the different performance so ssd's have typically in the order of like hundreds of
+[1319.36s -> 1327.04s]  microseconds milliseconds access time while magnetic disks tend to be more in the order
+[1327.04s -> 1335.44s]  of 10 milliseconds to individually read and write a block the terminology is actually
+[1335.44s -> 1341.60s]  slightly confusion here you know the terms sector that are being used blocks
+[1345.28s -> 1349.60s]  and so in sectors is typically the it's historically the sort of smallest unit
+[1350.88s -> 1358.00s]  that this drives can read and write in and so you know used to be typically 512 bytes
+[1358.00s -> 1363.52s]  was the common number the block size is basically where a block is basically an os or
+[1363.52s -> 1370.48s]  a file system idea or defined by the file system and in x86 for example is 1024 bytes
+[1370.48s -> 1376.80s]  and so it's two sectors so typically the block size is one or more sectors sometimes you know
+[1376.80s -> 1380.96s]  people refer to the sectors on disk also as blocks and so you know the terminology is not
+[1380.96s -> 1389.92s]  particularly precise so these devices you know basically sit you know on some bus and you know
+[1389.92s -> 1395.28s]  the bus is you know connected to the cpu correct uh you know there might be memory here on the side
+[1395.28s -> 1403.04s]  here there's maybe multiple cpus uh and so the file system runs on you know the cpu
+[1403.68s -> 1410.88s]  stores its internal data structures in memory and basically reads and writes uh you know to uh
+[1412.80s -> 1417.20s]  to the ssd or to the hard disk to actually write a block or read a block and so actually the
+[1417.20s -> 1424.88s]  interface um is quite simple so it's typically just read you know or write with block number
+[1426.00s -> 1429.76s]  now there's a little bit of a oversimplification when like by the core of the interface is
+[1429.76s -> 1436.48s]  roughly that um and internally of course the ssd's and ad hard disk work completely differently
+[1436.48s -> 1442.32s]  and uh but the hardware extracts it mostly away and uh typically there's sort of a standard
+[1442.32s -> 1450.72s]  protocol like pci or pci extended uh that uh the the processor or the file system users or
+[1450.72s -> 1457.12s]  the disk drivers used to actually talk to uh disks and often from the disk driver uh
+[1457.84s -> 1462.88s]  you know most disks you know sort of look the same uh and you can just read and write them
+[1462.88s -> 1468.64s]  you know by providing a block number and some data and then uh you know send it off or write
+[1468.80s -> 1472.32s]  to the control register you know the device and then the device actually will do its job
+[1474.08s -> 1481.12s]  so this from a file system perspective uh although you know the the disk have quite
+[1481.12s -> 1486.64s]  the storage device have quite different properties uh they're actually uh uh from
+[1486.64s -> 1490.08s]  the driver perspective you know there's your programming in roughly in the same place
+[1493.84s -> 1497.12s]  any questions about that i'm not going to talk much about the storage devices so
+[1497.68s -> 1500.64s]  so if you have any questions it's a really good time to ask them
+[1511.28s -> 1519.92s]  yes i have a question is the interface for uh calling read or write something that offers
+[1519.92s -> 1525.28s]  synchronous and asynchronous options yeah uh often there's the case in fact it's generally
+[1525.28s -> 1529.76s]  like it's almost very similar to actually uh basically you can think about the driver for
+[1529.76s -> 1537.12s]  a disk in the same way as the console driver uh where uh the cpu or the driver issues of
+[1537.12s -> 1542.48s]  commands to the device basically say start read or do write and then at some point later when
+[1542.48s -> 1545.76s]  the device is done and will generate an interrupt saying like okay i did the read
+[1545.76s -> 1551.28s]  or i did the right and then you know that indicates the completion uh and you know of
+[1551.28s -> 1555.92s]  course the driver you know since this device is more complicated than the console you know it's
+[1555.92s -> 1560.48s]  quite a bit more complicated driver than the console driver that we saw in the in previous
+[1560.48s -> 1566.72s]  lectures this is basically the same structure the bottom half top half interrupts uh and
+[1566.72s -> 1571.60s]  reading and writing to control that assertion okay thanks
+[1571.60s -> 1584.00s]  okay so uh so from the file system perspective uh the way to think about the disk is uh pretty
+[1584.00s -> 1589.92s]  straightforward uh since there's a read or write of block or sectors and we can just think about
+[1589.92s -> 1597.44s]  the disk it's basically a gigantic you know array of blocks you know starting at you know
+[1597.44s -> 1603.44s]  whatever zero you know one and going up to whatever the size of the disk is
+[1604.48s -> 1611.36s]  uh and basically the file system's job is to sort of lay out all the data structures on the
+[1611.36s -> 1616.56s]  disk in the way that you know it can reconstruct you know the file system after uh reboot
+[1617.84s -> 1623.28s]  um and so you know there are different ways of going about it uh uh xv6 you'll see uses a
+[1623.28s -> 1634.00s]  very simple layout structure uh but uh but not completely unusual not pretty typical in uh or
+[1634.72s -> 1641.12s]  prototypical for how file systems operate uh so typically the block zero is generally not used
+[1641.12s -> 1649.36s]  or used actually for the boot sector to boot the operating system uh block one is often what's
+[1649.36s -> 1654.64s]  called the super blog and the super blog basically describes you know the file system
+[1655.52s -> 1660.08s]  and it may say like oh there's so many blocks on disk and that constitutes the file system
+[1660.08s -> 1663.60s]  and we'll see in a second that in xv6 there's a little bit more information in it as you can
+[1663.60s -> 1671.20s]  make most out of file system so for example in xv6 the log uh starts at block two and runs
+[1671.20s -> 1672.56s]  until block 32
+[1675.12s -> 1680.00s]  yeah so this is the log and of course the log could be different size and in fact in the super
+[1680.00s -> 1688.40s]  block it just says like the log is whatever 30 blocks long uh then uh and xv6 after that
+[1688.40s -> 1695.76s]  stores from 32 to basically block 45 if i remember correctly uh it stores inotes
+[1695.76s -> 1704.32s]  and i said before uh and multiple inotes are packed into a single uh this block i think an
+[1704.32s -> 1709.92s]  i note is i believe i don't actually remember at the top of my head but i think it's either 64
+[1709.92s -> 1719.84s]  bytes or 128 i believe it's 64 and after that you know there's uh a bitmap block it turns
+[1719.84s -> 1725.36s]  out in the the default way we built the file system is actually the bitmap block is one block
+[1726.08s -> 1733.84s]  in size and so these basically keep track of actually the data blocks uh whether they're free
+[1733.84s -> 1739.28s]  or not and after that you know it's all from basically here to there it's all data blocks
+[1739.28s -> 1743.36s]  so data blocks that actually store contents of files or contents of directories
+[1743.36s -> 1751.44s]  um often all the bitmap blocks and i know blocks and the logging block
+[1751.44s -> 1754.00s]  are often sometimes referred to as metadata blocks
+[1756.96s -> 1760.16s]  yeah they don't actually store actual data but they help you know they store
+[1760.16s -> 1766.80s]  meta information for the file system to do its job like bitmaps and i notes um
+[1768.64s -> 1770.40s]  any questions so far about this
+[1773.44s -> 1776.80s]  i have a question about the boot block does it contain
+[1776.80s -> 1780.72s]  the code for the operating system to boot or something else
+[1781.52s -> 1788.16s]  yeah uh exactly it typically contains you know uh you know one block of uh code
+[1788.16s -> 1791.52s]  enough for the operating system to get going and then load maybe more
+[1791.52s -> 1793.92s]  of the operating system actually from the file system itself
+[1797.84s -> 1802.88s]  thank you so does that mean that the code for xv6 is actually stored on like the
+[1802.96s -> 1809.92s]  virtual disk or is it like how to you know the way we do it with qmu you know we cut some corners
+[1810.48s -> 1816.32s]  uh and qmu actually has a flag you know dash kernel that basically points to the where it
+[1816.32s -> 1821.60s]  boots the kernel from and loads you know that at a particular address into physical memory at
+[1821.60s -> 1826.40s]  all eight is zero zero zero zero and so basically when we're using qmu the way we're
+[1826.40s -> 1830.16s]  using qmu we don't really have to worry about boot sectors and anything like that
+[1831.12s -> 1840.48s]  okay so basically like when you run q q e mu you just um you just pass in like the the program
+[1840.48s -> 1844.00s]  yes through the command line and then it'll just run that it doesn't need to like read
+[1844.00s -> 1847.20s]  it from the virtual disk and everything exactly that makes sense
+[1847.60s -> 1857.20s]  um okay so like you know the so for example um so assuming that i know it's
+[1858.64s -> 1863.36s]  64 bytes you know so for example now if you want to read uh i note 10
+[1868.64s -> 1872.88s]  uh what do you do how do you read i know 10
+[1878.00s -> 1878.72s]  anybody
+[1882.32s -> 1889.52s]  when which block will i know 10 be you'd need to add do you take the i node number
+[1889.52s -> 1897.76s]  and add the offset into the disk so 10 plus 32 yeah so 32 correct and is it literally plus 10
+[1897.76s -> 1901.52s]  or something else
+[1907.92s -> 1913.76s]  is it 10 divided by the size yeah it's going to be whatever it's going to be the i note number
+[1915.28s -> 1922.96s]  i note number uh multiplied times like we do it in bytes you know multiplied by 64
+[1924.16s -> 1926.00s]  divided by 5 to 24
+[1926.00s -> 1938.24s]  so i know zero will end up in block 32 uh i note whatever what is 5 24 divided by 64
+[1944.00s -> 1949.52s]  16 yeah 16 that sounds about right so i know it's 17 where will it where will it end up
+[1949.76s -> 1955.20s]  it should be nine it should be in block 33 correct
+[1957.60s -> 1962.08s]  does that make sense so given an i know number we can always find
+[1962.08s -> 1967.68s]  uh the bytes on disk where the i note actually is stored okay
+[1970.56s -> 1976.72s]  okay so then let's look at the uh what actually is in an on disk i note
+[1979.92s -> 1989.68s]  so as we you know before you know we'll see there's basically a little data structure
+[1989.68s -> 1998.48s]  64 bytes in size uh and you know typically has a type which i'll talk about a little bit later
+[1998.48s -> 2006.00s]  but for example type is file or directory uh n link you know the link count you know to track
+[2006.08s -> 2011.12s]  if multiple names are pointing to the same i note a size in bytes
+[2013.12s -> 2017.44s]  and then uh in xv6 you know there can be slightly different in different
+[2017.44s -> 2023.84s]  file systems exactly how the representation is uh but in xv6 uh a little bit more space
+[2023.84s -> 2035.28s]  and xv6 you know basically is followed by a number of block numbers uh and so it has
+[2035.28s -> 2042.32s]  a block number zero block number one the factors are there are 12 of those guys
+[2043.12s -> 2045.20s]  he's called 12 direct block numbers
+[2045.20s -> 2054.56s]  and those direct node block numbers basically correspond to the first you know 12 blocks
+[2054.56s -> 2059.44s]  to constitute that file so for example if the file was only two bytes long you know there
+[2059.44s -> 2066.80s]  would be only one uh block number zero and that block number zero is the the block number
+[2066.80s -> 2071.12s]  of the disk block that contains you know the first few bytes of those in that file
+[2071.12s -> 2075.76s]  and then there's one indirect block number
+[2081.60s -> 2088.00s]  and basically that's a block number that corresponds to a block which then itself
+[2088.80s -> 2095.44s]  yeah the block is 5 to 24 bytes you know which holds uh 256 block numbers
+[2101.76s -> 2110.96s]  so if block number zero for block number 11 are all direct block numbers and so then block
+[2110.96s -> 2121.36s]  number 12 you know is stored in that uh in that indirect block that basically is pointed to by
+[2121.36s -> 2131.12s]  you know the indirect block number uh and that is basically the layout of the file in
+[2132.80s -> 2138.56s]  xv6 and so what is the maximum file size in xv6 based on this
+[2138.96s -> 2146.40s]  anybody
+[2154.24s -> 2160.88s]  maybe 268 times 1024 bytes basically yeah right so just 256
+[2161.60s -> 2169.76s]  plus 12 the 12 uh direct times 1024 and then we get the maximum file size in bytes correct
+[2171.92s -> 2172.48s]  how much is that
+[2178.24s -> 2181.20s]  another way of saying it's basically 268 kilobyte correct
+[2183.36s -> 2185.76s]  what can you store it in 268 kilobyte
+[2185.76s -> 2186.96s]  can you store a video in it
+[2190.40s -> 2190.96s]  or a song
+[2194.24s -> 2202.00s]  if it's a short song yes very short song correct so these are the really small file size correct
+[2202.00s -> 2206.56s]  like real file systems have much much much bigger file size so what would you could you do
+[2206.56s -> 2210.88s]  do the file system representation to make this to allow the file system to be much more file
+[2211.84s -> 2216.32s]  system representation to make this to allow the file system to be much more fast to be much bigger
+[2221.52s -> 2224.24s]  could you uh extend the indirect portions
+[2225.52s -> 2229.36s]  yeah like for example you could have another block sitting here below correct which is maybe
+[2229.36s -> 2237.36s]  double indirect almost like you know in the sort of the page table type data structures that
+[2237.36s -> 2243.28s]  we've seen before right then that double indirect points through 256 indirect block numbers each
+[2243.28s -> 2247.76s]  which point to another block number right and so suddenly the file size is going to the maximum
+[2247.76s -> 2253.04s]  file size is much bigger and basically this turns out to be just a sort of an exercise in on
+[2253.04s -> 2256.96s]  those data structures you could pick a like a structure like this like a tree but there's
+[2256.96s -> 2262.56s]  also possible to like maybe implement it as a b-tree or something other sophisticated now xv6 does
+[2262.56s -> 2269.20s]  something extremely simple and basically it's remodeled after the original version six units
+[2269.20s -> 2277.20s]  unix but you can implement more sophisticated schemes in fact in the file system lab you will
+[2277.20s -> 2285.20s]  implement double indirect block numbers to support much bigger files any questions about this
+[2285.20s -> 2297.04s]  sorry so is it 256 blocks because it's uh like one block as a whole
+[2298.56s -> 2304.96s]  uh this is an indirect block number but it doesn't count so there's 256
+[2304.96s -> 2310.64s]  sitting in this indirect block was 12 direct block numbers that makes it 268
+[2310.64s -> 2320.56s]  oh sorry my question was why is it 256 oh because it's a block number is four bytes probably
+[2323.28s -> 2330.96s]  so 1024 divided by four is 256 entries okay thank you which is also a little bit
+[2330.96s -> 2334.56s]  ridiculous if a block number is only four bytes how big can this be
+[2341.44s -> 2344.56s]  anybody
+[2356.48s -> 2362.32s]  two to the power of 32 right some things are bigger than that and so typically you know
+[2362.32s -> 2373.28s]  people use larger sizes for block numbers than 32 bits okay any questions further questions
+[2376.64s -> 2382.80s]  for the max file size could you could you help um could you explain that again like
+[2383.60s -> 2391.12s]  okay sure could could each block in the could each block in that's referenced by the indirect
+[2391.12s -> 2397.76s]  block could that also um point to more blocks if that makes sense well in in the default
+[2397.76s -> 2402.88s]  xv6 design uh that's not the case basically there are 12 block numbers 12 direct block numbers
+[2402.88s -> 2410.72s]  and 256 indirect block numbers and nothing more uh and in the next lab you'll be adding a
+[2410.72s -> 2415.36s]  double indirect block to the inode so you will take one of these b and l 11s and turn
+[2415.36s -> 2421.20s]  that into a double indirect and that double indirect you know it's going to point to
+[2421.20s -> 2428.32s]  basically it's going to have 256 indirect block numbers which itself then point to
+[2429.20s -> 2433.44s]  you know blocks and that way the file can be substantially bigger
+[2436.08s -> 2443.28s]  oh okay thanks okay so now let's say you know we want to implement the read system call
+[2444.08s -> 2450.48s]  and you know basically we start from uh uh sort of the operating system boots it wants to read
+[2451.12s -> 2459.60s]  uh say byte you know read uh byte uh 8000
+[2463.12s -> 2466.96s]  uh you know how would you you know which block would you read
+[2466.96s -> 2472.72s]  which block will contain basically byte 8000
+[2477.36s -> 2480.72s]  how would you compute or how you would look up you know given this data structure
+[2481.52s -> 2485.12s]  this extremely simple data structure uh how would you compute actually the
+[2485.12s -> 2488.80s]  block number that or find the block number that contains a byte 8000
+[2488.80s -> 2504.72s]  uh anybody do you just um subtract like first of all subtract the number of bytes in the first
+[2504.72s -> 2513.36s]  12 direct blocks and then see what the offset is in the indirect blocks yeah so okay so in case
+[2513.36s -> 2517.76s]  of 8000 just what we will do correct we'll divide it by 1024 because that's the block size
+[2519.68s -> 2522.72s]  and that is uh seven right
+[2524.96s -> 2530.56s]  and so that means that basically the seventh block actually has the second
+[2530.56s -> 2536.08s]  entry in this direct block numbers has the block number that contains you know byte 8000
+[2536.08s -> 2543.20s]  correct so bnn seven whatever number is there is the block number that contains with this
+[2543.20s -> 2550.08s]  with this particular file uh byte 8000 and to actually find out exactly where that
+[2550.80s -> 2558.16s]  byte is inside of that block you know basically we have to compute 8000 michelo of 24
+[2560.80s -> 2563.76s]  which uh is probably i think it's 832
+[2566.56s -> 2572.64s]  okay so basically to read by the 8000s you know the file system looks at the inode well
+[2573.20s -> 2580.56s]  takes the byte number divided by 1024 indexes into uh sees sees if it falls below 12 then
+[2580.56s -> 2586.72s]  there's a direct block number uh and just picks up the direct block number from the inode
+[2586.72s -> 2592.16s]  reach that block and then fishes out you know the 8000 byte by computing 8000 divided
+[2592.72s -> 2598.88s]  by micro 1024 and so it will give us an offset of 832 and that's the location for
+[2599.84s -> 2607.28s]  byte 8000 of the file okay so basically this is enough information you know the thing to conclude
+[2607.28s -> 2611.76s]  from this is like there's enough information here now to actually uh implement you know
+[2611.76s -> 2616.64s]  read and write system calls at least to find out which disk blocks uh need to be written written
+[2616.96s -> 2618.16s]  or written uh
+[2621.12s -> 2623.52s]  in response to a reader write system call
+[2626.64s -> 2627.14s]  okay
+[2631.52s -> 2633.12s]  so let me talk a little bit about directories
+[2636.16s -> 2639.76s]  one of the cool things about the file systems where you have a hierarchical
+[2640.40s -> 2647.28s]  uh namespace uh and you can store uh symbolic user-friendly names inside of a
+[2648.08s -> 2654.96s]  uh inside of a uh inside of the file system and and the interesting aspect actually uh one of
+[2654.96s -> 2659.76s]  the cool uh design features of uh most of these Unix file systems actually the directory
+[2660.48s -> 2664.00s]  is basically a file except the file with some structure
+[2664.00s -> 2675.12s]  that the file system understands and in fact in xv6 you know the structure is extremely simple
+[2675.68s -> 2685.20s]  um every the directory consists of directory entries and every entry has a fixed uh format
+[2685.76s -> 2694.40s]  namely it contains an inode number in the first two bytes and it contains the file name
+[2696.64s -> 2700.48s]  in the remaining 14 bytes and so the total thing is 16 bytes
+[2703.36s -> 2707.68s]  and this is enough information you know basically for
+[2708.96s -> 2711.04s]  you know to actually implement path name lookup
+[2716.00s -> 2724.08s]  so for example just to make it clear let's say we want to look up the path name y
+[2725.28s -> 2731.84s]  x how we go about doing that so well you know this path name explain
+[2732.88s -> 2735.76s]  uh indicates that we have to start at the root inode
+[2740.00s -> 2743.60s]  and it turns out that the root inode basically has a fixed you know there's a fixed inode
+[2743.60s -> 2748.48s]  number the root inode number has a pre-agreed fixed inode number and in fact in xv6 that
+[2748.48s -> 2752.80s]  number is one so how can we find the root inode number
+[2756.88s -> 2761.60s]  now we have to go back to our earlier picture correct uh if it's number one you know we know
+[2761.60s -> 2766.72s]  that you know i know start at block 32 so it must be in third block 32 and so it's the
+[2766.72s -> 2773.36s]  byte 16 to whatever sorry byte 64 to 128 in the first block that contains the
+[2774.32s -> 2777.84s]  root inode number and so the file system can just read the root inode number
+[2778.96s -> 2786.24s]  okay and then basically the way path name lookup works is it just scans the blocks
+[2786.24s -> 2792.64s]  you know for you know the name
+[2794.72s -> 2802.56s]  y so the file system basically goes through reach the blocks of the the inode
+[2803.44s -> 2808.64s]  file inode one uh one by one and just looks can afford the date of those blocks
+[2809.28s -> 2815.36s]  whether the string y appears and how can it find all the blocks of the inode one well just
+[2815.36s -> 2822.48s]  can look at the reach the bn0 the first block you know sees if x is in that you know if it's
+[2822.48s -> 2827.60s]  not it will read the second block etc etc until hopefully at some point either it finds it or
+[2827.60s -> 2835.76s]  doesn't find it and if it finds it say let's we find file x in the directory you know it's
+[2835.76s -> 2840.96s]  going to have some inode number say 251 and then we can just proceed from there right we
+[2840.96s -> 2850.00s]  can see it's like well okay we'll now read you know block number you know read inode 251
+[2851.20s -> 2852.72s]  and scan its blocks
+[2856.64s -> 2864.48s]  for uh okay i guess i did my example wrong this was y and let's get his blocks for x
+[2867.04s -> 2870.48s]  and that dream was going to find us you know so my note number again and we'll return that
+[2870.56s -> 2872.08s]  as the result of the path name lookup
+[2875.60s -> 2876.64s]  any questions about this
+[2885.84s -> 2891.36s]  if you're saying this is so this yeah go ahead uh yeah this so this is the layout of the
+[2891.36s -> 2897.68s]  directory in the disk but is there some bit somewhere uh in the metadata blocks that
+[2897.68s -> 2903.68s]  indicates whether the current thing is a directory or a file yeah it's actually in the inode so the
+[2903.68s -> 2910.72s]  type of the inode says when it's a directory or file so if you do look up on uh an inode
+[2910.72s -> 2913.84s]  that actually happens to be your file then actually the file system will return an error
+[2917.44s -> 2921.28s]  i see thanks okay
+[2921.28s -> 2931.68s]  um now uh and clearly this structure is not uh particularly efficient uh you know to actually
+[2931.68s -> 2937.68s]  find in a directory name you know you have to scan uh and so a real file system you know
+[2937.68s -> 2943.92s]  probably uh would look would use more sophisticated data structures to uh actually make these
+[2943.92s -> 2946.40s]  lookups much faster than xv6 does
+[2949.04s -> 2952.96s]  now but again that's sort of almost you know more design or a question of data structures
+[2952.96s -> 2954.96s]  then that is a question of operating system design
+[2957.28s -> 2962.24s]  and so you could plug in your favorite uh data structure and turn it into an undis
+[2962.24s -> 2964.88s]  data structure and then hopefully you're going to get better performance
+[2966.56s -> 2971.28s]  but for simplicity and easy explanation you know actually uses a very simple structure
+[2974.72s -> 2984.24s]  okay okay so what i want to do next is going to get a little bit more concrete feel for this
+[2984.24s -> 2989.92s]  and just to see actually how things work out in practice uh in xv6 and this will be helpful
+[2989.92s -> 2997.84s]  you know for the next lab um so i'm going to look at xv6 for a second uh here's the usual
+[2997.92s -> 2999.76s]  screen
+[3002.96s -> 3010.80s]  so the first thing i'm going to boot xv6 again as always um and i did make clean uh and as you
+[3010.80s -> 3014.64s]  probably remember again where many of you have run into this you know if you want actually a new
+[3014.64s -> 3020.24s]  file system you have to run make clean because then make you will build you a new clean file
+[3020.24s -> 3023.04s]  system so here we go
+[3025.76s -> 3032.16s]  and we'll see that uh xv6 uh uh has started but the thing i want to point out first is
+[3032.80s -> 3040.72s]  uh here here you'll see there's a call to uh basically make a file system so this makes a
+[3040.72s -> 3046.72s]  uh a fresh disk image uh and in a disk image you know contains you know a bunch of files that
+[3046.72s -> 3051.84s]  we specify in the command line and after and makefs basically built you a new file system that
+[3051.84s -> 3057.76s]  contains those files as the content of the file system and you can see you know the xv6 always
+[3057.76s -> 3063.28s]  prints out a bit of information about the file system so it basically says there are 46 meta
+[3063.28s -> 3068.72s]  blocks you know that includes the boot block the super block the 30 log blocks 39 node blocks
+[3068.72s -> 3075.52s]  one bitmap block and then followed by 954 data blocks so it's a tiny file system in total of
+[3075.52s -> 3081.20s]  only thousand blocks and one of the things you will do in the the lab for to support bigger files
+[3081.20s -> 3091.28s]  you also will have to use a much bigger uh file system um then i modified uh xv6 slightly to
+[3091.28s -> 3097.28s]  basically write or print something whenever we write to a particular block uh so for example
+[3097.28s -> 3103.04s]  we see a couple file system calls with xv6 when i start up does a bunch of file system calls
+[3103.04s -> 3110.48s]  and apparently wrote you know block 33 43 46 or 32 um and you know we're going to run basically
+[3110.48s -> 3117.28s]  commands and we're just going to see what block numbers are are being written uh by that command
+[3117.84s -> 3121.76s]  uh or as a cause of that command and we're going to try to understand
+[3121.76s -> 3126.24s]  where do those walk where do those rights make sense what we expect whatever to see if that
+[3126.72s -> 3131.20s]  uh to see what is happening is what we actually expect
+[3132.32s -> 3138.88s]  so we're going to create a file uh echo hi and i'm going to create a file x
+[3141.44s -> 3142.64s]  and let me actually
+[3146.32s -> 3148.24s]  copy that a little bit over so we can
+[3148.24s -> 3158.16s]  delineate this i'm going to delineate it in a couple places just for help for understanding uh
+[3160.08s -> 3166.24s]  probably right here and then probably here
+[3167.92s -> 3172.00s]  yeah okay uh so basically it turns out there's going to be
+[3172.64s -> 3176.48s]  a couple phases here one is the phase to actually create the file
+[3179.12s -> 3184.48s]  so then uh there's right the files namely right hi
+[3186.32s -> 3191.84s]  the file and then you know one more right right actually the new line
+[3194.80s -> 3195.60s]  i'll do the file
+[3198.56s -> 3201.92s]  so you look at the echo you know program that is basically what it does
+[3203.52s -> 3204.08s]  pick it up
+[3208.40s -> 3215.28s]  let's do it for completeness right so echo uh looks at his arguments
+[3215.28s -> 3221.28s]  writes the arguments to uh file descriptor one and then at the end it depends on
+[3222.48s -> 3228.96s]  a new line okay uh so these are the basically the sequences of disk rights you know involved in
+[3228.96s -> 3234.40s]  each operation um and let's see you know look at them one by one and try to understand what's
+[3234.40s -> 3241.12s]  going on um i'm gonna just basically maybe the easiest thing to do actually is to move this over
+[3247.92s -> 3254.48s]  okay so uh it's convenient uh to understand what's going on instead of looking at the code
+[3254.48s -> 3260.16s]  we're gonna actually just look at this disk layout and try to figure out what might be
+[3260.16s -> 3263.92s]  going on in these particular operations um
+[3279.44s -> 3286.16s]  okay good um so what do we think uh this right is
+[3290.24s -> 3298.40s]  any idea what this might actually be we're creating a file so what we expect the
+[3298.40s -> 3305.76s]  file system to do it writes the inodes entry yeah so first thing i got there's two uh so
+[3306.32s -> 3311.52s]  okay so good it's 33 so what do we know about block 33 if we look at the display our picture
+[3311.52s -> 3320.48s]  it contains a free inode yeah you know contains we know that i know one lives in 32 correct
+[3321.68s -> 3327.52s]  and so we're whatever apparently uh uh the island that's being allocated is probably an
+[3327.52s -> 3332.96s]  i know that lives in block 33 presumably the first right might just be marking you know
+[3332.96s -> 3337.76s]  that this i note actually is now going to be used so i think the way xv6 does this it uses
+[3337.76s -> 3342.80s]  the type field uh in the i know to actually indicate where an i note is free the file or
+[3342.80s -> 3350.08s]  a directory so it basically changes from uh three to a file and uh writes it to the disk
+[3350.08s -> 3356.16s]  to mark it as in use uh what do we think the next right 33 years
+[3356.16s -> 3362.56s]  so
+[3362.56s -> 3369.20s]  actually populating the inode entry with like info yeah exactly it's indeed populating the
+[3369.20s -> 3373.04s]  i know name for it you know i know it's probably with entries like you know setting
+[3373.04s -> 3382.72s]  the link count to one uh and things like that right and what is 46 what do we expect
+[3382.72s -> 3384.88s]  46 to be in 32 maybe that's it
+[3390.32s -> 3398.32s]  is 46 the first data no actually bitmap bitmap no it's just it's a data block
+[3398.32s -> 3402.80s]  and you're right it's the first data block okay so whose data block do we think this is
+[3402.80s -> 3415.60s]  it's the uh root directory uh entry yeah correct this is this is probably the block first block
+[3418.08s -> 3426.00s]  of you know the root directory you know i know one right and why why are we expecting
+[3426.00s -> 3436.40s]  you know actually that to be written what has because uh because we're um we're creating like x
+[3436.40s -> 3441.28s]  in we're adding a new file x in the current directory so we're adding it to like the file
+[3441.28s -> 3448.56s]  hierarchy yeah exactly so we're doing what we've done is like we just uh added an entry to
+[3448.56s -> 3454.08s]  the root the root directory namely the entry x without whatever i note we allocated in you know
+[3454.08s -> 3461.76s]  the stack two steps before does that make sense so what do we think this right to 32 is
+[3467.20s -> 3470.88s]  to block 32 well the easy thing to do is go back and look at the lakes layout picture
+[3471.60s -> 3472.96s]  and what is block 32
+[3475.60s -> 3481.68s]  i know the one probably yeah well it will include i note one it includes also other i
+[3481.68s -> 3485.04s]  notes correct because now i know it's smaller than a block but you know it will include i
+[3485.04s -> 3489.20s]  node one why do you think it's going to be written what what it might have changed
+[3489.20s -> 3492.16s]  in the i note that requires that the i know that should be written to disk
+[3493.36s -> 3498.96s]  the size yeah exactly the size of change because when we grew the directory it worked by
+[3498.96s -> 3501.20s]  16 bytes to actually store the entry x
+[3504.24s -> 3510.96s]  and then there's one more uh right to 33 and uh i'll leave that hanging for a second
+[3512.24s -> 3516.56s]  but basically we're updating the i note for x one more time
+[3516.56s -> 3522.00s]  uh even though nothing actually really was written yet uh okay
+[3524.32s -> 3529.44s]  so that's the first phase so let's now look at uh the second you know the so this is
+[3529.44s -> 3533.68s]  creation now let's look at the second phase or the first right you know the right of height
+[3533.68s -> 3534.88s]  to file x
+[3537.52s -> 3539.44s]  well what do we think 45 is
+[3543.52s -> 3549.12s]  bitmap yeah it's the bitmap so remember what happened here is correct that the file system
+[3549.12s -> 3554.64s]  uh scanned the bitmap block to find a block that was not a used you know so find a bit
+[3554.64s -> 3561.12s]  bit zero and then uh set that bit you know to one to indicate that that particular block
+[3561.12s -> 3568.16s]  now is in use and so it wrote you know 45 to the disk which updated the bitmap block
+[3570.16s -> 3573.36s]  and what block do we think the bitmap allocator picked
+[3576.40s -> 3582.56s]  595 yeah most likely right because right after it we see you're right to 595
+[3583.60s -> 3588.48s]  and presumably you know the block that was allocated to the file x and so basically in
+[3588.48s -> 3597.36s]  the i note correct of file x now in pn0 will have the number 595 and uh and basically what
+[3597.36s -> 3604.08s]  will be the first byte uh what's the value of the first byte of block 595 after this right
+[3605.76s -> 3609.36s]  h h yeah and what do we think the second right is
+[3609.36s -> 3621.12s]  this one i yeah right because every echo to uh you know there's a character by character
+[3621.92s -> 3624.00s]  okay what do we think this right 33 is
+[3628.48s -> 3633.36s]  updating the size again yeah updating the size of the i note of x because now it has two bytes
+[3633.36s -> 3644.88s]  in it does it make sense uh question 595 seems very high up in the disk is that because there's
+[3644.88s -> 3649.20s]  other stuff that's currently living there like the kernel boot code and other things that have
+[3649.20s -> 3653.20s]  already been stored well yeah we can look at we go back to the disk screen and we can look
+[3653.20s -> 3659.60s]  at what makefs did right so makefs stored a whole bunch of files there in the files before
+[3659.60s -> 3664.00s]  we actually created file x and in fact we've created all these guys
+[3665.60s -> 3669.76s]  and so presumably a good chunk of the disk is already filled you know by the files
+[3669.76s -> 3675.28s]  for the blocks a good number of the blocks are already used basically by the set of files
+[3678.80s -> 3688.88s]  about it um would it write down that block 595 is related to that to that i note during the
+[3688.88s -> 3695.84s]  last uh like during the write 32 that yeah exactly correct so this right through the
+[3695.84s -> 3698.72s]  free probably a bunch of things happened correct and the size got updated
+[3700.72s -> 3708.00s]  and you know bn0 and bn1 were updated or sorry only bn0 is updated correct to contain
+[3708.00s -> 3713.44s]  595 and both pieces of information are updated in the i note and then written to the disk by
+[3713.44s -> 3727.12s]  this right that makes sense yeah yeah thank you good so that's uh you know sort of the essence
+[3727.12s -> 3731.20s]  of sort of disk layout and hopefully you know you have a pretty good understanding
+[3732.88s -> 3737.76s]  what goes on uh to make this work and so let's we're looking a little bit more in detail
+[3737.76s -> 3746.08s]  now with the code uh to see actually uh things in them uh you know one more level of detail
+[3747.04s -> 3752.24s]  okay so the first thing since we allocated an i note let's first look at actually uh
+[3753.52s -> 3759.12s]  how uh how that happens uh so in sys file let's actually
+[3759.76s -> 3760.32s]  internal
+[3763.92s -> 3768.88s]  so here are all the calls related to file system calls so the first thing that actually
+[3768.88s -> 3775.04s]  happens correct was sys open because we're going to create a file uh sys uh open will call create
+[3779.60s -> 3786.64s]  and here's create uh create we'll look at this later the resolves the path name to basically
+[3786.64s -> 3793.36s]  the last directory locks the uh directory then doesn't look up and i really care about that
+[3794.40s -> 3798.08s]  just to see if the file already exists and if the file exists you know maybe you turn an error
+[3799.92s -> 3806.08s]  and then it calls i note allocate and so this is the call that is going to allocate this i
+[3806.08s -> 3812.64s]  note for uh the file x so let's look at that it's going to be in fs dot c
+[3816.96s -> 3823.68s]  so and here's i alloc and like most xv6 code you know it's just very simple but not particularly
+[3823.68s -> 3830.32s]  efficient uh and so what it does basically it goes from all the i note numbers possible
+[3831.60s -> 3835.44s]  from one to whatever the maximum number of i notes that is uh possible in this particular
+[3836.08s -> 3843.12s]  file system and then reach the block for that i note number so for example starts with one
+[3843.76s -> 3851.44s]  reach you know the block that contains i note number one and uh and then sees if that i
+[3851.44s -> 3857.84s]  know number uh is free and if it's not if it is free then uh it sets it to
+[3858.72s -> 3865.28s]  uh file and that way marks it as allocated and writes it to disk and this log right you
+[3865.28s -> 3870.56s]  know actually the print statements i had i put actually in log right and so the log right
+[3871.20s -> 3878.40s]  um uh was this first right that we've seen uh in that sequence of writes that we did
+[3879.52s -> 3881.68s]  or that the file system did does this make sense
+[3887.92s -> 3892.72s]  so an interesting uh so this is basically sort of the sequence of events that get you
+[3892.72s -> 3898.88s]  to the first you know right to the disk uh interesting question of course is uh what
+[3898.88s -> 3905.60s]  happens if like multiple uh processes uh are calling create at the same time kind of a
+[3905.60s -> 3910.48s]  multiple core machine you know they can be uh running in parallel you know coming down
+[3910.48s -> 3914.96s]  and all would get to i.l like roughly at the same time and then all they're going to call
+[3914.96s -> 3921.28s]  all they're going to call the read right and so there has to be some story or how uh these
+[3921.28s -> 3926.80s]  writes don't interfere with each other and this is really worthwhile looking into uh because
+[3926.80s -> 3931.68s]  in some sense you know this is actually the part of the last part of this lab that
+[3931.68s -> 3935.04s]  you're currently doing so that gets us into the buffer cache
+[3938.08s -> 3943.12s]  uh so let's look at b read so i'll b read what the first thing it does actually is
+[3943.12s -> 3949.36s]  called b get and so basically b get gets us a slot in the buffer cache let's look at the
+[3950.16s -> 3953.52s]  b get for a little while because there's a reasonable tricky code
+[3954.08s -> 3956.08s]  um and
+[3958.40s -> 3960.88s]  so what's going on in the first couple lines here
+[3963.76s -> 3966.64s]  i imagine some of you already looked at this code in quite a bit of detail
+[3966.64s -> 3971.28s]  as part of this lab the locking lab so what's going on here
+[3971.28s -> 3985.36s]  um it blocks the linked list and checks if any of the um things in the
+[3985.36s -> 3991.28s]  cache are matching with what we're looking for yeah right so the so basically this is
+[3991.28s -> 3996.08s]  the cache in action uh we're looking for whatever the block number uh i guess
+[3996.16s -> 4001.84s]  block number 33 and we're basically seeing if the cache already has block number 33
+[4003.12s -> 4011.52s]  and um and if that is the case it bumps the ref count up and uh and then releases the b
+[4011.52s -> 4015.60s]  cache lock because we're done looking in the cache itself we know it's there
+[4016.16s -> 4021.84s]  or we know that there's a buffery buffer for that particular block there uh and uh and then
+[4021.84s -> 4028.48s]  the next step that actually happens uh is sort of interesting the next step the block
+[4028.48s -> 4036.56s]  cache basically tries to uh get a lock on the buffer so uh so what happens is like multiple
+[4037.68s -> 4043.36s]  processes at the same time called bcat well one of them is going to get the bcash lock right
+[4044.32s -> 4048.32s]  it's going to scan the buffer cache and so nobody can actually modify the
+[4048.32s -> 4053.44s]  buffer cache in this particular point find if the block number is there and if the block
+[4053.44s -> 4059.44s]  number is there uh it bumps the ref count indicating that basically it has a reference
+[4059.44s -> 4065.28s]  you know to this uh this particular block and then releases the bcash lock so if there
+[4065.28s -> 4072.56s]  were a second process waiting uh to also scan the uh this cache it might not actually
+[4072.56s -> 4077.12s]  acquire the lock right away right in fact there might be a second process you know scanning for
+[4077.12s -> 4083.20s]  one also want to scan for this block 33 and it will also get you know basically reference to
+[4083.92s -> 4090.48s]  b uh bump up the reference count uh to two or three or whatever it is and then you know both
+[4090.48s -> 4097.12s]  of them will try to call acquire sleep on that particular buffer buffer 33 and acquire sleep
+[4097.12s -> 4102.64s]  is just basically another type of lock uh that we call them sleep blocks and we'll talk about
+[4102.64s -> 4110.16s]  it in a second uh but basically this acquires the lock on the buffer so one of the two processes
+[4110.16s -> 4118.24s]  will get the uh the lock on buffer 33 and will proceed and that will be returned and it
+[4118.24s -> 4122.80s]  will come through the motions you know like scanning that block 33 to see if there's an
+[4122.80s -> 4129.36s]  inode that exactly is free and the other process will just be sitting in the acquired sleep here
+[4129.36s -> 4133.76s]  you know waiting until the first process is done with all its operations
+[4138.40s -> 4139.36s]  any questions about this
+[4142.08s -> 4143.60s]  um i have a question
+[4146.56s -> 4153.12s]  while the ref count of a block is not zero can anything important about that block
+[4153.12s -> 4160.96s]  change because something can happen between the release of the b cash and acquiring the lock of
+[4160.96s -> 4166.40s]  the block yeah actually the the the protocol okay so there are a couple points i want to
+[4166.40s -> 4172.16s]  make here the the protocol that basically uh uh xv6 follows is that you know for any modification
+[4172.16s -> 4178.00s]  to the b cash itself you need to hold the b cash block for any modification to this block
+[4178.00s -> 4184.88s]  33 you need to hold the sleep block on block 33 and so at any particular point in time uh
+[4184.88s -> 4194.80s]  so after the release um the b ref count is uh larger than zero and there will be no modification
+[4194.80s -> 4199.44s]  to the buffer cache the buffer cache will only evict for things that actually have the ref
+[4199.44s -> 4204.88s]  count of zero never that has the ref count of something bigger than zero and so we know for
+[4204.88s -> 4210.08s]  sure that this block basically this buffer won't be touched in the b cash itself you know other
+[4210.08s -> 4216.08s]  processes might be looking up uh might be looking up the entry in the b cash uh but you know it
+[4216.08s -> 4223.28s]  won't be removed from the b cash correct yeah makes sense doesn't this lock that second
+[4223.28s -> 4228.64s]  level this sleep lock is really what protects the content of the buffer yeah and ensuring that
+[4228.64s -> 4233.44s]  only one process actually will be reading or writing the buffer at any particular point in time
+[4235.84s -> 4242.72s]  and then it's important correct that can assign would it be bad if this like say
+[4242.72s -> 4245.60s]  would it be bad if block 33 ended up in the cache twice
+[4248.64s -> 4249.44s]  in different slots
+[4252.96s -> 4258.00s]  yeah because then you could have the correct information right yeah for example let's say
+[4258.32s -> 4265.76s]  process one writes inote 19 and the other process writes inote 20 correct and so if they both get
+[4265.76s -> 4273.28s]  a handle on the buffer for that represents you know the block 33 one might update inote 18
+[4273.28s -> 4279.12s]  the other 19 the first one maybe writes it right 18 back to the disk then the guy that does
+[4279.84s -> 4284.16s]  modified 19 writes 19 back but will overwrite the changes that 18 made
+[4284.16s -> 4290.96s]  correct that were made for inote 18 and so that's terrible so it has to be the case that a block
+[4290.96s -> 4299.52s]  number only appears in the buffer cache only exactly once and there's an invariant correct
+[4299.52s -> 4303.76s]  that you know that you're you're sort of have to maintain while you're doing this uh
+[4304.40s -> 4311.60s]  block hash lab uh locking lab in uh in this week's lab does that make sense that invariant
+[4314.48s -> 4320.32s]  i guess tangential question to this there might be some blocks that have multiple references to them
+[4321.04s -> 4327.92s]  and then maybe one of the processes that has is touching this block flushes the cache
+[4327.92s -> 4338.00s]  by forcing a right to the disk what happens to what everyone else sees well uh the if the
+[4338.00s -> 4343.04s]  right okay so if the first process is done at some point we'll call release uh again where
+[4343.04s -> 4349.04s]  where is it called uh so basically you can think about uh at the end when the first
+[4349.04s -> 4353.68s]  process is done with it's reading and writing to that block 33 it will call be a release for that
+[4353.68s -> 4360.08s]  buffer and that will actually uh decrease the reference count well it releases sleep lock
+[4360.08s -> 4364.00s]  and that means that if anybody was waiting any other process was waiting for that particular
+[4364.00s -> 4370.56s]  buffer uh it will now be able to get the uh sleep block on that buffer and go read uh it
+[4370.56s -> 4376.00s]  and we'll observe uh the preview the new main main changes right so if the two processes
+[4376.00s -> 4381.04s]  were trying to maybe update i note 18 and i know 19 that all both live in block 33
+[4381.04s -> 4388.24s]  then if the first process is done it changes of 18 are visible uh and uh so the next uh
+[4388.24s -> 4393.68s]  and so the next guy will actually allocate i know 19 because actually 18 is marked as a file now
+[4394.96s -> 4397.28s]  anybody afterwards will observe the changes
+[4400.56s -> 4409.04s]  sense yes thanks and this is exactly what we hope to be the case correct if you know if uh
+[4409.04s -> 4412.16s]  one process creates an i note or case a file and then the
+[4412.16s -> 4415.12s]  impressive later process doesn't reach you know it should observe that file
+[4417.68s -> 4423.92s]  okay then uh we're going to one more for smaller detail uh as you can see here in the
+[4423.92s -> 4429.28s]  code you know the process actually takes a sleep walk on the buffer and so the sleep
+[4429.36s -> 4436.00s]  lock is slightly different than uh a regular or spin lock so let's look at sleep lock for a second
+[4437.20s -> 4445.28s]  and you see what it is so we here require sleep lock yeah and what it does it requires
+[4445.28s -> 4450.64s]  you know some field it basically requires a spin lock that is associated with the sleep lock
+[4451.28s -> 4456.72s]  if the lock is actually held okay the spin lock is held then uh
+[4457.12s -> 4460.56s]  uh if the lock is actually held so there's okay let me
+[4462.16s -> 4467.28s]  first see the h file so the h file contains a lock field um and
+[4470.64s -> 4471.20s]  and that's it
+[4473.84s -> 4474.72s]  and so basically
+[4478.32s -> 4481.36s]  that was the spin lock yeah where's the spin lock
+[4481.36s -> 4487.36s]  uh oh uh
+[4490.16s -> 4498.72s]  yeah there's a spin lock and good good good oops
+[4501.12s -> 4505.36s]  sorry about that uh and then if the lock is actually held there's the sleep
+[4505.36s -> 4513.04s]  lock is held it actually goes to sleep so it de-schedules itself uh and why why do you think
+[4513.04s -> 4518.88s]  for these buffers are we using sleep blocks instead of spin locks i guess indirectly we're
+[4518.88s -> 4523.92s]  using spin locks to implement sleep locks but why not just use regular uh
+[4526.88s -> 4532.32s]  because disk operations take a long time yeah you know it's a multiple regions uh there
+[4532.32s -> 4538.08s]  are all kinds of rules correct restrictions on the uh on um spin locks like one is one
+[4538.08s -> 4547.60s]  of the restrictions on spin locks what interrupts have to be off yeah they turn interrupts off
+[4547.60s -> 4555.04s]  correct and so we were would start a disk operation uh while holding a buffer while
+[4555.04s -> 4558.16s]  while holding a spin lock on the buffer and then we would never hear from the disk
+[4558.64s -> 4563.04s]  now maybe another core will hear but like if we had only one core and we would never hear from it
+[4563.04s -> 4569.28s]  right um and furthermore and for the same reasons you know you're not allowed to go to sleep while
+[4569.28s -> 4575.20s]  holding a spin lock uh and so therefore we have these sleep locks that are sort of long-term
+[4575.20s -> 4583.60s]  locks if you will uh that uh for that particular use case so that we can hold uh locks or
+[4584.56s -> 4587.84s]  one of the advantages of sleep locks is that we can hold them across interrupts and we
+[4587.84s -> 4590.96s]  can hold them across disk operations and we can hold them for long periods of time
+[4592.00s -> 4597.44s]  and we're not if we're if we're waiting on that lock we're also not uh keeping the CPU
+[4597.44s -> 4603.84s]  busy or spinning on the CPU we're basically releasing the CPU by calling sleep does that make
+[4603.84s -> 4610.48s]  sense any questions about this
+[4613.92s -> 4624.00s]  okay um let's look at one more uh thing um which is uh
+[4626.24s -> 4631.28s]  uh be a release uh so we looked at already a little bit you know basically would be released
+[4631.28s -> 4635.68s]  us it releases the sleep lock then acquires the bcash logs d grants reference count to
+[4635.68s -> 4640.32s]  indicate that one process is not interested anymore in this particular buffer and then if
+[4640.80s -> 4646.40s]  if direct down to zero uh it manipulates the uh
+[4648.56s -> 4650.56s]  list of buffers a little bit what does it do here
+[4657.68s -> 4667.60s]  um it inserts the b into the position after the head inside of the link list
+[4667.60s -> 4669.76s]  yeah where does it basically go what does that mean
+[4672.32s -> 4681.20s]  but let's go back up correct and let's look at that it was the most recently used yeah you know
+[4681.20s -> 4686.32s]  basically moves it into the position of the most recently used buffer right and this is important
+[4686.32s -> 4694.88s]  right because when uh when we cannot find the block in the block hash then we need to fix
+[4694.88s -> 4700.16s]  something to make space right and so we're going to go through the blocks and go and
+[4700.16s -> 4706.00s]  we basically start from the most from the least recently used one and evict that one first
+[4707.60s -> 4712.40s]  uh and so and we just used the buffer it's very unlikely that it actually evicted
+[4713.92s -> 4718.16s]  why is that a good policy
+[4718.64s -> 4727.04s]  so generally systems obey a temporal locality yeah right so if a block is
+[4727.60s -> 4731.68s]  reasonably used it's probably a good indicator that it might actually be used again quickly
+[4732.40s -> 4738.56s]  and so it is good idea not to evict it you want to and it's generally sort of if you even
+[4738.56s -> 4744.72s]  you know have locality cache locality then the block that is you know the least uh recently
+[4744.80s -> 4748.96s]  used is probably the block that is also most likely to be used in the future
+[4748.96s -> 4752.88s]  and so that's a good one to evict does that make sense
+[4758.16s -> 4759.36s]  okay uh
+[4762.00s -> 4768.72s]  so uh let me just go back to my slides here so um so this is a little bit of sort of a
+[4769.60s -> 4777.20s]  slight excursion in the dcache code or the block hash
+[4780.16s -> 4783.92s]  and there's a couple interesting things to point to correct you know there's this invariant
+[4783.92s -> 4788.08s]  that there's only one copy of a block in memory
+[4790.80s -> 4795.36s]  and that's an important variant that must be maintained by the block hash it has is sleep
+[4795.36s -> 4801.60s]  blocks and different type of locks than the ones that we've seen before that can span iO operations
+[4801.60s -> 4805.92s]  that implements you know LRU at least recently caching replacement policy
+[4805.92s -> 4814.00s]  then it has sort of these two levels of locking to uh uh in its implementation one level to
+[4814.00s -> 4818.16s]  basically protect the dcache internal data structures and then one level of locking
+[4818.16s -> 4821.60s]  through sleep blocks to actually uh lock individual buffers
+[4826.32s -> 4834.48s]  does that make sense okay um so i'm going to about to run out of time so what you may
+[4834.48s -> 4838.96s]  uh stop here uh you know quickly summarize that we what we have seen so far and then we're
+[4838.96s -> 4843.68s]  doing wednesday and we're going to focus really on crash uh safety so basically you
+[4843.68s -> 4848.72s]  know a file system is on this data structure and basically most of the lecture today we're
+[4848.72s -> 4854.64s]  sort of focusing on the layout of the on this data structure of the xv6 you know this
+[4854.80s -> 4859.60s]  this data structure on disk and you know we saw the xv6 has a very simple one
+[4864.64s -> 4867.60s]  but you can imagine like you know implementing more complicated one
+[4868.16s -> 4871.76s]  the other thing that we spend a bit of time looking at is this block hash which is crucial
+[4871.76s -> 4876.16s]  for performance because reading and writing typically through the disk is actually expensive
+[4876.16s -> 4880.40s]  you know in order for you know hundreds of microseconds to milliseconds and the block
+[4880.56s -> 4885.84s]  basically ensures that you know if a block was recently read from the disk you know we're
+[4885.84s -> 4891.76s]  actually not reading it again from the disk okay and then wednesday i'm going to talk about
+[4891.76s -> 4899.84s]  crash safety which is a fascinating other aspect of file system design in fact we'll spend two
+[4899.84s -> 4904.96s]  lectures on crash safety we'll see a logging design on wednesday that's slow and then next
+[4904.96s -> 4910.32s]  week we'll look at how linux ext3 does logging which is a much more faster scheme
+[4911.76s -> 4914.32s]  if you have any other questions no peace for you to hang around
+[4914.96s -> 4918.96s]  i'm happy to answer them otherwise you know see you wednesday
+[4922.16s -> 4932.32s]  all right thank you um i have a question about b release yes um so it seems like
+[4932.32s -> 4942.32s]  it releases the blocks lock and after that it modifies the ref count why is that okay
+[4942.96s -> 4949.28s]  yeah good question so what do we know you know so let's say we do release the sleep lock
+[4949.84s -> 4953.04s]  so if some other guy or some other process actually
+[4953.68s -> 4958.08s]  was waiting or was doing an acquiring sleep lock what does that mean about the ref count
+[4958.32s -> 4963.28s]  that it was zero
+[4965.84s -> 4976.40s]  no correct so like if n processes are waiting for a buffer oh okay that was at least one
+[4977.28s -> 4980.72s]  you know more than one correct if 10 processes are waiting then the ref count will be 10
+[4981.60s -> 4988.08s]  yeah yeah okay and so uh basically there's only there's only a line of code what it does is
+[4988.08s -> 4992.24s]  basically it updates the ref count for this one guy with this one process that actually did
+[4992.24s -> 4998.56s]  the release and it releases the ref count to do by one and if other people were waiting
+[4998.56s -> 5002.88s]  it will never the record will definitely not be here i won't do it will never execute this code
+[5002.88s -> 5013.28s]  okay okay okay i see i think i think i see okay um and my other question was why is uh
+[5014.72s -> 5020.16s]  why is two bits two bytes enough for an i-note number it's not
+[5021.44s -> 5025.36s]  it's ridiculously small correct because how many i notes can you have
+[5025.36s -> 5036.72s]  uh two to the power of eight yeah six uh yeah uh whatever two bytes 16 bits 16 right so
+[5037.36s -> 5043.92s]  32,000 i notes that's a lot of i notes for uh 90 60s or the 60s and 70s uh but certainly
+[5043.92s -> 5049.84s]  would not be sufficient for today and so uh today's file system will use a bigger number
+[5049.84s -> 5057.76s]  or more bits okay i see i guess my question was in the architecture that we have for
+[5058.88s -> 5068.56s]  xv6 um the those two 16 bits for i notes like where where else do they um where else can
+[5068.56s -> 5076.96s]  we see this number show up uh well the one that is two bytes right it's really on disk that it
+[5076.96s -> 5084.24s]  is two bytes uh any number in uh and when it's compiled or when it's sort of sitting in a
+[5084.24s -> 5091.12s]  register or it's in in memory uh the disk i notice uh we can look at it
+[5094.08s -> 5100.80s]  uh let's see so the disk i note as we said before actually the uh
+[5101.12s -> 5101.84s]  uh
+[5103.84s -> 5108.48s]  here's the directory entry right we say it's an inside short and that is there's two bytes 16
+[5108.48s -> 5116.48s]  bits uh the in-memory representation of an i note uh okay that's in
+[5118.88s -> 5123.68s]  you're the in-memory representation of an i note that actually number is
+[5124.56s -> 5131.60s]  uh an integer and you know the way we compile c code and integer happens to be four bytes
+[5134.48s -> 5137.84s]  okay okay i see thank you thank you so much

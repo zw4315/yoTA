@@ -1,0 +1,92 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.12s]  Okay, that was the joint probabilistic data association filter, which is based on merging
+[6.12s -> 11.04s]  multiple hypotheses using marginal association probabilities.
+[11.04s -> 14.52s]  Let's consider the same example as we did for GNN.
+[14.52s -> 16.88s]  We have two objects with scalar states.
+[16.88s -> 21.48s]  We have the same measurement model, motion model, and initial prior as we had in the
+[21.48s -> 23.32s]  GNN example.
+[23.32s -> 28.24s]  And for the visualization, we will again look at the marginal densities and the estimates.
+[28.28s -> 34.64s]  So at time zero, we have the initial marginal priors, we predict to time one, and we have
+[34.64s -> 38.00s]  some measurements, six of them illustrated by white circles.
+[38.00s -> 42.32s]  So in JPDA, we compute marginal association probabilities.
+[42.32s -> 48.88s]  Here, this is illustrated by making the measurements square if the association probability
+[48.88s -> 52.76s]  to any object is larger than 0.01.
+[52.76s -> 57.44s]  And by adjusting the color such that it's proportional to the colors used to illustrate
+[57.44s -> 58.44s]  the object.
+[58.44s -> 63.28s]  So on the left, we have two measurements with a non-negligible probability of association
+[63.28s -> 64.68s]  to object one.
+[64.68s -> 66.32s]  Object one is colored in blue.
+[66.32s -> 68.68s]  So these two measurements are blue.
+[68.68s -> 73.66s]  And the one closer to the mean is a more intense blue because it has higher association
+[73.66s -> 75.60s]  probability than the other.
+[75.60s -> 79.14s]  And the four measurements on the right are colored similarly.
+[79.14s -> 83.52s]  So after the merged update, we get the posterior densities shown here.
+[83.52s -> 86.04s]  Next, we predict to time two.
+[86.04s -> 91.60s]  There are five measurements at time two, we compute the marginal association probabilities,
+[91.60s -> 94.32s]  and then we compute the merged update.
+[94.32s -> 97.50s]  So this illustrates the basic JPDA recursion.
+[97.50s -> 102.52s]  In each time step we predict, we compute the marginal association probabilities, and
+[102.52s -> 105.40s]  then we use them to perform a merged update.
+[105.40s -> 110.12s]  So here, we've illustrated the measurements and the posterior densities together with
+[110.12s -> 113.88s]  estimates and ground truth, just like we did for GNN.
+[113.88s -> 118.60s]  Top left, we have the measurements and top right is the posterior densities shown as
+[118.60s -> 119.60s]  heat maps.
+[119.60s -> 124.56s]  So here we can see that in some time steps, a single measurement has a very high association
+[124.56s -> 125.56s]  probability.
+[125.56s -> 130.56s]  See, for example, for object two on the right at times three, four, and five.
+[130.56s -> 135.70s]  And in other time steps, there are multiple detections that share the association probability.
+[135.70s -> 140.68s]  For example, for object one on the left at time four, and on object two on the
+[140.68s -> 142.92s]  right at time one.
+[142.96s -> 147.32s]  And lastly, there are some time steps where the probability of missed detection is more
+[147.32s -> 149.00s]  or less equal to one.
+[149.00s -> 153.84s]  We can see this for object one at times five and nine, and for object two at times
+[153.84s -> 154.84s]  six.
+[154.84s -> 158.82s]  In the bottom left, we show the posterior densities and estimates, again shown as
+[158.82s -> 163.64s]  black circles, and the black lines show the sequences of the estimates.
+[163.64s -> 169.08s]  So a comparison between the estimates and the ground truth is given in the bottom right.
+[169.24s -> 173.92s]  And as expected, the estimates are not perfect, again due to the measurement noise and the
+[173.92s -> 176.96s]  process noise, but the results are quite good.
+[176.96s -> 182.36s]  If we compare the results from GNN and from JPDA for these measurements, we see
+[182.36s -> 188.00s]  that the posterior densities and estimates from both filters are quite similar, although
+[188.00s -> 190.30s]  some differences can be seen.
+[190.30s -> 193.52s]  This does hold in general for GNN and JPDA.
+[193.52s -> 198.88s]  If the SNR is sufficiently high, then often there are not so large differences between
+[198.88s -> 201.00s]  the results from the two filters.
+[201.00s -> 206.84s]  If we take the same models, but consider a lower probability of detection equal to 0.5,
+[206.84s -> 209.56s]  then we get the JPDA results shown here.
+[209.56s -> 213.52s]  So the main difference now is that there are more missed detections, and one effect
+[213.52s -> 219.92s]  this has is that the posterior JPDA density that results from merging has a larger variance.
+[219.92s -> 224.12s]  If we compare the estimates and the ground truth shown in the bottom right, we see
+[224.12s -> 230.58s]  that even though the probability of detection is only 0.5, we still have quite good results.
+[230.58s -> 234.44s]  So let's compare again to the results that we had using GNN.
+[234.44s -> 238.52s]  In this case, we can actually see some significant differences.
+[238.52s -> 244.00s]  Comparing the posterior densities, we see that JPDA in general has a higher variance
+[244.00s -> 249.48s]  than what GNN does, especially after measurements that have been associated in GNN.
+[249.48s -> 254.48s]  And this is due to the fact that JPDA better captures that there is still a fairly large
+[254.48s -> 256.88s]  probability of missed detection.
+[256.88s -> 262.72s]  If we compare the estimates, we see that for this particular example, JPDA is quite
+[262.72s -> 264.80s]  a lot better than GNN.
+[264.80s -> 270.20s]  This is especially true for object 1 on the left, which has a larger error for GNN from
+[270.20s -> 276.56s]  time 1 to time 8, whereas JPDA has much smaller error for the same object and timesteps.
+[276.64s -> 281.96s]  Now, this is just one particular scenario and one particular sequence of measurements.
+[281.96s -> 287.48s]  However, it does hold in general that when SNR is lower, for example, like here, where
+[287.48s -> 292.60s]  PD is lower, then JPDA often performs better than GNN.
+[292.60s -> 297.64s]  And the reason is that when SNR is lower, there are often multiple hypotheses with
+[297.64s -> 299.64s]  significant probability.
+[299.64s -> 306.52s]  And in this case, JPDA does a better approximation of the posterior density than what GNN does.
+[306.52s -> 312.32s]  As the last example, let's take the density approximation for the scenario with two objects,
+[312.32s -> 316.96s]  two measurements, minus 1.6 and 1, and a Gaussian prior.
+[316.96s -> 320.20s]  For JPDA, we get the results shown here.
+[320.20s -> 324.76s]  For all three values of PD, we can see that there is some difference between the exact
+[324.76s -> 327.92s]  posterior and the JPDA approximation.
+[327.92s -> 333.68s]  But in general, for this particular example, the approximation is fairly good.
+[333.68s -> 339.04s]  If we compare it to the GNN results, then we see that for these three examples, JPDA
+[339.04s -> 344.92s]  is slightly better, and this is especially true when PD is equal to 0.5.
+[344.92s -> 348.84s]  So let's conclude with some pros and cons for JPDA.
+[348.84s -> 354.08s]  In general, JPDA works better than GNN in scenarios with lower SNR.
+[354.08s -> 359.84s]  JPDA is still a fairly computationally cheap tracking algorithm, although the computational
+[359.84s -> 362.40s]  cost is a bit higher than GNN.
+[362.40s -> 368.04s]  It's also relatively simple to implement, although not quite as simple as GNN.
+[368.04s -> 373.20s]  One downside with JPDA is that it can give poor tracking results when the tracking scenario
+[373.20s -> 377.92s]  is complicated, for example, if the true objects are very close to each other.

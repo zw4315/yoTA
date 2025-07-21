@@ -1,0 +1,107 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.96s]  Alright, next I'm going to discuss algorithms for exploration in deep RL that draw on the
+[5.96s -> 10.94s]  ideas from posterior sampling or Thomson sampling that I've discussed before.
+[10.94s -> 16.58s]  So as a reminder, Thomson sampling or posterior sampling in a bandit setting refers to the
+[16.58s -> 20.32s]  case where we actually estimate a model of our bandit.
+[20.32s -> 25.02s]  So if theta is parametrized the distribution over the bandit's rewards, we would actually
+[25.02s -> 30.38s]  maintain a belief over theta, and then at each step of exploration, we would sample thetas
+[30.38s -> 36.50s]  based on our beliefs and take the action that is the argmax of the bandit described by that
+[36.50s -> 38.78s]  corresponding model.
+[38.78s -> 44.04s]  So in the deep RL setting, we could ask, well, what is it that we should sample,
+[44.04s -> 46.18s]  and how do we represent the distribution?
+[46.18s -> 48.66s]  So in the bandit setting, there isn't really a choice to be made.
+[48.66s -> 52.62s]  The only thing that's unknown is the model of the rewards.
+[52.62s -> 56.46s]  And then that model is pretty simple, so it's not too hard to represent.
+[56.46s -> 61.06s]  In the deep RL setting, this is, of course, a lot more complicated.
+[61.06s -> 66.74s]  So in the bandit setting, p hat theta one through theta n is a distribution of rewards.
+[66.74s -> 72.06s]  The analog in MDPs would be a Q function, because in a bandit, the instantaneous
+[72.06s -> 75.74s]  reward is basically all you need to know, so you can choose your action as the argmax
+[75.74s -> 76.74s]  of the reward.
+[76.74s -> 81.58s]  In MDP, we don't choose our action as the argmax of the reward, we choose the action as
+[81.58s -> 84.90s]  the argmax of the Q function.
+[84.90s -> 89.74s]  So the way that we could adopt posterior sampling or Thompson sampling, and this is
+[89.74s -> 95.54s]  not the only way, but this is one particularly simple way, is to sample a Q function from
+[95.54s -> 99.78s]  a distribution of our Q functions, and then act according to that Q function for
+[99.78s -> 107.22s]  one episode, and then update your Q function distribution, and then repeat.
+[107.22s -> 112.26s]  Now since the Q learning is off policy, we actually don't care which Q function was used
+[112.26s -> 116.84s]  to collect that episode, we can train all, you know, our whole distribution over Q functions
+[116.84s -> 117.92s]  on the same data.
+[117.92s -> 122.38s]  So it's okay if we use a different exploration strategy or a different policy for every
+[122.38s -> 125.72s]  single rollout.
+[125.72s -> 128.26s]  How do we represent a distribution over functions?
+[128.26s -> 134.06s]  Well, one of the things we could do is we could think back to the model-based RL
+[134.06s -> 139.34s]  lectures, where we learned how we can represent distributions by using bootstrap ensembles,
+[139.34s -> 141.06s]  and essentially try the same thing.
+[141.06s -> 146.74s]  So given a data set D, we resample that data set with replacement n times to get
+[146.74s -> 151.78s]  n data sets D1 through Dn, and then we train a separate model on each of those
+[151.78s -> 155.14s]  data sets, which basically means we train a separate Q function on each of those data
+[155.14s -> 156.60s]  sets.
+[156.60s -> 162.48s]  And then to sample from the posterior, we simply choose one of those models at random,
+[162.48s -> 164.84s]  and then use that model.
+[164.84s -> 170.78s]  So here's a little illustration that shows uncertainty intervals estimated by these bootstrap
+[170.78s -> 171.78s]  neural nets.
+[171.78s -> 177.08s]  Now, of course, training n big neural nets is expensive, how can we avoid it?
+[177.08s -> 181.92s]  Well, we use, again, the same trick that we used in the model-based RL lectures,
+[181.92s -> 189.66s]  which is to, you know, not do the resampling or replacement, just use the same data set.
+[189.66s -> 193.72s]  And furthermore, one of the things we could do, and this is described in this paper at
+[193.72s -> 198.76s]  the bottom called Deep Exploration by Bootstrap DQM, is we can actually train one network
+[198.76s -> 200.40s]  with multiple heads.
+[200.40s -> 205.78s]  Now that's not ideal, because now the outputs of those different heads will be correlated,
+[205.78s -> 210.08s]  but in practice, they might be different enough to give us a little bit of variability
+[210.08s -> 211.08s]  for exploration.
+[211.08s -> 215.08s]  So this might not be a great way to estimate a very accurate posterior, but it might be
+[215.08s -> 219.44s]  good enough to ensure that each of those heads has slightly different behavior.
+[219.44s -> 223.16s]  By the way, for those of you that are not familiar with the deep learning terminology,
+[223.16s -> 227.46s]  when they say multiple heads, what I mean is all of the layers in the network are shared
+[227.46s -> 231.38s]  except for the last layer, so there are multiple copies of the last layer, each of
+[231.38s -> 233.90s]  which we refer to as a different head.
+[233.90s -> 238.26s]  All right, so why does this work?
+[238.26s -> 242.70s]  Well, exploring with random actions, like for example, by using something like epsilon
+[242.70s -> 247.32s]  greedy, results, you know, one problem results in is that you kind of end up oscillating
+[247.32s -> 248.70s]  back and forth.
+[248.70s -> 253.34s]  And you might not go to a coherent or interesting place just through random oscillation.
+[253.34s -> 258.96s]  As an example, here is one of the kind of tricky Atari games, it's called SeaQuest.
+[258.96s -> 263.00s]  In SeaQuest, you control the submarine, and for some reason, what you're supposed
+[263.00s -> 267.16s]  to do is you're supposed to shoot the fish and like pick up the divers.
+[267.16s -> 269.56s]  Or maybe it's the other way around, I don't know, but something ecologically very
+[269.56s -> 270.56s]  unfriendly.
+[270.56s -> 275.48s]  But the submarine runs out of oxygen, so if it stays underwater too long, then you
+[275.48s -> 278.20s]  lose because you're out of air.
+[278.20s -> 282.46s]  So in order to play the game properly, what you're supposed to do is shoot all the fish,
+[282.46s -> 288.02s]  and then once the oxygen bar gets too low, then come back up and recover some air.
+[288.02s -> 291.28s]  The problem is that if you're exploring randomly, then once you're at the bottom
+[291.28s -> 294.98s]  of the ocean, it's extremely unlikely that you will randomly surface, because that
+[294.98s -> 299.32s]  requires randomly pushing the up button many times.
+[299.32s -> 303.66s]  In fact, you're exponentially unlikely to resurface once you're at the bottom.
+[303.66s -> 306.26s]  And due to the mechanics of the game, it's actually a little bit easier to play if you
+[306.26s -> 308.52s]  go a little deeper down.
+[308.52s -> 314.18s]  So this makes surfacing for air very hard to discover through epsilon-greedy exploration.
+[314.18s -> 318.78s]  When you explore with random Q-functions, you commit to a random but internally consistent
+[318.78s -> 320.82s]  strategy for an entire episode.
+[320.82s -> 323.42s]  So the Q-functions might make slightly different conclusions.
+[323.42s -> 327.10s]  For example, one of the Q-functions in your ensemble might decide that going deeper
+[327.10s -> 328.10s]  is good.
+[328.10s -> 331.10s]  Another one might decide that going up is good.
+[331.10s -> 334.10s]  And if you just randomly pick the one that decided that going up is good, then it will
+[334.10s -> 337.08s]  go up consistently, and you will actually surface for air.
+[337.08s -> 340.70s]  You won't surface for air on every episode, but it's more likely to happen for one of
+[340.70s -> 343.62s]  your random samples.
+[343.62s -> 348.14s]  So then you would get a strategy where you would actually go up.
+[348.14s -> 353.74s]  In the experiments in the paper, they do show that this bootstrap trick does actually
+[353.74s -> 356.06s]  help a fair bit on some games, although not others.
+[356.06s -> 359.38s]  It doesn't work very well on Montezuma's Revenge at all, for example.
+[359.38s -> 363.58s]  In general, this method doesn't work quite as well as good count-based exploration
+[363.58s -> 367.54s]  or pseudo-counts, but it has some major advantages.
+[367.54s -> 371.02s]  So it doesn't require any change to the original reward function.
+[371.02s -> 375.02s]  In fact, at convergence, you would expect that all of your Q-functions in your ensemble
+[375.02s -> 379.18s]  would be pretty good, and you don't actually have to tune any hyperparameters to trade
+[379.18s -> 381.18s]  off exploration and exploitation.
+[381.18s -> 383.30s]  So it's quite simple and convenient.
+[383.30s -> 387.38s]  It's a very unintrusive way to do exploration.
+[387.38s -> 389.76s]  Very good bonuses often do quite a bit better, though.
+[389.76s -> 393.38s]  So this is not the best exploration method.
+[393.38s -> 396.42s]  In practice, it's actually not used very much, simply because if you really have a
+[396.42s -> 401.18s]  difficult exploration problem, assigning bonuses will usually work better.
+[401.18s -> 405.62s]  But this is a fairly heavily studied class of exploration algorithms, and it's worth
+[405.62s -> 406.26s]  knowing about.

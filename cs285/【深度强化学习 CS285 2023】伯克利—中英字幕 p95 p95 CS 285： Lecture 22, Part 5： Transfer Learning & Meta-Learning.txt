@@ -1,0 +1,200 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.16s]  Okay, the last discussion of meta-reinforcement learning will be about how meta-RL can actually
+[6.16s -> 8.84s]  be framed as a partially observed MDP.
+[8.84s -> 13.02s]  And some of you might have already guessed this from my discussion about how you can
+[13.02s -> 18.74s]  do meta-learning simply by conditioning the policy on a history, but this actually
+[18.74s -> 23.32s]  illustrates some interesting connections that will give us a better way to unify
+[23.32s -> 27.32s]  the different meta-RL methods that we've talked about.
+[27.32s -> 33.00s]  So a partially observed MDP, just to remind everybody, is an MDP that has observations
+[33.00s -> 36.98s]  and observation probabilities in addition to states and actions.
+[36.98s -> 41.12s]  So it has an observation space and an emission probability, which is the probability of
+[41.12s -> 44.48s]  observing a particular observation given a state.
+[44.48s -> 49.12s]  And this is the graphical model for a partially observed MDP from before.
+[49.12s -> 53.76s]  In a partially observed MDP, the policy has to act on observations, which typically
+[53.76s -> 58.48s]  requires either explicit state estimation, meaning some function that will estimate
+[58.48s -> 65.04s]  p of s t given a history of observations, or policies with memory.
+[65.04s -> 71.96s]  So let's say that we have a policy, pi theta a given s comma z, where z is some
+[71.96s -> 75.92s]  variable that encapsulates the information that the policy needs to solve the current
+[75.92s -> 79.08s]  task.
+[79.08s -> 82.92s]  Learning a task at this point amounts to inferring what z is.
+[83.76s -> 88.16s]  So, rewinding back to contextual policies, z might represent something like, oh, it's
+[88.16s -> 90.68s]  time to do the laundry, it's time to do the dishes.
+[90.68s -> 94.52s]  If you can figure out what you're supposed to be doing, then you will be able to do
+[94.52s -> 99.64s]  it successfully, and figuring it out amounts to inferring z.
+[99.64s -> 103.10s]  And in meta-learning, you have to infer this from context.
+[103.10s -> 107.72s]  And context is a sequence of transitions, the experience that you've gathered in the new
+[107.72s -> 110.32s]  MDP-MI.
+[110.32s -> 114.44s]  This is really just a partially observed Markov decision process.
+[114.44s -> 117.32s]  So you have some kind of z, you don't know what it is, you need to figure out what
+[117.32s -> 120.80s]  it is, and you need to figure it out from a sequence of observations, and once you've
+[120.80s -> 124.00s]  figured it out, then you can do the task.
+[124.00s -> 129.08s]  So before you had an MDP with state s, actions a, and transition probability and so on,
+[129.08s -> 133.24s]  and now you have a modified partially observed MDP m tilde with a modified state space
+[133.24s -> 138.44s]  s tilde, observation space o tilde, and transitions p tilde, where the modified state
+[138.44s -> 142.20s]  space consists of the original state and z.
+[142.20s -> 144.24s]  So knowing the state means knowing s and knowing z.
+[144.24s -> 151.12s]  But of course you don't observe z, what you observe is just s, as well as the reward
+[151.12s -> 153.64s]  in general.
+[153.64s -> 158.56s]  So the key idea is that solving this POMDP m tilde is equivalent to meta-learning, because
+[158.56s -> 162.76s]  if you can get a very high reward in this partially observed Markov decision process,
+[162.76s -> 166.64s]  where the state is observed but the task isn't, then you will be able to solve a new
+[166.64s -> 173.84s]  task just from the observations of the state, and the reward in general.
+[173.84s -> 177.52s]  By the way, the reason that I omit, that I kind of gloss over the fact that the reward
+[177.52s -> 184.96s]  is observed is because you can always concatenate the reward to the state.
+[184.96s -> 189.20s]  Now typically this requires, as I said before, either explicit state estimation, meaning
+[189.20s -> 196.44s]  the ability to estimate p of s t given a sequence of observations, or policies of memory.
+[196.44s -> 200.56s]  Now policies of memory, that is essentially the RNN meta-learners that we talked about
+[200.56s -> 201.56s]  before.
+[201.56s -> 207.32s]  So those could be viewed just as well as just methods for solving POMDPs, where the
+[207.32s -> 211.24s]  task is unknown and is supposed to be inferred from memory.
+[211.24s -> 215.12s]  But let's talk about the other category of POMDP solvers, ones that perform explicit
+[215.12s -> 216.84s]  state estimation.
+[216.84s -> 220.56s]  It turns out that this will also lead to a class of meta-learning algorithms with
+[220.56s -> 222.90s]  some interesting properties.
+[222.90s -> 227.38s]  So these meta-learning algorithms will aim to directly estimate p of z t given a history
+[227.38s -> 231.58s]  of states, a history of actions, and a history of rewards.
+[231.58s -> 235.30s]  Now in reality you don't know what z is, z is some kind of latent variable, so we're
+[235.30s -> 241.38s]  going to train it in a similar way as we trained latent variable models from before,
+[241.38s -> 249.38s]  where we're going to use variational inference to acquire a learned representation of tasks.
+[249.38s -> 255.46s]  And then once we've acquired it, then we can explore via posterior sampling with this
+[255.46s -> 256.46s]  latent context.
+[256.46s -> 260.14s]  So if you remember the discussion of posterior sampling from the exploration lecture, it
+[260.14s -> 264.82s]  amounts to sampling from our posterior belief and then acting optimally under that belief.
+[264.82s -> 269.70s]  So the way that we'll sample is we will actually randomly select a z from our posterior
+[269.70s -> 271.46s]  and then we'll act according to that z.
+[271.46s -> 275.38s]  And that makes a lot of sense because initially you don't know what the task is, so you'll
+[275.38s -> 279.30s]  start off by basically trying to do random tasks, and as you gather more information,
+[279.30s -> 282.50s]  you will zero in on the right task to do.
+[282.50s -> 287.38s]  So the procedure will be to sample z from your belief about z given your history, and
+[287.38s -> 291.18s]  that will use some approximate posterior trained with variational inference, then
+[291.18s -> 296.10s]  act according to pi theta a given s comma z to collect more data, basically act as
+[296.10s -> 298.78s]  though z was correct, and then repeat this process.
+[298.78s -> 303.78s]  And metatraining will consist of training pi theta and training your variational approximation
+[303.78s -> 307.62s]  to this state estimator.
+[307.62s -> 315.62s]  Now, this is not an optimal procedure, meaning this is not the best you could do for exploration.
+[315.62s -> 319.50s]  Take a moment to think about why.
+[319.50s -> 323.94s]  If it's not clear yet, it might become more obvious once I give an example later.
+[323.94s -> 327.42s]  But it is pretty good, both in theory and in practice, so we know that posterior sampling
+[327.42s -> 329.18s]  is a good exploration strategy.
+[329.18s -> 335.14s]  It turns out that in meta-learning it's not necessarily optimal, and I'll explain why shortly.
+[335.14s -> 338.66s]  But first, let's talk about an example of such a method, and that will let us instantiate
+[338.66s -> 340.66s]  this a little bit more concretely.
+[340.66s -> 343.54s]  So there are a variety of techniques that have been proposed that build on this idea.
+[343.54s -> 347.98s]  The one I'm going to talk about today is called Perl, and Perl trains a policy
+[347.98s -> 352.30s]  that is conditioned on the state and z, and it trains an inference network that predicts
+[352.30s -> 356.64s]  z based on a history of states, actions, and rewards.
+[356.64s -> 361.78s]  The whole thing is trained with variational inference, very similar to the kind of variational
+[361.78s -> 363.50s]  inference that we talked about before.
+[363.50s -> 368.62s]  So basically we maximize the expected value of the reward in expectation under the trajectory
+[368.62s -> 373.74s]  distribution and the distribution of z's inferred by the encoder.
+[373.74s -> 378.42s]  And we, of course, minimize the KL divergence between q of z and the prior, so that just
+[378.42s -> 386.06s]  encourages the z's to contain minimal information, just like in a variational order encoder.
+[386.06s -> 391.14s]  And the goal is to really maximize the post-update reward, meaning the reward after
+[391.14s -> 392.14s]  you've inferred the z.
+[392.14s -> 396.46s]  This is the same as standard meta-reinforcement learning, while at the same time staying close
+[396.46s -> 399.62s]  to the prior.
+[399.62s -> 404.78s]  So it's conceptually actually very similar to RNN-based meta-RL, in that you read in
+[404.78s -> 408.52s]  a history, you predict some kind of statistic, you give that statistic to your policy,
+[408.52s -> 412.62s]  and you maximize the reward of the policy that has been given that statistic.
+[412.62s -> 419.14s]  The difference is that your encoder now is stochastic, and it infers this latent
+[419.14s -> 423.02s]  z, and you can explore by sampling it from your encoder.
+[423.02s -> 426.50s]  So stochastic z enables exploration via posterior sampling.
+[426.50s -> 430.02s]  So here's an illustration of this process, and this will also hopefully make it clearer
+[430.02s -> 433.06s]  to you why it's a little bit suboptimal.
+[433.06s -> 436.18s]  So here we have a little 2D point mass.
+[436.18s -> 439.46s]  The goal always lies in that semicircle.
+[439.46s -> 443.34s]  The blue circle represents the true goal for this task, which the agent doesn't know
+[443.34s -> 446.94s]  at the beginning, and you can see that the way the agent explores is by going to random
+[446.94s -> 451.10s]  places on a semicircle, and then once it hits the regions that have high reward, then it
+[451.10s -> 453.18s]  keeps going there again and again.
+[453.18s -> 456.86s]  So this works pretty well, but hopefully this also makes it clear why this is a little
+[456.86s -> 461.40s]  bit suboptimal, because of course, in reality, it might be more optimal for the agent to
+[461.40s -> 465.82s]  sweep along that circle in a single episode to find where the reward is, and then revisit
+[465.82s -> 474.14s]  the reward again and again, and that would of course work better.
+[474.14s -> 478.38s]  Okay, so let's talk a little bit more about the procedure.
+[478.38s -> 480.70s]  One of the choices that we have to make to instantiate this is we have to actually
+[480.70s -> 484.06s]  choose a design for the encoder.
+[484.06s -> 487.06s]  This could be done with a recurrent neural network, but it turns out that a very simple
+[487.06s -> 489.58s]  encoder actually works really well here.
+[489.58s -> 493.38s]  So one really simple encoder simply takes all the transitions, the states, actions,
+[493.38s -> 498.30s]  next states, and rewards, featurizes them with some featurizer, and then actually
+[498.30s -> 501.02s]  just averages together the features.
+[501.02s -> 505.02s]  And it should be enough to do this because the transitions are, you know, can actually
+[505.02s -> 506.02s]  be treated as independent.
+[506.02s -> 508.26s]  If you think of something like a Q-learning algorithm, the Q-learning algorithm doesn't
+[508.26s -> 511.74s]  care about the ordering of the transitions, so it makes sense that your encoder here
+[511.74s -> 516.46s]  shouldn't care about it either, and that's actually a really simple way to do this.
+[516.46s -> 519.74s]  So you average together the features, and then you use that to produce the mean and
+[519.74s -> 524.26s]  the variance of the z-posterior.
+[524.26s -> 529.46s]  The meta-training here is done with an off-policy actor-critic algorithm, specifically
+[529.46s -> 535.14s]  a soft actor-critic, which goes pretty well with the variational inference procedure, and
+[535.14s -> 538.74s]  the only difference is that every time you make an update, you have to also update
+[538.74s -> 543.74s]  the encoder, which you do by loading some transitions from the buffer as well as their
+[543.74s -> 546.26s]  histories, and those histories are used to train the encoder.
+[546.26s -> 550.22s]  So in that sense, it is actually very similar to the RNN-based meta-learning.
+[550.22s -> 554.46s]  Okay, if you want to learn more about this, here are a few papers that you could
+[554.46s -> 560.82s]  check out that take some version of this PUMDP view on the meta-learning problem, and
+[560.82s -> 566.02s]  they would go into this in more detail if you want to get the technical specifics.
+[566.02s -> 569.74s]  But one of the things I want to end on is to discuss how the three perspectives
+[569.74s -> 574.18s]  of meta-RL that we talked about all kind of fit together.
+[574.18s -> 579.66s]  So in all of the meta-RL methods we talked about, they can be represented as some kind
+[579.66s -> 583.78s]  of F-theta that takes in an MDP-MI, and in reality what that means is that it takes
+[583.78s -> 587.74s]  in experience in this MDP, and it needs to be able to improve from that experience
+[587.74s -> 592.30s]  and be able to choose actions that explore effectively.
+[592.30s -> 595.62s]  The first perspective we talked about is just a black-box model like an RNN that
+[595.62s -> 599.18s]  can read in the entirety of that experience, then we talked about framing it as this
+[599.18s -> 603.34s]  gradient-based meta-learning procedure, and then we talked about how we could also
+[603.34s -> 607.38s]  frame it as an inference problem, as a problem of inferring some context Z that is sufficient
+[607.38s -> 611.06s]  to figure out the task.
+[611.06s -> 613.14s]  These things are not that different.
+[613.14s -> 617.38s]  The RNN is conceptually very simple, it's relatively easy to apply, but it's very
+[617.38s -> 622.82s]  vulnerable to what is sometimes called meta-overfitting, meaning that if the task
+[622.82s -> 626.94s]  at test time is a little bit outside of the distribution of training tasks, the RNN
+[626.94s -> 630.06s]  might not produce a very good H, and there's sort of no recourse past that, like you
+[630.06s -> 633.26s]  run the RNN forward, it does what it does, and you can't improve it further on the
+[633.26s -> 634.26s]  test task.
+[634.70s -> 638.38s]  RNNs can also be challenging to optimize in practice, although more recent sequence models
+[638.38s -> 641.90s]  like transformers can make this a bit easier.
+[641.90s -> 646.66s]  The gradient-based approach has good extrapolation in the sense that you can just keep running
+[646.66s -> 650.50s]  more gradient steps at test time and eventually you'll get better, and it's conceptually
+[650.50s -> 655.46s]  elegant, but it can be complicated and can require many meta-training samples.
+[655.46s -> 658.66s]  It's also very difficult to extend these methods from policy gradients to things
+[658.66s -> 661.78s]  like active-critic methods, because as we've talked about before, temporal difference
+[661.78s -> 664.50s]  learning is not really gradient descent, so it's very hard to apply gradient-based
+[664.50s -> 667.62s]  meta-learning to.
+[667.62s -> 672.74s]  The inference approach is simple, and provides for effective exploration via posterior sampling,
+[672.74s -> 676.66s]  and has an elegant reduction to solving a special kind of POMDP, but like the RNN
+[676.66s -> 680.22s]  approach, it can be vulnerable to meta-overfitting.
+[680.22s -> 684.26s]  And it can be a bit challenging to optimize in practice.
+[684.26s -> 687.98s]  But let's talk about how these things are actually similar to each other.
+[687.98s -> 694.82s]  The inference procedure is really just like the RNN procedure, but with stochastic variables.
+[694.82s -> 697.18s]  So phi is basically z.
+[697.18s -> 701.50s]  And the gradient-based approach can be instantiated as one or the other two, just with a particular
+[701.50s -> 704.02s]  choice of architecture.
+[704.02s -> 707.86s]  In fact, you can actually develop a stochastic version of model-agnostic meta-learning by
+[707.86s -> 711.22s]  adding noise to your gradients, and that will start looking a lot like the inference
+[711.22s -> 713.74s]  process.
+[713.74s -> 717.58s]  So they're actually pretty similar.
+[717.58s -> 723.54s]  The last thing I want to leave you off with is a few points about interesting observations
+[723.54s -> 724.54s]  on meta-RL in the literature.
+[724.54s -> 727.82s]  So, so far I've talked a lot about methodology, but the other thing that people have studied
+[727.82s -> 732.86s]  a lot is how meta-reinforcement learning can lead to interesting emergent phenomena,
+[732.86s -> 737.18s]  and this often falls at the intersections of reinforcement learning and cognitive science.
+[737.18s -> 740.62s]  So the observation goes something like this.
+[740.62s -> 746.38s]  Humans and animals seemingly learn behaviors in a variety of ways, including highly efficient,
+[746.38s -> 751.86s]  but apparently model-free RL, episodic recall, where they recall things that worked before
+[751.86s -> 754.74s]  and immediately do them, and model-based RL.
+[754.74s -> 758.90s]  And when people study learning in human and animal brains, it seems like all these things
+[758.90s -> 762.62s]  are occurring at some point, and it's not clear how the brain decides whether to do
+[762.62s -> 766.36s]  one or the other, or whether it has different algorithms running.
+[766.36s -> 771.94s]  So one hypothesis is that maybe each of these things are kind of emergent properties of
+[771.94s -> 776.18s]  some overarching method that can learn how to learn.
+[776.18s -> 780.86s]  And people have studied how meta-learning can sort of lead to emergent learning processes
+[780.86s -> 784.42s]  that are different than the ones that were used for meta-learning in the first place.
+[784.42s -> 788.26s]  So there are papers that have analyzed how meta-RL can give rise to episodic learning,
+[788.26s -> 793.98s]  where you recall related episodes of experience, how model-free meta-RL can give rise to
+[793.98s -> 797.78s]  model-based adaptation, and even how meta-RL can give rise to something that looks
+[797.78s -> 799.30s]  like causal reasoning.
+[799.30s -> 802.42s]  So again, I won't go into great detail about each of these things, but if you want to
+[802.42s -> 804.38s]  learn more about them, I would encourage you to check out these papers.

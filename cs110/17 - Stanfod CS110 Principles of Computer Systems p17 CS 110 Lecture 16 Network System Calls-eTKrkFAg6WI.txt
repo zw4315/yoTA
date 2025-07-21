@@ -1,0 +1,667 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 10.44s]  screencast people you missed about 30 seconds okay so the question was hey can
+[10.44s -> 13.52s]  we use multi-processing from threading the answer is you kind of have to be
+[13.52s -> 17.84s]  careful the best I could find was this stackoverflow answer which
+[17.84s -> 23.80s]  basically said look you can do use fork in a multi-threaded program and
+[23.80s -> 28.60s]  then what does that actually mean it means that both copies of when you
+[28.60s -> 34.20s]  forked now both processes have threads associated with them so something's got
+[34.20s -> 40.16s]  to be you know you've got to have some way of dealing with that but in the
+[40.16s -> 46.40s]  sense of in sense of being able to do it the biggest thing is after you do fork
+[46.40s -> 52.24s]  and before you do exactly P don't do any mallet free new or delete and that
+[52.24s -> 55.52s]  was the best I could find and said look you can do it just don't do
+[55.52s -> 60.24s]  anything that's gonna mess with memory in such a way that it will end up being
+[60.24s -> 64.84s]  like it'll end up messing with the schedulers and things and that was the
+[64.84s -> 69.36s]  best I could find so the answer is yes if you want to use multi-processing
+[69.36s -> 73.60s]  from within multi-threading you can you just have to be a little careful
+[73.60s -> 77.96s]  about it and obviously testing is always going to be something important
+[77.96s -> 84.08s]  to do okay so good question and there's the kind of answer that I could find
+[84.08s -> 87.80s]  feel free to do some more dating on your own but it is possible it's just
+[87.80s -> 94.68s]  you got to be careful okay so let's move on to network system calls library
+[94.68s -> 98.64s]  functions etc now as I said a couple minutes ago this is where I think it's
+[98.64s -> 104.32s]  kind of a flashback to cs107 because some of the wonkiness associated with
+[104.32s -> 109.72s]  C propagates to these functions that are about getting host names and
+[109.72s -> 115.40s]  resolving them and using these low-level functions to do so in a way such that
+[115.40s -> 120.00s]  you can support IP version 4 and IP version 6 and any other version that you
+[120.00s -> 124.32s]  want it turns out that socket programming which is what we're talking
+[124.32s -> 127.66s]  about here where two computers talk to each other through a socket or
+[127.66s -> 134.36s]  basically a port a socket is as it turns out just a file descriptor but
+[134.36s -> 138.24s]  it's a very special file descriptor it still gets an entry in the open file
+[138.24s -> 143.72s]  table believe it or not it still gets an entry in the file descriptors for a
+[143.72s -> 148.20s]  particular process but it allows you to have a double-ended communication
+[148.20s -> 153.72s]  between two processes or two computers over a network okay so it's a
+[153.72s -> 159.00s]  it's just like a file descriptor but there's a little more to it and you
+[159.00s -> 162.88s]  don't necessarily need to know what else there is to it except for the
+[162.88s -> 166.58s]  fact that even though it's a file descriptor you actually can't say you
+[166.58s -> 171.30s]  don't say read and write in the same way that you normally do okay you use
+[171.30s -> 176.50s]  things like except and you use you use other functions that I guess you
+[176.50s -> 179.30s]  can use right on the file descriptors but you can't but there's
+[179.30s -> 181.74s]  some other nuances that you can't just say oh it's just like every other
+[181.74s -> 186.14s]  file somewhat like out of every file but not exactly so let's talk about
+[186.14s -> 195.90s]  the specifics because we are people we like to use things like www.facebook.com
+[195.90s -> 202.50s]  versus 31.13.75.17 right you don't want to memorize numbers we've talked about
+[202.50s -> 207.86s]  that in a number of ways this class and so there are functions that will get
+[207.86s -> 214.78s]  the number from the name so if you know the name www.facebook.com which you
+[214.94s -> 219.18s]  remember easily you can use a function called get host by name and you can also
+[219.18s -> 224.26s]  use one get host by address which they're both technically deprecated in other
+[224.26s -> 227.90s]  words there's other things you should probably use instead however your book
+[227.90s -> 231.98s]  talks about these ones and they're still used enough that you should be
+[231.98s -> 236.50s]  used to using them in particular I'm not exactly sure what the actual new
+[236.50s -> 239.60s]  one is I don't see these ones more than I see that and I forget what the
+[239.60s -> 243.22s]  actual the one that you should use these days is so anyway we're gonna talk
+[243.26s -> 251.74s]  about these two and what they take are a get host by name takes a name like
+[251.74s -> 258.02s]  www.facebook.com okay and it returns this struct called host a struct
+[258.02s -> 263.22s]  hostent which is a particular structure we'll see in a second and it
+[263.22s -> 265.86s]  populates it with the information you're gonna need about like what the
+[265.86s -> 275.22s]  IP address is and so forth you can also pass in a an address here as it turns
+[275.22s -> 280.90s]  out I don't believe that's actually a char star although it looks like a char
+[280.90s -> 285.50s]  star you have to actually cast it to believe it or not a like an int in this
+[285.50s -> 291.96s]  case and the reason for that is because you need to actually this one
+[291.96s -> 294.90s]  maybe not this one I don't use this one I don't even think we use this one
+[294.94s -> 298.46s]  in an example this one maybe not there are ones where you have to do that and again it's because
+[298.46s -> 303.86s]  of the wonkiness of C and some of this stuff we've done in 1977 and there weren't even void
+[303.86s -> 310.66s]  star pointers then so everything became a char star pointer and it you can do that in this
+[310.66s -> 316.26s]  case I guess in this case yeah this would be this is actually going to be I believe a
+[316.26s -> 322.54s]  number a pointer to a number and you're gonna say how many bytes it is and then another
+[323.54s -> 329.94s]  talks about the type of connection whether it's an IP 4 v4 or 6 or so forth okay so there's lots
+[329.94s -> 336.54s]  of details about that that you that you have to know when you're using that function okay
+[336.54s -> 344.62s]  a struct host int has the following well we'll get to what it is let's see get host name yes
+[344.66s -> 354.74s]  here we go the this one is a struct INADDR which happens to be an int it's a it's the weirdest
+[354.74s -> 359.34s]  struct I've ever seen it's got one value in it which is an int so we'll see a little bit
+[359.34s -> 363.90s]  more about that in a second but the one we're going to focus mostly on is get host by name
+[364.14s -> 370.50s]  that turns out okay all right so what is this what is this
+[374.50s -> 380.22s]  hang on I'm not I don't my tablet set up quite correctly now so
+[380.22s -> 397.38s]  so here's what the struct host int looks like okay first of all it takes inside of it I will
+[397.38s -> 406.02s]  use the pen it takes a struct called struct INADDR which is in this case an unsigned int
+[406.42s -> 414.02s]  SADDR which is like I said the strangest struct because it's only got one value in it you
+[414.02s -> 419.18s]  normally don't bother with a struct that has one value in it what's the point maybe this is for
+[419.18s -> 422.82s]  hey they thought maybe it would be used some other way and they might have some other they
+[422.82s -> 427.86s]  probably were forward thinking enough and it never has changed so that's all it is in there
+[427.86s -> 436.06s]  okay is an unsigned int and then the struct host int has a regular old charge star finally
+[436.06s -> 440.46s]  we get a regular charge star which is the name okay that's the official name turns out
+[440.46s -> 444.34s]  I'll show you an example the official name might be different than what you actually type
+[444.34s -> 449.50s]  in a lot of times they end up going to the same IP address but the name could be a little
+[449.70s -> 458.50s]  different then you have a bunch of aliases okay and the aliases are other strings that
+[458.50s -> 462.38s]  also refer to the same IP address okay so there's like an official one and there's
+[462.38s -> 468.10s]  other ones that do that you rarely see the aliases one filled in at all I guess maybe it
+[468.10s -> 471.66s]  doesn't really nobody really cares that much about it but you rarely see that in but it
+[471.66s -> 477.06s]  is a char star star meaning that it's basically just like every other char star star we
+[477.06s -> 484.06s]  normally use it's a as it turns out no terminated list of pointer to strings so a string for
+[484.06s -> 487.86s]  string string string and then the final ones no you know you've reached the end that's what
+[487.86s -> 495.64s]  that is okay the H address type is going to be different depending on which type of IP
+[495.64s -> 501.22s]  address you care about so in this case we'll probably stick mostly with a F I net which
+[501.22s -> 508.54s]  means the internet for IPv4 addresses okay and this is actually somewhat important we'll see why
+[508.54s -> 513.70s]  when we get into the details of some of the strange polymorphism that they've jammed in to
+[513.70s -> 523.42s]  see as we see okay and then here is a char star star H address list which is another not char
+[523.42s -> 529.06s]  star star it's a it's basically a void star star that should be a void star star but when they
+[529.06s -> 532.22s]  built this function they either didn't have void star star they didn't want to use it for whatever
+[532.22s -> 537.82s]  reason but when you use this you should cast it to the appropriate that the appropriate thing that
+[537.82s -> 543.82s]  it is which you will know based on analyzing this we'll see how that works again this is like
+[543.82s -> 552.46s]  really low level 107 kind of stuff are these things you'll make the dirt probably yeah
+[552.62s -> 559.50s]  probably the same people yeah there you go yeah it's a look when you're designing something in
+[559.50s -> 564.50s]  1970s it's a little bit different than way the way you might design today maybe but yes it's
+[564.50s -> 569.78s]  probably the same people who did that or somebody who's thinking along the same lines okay
+[569.78s -> 576.14s]  anyway we'll see we'll see why this becomes interesting in a few minutes okay all right
+[576.90s -> 588.58s]  the S a D D R field is what we call a dotted quad okay basically it's four bytes one two three
+[588.58s -> 594.66s]  four okay four bytes and this is what you hopefully have seen IP addresses that look like
+[594.66s -> 599.30s]  this in the past you haven't well that's what an IP address looks like an IP version
+[599.54s -> 607.18s]  address looks like 171.64.64.136 and those IP addresses they break them into fours because
+[607.18s -> 612.90s]  it's a little easier than memorizing that big long number number one and number two each little
+[612.90s -> 621.02s]  byte means something different like the 171 I believe that Stanford's mean like the first
+[621.02s -> 628.10s]  byte in all Stanford dresses 171 I believe and then the other ones kind of slowly get it down
+[628.10s -> 633.10s]  to the actual machine or router that you're actually looking at so that's how that's how
+[633.10s -> 639.82s]  that works meaning that because these are just bytes the IP version for addresses four bytes
+[639.82s -> 650.94s]  long or 32 bits and it's 171.64.64.136 now what order are those bytes going to be in in
+[650.94s -> 656.38s]  other words when you have a this is the 107 stuff I was talking about too when you have
+[656.38s -> 663.14s]  a number in a four byte number on your system there's two different orderings we could use
+[663.14s -> 671.74s]  never remember what they were little endian and big endian right and our machines are generally
+[671.74s -> 677.98s]  little endian machines meaning that the little end of the number actually comes first in memory
+[677.98s -> 683.58s]  so one three six would actually be the first one in memory and then 64 and then another 64
+[683.58s -> 689.62s]  and then 171 would be last in memory we could have done it in exactly the opposite order you
+[689.62s -> 696.26s]  could have done it in big endian and for those of you who took cs let's see 107e I believe
+[696.26s -> 701.94s]  they are the raspberry pies are in general big endian although maybe they I think I can
+[701.94s -> 706.18s]  actually switch it back and forth as it turns out but the point is that in that case it would
+[706.18s -> 712.30s]  be in a different order well because of standardization your computer which is little
+[712.30s -> 716.62s]  Indian needs to talk to some computer on the other side of the world which may be big
+[716.62s -> 721.58s]  endian you have to make a decision on which direction to put the bytes when you actually
+[721.58s -> 727.98s]  send them over the wire okay so the reason we have to do that so that everybody can talk
+[727.98s -> 733.46s]  together and therefore if you have the wrong type on your computer you'd better do a
+[733.46s -> 737.66s]  translation when you're about to send it we will see that in action I'm just setting you
+[737.66s -> 743.10s]  up for it thinking about it right now and I'm going to show you the I'm going to show you
+[743.10s -> 755.18s]  the details in a second okay let's see yeah so we for non IP version for ones we can also
+[755.18s -> 762.94s]  seeing I'm there to see this works for non IPv4 ones we have different information in all that
+[762.94s -> 768.86s]  thing it's got other information in there H adder type is going to be a different actual number
+[768.86s -> 772.50s]  length is going to be different if you have 128 bits you're going to need to report that and
+[772.50s -> 777.38s]  the list can have different types of information too so you've got to be a little bit a little
+[777.38s -> 784.66s]  bit careful with that as well okay all right now why is it not letting me do this again
+[784.66s -> 792.74s]  there we go okay any questions on that so far we're getting the getting the actual code here
+[792.74s -> 797.06s]  in fact let's actually write some code and then I'll show you this as we go along that
+[797.06s -> 818.82s]  is way too small all right resolve hostname that CC okay so you have a copy of this if you
+[818.82s -> 826.22s]  wanted to take a look and take notes but what oh it's already in here I guess I don't need to
+[826.26s -> 831.30s]  check it it's already there let's go through what this actually is doing this is the meat of this
+[831.30s -> 839.46s]  program that is going to let you type in a name and then get out the details of the get out
+[839.46s -> 845.90s]  the details of the official name and then all the IP addresses associated with it okay so we
+[845.90s -> 856.78s]  have to start out and we declare a struct host and this is this is a statically statically built
+[856.78s -> 863.74s]  variable that is kept by the operating system so if you're going to use this multiple times in
+[863.74s -> 868.34s]  your code you'd better make a cop if you want to keep track of different like things keep a
+[868.34s -> 872.18s]  copy of it because it's not it's not like it's it's not thread safe and it's other things
+[872.18s -> 880.34s]  because you are just getting the actual pointer to the data that's living inside the function
+[880.34s -> 884.14s]  that you're calling okay not the best way to do it but that's why static variables work and that's
+[884.14s -> 890.46s]  how this works get host by name is a C function so we need to convert we have a C++ string we
+[890.46s -> 897.42s]  just convert to C string okay and then calling the get host by name will populate this okay if
+[897.50s -> 904.46s]  it comes back no it means we couldn't resolve the name that could be for a number of reasons
+[904.46s -> 908.90s]  as it turns out it could be that your DNS server is down and that's on your computer or
+[908.90s -> 913.14s]  the network or the router and so forth where you're connecting to or it could be some other
+[913.14s -> 916.86s]  reason so if you type one and it happens to be not there it doesn't necessarily mean that
+[916.86s -> 921.30s]  it doesn't exist but it doesn't it means that your program couldn't resolve it this is the
+[921.30s -> 925.82s]  problem with networks sometimes other things that you can't rely on go down and nothing you
+[925.82s -> 933.06s]  can do about it okay then HE the H name is the name we talked about and then all of those IP
+[933.06s -> 942.26s]  addresses we just go through them one at a time by first saying okay let's cast the H address
+[942.26s -> 952.14s]  list to what it really is and we know that really is a IN address double pointer why because
+[952.54s -> 958.30s]  we're asking for the IP version for address in other words we call the get host by name
+[958.30s -> 966.02s]  meaning we were expecting a an IPv4 if you want an IPv6 there's a different function you call okay
+[966.02s -> 972.82s]  and I'll show you that in a minute but anyway then you you get the IP address by the IP
+[972.82s -> 980.02s]  addresses by looping through until you get null okay and how do we actually get out the the
+[980.02s -> 988.14s]  actual the actual IP address well remember it's just a number right now and it's just a four
+[988.14s -> 996.78s]  byte number and so what we do is we call another function called I met network to printable is
+[996.78s -> 1004.14s]  basically what the NTOP stands for which means it takes it says hey what type of IP address are
+[1004.18s -> 1011.82s]  you using in this case IP version for okay it says give me the actual pointer to the address itself
+[1011.82s -> 1018.42s]  okay and then give me a string to populate it with and that's what we've done up here and
+[1018.42s -> 1027.74s]  we know that I met underscore a DDR sterling is the maximum length of a IP address it turns
+[1027.74s -> 1034.22s]  out so we know that's okay and then how long it is is also passed in so that it won't right
+[1034.22s -> 1039.98s]  over the buffer once you do that it takes that number and it forms it into a nice 172 dot
+[1039.98s -> 1052.18s]  whatever whatever whatever okay questions on that yes a fine that is IP version for let's
+[1052.18s -> 1062.58s]  look real quickly resolve hostname six cc yeah there's the one for IP version six a finet six
+[1062.58s -> 1070.78s]  etc and we also would call a different function called get host by name two they weren't very
+[1070.78s -> 1075.74s]  clever when they named these I guess you think it would be you think it'd be someone like get
+[1075.74s -> 1080.58s]  host by name six or something but it's a did you can pass into this one this one you pass
+[1080.62s -> 1085.98s]  in the actual type so I believe we could have used this one for the IP version six as well
+[1085.98s -> 1090.90s]  and it would have worked just fine as well because we would have passed in the IP version
+[1090.90s -> 1098.38s]  or so sorry the IP version for did he also do to they probably also wrote you too yes yes
+[1098.38s -> 1103.66s]  if you ever build a big system you will quickly realize that there are decisions you have to
+[1103.66s -> 1107.70s]  make that you hate at the coin your core but you have to make those decisions because it
+[1107.86s -> 1111.98s]  happens that the way now they have to do it this way probably not but they maybe there's
+[1111.98s -> 1116.14s]  some committee that probably decided that and that's the way it goes anyway let's see this
+[1116.14s -> 1122.94s]  program in action okay I think it's already made let's see resolve hostname yes okay so if
+[1122.94s -> 1132.50s]  we type a hostname let's try let's try www.stanford.edu okay so it says that that's
+[1132.50s -> 1137.18s]  the actual host name the official one now it's a good thing we don't have to type that
+[1138.06s -> 1143.26s]  every time you want to go to stamp www.stanford.edu why is it that big long and well it tells you
+[1143.26s -> 1150.26s]  that actually Stanford relies on Amazon AWS services for their well if you think about it
+[1150.26s -> 1154.18s]  it's actually not a terrible call why why do it all in-house if you don't have to write
+[1154.18s -> 1158.58s]  just rely on some giant company that has billions of servers out there and it's probably gonna
+[1158.58s -> 1165.26s]  stay up relatively often and so forth I believe if we just type stanford.edu we get there we
+[1165.26s -> 1171.66s]  go we get the official name is just stanford.edu and it happens to go to a slightly different web
+[1171.66s -> 1179.90s]  address my guess is that if you type www.stanford.edu your browser may actually let's
+[1179.90s -> 1188.42s]  try this I'm gonna try something ping ping stanford.edu okay it says one seven one sixty
+[1188.42s -> 1193.90s]  seven two fifteen two hundred okay so that's that if we ping www let's see what happens here
+[1193.90s -> 1199.54s]  no it's giving you the other one so they're slightly different they probably end up pointing
+[1199.54s -> 1207.82s]  to the same place somewhere along the line but but yeah there's the they do end up with
+[1207.82s -> 1212.74s]  different www actually makes a slight difference in that case but I bet if you type both you'll
+[1212.74s -> 1217.22s]  end up at the same place somewhere along line they reroute it to the same webpage let's try
+[1217.22s -> 1225.26s]  a couple more let's try google.com google.com has an IP address that I believe is actually
+[1225.26s -> 1231.34s]  based on your location like it kind of knows who you who's asking and then it returns the
+[1231.34s -> 1236.94s]  IP address about like where it like locally more local to you as it turns out let's see
+[1236.94s -> 1243.62s]  facebook.com yeah same thing there you go some of the other ones let's see www.facebook.com
+[1244.62s -> 1252.82s]  there you go the other I said the www.stanford one actually I think it had two there it is it
+[1252.82s -> 1257.50s]  did have two different IP addresses associated with it those are Amazon addresses I think and
+[1257.50s -> 1263.30s]  then there's another one that Jerry likes to use okcupid.com I don't know if you like to
+[1263.30s -> 1268.78s]  use that but Jerry actually showed me this that it that it has lots I'm not sure why and it's
+[1268.78s -> 1272.38s]  not because like billions and billions people are using it and you like Google has a few
+[1272.38s -> 1276.42s]  people here and there so I don't know why just there's some something going on where
+[1276.42s -> 1280.66s]  their host server says hey these are all your IP addresses and it shows up in this list and
+[1280.66s -> 1288.78s]  it's it's a little bit black magic after that now github.com let me try it github.com
+[1288.78s -> 1295.50s]  there's just one for that one I could try www.github.com same so it's the same that one
+[1295.50s -> 1298.74s]  happened to be the the official name is the same one that went to the same one so yeah
+[1298.82s -> 1302.90s]  there's some definitely some black magic going on there and you know I don't know all the details
+[1302.90s -> 1309.90s]  about that so let's do one other thing I want to show you just one other thing here gdb see
+[1309.90s -> 1323.30s]  I told you it's not feel like 107 gdb resolve hostname okay break on publish IP address info
+[1323.82s -> 1329.18s]  there we go all right let's run it again let's do stanford.edu actually let's do one of the
+[1329.18s -> 1337.78s]  let's do the let's do the okcupid one just to see okcupid.com okay so if we go into the
+[1337.78s -> 1345.98s]  code and we get the hostname okay if we print out HE it's just a pointer right if we print
+[1346.30s -> 1353.18s]  out host HE like that it tells you all the details there okay so the details there are
+[1353.18s -> 1358.66s]  in this case the name that's just a pointer to the name and then the aliases are in there
+[1358.66s -> 1362.86s]  there's no it turns out there's no aliases I believe if we do let's see how are we gonna
+[1362.86s -> 1373.30s]  do this we're gonna do this star HE let's do the star HE arrow HE aliases see if that
+[1373.34s -> 1380.06s]  works yeah so the first there are no aliases as it turns out and then let's see let's see
+[1380.06s -> 1387.58s]  the address type happens to be 2 in that case that one means the IP version 4 and then the
+[1387.58s -> 1393.18s]  length is 4 bytes so we know how long the address is and then the address list is
+[1393.18s -> 1400.98s]  remember we said it was a char star but if we just said try to do this ADDR list like that
+[1400.98s -> 1406.82s]  it's gonna be kind of garbagey right because we don't really know what it is I think you're
+[1406.82s -> 1413.70s]  gonna have to actually do something like this see if this works let's see if we can do this
+[1413.70s -> 1422.26s]  we're gonna have to cast it I know it's ugly right we have to cast it to a what is it here
+[1422.26s -> 1438.10s]  it is a struct INADDR struct INADDR star maybe it's gonna be nope oh no let's see
+[1438.10s -> 1447.74s]  I did this or I figured this out earlier okay that's that maybe we need to do see
+[1452.26s -> 1459.78s]  hang on this the only thing this one yeah it's gonna be that well it's gonna be the same thing
+[1459.78s -> 1472.74s]  if I do if I D yeah okay so that's that one and then if we want to then let's see so let's
+[1472.74s -> 1481.22s]  print out what each one of those is P 0x84 aha 132 was that one of the okay cupid ones
+[1482.06s -> 1494.72s]  is 132 okay and then let's see 84 D 0 208 yeah or the other ones 208 41 and 198 so we should get
+[1494.72s -> 1504.78s]  41 should be 29 and then C 6 should be 98 okay notice the order it's in right it's in the wrong
+[1504.82s -> 1512.06s]  order it's backwards well the function that we called earlier that I met underscore NT o P
+[1512.06s -> 1516.46s]  function actually knows that it's in the wrong I know that it's in the little endian format and
+[1516.46s -> 1521.86s]  then gives us the correct string back okay we haven't yet actually converted like send anything
+[1521.86s -> 1534.02s]  over the network yet yeah it knows that by the time it gets into that number it's whatever
+[1534.06s -> 1539.50s]  the computer's representation is so in this case little indeed when we actually send it across the
+[1539.50s -> 1544.30s]  network we have to turn it into a big endian number you have to do that so that everybody
+[1544.30s -> 1550.86s]  knows how to why big and not little somebody made that decision I mean you know it's a it's
+[1550.86s -> 1556.34s]  a so do you know where the little endian and big endian comes from you guys need to take
+[1556.34s -> 1559.70s]  more and see this is so supposedly Stanford is a liberal arts university that's what I
+[1559.70s -> 1567.66s]  understand but it comes from it comes from Gulliver's Travels so in Gulliver's Travels there
+[1567.66s -> 1573.58s]  were the little Indians and the big Indians who cracked their eggs either on the big end to open
+[1573.58s -> 1577.58s]  them up or like their hardwell or soft boiled eggs or whatever or the little endian and they
+[1577.58s -> 1582.30s]  got a big fight over it and so that somebody whoever's creating this said oh it looks like
+[1582.30s -> 1585.54s]  the little end is there oh I remember this oh and this is also going to cause a big fight
+[1585.54s -> 1588.98s]  and so that's why we get questions like why who does it what does it matter and so forth so
+[1589.26s -> 1595.86s]  it was actually a perfect analogy as it turns out that's where it comes from as okay so let's
+[1595.86s -> 1604.38s]  just while we're at it let's look at the dot the hostname six dot cc which is that
+[1604.38s -> 1610.62s]  oops then resolve hostname six cc let's look at this when we kind of look at this
+[1610.62s -> 1618.62s]  one already a little bit if we want to do IP version six addresses we can actually look
+[1618.78s -> 1624.46s]  at them we have to actually use a get hostname get host by name two and tell it we're looking
+[1624.46s -> 1631.50s]  for an I net six address and then we have to check and make sure that's an I I met six
+[1631.50s -> 1637.58s]  address or IP version six address and then same sort of thing here we can use this function
+[1637.58s -> 1644.86s]  it knows how to convert IP version sixes let's see that one as we run it let's actually do
+[1644.86s -> 1652.14s]  the DDB just to see the difference resolve hostname six let's first run it and see hostname
+[1652.14s -> 1660.78s]  google.com there's google.com address now there's 128 bits here this is a pretty big 128 divided
+[1660.78s -> 1667.90s]  by 8 is 16 that means 16 various things there's not 16 here there's 1 2 3 4 5 6 7
+[1667.90s -> 1672.94s]  basically 7 8 because they takes them out and then 9 10 and there's a little extra double
+[1672.94s -> 1678.46s]  colons in there this is a decision they made to try to make the IP version six numbers smaller
+[1678.46s -> 1682.94s]  if there's a bunch of zeros in a row you can actually put two colons and it says look all
+[1682.94s -> 1687.66s]  the rest of the zeros in there I still think it's like almost impossible for a human to figure
+[1687.66s -> 1691.34s]  out exactly what all that means it's not impossible but it's just like you gotta rock
+[1691.34s -> 1695.74s]  your brain about where's the zeros and how do they fit in and it was probably an uninspired
+[1695.74s -> 1703.50s]  decision as far as I'm concerned but some places actually when they remember an IP version
+[1703.50s -> 1711.10s]  six address there's 128 bits available which is two to the 128th different addresses actually
+[1711.10s -> 1717.42s]  let me go to here I got the number in here there it is there are this many different IP
+[1717.42s -> 1723.98s]  addresses that you can now have that number is bigger than the number of protons or atoms
+[1724.06s -> 1728.42s]  in the universe I believe so you will be able to assign every atom in the universe an IP version
+[1728.42s -> 1735.06s]  six if you'd like so I doubt we'll run out of them at least in our lifetimes but you never
+[1735.06s -> 1740.54s]  know I suppose but the they look at it so if you're a big enough company and you have
+[1740.54s -> 1745.82s]  enough cloud you can actually ask for a particular IP version six and why would you care about that
+[1746.02s -> 1756.70s]  facebook.com take a look at Facebook's IP version six address it actually says face book in it
+[1756.70s -> 1761.90s]  which is like oh how clever how nice is that and you know and again I don't even know why
+[1761.90s -> 1765.86s]  they didn't put just two double colons that again I don't understand how these things are
+[1765.86s -> 1771.66s]  how these things are figured out but maybe someday they'll just have you know vanity IP
+[1771.78s -> 1776.94s]  addresses and you can get one for your phone or whatever not that you actually care but people
+[1776.94s -> 1782.74s]  Facebook I guess you care about these things let's just run it let's break the same function
+[1782.74s -> 1796.02s]  as before publish IP address info and then oh no is it not there hang on there's all
+[1796.02s -> 1811.38s]  hostname six CC it is called publish oh of course publish IPv6 that okay all right break
+[1811.38s -> 1817.14s]  on that and then run it and yes we're gonna start in let's try Google again notice I didn't
+[1817.14s -> 1828.02s]  do Stanford wait let me show you Stanford yes I don't know if it has it yet just kind of too
+[1828.02s -> 1835.42s]  bad that's the way that goes let's see hostname we'll try it again google.com okay
+[1835.42s -> 1842.86s]  google.com okay so you do the get hostname and then there and then there and then we have to
+[1842.86s -> 1851.58s]  again we have to cast it to this struct IN address 6 and that we have to actually do it so if we
+[1851.58s -> 1862.30s]  just type again let's see print out HE it will give us the fact that it is got a length of 16
+[1862.30s -> 1866.78s]  for the number of bytes and the actual address list and so forth so there are some differences
+[1866.78s -> 1888.26s]  that we go into that yeah right good question take a look at the struct where to go there's
+[1888.26s -> 1898.62s]  okay so this is cast to a char star star it's not cast to what it really is right why is it cast
+[1898.62s -> 1903.02s]  really why isn't it cast really what it really is because we want this to be generic enough to
+[1903.02s -> 1907.86s]  work with both IP version 4 and IP version 6 and any other one that you want there's actually
+[1907.86s -> 1914.06s]  another one that's IP I think it's it's just got a I think it's I it's what is it here it's
+[1914.06s -> 1924.86s]  not IN address it's IN ADDR underscore UN I think for UNIX and it's its own type meaning that you
+[1924.86s -> 1930.86s]  can use sockets like internal to a computer and so it's another way of doing that so again this
+[1930.86s -> 1936.06s]  server thing is pretty robust but it's robust enough that there's some weird details in here
+[1936.06s -> 1939.10s]  that you kind of have to get to know but does that make sense about that why you'd have to
+[1939.10s -> 1949.62s]  that how come you're going to do addresses this plus what the year yeah you can do address list
+[1949.62s -> 1954.22s]  plus plus because it knows now that it's this type of strong right once you do that your if
+[1954.22s -> 1956.98s]  you didn't do that it would try to do one at one character at a time and it would get
+[1956.98s -> 1965.50s]  all screwed up again 107 stuff yeah I don't know what happened to version 5 I mean that's
+[1965.50s -> 1976.78s]  a good question this this could be deadly but what happened happened to be IP v5 IP why is there
+[1976.78s -> 1984.58s]  no IP yeah I might click Windows 9 let's see it doesn't exist there is no IP version 5 let's
+[1984.58s -> 1991.34s]  see it was intentionally skipped to avoid confusion there was an experimental protocol
+[1991.34s -> 2000.22s]  called the internet stream protocol defined in 1190 and therefore it was assigned IP version 5
+[2000.22s -> 2005.06s]  and we don't use that anymore so they said oh let's skip it and use six has nothing to do
+[2005.06s -> 2011.58s]  there's four bytes or six bytes or anything like that if that was one thing you're thinking okay
+[2011.58s -> 2016.82s]  no worries I know this stuff is a bit definitely a bit crazy so anyway we've run a bunch of these
+[2016.82s -> 2027.58s]  here now let's talk about the sockets themselves okay when you are creating a socket remember we
+[2027.58s -> 2033.98s]  did we had the accept command and we had the create socket and so forth we are going to look
+[2033.98s -> 2037.74s]  at those in a little bit of detail to see how they're actually built okay we're going to look at
+[2037.74s -> 2044.02s]  the create client socket and create server socket now remember they are two very different things
+[2044.34s -> 2049.34s]  when you are creating a client socket what you were trying to do is you're trying to reach out
+[2049.34s -> 2055.02s]  to some other computer and connect to that computer's IP address and port okay so you're
+[2055.02s -> 2059.26s]  trying to actually go let me make a connection with some other computer that's the when you're
+[2059.26s -> 2063.02s]  creating the client socket your client we're trying to create the client socket when you
+[2063.02s -> 2072.14s]  are a host if you're trying to do the create server socket all you need to do is get
+[2072.18s -> 2078.70s]  your local port number and try to assign it to yourself we call that binding it we'll see how
+[2078.70s -> 2082.18s]  that works so you don't actually reach out and get anybody when you're doing a server so you're
+[2082.18s -> 2086.66s]  basically saying hey I'm here please I'm listening for people to connect to or other
+[2086.66s -> 2091.82s]  computers to connect to me that's the big difference there okay now of course we have
+[2091.82s -> 2099.26s]  different types of sockets here this is also again where it gets a little bit pokey okay
+[2099.26s -> 2108.94s]  we have a generic socket okay the generic socket is struct sock address and it has as its first
+[2108.94s -> 2117.70s]  element its first member is this unsigned short called SA family okay it's a two byte value called
+[2117.70s -> 2123.66s]  SA family which is going to be the down just going to say what protocol it is then we have
+[2123.78s -> 2134.58s]  a really bizarre SA data 14 bytes worth but that's it okay it doesn't say anything else
+[2134.58s -> 2138.90s]  about that except that it says there's 14 bytes there and you say all right maybe that
+[2138.90s -> 2144.90s]  14 bytes is going to be useful for something I don't know we'll see then we have struct
+[2144.90s -> 2152.70s]  sock address IN for internet and this is the IP version 4 version okay and it also has as
+[2152.74s -> 2162.18s]  its first two bytes the family the internet fast socket internet family okay and then it
+[2162.18s -> 2170.54s]  then has a port number associated with it and then it has one of these struct IN addresses
+[2170.54s -> 2180.06s]  which we saw earlier sign ADDR which says the the actual four byte internet address in it okay
+[2180.06s -> 2185.30s]  remember it's that weird it's four bytes and not it's actually a struct which is weird okay and
+[2185.30s -> 2193.34s]  then it has eight bytes worth of zeros and they're defined to be zeros and it turns out
+[2193.34s -> 2198.34s]  they're completely ignored although most people actually just do set them to zero because it
+[2198.34s -> 2201.74s]  says zero in the name and so they figure out I should probably just set it to zero it
+[2201.74s -> 2207.50s]  actually probably doesn't matter one bit okay they're completely ignored all right so what does
+[2207.54s -> 2211.90s]  well we'll see let's count the bytes first of all let's see if this actually does anything
+[2211.90s -> 2218.38s]  how many bytes is a short two shorts another two there's four how many bytes is an unsigned
+[2218.38s -> 2225.86s]  eight which is the INR four so that's eight total and then there's eight more so that's 16
+[2225.86s -> 2230.78s]  right and then up here we had two there and 14 there so that's 16 okay that sounds like it
+[2230.98s -> 2238.70s]  makes sense let's look at the internet version six version okay well it also has the first
+[2238.70s -> 2243.22s]  two bytes as the family then it's got the first two bytes as the port remember ports are only two
+[2243.22s -> 2252.86s]  bytes either whether using IP version 6 or 4 and then it's got a struct IN6 address and that's
+[2252.94s -> 2263.22s]  going to be sign sin 6 address how big is 128 bytes and how big is 128 bits in bytes rather
+[2263.22s -> 2274.94s]  16 16 plus 4 is 20 plus 2 is 22 plus 2 is 24 plus another 4 is 28 for this one is that 16 no
+[2274.94s -> 2279.06s]  I have no idea why this is the case it turns out that it really doesn't matter that there's
+[2279.50s -> 2284.90s]  14 byte one there I think there has to be something there to make the compilation work right but
+[2284.90s -> 2289.46s]  that's about all I can figure out the various resources I've looked at said it's just kind of
+[2289.46s -> 2301.10s]  doesn't matter so whatever what's what oh sorry flow info and scope info or scope ID I'm not
+[2301.10s -> 2304.94s]  even sure what those are those are specific things to IP version 6 the nice thing about
+[2304.94s -> 2308.34s]  this part of this thing is that it is generic enough so you can have this that
+[2308.50s -> 2314.94s]  extra stuff in it flow info might have something to do with the the actual back and forth between
+[2314.94s -> 2319.22s]  the server and client maybe it's more efficient than something else and they wanted to add it in
+[2319.22s -> 2323.30s]  there scope ID might be something else too I just don't know but it's above beyond the scope
+[2323.30s -> 2329.54s]  of this class no pun intended but it's it's just extra information that goes along with it
+[2329.54s -> 2337.90s]  there okay so that's what a sock address looks like we've got this generic one which doesn't
+[2338.10s -> 2341.82s]  do much for us except that it has a family in there and then we've got these other ones
+[2341.82s -> 2348.54s]  that have the family as well as the first two bytes and then extra stuff in them that's the
+[2348.54s -> 2351.98s]  important stuff in fact there's not just two there's a whole there's this other Unix one and
+[2351.98s -> 2361.30s]  there's other ones as well socket is a very generic type of structure okay so that's that
+[2361.30s -> 2374.30s]  and as I said the version 6 one has some other stuff in it okay the you will rarely ever declare
+[2374.30s -> 2384.02s]  variables that are of this type okay this is kind of like a an abstract class or something in
+[2384.02s -> 2390.02s]  Java or those sorts of things where you've got this definition that you will never actually use
+[2390.14s -> 2397.06s]  it's just there so that other things that are that kind of inherit from it can be used okay so
+[2397.06s -> 2403.74s]  you will rarely ever do an actual struck sock ADDR you'll do the one you want for the particular
+[2403.74s -> 2414.10s]  socket you're trying to create okay and Linux actually does kind of one set for both because
+[2414.10s -> 2419.94s]  they want to make it generic okay what you're gonna have to do and we'll see this when
+[2420.42s -> 2427.10s]  write the code is you're going to have to do some casting associated with these to get the
+[2427.10s -> 2432.86s]  right value out now if you remember from cs107 all of that casting you would have had to do
+[2432.86s -> 2438.78s]  when you did generic functions there are times when you are say writing a function that has
+[2438.78s -> 2444.06s]  two void star pointers where you don't really know you know when you're writing it but the
+[2444.06s -> 2450.54s]  compiler has no idea what type it is because it expects avoid star pointers you know because
+[2450.54s -> 2455.76s]  you're the one writing the function that oh really these are these are char star star
+[2455.76s -> 2459.86s]  pointers or something like that inside the function you will actually cast that it's
+[2459.86s -> 2464.92s]  gonna be very similar when we go and figure out what these are okay when we actually write
+[2464.92s -> 2470.42s]  these these two functions we're about to write okay all right we are going to write two
+[2470.42s -> 2477.14s]  functions that one is create client socket the other is create server socket okay the creates
+[2477.14s -> 2481.50s]  client sockets a little bit easier even though it seems like there's more to do you're actually
+[2481.50s -> 2485.02s]  trying to reach out to this other computer and connect to it but there's not that much really
+[2485.02s -> 2488.54s]  to do you know that you're going to know the port address or the port number and the address
+[2488.54s -> 2493.34s]  and then you have to set up the socket to do it and that's what that's what we're gonna
+[2493.34s -> 2499.78s]  do okay what we're gonna do is we are going to confirm that we can actually talk to the IP
+[2499.94s -> 2505.14s]  address okay well confirm that we actually that the IP the IP address exists for that host we're
+[2505.14s -> 2508.62s]  gonna try to go to some host and we're gonna go if we need the IP address let's see if it exists
+[2508.62s -> 2515.54s]  okay then we are going to allocate a new descriptor this is exactly like except very
+[2515.54s -> 2520.70s]  different from a regular descriptor file descriptor it's just like a file descriptor in that it lives
+[2520.70s -> 2524.78s]  in the file descriptor table and it has an open file descriptor and so forth but you don't use
+[2524.78s -> 2529.74s]  it in the same way it's a double it's a two-way communications instead of a one-way which are
+[2529.74s -> 2536.26s]  most of our other descriptors were okay you use this this system call called socket to actually
+[2536.26s -> 2542.50s]  configure a socket descriptor when you use socket it doesn't actually talk to any other
+[2542.50s -> 2547.10s]  computer yet it just sets up the socket so that you can populate it with the right details
+[2547.10s -> 2555.38s]  and then and then use it okay then we have to create an instance of sock address underscore
+[2555.38s -> 2562.58s]  IN if we're doing IPv4 and then that packages up the host and port number that packages all
+[2562.58s -> 2567.18s]  the details that we're going to connect to do that and then now you've got this socket that
+[2567.18s -> 2573.14s]  you've set up now you can actually go and connect it to the other computer okay that's
+[2573.14s -> 2578.26s]  what we're going to do and then if all goes well you return that socket to whatever program
+[2578.26s -> 2590.10s]  or whatever function requested it okay question yeah good question the question is conceptually
+[2590.10s -> 2593.30s]  how is this different than setting up now we're doing the details are setting it up so we
+[2593.30s -> 2597.06s]  actually called these functions before now we're actually going to go and dig into what they
+[2597.06s -> 2600.70s]  look like and that's where all this other stuff that we had to get to is involved good
+[2600.70s -> 2610.50s]  question a socket descriptor lives in the file descriptor table the type is a socket so it's
+[2610.50s -> 2615.62s]  not an it's not a read file right file right only file center it's a socket and it's got more
+[2615.62s -> 2620.30s]  details associated with it because it needs to be two-way and potentially connect other computers
+[2620.30s -> 2624.86s]  and so forth but because pretty much everything in UNIX is a file they still made it a file
+[2624.86s -> 2630.82s]  even though you can't use it quite like you would a normal file descriptor all right let's
+[2630.82s -> 2639.18s]  actually do this okay let's go and do this one now let's see we want to do client sockets
+[2639.18s -> 2644.62s]  dot CC okay this one is here you've also got this code so you can follow once we do this
+[2644.62s -> 2654.98s]  we are going to do struct host int HE equals get host by name and then the name that we passed
+[2654.98s -> 2661.82s]  in host dot C stir like that which is exactly what we did we talked about for 10 minutes
+[2661.82s -> 2668.30s]  earlier okay because we're trying to just figure out if it's there okay all right if HE
+[2668.30s -> 2673.30s]  is no we're just gonna return negative one which said look we didn't get it we don't even we
+[2673.30s -> 2676.34s]  don't know what address you're talking about and then hopefully whoever's calling create
+[2676.34s -> 2680.34s]  client circuit is paying attention to the return value and then knows hope they didn't get it I
+[2680.34s -> 2685.66s]  didn't get the socket that I requested okay and then we do in s equals and this is where
+[2685.66s -> 2692.06s]  we call of the socket function to set up the sock in this case we're doing a F I net and
+[2692.06s -> 2700.10s]  then we're doing sock stream okay and then let me talk about that in a second sock stream
+[2700.10s -> 2706.22s]  is basically telling the operating system please please please handle this the way
+[2706.22s -> 2711.46s]  the regular old internet works and you might say well how does a regular old internet work
+[2711.46s -> 2720.46s]  well I'm gonna tell you when you send data between two computers you don't send one long
+[2720.46s -> 2726.90s]  stream of data like all at once until you're done I mean you kind of do but what it's done
+[2726.94s -> 2733.06s]  what happens in the way they set it up is it sent in packets okay a packet can be various sizes I
+[2733.06s -> 2739.06s]  think most oh I'm not exactly sure how big a packet is right now it might be something like
+[2739.06s -> 2744.54s]  128 bytes or something like that it's relatively small but it made its 512 but it has
+[2744.54s -> 2750.10s]  information about the data it has a packet number and it has information about the data
+[2750.10s -> 2755.82s]  itself and then it has some of that data okay and you send a whole bunch of these packets
+[2755.86s -> 2760.82s]  off to some computer and they all take different paths around the internet many of them go on the
+[2760.82s -> 2765.18s]  same path it just happens to be the shortest path but it might not and some of your packets
+[2765.18s -> 2769.70s]  may go down one path some might go down another path and they all meet up at the
+[2769.70s -> 2775.80s]  computer where the they're trying to be heard in the one you're sending them to and they
+[2775.80s -> 2781.30s]  may end up in wrong the wrong border okay if they end up in the wrong border it actually
+[2781.30s -> 2786.58s]  doesn't matter because the other computer is going okay I'm gonna listen for all these packets
+[2786.58s -> 2791.94s]  and if I get packet two first I'm just gonna hold it aside until I get packet one and then I'm
+[2791.94s -> 2796.34s]  gonna know that I got packed one and two and I'm gonna order them all when I get them and
+[2796.34s -> 2801.22s]  sometimes packets get dropped in fact packets get dropped all the time some computer goes down
+[2801.22s -> 2806.70s]  or there's a glitch somewhere or whatever if a packet gets lost the there's a timeout
+[2806.70s -> 2813.10s]  associated with that on both ends as it turns out when a receiving computer gets a packet it
+[2813.10s -> 2819.86s]  sends an acknowledgement packet back it says I got your packet number three right and then and
+[2819.86s -> 2823.86s]  then the sending computer goes okay packet three got through and it checks it off the list
+[2823.86s -> 2829.22s]  if the receiving computer doesn't get packet three it waits a little bit of time and then
+[2829.22s -> 2834.94s]  sends a actually it actually just it just waits I believe it just sits there and waits
+[2834.94s -> 2840.22s]  it's the sending computer that says oh I never got an acknowledgement I'd better send another
+[2840.22s -> 2844.94s]  packet right and it keeps sending them until it gets through and that's sometimes why I can
+[2844.94s -> 2851.78s]  take your file that's sometimes why your files buffers and so forth question yeah good
+[2851.78s -> 2855.58s]  question that's such a good question what if the acknowledgement packet gets lost it's
+[2855.58s -> 2860.50s]  exactly the same thing the sending computer says oh they never got my thing they send another
+[2860.70s -> 2865.94s]  and then the receiving computer if it gets to packet threes ignores one of them it ignores
+[2865.94s -> 2871.06s]  the second one because I already got it right so it's it's robust in that sense there is a
+[2871.06s -> 2879.18s]  problem called the it's called why am I blanking on it the let me think about this for a second
+[2879.18s -> 2888.70s]  say again no no no there's a the Byzantine Emperor's problem that's what it is there
+[2888.74s -> 2895.62s]  Byzantine generals problem again liberal arts education the the Byzantine generals problem
+[2895.62s -> 2900.70s]  is what happens if there's two generals on two hills and they both want to and they want to
+[2900.70s -> 2904.70s]  coordinate attacking a valley and they have to agree on the time they have to attack the
+[2904.70s -> 2909.74s]  valley and let's say one general sends a message to the other general and says we're gonna attack
+[2909.74s -> 2913.74s]  at 7 a.m. and the other one sends a messenger back that says okay we know we're gonna attack
+[2913.74s -> 2919.90s]  at 7 well what if then you never get those like acknowledgments can you and even if even
+[2919.90s -> 2923.38s]  if you do how does the one who sent the acknowledgement know that the other one got
+[2923.38s -> 2930.50s]  the the acknowledgement and then like so you can never quite exactly coordinate so there's
+[2930.50s -> 2934.82s]  always there's a little bit of an issue there but generally you send how many total bites you
+[2934.82s -> 2937.50s]  want at the beginning and hopefully that gets through and you get an acknowledgement on that
+[2937.50s -> 2942.46s]  and whatever it turns out it works out okay as it turns out but but that's how it works
+[2942.62s -> 2948.18s]  basically you send a bunch of these packets on here's what sock stream does sock stream
+[2948.18s -> 2954.42s]  says to the operating system please take care of all of the details of that packet back and
+[2954.42s -> 2960.38s]  forth for me if you don't want them to the operating system to do that let's say instead
+[2960.38s -> 2964.82s]  you wanted to handle it all yourself you just want to send the packet and let them go in
+[2964.82s -> 2970.02s]  the order they're in and go and do that there's more work for you to do especially if you want
+[2970.02s -> 2975.82s]  to keep everything like make sure that the other end got the back you have to do all that and you
+[2975.82s -> 2981.46s]  may want to do that let's say you're sending video data or something and you don't care about
+[2981.46s -> 2986.58s]  every bite or every packet maybe you want to do that you want to send it that way you
+[2986.58s -> 2990.42s]  can say hey I'll take care of it because it doesn't matter that ever a few bites of the
+[2990.42s -> 2994.18s]  video maybe the video gets a little blurry for a second who cares at least it continues
+[2994.18s -> 2998.06s]  instead of having to be slowed down by this acknowledgement business and all that so
+[2998.10s -> 3004.54s]  there are reasons to do that we will only stick to sock stream in this case all right
+[3004.54s -> 3013.10s]  okay so that's that if s is less than zero again that means we had a problem return negative
+[3013.10s -> 3024.10s]  one okay now we now we have to do struct sock address I and address and we need to populate
+[3024.14s -> 3028.34s]  this address we're creating here because we're actually going to use it to connect do the
+[3028.34s -> 3033.10s]  connection so we are going to do this now the first thing we're going to do is mem set and
+[3033.10s -> 3047.46s]  percent address zero size of struct sock address in like that actually I guess we can just do
+[3047.90s -> 3054.10s]  that would probably work but you could also just do size of address I think both would work we're
+[3054.10s -> 3060.54s]  doing that just to zero out the memory again it probably doesn't matter as it turns out but we
+[3060.54s -> 3065.34s]  just do it because this that says hey these things should be zero it's not actually a matter
+[3065.34s -> 3069.06s]  I think we fill in all the bytes anyway as it turns out okay then we're going to do
+[3069.06s -> 3079.54s]  address dot internet basically socket internet family equals a fine at that and then we are
+[3079.54s -> 3088.50s]  going to do address dot sign port equals now here's where we need to make it into a
+[3088.50s -> 3097.18s]  network number when we're going to set up the socket we have to make sure that it's correct
+[3097.18s -> 3102.62s]  for the network order I'm not sure why they couldn't just make the connect thing do this
+[3102.62s -> 3109.42s]  but you need to actually do the following you need to say h-t-o-n-s port and that stands for
+[3109.42s -> 3122.46s]  it stands for let's see h forget now the host yeah host to network short it's going to convert
+[3122.70s -> 3129.42s]  the port to the correct address going to flip those two bytes as it turns out if you were
+[3129.42s -> 3135.22s]  building this on a big ending machine that would be a no operation function it would actually do
+[3135.22s -> 3139.70s]  nothing because it's already in that order that's the way it goes okay so we have to do that
+[3139.70s -> 3153.42s]  alright so then we have to we're going to do the address sign address equals okay ready for
+[3153.42s -> 3163.30s]  this we have to now cast it appropriately okay two we have to cast it to a struct
+[3163.30s -> 3176.18s]  internet ADDR like that h-a-h-a-d-r why are we doing oops what did I do here hang on eight
+[3176.18s -> 3183.50s]  sign a-d-d-r equals there I forget the number of guests I did I must have forgotten on there
+[3184.06s -> 3197.66s]  so now we are casting that four byte int we got to an actual struct to make sure it goes
+[3197.66s -> 3203.34s]  into the structure why because it's a struct and not actually in it that's the way it goes
+[3204.34s -> 3214.06s]  so we do that okay and then we call this connect function okay if connect okay we are passing in
+[3214.06s -> 3218.42s]  the socket that we don't have nothing associated with it yet we were about to do that okay we have
+[3218.42s -> 3226.22s]  another cast we have to do here struct sock address star this is basically down casting
+[3226.22s -> 3232.26s]  it it's losing information in the big picture right it's losing information when you do this
+[3232.26s -> 3239.78s]  in the sense that the compiler is going to be looking for a sock address instead of a sock
+[3239.78s -> 3246.22s]  address I in okay all right and you say well how do you ever get that information back well
+[3246.22s -> 3254.50s]  let's talk about that after this line size of address and equals equals zero that's the
+[3254.54s -> 3263.38s]  actual connect line how does the socket or sorry the connect function know that we are doing
+[3263.38s -> 3272.90s]  internet version 4 that's the question how does it know what did we say was the same about every
+[3272.90s -> 3286.34s]  one of these the first two bytes is always the address family right so if we know the first two
+[3286.34s -> 3291.42s]  bytes are always an address family we know that structs always have to be in the order
+[3291.42s -> 3298.70s]  of the members we can actually look at that first member and say that member must be the
+[3299.18s -> 3304.30s]  type and then inside the connect function as well if it's if the type is internet address
+[3304.30s -> 3308.02s]  four let's handle it this way if it's six we'll handle this way if it's unit one at this way
+[3308.02s -> 3319.06s]  etc okay so it tells that by knowing what it is all right okay if that's a return zero
+[3319.06s -> 3326.86s]  meaning that we are sorry return s meaning that we actually got the correct side yeah okay
+[3326.98s -> 3337.34s]  how does it know we we are creating this up here right now that is a it's it's of the types of
+[3337.34s -> 3344.70s]  it's one of the types of internet address family set up like guys trucks right we the first two
+[3344.70s -> 3351.78s]  bytes have to be in fact we set them here the first two bytes are the family so anytime you
+[3351.78s -> 3357.54s]  get one of these generic sock address ones if you look at the first two bytes it will be a
+[3357.54s -> 3363.66s]  family and then you can say oh I know what the various families are therefore it must be of this
+[3363.66s -> 3370.50s]  type sock address I n and therefore they treat you treat it that way so the connect function
+[3370.50s -> 3377.14s]  needs to know the different types and it looks at the first two bytes says oh that one's
+[3377.14s -> 3380.26s]  two or that one's four that one's eight or whatever the different you know the number
+[3380.26s -> 3386.02s]  is and then it decides internally oh I know what this is that's how it does it now you can't do
+[3386.02s -> 3391.98s]  that in C because you can't overload function declaration types so therefore you have to do
+[3391.98s -> 3398.86s]  it this wonky way CS 107 yeah right that's what that all comes back to okay all right
+[3398.86s -> 3406.60s]  now if for some reason you don't get a connection let's say the connection actually is broken or
+[3406.60s -> 3412.56s]  something you have to close that socket that we created right because we opened or that descriptor
+[3412.56s -> 3419.16s]  because we actually opened a descriptor using using socket and so therefore you have to close
+[3419.16s -> 3423.72s]  it so if you don't if you get to this line it means something's bad and you need to close
+[3423.72s -> 3442.28s]  it and then you return negative one like that I was hoping nobody would ask that question the
+[3442.28s -> 3445.92s]  question is the question is then very good very good point in this case you don't have to do
+[3445.92s -> 3456.32s]  the the Indianness I do I think because let me think about this yeah I'm not exactly sure
+[3456.32s -> 3461.76s]  there's a there's the reason I don't know why why you have to do it up here and you don't have
+[3461.76s -> 3469.40s]  to do it down here I'm not a hundred percent sure why yeah I'm not sure I'll look it up I'll
+[3469.40s -> 3474.60s]  try look at them see this works well we can try it I mean it's worked for every example
+[3474.72s -> 3484.08s]  so far in class so I assume it works in that case okay so what do we have so that's the client
+[3484.08s -> 3490.88s]  connect function okay all right it's actually making see anybody see any client socket see if
+[3490.88s -> 3497.84s]  that works a client socket okay oh no oh I know why because it's not it's just needs to make
+[3497.84s -> 3502.60s]  it into a if we just type make in this case it would work because it's not it's actually a
+[3502.60s -> 3507.44s]  library function that gets it doesn't need a main function we don't have main in there okay
+[3507.44s -> 3518.60s]  any other questions on that yes why do we close it if the call succeeds we pass it back the user
+[3518.60s -> 3524.24s]  needs to close it because you're setting up the socket right so down here you're saying let's
+[3524.24s -> 3529.20s]  actually connect to that computer and get now the socket is an open file for you know it's
+[3529.20s -> 3533.52s]  an open it's an open file descriptor or it's rather it's a connected file descriptor I should
+[3533.52s -> 3547.72s]  say and then you pass it back to the user who uses it yeah yeah the question is is that kind of
+[3547.72s -> 3552.32s]  like how sub process passes back and open file descriptor so and the user has to close exactly
+[3552.32s -> 3558.12s]  notice that we do close our descriptors when we're using them it turns out the the stream
+[3558.20s -> 3562.84s]  the socket stream does the closing for us but it closes it yeah does that good point the
+[3562.84s -> 3569.44s]  using function needs to actually close it because it's the only one knows when it's done okay so
+[3569.44s -> 3577.56s]  let's now look quickly at the server socket file okay this one's going to be somewhat similar
+[3577.56s -> 3582.80s]  but we've got a couple extra little details to do to work on here okay so in the create
+[3582.80s -> 3588.20s]  server socket okay we're going to do basically the same thing and by the way we're only doing
+[3588.20s -> 3604.00s]  internet ipv4 in this case af inet okay sock stream zero okay so we don't need to get any
+[3604.00s -> 3608.88s]  IP address in this case because the IP address is our IP address right we're trying to set up
+[3608.88s -> 3616.92s]  a server on our computer so it actually doesn't turns out that it doesn't matter we could use
+[3616.92s -> 3623.00s]  one of our IP addresses and I say one of our IP addresses because your computer often has met
+[3623.00s -> 3628.56s]  more than one IP address if you've got Bluetooth if you've got Wi-Fi if you've got a cable
+[3628.56s -> 3634.38s]  Ethernet cable plugged in your computer you are going to have multiple IP addresses so you can
+[3634.38s -> 3640.38s]  actually say can that only allow connections on this Wi-Fi or whatever or as it turns out you
+[3640.38s -> 3646.90s]  can say any which we'll see in a second okay all right if that doesn't work we are going to
+[3646.90s -> 3655.30s]  return negative one it didn't even open yet so we don't need to actually close it okay but if
+[3655.30s -> 3662.78s]  it did open then we can go on and we can go okay struct and same thing before sock address
+[3662.78s -> 3668.98s]  in address this is going to look a relative loops relative yeah relatively familiar okay
+[3668.98s -> 3679.58s]  and then we're going to mem set address zero size of address okay and then we're going to
+[3679.58s -> 3687.90s]  set the sign for the family and this is again how the socket function is going to run this
+[3687.90s -> 3694.06s]  case the bind function is going to know how to interpret our downcasted address or downcasted
+[3694.06s -> 3706.70s]  sock address okay so we do that and sock sign family equals a finite okay and then we need
+[3706.70s -> 3718.94s]  to do address dot address dot address okay in this case now we do need to do this so I wonder
+[3718.94s -> 3721.78s]  if we didn't need to do before I know I don't think we did because it always worked before hmm
+[3721.78s -> 3726.42s]  I'll have to look I'll look it up see why this is okay so we're doing now we are doing
+[3726.42s -> 3737.58s]  HT O and L meaning we're going to now can convert the IP address that we are doing into host to
+[3737.58s -> 3745.58s]  network form in this case okay so now I and a DDR any we could have put our own IP address
+[3745.58s -> 3749.42s]  but we don't want to because we want to just in this case allowed to connect on any
+[3749.42s -> 3754.82s]  of the available ports you don't have to do that if you want to and then address dot sign
+[3754.82s -> 3768.54s]  dot port equals HT O and short port and then now we need to make it so that we are connected
+[3768.54s -> 3773.26s]  to that port for the operating system and we need to make it so that we're listening to that
+[3773.50s -> 3781.50s]  we have to do two things we have to do what we call bind okay we bind the socket to the address
+[3781.50s -> 3793.70s]  okay and again you have to downcast it the following follows sock address and then same
+[3793.70s -> 3806.58s]  thing okay if that if bind equals zero and let's do another thing called listen the listen
+[3806.58s -> 3813.10s]  system call says okay now you've got this function this port that you're listening that
+[3813.10s -> 3819.18s]  you've bound to now you actually say oh whenever I get somebody trying to connect forward that
+[3819.18s -> 3825.94s]  along to my program and you do that with the listen okay and then backlog did we type
+[3825.94s -> 3833.26s]  the backlog there oh it's passed in yeah I'm not sure what the hell I think that normally
+[3833.26s -> 3838.26s]  pass it in is normally we pass that in is zero or no or whatever it doesn't actually matter
+[3838.26s -> 3846.62s]  huh not sure what the backlog one actually does return s okay so in other words if you
+[3846.62s -> 3852.38s]  can't bind to the socket and you can't or if you can bind to it and you can listen to it
+[3852.38s -> 3859.74s]  return that socket we now correctly set up to be a server socket okay otherwise we close the
+[3859.74s -> 3866.86s]  socket because we had a problem and we return negative one okay and that's how that works ever
+[3866.86s -> 3879.98s]  what is line 22 do okay that sets up the address that we are it basically tells the in this case it
+[3879.98s -> 3894.22s]  tells the call the bind and listen function you can listen on any of my IP addresses that's what
+[3894.46s -> 3904.74s]  it is different than any of its ports because you have your computer has an IP address through the
+[3904.74s -> 3909.70s]  Wi-Fi your computer also believe or not has an IP address through Bluetooth and it also has
+[3909.70s -> 3915.82s]  one if you connect an Ethernet port in so there's different IP addresses which have which
+[3915.82s -> 3924.02s]  are associated with the connection in this case okay as it turns out I believe I believe
+[3924.02s -> 3929.58s]  INADDR any actually is zero so you probably need to do this at all but that wasn't the case
+[3929.58s -> 3934.18s]  in the other one so again I'll look that up and let the other is and now we have set it
+[3934.18s -> 3958.50s]  up to start listening what are their questions yes okay so let's see about your question your
+[3958.50s -> 3963.70s]  question is what's stopping the client from connecting and then reassigning things or
+[3963.70s -> 3969.82s]  whatever so the client remember the client just it's a very opaque procedure the client
+[3969.82s -> 3974.50s]  is a different computer that's trying to request something from the server and it just says hey I
+[3974.50s -> 3980.78s]  want to talk to port one two three four and then if the computer if your server is listening
+[3980.78s -> 3985.02s]  to it it just sets up a connection that says okay start giving me data for it it doesn't do
+[3985.02s -> 3989.82s]  anything else locally on the on the other server computer it can't you can't reach over the
+[3990.82s -> 4002.30s]  ports over there oh it can try to communicate with other ports well they can try to cut well
+[4002.30s -> 4007.42s]  okay so we could try let's say you send a message a random message to the web server
+[4007.42s -> 4011.62s]  on port 80 and you're trying to get it from it it's only going to talk web they get us
+[4011.62s -> 4013.86s]  no other it's not going to try it it's not going to be over you're not going to be able
+[4013.86s -> 4017.18s]  to get any other information for it you can take that and then pass that information to any
+[4017.22s -> 4021.58s]  other to pass that to other programs and whatever and then they can talk to the web server it
+[4021.58s -> 4027.22s]  doesn't really matter in the sense that it's not going to what you do on your computer with that
+[4027.22s -> 4032.78s]  socket is irrelevant as long as long as you talk web HTTP then it'll be fine and maybe
+[4032.78s -> 4036.94s]  multiple programs can talk sure but it doesn't maybe I'm misunderstanding your question
+[4047.58s -> 4058.02s]  can a server be given a socket it's not requested directly that has been requested directly no I can't
+[4058.02s -> 4062.34s]  I mean there's it's local to the machine a socket is local to the machine it happens to
+[4062.34s -> 4066.82s]  be maybe connecting to another machine on a particular IP address on the other machine
+[4066.82s -> 4074.02s]  but there's that's it like there's no other you can't you can't request a socket you can't
+[4074.02s -> 4077.78s]  request a port that's not listening first of all and you can't request anything that's
+[4077.78s -> 4081.98s]  stop I read for class we'll check come on back right after class will check but anyway
+[4081.98s -> 4087.94s]  any other questions on this sorry we're not good yeah yeah I'm not exactly I'm not 100%
+[4087.94s -> 4096.02s]  sure what the backlog does let's look it up buying and buying let's see buying to a socket
+[4096.02s -> 4108.30s]  let's see binder is that the was it bind it was always listen sorry listen listen for an action
+[4108.30s -> 4115.30s]  on a second back on okay the backlog argument defines the maximum length to which the queue
+[4115.30s -> 4121.86s]  of pending connections may grow so basically if a connection request arrives the queue is full
+[4122.70s -> 4127.90s]  okay yeah so this is saying how many different connections you're gonna allow and I think the
+[4127.90s -> 4132.78s]  maximum is 128 actually I don't think you're allowed to say do more but it's it's going
+[4132.78s -> 4139.14s]  to make it so that your program can take a little bit of time to connect to set up a
+[4139.14s -> 4144.14s]  connection and then there will be the operating system will keep a backlog of the other
+[4144.14s -> 4146.90s]  connections and then forward them to you one at a time believe that's what it is
+[4151.86s -> 4159.54s]  yeah good question okay so the question is I'm getting confused about sport socket an IP address
+[4159.54s -> 4166.06s]  okay an IP address sorry guy in the reverse order an IP address is your computer's address
+[4166.06s -> 4173.14s]  that the rest of the world knows about okay my IP address on this machine and myth 64
+[4173.46s -> 4183.70s]  IP address if config gives you the IP address and it's right here the I IP before address is
+[4183.70s -> 4188.54s]  one seven one six four fifteen twenty nine the IP version six addresses this big long one here
+[4188.54s -> 4193.74s]  and the scope who the scope there's where the scope comes in it's a link for some reason so
+[4193.74s -> 4197.90s]  that's what your IP address is it's the address the rest of the world talks on when somebody
+[4197.90s -> 4201.34s]  from the rest of all wants to talk to you they can talk on they can ask for a particular
+[4201.50s -> 4207.10s]  port of yours that you are one of your programs is listening on so maybe we want to SSH in a myth
+[4207.10s -> 4212.82s]  that's port 22 so we go look at IP address and then we look at port 22 and that gives us an
+[4212.82s -> 4217.86s]  SSH connection if we look for port 80 that gives us a web connection if we look for port
+[4217.86s -> 4224.34s]  443 that's a mail connection or something like that so that's what the port is it's it's
+[4224.34s -> 4231.26s]  defined as all of your IP address like on your computer what port are you listening to for various
+[4231.26s -> 4240.10s]  types of things now a socket is the file descriptor that is associated with a connection
+[4240.10s -> 4247.22s]  either to another computer or when you're listening on the socket itself is the file
+[4247.22s -> 4253.18s]  descriptor that you can read and write from and you can do both as it turns out does that
+[4253.18s -> 4276.34s]  help answer your question yeah good question so yeah this is so this is a very good question
+[4276.34s -> 4281.98s]  I haven't really talked about this yet the question is wait so we've got if multiple
+[4281.98s -> 4284.82s]  computers are trying to talk to you on a particular port does that mean they all have different
+[4284.82s -> 4290.50s]  sockets here's what really happens and this we kind of glossed over this once you set up a
+[4290.50s -> 4296.78s]  connection to another computer you actually do it on a completely different port the only thing
+[4296.78s -> 4302.50s]  you do on the original port is listen for connections then you set up another port to go
+[4302.50s -> 4308.10s]  and connect to the the client through another port that you can listen on and do the
+[4308.10s -> 4312.90s]  connection on so once you set up on that initial port then you actually hand over the connection
+[4312.90s -> 4316.54s]  to a different port to have that connection so let's say you have a thousand different computers
+[4316.54s -> 4321.18s]  connected to you you will then have a thousand other ports that they're connecting on and talking
+[4321.18s -> 4324.70s]  back and forth and you're still listening to port 80 for the next connection to come in
+[4324.70s -> 4327.42s]  that's what happens there good question yeah
+[4338.10s -> 4348.30s]  when you want to listen to various ports you have to put well you have to processes not really
+[4348.30s -> 4352.30s]  I mean you you can listen to multiple ports in a particular process just like you can have
+[4352.30s -> 4363.22s]  multiple files open oh do threads share sockets I believe they do yes I believe threads
+[4363.38s -> 4370.42s]  share sockets now it's not really going to again when like in your thread pool for networking for
+[4370.42s -> 4374.86s]  instance when we do that we set up a new connection it's a different port when we do
+[4374.86s -> 4378.86s]  all this when we do that set up the connection back to the client it's a different port all
+[4378.86s -> 4385.42s]  together okay any other questions all right we will see you all Wednesday

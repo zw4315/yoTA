@@ -1,0 +1,438 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.44s]  In the second part of today's lecture, we're going to do some theoretical
+[4.44s -> 8.28s]  analysis of a model-free reinforcement learning algorithm that is kind of
+[8.28s -> 11.56s]  similar to one that we might actually want to use, namely fitted queue
+[11.56s -> 16.20s]  iteration. Now, of course, we know that real fitted queue iteration in general
+[16.20s -> 19.36s]  is not guaranteed to converge, so we're going to use a kind of an
+[19.36s -> 23.36s]  idealized model of fitted queue iteration that is, you know, a little more
+[23.36s -> 29.20s]  simplified than the real method, but is amenable to theoretical analysis.
+[30.08s -> 35.48s]  So here is our abstract model of exact queue iteration. In exact queue
+[35.48s -> 42.12s]  iteration, we're going to, at every iterate, set qk plus one to be equal to
+[42.12s -> 47.44s]  some operator t times qk. The operator t is going to be the Bellman
+[47.44s -> 54.20s]  optimality operator, so t times q is equal to r plus gamma times p times
+[54.20s -> 59.36s]  the max over a of q. So the max operator here is kind of weird
+[59.36s -> 64.40s]  because q is an SA length matrix, and we're going to say that max a of
+[64.40s -> 69.88s]  that SA vector results in a new vector that is of length s.
+[69.88s -> 74.52s]  So it's max a, but it's kind of this blockwise max, where over all
+[74.52s -> 77.80s]  the actions corresponding to the same states, it computes one entry, which
+[77.80s -> 81.56s]  is the max over those actions. So this is not a full max over the
+[81.56s -> 85.20s]  whole vector q, it's actually this block max. So there's a little bit of
+[85.20s -> 89.08s]  notational convenience. Anyway, don't worry too much if my
+[89.08s -> 91.72s]  notation here is confusing. Tq is basically exactly what you
+[91.72s -> 94.00s]  think it is. It's just the thing that takes a q function and
+[94.00s -> 100.12s]  performs a max Bellman backup. Now this exact queue iteration.
+[100.12s -> 102.48s]  Here's how we're going to model approximate fitted queue
+[102.48s -> 108.84s]  iteration. We're going to say that q hat k plus one is going
+[108.84s -> 113.64s]  to perform some kind of minimization over q hat to minimize
+[113.64s -> 120.84s]  q hat minus t hat q hat k. So there are going to be two sources
+[120.84s -> 124.20s]  of error here. One is that t hat is not the same as t.
+[124.20s -> 126.16s]  I'll talk about that in a second. And the other one is that the
+[126.16s -> 130.52s]  minimization will not be exact either. So q hat k plus one will not
+[130.52s -> 134.60s]  actually be equal to t hat q hat k. So we're going to have an
+[134.64s -> 138.04s]  approximate Bellman operator, and we're going to have an
+[138.04s -> 142.00s]  approximate minimization. So the approximate Bellman operator t
+[142.00s -> 147.40s]  hat q is going to be equal to r hat plus gamma p hat.
+[147.40s -> 152.40s]  Let's unpack this a little bit. So r hat is, in this case
+[152.40s -> 157.76s]  for the purpose of this analysis, just the reward averaged
+[157.76s -> 161.56s]  over all the times when we've seen the state SA. So the
+[161.56s -> 165.76s]  value in r hat for SA is just the sample average, one over
+[165.76s -> 168.72s]  the number of times we've seen SA, times the sum over all
+[168.72s -> 173.48s]  of our samples of r i for every r i whose s i a i
+[173.48s -> 175.68s]  corresponds to SA. So it's basically exactly what you
+[175.68s -> 177.92s]  think it is. It's just the average reward we've seen for
+[177.92s -> 183.00s]  that state action tuple. And p hat, basically the same as
+[183.00s -> 185.12s]  before, is the number of times we've seen the
+[185.12s -> 187.52s]  transition s a s prime divided by the number of times
+[187.52s -> 191.60s]  we've seen SA. Now this might look like the same kind of
+[191.60s -> 194.20s]  idea that we had in the model based analysis before, but
+[194.20s -> 198.16s]  note that these are not models. This is the effect of
+[198.16s -> 201.20s]  averaging together different transitions in the data. So
+[201.20s -> 203.96s]  what we would do in a real fitted q iteration algorithm is
+[203.96s -> 208.24s]  we would have different losses for every single sample. So
+[208.24s -> 212.12s]  for every sample, we would have something like r i, we
+[212.12s -> 215.76s]  would have something like q s i a i minus r i plus gamma
+[216.56s -> 220.84s]  max a prime q s i prime a prime squared or some other
+[220.84s -> 223.76s]  difference, you know, maybe not squared, maybe absolute
+[223.76s -> 227.84s]  value, and we would average them all together. So we're
+[227.84s -> 230.32s]  doing this idealized model is we're basically saying
+[230.32s -> 233.00s]  that the effect of averaging together these different
+[233.00s -> 236.32s]  losses kind of looks like doing a backup under this
+[236.32s -> 238.96s]  empirical model. So p hat and r hat are basically
+[238.96s -> 241.88s]  empirical models of the reward and transitions.
+[242.88s -> 246.40s]  Um, technically this is what you would get if you were
+[246.40s -> 249.44s]  to average together all the target values for a given
+[249.44s -> 252.24s]  state action tuple SA, right? So if you've seen a given
+[252.24s -> 255.24s]  SA five times and you average together the target
+[255.24s -> 257.96s]  values for those five instances of that same SA, you
+[257.96s -> 260.04s]  would get exactly the same thing as if you were to
+[260.04s -> 264.96s]  employ this version of r hat and p hat. Okay, now I'm
+[264.96s -> 266.36s]  saying all of this, but this is just kind of
+[266.36s -> 269.24s]  justification for this idealized model. So from here
+[269.24s -> 271.28s]  on out, we're just going to deal with r hats and p
+[271.28s -> 275.04s]  hats. So all that explanation was just to justify why
+[276.04s -> 279.56s]  viewing approximate fit accuteration as doing this t
+[279.56s -> 283.40s]  hat backup is reasonable. It's reasonable because if
+[283.40s -> 285.52s]  you were just average together the target values
+[285.52s -> 289.04s]  for that state action tuple over all the samples
+[289.04s -> 291.24s]  that contain that state action tuple, this is exactly
+[291.24s -> 291.72s]  what you would get.
+[294.12s -> 298.88s]  Okay, um, now at this point, you know, what we're
+[298.88s -> 301.04s]  actually going to see in our analysis is that the
+[301.04s -> 303.04s]  fact that r hat and p hat are not exactly the
+[303.04s -> 305.60s]  same as r and p is going to induce some
+[305.60s -> 307.88s]  error. And we call that sampling error because the
+[307.88s -> 309.92s]  reason for the error is that we do is that
+[309.92s -> 312.48s]  r hat and p hat are inexact because we have
+[312.48s -> 314.36s]  a finite number of samples. If we had an infinite
+[314.36s -> 316.22s]  number of samples that r hat would be equal to
+[316.22s -> 318.04s]  r and p hat would be equal to p. But
+[318.04s -> 319.76s]  for a finite number of samples, we incur a sampling
+[319.76s -> 322.72s]  error. But that's not the only source of error.
+[323.00s -> 326.04s]  This minimization will also be inexact, so we
+[326.04s -> 328.96s]  won't actually be able to get q hat k plus one
+[328.96s -> 333.20s]  to perfectly match t hat q hat k because it's fit a
+[333.20s -> 336.00s]  q iteration and there's some kind of function approximation
+[336.00s -> 339.16s]  or some kind of, you know, inexact learning going
+[339.16s -> 343.48s]  on. So we need some model for this error. And
+[343.48s -> 345.52s]  an important thing here is which norm are we're
+[345.52s -> 350.12s]  going to use. So we saw before in our discussion
+[350.12s -> 353.12s]  of fit a q iteration back in the beginning of
+[353.12s -> 356.68s]  the course that if we do this with, um, squared
+[356.68s -> 358.54s]  error, the problem is that we can't even prove
+[358.54s -> 361.92s]  convergence of the algorithm. Now that's a significant
+[361.92s -> 364.76s]  problem. But even though we can't prove convergence
+[364.76s -> 367.00s]  of the real algorithm, maybe we can assume some
+[367.00s -> 369.28s]  kind of idealized algorithm and at least study
+[369.28s -> 372.00s]  how error in this idealized algorithm depends on
+[372.00s -> 374.30s]  the problem parameters. So we need to idealize
+[374.30s -> 376.80s]  this a little bit. And in order to idealize it,
+[376.80s -> 378.44s]  we're going to assume that we're actually
+[378.44s -> 380.86s]  minimizing the infinity norm. And furthermore,
+[380.86s -> 382.20s]  we're going to assume that we can get the
+[382.28s -> 385.56s]  infinity norm to be, uh, less than or equal to
+[385.56s -> 388.16s]  some constant. So we'll assume that every iteration
+[388.16s -> 391.20s]  we compute this approximate Bellman backup,
+[391.20s -> 394.72s]  t hat q hat k. And then we fit the new q
+[394.72s -> 397.92s]  hat k plus one to this t hat q hat k with
+[397.92s -> 400.08s]  an infinity norm that is less than or equal to
+[400.08s -> 402.72s]  some constant. And I'll come back to this later.
+[402.72s -> 405.60s]  So this is, this assumption is kind of made out
+[405.60s -> 408.44s]  of convenience because, uh, it's difficult to do
+[408.48s -> 413.40s]  this with the L2 norm. Okay, so which questions are
+[413.40s -> 416.40s]  we gonna want to study? Well, one question is,
+[416.40s -> 419.52s]  as the number of fitted q iteration iterations
+[419.52s -> 422.20s]  approaches infinity, what does q hat k actually
+[422.20s -> 426.56s]  approach? And in particular, um, how much does
+[426.56s -> 430.24s]  q hat k differ from q star, asymptotically, as we
+[430.24s -> 432.48s]  take infinitely many approximate fitted q iteration
+[432.48s -> 436.68s]  iterations? Well, where will our errors come from?
+[436.68s -> 438.92s]  They'll come from two sources. One is that t is not
+[438.92s -> 441.72s]  equal to t hat. So that's sampling error. And the
+[441.72s -> 444.24s]  other one is that q hat k plus one is not
+[444.24s -> 447.32s]  equal to t hat q hat k. And that's, we call it
+[447.32s -> 450.56s]  approximation error. Basically, when we approximate
+[450.56s -> 452.80s]  the backed up previous q function, meaning the
+[452.80s -> 455.44s]  target values with some new q function, we incur
+[455.44s -> 457.48s]  some approximation error and we can try to quantify
+[457.48s -> 461.44s]  that. Right. So let's first analyze just the
+[461.44s -> 466.04s]  sampling error. So we'll just analyze the problems
+[466.08s -> 468.08s]  we get from the fact that t is not equal to t hat.
+[468.08s -> 470.36s]  And this is going to look pretty similar to what
+[470.36s -> 473.28s]  we saw in the previous section. So we're basically
+[473.28s -> 475.84s]  going to figure out how the real thing that we're
+[475.84s -> 478.24s]  doing, the one that has t hat q hat is different
+[478.24s -> 481.00s]  from what we would have gotten if we used t times
+[481.00s -> 483.96s]  q hat. So in particular, we want to understand this
+[483.96s -> 489.36s]  difference. How different will t hat q be from t q
+[489.36s -> 492.36s]  for some q function q? We don't care what q is at
+[492.36s -> 493.84s]  this point. We just want to understand the
+[493.84s -> 495.60s]  difference between applying t hat to it and applying
+[495.64s -> 499.32s]  t to it. So if we were to write that out, well,
+[499.32s -> 501.24s]  let's just substitute in the definition of t hat and
+[501.24s -> 504.36s]  t in there, uh, and we'll collect the terms. So
+[504.36s -> 507.36s]  we'll collect the r terms and the next value terms.
+[507.36s -> 511.52s]  We get r hat minus r plus gamma times the
+[511.52s -> 514.52s]  expected value of the max under p hat minus the
+[514.52s -> 518.12s]  expected value of the max under p. And by the
+[518.12s -> 520.76s]  triangle in quality, as usual, we can bound this,
+[520.76s -> 524.04s]  the norm of this sum with the sum of their
+[524.04s -> 528.20s]  norms. So we get, uh, r hat minus r, the norm of
+[528.20s -> 531.36s]  that, plus, uh, gamma times the norm of the
+[531.36s -> 535.12s]  difference of expectations. Now, the first value here
+[535.12s -> 537.40s]  is exactly the estimation error of a continuous
+[537.40s -> 540.64s]  random variable. What did we learn about that
+[540.64s -> 543.48s]  allows us to bound the approximation error of a
+[543.48s -> 547.68s]  continuous random variable? Well, this is exactly
+[547.68s -> 550.64s]  Hoeffding's inequality. So if we just directly plug
+[550.64s -> 553.60s]  in the formula for Hoeffding's inequality, we
+[553.64s -> 556.48s]  get that the difference between r hat and r is just
+[556.48s -> 558.12s]  going to be less than or equal to two times the
+[558.12s -> 560.00s]  maximum possible reward. That's basically the range
+[560.00s -> 564.08s]  of rewards of the b plus minus b minus, um, times
+[564.08s -> 567.08s]  the square root of one over delta over two n. So
+[567.08s -> 570.68s]  our familiar bound, uh, the error will scale as one
+[570.68s -> 575.16s]  over root n. For the second part, this is just
+[575.16s -> 577.80s]  the sum over all next states of the difference of p
+[577.80s -> 581.48s]  hat and p times the maximum over, um, the action
+[581.56s -> 587.48s]  of q s prime, a prime. And we can bound that by
+[587.48s -> 591.76s]  replacing the max over a prime with a max over s
+[591.76s -> 593.88s]  prime and a prime. So that'll make this, uh, this
+[593.88s -> 597.52s]  q term independent of s prime, right? Because if
+[597.52s -> 600.72s]  you average together the, uh, you know, the values
+[600.72s -> 603.60s]  of some vector, that's the same that that's bounded
+[603.60s -> 605.68s]  by summing together the maximum values of that
+[605.68s -> 607.68s]  vector, because any entry in the vector is less
+[607.68s -> 612.16s]  than or equal to its maximum. Um, and now looking
+[612.16s -> 614.88s]  at this equation, hopefully you'll recognize this
+[614.88s -> 617.44s]  as the total variation divergence between p hat
+[617.44s -> 622.24s]  and p times some quantity that depends on q, some
+[622.24s -> 624.96s]  constant quantity. And in particular, that constant
+[624.96s -> 627.56s]  quantity is just the infinity norm of q. So this
+[627.56s -> 629.60s]  is exactly equal to the total variation divergence
+[629.60s -> 632.12s]  between p hat and p times the infinity norm of
+[632.12s -> 635.56s]  q. And we already had a bound for that. Um, so
+[635.56s -> 637.96s]  that's basically going to use that, uh, concentration
+[637.96s -> 642.12s]  equality for estimating, um, categorical distributions.
+[642.60s -> 645.00s]  And therefore this is bounded by some constant
+[645.00s -> 647.80s]  times the infinity norm of q times the square root
+[647.80s -> 651.08s]  of the log of one over delta, uh, divided by n.
+[651.48s -> 655.08s]  So again, it scales as root n, and there's some
+[655.08s -> 657.40s]  constant that comes from the dimensionality and so
+[657.40s -> 661.20s]  on and the infinity norm of q. So that's sampling
+[661.20s -> 663.04s]  error. And this is, you know, more or less following
+[663.08s -> 666.32s]  the same logic as we had in the previous section.
+[669.44s -> 672.56s]  So what we have is that the difference between
+[672.56s -> 674.84s]  applying these empirical Bellman backup, the
+[674.84s -> 678.08s]  approximate backup and the true backup, uh, is
+[678.08s -> 680.40s]  bounded by two terms, one that depends on the
+[680.40s -> 682.40s]  error in the reward and the other one that
+[682.40s -> 685.56s]  depends on the error in the dynamics. So that
+[685.56s -> 690.92s]  means that the infinity norm of the difference
+[690.92s -> 694.04s]  between t hat q and t q is basically also going
+[694.04s -> 696.04s]  to have this form so slightly different constants
+[696.04s -> 700.52s]  and with some terms that depend on the dimension on
+[700.52s -> 702.28s]  the number of states and actions. And we get
+[702.28s -> 704.28s]  that by using the union bound. Remember, the
+[704.28s -> 706.28s]  reason that we need to use the union bound is
+[706.28s -> 709.48s]  that these inequalities all hold with probability
+[709.48s -> 711.92s]  one minus delta. So if you have n different
+[711.92s -> 714.20s]  events, then you need to bound the probability
+[714.20s -> 716.48s]  of all of those events happening. And that's what
+[716.48s -> 720.28s]  the union bound does. But you don't really have
+[720.28s -> 721.80s]  to worry about this. All this really changes is
+[721.80s -> 725.96s]  the constants. Okay, so that's sampling error.
+[727.16s -> 730.84s]  Now, what about approximation error? Well, let's
+[730.84s -> 735.24s]  make some assumption. Let's assume that, um, when
+[735.24s -> 741.40s]  you fit q hat k plus one to the target values,
+[741.40s -> 743.96s]  which we're going to say are t q hat k, your
+[743.96s -> 747.12s]  fit has an infinity norm error of at most
+[747.12s -> 749.60s]  epsilon k. And for now, we're going to
+[749.60s -> 752.68s]  analyze the case where you have an exact backup,
+[752.68s -> 754.88s]  but we'll come back to the approximate backup later.
+[754.88s -> 756.60s]  So let's just pretend for a minute that our
+[756.60s -> 758.64s]  backup is exact. So there's no difference between
+[758.64s -> 761.04s]  t and t hat, and we're just studying the effect
+[761.04s -> 764.00s]  of error in the fit. So if we had an exact
+[764.00s -> 766.64s]  fit, if we had like an exact tabular q iteration
+[766.64s -> 769.40s]  method, then q hat k plus one would be exactly
+[769.40s -> 771.60s]  equal to t q hat k. And now we're going to
+[771.60s -> 773.52s]  assume that it's not exact, that it incurs some
+[773.52s -> 775.92s]  error and that error is bounded in the infinity
+[775.92s -> 779.04s]  norm. Now, this is a strong assumption. In
+[779.04s -> 780.96s]  reality, if you're doing supervised learning, your
+[780.96s -> 783.04s]  error is not bounded in the infinity norm. It's
+[783.04s -> 785.32s]  going to be bounded in something like, um, you
+[785.32s -> 788.24s]  know, a weighted L2 norm in expectation or some
+[788.24s -> 789.96s]  distribution. We're going to assume it's bounded
+[789.96s -> 791.56s]  in the infinity norm, which means that for the
+[791.56s -> 794.08s]  worst possible state action tuple, your error is
+[794.08s -> 796.16s]  at most epsilon k. So this is a strong
+[796.16s -> 797.76s]  assumption, but it will make this very
+[797.76s -> 801.44s]  convenient. Okay, so now what we're going to
+[801.44s -> 804.76s]  try to understand is the difference between, uh,
+[804.76s -> 807.72s]  q hat k at some iteration k and the real
+[807.76s -> 811.84s]  q star again in the infinity. So here's how we're
+[811.84s -> 814.24s]  going to do it. Um, we're going to use the same
+[814.24s -> 816.92s]  trick as before. We're going to subtract and add
+[816.92s -> 818.76s]  some quantity and the particular quantity that
+[818.76s -> 821.44s]  we're going to put in is t times q hat k
+[821.44s -> 825.40s]  minus one. The reason is that, well, we're
+[825.40s -> 829.96s]  fitting q hat k to t q hat k minus one. So
+[829.96s -> 831.44s]  if we put that in, that's the quantity we
+[831.44s -> 833.84s]  can bound. So we're going to subtract it and
+[833.84s -> 835.48s]  we're going to add it and then we'll group
+[835.48s -> 837.16s]  these two terms together. So we're going to have
+[837.16s -> 839.52s]  one term which is q hat k minus t q hat
+[839.52s -> 842.92s]  k minus one. So that that's convenient because
+[842.92s -> 844.28s]  that's the quantity that we're going to be
+[844.28s -> 846.08s]  bounding by assumption. And then we have this
+[846.08s -> 848.92s]  other term which consists of the backup of q
+[848.92s -> 852.60s]  hat k minus one minus the backup of q star.
+[852.60s -> 854.64s]  Now q star is the fixed point of t, so
+[854.64s -> 856.88s]  you can always replace q star with t q star,
+[856.88s -> 861.80s]  which is what I did on this line. Okay. And
+[861.80s -> 864.48s]  then we'll apply the triangle equality again to
+[864.48s -> 867.68s]  bound the infinity norm of the sum by the
+[867.68s -> 871.04s]  sum of their infinity norms. And the first term
+[871.04s -> 874.36s]  here, q hat k minus t q hat k minus one,
+[874.36s -> 877.60s]  is just bounded by epsilon k minus one by
+[877.60s -> 879.96s]  our assumption at the top. The indexing is off
+[879.96s -> 883.32s]  by one, that's why it's k minus one. So
+[883.32s -> 885.96s]  that leaves us with a second term. Now for
+[885.96s -> 888.60s]  the second term, we're going to recognize an
+[888.60s -> 891.08s]  interesting fact that we saw way back in the
+[891.08s -> 893.52s]  day when we first learned about Q learning,
+[893.52s -> 897.84s]  which is that the Bellman backup is a contraction.
+[897.84s -> 899.48s]  The fact that the Bellman backup is a contraction
+[899.48s -> 901.52s]  in the infinity norm means that the infinity
+[901.52s -> 905.40s]  norm of what you get by applying t to two
+[905.40s -> 909.00s]  different Q functions is less than or equal to
+[909.00s -> 911.04s]  gamma times the infinity norm of the difference
+[911.04s -> 914.00s]  between those Q functions. So using the fact
+[914.00s -> 917.00s]  that t is a contraction in gamma, we can
+[917.00s -> 920.12s]  bound this by gamma times q hat k minus one
+[920.12s -> 923.76s]  minus q star. And now what we've done is we've
+[923.76s -> 927.96s]  related q hat k minus q star recursively to
+[927.96s -> 931.24s]  q hat k minus one minus q star, but with
+[931.24s -> 932.72s]  the addition of this little error term, epsilon
+[932.72s -> 936.72s]  k minus one. So now we're going to unroll
+[936.72s -> 939.88s]  this recursion. So applying the same thing
+[939.88s -> 942.72s]  again to q hat k minus one minus q star,
+[942.72s -> 944.48s]  we bound the whole thing by epsilon k minus
+[944.48s -> 946.64s]  one plus gamma epsilon k minus two plus
+[946.64s -> 949.48s]  gamma squared times the difference. Then we
+[949.52s -> 951.40s]  do it again and we get gamma squared times
+[951.40s -> 954.16s]  epsilon k minus three plus gamma cubed and so on
+[954.16s -> 955.64s]  and so on. If we go all the way back to the
+[955.64s -> 958.64s]  beginning, then we end up bounding the whole
+[958.64s -> 962.16s]  thing by this gamma discounted sum from i equals
+[962.16s -> 966.00s]  zero to k minus one, gamma to the i times
+[966.00s -> 969.40s]  the corresponding epsilon plus gamma to the k
+[969.40s -> 974.20s]  times the difference between q hat zero and q star.
+[974.20s -> 976.44s]  Now this tells us something very interesting
+[976.48s -> 980.36s]  and also very useful, which is that the more
+[980.36s -> 982.32s]  iterations we take, the more we essentially
+[982.32s -> 984.96s]  forget our initialization, because as k goes to
+[984.96s -> 986.88s]  infinity, this gamma to the k term will
+[986.88s -> 989.12s]  vanish because gamma is less than one, which
+[989.12s -> 991.12s]  means that the effect of our starting point, q
+[991.12s -> 995.04s]  hat zero, is going to vanish. So what that
+[995.04s -> 997.40s]  means is that if we take the limit as k goes
+[997.40s -> 1000.00s]  to infinity, the second term gamma to the k
+[1000.00s -> 1001.64s]  vanishes because gamma to the k approaches
+[1001.64s -> 1003.84s]  zero. And for the first term, we're going to
+[1003.84s -> 1005.52s]  simplify it a little bit. We're going to
+[1005.52s -> 1008.28s]  replace all those epsilon k minus i minus one
+[1008.28s -> 1010.60s]  terms with just the maximum epsilon we get
+[1010.60s -> 1015.28s]  over all the iterations. And that's probably
+[1015.28s -> 1017.08s]  reasonable to do because if our fitting error
+[1017.08s -> 1018.64s]  is bounded for every iteration, we'll just say
+[1018.64s -> 1022.36s]  that we can also bound it over all iterations.
+[1022.36s -> 1026.24s]  And now we get our familiar geometric series,
+[1026.24s -> 1027.92s]  the sum from i equals zero to infinity of
+[1027.92s -> 1032.64s]  gamma to the i times some constant. And so
+[1032.64s -> 1034.52s]  that's equal to one over one minus gamma
+[1034.52s -> 1036.44s]  times the infinity norm of epsilon where
+[1036.44s -> 1040.04s]  epsilon is a big vector with k dimensions
+[1040.04s -> 1041.92s]  where every dimension has the error at that
+[1041.92s -> 1045.48s]  iteration. So that's pretty neat. Now we see
+[1045.48s -> 1048.96s]  how error scales for just the approximation
+[1048.96s -> 1051.24s]  error. So if we incur some epsilon fit
+[1051.24s -> 1053.68s]  every step, then the total error we'll get
+[1053.68s -> 1055.64s]  will be epsilon times one over one minus
+[1055.64s -> 1060.08s]  gamma. So the longer our horizon, essentially
+[1060.08s -> 1061.92s]  the more error we get, which intuitively kind
+[1061.92s -> 1065.00s]  of you can think of as saying that every time
+[1065.00s -> 1067.76s]  you back up, which is every iteration of fit
+[1067.76s -> 1070.88s]  a q iteration, you incur some additional error.
+[1070.88s -> 1073.92s]  So since the number of backups you need to
+[1073.92s -> 1076.24s]  make is equal to your horizon, that's the
+[1076.24s -> 1077.72s]  order of the approximation error that you'll
+[1077.72s -> 1080.92s]  see. So now let's put these two things
+[1080.92s -> 1084.04s]  together. We've got our sampling error, and
+[1084.04s -> 1085.64s]  that quantifies the difference between t hat
+[1085.64s -> 1089.48s]  and t. And we've got our approximation error,
+[1089.48s -> 1093.40s]  which is how much q hat k plus one will differ
+[1093.40s -> 1099.00s]  from t q hat k. And they'll differ due to
+[1099.00s -> 1100.96s]  sampling error and due to the approximation
+[1100.96s -> 1103.16s]  error. So essentially what we're going to do
+[1103.16s -> 1106.00s]  is we're going to subsume the sampling error
+[1106.00s -> 1108.44s]  inside the epsilons. And that will let us
+[1108.44s -> 1113.28s]  connect these two parts up. So put it stated
+[1113.28s -> 1116.08s]  another way that bound from the previous slide
+[1116.08s -> 1118.28s]  can also be rewritten as the limit as k goes
+[1118.32s -> 1121.04s]  to infinity of q hat k minus q star is less than
+[1121.04s -> 1123.24s]  or equal to one over one minus gamma times the
+[1123.24s -> 1125.76s]  max over all the iterations of the difference
+[1125.76s -> 1130.72s]  between q hat k and t q hat k minus one.
+[1130.72s -> 1132.60s]  Right, so this contains both kinds of errors
+[1132.60s -> 1135.12s]  because there's a t in there. So if you're
+[1135.12s -> 1137.40s]  actually backing up using t hat instead of t,
+[1137.40s -> 1139.32s]  you'll have an error there, and it contains
+[1139.32s -> 1142.36s]  the approximation error due to an imperfect fit.
+[1142.36s -> 1145.24s]  So let's just examine what this quantity is.
+[1145.28s -> 1148.12s]  Q hat k minus t q hat k minus one.
+[1149.56s -> 1153.64s]  We're going to put in t hat q hat k minus one,
+[1153.64s -> 1156.44s]  so we'll subtract and add it, the same trick as before.
+[1156.44s -> 1159.36s]  We'll again group the terms. So we're bound
+[1159.36s -> 1162.36s]  in this whole thing by q hat k minus t hat q hat
+[1162.36s -> 1166.88s]  k minus one, plus t hat q k minus one,
+[1166.88s -> 1170.28s]  minus t q hat k minus one. So the second term
+[1170.28s -> 1172.68s]  is basically taking care of the sampling error,
+[1172.68s -> 1174.44s]  and the first term is taking care of the
+[1174.48s -> 1177.44s]  approximation error. So we know that the first term
+[1177.44s -> 1180.76s]  is that epsilon k, and the second term is that
+[1180.76s -> 1182.48s]  big sampling error bound up above.
+[1184.92s -> 1186.24s]  So what we can do is we can just take these
+[1186.24s -> 1188.56s]  two terms and plug them in here,
+[1188.56s -> 1190.16s]  and we're going to use that to calculate
+[1190.16s -> 1193.36s]  the difference between q hat k and q star
+[1193.36s -> 1195.08s]  in the limit as k goes to infinity,
+[1195.08s -> 1197.00s]  and it will be one over one minus gamma
+[1197.00s -> 1200.28s]  times a bunch of terms, basically a sum of three terms,
+[1200.28s -> 1201.60s]  two of them coming from sampling error,
+[1201.60s -> 1203.56s]  and one coming from approximation error.
+[1205.20s -> 1208.28s]  So here's what we have on the previous slide.
+[1209.48s -> 1213.92s]  We can see here that error compounds with the horizon
+[1213.92s -> 1215.76s]  over iterations and due to sampling.
+[1218.12s -> 1221.76s]  Notice that in the sampling error, the second term
+[1221.76s -> 1224.32s]  actually is also of order one over one minus gamma
+[1224.32s -> 1228.24s]  because q infinity is on the order of r max
+[1228.24s -> 1229.68s]  over one over one minus gamma.
+[1229.68s -> 1231.04s]  We discussed this before, we talked about
+[1231.04s -> 1233.32s]  how the value functions and q functions
+[1233.32s -> 1237.08s]  basically their magnitudes are the reward
+[1237.08s -> 1240.36s]  times the horizon, so it's r max over one minus gamma.
+[1240.36s -> 1242.76s]  So if you imagine what will happen
+[1242.76s -> 1246.92s]  if we substitute in epsilon k plus sampling error
+[1246.92s -> 1248.68s]  into that second equation,
+[1248.68s -> 1250.68s]  you have a one over one minus gamma term in front,
+[1250.68s -> 1252.32s]  and then you have a sum of three terms,
+[1252.32s -> 1253.92s]  one of which itself also has
+[1253.92s -> 1255.84s]  a one over one minus gamma term in it.
+[1255.84s -> 1258.60s]  So the overall order of the error will be quadratic
+[1258.60s -> 1260.08s]  in one over one minus gamma,
+[1260.08s -> 1261.68s]  just like we saw in part one.
+[1263.92s -> 1266.56s]  Now, so far, we needed strong assumptions,
+[1266.56s -> 1268.20s]  specifically infinity norm assumptions
+[1268.20s -> 1269.36s]  on the error that we're incurring.
+[1269.36s -> 1271.80s]  So that is a fairly strong assumption
+[1271.80s -> 1273.68s]  that is not always going to hold.
+[1274.96s -> 1277.36s]  More advanced results can actually be derived
+[1277.36s -> 1279.80s]  with p-norms under some distributions.
+[1279.80s -> 1282.92s]  So infinity norms are not really realistic
+[1282.92s -> 1284.36s]  for practical learning algorithms.
+[1284.36s -> 1287.48s]  It is possible to do some analysis with p-norms,
+[1287.48s -> 1291.00s]  and you can learn more about that in the RL theory book
+[1291.00s -> 1293.04s]  referenced at the bottom of the slide.
+[1293.04s -> 1297.28s]  Basically, this analysis studies norms of this form,
+[1297.28s -> 1302.28s]  where the p mu norm is just the expected value under mu
+[1302.60s -> 1304.28s]  of the difference raised to the power p,
+[1304.28s -> 1306.08s]  and then the whole thing is raised to one over p.
+[1306.08s -> 1307.60s]  So if p is equal to two,
+[1307.60s -> 1309.20s]  this is actually the quadratic Bellman error
+[1309.20s -> 1310.32s]  that we're used to.
+[1310.32s -> 1312.20s]  So there's some analysis that we can do with that,
+[1312.20s -> 1313.96s]  but we need some assumptions there too,
+[1313.96s -> 1315.92s]  to avoid this non-convergence issue.

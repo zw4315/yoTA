@@ -1,0 +1,1755 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 12.80s]  All right, so welcome, my name is Kavon, I'm a pretty casual guy, so Kavon is a perfectly
+[12.80s -> 14.52s]  reasonable way to address me.
+[14.52s -> 21.76s]  Hi, I'm Kudle, I'm the other instructor, you know, Kavon's the software half, I'm
+[21.76s -> 22.76s]  the hardware guy.
+[22.76s -> 25.68s]  Yeah, so I'll be doing a lot of the lectures at the front of the class which
+[25.68s -> 30.08s]  are a little bit more software oriented, and then you get the 18 in the back half of the
+[30.08s -> 34.80s]  class to tell you about how hardware really works.
+[34.80s -> 39.52s]  Right now we have 9 TAs, you're going to have 10 or 11, so hopefully you get everybody
+[39.52s -> 41.60s]  pretty good support.
+[41.60s -> 49.66s]  Okay, so I'm a big person on motivation, so I thought that we would start by, okay
+[49.66s -> 55.12s]  so first of all, I like to try and make lectures as interactive as I can for a big
+[55.12s -> 56.64s]  class like this.
+[56.64s -> 59.88s]  So one thing I'd like you to start is, why don't you just turn to your neighbor who
+[59.88s -> 64.20s]  hopefully is a friend or maybe not a friend, you've never seen them before, you might
+[64.20s -> 68.24s]  be working through a few things with them today, so why don't you turn over, introduce
+[68.24s -> 76.92s]  yourself, say hi, suggest that you're a pleasant person to be around, and then one thing
+[76.92s -> 81.84s]  is, why don't you tell everybody why you are here.
+[82.08s -> 91.08s]  Okay, alright, so hopefully you, very good job, very good job, okay, so here's a question
+[91.08s -> 96.00s]  for all of you, we have 270 people in this class, which is more than we've ever had
+[96.00s -> 101.84s]  before, it's always good to know why people got their butt up this morning and
+[101.84s -> 107.24s]  decided to take this class, you know, why are you here?
+[107.24s -> 111.20s]  This is actually a class where we have pretty different people showing up, we often
+[111.24s -> 115.28s]  have hardware architects, we have software programmers, we have people in machine learning
+[115.28s -> 121.28s]  that are tired of waiting for training to go, we have graphics folks, so who's here?
+[121.28s -> 123.28s]  Why are you here?
+[123.28s -> 125.28s]  Yes sir, sitting in the front.
+[141.28s -> 144.28s]  I think that would be a better class than this one.
+[144.28s -> 147.28s]  I think so, I think one of the things that I'd like people to take away from this class
+[147.28s -> 152.28s]  is that computers are a hell of a lot faster than they actually think they are, and so
+[152.28s -> 155.28s]  having, especially if you've never built a system in your life, and I'm not saying
+[155.28s -> 160.28s]  that you will, but for folks that are applications focused, I think that having
+[160.28s -> 165.28s]  a little bit of intuition about how fast something should be is extremely important,
+[165.28s -> 169.28s]  like when someone working for you goes, look this computation is taking all day,
+[169.36s -> 173.36s]  you should be like, I mean, I kind of understand what that workload is, that should be a
+[173.36s -> 177.36s]  five second thing on pangpores, can really be helpful.
+[177.36s -> 179.36s]  Anyone else?
+[179.36s -> 181.36s]  Yes sir?
+[181.36s -> 186.36s]  Yeah, so hardware, the software, and then what's going on in the hole.
+[186.36s -> 189.36s]  Okay, yeah, that's great.
+[189.36s -> 193.36s]  So we are going to talk a lot about the interface between hardware and software,
+[193.36s -> 197.36s]  typically getting that interface right is step one to the key to performance
+[197.44s -> 199.44s]  a lot of times.
+[199.44s -> 201.44s]  Anybody else in the back?
+[201.44s -> 204.44s]  We've got some machine learning interests, we've got some hardware, software, boundary interests.
+[204.44s -> 206.44s]  Anybody else?
+[206.44s -> 208.44s]  Do we have any graphics books here?
+[208.44s -> 210.44s]  Yes ma'am?
+[216.44s -> 221.44s]  Cool, I mean graphics, like machine learning, has always been this feel that we got to get the algorithms right
+[221.44s -> 226.44s]  but we also got to run really efficiently, so a lot of the technologies that we'll talk about
+[226.52s -> 229.52s]  have some genesis in graphics, so.
+[229.52s -> 233.52s]  Okay, so some of the things that we're going to talk about, this is like actually
+[233.52s -> 236.52s]  first of all, how many people have spawned a thread before in their life?
+[236.52s -> 239.52s]  And in what class did you spawn a thread for?
+[239.52s -> 243.52s]  110, and you spawned a thread in 110 in the context of what?
+[243.52s -> 245.52s]  Thread pool.
+[245.52s -> 247.52s]  You're writing a thread pool, okay.
+[247.52s -> 252.52s]  And did you, I actually forgot, you wrote the thread pool for what application, or was it just a generic thread pool?
+[252.52s -> 254.52s]  It was just a piece of that.
+[254.60s -> 258.60s]  So you didn't create a thread pool to actually have a concurrent application at all?
+[258.60s -> 262.60s]  Yeah, I mean we were trying to do like, it was like Stanford Farm or something like that
+[262.60s -> 265.60s]  where we were trying to like run, or we were trying to run a number of thread pools.
+[265.60s -> 270.60s]  Okay, alright, so you wrote a thread pool for exactly the reason on this slide
+[270.60s -> 274.60s]  which is you wanted to use as many cores as you could in order to get stuff done faster.
+[274.60s -> 275.60s]  Makes sense.
+[275.60s -> 278.60s]  A number of you have probably also written thread pools for web programming
+[278.60s -> 280.60s]  or something like that before, right?
+[280.68s -> 285.68s]  Like has anybody written like a web proxy or a little web server or something like that?
+[285.68s -> 290.68s]  A lot of the times we hide, we spawn threads to hide latency, to do something else.
+[290.68s -> 297.68s]  But in this class we're going to be talking about multiple uses of why we're creating parallelism
+[297.68s -> 300.68s]  and this class is, even though it's called parallel computing
+[300.68s -> 304.68s]  we're going to talk about efficiency as much as we're going to talk about parallelism
+[304.68s -> 307.68s]  and sometimes efficiency is a lot more important than parallelism.
+[307.76s -> 310.76s]  So I like to play a little game in the first day of class
+[310.76s -> 317.76s]  just to kind of make some things a little bit more explicit
+[317.76s -> 318.76s]  at least while everybody's here.
+[319.76s -> 322.76s]  So who can handle pressure?
+[325.76s -> 326.76s]  Got some people.
+[326.76s -> 329.76s]  You, name in the back.
+[330.76s -> 333.76s]  So would you mind coming to the front of the room
+[333.84s -> 338.84s]  because there's no bigger pressure than doing something in front of everybody else
+[338.84s -> 342.84s]  and it even gets worse because I'm going to have you do math in front of everybody else.
+[342.84s -> 346.84s]  So if it was me I'd be quaking in my boots right now.
+[347.84s -> 348.84s]  Okay.
+[348.84s -> 353.84s]  So here's a, we're going to use you as a little processor, okay?
+[353.84s -> 356.84s]  So there are 16 numbers on pieces of paper right here
+[358.84s -> 362.84s]  and I'm going to ask to just add them up.
+[362.92s -> 363.92s]  That's all you got to do.
+[363.92s -> 365.92s]  Hold on one second and I'm going to time you
+[365.92s -> 371.92s]  and what we're going to do is we're going to see how fast one person can add up all these numbers
+[371.92s -> 373.92s]  and then we're going to see if we can do better.
+[373.92s -> 374.92s]  Okay?
+[374.92s -> 379.92s]  So prepare yourself and whenever you're ready I'll start the timer
+[379.92s -> 382.92s]  and we'll time how quickly you can add up 16 numbers.
+[382.92s -> 384.92s]  So whenever you feel comfortable go right ahead.
+[385.92s -> 386.92s]  Okay, go for it.
+[387.92s -> 388.92s]  Timer has started.
+[388.92s -> 394.00s]  And I'll be quiet, sign on the front.
+[419.00s -> 420.00s]  Okay.
+[442.00s -> 443.00s]  That's very, very close.
+[443.00s -> 445.00s]  Close enough but very, very.
+[446.00s -> 448.00s]  It's a very high pressure activity.
+[449.00s -> 450.00s]  Okay.
+[450.00s -> 453.00s]  So you were able to add all these numbers up
+[453.00s -> 457.00s]  and approximately if I sort of, I'm going to remove a little bit of time
+[457.00s -> 459.00s]  when you were just kind of getting started
+[459.00s -> 463.00s]  but it was about 40 seconds, about 40 seconds to add up all the numbers.
+[463.00s -> 466.00s]  Okay, so I'm going to thank you and we'll keep going with the lecture
+[466.00s -> 468.00s]  so thank you, thank you again.
+[468.00s -> 469.00s]  Okay.
+[470.00s -> 475.00s]  So 40 seconds and this is our first parallel program of the class
+[475.08s -> 479.08s]  and I might suggest that how can we do better?
+[479.08s -> 482.08s]  So one way we could do better is we could ask,
+[482.08s -> 484.08s]  practice a bunch over the next couple of days
+[484.08s -> 488.08s]  and we can call back up next week and say let's try it again
+[488.08s -> 492.08s]  and let's see if we can get those 16 numbers done even faster, right?
+[492.08s -> 495.08s]  So she could work on arithmetic tables or something like that.
+[495.08s -> 497.08s]  But what are some other ways we could maybe do faster?
+[498.08s -> 504.08s]  So yeah, so obviously where I'm leading you is let's try this with more people, right?
+[504.16s -> 508.16s]  So luckily I have sitting here with another set of 16 numbers.
+[508.16s -> 511.16s]  The answer is different so you can't just repeat the same number
+[511.16s -> 514.16s]  and I'd like to have two more volunteers
+[514.16s -> 519.16s]  to see if we can use two people to do better than about 40 seconds.
+[519.16s -> 522.16s]  All right, so you seem very confident.
+[522.16s -> 524.16s]  Please come on up.
+[524.16s -> 525.16s]  Nice.
+[526.16s -> 530.16s]  I'm going to put these face down so you can't at least pre-compute some of them
+[530.16s -> 531.16s]  and we need another volunteer.
+[531.16s -> 533.16s]  Oh, by the way, what's your name?
+[533.24s -> 535.24s]  Okay, so first of all, thank you.
+[536.24s -> 537.24s]  And thank you.
+[540.24s -> 542.24s]  And I'd like another volunteer
+[542.24s -> 545.24s]  but I in particular want a volunteer from the back of the room.
+[546.24s -> 547.24s]  Yes sir, okay?
+[547.24s -> 549.24s]  So you're going to be working with someone and your name is?
+[551.24s -> 553.24s]  That's great, but I don't want you to go to the front of the room.
+[553.24s -> 555.24s]  I want you to stay back here, okay?
+[555.24s -> 557.24s]  So you can't look at these things
+[557.24s -> 560.24s]  and what I want to know is I want to know what the sum of these 16 numbers is.
+[560.24s -> 562.24s]  I believe both of you have eight of them.
+[562.32s -> 563.32s]  But here's the catch.
+[565.32s -> 570.32s]  Somebody give a piece of paper and a pencil or if you have one.
+[572.32s -> 573.32s]  I'm sure we can figure it out.
+[573.32s -> 575.32s]  We have 270 people in the room.
+[577.32s -> 581.32s]  All right, so you two can't talk
+[581.32s -> 583.32s]  but I want to know the total sum.
+[584.32s -> 588.32s]  So whenever you're all ready, feel free to grab your pieces of paper.
+[588.32s -> 590.32s]  One second, let me reset my timer.
+[590.40s -> 591.40s]  And ready?
+[591.40s -> 593.40s]  Just to ask a promise again, he's getting the same numbers?
+[593.40s -> 596.40s]  No, you guys have different sets of eight numbers
+[596.40s -> 598.40s]  and I want to know the sum of all 16.
+[598.40s -> 599.40s]  Without communicating?
+[599.40s -> 601.40s]  Well, he has a piece of paper.
+[601.40s -> 603.40s]  You can communicate, you just can't talk.
+[603.40s -> 604.40s]  Okay.
+[604.40s -> 605.40s]  Okay, you ready?
+[605.40s -> 606.40s]  Go for it.
+[620.40s -> 621.40s]  You solved the problem.
+[621.40s -> 622.40s]  Look at me.
+[635.40s -> 636.40s]  Okay.
+[646.40s -> 649.40s]  112, that's actually exactly correct.
+[649.48s -> 652.48s]  And very good, very good.
+[654.48s -> 657.48s]  And I can prove it to you because I wrote 112 right here.
+[657.48s -> 658.48s]  So that is correct.
+[659.48s -> 660.48s]  All right, great job.
+[660.48s -> 662.48s]  Now, did anybody notice how long that took?
+[663.48s -> 666.48s]  My stopwatch says 41.7 seconds.
+[667.48s -> 671.48s]  So we had one person that I gave to you a little bit of credit
+[671.48s -> 673.48s]  because it was actually more like 45
+[673.48s -> 675.48s]  but I tried to get rid of some of the rustling of the papers.
+[675.48s -> 677.48s]  But let's call it 45.
+[677.56s -> 682.56s]  Now let's call 41 seconds.
+[683.56s -> 686.56s]  So we have two people, twice the resources,
+[686.56s -> 688.56s]  twice my CA budget, you know,
+[688.56s -> 691.56s]  and I got, you know, how much better did I do?
+[691.56s -> 692.56s]  I did what?
+[692.56s -> 693.56s]  Like 10% better.
+[694.56s -> 695.56s]  So what was the, what's going on here?
+[696.56s -> 697.56s]  What would we have expected
+[697.56s -> 700.56s]  if we assume that everybody could do math at approximately the same rate?
+[701.56s -> 702.56s]  60% of the time.
+[703.56s -> 704.56s]  Sorry?
+[704.56s -> 705.56s]  60% of Tina's time.
+[705.56s -> 706.56s]  Okay, why did you say 60%?
+[707.56s -> 710.56s]  Have it and then add it for some resource communication between the parties?
+[710.56s -> 713.56s]  Okay, and then ideally, like the best we could do
+[713.56s -> 716.56s]  if you had some telepathic connection or something like that
+[716.56s -> 719.56s]  would have been, it should have been about two times faster, right?
+[719.56s -> 721.56s]  Two people, twice the resources, two times faster.
+[722.56s -> 724.56s]  But we actually basically weren't faster at all.
+[725.56s -> 727.56s]  And so what caused that?
+[727.56s -> 732.56s]  Did anybody notice how long it took the second group to do the math?
+[733.56s -> 735.56s]  It actually was at about 21 seconds
+[735.64s -> 738.64s]  when you started throwing up your hands, going, I'm not sure what to do next.
+[739.64s -> 740.64s]  And I think it was like 23 seconds
+[741.64s -> 743.64s]  when he finished his math and started walking towards you.
+[745.64s -> 746.64s]  So what was the deal?
+[747.64s -> 748.64s]  Communication between the two?
+[749.64s -> 750.64s]  We had to do some communication.
+[751.64s -> 756.64s]  So this is actually a problem that is pretty trivial in some sense to parallelize.
+[757.64s -> 761.64s]  But just something as simple as getting one number from one side of the room to the other
+[761.72s -> 764.72s]  significantly blew up all of our speed up immediately.
+[765.72s -> 767.72s]  We had students twiddling their thumbs.
+[768.72s -> 770.72s]  Now if I gave you the opportunity to do it again
+[771.72s -> 772.72s]  and you could sort of do whatever you wanted,
+[773.72s -> 774.72s]  how would you maybe speed things up?
+[775.72s -> 777.72s]  I would walk over to him while adding the numbers.
+[778.72s -> 780.72s]  Okay, so we could walk towards each other while adding the numbers.
+[781.72s -> 784.72s]  We can sort of start communicating essentially while we're still doing the math.
+[785.72s -> 790.72s]  What if I gave you other rules like you could yell or you could use WeChat
+[791.72s -> 792.72s]  or something like that?
+[793.72s -> 794.72s]  I would use WeChat.
+[795.72s -> 798.72s]  Yeah, so there's some way like if we could shout
+[799.72s -> 800.72s]  or if we were sitting here on WhatsApp
+[801.72s -> 803.72s]  like we could reduce the amount of communication significantly.
+[804.72s -> 806.72s]  So what we saw here is something that, you know,
+[807.72s -> 808.72s]  I don't even have to pop this equation up on the slide.
+[809.72s -> 810.72s]  It's pretty obvious to everybody.
+[811.72s -> 812.72s]  I said what should the speed up be with two people
+[813.72s -> 816.72s]  and you all were like well it should probably be about 2x
+[817.72s -> 820.72s]  and we got that speed up for the time for one person
+[821.72s -> 823.72s]  and you know the time that Tina took
+[824.72s -> 828.72s]  divided by the time using two people or in this case P equals 2.
+[829.72s -> 832.72s]  And the observations were that it was really this minimizing
+[833.72s -> 835.72s]  the cost of communication would actually be the hard part
+[836.72s -> 839.72s]  of trying to use two people under these conditions.
+[840.72s -> 845.72s]  So if two people is hard, maybe we should try four.
+[845.80s -> 850.80s]  Okay, so luckily I have four groups of things set up.
+[851.80s -> 854.80s]  So I'd like four volunteers and so first four people to come
+[855.80s -> 857.80s]  enthusiastically run to the front of the room
+[858.80s -> 859.80s]  will get to participate in this activity.
+[860.80s -> 861.80s]  Okay, so here's what we're going to do.
+[862.80s -> 864.80s]  I'm giving you all some work.
+[865.80s -> 866.80s]  You each have your things.
+[867.80s -> 868.80s]  Let me, can't start.
+[869.80s -> 873.80s]  And so, you know, ideally, now you're all right next to each other
+[873.88s -> 876.88s]  and, you know, I'm fine with allowing you all to talk.
+[877.88s -> 879.88s]  You're all right next to each other anyway.
+[880.88s -> 882.88s]  I'd like to know how fast you can do this
+[883.88s -> 885.88s]  and we expect, you know, maybe on the order of 12 seconds
+[886.88s -> 888.88s]  or something like that if we're in good shape.
+[889.88s -> 890.88s]  So let's give it a shot.
+[891.88s -> 892.88s]  So we got four workers, go.
+[900.88s -> 901.88s]  So what happened?
+[901.96s -> 902.96s]  Wait, wait, I'm sorry.
+[903.96s -> 905.96s]  What was the first, what was the reason why this didn't go right?
+[906.96s -> 907.96s]  I got a lot of numbers.
+[908.96s -> 909.96s]  You got a lot more work than everybody else.
+[910.96s -> 911.96s]  I also gave you bigger numbers.
+[912.96s -> 913.96s]  Oh, okay.
+[914.96s -> 916.96s]  These people were adding up like four and five.
+[917.96s -> 920.96s]  And so, okay, so why did that?
+[923.96s -> 927.96s]  Because my agency was higher than the other people.
+[928.96s -> 929.96s]  I took more time because I had more work
+[930.04s -> 931.04s]  and the work distribution wasn't even there.
+[932.04s -> 933.04s]  You had more, yeah, you had more work
+[934.04s -> 935.04s]  so everybody else was waiting for you
+[936.04s -> 937.04s]  and they didn't have anything to do.
+[938.04s -> 939.04s]  Okay.
+[940.04s -> 941.04s]  So I'm going to, unlike, you know, unlike the other folks,
+[942.04s -> 943.04s]  I'm going to give you all another shot.
+[944.04s -> 945.04s]  Okay.
+[946.04s -> 947.04s]  Okay, so I'm in a different group.
+[948.04s -> 949.04s]  Now, in this case, actually,
+[950.04s -> 952.04s]  I do know what comes out since I take the same shot.
+[953.04s -> 954.04s]  Kayla.
+[955.04s -> 956.04s]  I'm not going to make any guarantees at all.
+[957.04s -> 959.04s]  Okay, so I'm going to redistribute to everybody
+[960.04s -> 961.04s]  Now, before you do your work,
+[962.04s -> 963.04s]  why don't you all talk a little bit
+[964.04s -> 965.04s]  about how you're going to do this?
+[966.04s -> 967.04s]  And with your friends over there,
+[968.04s -> 969.04s]  I'd like you all in the audience
+[970.04s -> 971.04s]  to come up with a scheme about how you would do it
+[972.04s -> 973.04s]  if you were standing up here
+[974.04s -> 975.04s]  trying to coordinate four people.
+[976.04s -> 977.04s]  And there's a number of different strategies.
+[978.04s -> 980.04s]  So I'll give everybody like 45 seconds or a minute
+[981.04s -> 982.04s]  to talk it over.
+[983.04s -> 984.04s]  If you were up here with four people
+[985.04s -> 986.04s]  and you had no idea what were in those piles,
+[987.04s -> 988.04s]  how would you do this?
+[988.12s -> 989.12s]  I think I'd work first.
+[990.12s -> 992.12s]  And feel free to talk about it in groups.
+[996.12s -> 997.12s]  Okay.
+[998.12s -> 999.12s]  I think that's enough planning time.
+[1000.12s -> 1001.12s]  So take your packets.
+[1002.12s -> 1003.12s]  And one second.
+[1004.12s -> 1005.12s]  Let me get ready.
+[1006.12s -> 1007.12s]  Are you ready?
+[1008.12s -> 1009.12s]  Go.
+[1010.12s -> 1011.12s]  Okay, I'm looking to see what they're doing.
+[1012.12s -> 1013.12s]  I'll explain it to you in a second.
+[1015.12s -> 1016.12s]  It's 34.
+[1016.20s -> 1017.20s]  It's 34.
+[1018.20s -> 1019.20s]  It's 35.
+[1020.20s -> 1021.20s]  34 plus 35 is 96.
+[1022.20s -> 1023.20s]  99 plus 36 is 125.
+[1025.20s -> 1026.20s]  You're asked by 10, but that's fine.
+[1027.20s -> 1028.20s]  You know.
+[1029.20s -> 1030.20s]  Ten percent error.
+[1032.20s -> 1033.20s]  Not to be used in banking.
+[1034.20s -> 1035.20s]  It was 150, but you know,
+[1036.20s -> 1038.20s]  sometimes we don't check correctness on assignments.
+[1039.20s -> 1040.20s]  Okay.
+[1041.20s -> 1042.20s]  So they did it in 19 seconds.
+[1043.20s -> 1045.20s]  And I think things were a little bit occluded.
+[1046.20s -> 1047.20s]  Actually, why don't you summarize to the crowd
+[1048.20s -> 1049.20s]  how you did it.
+[1050.20s -> 1051.20s]  Yeah, once we got our packets,
+[1052.20s -> 1053.20s]  we just put them all in one big pool,
+[1054.20s -> 1055.20s]  taking and adding,
+[1056.20s -> 1057.20s]  and then once all the packets were gone,
+[1058.20s -> 1059.20s]  we just added them all together.
+[1060.20s -> 1061.20s]  Yeah, so everything got thrown into a big pool,
+[1062.20s -> 1064.20s]  and then everybody just took the next available thing
+[1065.20s -> 1066.20s]  as they were adding.
+[1067.20s -> 1068.20s]  That was their scheme.
+[1069.20s -> 1070.20s]  Now, you would have run the risk of maybe
+[1071.20s -> 1072.20s]  you would have bumped into each other's hands
+[1073.20s -> 1074.20s]  or something like that,
+[1074.28s -> 1075.28s]  but why that didn't seem to be the case
+[1076.28s -> 1077.28s]  is that, by the way,
+[1078.28s -> 1079.28s]  that took 19 seconds to do,
+[1080.28s -> 1081.28s]  but at 12 seconds,
+[1082.28s -> 1084.28s]  all of you had finished your individual math, actually.
+[1085.28s -> 1086.28s]  So you almost were perfect up until there,
+[1087.28s -> 1089.28s]  and then it took 7 seconds to add up the partials,
+[1090.28s -> 1091.28s]  the partial sums.
+[1092.28s -> 1093.28s]  So your parallelization scheme
+[1094.28s -> 1095.28s]  was actually executed quite well.
+[1096.28s -> 1097.28s]  So, anyways, thank you to the group.
+[1101.28s -> 1102.28s]  Did anybody else in talking over,
+[1102.36s -> 1103.36s]  I mean, there's a number of ways
+[1104.36s -> 1105.36s]  people could have done this.
+[1106.36s -> 1107.36s]  Were there any alternative schemes
+[1108.36s -> 1109.36s]  that were devised in the crowd?
+[1110.36s -> 1111.36s]  So, again, the scheme here
+[1112.36s -> 1113.36s]  was throw everything into a pot
+[1114.36s -> 1115.36s]  and take the next thing out of the pot.
+[1116.36s -> 1117.36s]  Yes?
+[1118.36s -> 1119.36s]  I think we forgot to do one thing
+[1120.36s -> 1121.36s]  that once all of us added our numbers together,
+[1122.36s -> 1123.36s]  I think we planned this, but we didn't do it.
+[1124.36s -> 1125.36s]  Two of us should have added it together first,
+[1126.36s -> 1127.36s]  then the other two and then together.
+[1128.36s -> 1129.36s]  It is true.
+[1130.36s -> 1131.36s]  You all kind of waited around
+[1132.36s -> 1133.36s]  Yep.
+[1134.36s -> 1135.36s]  I bet you could have shaked out
+[1136.36s -> 1137.36s]  two or three seconds if you did that.
+[1138.36s -> 1139.36s]  Any other strategies in general?
+[1142.36s -> 1146.36s]  You can distribute that into four pools beforehand.
+[1147.36s -> 1148.36s]  Right.
+[1149.36s -> 1150.36s]  Yeah, so another way would have been
+[1151.36s -> 1153.36s]  just like anybody that had more than four
+[1154.36s -> 1155.36s]  pass to people with less than four
+[1156.36s -> 1158.36s]  get four to everybody and then do the work.
+[1159.36s -> 1160.36s]  Now, in practice, like, they ended up
+[1160.44s -> 1161.44s]  probably with about four items per person
+[1163.44s -> 1164.44s]  just by grabbing the next.
+[1165.44s -> 1166.44s]  And what if one of the students
+[1167.44s -> 1168.44s]  would have been just really bad at math
+[1169.44s -> 1170.44s]  or maybe one of the students
+[1171.44s -> 1172.44s]  got some numbers that was very large
+[1173.44s -> 1174.44s]  and harder to add.
+[1175.44s -> 1176.44s]  So your scheme, which is great
+[1177.44s -> 1178.44s]  and actually the one that I anticipated them to use
+[1179.44s -> 1180.44s]  was redistribute all the work upfront,
+[1181.44s -> 1182.44s]  do things independently
+[1183.44s -> 1184.44s]  and then come back together.
+[1185.44s -> 1186.44s]  What they chose is they actually decided
+[1187.44s -> 1188.44s]  to just sort of sync up constantly
+[1188.52s -> 1189.52s]  with the next thing.
+[1190.52s -> 1191.52s]  Any other strategies?
+[1195.52s -> 1196.52s]  No other strategies?
+[1197.52s -> 1198.52s]  Yeah.
+[1199.52s -> 1200.52s]  We were thinking of using, like,
+[1201.52s -> 1202.52s]  red dispatchers to have one person
+[1203.52s -> 1204.52s]  who's just waiting and ready to sum
+[1205.52s -> 1206.52s]  the other three partial sums.
+[1207.52s -> 1208.52s]  So what persons do?
+[1209.52s -> 1210.52s]  Okay.
+[1211.52s -> 1212.52s]  So you could have one person
+[1213.52s -> 1214.52s]  holding the total sum in the head.
+[1215.52s -> 1216.52s]  Okay, that would actually potentially work.
+[1216.60s -> 1217.60s]  Do you have a team of using three people
+[1218.60s -> 1219.60s]  to add up the numbers
+[1220.60s -> 1221.60s]  and one person to do the other ones?
+[1222.60s -> 1225.60s]  Yeah, you're basically letting someone wait
+[1226.60s -> 1227.60s]  while everybody else is doing work.
+[1228.60s -> 1229.60s]  Now, in practice, I think your solution
+[1230.60s -> 1231.60s]  might have worked quite well
+[1232.60s -> 1233.60s]  because that person was waiting
+[1234.60s -> 1235.60s]  for a very short period of time
+[1236.60s -> 1237.60s]  and it's only one person waiting
+[1238.60s -> 1239.60s]  for a short period of time,
+[1240.60s -> 1241.60s]  whereas what they had at the end
+[1242.60s -> 1243.60s]  were three people waiting
+[1244.60s -> 1245.60s]  for a short period of time.
+[1246.60s -> 1247.60s]  Yes.
+[1248.60s -> 1249.60s]  Well, the scheme was
+[1250.60s -> 1251.60s]  we're going to let one person
+[1252.60s -> 1253.60s]  just stand off to the side
+[1254.60s -> 1255.60s]  and do nothing,
+[1256.60s -> 1257.60s]  and that person will recognize
+[1258.60s -> 1259.60s]  when the three other workers
+[1260.60s -> 1261.60s]  got done with their partial sums
+[1262.60s -> 1263.60s]  and that person is only responsible
+[1264.60s -> 1265.60s]  for adding those up.
+[1266.60s -> 1267.60s]  So presumably they can start adding
+[1268.60s -> 1269.60s]  numbers up in parallel
+[1270.60s -> 1271.60s]  with the long worker.
+[1272.60s -> 1273.60s]  So another possibility.
+[1274.60s -> 1275.60s]  Seems perfectly valid to me.
+[1276.60s -> 1277.60s]  Let's go on to some class logistics
+[1278.60s -> 1279.60s]  and this is the more interesting one
+[1280.60s -> 1281.60s]  that I want you all to decide as a class.
+[1282.60s -> 1283.60s]  What I want to know
+[1284.60s -> 1285.60s]  is how many people
+[1286.60s -> 1287.60s]  are in the room right now.
+[1288.60s -> 1289.60s]  Okay, so I'm going to give you
+[1290.60s -> 1291.60s]  one minute, minute and a half
+[1292.60s -> 1293.60s]  to talk it over with everybody else.
+[1294.60s -> 1295.60s]  As a class, you need to design a strategy
+[1296.60s -> 1297.60s]  for how you're going to do this
+[1298.60s -> 1299.60s]  and I'm going to put the timer on you
+[1300.60s -> 1301.60s]  and we're going to try and estimate
+[1302.60s -> 1303.60s]  how many people are in the class right now.
+[1304.60s -> 1305.60s]  Let's say there's 150 people in the class.
+[1306.60s -> 1307.60s]  If we do 16 numbers in 45 seconds
+[1311.60s -> 1312.60s]  or round up to a minute,
+[1313.60s -> 1314.60s]  well that means that we should be able
+[1315.60s -> 1316.60s]  to do the whole class of 160
+[1317.60s -> 1318.60s]  in 10 minutes, right?
+[1319.60s -> 1320.60s]  Divided by 100 people
+[1321.60s -> 1322.60s]  so this should be just a few seconds
+[1323.60s -> 1324.60s]  to add everybody up.
+[1325.60s -> 1326.60s]  So how are you going to do it?
+[1326.68s -> 1327.68s]  Okay, so let's come back together.
+[1342.68s -> 1343.68s]  Let's make sure we have agreed
+[1344.68s -> 1345.68s]  upon a scheme, have we?
+[1346.68s -> 1347.68s]  Have we converged to an algorithm
+[1348.68s -> 1349.68s]  with 150 people in 90 seconds?
+[1351.68s -> 1352.68s]  Someone be assertive and say
+[1353.68s -> 1354.68s]  here's how many people are in the class.
+[1354.76s -> 1355.76s]  Someone be assertive and say
+[1356.76s -> 1357.76s]  here's how we're going to do it.
+[1362.76s -> 1363.76s]  So that's what you're going to do?
+[1364.76s -> 1365.76s]  Is that the plan?
+[1366.76s -> 1367.76s]  I mean that's a perfectly fine plan.
+[1368.76s -> 1369.76s]  Does anyone want to add anything to it?
+[1370.76s -> 1371.76s]  So we're going to add up,
+[1372.76s -> 1373.76s]  is that the plan?
+[1374.76s -> 1375.76s]  One, two, three separate?
+[1376.76s -> 1377.76s]  Every row in every section adds their row.
+[1378.76s -> 1379.76s]  Send to the sub backwards
+[1380.76s -> 1381.76s]  and then the back row amalgamates
+[1382.76s -> 1383.76s]  all three of the sections from the outside.
+[1384.76s -> 1385.76s]  Are you sure?
+[1389.76s -> 1390.76s]  Because I feel like there's a lot
+[1391.76s -> 1392.76s]  of the classes going to be sitting around.
+[1393.76s -> 1394.76s]  What's not ideal here is that
+[1395.76s -> 1396.76s]  the back of the class is not doing
+[1397.76s -> 1398.76s]  any work while you're working here.
+[1399.76s -> 1400.76s]  Yeah, the back of the class
+[1401.76s -> 1402.76s]  is going to be doing a lot of waiting
+[1403.76s -> 1404.76s]  while this partial sum is rolling back.
+[1405.76s -> 1406.76s]  Anybody want to start?
+[1407.76s -> 1408.76s]  Okay, so there's a proposal
+[1409.76s -> 1410.76s]  to start in the back and push forward
+[1411.76s -> 1412.76s]  and start in the front and push back
+[1412.84s -> 1413.84s]  because you all somewhere in the middle
+[1414.84s -> 1415.84s]  are going to have to produce it?
+[1416.84s -> 1417.84s]  Does that sound okay?
+[1418.84s -> 1419.84s]  Any more?
+[1420.84s -> 1421.84s]  One person, are two people
+[1422.84s -> 1423.84s]  one person in the back
+[1424.84s -> 1425.84s]  and the other person in the front
+[1426.84s -> 1427.84s]  and then combine that
+[1428.84s -> 1429.84s]  and then send it to the other section
+[1430.84s -> 1431.84s]  in the middle?
+[1432.84s -> 1433.84s]  I see.
+[1434.84s -> 1435.84s]  Sorry, I didn't quite get it.
+[1436.84s -> 1437.84s]  So are we still doing rows first?
+[1438.84s -> 1439.84s]  For the front section
+[1440.84s -> 1441.84s]  of like front rows
+[1442.84s -> 1443.84s]  and then the other person
+[1444.84s -> 1445.84s]  for the back rows
+[1446.84s -> 1447.84s]  and then combine that.
+[1448.84s -> 1449.84s]  So only two people are going to do the work?
+[1450.84s -> 1451.84s]  Kind of observing, yeah.
+[1455.84s -> 1456.84s]  I think I know what you're saying
+[1457.84s -> 1458.84s]  but I'm not sure if I can translate it
+[1459.84s -> 1460.84s]  into pseudocode for 150 people
+[1461.84s -> 1462.84s]  in 10 seconds.
+[1463.84s -> 1464.84s]  Okay, one more thing
+[1465.84s -> 1466.84s]  and then I think we're at a scheme
+[1467.84s -> 1468.84s]  and let's just see how well it goes.
+[1469.84s -> 1470.84s]  Everyone tries to do it by tag
+[1470.92s -> 1471.92s]  but everybody wishes to pull many tags.
+[1473.92s -> 1474.92s]  Oh, now we're doing something different.
+[1475.92s -> 1476.92s]  So the proposal is
+[1477.92s -> 1478.92s]  get your butts up
+[1479.92s -> 1480.92s]  get into groups of 10
+[1481.92s -> 1482.92s]  and then count the number of groups.
+[1483.92s -> 1485.92s]  So who wants to
+[1486.92s -> 1487.92s]  is there a strong feeling?
+[1488.92s -> 1489.92s]  That one is good.
+[1490.92s -> 1491.92s]  I think people want to move around.
+[1492.92s -> 1493.92s]  Yes?
+[1494.00s -> 1495.00s]  Everyone sit in the middle row.
+[1500.00s -> 1501.00s]  Everyone sit in the middle row.
+[1502.00s -> 1503.00s]  Everyone fill up the rows
+[1504.00s -> 1505.00s]  Oh, okay.
+[1506.00s -> 1507.00s]  The other thing was
+[1508.00s -> 1509.00s]  pre-compute the number of chairs per row
+[1510.00s -> 1511.00s]  and everybody fill up the front rows
+[1512.00s -> 1513.00s]  and count the rows.
+[1514.00s -> 1515.00s]  Okay, I'm going to get one more.
+[1516.00s -> 1517.00s]  These are actually a lot more creative
+[1518.00s -> 1519.00s]  than previous ones.
+[1520.00s -> 1521.00s]  So you have one person
+[1522.00s -> 1523.00s]  post a poll on Ed
+[1524.00s -> 1525.00s]  That's a good idea too, right?
+[1527.00s -> 1528.00s]  I think you could probably do that one in parallel
+[1529.00s -> 1530.00s]  with the in-person algorithm too
+[1531.00s -> 1532.00s]  and see which one converges first.
+[1533.00s -> 1534.00s]  Sometimes it's called speculative execution
+[1535.00s -> 1536.00s]  you do two strategies
+[1537.00s -> 1538.00s]  and you see which one wins.
+[1539.00s -> 1540.00s]  Okay, so which one do you want to go with?
+[1541.00s -> 1542.00s]  Filling up rows.
+[1543.00s -> 1544.00s]  Filling up rows?
+[1545.00s -> 1546.00s]  Okay, are you ready?
+[1548.00s -> 1549.00s]  One
+[1550.00s -> 1551.00s]  Two
+[1552.00s -> 1553.00s]  Three
+[1554.00s -> 1555.00s]  Four
+[1557.00s -> 1558.00s]  Didn't expect that?
+[1560.00s -> 1561.00s]  I would, sir.
+[1574.00s -> 1575.00s]  Alright, we're at two minutes.
+[1576.00s -> 1577.00s]  Ten minutes is a serial algorithm.
+[1584.00s -> 1585.00s]  Thirty?
+[1586.00s -> 1587.00s]  Thirty-six
+[1588.00s -> 1589.00s]  Oh, geez.
+[1590.00s -> 1591.00s]  Alright, alright, alright, alright.
+[1592.00s -> 1593.00s]  Just do the poll on Ed.
+[1595.00s -> 1596.00s]  Alright, about two minutes so far.
+[1597.00s -> 1598.00s]  I think if we...
+[1599.00s -> 1600.00s]  Twenty-five
+[1601.00s -> 1602.00s]  Thirty-two
+[1606.00s -> 1607.00s]  I like that.
+[1608.00s -> 1609.00s]  Perseverance
+[1610.00s -> 1611.00s]  Nine
+[1611.08s -> 1612.08s]  Twenty-nine
+[1614.08s -> 1615.08s]  Forty-five
+[1616.08s -> 1617.08s]  There's forty-five in this section.
+[1620.08s -> 1621.08s]  Alright, alright.
+[1622.08s -> 1624.08s]  I think just for the sake of finishing the lecture...
+[1625.08s -> 1627.08s]  First of all, I actually think this is a very creative solution.
+[1628.08s -> 1631.08s]  I also thought, I mean, I thought all of these solutions were going to work pretty well.
+[1632.08s -> 1635.08s]  This has never been proposed, I think, in my time in the class.
+[1636.08s -> 1639.08s]  And the groups of ten also have never been proposed ever in the class.
+[1639.16s -> 1640.16s]  So what do y'all think, actually?
+[1641.16s -> 1645.16s]  So, like, let's maybe do a little bit of a post-mortem here on what was good, what was bad about this.
+[1646.16s -> 1647.16s]  Yeah, what was good?
+[1648.16s -> 1651.16s]  I think there should have been, like, one or two people that are just dedicated to counting everyone while they're being treated.
+[1652.16s -> 1658.16s]  I do have a feeling that this idea of just separating somebody off to the side to be responsible or counting given this number of people probably would have been helpful.
+[1659.16s -> 1660.16s]  Yeah, exactly.
+[1661.16s -> 1668.16s]  I have also a feeling, which will be somewhat embarrassing, that if your algorithm was one person, just count everybody in all the rows, they probably could have done it in two minutes.
+[1669.16s -> 1671.16s]  What else did you notice about this?
+[1672.16s -> 1676.16s]  I think, like, you need a lot of communication saying, hey, who would be here?
+[1677.16s -> 1679.16s]  Yeah, so you kind of had, like, an allocation problem.
+[1680.16s -> 1683.16s]  You also had a big data movement problem just to get everybody into the appropriate seat.
+[1684.16s -> 1692.16s]  So I actually think, in hindsight, that groups of ten might have actually gotten people to a countable set a little bit quicker because you didn't have these dependencies to get everybody in rows.
+[1693.16s -> 1697.16s]  So I have a feeling that, like, if you're getting hot and things like that, why don't you file back to wherever you feel most comfortable?
+[1697.24s -> 1699.24s]  But thank you very much.
+[1700.24s -> 1709.24s]  So if I assume there's, like, 160 of you here right now, that was, like, only ten times more work than we originally asked to do, for example, right?
+[1710.24s -> 1714.24s]  And so it shouldn't have been more than about six or seven minutes to add it all up sequentially.
+[1715.24s -> 1719.24s]  It should have been much less because now it's just plus one, it's not adding a harder number.
+[1719.32s -> 1727.32s]  But we were nowhere close to that, right, like, in terms of 100x speedup over the sequential algorithm.
+[1728.32s -> 1733.32s]  And it was largely because of the cost of communication, synchronization, moving all of you.
+[1734.32s -> 1739.32s]  And so this is something I want you to keep in mind because although the class is about parallelism,
+[1740.32s -> 1745.32s]  I mean, the reality is that it's really about moving things around.
+[1745.40s -> 1749.40s]  Like, every system that I think I've ever built, I'm sure I bet Kume probably would agree,
+[1750.40s -> 1755.40s]  is kind of the only thing that really matters is communicating and moving stuff around.
+[1756.40s -> 1760.40s]  So let me get into just some summary and some logistics real quick.
+[1761.40s -> 1765.40s]  You know, theme number one of this course is we're going to get you thinking kind of like you were just thinking now.
+[1766.40s -> 1771.40s]  Like, we're going to give you problems, you need to compute this problem, and you need to do it as efficiently as possible,
+[1771.48s -> 1776.48s]  and so we're going to want you thinking about how to decompose things in parallel and how to synchronize.
+[1777.48s -> 1780.48s]  And I like some folks interested in the hardware-software boundary
+[1781.48s -> 1785.48s]  because we're going to talk about programming mechanisms that help you organize that thinking,
+[1786.48s -> 1788.48s]  that make it a little bit easier to solve problems like this.
+[1789.48s -> 1795.48s]  Now, some of you are computer scientists, your day jobs, you write software.
+[1796.48s -> 1799.48s]  Some of you are ECE and design hardware.
+[1799.56s -> 1805.56s]  Another aspect of this course is about the fundamentals of how hardware works
+[1806.56s -> 1811.56s]  because you can't make things go fast if you don't know how things are running under the hood.
+[1812.56s -> 1819.56s]  So the hardware is a little bit about why code has to be structured in certain ways in order to run fast.
+[1820.56s -> 1824.56s]  So hardware designers need to know about hardware because they like to build this stuff.
+[1824.64s -> 1827.64s]  Software folks need to know a little bit about hardware to go,
+[1828.64s -> 1832.64s]  wait a minute, why am I making my program structure this way?
+[1833.64s -> 1836.64s]  It seems hard or it seems difficult, why can't I write it in another way?
+[1837.64s -> 1840.64s]  And more so than in previous years, there's going to be a stronger component in this class
+[1841.64s -> 1843.64s]  of actually designing hardware itself.
+[1844.64s -> 1846.64s]  So there may be an extra credit assignment at the end of the quarter
+[1847.64s -> 1852.64s]  where you can actually make a piece of hardware on an FPGA or some programmable substream.
+[1852.72s -> 1859.72s]  And then the last thing I want to just really emphasize is I care a lot about teaching people about efficiency.
+[1860.72s -> 1864.72s]  In some cases, like in this exercise where we added up the number of people in the room,
+[1865.72s -> 1868.72s]  if it would have been easier for one person just to scan the rows and add them all up,
+[1869.72s -> 1872.72s]  that's great, that's a faster, potentially more efficient solution
+[1873.72s -> 1876.72s]  than a solution that was highly parallel but had a lot of communication.
+[1876.80s -> 1882.80s]  So don't, let's not get too hung up on parallelism because efficiency is often what matters.
+[1883.80s -> 1884.80s]  So here's an example.
+[1885.80s -> 1888.80s]  Imagine that you go off to your next internship or full-time job or whatever
+[1889.80s -> 1896.80s]  and you were asked to write, to speed up a program on a 10 core processor or something like that.
+[1897.80s -> 1902.80s]  And you came back a month later and you were able to get 2x speed up.
+[1903.80s -> 1905.80s]  You went to your boss, you said look, it's two times faster.
+[1906.80s -> 1907.80s]  Do you get fired?
+[1908.80s -> 1909.80s]  Or do you get a raise?
+[1911.80s -> 1912.80s]  Okay, so we have a very negative class.
+[1913.80s -> 1914.80s]  Some people want to fire you.
+[1915.80s -> 1916.80s]  What's the rationale for getting fired?
+[1917.80s -> 1920.80s]  You had 10 processors but all you could achieve was a 2x speed up.
+[1921.80s -> 1923.80s]  You had 10 processors, you only got 2x out of it.
+[1924.80s -> 1925.80s]  Maybe you're using those processors very inefficiently.
+[1926.80s -> 1928.80s]  They say you're fired, go back, take CS149.
+[1931.80s -> 1933.80s]  Any reason to give the person a raise?
+[1936.80s -> 1937.80s]  Yes sir?
+[1938.80s -> 1942.80s]  I'm just saying not all programs are so easily parallelized.
+[1943.80s -> 1944.80s]  Like the one we just did, right?
+[1945.80s -> 1946.80s]  That's a pretty hard program to parallelize.
+[1947.80s -> 1949.80s]  Is there a reason why you might be satisfied with 2x?
+[1950.80s -> 1955.80s]  Yeah, if the performance gains by that offset the additional cost of using a 10 processor computer.
+[1956.80s -> 1961.80s]  Yeah, maybe computers are cheap and being able to reduce the response time of your website by a factor of two
+[1962.80s -> 1965.80s]  translates into a ton of sales, you might be really happy.
+[1966.80s -> 1970.80s]  Or like Google search results have to be returned in a certain amount of time
+[1971.80s -> 1972.80s]  otherwise people lose interest and go somewhere else.
+[1973.80s -> 1977.80s]  Another example, imagine you had a computer game that ran at 15 frames per second
+[1978.80s -> 1981.80s]  in a game and you made it get to 30 frames per second.
+[1982.80s -> 1984.80s]  That might be the difference between the game shipping or not shipping.
+[1985.80s -> 1989.80s]  So sometimes we care about raw performance, sometimes we care about efficiency.
+[1990.80s -> 1992.80s]  Ideally we'd like to have both.
+[1992.88s -> 1993.88s]  Okay?
+[1994.88s -> 1995.88s]  Yeah, alright.
+[1996.88s -> 1998.88s]  And hardware designers care a lot about efficiency
+[1999.88s -> 2001.88s]  because they're like the more hardware we put into the chip
+[2002.88s -> 2004.88s]  the more expensive this chip is going to be to manufacture.
+[2005.88s -> 2008.88s]  So I'd like to put in the minimal amount of hardware that I can get by with
+[2009.88s -> 2011.88s]  and still meet my performance goals.
+[2012.88s -> 2015.88s]  Alright, middle of the lecture, let's take a breather for a second
+[2016.88s -> 2017.88s]  and just go through some logistics.
+[2018.88s -> 2019.88s]  It would be a good time to ask any questions about logistics.
+[2019.96s -> 2023.96s]  Getting started is that all information on the course will be via the website.
+[2024.96s -> 2026.96s]  So CS 149, you know, here's the website.
+[2027.96s -> 2031.96s]  All the lectures are posted so we try and make sure that your lecture slides
+[2032.96s -> 2035.96s]  are posted prior to lectures so you can follow along while you're in the classroom.
+[2036.96s -> 2040.96s]  Notice that there's a mechanism to comment under the slides.
+[2041.96s -> 2042.96s]  So you can add a comment.
+[2043.96s -> 2046.96s]  And typically the reason why we do this under the slides
+[2047.04s -> 2050.04s]  is you can ask an actual question specific to the slide.
+[2051.04s -> 2053.04s]  So like intellectual questions, like I didn't understand this.
+[2054.04s -> 2055.04s]  Can someone explain multi-threading?
+[2056.04s -> 2058.04s]  Very much prefer them to come in via the slides
+[2059.04s -> 2060.04s]  so that other people can see them and respond
+[2061.04s -> 2062.04s]  as opposed to making those on Ed.
+[2063.04s -> 2065.04s]  Ed is for like logistics and stuff like that to me.
+[2066.04s -> 2067.04s]  And you can always go up here to the course feed
+[2068.04s -> 2070.04s]  and see all the comments that people have made.
+[2071.04s -> 2072.04s]  Okay.
+[2073.04s -> 2074.04s]  Back to my lectures.
+[2075.04s -> 2076.04s]  So that's that.
+[2077.04s -> 2080.04s]  Basically the textbook, the internet is full of great resources
+[2081.04s -> 2083.04s]  and so a great way to make a helpful comment would be to say,
+[2084.04s -> 2086.04s]  hey, I actually learned it from this website.
+[2087.04s -> 2088.04s]  The explanation in class was pretty bogus.
+[2089.04s -> 2090.04s]  This is way better. Go read this.
+[2091.04s -> 2093.04s]  All right. So you're going to be doing four programming assignments.
+[2094.04s -> 2095.04s]  It's the bulk of the grade.
+[2096.04s -> 2097.04s]  The first programming assignment will come out on Thursday.
+[2098.04s -> 2099.04s]  It's a little shorter.
+[2100.04s -> 2101.04s]  The next three are significantly longer.
+[2102.04s -> 2104.04s]  You will be writing a much more elaborate version of a thread pool
+[2105.04s -> 2106.04s]  where we give you dependencies and everything.
+[2107.04s -> 2108.04s]  You will be writing a render yourself
+[2109.04s -> 2113.04s]  that will make pretty pictures via Ncuda as fast as you can.
+[2114.04s -> 2116.04s]  Not made yet but intended to do so.
+[2117.04s -> 2119.04s]  Assignment four is definitely very new this year.
+[2120.04s -> 2122.04s]  You're going to implement the transformer module of DNN
+[2123.04s -> 2124.04s]  and you're going to try and do it as fast as possible
+[2125.04s -> 2127.04s]  so that you can have a chat bot kick out tokens
+[2128.04s -> 2129.04s]  and maybe we'll have all the chat bots chat with each other
+[2130.04s -> 2131.04s]  or something like that.
+[2132.04s -> 2134.04s]  Okay. So there's four assignments.
+[2135.04s -> 2136.04s]  Typically after Thanksgiving we release a fifth
+[2137.04s -> 2138.04s]  which means you can use the fifth
+[2139.04s -> 2140.04s]  because it's awesome and fun
+[2141.04s -> 2142.04s]  or you can use the fifth to boost the score
+[2143.04s -> 2144.04s]  of one of those by a few points,
+[2145.04s -> 2146.04s]  usually about 10 or 15 points.
+[2147.04s -> 2148.04s]  Okay. Most of your grade is there.
+[2149.04s -> 2150.04s]  We do written assignments that are graded
+[2151.04s -> 2153.04s]  on a did you make a reasonable effort.
+[2154.04s -> 2156.04s]  The written assignments are all previous year's exam problems.
+[2157.04s -> 2158.04s]  So about every two weeks there will be a written assignment
+[2159.04s -> 2160.04s]  plus practice problems.
+[2161.04s -> 2163.04s]  So we distribute practice problems throughout the quarter.
+[2164.04s -> 2166.04s]  You can think about this as a participation grade largely.
+[2167.04s -> 2170.04s]  And then the last part of your participation grade is
+[2171.04s -> 2173.04s]  I do not want people studying for the final exam
+[2174.04s -> 2175.04s]  and not thinking at all about the course
+[2176.04s -> 2178.04s]  between now and the final or the midterm exam.
+[2179.04s -> 2182.04s]  So just to force you a little bit to engage with the lecture
+[2183.04s -> 2184.04s]  in the same week as the lectures,
+[2185.04s -> 2189.04s]  we require one reasonable comment per lecture approximately
+[2190.04s -> 2191.04s]  in approximately the same week as the lecture.
+[2192.04s -> 2193.04s]  So no hard rules on this.
+[2194.04s -> 2196.04s]  But I hope that you average about two comments per lecture
+[2197.04s -> 2198.04s]  throughout the quarter.
+[2199.04s -> 2200.04s]  And if you really like a lecture and want to do a bunch
+[2201.04s -> 2202.04s]  of comments on one lecture and skip the next lecture
+[2203.04s -> 2204.04s]  that week, that's fine.
+[2205.04s -> 2206.04s]  But no, it's not cool to do 35 comments
+[2207.04s -> 2208.04s]  when you're studying for the midterm and only then.
+[2209.04s -> 2210.04s]  And so you can kind of see some of the interaction
+[2211.04s -> 2212.04s]  that happens.
+[2213.04s -> 2217.04s]  Like these are real comments from students before.
+[2218.04s -> 2219.04s]  And so we expect you to do that.
+[2220.04s -> 2221.04s]  And I think, you know, I think good architects
+[2222.04s -> 2225.04s]  typically write well, write clearly,
+[2225.12s -> 2226.12s]  not elegant English language prose.
+[2227.12s -> 2230.12s]  But as an architect, you're constantly communicating
+[2231.12s -> 2232.12s]  to other people about technical things
+[2233.12s -> 2234.12s]  and I think this is a very useful thing to be doing.
+[2235.12s -> 2236.12s]  So you can take this offline,
+[2237.12s -> 2238.12s]  but here are some examples of fodder for comments.
+[2239.12s -> 2240.12s]  In a big class like this,
+[2241.12s -> 2242.12s]  the comments actually works pretty well
+[2243.12s -> 2244.12s]  because somebody asks the question
+[2245.12s -> 2246.12s]  and then other people answer it.
+[2247.12s -> 2248.12s]  Don't worry if someone has already answered the question.
+[2249.12s -> 2250.12s]  You could answer it again in your own words
+[2251.12s -> 2252.12s]  or something like that.
+[2253.12s -> 2254.12s]  There are a bunch of ways to interact.
+[2255.12s -> 2256.12s]  I saw this on Stack Overflow.
+[2257.12s -> 2258.12s]  It's a great example of this concept
+[2259.12s -> 2260.12s]  and stuff like that.
+[2261.12s -> 2262.12s]  Grading distribution is here.
+[2263.12s -> 2264.12s]  So 58 percent programming assignments,
+[2265.12s -> 2266.12s]  that's most of it.
+[2267.12s -> 2268.12s]  Exams are about 30
+[2269.12s -> 2270.12s]  and then these two participations are
+[2271.12s -> 2272.12s]  just like last year, about 10 percent of the grade.
+[2273.12s -> 2274.12s]  Okay.
+[2275.12s -> 2276.12s]  The only last thing I wanted to say now
+[2277.12s -> 2278.12s]  is we do eight late days per quarter.
+[2279.12s -> 2280.12s]  You can use your eight days for programming assignments
+[2281.12s -> 2282.12s]  or for the writtens.
+[2283.12s -> 2284.12s]  Most people use them for the programming assignments
+[2285.12s -> 2286.12s]  or just participation.
+[2287.12s -> 2288.12s]  That's pretty generous.
+[2289.12s -> 2290.12s]  That's eight days throughout the quarter.
+[2291.12s -> 2292.12s]  So we expect that those late days
+[2293.12s -> 2294.12s]  are for most life situations.
+[2296.12s -> 2297.12s]  You know, minor illnesses,
+[2298.12s -> 2299.12s]  getting busy and other stuff,
+[2300.12s -> 2301.12s]  taking athletic trips and things like that.
+[2302.12s -> 2303.12s]  I was a college athlete myself
+[2304.12s -> 2305.12s]  so I understand and I'm sympathetic,
+[2306.12s -> 2307.12s]  but I think that the eight late days
+[2308.12s -> 2309.12s]  should handle most cases without asking.
+[2310.12s -> 2311.12s]  If you get yourself in a situation
+[2312.12s -> 2313.12s]  where this is going to be trouble,
+[2313.20s -> 2314.20s]  come talk to us in advance,
+[2315.20s -> 2316.20s]  I mean multiple days in advance.
+[2317.20s -> 2318.20s]  You're like, I foresee this,
+[2319.20s -> 2320.20s]  me not being able to complete my work
+[2321.20s -> 2322.20s]  will handle on a case-by-case basis.
+[2323.20s -> 2324.20s]  But I bet 95 percent of the time
+[2325.20s -> 2326.20s]  I'm going to say just use your late days.
+[2327.20s -> 2328.20s]  That's what they're there for.
+[2329.20s -> 2330.20s]  No problem if you turn in your assignment
+[2331.20s -> 2332.20s]  three or four days, three days late.
+[2333.20s -> 2334.20s]  I think we have a rule that programming assignments,
+[2335.20s -> 2336.20s]  written assignments can only be one day late
+[2337.20s -> 2338.20s]  because I want to release solutions
+[2339.20s -> 2340.20s]  and they're for credit only.
+[2341.20s -> 2342.20s]  Programming assignments I think
+[2343.20s -> 2344.20s]  is three or four.
+[2345.20s -> 2346.20s]  All right.
+[2347.20s -> 2348.20s]  Any questions about logistics?
+[2349.20s -> 2350.20s]  That's all I was going to do.
+[2351.20s -> 2352.20s]  Yeah.
+[2353.20s -> 2354.20s]  Not a question, but in both the programming
+[2355.20s -> 2356.20s]  and written assignments,
+[2357.20s -> 2358.20s]  can you indicate which question
+[2359.20s -> 2360.20s]  or which component will be completed
+[2361.20s -> 2362.20s]  after which lecture?
+[2363.20s -> 2364.20s]  Sure.
+[2365.20s -> 2366.20s]  Yeah, I can even do that in lecture.
+[2367.20s -> 2368.20s]  I mean, it's not super modular like.
+[2373.20s -> 2374.20s]  It might be a little hard,
+[2375.20s -> 2376.20s]  but in general the programming assignments
+[2377.20s -> 2378.20s]  with the exception of assignment one,
+[2379.20s -> 2380.20s]  all the content I believe is released
+[2381.20s -> 2382.20s]  prior to the,
+[2383.20s -> 2384.20s]  all the lecture content exists
+[2385.20s -> 2386.20s]  prior to the assignment coming out.
+[2387.20s -> 2388.20s]  In assignment one you'll have,
+[2389.20s -> 2390.20s]  you know, conceptually everything
+[2391.20s -> 2392.20s]  you need on Thursday
+[2393.20s -> 2394.20s]  and logistically with a little bit
+[2395.20s -> 2396.20s]  of programming example
+[2397.20s -> 2398.20s]  comes next Tuesday.
+[2399.20s -> 2400.20s]  But, yeah.
+[2401.20s -> 2402.20s]  Yes.
+[2403.20s -> 2404.20s]  Final exams in person at the university slot.
+[2405.20s -> 2406.20s]  That is the one thing
+[2407.20s -> 2408.20s]  that we are a little bit strict on.
+[2409.20s -> 2410.20s]  It is hard to run
+[2411.20s -> 2412.20s]  asynchronous assignments,
+[2413.20s -> 2414.20s]  so if you're an in-person student
+[2415.20s -> 2416.20s]  and don't have an extremely,
+[2417.20s -> 2418.20s]  extremely strong reason,
+[2419.20s -> 2420.20s]  we expect butts in chairs
+[2421.20s -> 2422.20s]  during the exam slot.
+[2423.20s -> 2424.20s]  Okay, so, you know,
+[2425.20s -> 2426.20s]  I accidentally bought a ticket
+[2427.20s -> 2428.20s]  to go home early.
+[2429.20s -> 2430.20s]  Don't accidentally buy a ticket
+[2431.20s -> 2432.20s]  to go home early.
+[2433.20s -> 2434.20s]  You'll never know what's in the TA grading
+[2435.20s -> 2436.20s]  and then you never know
+[2437.20s -> 2438.20s]  if the solutions get out
+[2439.20s -> 2440.20s]  and stuff like that.
+[2441.20s -> 2442.20s]  Okay, yes ma'am.
+[2443.20s -> 2444.20s]  I just wanted to double check
+[2445.20s -> 2446.20s]  a few things before I had
+[2447.20s -> 2448.20s]  everybody sign up, yes.
+[2449.20s -> 2450.20s]  Okay.
+[2451.20s -> 2452.20s]  All right, so keep going.
+[2453.20s -> 2454.20s]  All right.
+[2455.20s -> 2456.20s]  So the last 20 minutes here,
+[2457.20s -> 2458.20s]  25 minutes, maybe let's go
+[2459.20s -> 2460.20s]  into a little bit more
+[2461.20s -> 2462.20s]  technical material that
+[2463.20s -> 2464.20s]  is new to you, but some of it
+[2465.20s -> 2466.20s]  may be stuff that you have seen.
+[2467.20s -> 2468.20s]  So I like to set the stage
+[2469.20s -> 2471.20s]  for tomorrow or Thursday's lecture.
+[2472.20s -> 2473.20s]  Okay, so, you know,
+[2474.20s -> 2475.20s]  sometimes it's kind of useful
+[2476.20s -> 2477.20s]  to think historically about things
+[2478.20s -> 2479.20s]  and when I was approximately
+[2480.20s -> 2481.20s]  sitting in classes like this
+[2482.20s -> 2483.20s]  and I was really interested
+[2484.20s -> 2485.20s]  in parallel computing,
+[2486.20s -> 2487.20s]  I actually had professors tell me
+[2488.20s -> 2489.20s]  why are you interested
+[2490.20s -> 2491.20s]  in parallel computing?
+[2491.28s -> 2492.28s]  And so this is a very old plot
+[2493.28s -> 2494.28s]  that Kunlei made,
+[2495.28s -> 2496.28s]  almost 20 years ago now,
+[2498.28s -> 2499.28s]  of processor performance
+[2501.28s -> 2502.28s]  as a function of time.
+[2503.28s -> 2504.28s]  And it's a log plot,
+[2505.28s -> 2506.28s]  so you see the exponential.
+[2507.28s -> 2508.28s]  And so, you know,
+[2509.28s -> 2510.28s]  you just waited and Intel would ship
+[2511.28s -> 2512.28s]  their next CPU and next year
+[2513.28s -> 2514.28s]  it would run your program faster.
+[2515.28s -> 2516.28s]  So you spent all this time
+[2517.28s -> 2518.28s]  taking CS149, you got some skills
+[2519.28s -> 2520.28s]  and then all of a sudden,
+[2521.28s -> 2522.28s]  the workflow program had to now
+[2523.28s -> 2524.28s]  be even faster to improve
+[2525.28s -> 2526.28s]  over the sequential program.
+[2527.28s -> 2528.28s]  And do you know why
+[2529.28s -> 2530.28s]  that was the case?
+[2531.28s -> 2532.28s]  Like if we,
+[2533.28s -> 2534.28s]  maybe some of the hardware
+[2535.28s -> 2536.28s]  architects in the room?
+[2537.28s -> 2538.28s]  Transistor sizes were getting smaller
+[2539.28s -> 2540.28s]  but that's not a direct
+[2541.28s -> 2542.28s]  translation to performance.
+[2543.28s -> 2544.28s]  So you're correct
+[2545.28s -> 2546.28s]  but you took a couple steps.
+[2546.36s -> 2547.36s]  So transistor sizes
+[2548.36s -> 2549.36s]  getting smaller
+[2550.36s -> 2551.36s]  allowed for a couple of things.
+[2552.36s -> 2553.36s]  It allowed for them
+[2554.36s -> 2555.36s]  to be clocked higher
+[2556.36s -> 2557.36s]  so frequency could go up.
+[2558.36s -> 2559.36s]  It also meant that more
+[2560.36s -> 2561.36s]  transistors could go on the chip
+[2562.36s -> 2563.36s]  and architects had to have
+[2564.36s -> 2565.36s]  clever ways to use those transistors
+[2566.36s -> 2567.36s]  to translate into performance.
+[2568.36s -> 2569.36s]  And in this class
+[2570.36s -> 2571.36s]  I'm oversimplifying a little bit
+[2572.36s -> 2573.36s]  but you can kind of think
+[2574.36s -> 2575.36s]  about two major reasons
+[2576.36s -> 2577.36s]  one is parallelizing your code
+[2578.36s -> 2579.36s]  for you without you ever knowing it
+[2580.36s -> 2581.36s]  and two, increasing CPU clock frequency.
+[2585.36s -> 2586.36s]  So this is where I get
+[2587.36s -> 2588.36s]  to a few questions
+[2589.36s -> 2590.36s]  that may seem really dumb
+[2591.36s -> 2592.36s]  but one of the reasons why
+[2593.36s -> 2594.36s]  I like people writing comments
+[2595.36s -> 2596.36s]  is sometimes when you sit down
+[2597.36s -> 2598.36s]  to write something you realize
+[2599.36s -> 2600.36s]  that your thinking is not
+[2601.36s -> 2602.36s]  as precise as it may seem.
+[2603.36s -> 2604.36s]  So look to your left or right
+[2604.44s -> 2605.44s]  answering this question
+[2606.44s -> 2607.44s]  what is a computer program?
+[2610.44s -> 2611.44s]  From the perspective
+[2612.44s -> 2613.44s]  of a computer
+[2615.44s -> 2616.44s]  here's definitely a program
+[2617.44s -> 2618.44s]  written in C
+[2619.44s -> 2620.44s]  no problem this is a computer program
+[2621.44s -> 2622.44s]  but from the perspective
+[2623.44s -> 2624.44s]  of a computer
+[2625.44s -> 2626.44s]  what is a program
+[2627.44s -> 2628.44s]  and just go ahead and give that a shot
+[2629.44s -> 2630.44s]  spend 45 seconds
+[2631.44s -> 2632.44s]  what is a program
+[2632.52s -> 2633.52s]  what is a computer program
+[2634.52s -> 2635.52s]  what is a computer program
+[2636.52s -> 2637.52s]  all right
+[2638.52s -> 2639.52s]  so someone who hasn't said anything yet
+[2640.52s -> 2641.52s]  if
+[2642.52s -> 2643.52s]  you know
+[2644.52s -> 2645.52s]  a talk show host
+[2646.52s -> 2647.52s]  found you on the street
+[2648.52s -> 2649.52s]  while you're walking around San Francisco
+[2650.52s -> 2651.52s]  and they say what is a computer program
+[2652.52s -> 2653.52s]  you're on camera what might you say?
+[2654.52s -> 2655.52s]  I just want to see some new hands
+[2656.52s -> 2657.52s]  new hands
+[2658.52s -> 2659.52s]  what is a computer program
+[2659.60s -> 2660.60s]  a piece of text
+[2661.60s -> 2662.60s]  that can be translated to hardware instructions
+[2663.60s -> 2664.60s]  a piece of text
+[2665.60s -> 2666.60s]  that's a piece of text
+[2667.60s -> 2668.60s]  that can be translated
+[2669.60s -> 2670.60s]  to hardware instructions
+[2671.60s -> 2672.60s]  and I think that the text aspect
+[2673.60s -> 2674.60s]  doesn't really matter too much
+[2675.60s -> 2676.60s]  what's important is the back half
+[2677.60s -> 2678.60s]  of your comment is
+[2679.60s -> 2680.60s]  a program is just a list of instructions
+[2681.60s -> 2682.60s]  right so if I take this program
+[2683.60s -> 2684.60s]  it certainly has a meaning
+[2685.60s -> 2686.60s]  it has some semantics
+[2687.60s -> 2688.60s]  and a compiler might get to it
+[2689.60s -> 2690.60s]  whether or not it's a compiler
+[2691.60s -> 2692.60s]  interpreter doesn't matter
+[2693.60s -> 2694.60s]  but at the end of the day
+[2695.60s -> 2696.60s]  a computing machine runs
+[2697.60s -> 2698.60s]  a list of instructions
+[2699.60s -> 2700.60s]  so here are some examples
+[2701.60s -> 2702.60s]  of x86 instructions
+[2703.60s -> 2704.60s]  that you might have seen
+[2705.60s -> 2706.60s]  so in CS111 now
+[2707.60s -> 2708.60s]  so 7 you've looked at a bit of assembly
+[2709.60s -> 2710.60s]  this is x86
+[2711.60s -> 2712.60s]  if you have an Apple laptop these days
+[2713.60s -> 2714.60s]  it would be ARM assembly
+[2715.60s -> 2716.60s]  but at the end of the day
+[2717.60s -> 2718.60s]  all a computer does
+[2719.60s -> 2720.60s]  and it executes those commands
+[2721.60s -> 2722.60s]  so it's kind of like
+[2723.60s -> 2724.60s]  me making carne asada
+[2725.60s -> 2726.60s]  which I have to make tomorrow night
+[2727.60s -> 2728.60s]  because I'm up for dinner
+[2729.60s -> 2730.60s]  I get a list of instructions
+[2731.60s -> 2732.60s]  I have a set of commands
+[2733.60s -> 2734.60s]  and what do those commands do
+[2735.60s -> 2736.60s]  or maybe another way to ask this question
+[2737.60s -> 2738.60s]  is what does a processor do
+[2739.60s -> 2740.60s]  so I'll throw it back at you
+[2741.60s -> 2742.60s]  talk it over for a second
+[2743.60s -> 2744.60s]  if I asked you and I said
+[2745.60s -> 2746.60s]  what does a processor do
+[2747.60s -> 2748.60s]  if a program is a list of instructions
+[2749.60s -> 2750.60s]  what does a processor do
+[2752.60s -> 2753.60s]  I'll let you talk it over for a second
+[2757.60s -> 2758.60s]  and for those of you
+[2759.60s -> 2760.60s]  that just said executes the instructions
+[2761.60s -> 2762.60s]  which is a perfect first answer
+[2763.60s -> 2764.60s]  my follow up is
+[2765.60s -> 2766.60s]  what does it mean to execute those instructions
+[2767.60s -> 2768.60s]  what does executing an instruction do
+[2772.60s -> 2773.60s]  ok let's talk about this
+[2774.60s -> 2775.60s]  so I heard a lot of people
+[2776.60s -> 2777.60s]  immediately say a processor executes instructions
+[2777.68s -> 2778.68s]  which is exactly where I wanted you
+[2779.68s -> 2780.68s]  to think about it
+[2781.68s -> 2782.68s]  and now let's dive a little bit deeper
+[2783.68s -> 2784.68s]  what does it mean to execute an instruction
+[2785.68s -> 2786.68s]  what does executing an instruction do
+[2791.68s -> 2792.68s]  either performing a computation
+[2793.68s -> 2794.68s]  or handling you
+[2795.68s -> 2796.68s]  ok so it performs some math
+[2797.68s -> 2798.68s]  like what you did when you came up here
+[2799.68s -> 2800.68s]  ok
+[2801.68s -> 2802.68s]  ok or it jumps somewhere else
+[2803.68s -> 2804.68s]  ok
+[2805.68s -> 2806.68s]  anybody want to add
+[2807.68s -> 2808.68s]  any of those
+[2809.68s -> 2810.68s]  those are two examples of instructions
+[2811.68s -> 2812.68s]  changes of registers value
+[2813.68s -> 2814.68s]  what are other things instructions might do
+[2815.68s -> 2816.68s]  access memory
+[2817.68s -> 2818.68s]  might read or write to memory
+[2819.68s -> 2820.68s]  so at the end of the day
+[2821.68s -> 2822.68s]  we can boil all of this down to
+[2823.68s -> 2825.68s]  instructions perform some operation
+[2826.68s -> 2827.68s]  like arithmetic or math
+[2828.68s -> 2829.68s]  and the result of those operations
+[2830.68s -> 2831.68s]  is a change in state
+[2832.68s -> 2833.68s]  and what I mean by state
+[2834.68s -> 2835.68s]  is either values in memory
+[2835.76s -> 2836.76s]  or values in processor registers
+[2837.76s -> 2838.76s]  so when we
+[2839.76s -> 2840.76s]  if I go back
+[2841.76s -> 2842.76s]  let's look at
+[2843.76s -> 2844.76s]  this instruction sequence here
+[2845.76s -> 2846.76s]  oops
+[2847.76s -> 2848.76s]  oh there it was
+[2849.76s -> 2850.76s]  you know you see some instructions
+[2851.76s -> 2852.76s]  which are referencing registers
+[2853.76s -> 2854.76s]  and like moving a value
+[2855.76s -> 2856.76s]  from one register to another
+[2857.76s -> 2858.76s]  is changing the value
+[2859.76s -> 2860.76s]  of the target register
+[2861.76s -> 2862.76s]  there's other instructions in there
+[2863.76s -> 2864.76s]  when you see the parens
+[2865.76s -> 2866.76s]  or memory at certain addresses
+[2867.76s -> 2868.76s]  and stuff like that
+[2869.76s -> 2870.76s]  so what I want you to think about
+[2871.76s -> 2872.76s]  this is a diagram I'm going to use
+[2873.76s -> 2874.76s]  heavily throughout the rest of this lecture
+[2875.76s -> 2876.76s]  and the next lecture
+[2877.76s -> 2878.76s]  and this is a really cartoon diagram
+[2879.76s -> 2880.76s]  how to think about a processor
+[2881.76s -> 2882.76s]  but for most software people
+[2883.76s -> 2884.76s]  this is pretty sufficient
+[2885.76s -> 2886.76s]  I like to think about three pieces of
+[2887.76s -> 2888.76s]  blocks in any modern processor
+[2889.76s -> 2890.76s]  one of them which I'm always going to
+[2891.76s -> 2892.76s]  color orange throughout this class
+[2893.76s -> 2894.76s]  is about control
+[2895.76s -> 2896.76s]  and once I get the next instruction
+[2897.76s -> 2898.76s]  what do I do
+[2899.76s -> 2900.76s]  then I have this yellow box
+[2901.76s -> 2902.76s]  which is responsible for the arithmetic
+[2903.76s -> 2904.76s]  maybe adding some numbers
+[2905.76s -> 2906.76s]  or carrying out a move
+[2907.76s -> 2908.76s]  or multiplying some numbers
+[2909.76s -> 2910.76s]  and I'm always going to call that yellow
+[2911.76s -> 2912.76s]  and then I have stuff that's blue
+[2913.76s -> 2914.76s]  that's state
+[2915.76s -> 2916.76s]  and I'm calling this the execution context
+[2917.76s -> 2918.76s]  it's the context in which
+[2919.76s -> 2920.76s]  we run a program
+[2921.76s -> 2922.76s]  which is just a big set of values
+[2923.76s -> 2924.76s]  of bindings from register 1 has this value
+[2925.76s -> 2926.76s]  and the simplest possible way
+[2927.76s -> 2928.76s]  to think about a processor
+[2929.76s -> 2930.76s]  is it determines you know
+[2931.76s -> 2932.76s]  given where we are in the program
+[2933.76s -> 2934.76s]  where we are in the recipe
+[2935.76s -> 2936.76s]  what to do next
+[2937.76s -> 2938.76s]  it grabs the appropriate values
+[2939.76s -> 2940.76s]  from registers it performs some math
+[2941.76s -> 2942.76s]  and then it updates the value
+[2943.76s -> 2944.76s]  for example if I have a simple instruction
+[2945.76s -> 2946.76s]  like add the contents of R0 and R1
+[2947.76s -> 2948.76s]  and put the result in R0
+[2949.76s -> 2950.76s]  well that processor will reference
+[2951.76s -> 2952.76s]  the two you know R0 and R1
+[2953.76s -> 2954.76s]  see how it's in red here
+[2955.76s -> 2956.76s]  yes and what is that
+[2957.76s -> 2958.76s]  compute 96
+[2959.76s -> 2960.76s]  and then it will update the value
+[2961.76s -> 2962.76s]  of so it gets the contents
+[2963.76s -> 2964.76s]  of those registers
+[2965.76s -> 2966.76s]  it updates the value
+[2967.76s -> 2968.76s]  and then it modifies the state
+[2969.76s -> 2970.76s]  of the program to 96
+[2971.76s -> 2972.76s]  very very simple instruction you know add
+[2973.76s -> 2974.76s]  and so for now
+[2975.76s -> 2976.76s]  I want you to think about this processor
+[2977.76s -> 2978.76s]  as every single clock tick
+[2979.76s -> 2980.76s]  it's just grabbing the next instruction
+[2981.76s -> 2982.76s]  executing it and updating registers
+[2983.76s -> 2984.76s]  that's all it's doing
+[2985.76s -> 2986.76s]  okay so my review here is
+[2987.76s -> 2988.76s]  hopefully this is review
+[2989.76s -> 2990.76s]  from 107 or 111
+[2991.76s -> 2992.76s]  is what is a computer program
+[2993.76s -> 2994.76s]  it's just a list of instructions
+[2995.76s -> 2996.76s]  what are instructions
+[2997.76s -> 2998.76s]  they are commands
+[2999.76s -> 3000.76s]  they are operations to the processor
+[3001.76s -> 3002.76s]  and those operations are about
+[3003.76s -> 3004.76s]  performing arithmetic or modifying state
+[3005.76s -> 3006.76s]  and when we talk about state
+[3007.76s -> 3008.76s]  I'm talking about the values
+[3009.76s -> 3010.76s]  of data in registers or in memory
+[3011.76s -> 3012.76s]  okay there's a question
+[3013.76s -> 3014.76s]  okay cool
+[3015.76s -> 3016.76s]  right so this program
+[3017.76s -> 3018.76s]  has five instructions in it
+[3019.76s -> 3020.76s]  so it will take five steps
+[3021.76s -> 3022.76s]  five processor clocks
+[3023.76s -> 3024.76s]  to execute it
+[3025.76s -> 3026.76s]  make sense
+[3027.76s -> 3028.76s]  is there any way we can do better
+[3033.76s -> 3034.76s]  what if
+[3035.76s -> 3036.76s]  I had two processors
+[3037.76s -> 3038.76s]  okay this is your program
+[3039.76s -> 3040.76s]  this is what let's say I'm a computer
+[3041.76s -> 3042.76s]  and you hand me this program to run
+[3043.76s -> 3044.76s]  what does this program mean
+[3045.76s -> 3046.76s]  this program says
+[3047.76s -> 3048.76s]  you must do instruction one
+[3049.76s -> 3050.76s]  then you must do instruction two
+[3051.76s -> 3052.76s]  three, four, five
+[3053.76s -> 3054.76s]  that's the order
+[3055.76s -> 3056.76s]  if I like trying to make my carne asada
+[3057.76s -> 3058.76s]  and I do things out of order
+[3059.76s -> 3060.76s]  I will be unhappy with the results
+[3061.76s -> 3062.76s]  right
+[3063.76s -> 3064.76s]  so the meaning of this program
+[3065.76s -> 3066.76s]  is that the results have to be
+[3067.76s -> 3068.76s]  such that we did these things in this order
+[3069.76s -> 3070.76s]  but what if we had two processors
+[3073.76s -> 3074.76s]  yeah
+[3075.76s -> 3076.76s]  so you're looking at this
+[3077.76s -> 3078.76s]  you're realizing that like
+[3079.76s -> 3080.76s]  this multiplication only depends on register zero
+[3081.76s -> 3082.76s]  this one only depends on this value R1
+[3083.76s -> 3084.76s]  so you know maybe
+[3085.76s -> 3086.76s]  if I wanted to assign work to processors
+[3087.76s -> 3088.76s]  I could do something like this
+[3090.76s -> 3091.76s]  right
+[3092.76s -> 3093.76s]  now what can I do next
+[3096.76s -> 3097.76s]  you know three can go where
+[3098.76s -> 3099.76s]  either side
+[3100.76s -> 3101.76s]  actually three can go where
+[3102.76s -> 3103.76s]  either side
+[3103.84s -> 3104.84s]  either side
+[3105.84s -> 3106.84s]  actually can go anywhere right
+[3107.84s -> 3108.84s]  I'll even put it here
+[3109.84s -> 3110.84s]  and then what
+[3111.84s -> 3112.84s]  add
+[3113.84s -> 3114.84s]  add better
+[3115.84s -> 3116.84s]  right
+[3117.84s -> 3118.84s]  because this only depends on one and two
+[3119.84s -> 3120.84s]  so we can do
+[3121.84s -> 3122.84s]  and then five has to come after
+[3123.84s -> 3124.84s]  four and three
+[3125.84s -> 3126.84s]  so it's possible for me to do better
+[3128.84s -> 3129.84s]  even if
+[3130.84s -> 3131.84s]  you know even if I have a program
+[3131.92s -> 3132.92s]  that looks sequential
+[3133.92s -> 3134.92s]  because it's written in a line
+[3135.92s -> 3136.92s]  you look carefully at it
+[3137.92s -> 3138.92s]  there's some parallelism there
+[3139.92s -> 3140.92s]  so the first major
+[3141.92s -> 3142.92s]  and by the way
+[3143.92s -> 3144.92s]  you notice what I'm saying is
+[3145.92s -> 3146.92s]  the program says
+[3147.92s -> 3148.92s]  here's the program
+[3149.92s -> 3150.92s]  you better compute results that are the same
+[3151.92s -> 3152.92s]  as if you ran them in the order that I told you
+[3153.92s -> 3154.92s]  but if you run them in a different order
+[3155.92s -> 3156.92s]  and I can't tell the difference
+[3157.92s -> 3158.92s]  then it's okay
+[3159.92s -> 3160.92s]  and that's a really big difference
+[3161.92s -> 3162.92s]  so the program that I have
+[3163.92s -> 3164.92s]  right here
+[3165.92s -> 3166.92s]  is a sequential program
+[3167.92s -> 3168.92s]  I have written this program
+[3169.92s -> 3170.92s]  which says the output that I want
+[3171.92s -> 3172.92s]  is as if you did this and then this
+[3173.92s -> 3174.92s]  and then this and then this
+[3175.92s -> 3176.92s]  I didn't think about parallelism at all
+[3177.92s -> 3178.92s]  when I wrote my program
+[3179.92s -> 3180.92s]  but I wrote a program
+[3181.92s -> 3182.92s]  where someone can muck with the order
+[3183.92s -> 3184.92s]  in particular make it parallel
+[3185.92s -> 3186.92s]  and I'd get the same result
+[3187.92s -> 3188.92s]  I would never know
+[3189.92s -> 3190.92s]  but my program would be faster
+[3191.92s -> 3192.92s]  even better
+[3194.92s -> 3195.92s]  well before what did I do?
+[3196.92s -> 3197.92s]  I did it in three cycles
+[3198.92s -> 3199.92s]  if we have three processors
+[3200.92s -> 3201.92s]  how long would it take?
+[3204.92s -> 3205.92s]  are you sure?
+[3206.92s -> 3207.92s]  why three?
+[3208.92s -> 3209.92s]  well I can definitely paralyze
+[3210.92s -> 3211.92s]  the first three operations all I want
+[3212.92s -> 3213.92s]  but I have a chain of dependencies
+[3214.92s -> 3215.92s]  that keeps things three cycles
+[3216.92s -> 3217.92s]  each processor has its own
+[3218.92s -> 3219.92s]  like in this example
+[3220.00s -> 3221.00s]  I'm speaking very abstractly right now
+[3222.00s -> 3223.00s]  just imagine that like
+[3224.00s -> 3225.00s]  we have the ability to execute
+[3226.00s -> 3227.00s]  three things at once
+[3228.00s -> 3229.00s]  and I'll come back to that in one second
+[3230.00s -> 3231.00s]  good question
+[3232.00s -> 3233.00s]  so conceptually when I look at my program
+[3234.00s -> 3235.00s]  and that instruction sequence
+[3236.00s -> 3237.00s]  that I gave you actually
+[3238.00s -> 3239.00s]  I'm just rewriting it now
+[3240.00s -> 3241.00s]  as something that may be a lot more familiar
+[3242.00s -> 3243.00s]  like a dot product
+[3244.00s -> 3245.00s]  between two three vectors
+[3246.00s -> 3247.00s]  key machine learning operation
+[3248.00s -> 3249.00s]  these are the true dependencies
+[3250.00s -> 3251.00s]  number one today
+[3252.00s -> 3253.00s]  well we've had a few key ideas today
+[3254.00s -> 3255.00s]  but it gets to the reason why
+[3256.00s -> 3257.00s]  more transistors did translate
+[3258.00s -> 3259.00s]  into more performance
+[3260.00s -> 3261.00s]  which is
+[3262.00s -> 3263.00s]  processor architects
+[3264.00s -> 3265.00s]  were designing hardware
+[3266.00s -> 3267.00s]  that were looking at the programs
+[3268.00s -> 3269.00s]  that you gave it
+[3270.00s -> 3271.00s]  and said they didn't do any parallelism
+[3272.00s -> 3273.00s]  but hey look what I found
+[3274.00s -> 3275.00s]  I happen to have
+[3276.00s -> 3277.00s]  multiple instruction units
+[3278.00s -> 3279.00s]  that I can do multiple things at once
+[3280.00s -> 3281.00s]  that are going to be parallel
+[3282.00s -> 3283.00s]  for you without looking
+[3284.00s -> 3285.00s]  you know without you ever knowing
+[3286.00s -> 3287.00s]  and so to your question about
+[3288.00s -> 3289.00s]  registers and stuff
+[3290.00s -> 3291.00s]  really what I mean here
+[3292.00s -> 3293.00s]  is we replicated
+[3294.00s -> 3295.00s]  you know we still have one core
+[3296.00s -> 3297.00s]  but we have two execution units
+[3298.00s -> 3299.00s]  and ability to execute
+[3300.00s -> 3301.00s]  two instructions per clock now
+[3302.00s -> 3303.00s]  and I added this out of order
+[3304.00s -> 3305.00s]  control logic box
+[3306.00s -> 3307.00s]  just to say that now there's some
+[3308.00s -> 3309.00s]  smarts in the processor
+[3310.00s -> 3311.00s]  and I draw my diagram
+[3312.00s -> 3313.00s]  from a long long time ago
+[3314.00s -> 3315.00s]  and I draw my color scheme on it
+[3316.00s -> 3317.00s]  it's not all that different
+[3318.00s -> 3319.00s]  from my little cartoon
+[3320.00s -> 3321.00s]  they have the ability to
+[3322.00s -> 3323.00s]  execute up to four different
+[3324.00s -> 3325.00s]  instructions at the same time
+[3326.00s -> 3327.00s]  or three instructions at the same time
+[3328.00s -> 3329.00s]  with a variety of units
+[3330.00s -> 3331.00s]  and real programs are a lot more complex
+[3332.00s -> 3333.00s]  here's a longer instruction sequence
+[3334.00s -> 3335.00s]  a good thing to do on your own
+[3336.00s -> 3337.00s]  is to kind of verify
+[3338.00s -> 3339.00s]  that this is the dependency graph
+[3340.00s -> 3341.00s]  with the total amount of parallelism
+[3342.00s -> 3343.00s]  that you could ever find
+[3344.00s -> 3345.00s]  with this technique of automatically
+[3346.00s -> 3348.00s]  parallelizing within a single processor
+[3349.00s -> 3350.00s]  without you ever knowing it
+[3351.00s -> 3352.00s]  yes
+[3353.00s -> 3354.00s]  what would you do to understand
+[3355.00s -> 3356.00s]  better how that actually happens
+[3357.00s -> 3358.00s]  in the processor?
+[3359.00s -> 3360.00s]  well super scalar execution
+[3361.00s -> 3362.00s]  is the first one
+[3363.00s -> 3364.00s]  and then you need a good reordering algorithm
+[3365.00s -> 3366.00s]  you could start with Toma Sulu
+[3367.00s -> 3368.00s]  or something like that
+[3368.08s -> 3369.08s]  go to Hennessy and Patterson
+[3370.08s -> 3371.08s]  read the out of order execution channel
+[3372.08s -> 3373.08s]  and then you're well prepared
+[3374.08s -> 3375.08s]  for EE 280
+[3376.08s -> 3377.08s]  but there's a problem
+[3378.08s -> 3379.08s]  remember when I said
+[3380.08s -> 3381.08s]  if we had the ability
+[3382.08s -> 3383.08s]  to do three things at once
+[3384.08s -> 3385.08s]  we ended up in the same performance
+[3386.08s -> 3387.08s]  as two things at once
+[3388.08s -> 3389.08s]  that's because if I write
+[3390.08s -> 3391.08s]  just like a sequence of instructions
+[3392.08s -> 3393.08s]  there kind of usually is fundamentally
+[3394.08s -> 3395.08s]  an order to it
+[3396.08s -> 3397.08s]  and so folks studied
+[3398.08s -> 3399.08s]  studies of how much parallelism
+[3400.08s -> 3401.08s]  could we automatically extract
+[3402.08s -> 3403.08s]  if we asked the programmer
+[3404.08s -> 3405.08s]  to do nothing
+[3406.08s -> 3407.08s]  and we found what parallelism
+[3408.08s -> 3409.08s]  exists in their program
+[3410.08s -> 3411.08s]  and they found that
+[3412.08s -> 3413.08s]  the x-axis here is the number
+[3414.08s -> 3415.08s]  of operations this processor
+[3416.08s -> 3417.08s]  could do at the same time
+[3418.08s -> 3419.08s]  and the y-axis is the speedum
+[3420.08s -> 3421.08s]  and they found that like
+[3422.08s -> 3423.08s]  once you build about
+[3424.08s -> 3425.08s]  three or four operations
+[3426.08s -> 3427.08s]  at the same time in your processor
+[3428.08s -> 3429.08s]  so all of a sudden
+[3430.08s -> 3431.08s]  they could stop
+[3432.08s -> 3433.08s]  they couldn't play this trick
+[3434.08s -> 3435.08s]  for you anymore
+[3436.08s -> 3437.08s]  to speed things up
+[3438.08s -> 3439.08s]  okay
+[3440.08s -> 3441.08s]  alright so here's
+[3442.08s -> 3443.08s]  a graph that you probably
+[3444.08s -> 3445.08s]  would have seen
+[3446.08s -> 3447.08s]  again it's x-axis
+[3448.08s -> 3449.08s]  it's a fancier version
+[3450.08s -> 3451.08s]  of kunle's old graph
+[3452.08s -> 3453.08s]  x-axis is performance
+[3454.08s -> 3455.08s]  sorry x-axis is time
+[3456.08s -> 3457.08s]  and the y-axis is actually
+[3458.08s -> 3459.08s]  performance per chip
+[3460.08s -> 3461.08s]  and you know in general
+[3462.08s -> 3463.08s]  okay now we're starting
+[3464.08s -> 3465.08s]  to fall off of it
+[3466.08s -> 3467.08s]  for the last five years or so
+[3468.08s -> 3469.08s]  but in general
+[3470.08s -> 3471.08s]  we've been able to shrink
+[3472.08s -> 3473.08s]  transistors for pretty reliably
+[3474.08s -> 3475.08s]  for up until very recent times
+[3476.08s -> 3477.08s]  like more and more transistors
+[3478.08s -> 3479.08s]  like in a modern nvidia chip
+[3480.08s -> 3481.08s]  has something like
+[3482.08s -> 3483.08s]  I think a hundred billion
+[3484.08s -> 3485.08s]  transistors on it
+[3486.08s -> 3487.08s]  I think it's like 85 billion
+[3488.08s -> 3489.08s]  so that's sort of
+[3490.08s -> 3491.08s]  this green line
+[3492.08s -> 3493.08s]  this green line is
+[3494.08s -> 3495.08s]  transistors per chip
+[3496.08s -> 3497.08s]  the purple line here
+[3498.08s -> 3499.08s]  is operations per clock
+[3500.08s -> 3501.08s]  and they stopped adding
+[3502.08s -> 3503.08s]  operations per clock
+[3504.08s -> 3505.08s]  because they didn't help anymore
+[3506.08s -> 3507.08s]  now the dark blue line
+[3508.08s -> 3509.08s]  you know correlate both blue lines
+[3510.08s -> 3511.08s]  are actually
+[3512.08s -> 3513.08s]  they were increasing clock speed
+[3514.08s -> 3515.08s]  you know like 500 megahertz
+[3516.08s -> 3517.08s]  750 megahertz gigahertz
+[3518.08s -> 3519.08s]  really stopped moving
+[3520.08s -> 3521.08s]  about 15 years ago
+[3522.08s -> 3523.08s]  and for the architects
+[3524.08s -> 3525.08s]  in the room do you have
+[3526.08s -> 3527.08s]  an idea why
+[3528.08s -> 3529.08s]  clock frequency stopped
+[3530.08s -> 3531.08s]  because of power
+[3532.08s -> 3533.08s]  so we couldn't turn
+[3534.08s -> 3535.08s]  more transistors
+[3536.08s -> 3537.08s]  into free parallelism
+[3538.08s -> 3539.08s]  and we couldn't make
+[3540.08s -> 3541.08s]  your instruction stream go faster
+[3542.08s -> 3543.08s]  because we couldn't increase
+[3544.08s -> 3545.08s]  the frequency of the machine
+[3546.08s -> 3547.08s]  and that's completely power driven
+[3548.08s -> 3549.08s]  it's non-trivial
+[3550.08s -> 3551.08s]  like if you take an RTX 4090 GPU
+[3552.08s -> 3553.08s]  and you take the
+[3554.08s -> 3555.08s]  microwave in my kitchen
+[3558.08s -> 3559.08s]  you are within a factor of two
+[3560.08s -> 3561.08s]  of running that thing
+[3562.08s -> 3563.08s]  in a machine learning workload
+[3564.08s -> 3565.08s]  at full tilt
+[3566.08s -> 3567.08s]  versus microwaving your yesterday's hamburger
+[3568.08s -> 3569.08s]  you are in the same ballpark
+[3570.08s -> 3571.08s]  of energy being spent
+[3572.08s -> 3573.08s]  and that energy translates into heat
+[3574.08s -> 3575.08s]  heat translates into
+[3576.08s -> 3577.08s]  the need to cool
+[3578.08s -> 3579.08s]  and so you just
+[3580.08s -> 3581.08s]  cannot continue
+[3582.08s -> 3583.08s]  to increase frequency
+[3584.08s -> 3585.08s]  and we'll talk a little bit more
+[3586.08s -> 3587.08s]  about that
+[3588.08s -> 3589.08s]  but a nice rule of thumb
+[3590.08s -> 3591.08s]  is that power is gonna go
+[3592.08s -> 3593.08s]  as the square of frequency
+[3594.08s -> 3595.08s]  so x-axis here is clock speed
+[3596.08s -> 3597.08s]  y-axis is power consumption
+[3598.08s -> 3599.08s]  so it's a very inefficient way
+[3600.08s -> 3601.08s]  to go faster
+[3602.08s -> 3603.08s]  to try and increase that clock
+[3604.08s -> 3605.08s]  so this is where we were
+[3606.08s -> 3607.08s]  not so long ago
+[3608.08s -> 3609.08s]  one of the biggest transistors
+[3610.08s -> 3611.08s]  would be I as the programmer
+[3612.08s -> 3613.08s]  have to tell the processor
+[3614.08s -> 3615.08s]  here are two things we can do at once
+[3616.08s -> 3617.08s]  now luckily in machine learning
+[3618.08s -> 3619.08s]  and computer graphics
+[3620.08s -> 3621.08s]  and image processing and photography
+[3622.08s -> 3623.08s]  that's gonna be pretty easy
+[3624.08s -> 3625.08s]  and so that's when people
+[3626.08s -> 3627.08s]  started building processors
+[3628.08s -> 3629.08s]  with chips with a bunch of processors in it
+[3630.08s -> 3631.08s]  where they took that
+[3632.08s -> 3633.08s]  one single instruction stream
+[3634.08s -> 3635.08s]  and allowed for more and more
+[3636.08s -> 3637.08s]  things to go in parallel
+[3638.08s -> 3639.08s]  and so the first thing is
+[3640.08s -> 3641.08s]  you're gonna go wow
+[3642.08s -> 3643.08s]  if I actually just write code properly
+[3644.08s -> 3645.08s]  on a machine that you're used to
+[3646.08s -> 3647.08s]  like a laptop
+[3648.08s -> 3649.08s]  or the quad core myth machines
+[3650.08s -> 3651.08s]  the difference between C++ code
+[3652.08s -> 3653.08s]  you know compiled C++
+[3654.08s -> 3655.08s]  I'm not talking about Python
+[3656.08s -> 3657.08s]  or Lure or anything like that
+[3658.08s -> 3659.08s]  compiled C++ and well written
+[3660.08s -> 3661.08s]  properly parallelized C++
+[3662.08s -> 3663.08s]  is about 30 to 40x
+[3664.08s -> 3665.08s]  on your laptop
+[3666.08s -> 3667.08s]  even with four cores
+[3668.08s -> 3669.08s]  and you're just seeing
+[3670.08s -> 3671.08s]  some big chips out there
+[3672.08s -> 3673.08s]  like you can go buy an AMD chip
+[3674.08s -> 3675.08s]  these days with 64 processors
+[3676.08s -> 3677.08s]  cores in it
+[3678.08s -> 3679.08s]  we'll talk in the class
+[3680.08s -> 3681.08s]  about how Nvidia processors
+[3682.08s -> 3683.08s]  are more of the same thing
+[3684.08s -> 3685.08s]  just a little bit different point
+[3686.08s -> 3687.08s]  in the design space
+[3688.08s -> 3689.08s]  there's 18,000 floating point multipliers
+[3690.08s -> 3691.08s]  on a 4090
+[3692.08s -> 3693.08s]  so that's a lot of parallelism
+[3694.08s -> 3695.08s]  you have to have
+[3696.08s -> 3697.08s]  in order to use this thing
+[3698.08s -> 3699.08s]  there's actually power draws
+[3700.08s -> 3701.08s]  of small towns
+[3702.08s -> 3703.08s]  and we're in the orders of
+[3704.08s -> 3705.08s]  hundreds of thousands of CPU cores
+[3706.08s -> 3707.08s]  this is not just a big iron thing
+[3708.08s -> 3709.08s]  go crack open your iPhone
+[3710.08s -> 3711.08s]  or go crack open your favorite Android phone
+[3712.08s -> 3713.08s]  you'll find multi-core processing
+[3714.08s -> 3715.08s]  both CPU and GPU
+[3716.08s -> 3717.08s]  if you're working embedded
+[3718.08s -> 3719.08s]  you'll find multi-core processing
+[3720.08s -> 3721.08s]  alright
+[3722.08s -> 3723.08s]  so last thing in the last few minutes
+[3724.08s -> 3725.08s]  so far we've been
+[3726.08s -> 3727.08s]  talking about parallelism
+[3728.08s -> 3729.08s]  and representation and stuff like that
+[3730.08s -> 3731.08s]  in this class
+[3732.08s -> 3733.08s]  it's not enough to be parallel
+[3734.08s -> 3735.08s]  you gotta be efficient
+[3736.08s -> 3738.08s]  and one thing we're gonna talk about
+[3739.08s -> 3740.08s]  in multiple lectures this year
+[3741.08s -> 3742.08s]  is how the architects of the world
+[3743.08s -> 3744.08s]  are saying we are not gonna
+[3745.08s -> 3746.08s]  if we have to be more efficient
+[3747.08s -> 3748.08s]  we cannot provide you general purpose cores
+[3749.08s -> 3750.08s]  we're gonna have to provide you
+[3751.08s -> 3752.08s]  much more specialized cores
+[3753.08s -> 3754.08s]  that do specific tasks
+[3755.08s -> 3756.08s]  so here again this is that iPhone
+[3756.16s -> 3757.16s]  I'm highlighting some of the stuff down here
+[3758.16s -> 3759.16s]  on this processor
+[3760.16s -> 3761.16s]  there are six CPUs
+[3762.16s -> 3763.16s]  two of which are big CPU cores
+[3764.16s -> 3765.16s]  that are really good
+[3766.16s -> 3767.16s]  or supposedly good at running single threads
+[3768.16s -> 3769.16s]  there are four small CPU cores
+[3770.16s -> 3771.16s]  that are lower power
+[3772.16s -> 3773.16s]  and good for background stuff
+[3774.16s -> 3775.16s]  and then there's a whole bunch of stuff
+[3776.16s -> 3777.16s]  on there for camera, neural networks
+[3778.16s -> 3779.16s]  sensing, your heart monitor
+[3780.16s -> 3781.16s]  all this other stuff
+[3782.16s -> 3783.16s]  that's never even run on the CPU
+[3784.16s -> 3785.16s]  it's run on specialized processing
+[3786.16s -> 3787.16s]  that's true in the small
+[3788.16s -> 3789.16s]  it's also true in the large
+[3790.16s -> 3791.16s]  with Google building TPUs
+[3792.16s -> 3793.16s]  and Facebook announcing that
+[3794.16s -> 3795.16s]  they're building their own neural architectures
+[3796.16s -> 3797.16s]  as well as in the valley these days
+[3798.16s -> 3799.16s]  the large number of companies
+[3800.16s -> 3801.16s]  that are building special-purpose
+[3802.16s -> 3803.16s]  processing infrastructure
+[3804.16s -> 3805.16s]  just for machine learning
+[3806.16s -> 3807.16s]  so we'll have lectures about all of this throughout the course
+[3808.16s -> 3809.16s]  okay
+[3810.16s -> 3811.16s]  all right so I'll close up
+[3812.16s -> 3813.16s]  on the thing that I think is
+[3814.16s -> 3815.16s]  perhaps the most important
+[3816.16s -> 3817.16s]  you know walking around the classroom
+[3818.16s -> 3819.16s]  moving data to the right place
+[3820.16s -> 3821.16s]  is going to be the most important thing
+[3822.16s -> 3823.16s]  we talk about in the class
+[3824.16s -> 3825.16s]  when you think about parallelism
+[3826.16s -> 3827.16s]  you're going to be thinking about
+[3828.16s -> 3829.16s]  what do I do at the same time
+[3830.16s -> 3831.16s]  and how do I get the data there
+[3832.16s -> 3833.16s]  okay and here's some examples
+[3834.16s -> 3835.16s]  so this is where I need to bring up memory
+[3836.16s -> 3837.16s]  a term that I've used without defining
+[3838.16s -> 3839.16s]  so far in this lecture
+[3840.16s -> 3841.16s]  so I've asked you
+[3842.16s -> 3843.16s]  what is a program
+[3844.16s -> 3845.16s]  I've asked you what is an instruction
+[3846.16s -> 3847.16s]  and at some point we've said things
+[3848.16s -> 3849.16s]  like a processor issues instructions
+[3850.16s -> 3851.16s]  that modify state
+[3852.16s -> 3853.16s]  and I said
+[3854.16s -> 3855.16s]  one of the aspects of that state
+[3856.16s -> 3857.16s]  could be values in memory
+[3858.16s -> 3859.16s]  what did I mean by memory?
+[3864.16s -> 3867.16s]  like what is memory if you're a programmer?
+[3868.16s -> 3869.16s]  RAM?
+[3870.16s -> 3871.16s]  RAM is an implementation of memory
+[3876.16s -> 3877.16s]  when I look at my x86 code
+[3878.16s -> 3880.16s]  when I say store this value in memory
+[3881.16s -> 3883.16s]  I'm not saying it's stored in DDR4
+[3884.16s -> 3887.16s]  I'm not saying it's stored in on-chip HVM
+[3888.16s -> 3889.16s]  what am I actually saying?
+[3890.16s -> 3891.16s]  yeah?
+[3892.16s -> 3893.16s]  it's like a scratch pad where you just specify the address
+[3894.16s -> 3895.16s]  and it's a byte
+[3896.16s -> 3897.16s]  at the end of the day all memory is
+[3898.16s -> 3899.16s]  logically, abstractly
+[3900.16s -> 3901.16s]  is an array of values
+[3902.16s -> 3903.16s]  if you give me an address
+[3904.16s -> 3905.16s]  memory will provide you with an address
+[3906.16s -> 3907.16s]  and it will give you the value
+[3908.16s -> 3909.16s]  stored at that address
+[3910.16s -> 3911.16s]  we haven't talked about how memory is implemented
+[3912.16s -> 3913.16s]  in fact we will
+[3914.16s -> 3915.16s]  but I have not told you how it's implemented
+[3916.16s -> 3917.16s]  so here's an example of that abstraction
+[3918.16s -> 3919.16s]  I have a table of addresses
+[3920.16s -> 3921.16s]  in this case they're referring
+[3922.16s -> 3923.16s]  to the address as the address of a byte
+[3924.16s -> 3925.16s]  and for every address
+[3926.16s -> 3927.16s]  there's a value in memory
+[3928.16s -> 3929.16s]  in this case I've given you some values
+[3930.16s -> 3931.16s]  that are bytes between 0 and 255
+[3932.16s -> 3933.16s]  so memory provides the abstractions
+[3934.16s -> 3935.16s]  that the byte stored at this address
+[3936.16s -> 3937.16s]  and a load and store to memory
+[3938.16s -> 3939.16s]  let's say if we're just talking about
+[3940.16s -> 3941.16s]  byte size loads and stores
+[3942.16s -> 3943.16s]  it says the address at this
+[3944.16s -> 3945.16s]  sorry the value at this address
+[3946.16s -> 3947.16s]  needs to be set to this value
+[3948.16s -> 3949.16s]  that's all memory ever is
+[3950.16s -> 3951.16s]  so a processor has two places
+[3952.16s -> 3953.16s]  where it can store values
+[3954.16s -> 3955.16s]  it can store values in its registers
+[3956.16s -> 3957.16s]  and it can store values in memory
+[3958.16s -> 3959.16s]  and there's example of an instruction
+[3960.16s -> 3961.16s]  might be move the value from memory
+[3962.16s -> 3964.16s]  into a processor or register
+[3964.24s -> 3965.24s]  so I say go ahead
+[3966.24s -> 3967.24s]  hey processor take the value
+[3968.24s -> 3969.24s]  stored at this address
+[3970.24s -> 3971.24s]  which happens to be 42
+[3972.24s -> 3973.24s]  and move it to a register
+[3974.24s -> 3975.24s]  for example register R0
+[3976.24s -> 3977.24s]  and what's the effect of that operation
+[3978.24s -> 3979.24s]  how will my state change
+[3983.24s -> 3984.24s]  how will the state of this program change
+[3985.24s -> 3986.24s]  if we execute this instruction
+[3987.24s -> 3988.24s]  R0
+[3989.24s -> 3990.24s]  R0 will have what value
+[3991.24s -> 3992.24s]  42
+[3992.32s -> 3993.32s]  so ask memory for the value at 42
+[3994.32s -> 3995.32s]  and you get it exactly
+[3996.32s -> 3997.32s]  sorry I didn't show the update
+[3998.32s -> 3999.32s]  ok
+[4000.32s -> 4001.32s]  so you should think about
+[4002.32s -> 4003.32s]  a processor asks memory for information
+[4004.32s -> 4005.32s]  and memory provides it
+[4006.32s -> 4007.32s]  now for implementation reasons
+[4008.32s -> 4009.32s]  memory might take a while
+[4010.32s -> 4011.32s]  and so for example
+[4012.32s -> 4013.32s]  if a processor asks for the data
+[4014.32s -> 4015.32s]  it may come some point in the future
+[4016.32s -> 4017.32s]  right so in this diagram
+[4018.32s -> 4019.32s]  memory had a very long latency
+[4020.32s -> 4021.32s]  two seconds
+[4022.32s -> 4023.32s]  but the latency of memory
+[4024.32s -> 4028.32s]  if it was stored in DRAM
+[4029.32s -> 4030.32s]  which is a very common implementation
+[4031.32s -> 4032.32s]  of memory
+[4033.32s -> 4034.32s]  can be hundreds of processor cycles
+[4035.32s -> 4036.32s]  so imagine if you had a sequence like this
+[4037.32s -> 4038.32s]  load from memory this address
+[4039.32s -> 4040.32s]  into this register
+[4041.32s -> 4042.32s]  load from memory this address
+[4043.32s -> 4044.32s]  into this register
+[4045.32s -> 4046.32s]  then add those two values
+[4047.32s -> 4048.32s]  you might have to wait hundreds of cycles
+[4049.32s -> 4050.32s]  to actually get that data
+[4050.40s -> 4051.40s]  so what can we do about that
+[4052.40s -> 4053.40s]  a processor has a detail in it
+[4054.40s -> 4055.40s]  so I have a processor with execution
+[4056.40s -> 4057.40s]  registers
+[4058.40s -> 4059.40s]  fetch and decode
+[4060.40s -> 4061.40s]  and memory is off over here
+[4062.40s -> 4063.40s]  what is a cache?
+[4067.40s -> 4068.40s]  what is a cache?
+[4069.40s -> 4070.40s]  you know not this
+[4071.40s -> 4072.40s]  a small amount of memory
+[4073.40s -> 4074.40s]  you can access frequently
+[4077.40s -> 4078.40s]  so if DRAM
+[4078.48s -> 4079.48s]  is storage
+[4080.48s -> 4081.48s]  for memory
+[4082.48s -> 4083.48s]  a DRAM holds a lot of data
+[4084.48s -> 4085.48s]  but it's a storage mechanism
+[4086.48s -> 4087.48s]  that has high latency
+[4088.48s -> 4089.48s]  a cache is another storage mechanism
+[4090.48s -> 4091.48s]  that can't hold that much data
+[4092.48s -> 4093.48s]  but has very low latency
+[4094.48s -> 4095.48s]  so if DRAM is my garage
+[4096.48s -> 4097.48s]  cache is my desktop in my office
+[4098.48s -> 4099.48s]  right less space
+[4100.48s -> 4101.48s]  but much faster to access
+[4102.48s -> 4103.48s]  so if DRAM is my garage
+[4104.48s -> 4105.48s]  cache is my desktop in my office
+[4106.48s -> 4107.48s]  right less space
+[4108.48s -> 4109.48s]  so now we're talking about
+[4110.48s -> 4111.48s]  implementation of memory
+[4112.48s -> 4113.48s]  a processor not only has stuff
+[4114.48s -> 4115.48s]  to execute instructions
+[4116.48s -> 4117.48s]  it has a little bit of storage in it
+[4118.48s -> 4119.48s]  a little bit of storage
+[4120.48s -> 4121.48s]  that's used to keep values in memory
+[4122.48s -> 4123.48s]  a copy of those values
+[4124.48s -> 4125.48s]  to make it easier to access
+[4126.48s -> 4127.48s]  so in this example
+[4128.48s -> 4129.48s]  I might have a memory address space
+[4130.48s -> 4131.48s]  that in this case is 16 bytes
+[4133.48s -> 4134.48s]  and I have a data cache
+[4135.48s -> 4136.48s]  that can hold two bytes
+[4136.56s -> 4137.56s]  see that
+[4138.56s -> 4139.56s]  so there's a little bit of a question
+[4140.56s -> 4141.56s]  of what data goes in this cache
+[4142.56s -> 4143.56s]  and we're not going to even
+[4144.56s -> 4145.56s]  talk about it in this class very much
+[4146.56s -> 4147.56s]  but I want you to just think about it
+[4148.56s -> 4149.56s]  as the cache is going to function
+[4150.56s -> 4151.56s]  of whenever it needs to put
+[4152.56s -> 4153.56s]  something in there
+[4154.56s -> 4155.56s]  it's just going to kick the last thing out
+[4156.56s -> 4157.56s]  so if you give me one minute
+[4158.56s -> 4159.56s]  or two minutes
+[4160.56s -> 4161.56s]  I'll be able to finish up on time
+[4162.56s -> 4163.56s]  so imagine that this is memory
+[4164.56s -> 4165.56s]  these are memory
+[4166.56s -> 4167.56s]  it's just an array of 16 bytes
+[4168.56s -> 4169.56s]  and now I want you to imagine
+[4170.56s -> 4171.56s]  that a processor issues instructions
+[4172.56s -> 4173.56s]  to access these addresses
+[4175.56s -> 4176.56s]  so there's an instruction to access
+[4177.56s -> 4178.56s]  0, 1, 2, 3, 2, back to 1, 4, 1
+[4183.56s -> 4184.56s]  and so on and so on
+[4185.56s -> 4186.56s]  so the program's order
+[4187.56s -> 4188.56s]  is kind of going down this way
+[4189.56s -> 4190.56s]  so when the program
+[4191.56s -> 4192.56s]  accesses the value
+[4193.56s -> 4194.56s]  I need the value at 0
+[4194.64s -> 4195.64s]  address 0
+[4197.64s -> 4198.64s]  it's going to need to load
+[4199.64s -> 4200.64s]  some data from memory
+[4201.64s -> 4202.64s]  now here's one implementation detail
+[4203.64s -> 4204.64s]  that we can't get around
+[4205.64s -> 4206.64s]  caches transfer data
+[4207.64s -> 4208.64s]  data is transferred from
+[4209.64s -> 4210.64s]  out in memory
+[4211.64s -> 4212.64s]  onto on-chip caches
+[4213.64s -> 4214.64s]  in the granularity of some number of bytes
+[4215.64s -> 4216.64s]  that typically is called the cache line
+[4217.64s -> 4218.64s]  so in this illustration
+[4219.64s -> 4220.64s]  let's just say that that cache line
+[4221.64s -> 4222.64s]  is 4 bytes and I have a cache
+[4222.72s -> 4223.72s]  with room for two cache lines
+[4226.72s -> 4227.72s]  so when my program
+[4228.72s -> 4229.72s]  accesses address 0
+[4230.72s -> 4231.72s]  it will bring
+[4232.72s -> 4233.72s]  an entire cache line
+[4234.72s -> 4235.72s]  all the data for that pink box
+[4236.72s -> 4237.72s]  into cache
+[4238.72s -> 4239.72s]  so what happens
+[4240.72s -> 4241.72s]  when my program
+[4242.72s -> 4243.72s]  accesses address 1?
+[4246.72s -> 4247.72s]  the data's already there
+[4248.72s -> 4249.72s]  and 3 the data's already there
+[4250.72s -> 4251.72s]  and so on
+[4252.72s -> 4253.72s]  and so on
+[4254.72s -> 4255.72s]  so these cache lines, these caches
+[4256.72s -> 4257.72s]  provide an interesting benefit
+[4258.72s -> 4259.72s]  they assume that if you've accessed some data
+[4260.72s -> 4261.72s]  you're going to access the data right next to it
+[4262.72s -> 4263.72s]  so there's some value
+[4264.72s -> 4265.72s]  in reading through memory
+[4266.72s -> 4267.72s]  completely in the same order
+[4268.72s -> 4269.72s]  now what happens if I go back
+[4270.72s -> 4271.72s]  and want to access 2 again?
+[4272.72s -> 4273.72s]  it's already there
+[4274.72s -> 4275.72s]  so they also have a benefit
+[4276.72s -> 4277.72s]  of when I access things over and over
+[4278.72s -> 4279.72s]  it's really quick
+[4280.72s -> 4281.72s]  what happens if I hit 1?
+[4282.72s -> 4283.72s]  again it's there
+[4283.72s -> 4284.72s]  and so on and so on
+[4285.72s -> 4286.72s]  so I'll finish this sequence up tomorrow
+[4287.72s -> 4288.72s]  but I want to end with one fun thing
+[4291.72s -> 4292.72s]  this is the effect of caches
+[4294.72s -> 4295.72s]  so if the data is stored out
+[4296.72s -> 4297.72s]  in DRAM memory
+[4298.72s -> 4299.72s]  you're going to have to wait for a while
+[4300.72s -> 4301.72s]  if it's stored in certain processor caches
+[4302.72s -> 4303.72s]  you don't have to wait that long at all
+[4304.72s -> 4305.72s]  so I've made this to scale
+[4306.72s -> 4307.72s]  if data's in cache
+[4308.72s -> 4309.72s]  and the closest cache to the processor
+[4310.72s -> 4311.72s]  might hold a few kilobytes
+[4312.72s -> 4313.72s]  a nearby cache
+[4315.72s -> 4316.72s]  a little bit farther cache
+[4317.72s -> 4318.72s]  a little bit longer
+[4320.72s -> 4321.72s]  if data is not in cache
+[4322.72s -> 4323.72s]  this is relatively how long
+[4324.72s -> 4325.72s]  it takes a load instruction to work
+[4326.72s -> 4327.72s]  I'll end there
+[4328.72s -> 4329.72s]  I'll let Ron get started
+[4330.72s -> 4331.72s]  and we'll actually do some
+[4332.72s -> 4333.72s]  we'll get into some details
+[4334.72s -> 4335.72s]  of why this is the case
+[4336.72s -> 4337.72s]  and the implications next time

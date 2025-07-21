@@ -1,0 +1,687 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.00s]  All right, I'd like to get started. Can anyone hear me?
+[6.00s -> 8.00s]  Yep, loud and clear. Good.
+[8.00s -> 20.00s]  All right, so today my plan is for first I want to spend a few minutes reemphasizing some points from the lecture last week on thread switching, because they turned out to be important points.
+[20.00s -> 29.00s]  And then I want to spend most of the lecture talking about something called coordination, which is the larger term for x v 6 is sleep and wake up mechanism.
+[29.00s -> 33.00s]  And particularly, I'm going to talk about the lost wake up problem.
+[33.00s -> 54.00s]  All right. So one point I want to just mention again is that, is the fact that x v 6, whenever anything calls switch to switch from one thread to another, usually from a kernel thread to the scheduler thread,
+[54.00s -> 62.00s]  it's always preceded by an acquire of this process's lock.
+[62.00s -> 72.00s]  So a process acquires this lock called switch, which always switches into the scheduler, and it's the scheduler that releases the lock.
+[72.00s -> 81.00s]  And in fact, almost always the sequence looks more like this, where the process wants to go to sleep for some reason, yielding the CPU or waiting for something.
+[81.00s -> 86.00s]  It acquires a lock on itself. It sets its state.
+[86.00s -> 94.00s]  And there's a number of different states. What we saw last week was set its state to runnable.
+[94.00s -> 103.00s]  Instead of running and then call switch or sched, which itself calls switch.
+[103.00s -> 109.00s]  And that, you know, this switch basically switches threads over into the scheduler thread,
+[109.00s -> 117.00s]  which, so a previous call to switch over in the scheduler thread returns.
+[117.00s -> 132.00s]  And then the scheduler thread calls release on the lock of the process that's just yielded the CPU.
+[132.00s -> 154.00s]  The reason for this, just to repeat, is that the acquisition of this lock on the process prevents the scheduler on a different core from looking right at this point in time and seeing that, oh, this thread is runnable and trying to run it.
+[154.00s -> 163.00s]  Because every other core may be running a scheduler loop, which is continually looping over the process table, looking for runnable threads.
+[163.00s -> 168.00s]  So any one of them may see that this thread's runnable if we hadn't acquired the process lock.
+[168.00s -> 175.00s]  So the fact that we acquire the process lock means that the other schedulers, before they even look at a process's state, must acquire its lock.
+[175.00s -> 179.00s]  So we know after this acquisition, know where the thread's going to look at the lock.
+[179.00s -> 184.00s]  We can't give up the lock here, though. We can't give up the lock before calling switch.
+[184.00s -> 187.00s]  That is, this thread acquires the lock, but it can't give it up.
+[187.00s -> 199.00s]  Because if we did, then right after we gave it up, some other core scheduler would probably start running this process, even though the thread is currently running on this core.
+[199.00s -> 208.00s]  I mean, having two cores run the same thread using the same stack would cause a pretty instant crash.
+[208.00s -> 212.00s]  And therefore, the process acquires the lock and doesn't release it and call switch.
+[212.00s -> 221.00s]  And a different thread, namely the scheduler thread, actually releases the lock at a point after this thread has completely stopped using its own stack.
+[221.00s -> 234.00s]  So at this point, it's OK for another core scheduler to start running this thread because the thread is now no longer running and has given up the processor.
+[234.00s -> 237.00s]  OK, so that's an important point.
+[237.00s -> 245.00s]  And it'll come up in a few minutes. It's one of the many constraints on the design of the sleep-wakeup coordination scheme.
+[245.00s -> 255.00s]  Any questions about this holding of the P arrow lock across switch?
+[255.00s -> 267.00s]  When we have multiple cores, the only reason they're able to have the same view of the lock is because there's a single shared physical memory system, right?
+[267.00s -> 269.00s]  That is correct.
+[269.00s -> 279.00s]  So is there implementations where there's weird file systems that can't guarantee this atomicity so we can lock?
+[279.00s -> 284.00s]  If you buy two computers, then they don't share memory.
+[284.00s -> 292.00s]  Right? So that's one way to do it. If you buy two separate computers, then they won't share memory and we wouldn't have any of these problems.
+[292.00s -> 300.00s]  It's just that the way processor chips look these days, there's always multiple cores on a single processor chip.
+[300.00s -> 309.00s]  And so the hardware just is built to have multiple cores sharing the same memory system.
+[309.00s -> 313.00s]  I see. Thanks.
+[313.00s -> 318.00s]  OK. So that's one point.
+[318.00s -> 333.00s]  Another point, which I don't think I've mentioned yet, has to do with the fact that in XV6, a process is not allowed to hold any other lock when it calls switch.
+[333.00s -> 341.00s]  A process is required to hold P arrow lock when it calls switch, but is forbidden to hold any other lock when it calls switch.
+[341.00s -> 347.00s]  So this is another important constraint on the design of many things, including how sleep is going to work.
+[347.00s -> 359.00s]  So let me lay out the reasoning for this. So it's no other locks.
+[359.00s -> 364.00s]  When you call switch.
+[364.00s -> 368.00s]  A scenario sort of illustrating why this is this rule has to be enforced.
+[368.00s -> 380.00s]  And this is a rule that, you know, if you're extending, you know, if you're a programmer developing the XV6 kernel, you have to follow this rule along with many other rules.
+[380.00s -> 389.00s]  So the justification for this rule, supposing we have process one or, you know, the kernel thread for process one and it requires some lock.
+[389.00s -> 398.00s]  Not its process lock, but just some lock. Maybe it's using the disk or using the UART console and, you know, requires some lock.
+[398.00s -> 407.00s]  And supposing it did then give up the CPU by calling switch or yield or sked or something while still holding this lock.
+[407.00s -> 412.00s]  So now P1 holds a lock. This lock's held, but it's not running.
+[412.00s -> 417.00s]  And imagine also for a moment that we're on a machine with just a single core.
+[417.00s -> 422.00s]  So there's only one core. The process one calls switch, which transfers to the scheduler.
+[422.00s -> 426.00s]  The scheduler sees, aha, process two's kernel thread is waiting to run.
+[426.00s -> 431.00s]  And so the scheduler switches to process, starts running process two, switches to process two.
+[431.00s -> 436.00s]  And supposing process two, for whatever reason, maybe it also wants to use the disk or use the UART or something.
+[436.00s -> 443.00s]  And it calls acquire on the same lock.
+[443.00s -> 449.00s]  So we have a second acquire of this lock. It's the same, the same lock.
+[449.00s -> 454.00s]  Of course, the lock's already held, so this acquire can't get it. And these are spin locks.
+[454.00s -> 463.00s]  So what this actually causes to happen is that process two inside acquire will just sit in a loop, spinning, waiting for the lock to be released.
+[463.00s -> 472.00s]  And acquire won't return. And since acquire doesn't return, process two can't, doesn't have a chance, even though it may be willing to yield the CPU when it's done later on.
+[472.00s -> 477.00s]  It doesn't get a chance to because acquire doesn't return until the lock's released.
+[477.00s -> 482.00s]  But the only way the lock could be released is if process one resumes execution.
+[482.00s -> 488.00s]  And presumably later, if it's correctly, it doesn't have terrible bugs in it.
+[488.00s -> 493.00s]  It was going to call, it was intending to release this lock. Right.
+[493.00s -> 498.00s]  But it hasn't happened yet because it called switch and process two is spinning, waiting for the lock.
+[498.00s -> 502.00s]  So this is a deadlock. Right.
+[502.00s -> 510.00s]  And it will just cause the system to freeze.
+[510.00s -> 515.00s]  And while I describe this in the context of a machine with a single CPU, a single core,
+[515.00s -> 525.00s]  you can construct scenarios that using multiple locks would cause the same kind of deadlock on a machine with multiple cores.
+[526.00s -> 537.00s]  And so as a result, we have a general prohibition in xv6 that you're not allowed to hold spin locks across the switch.
+[537.00s -> 542.00s]  Any questions about this rule?
+[542.00s -> 544.00s]  There's a question in the chat, Robert.
+[544.00s -> 549.00s]  Oh, wouldn't you have a timer interrupt switch to P1, which resolves the deadlock?
+[549.00s -> 554.00s]  OK, so, yeah, it does turn out, so we're running both, all this stuff's running in the kernel.
+[554.00s -> 558.00s]  Right. You know, acquire, release, switch, you know, is only, it's all kernel code.
+[558.00s -> 563.00s]  So we're not running in user space. But indeed, a timer interrupt could occur.
+[563.00s -> 573.00s]  And xv6 is actually and allows timer interrupts to happen in while running kernel code, system call code.
+[573.00s -> 578.00s]  And in fact, if you look at the kernel trap code or whatever it is in trap.c,
+[578.00s -> 585.00s]  you'll see that if a timer interrupt happens while executing the kernel, it will call yield.
+[585.00s -> 595.00s]  So if a timer interrupt could happen while we're running acquire here, then actually we would be saved because call yield,
+[595.00s -> 599.00s]  yield would switch back here and hopefully P1 would then resume and eventually release the lock.
+[599.00s -> 609.00s]  However, for reasons that were explained in a previous lecture, acquire turns off interrupts before it starts to wait for the lock,
+[609.00s -> 616.00s]  because we absolutely, for other reasons, cannot afford to have an interrupt happen while we're holding a lock,
+[616.00s -> 623.00s]  because that would cause a different kind of deadlock if the interrupt handler needed to use,
+[623.00s -> 630.00s]  needed to acquire the lock that this acquire had possibly just acquired.
+[630.00s -> 636.00s]  So if you look at the code for acquire in xv6, you'll see the first thing it does is turn off interrupts and then spins.
+[636.00s -> 640.00s]  And you may wonder, geez, why doesn't it spin and then turn off interrupts?
+[640.00s -> 647.00s]  And the reason is that would allow a short period of time to occur in which the lock is held, but interrupts weren't disabled.
+[647.00s -> 651.00s]  And again, a device interrupt at that time might cause a deadlock.
+[651.00s -> 657.00s]  So unfortunately, this other requirement that we leave interrupts off while we're spinning, waiting for a lock,
+[657.00s -> 664.00s]  prevents the timer interrupt from going off and therefore prevents process two from yielding back to process one.
+[664.00s -> 667.00s]  It's a good question.
+[667.00s -> 675.00s]  Because another question, can I repeat how deadlocks are avoided?
+[675.00s -> 680.00s]  Oh, deadlocks are avoided in xv6 by prohibiting this.
+[680.00s -> 687.00s]  The xv6 code is not allowed to acquire any lock other than P arrow lock and then call switch.
+[687.00s -> 696.00s]  And if you look at the code for switch, there's actually some checks in switch that are equivalent to checking that no locks are held other than P arrow lock.
+[696.00s -> 703.00s]  So the problem with this is this code, if it occurred in the xv6 kernel, would be illegal and could easily cause a deadlock.
+[703.00s -> 706.00s]  So it's forbidden.
+[706.00s -> 708.00s]  Does that answer the question?
+[708.00s -> 710.00s]  OK.
+[710.00s -> 717.00s]  Other questions?
+[717.00s -> 724.00s]  OK, so keep this rule and the previous need to hold P arrow lock across switch in mind,
+[724.00s -> 731.00s]  because they'll come up again in our discussion of how sleep and wake up work.
+[731.00s -> 738.00s]  All right, new topic.
+[738.00s -> 745.00s]  Coordination.
+[745.00s -> 756.00s]  Which really means sleep.
+[756.00s -> 766.00s]  We've heard a lot about locks and locks are fantastic for situations where different threads really want to not be aware and not have to worry about or think about what other threads are up to.
+[766.00s -> 774.00s]  We hold locks and share data. That means we just never have to worry about the possibility that some other lock is or maybe not using that data,
+[774.00s -> 778.00s]  because the lock causes things to happen one at a time.
+[778.00s -> 790.00s]  But when you're writing threaded code, there are also situations where you explicitly want to wait for some specific event, where you want different threads to interact.
+[790.00s -> 796.00s]  So, for example, supposing we have pipes and we got a reader and a writer, right?
+[796.00s -> 804.00s]  If I'm reading a pipe and there's nothing currently to read in the pipe, I want to be able to wait for any other process to write data to the pipes.
+[805.00s -> 809.00s]  I want to wait for this sort of pipe is not empty event.
+[809.00s -> 817.00s]  Similarly, if I'm reading the disk or writing the disk.
+[817.00s -> 823.00s]  If I'm reading the disk, then I want to be able to tell the disk controller, look, please read a particular block on the disk.
+[823.00s -> 832.00s]  It may take a long time, milliseconds, long, long time before the disk finally finishes the read, especially if it has to seek and rotate.
+[832.00s -> 836.00s]  And the process is doing the read needs to be able to wait for that specific event.
+[836.00s -> 841.00s]  You want to wait for the disk read to complete.
+[841.00s -> 849.00s]  Similarly, you may have noticed when you're programming that a Unix program can make the wait system call.
+[849.00s -> 854.00s]  And what wait does is it causes the calling process to wait until any of its children exit.
+[854.00s -> 861.00s]  So here we have the parent process intentionally waiting for some event sort of caused by another process.
+[861.00s -> 866.00s]  So these are all situations where a process needs to wait for a specific event,
+[866.00s -> 875.00s]  either typically IO or another process sort of declaring that something specific has happened.
+[875.00s -> 884.00s]  And coordination is the sort of tool that helps us solve these kind of problems or implement these kind of requirements.
+[884.00s -> 888.00s]  And coordination is totally fundamental, just like with locks.
+[888.00s -> 895.00s]  Coordination is another fundamental tool for writing threaded programs and it comes up all the time.
+[895.00s -> 904.00s]  All right. So how could we have a process or a thread wait for this kind of event?
+[904.00s -> 911.00s]  So one possibility, which is an extremely straightforward one, is just a busy wait to loop.
+[911.00s -> 919.00s]  So you could imagine, and we'll discard this as a bad idea in a moment, but let's say we want to read from a pipe.
+[919.00s -> 930.00s]  We just write a loop in the pipe read function that says, you know, while the pipe buffer is empty,
+[930.00s -> 934.00s]  we're going to do absolutely nothing.
+[934.00s -> 943.00s]  Right. And we're going to sit in this loop going round and round in this loop until maybe some other thread or another core writes into the buffer and makes it not empty.
+[943.00s -> 952.00s]  And then this loop will finish and then we'll return the data or whatever it is to do with the data.
+[952.00s -> 958.00s]  So you'd imagine writing code like this, and actually there is a little bit of, there may be small amounts of code like this.
+[958.00s -> 969.00s]  Like if you know that the thing you're waiting for is extremely likely to happen and a tenth of a microsecond, let's say, this may be the best way to wait for it.
+[969.00s -> 976.00s]  So typically this is done with some kinds of device hardware where you ask the device hardware to do something,
+[976.00s -> 981.00s]  you know, it will always complete that task in a tiny amount of time.
+[981.00s -> 985.00s]  Just sitting in a short loop can be the right answer.
+[985.00s -> 990.00s]  But if this might take a long time, milliseconds, or you just don't know how long, right?
+[990.00s -> 996.00s]  Maybe it's going to be 10 minutes before whatever process is writing the pipe actually writes anything.
+[996.00s -> 1004.00s]  Then we don't want to spin there and waste CPU time, which could be used to find more digits of pi or something else useful.
+[1004.00s -> 1009.00s]  We want to give up the CPU instead.
+[1009.00s -> 1016.00s]  And only, we want some way to give up the CPU like switch, but actually regain the CPU when the event we care about has actually occurred.
+[1016.00s -> 1027.00s]  And it's that that coordination is all about techniques to give up the CPU until the condition, the event that we're waiting for has actually occurred.
+[1027.00s -> 1030.00s]  And again, sleep and wake up.
+[1030.00s -> 1036.00s]  There's actually, there's a number of different coordination primitives that people have invented over the years.
+[1036.00s -> 1043.00s]  And XV6, in common with many flavors of Unix, uses something called sleep and wake up.
+[1043.00s -> 1059.00s]  OK. All right, with this background, I'd like to switch to looking at the code in XV6.
+[1059.00s -> 1066.00s]  All right, so I've just shared my screen. Let me know if the screen share did not work.
+[1066.00s -> 1074.00s]  OK, I have, in preparation for this lecture, rewritten some of the code in the UART driver.
+[1074.00s -> 1081.00s]  That's the serial driver that XV6 uses to read and write characters from the console.
+[1081.00s -> 1090.00s]  And so I have this function UART write, which when a program like the shell prints its prompt or produces any other output that makes a write system call,
+[1090.00s -> 1098.00s]  and in my slightly modified version of XV6, that write system call ends up with a call to UART write in the UART driver,
+[1098.00s -> 1107.00s]  which actually writes the characters in this loop one by one to the UART hardware.
+[1107.00s -> 1118.00s]  And this is written in a sort of classic device driver style. You'll see code like this in many device drivers.
+[1118.00s -> 1126.00s]  OK, so one of the things that's going on here is that the UART hardware can only accept one character for transmission at a time.
+[1126.00s -> 1131.00s]  And so the way this code has to look, you know, typically you have lots of characters you want to write.
+[1131.00s -> 1137.00s]  It can write a character to the UART hardware and it needs to wait for the UART hardware to say, yes, I finished sending that character.
+[1137.00s -> 1144.00s]  I'm ready for a new one. And then the driver can write a new one, a new character, the next character to output,
+[1144.00s -> 1150.00s]  because this hardware can operate very slowly, like maybe only a thousand characters per second.
+[1150.00s -> 1157.00s]  The amount of time we have to wait between characters can be very long, like a millisecond is a long, long time on modern computer.
+[1157.00s -> 1163.00s]  It's, you know, a billion cycles, a million cycles maybe, which a huge amount of work could be done.
+[1163.00s -> 1170.00s]  So we'd really prefer not to just spin waiting for the UART to finish sending each character.
+[1170.00s -> 1178.00s]  We'd like to have a better way. And so, in fact, XV6 has a better way, like most operating systems.
+[1178.00s -> 1184.00s]  The UART hardware will raise an interrupt after it's finished sending each character.
+[1184.00s -> 1189.00s]  And so we have not just this write routine, we also have the UART driver has an interrupt routine,
+[1189.00s -> 1196.00s]  which I think trap.c calls when the UART hardware raises an interrupt to say that it's finished.
+[1196.00s -> 1203.00s]  And the interrupt routine checks the UART, reads one of the memory map registers in the UART hardware,
+[1203.00s -> 1209.00s]  to look for the flag that says I'm done transmitting, which is this LSRTX idle flag.
+[1209.00s -> 1219.00s]  And if that flag's set, then the interrupt routine actually sets this flag in memory and makes this wakeup call,
+[1219.00s -> 1230.00s]  which will cause the UART write, whatever thread is in UART write, to return from its sleep here and attempt to send a new character.
+[1230.00s -> 1235.00s]  So the game is that if a thread needs to wait for something, and here we are,
+[1235.00s -> 1245.00s]  we need to wait for the UART hardware to be willing to accept a new character, it'll call sleep, waiting for a specific condition, usually.
+[1245.00s -> 1252.00s]  And when the condition is fulfilled, code that realizes the condition is fulfilled will call wakeup.
+[1252.00s -> 1257.00s]  So these sleeps and wakeups are paired. And sleep will look at the implementation by and by,
+[1257.00s -> 1264.00s]  but sleep does a number of things and then calls switch in order to give up the CPU.
+[1265.00s -> 1270.00s]  One thing to notice is that the wakeup and the sleep have to be linked together somehow.
+[1270.00s -> 1278.00s]  That is, when we call wakeup, we really only want to wake up threads that are waiting for the specific event that we realize has happened.
+[1278.00s -> 1283.00s]  And so sleep and wakeup take this argument, which is called the sleep channel.
+[1283.00s -> 1290.00s]  So wakeup supplies the very same value here that we're passing to sleep.
+[1290.00s -> 1297.00s]  Sleep and wakeup actually don't really look, don't care what these, they just take 64-bit values here.
+[1297.00s -> 1299.00s]  They don't care what they are really.
+[1299.00s -> 1311.00s]  The only thing that's going on is that when if we sleep on a particular sleep channel, particular weight channel,
+[1312.00s -> 1319.00s]  we want the wakeup to pass the very same value here in order to show that it indicates which sleepers it wants to wake up.
+[1322.00s -> 1324.00s]  Any questions about this interface?
+[1324.00s -> 1325.00s]  Okay.
+[1327.00s -> 1333.00s]  So there's a question, just to clarify, the process is not woken up for every character that's written.
+[1334.00s -> 1337.00s]  Okay, let's see.
+[1337.00s -> 1345.00s]  In this driver that I've specially hacked for demonstration purposes, there's an interrupt per character.
+[1345.00s -> 1354.00s]  So the way UART write works is that for each character, that is, in this while loop, for each character in the buffer characters we're supposed to write,
+[1354.00s -> 1360.00s]  we wait here in this loop until the UART is ready to accept one more character.
+[1361.00s -> 1363.00s]  We write one more character.
+[1363.00s -> 1371.00s]  We set this done flag to zero and go back and wait typically in sleep until the done flag is one.
+[1371.00s -> 1379.00s]  And then after the UART finishes sending this character, it'll interrupt and the interrupt routine will set done to one and do the wakeup.
+[1379.00s -> 1386.00s]  So in fact, there is a wakeup, a sleep and a wakeup and an iteration of the loop for every single character.
+[1387.00s -> 1396.00s]  The UART is actually capable of sending some number like four, 16 or something characters at a time.
+[1396.00s -> 1404.00s]  So a more efficient driver would hand 16 characters to the UART per iteration of this loop.
+[1404.00s -> 1406.00s]  And there'd be an interrupt every 16 characters.
+[1406.00s -> 1414.00s]  And higher speed devices, you know, typically like Ethernet drivers, typically accept many more bytes than that per interrupt.
+[1416.00s -> 1418.00s]  All right.
+[1418.00s -> 1426.00s]  OK, so this is just an illustration of what the interface looks like.
+[1426.00s -> 1431.00s]  Sleep and wakeup are nice because one reason they're nice is they're relatively flexible.
+[1431.00s -> 1435.00s]  Sleep and wakeup don't really care what it is you're up to.
+[1435.00s -> 1439.00s]  You don't have to tell sleep what you're waiting for.
+[1439.00s -> 1441.00s]  You don't have to tell wakeup what event happened.
+[1441.00s -> 1447.00s]  You just need to have these matching sleep channel 64 bit values.
+[1447.00s -> 1454.00s]  However, there's one interesting property of the sleep interface. We have to pass it a lock here.
+[1454.00s -> 1458.00s]  There's this second argument, this lock argument.
+[1458.00s -> 1466.00s]  And there's a big story behind why sleep takes this second argument.
+[1466.00s -> 1469.00s]  And I'm going to explain what's going on.
+[1469.00s -> 1486.00s]  But the high level picture is that it doesn't seem to be possible to design a sleep that is completely ignorant of what it is you're trying to wait for.
+[1486.00s -> 1492.00s]  It's hard to write a sort of general purpose sleep that simply sleeps waiting for some specific event.
+[1493.00s -> 1502.00s]  And this is danger, which we'll see in a moment, called lost wakeups that just about every coordination mechanism has to grapple with somehow and deal with somehow.
+[1502.00s -> 1512.00s]  And in the sleep interface, this fact that we have to pass a lock is sort of a little bit of ugly implementation leaking through into the interface.
+[1512.00s -> 1518.00s]  In a way, I'll explain in just a moment.
+[1518.00s -> 1524.00s]  Yeah, I'll explain. There's a question, why do we need the done flag and the sleep channel? I will hold on to that question.
+[1524.00s -> 1529.00s]  I'll explain that in five or 10 minutes.
+[1529.00s -> 1534.00s]  OK, so before explaining why it is what it is that sleep is doing with this lock,
+[1534.00s -> 1547.00s]  I actually want to talk a bit about what the implications would be if we had a simpler sleep that didn't have didn't take that extra lock argument.
+[1547.00s -> 1555.00s]  So.
+[1555.00s -> 1561.00s]  Right, so.
+[1561.00s -> 1568.00s]  And the topic here is lost wakeups.
+[1568.00s -> 1573.00s]  That's the problem I'm going to describe now.
+[1573.00s -> 1581.00s]  So suppose that the interface was just sleep.
+[1581.00s -> 1588.00s]  On this arbitrary channel value with no second argument.
+[1588.00s -> 1593.00s]  You can't make this work, so I'm actually going to call this broken sleep.
+[1593.00s -> 1604.00s]  And you could imagine if we didn't know better that a sleep like this could simply set the state of the.
+[1604.00s -> 1611.00s]  Process. To this special sleeping value, which says I don't want to run anymore, I'm waiting for a specific event.
+[1611.00s -> 1617.00s]  And then if you look at the actually sixes implementation of sleep, you'll see it does this among other things.
+[1617.00s -> 1629.00s]  We need to record this special sleep channel value so that a future call to wake up can realize that we're actually waiting for the thing that the.
+[1629.00s -> 1635.00s]  Wake up is waking us up for. So you could imagine a sleep and it would be broken that really just did this.
+[1635.00s -> 1642.00s]  I guess you'd have to take acquire this processes lock also.
+[1642.00s -> 1650.00s]  And then, of course, when you wake up.
+[1650.00s -> 1658.00s]  And this really is pretty much how wake up works. We want to wake up all the threads that are waiting on that have called sleep with this particular channel value.
+[1658.00s -> 1668.00s]  So we're just going to say, you know, for each. P in the process table.
+[1668.00s -> 1671.00s]  If.
+[1671.00s -> 1677.00s]  The state if it's sleeping.
+[1677.00s -> 1690.00s]  And it's sleeping on the channel that we're waking up.
+[1690.00s -> 1693.00s]  Then set the state to.
+[1693.00s -> 1698.00s]  Runnable.
+[1698.00s -> 1705.00s]  And actually modular locks, this is pretty much what wake up does.
+[1705.00s -> 1713.00s]  OK, so some alternate universe boy, it would be nice if sleep and wake up were this simple.
+[1713.00s -> 1716.00s]  Let me demonstrate, though.
+[1716.00s -> 1721.00s]  Well.
+[1721.00s -> 1730.00s]  Let me demonstrate.
+[1730.00s -> 1739.00s]  Well, before I go back to the actual code, let me just outline how you would use this sleep and wake up in the driver.
+[1739.00s -> 1747.00s]  This is sort of a repeat of what we've already seen, but using this slightly simpler interface you would have.
+[1747.00s -> 1752.00s]  And indeed, the driver does this. You'd have this done flag.
+[1752.00s -> 1760.00s]  And then you are right.
+[1760.00s -> 1769.00s]  You know, it would say for each. Character in the buffer.
+[1769.00s -> 1777.00s]  And then it would check this done flag, just say while not done.
+[1777.00s -> 1780.00s]  Going to sleep.
+[1780.00s -> 1787.00s]  And then pass that channel, whatever was Txchan or something.
+[1787.00s -> 1791.00s]  Doesn't really matter. OK, and then we're going to send C.
+[1791.00s -> 1796.00s]  To the UART and said done equals.
+[1796.00s -> 1799.00s]  Zero right.
+[1799.00s -> 1804.00s]  And then the interrupt routine.
+[1804.00s -> 1809.00s]  Just sets it on flag is equal to true and calls wake up.
+[1809.00s -> 1813.00s]  So this is how we could use.
+[1813.00s -> 1819.00s]  The simplified broken sleep, right, so this is really broken sleep.
+[1819.00s -> 1824.00s]  What this is missing, though, is locking.
+[1824.00s -> 1833.00s]  So actually, both the both of these routines here, both the right routine and the interrupt routine absolutely have to lock.
+[1833.00s -> 1841.00s]  And one reason is that this done flag, anytime we have shared data, we really need to put a lock around the shared data.
+[1841.00s -> 1844.00s]  And the other reason is that actually I didn't put it in here,
+[1844.00s -> 1851.00s]  but both the interrupt routine and the right routine need to access the hardware, the UART hardware itself.
+[1851.00s -> 1855.00s]  And typically it's an error unless you're very, very clever.
+[1855.00s -> 1862.00s]  It's an error to have two threads concurrently try to read and write the memory mapped hardware registers.
+[1862.00s -> 1868.00s]  So we need a lock around in both of these subroutines in order to.
+[1868.00s -> 1877.00s]  Avoid both recent racing accesses done and racing accesses to the hardware hardware.
+[1877.00s -> 1881.00s]  And so the question is, where should we put the locks in?
+[1881.00s -> 1887.00s]  It's it's easy in the interrupt routine. We're going to lock our lock at the beginning.
+[1887.00s -> 1892.00s]  Whatever the lock, I think it's called UART TX lock or something, and we're going to unlock at the end.
+[1892.00s -> 1896.00s]  So the interrupt routine just takes the lock and releases it.
+[1896.00s -> 1901.00s]  The puzzle is where to put the locks in the UART routine.
+[1901.00s -> 1910.00s]  One possibility is that UART write could hold the lock for the entire sequence of trying to send a character, each character.
+[1910.00s -> 1917.00s]  So we could acquire the lock here.
+[1917.00s -> 1922.00s]  And unlock here.
+[1922.00s -> 1927.00s]  So lock and unlock at the beginning and very end, processing each character.
+[1927.00s -> 1938.00s]  So why, why does this definitely not work?
+[1939.00s -> 1946.00s]  One reason is that the only way we can get out of this loop is if the interrupt routine sets done to one.
+[1946.00s -> 1953.00s]  But if we hold this lock for this entire sequence in it, the interrupt routine also needs the lock.
+[1953.00s -> 1961.00s]  And so it will sit here spinning, waiting for the lock, because we hold the lock and aren't going to release it until done is set.
+[1961.00s -> 1965.00s]  But done can only be set when the interrupt routine is actually able to get the lock.
+[1965.00s -> 1976.00s]  So we cannot just simply hold the lock across the entire sequence of sending each character.
+[1976.00s -> 1988.00s]  All right. So another possibility of the sort of nasty problem here is that we, the UART write was holding a lock at the time when it expected the interrupt routine to execute, which is right here.
+[1988.00s -> 1993.00s]  The only time when we really need the interrupt routine to execute is at this point here.
+[1993.00s -> 2003.00s]  Otherwise it's OK to hold the lock. So another possibility would be to acquire the lock at the beginning, because we need to protect our access to this shared variable done.
+[2003.00s -> 2008.00s]  But release it.
+[2008.00s -> 2019.00s]  Before the call to sleep, that gives the interrupt routine a chance to execute and set done to one, and then we'll just reacquire it after sleep returns.
+[2019.00s -> 2026.00s]  So that when we go back up to the top and check done again, we have a lock again.
+[2026.00s -> 2035.00s]  All right, so let me actually modify my driver to do this.
+[2035.00s -> 2042.00s]  We'll see what the consequences are.
+[2042.00s -> 2052.00s]  All right, so the sleep we're talking about, where we want to, you can see this code actually does acquire the lock at the very beginning and release it at the end.
+[2052.00s -> 2058.00s]  And the interrupt routine also acquires and releases. And the proposal is that we do two things.
+[2058.00s -> 2070.00s]  One is we're going to, what we're exploring is why my broken sleep idea that only takes a single argument, why that doesn't work.
+[2070.00s -> 2089.00s]  So the idea is that in order to make the locking work out right, we're going to call broken sleep all right, but we're going to release the lock here and reacquire it after sleep returns.
+[2089.00s -> 2105.00s]  And literally all this broken sleep does is exactly what I wrote on my little whiteboard, namely it sets the state to sleeping, it sets the channel to this Txchan argument, then it calls switch.
+[2105.00s -> 2116.00s]  All right, let's see what happens.
+[2117.00s -> 2129.00s]  Oh, well, look at that. It actually managed to, init is printing out its init starting message, and it actually managed to write a few characters, and now it seems to have hung.
+[2129.00s -> 2134.00s]  And it turns out that if I type a character, I'm going to type a period.
+[2134.00s -> 2141.00s]  If I type a period, output restarts.
+[2141.00s -> 2145.00s]  Maybe make some more output, I'll run ls.
+[2145.00s -> 2158.00s]  ls also emitted a few characters and then stopped, but if I type something, I'm going to type x, it'll restart ls and it'll keep going.
+[2158.00s -> 2164.00s]  So, what do we think is going on here?
+[2164.00s -> 2177.00s]  Does anybody want to propose a theory?
+[2177.00s -> 2189.00s]  The problem definitely has to do with the code that I just changed. So, what's happening?
+[2190.00s -> 2205.00s]  All right, so what's going on here is that my new code releases the lock, releases this lock at this point, and then right here, the interrupt happens.
+[2205.00s -> 2211.00s]  Because as soon as you release a lock, first of all, the interrupts are re-enabled, so on this CPU, interrupts could happen.
+[2211.00s -> 2217.00s]  This is a multi-core machine, so actually interrupts can be taken on any core.
+[2217.00s -> 2235.00s]  So, almost certainly, what's going on at this point that I've marked in the code is that on some other core, the UART interrupt is executing and it's sitting in a choir waiting for this lock on some other core.
+[2235.00s -> 2245.00s]  And so, as soon as I release it, that other core is going to acquire the lock, it's going to see that the UART has completed sending the character.
+[2245.00s -> 2250.00s]  And it's going to set this transmit done flag to one, which is great.
+[2250.00s -> 2265.00s]  And then it's going to call wake up on TX-chan, which is also fine, except because the writing thread is still executing between the release and the broken sleep, the writing thread hasn't gone to sleep yet.
+[2265.00s -> 2274.00s]  So, the wake up that the interrupt routine calls doesn't actually wake up anything up because nothing's yet gone to sleep on that channel.
+[2274.00s -> 2289.00s]  And then, the writing thread will proceed to call its broken sleep, which will set the state to sleeping and set the sleep channel, but the interrupt has already happened and the wake up has already been called.
+[2289.00s -> 2296.00s]  So, this sleep, nothing will ever wake it up because the wake up already happened.
+[2296.00s -> 2301.00s]  This is called the lost wake up problem.
+[2301.00s -> 2315.00s]  Any questions about why or how this arises?
+[2315.00s -> 2329.00s]  Yeah. Is it always going to be the case that once something gets lost, once a wake up gets lost that on the next time everything that's been buffered is just going to get dumped?
+[2329.00s -> 2344.00s]  Well, it completely depends on the details of what's going on. In this case, it's actually just sort of accidental that me typing something caused the output to resume.
+[2344.00s -> 2349.00s]  So, me typing input caused the output to get fixed.
+[2349.00s -> 2353.00s]  And the reason for that is that the UART has only one kind of interrupt it makes.
+[2353.00s -> 2360.00s]  It calls the same interrupt routine to signal input and to signal completed output.
+[2360.00s -> 2370.00s]  So, when I type something, which is input, this UART interrupt routine gets called and the UART is thinking that it's calling it just to signal that input has arrived.
+[2370.00s -> 2386.00s]  But in fact, the interrupt routine in xv6, you know, looks for, you know, notices that the, you know, the way this code happens to be written is that if the UART is ready to transmit another character, it always calls wake up.
+[2386.00s -> 2395.00s]  Even though it's a while ago maybe had already called wake up. So, it's sort of accidental that me typing characters caused this to get restarted.
+[2395.00s -> 2404.00s]  And so sometimes, you know, if there are lost wake ups, sometimes they sort of fix themselves in this way if you're lucky, and sometimes they don't.
+[2404.00s -> 2412.00s]  Like if the UART had had separate receive and transmit interrupt routines, then there would have been no getting out of this.
+[2412.00s -> 2413.00s]  Does that answer your question?
+[2413.00s -> 2419.00s]  Yes, thank you.
+[2419.00s -> 2420.00s]  Okay.
+[2420.00s -> 2422.00s]  So, yes, please go ahead.
+[2422.00s -> 2427.00s]  What purpose does the txdone bit serve?
+[2427.00s -> 2432.00s]  Or the txdone bit, or you mean this flag txdone?
+[2432.00s -> 2448.00s]  It is simply a way for the interrupt routine to communicate to UART right that the previously transmitted character is finished, and it's okay for UART right to proceed to transmitting the next character.
+[2448.00s -> 2458.00s]  So it's a little piece of, it's just like a little communication flag from the interrupt routine to UART right.
+[2458.00s -> 2460.00s]  Does that make sense?
+[2460.00s -> 2469.00s]  Because if it, it could, like, it would sleep, and then it would know that when it wakes up, it's probably the UART interrupt that woke it up.
+[2469.00s -> 2484.00s]  So, probably the txdone bit, like, would have been said, but if we didn't have it. So, I guess I'm saying that actually wakes up, it should know that it's from UART interrupt.
+[2484.00s -> 2489.00s]  Okay, so is another way of phrasing your question, how come there's this a while loop here?
+[2489.00s -> 2490.00s]  Instead of just an if?
+[2490.00s -> 2498.00s]  Okay, I think I answered my question. I think the answer to my question is because UART interrupt serves two purposes. Okay, yeah.
+[2498.00s -> 2517.00s]  Yeah, yeah. In general, the answer to your question is sort of a specific instance of the more general answer that it's, it just turns out to be not practical to make sleeps and wake ups be precise, guaranteed precise.
+[2517.00s -> 2522.00s]  That is that if sleep returns then for sure, whatever you're waiting for has happened.
+[2522.00s -> 2531.00s]  So, one example of this is that, supposing we have two processes that are both trying to write the UART at the same time, they're both in UART, right?
+[2531.00s -> 2544.00s]  And they can be, because after one writes a character, it'll sleep, and releasing, as it turns out, releasing the lock, and then the other one can enter that loop and try to wait until the UART's not busy.
+[2545.00s -> 2552.00s]  And they both, may both end up sleeping, and when an interrupt happens and the UART can accept one more character, they'll both be woken up.
+[2552.00s -> 2556.00s]  But only one should actually write the character.
+[2556.00s -> 2562.00s]  And that, this while loop, and in fact, you'll see a while loop around every sleep in XV6, I believe.
+[2562.00s -> 2570.00s]  And it's because this problem of you may be woken up, but really somebody else sort of took the thing you were waiting for, so you have to sleep again.
+[2570.00s -> 2573.00s]  This happens, pervasively.
+[2575.00s -> 2576.00s]  Okay.
+[2576.00s -> 2577.00s]  Thank you.
+[2577.00s -> 2578.00s]  Yes.
+[2578.00s -> 2580.00s]  I've got a question.
+[2580.00s -> 2581.00s]  Yes.
+[2581.00s -> 2592.00s]  So it looks like we only saw one lost wakeup, because as soon as we pressed like a character, the rest of the output, the entire rest of the output came out.
+[2592.00s -> 2597.00s]  Shouldn't we have seen like multiple lost wakeups where, like why didn't it happen again?
+[2597.00s -> 2598.00s]  Oh, it did, it did.
+[2598.00s -> 2599.00s]  Here, let me run this.
+[2599.00s -> 2600.00s]  I'm going to run readme.
+[2600.00s -> 2603.00s]  I'm going to cat readme, right, which is, I don't know, a couple thousand bytes.
+[2603.00s -> 2607.00s]  So, oops, sorry, I had already typed something.
+[2607.00s -> 2609.00s]  Oh, gosh, we've got one character.
+[2609.00s -> 2611.00s]  I'm going to type a period.
+[2611.00s -> 2614.00s]  Ah, we got a few more characters, and then it hung up again.
+[2614.00s -> 2615.00s]  I'm going to type another period.
+[2615.00s -> 2617.00s]  Ah, another couple characters.
+[2617.00s -> 2626.00s]  Right, each time I type a period, that causes an interrupt for the input, which then wakes up the process, and it could do a few more characters of writes, and then it hangs again.
+[2626.00s -> 2628.00s]  You know, it gets another lost wakeup.
+[2628.00s -> 2630.00s]  Is that the answer to your question?
+[2630.00s -> 2632.00s]  Yeah, okay, I think I just missed that.
+[2632.00s -> 2633.00s]  Yep, that makes sense.
+[2633.00s -> 2634.00s]  Yeah, so I'm typing period here.
+[2634.00s -> 2644.00s]  I get a couple characters per lost wakeup, because, you know, the lost wakeup requires this coincidence that the interrupt had already happened and was waiting to acquire the lock.
+[2644.00s -> 2651.00s]  We get that coincidence a lot of the time, but not all the time.
+[2651.00s -> 2652.00s]  All right.
+[2653.00s -> 2666.00s]  Okay, so our goal, then, is to get rid of this lost wakeup problem by somehow eliminating this window here between the release of the URTX lock, which we have to release, right?
+[2666.00s -> 2678.00s]  Because the interrupt needs that lock, so we know we have to release the lock, but somehow we want to eliminate this window between when we release the lock and when the process actually marks itself as sleeping,
+[2678.00s -> 2685.00s]  so that the interrupt's wakeup will see that the process is sleeping and actually wake it up and therefore not lose the wakeup.
+[2685.00s -> 2689.00s]  So we've got to somehow close that window.
+[2689.00s -> 2694.00s]  And to do that, we've got to make sleep's interface a little bit more complicated.
+[2694.00s -> 2703.00s]  So I'm going to go back to the original working sleep and a call to the working sleep.
+[2703.00s -> 2715.00s]  And the way that people solve this problem is that sleep requires, even though sleep doesn't really know what you're waiting for, it requires that you be waiting for something.
+[2715.00s -> 2721.00s]  And furthermore, that there be a lock that protects whatever it is you're waiting for.
+[2721.00s -> 2727.00s]  So it requires that there be a sleep condition, which it doesn't really know about.
+[2727.00s -> 2733.00s]  The sleep condition is that TX done is equal to one. So sleep doesn't know what the sleep condition is, but it does.
+[2733.00s -> 2748.00s]  It requires that there be a lock that protects the sleep condition, namely this URTX lock, and that the lock be locked when you check the condition, that you hold the lock until you call sleep, and that you pass the lock to sleep.
+[2748.00s -> 2765.00s]  And what sleep promises, essentially at an interface level, is that it's going to atomically put the process to sleep and release the lock as a sort of, at least as an indivisible pair of actions, at least with respect to wake up.
+[2765.00s -> 2772.00s]  So wake up will never see this situation in which, yeah, you've released the lock, but no, the process is not asleep.
+[2772.00s -> 2779.00s]  So sleep makes the release of the lock and putting the process to sleep atomic.
+[2779.00s -> 2789.00s]  And the rules for this is that there has to be a condition, there has to be a lock protecting the condition, the lock has to be held when you call sleep, you have to pass the lock to sleep.
+[2789.00s -> 2799.00s]  Furthermore, the lock has to be held when you call wake up. This condition lock needs to be held when you call wake up.
+[2799.00s -> 2809.00s]  So these are rules that the programmer had better follow if they want to write correct code using sleep and wake up.
+[2809.00s -> 2822.00s]  All right. So let's look at the sleep and wake up to try to spot how they actually use this extra little piece of information and these rules to avoid lost wake ups.
+[2822.00s -> 2826.00s]  So first I want to look at wake up.
+[2826.00s -> 2831.00s]  Wake up is not very surprising. It just runs through the entire process table.
+[2831.00s -> 2841.00s]  It locks every process. Remember that? After it's locked a process, you can't really look at a process's state without locking it, it locks each process.
+[2841.00s -> 2856.00s]  If the process is sleeping and the channel that it's sleeping for is the same channel that was passed to wake up, then wake up marks the changes the process's state to runnable and then releases the process's lock.
+[2856.00s -> 2859.00s]  So no surprises here.
+[2859.00s -> 2864.00s]  We'll ignore my broken sleep and instead look at sleep itself.
+[2864.00s -> 2873.00s]  So here's the implementation of sleep with now this new lock argument.
+[2873.00s -> 2879.00s]  So we know sleep has to release that condition lock, its second argument.
+[2879.00s -> 2883.00s]  We know it has to release it because the interrupt routine has to be able to acquire it.
+[2883.00s -> 2889.00s]  So we know there's going to be release of that lock somewhere inside sleep. And indeed, here's the release of that lock.
+[2889.00s -> 2899.00s]  Of course, we're worried after we release the lock that at this very point wake up might be called and might wake up this process.
+[2899.00s -> 2903.00s]  So in order to might try to wake up this process. But of course, we haven't marked it sleeping yet.
+[2903.00s -> 2914.00s]  So we cannot afford to have wake up execute right after this release, even though we're releasing.
+[2914.00s -> 2923.00s]  So in order to cause that not to happen before releasing the condition lock, sleep acquires the lock of the process that's going to sleep.
+[2923.00s -> 2940.00s]  If you recall, wake up must be called with the condition lock held and it acquires, if it's about to wake up a process, it first must wait to acquire that process's lock.
+[2940.00s -> 2950.00s]  So for the entire amount of time between when you are right between before you are right checked the condition.
+[2950.00s -> 2960.00s]  And we when we call sked here, this thread holds one or another of the condition lock and P arrow lock at all times.
+[2960.00s -> 2972.00s]  Just to go back to you artists want to emphasize this you are right acquires the condition lock here and holds the condition lock all the way through to where it calls sleep.
+[2972.00s -> 2979.00s]  And so it acquires the condition lock, checks the condition with the lock held, calls sleep with the condition lock held.
+[2979.00s -> 2986.00s]  So wake up can't do anything now because cannot even allow to call wake up until we until the caller owns the condition lock.
+[2986.00s -> 2993.00s]  So wake up is definitely not executing now. We still hold the lock when we call sleep.
+[2993.00s -> 3001.00s]  Sleep releases the condition lock but first acquires the process's lock.
+[3001.00s -> 3010.00s]  And if you remember, wake up, wake up is called with the condition lock.
+[3010.00s -> 3020.00s]  After we release it, sorry, after we release the condition lock, wake up can be called but wake up won't look at the process until it has the process lock, which we hold.
+[3020.00s -> 3027.00s]  So wake up is still not executing.
+[3027.00s -> 3039.00s]  Acquire the process lock, release the condition lock. While holding the process lock, mark the process as sleeping on this particular channel and then call sked, which calls switch.
+[3039.00s -> 3042.00s]  We still have the process lock so wake up still isn't doing anything.
+[3043.00s -> 3048.00s]  And if you remember, we're now switching away from this thread to the scheduler thread.
+[3048.00s -> 3056.00s]  And the scheduler routine after it's called to switch returns releases the recently running process's lock.
+[3056.00s -> 3064.00s]  So at this point, after we're in the scheduler, wake up can finally acquire PR lock for this process.
+[3064.00s -> 3070.00s]  Notice that it's sleeping on this channel and set its state to wake up.
+[3070.00s -> 3076.00s]  So we're guaranteed the effect of the rule that you have to hold the condition lock when calling sleep.
+[3076.00s -> 3090.00s]  The fact that sleep knows about that lock and releases it only after requiring process PR lock and wake up needing to hold both locks in order to think about this process means that we can no longer lose a wake up.
+[3090.00s -> 3095.00s]  And so we fix this lost wake up problem.
+[3095.00s -> 3119.00s]  I realize I'm a little bit involved. Any questions about what's going on here?
+[3119.00s -> 3125.00s]  All right, well, feel free to ask questions at any time.
+[3125.00s -> 3136.00s]  All right, so we saw one, we saw this one, looked at this one case in which we're using sleep and wake up in a way that avoids lost wake ups.
+[3136.00s -> 3139.00s]  There's a bunch of others in XV6.
+[3139.00s -> 3151.00s]  This particular one, the thing that we're waiting for, the condition that we're waiting for is that an interrupt has occurred that has signaled that hardware is ready to sort of do the next thing.
+[3151.00s -> 3163.00s]  There's also times when kernel code calls sleep in order to wait for a diff some other thread to do something, which is not actually in the end conceptually different but may feel a little bit different.
+[3163.00s -> 3181.00s]  So in the pipe code, for example, if you look at pipe read, you know, there's a bunch of junk here, which you have to ignore, but the read system call on a pipe ends up calling pipe read.
+[3181.00s -> 3190.00s]  There's a lock that protects the pipe, and this is going to end up being the condition lock.
+[3190.00s -> 3205.00s]  Pipe read needs to wait until there's actually data buffered in the pipe, and that condition is, you know, that there's data ready is nread or nwrite is greater than nread, that is more bytes have been written than read.
+[3205.00s -> 3222.00s]  While that's not true, pipe read sits in sleep waiting for that condition and passes in this pipe lock, the condition lock that protects the condition into sleep in order to protect against lost wakeups.
+[3222.00s -> 3234.00s]  And the reason why you might get a lost wakeup is that on a different core, if we go a little farther up in the file, on a different core, there's probably some other thread just now calling pipe write.
+[3234.00s -> 3245.00s]  And that's going to add bytes to the pipe buffer and finally called wakeup on the channel that pipe read is waiting for.
+[3245.00s -> 3260.00s]  And, you know, we want to avoid the risk that between the reader checking and noticing there's no bytes to read and calling sleep, we do not want a pipe write on another core to slip in there
+[3260.00s -> 3267.00s]  and add bytes and wake us up before we've even gone to sleep, right? That would be a lost wakeup.
+[3267.00s -> 3284.00s]  And this lock, basically, this lock and the fact that sleep is careful about releasing it, prevent a writer from slipping in between the check of the condition and the sleep, because the writer has to require this lock too.
+[3284.00s -> 3299.00s]  And for those of you who are, the people who asked about wrapping sleep in while loops, both pipe read and pipe write are examples of a sleep wrapped in a while.
+[3299.00s -> 3310.00s]  So, for example, this is the loop that pipe read waits for data to appear, waits for the pipe buffer to be non-empty, and the sleep is wrapped in a loop.
+[3310.00s -> 3317.00s]  And again, the reason is that there could be perfectly well be multiple processes reading the very same pipe.
+[3317.00s -> 3325.00s]  And so if a writer writes one byte to the pipe, so there's only one byte there, the writer is going to call wakeup.
+[3325.00s -> 3332.00s]  That's going to wake up all the multiple processes that were reading that pipe, but there's only one byte in the pipe.
+[3332.00s -> 3339.00s]  And so one of those processes is going to wake up first, right? It's going to come out of its sleep first.
+[3339.00s -> 3345.00s]  Actually, this reminds me, there's another crucial thing I forgot to mention about sleep.
+[3345.00s -> 3352.00s]  And that's that the last thing sleep does, let's look at...
+[3352.00s -> 3360.00s]  Here's the end of sleep. The last thing sleep does is acquires the condition lock.
+[3360.00s -> 3368.00s]  So you must call sleep with the condition lock held, and sleep reacquires it before it returns.
+[3368.00s -> 3374.00s]  Okay, so what that means is that if there were a bunch of readers, if there's one byte just written to a pipe,
+[3374.00s -> 3378.00s]  and a bunch of readers, they're all woken up, one of them will succeed.
+[3378.00s -> 3383.00s]  One of the sleeps of one of the threads will succeed in acquiring this lock.
+[3383.00s -> 3386.00s]  The others will be waiting in sleep, spinning waiting for the lock.
+[3386.00s -> 3394.00s]  That one lucky process, sleep will return, it will come back to this check, and now p arrow n write is one larger than n read.
+[3394.00s -> 3396.00s]  So there's data to read, it'll fall out of the loop.
+[3396.00s -> 3401.00s]  It'll read the one byte, and now there's nothing in the buffer, release the lock, and return.
+[3401.00s -> 3408.00s]  And now the next thread that was woken up, its sleep will be able to reacquire the condition lock.
+[3408.00s -> 3417.00s]  Its sleep will return, it'll return, recheck the loop condition, but now n read is equal to n write.
+[3417.00s -> 3421.00s]  And so that thread and any other thread waiting will go back to sleep.
+[3421.00s -> 3429.00s]  This is, again, just to reinforce why almost every, maybe every call to sleep has to be wrapped in a loop that rechecks the condition.
+[3434.00s -> 3438.00s]  Questions about the way sleep, pipes use sleep.
+[3438.00s -> 3450.00s]  All right.
+[3450.00s -> 3461.00s]  The sleep and wake up interface and rules are a little bit complex, because you have to sort of reveal a bit to sleep about what you're waiting for.
+[3461.00s -> 3466.00s]  You have to tell it to lock and follow some rules, which is sometimes annoying.
+[3466.00s -> 3472.00s]  On the other hand, sleep and wake up are pretty flexible, partially because they don't actually have to understand the condition itself.
+[3472.00s -> 3476.00s]  There just has to be a condition and be a lock.
+[3476.00s -> 3479.00s]  There are other schemes that are somewhat higher level.
+[3479.00s -> 3487.00s]  There's other coordination schemes, like the semaphores you read about in the reading for today, in which the interface is slightly less complex.
+[3487.00s -> 3491.00s]  Like the semaphores, you don't have to tell the semaphore about a lock.
+[3491.00s -> 3495.00s]  And the caller to the semaphore doesn't have to worry about lost wake ups.
+[3495.00s -> 3504.00s]  Internally, the implementation of the semaphore, again, as you saw in the reading for today, the internal implementation of semaphores worries about a lost wake up.
+[3504.00s -> 3514.00s]  So because the interface is specialized to these up down counters, the need to deal with lost wake ups doesn't leak through into the interface.
+[3514.00s -> 3518.00s]  So the semaphores are somewhat simpler, although they're less general.
+[3518.00s -> 3528.00s]  If you don't have a count and you're not waiting for a count, then semaphores are not necessarily going to be super helpful for you.
+[3528.00s -> 3536.00s]  So it's that that causes me to claim that sleep and wake up are a little more general.
+[3536.00s -> 3548.00s]  All right, so with sleep and wake up under our belts, I want to talk about one more kind of challenge that xv6 faces that's actually related to sleep and wake up.
+[3548.00s -> 3551.00s]  And that's how to shut down threads.
+[3551.00s -> 3558.00s]  Every threading system, you know, the threads eventually need to exit and we need to clean up their state, free their stack.
+[3558.00s -> 3573.00s]  On xv6, when a process exits, we need to free its user memory and free its page table and free its trap frame and mark the process, the slot in the process table as reusable.
+[3573.00s -> 3584.00s]  So this is sort of typical cleanup requirement, which is a bunch of stuff that has to be freed when threads exit or are killed.
+[3584.00s -> 3589.00s]  So there's two big problems that arise here with thread exit or killing threads.
+[3589.00s -> 3597.00s]  One is that we can't just reach out, we can't usually just reach out and unilaterally destroy another thread.
+[3597.00s -> 3607.00s]  The problem is that that other thread may actually be currently executing on another core and using its stack and maybe about to save its registers and its struct context or whatever.
+[3607.00s -> 3611.00s]  The other thread, if it's in the kernel, may be holding locks.
+[3611.00s -> 3615.00s]  It may be in the middle of some complicated update to a kernel data structure.
+[3615.00s -> 3629.00s]  And if we simply somehow shoot down the thread and stop it dead in its tracks, then it may have gotten halfway through a delicate update to some kernel data, but we shot it down before it completed.
+[3629.00s -> 3635.00s]  And so we can't afford any of those things to happen.
+[3636.00s -> 3648.00s]  Another problem is that even if a thread calls exit and has sort of decided for its, it's not killed, but decided for itself that it wants to quit, it has resources that it uses while it executes.
+[3648.00s -> 3652.00s]  Like its stack, for example, and its slot in the process table.
+[3652.00s -> 3660.00s]  And while it's still executing, it may not be able to free up the resources that it's still using.
+[3660.00s -> 3672.00s]  So we need a way for threads to, for those last few resources that are critical to execution to somehow be freed, even though the thread needs them, even just execute any code at all.
+[3672.00s -> 3675.00s]  Okay, so keep these two problems in mind.
+[3675.00s -> 3683.00s]  xv6 actually has two things that are related to shutting down threads or processes.
+[3683.00s -> 3687.00s]  One is exit and the other is kill. So let's look at exit first.
+[3687.00s -> 3691.00s]  I'm going to look at the code for exit in proc.c.
+[3691.00s -> 3698.00s]  This is what the exit system calls.
+[3698.00s -> 3707.00s]  And, you know, what exit has to do in the end, we know sort of from the outside, from the interface, that it's got to free up the process memory and page table, it's got to close its open files.
+[3707.00s -> 3717.00s]  And we also know that there's this wait call that the parent may be making and that exit has to eventually cause the parent to be woken up as well.
+[3717.00s -> 3722.00s]  And so we're going to look for all these things in the exit code.
+[3723.00s -> 3728.00s]  So you can see some of this stuff, like exit, specifically closes the open files.
+[3728.00s -> 3737.00s]  And this might actually be quite complex because the files are, you know, file system files, closing them actually involves things like reference counting.
+[3737.00s -> 3741.00s]  We haven't gotten there yet, but we'll see that this takes a fair amount of work.
+[3741.00s -> 3747.00s]  But a process goes ahead and closes when you call exit, closes its own files.
+[3747.00s -> 3760.00s]  And it also does something similar. It has a record of the current working directory, which is what's changed when you call CD and it needs to sort of release that reference into the file system.
+[3760.00s -> 3771.00s]  Then there's some other horrible stuff that happens that's related to the fact that if a process exits, but it has children of its own,
+[3771.00s -> 3780.00s]  those children are inherited by the init process. Because as it turns out, we'll see in a few minutes that every process that exits,
+[3780.00s -> 3787.00s]  there has to be a corresponding wait from a parent that actually finishes up some of the steps in exiting.
+[3787.00s -> 3794.00s]  And so if I exit, my children, they need to be waited for. I was their parent, I'm not going to wait for them because I've exited.
+[3794.00s -> 3805.00s]  And so there's a stretch of code here in exit that is re-parenting the exiting process's children so that they're parents of init, which is process ID one.
+[3805.00s -> 3820.00s]  And then finally, a process wakes up its own parent, which might be sleeping in wait, and sets its state to the zombie state.
+[3820.00s -> 3828.00s]  It turns out we haven't, we'll see in a moment, but the process hasn't completely finished releasing all of its resources.
+[3828.00s -> 3841.00s]  So it's not quite ready to be reused. We want to end up in a position where the process can be, and all its state can be reused by a fork, by some other fork that's unrelated.
+[3841.00s -> 3848.00s]  But we're not quite there yet. And we'll see why in a moment. We set the state to zombie.
+[3848.00s -> 3863.00s]  And then we're not done yet, right? We haven't freed the process. We'll just jump into the scheduler without having completely finished freeing all resources.
+[3863.00s -> 3872.00s]  Okay. So the story here continues. At this point, a zombie process won't be run. The scheduler only runs runnable processes.
+[3872.00s -> 3879.00s]  So this process isn't quite free, because that would be state equals unused. But it's definitely not going to run again, because it's in state zombie.
+[3879.00s -> 3885.00s]  So we switch into the scheduler. The scheduler now runs something else.
+[3885.00s -> 3896.00s]  We know from the description of exit and wait in Unix that if a process exits, then if its parent calls wait,
+[3896.00s -> 3908.00s]  the wait, that wait is going to return to signal to the parent that one of its children has exited. So we can look for the implementation of wait.
+[3908.00s -> 3922.00s]  Also here is a big loop, this implementation of wait. But really what's going on is that when a process calls wait, it scans the process table,
+[3922.00s -> 3935.00s]  looking for processes whose parent is the current process, and in particular looking for processes whose parent is the current process and are in state zombie.
+[3935.00s -> 3943.00s]  That is, they've gotten that far in exit, or almost finished exiting.
+[3943.00s -> 3950.00s]  So now we found this call to wait, the wait system calls found a child process that has exited.
+[3951.00s -> 3961.00s]  And I don't know if you remember, exit can return this 32-bit exit status to the parents, so the next bunch of code collects that.
+[3961.00s -> 3969.00s]  And then it's the parent that calls free proc, which does the final steps in freeing a process's resources.
+[3969.00s -> 3979.00s]  So we'll look at free proc. And this is the final shutdown of stuff that would be quite awkward if the exiting process itself freed while it was executing.
+[3979.00s -> 3993.00s]  So it frees its trap frame, it frees the user page table, and if we freed kernel stacks, the processes exiting processes, kernel stack would be freed here also.
+[3993.00s -> 4005.00s]  But because of the stack guard, kernel stack stack guard pages, we don't actually ever, turns out we don't free, do we never free the kernel stacks.
+[4005.00s -> 4014.00s]  But all the stuff that would be a sort of potentially a pain to free in the exit, while the exiting process is running, is freed by the parent.
+[4014.00s -> 4025.00s]  One thing to notice here is that wait, wait is not just for the convenience of parents that want to know when their children have exited.
+[4026.00s -> 4037.00s]  Wait is actually a critical piece of the exit process, and you really, in Unix, it's just a requirement that there be a wait that corresponds to every exiting process.
+[4037.00s -> 4047.00s]  And that's really the reason why when a process exits, its children are sort of given away to init, they're turned into init's children.
+[4047.00s -> 4058.00s]  What init does is just calls wait in the loop, because every process has to be waited for so that its parent can call free proc and finish freeing up its resources.
+[4058.00s -> 4072.00s]  And then when it's completely done, it sets, when the parent's done freeing all the exited processes resources, it sets that child state to unused, now fork.
+[4072.00s -> 4079.00s]  And, you know, some future call to fork can reuse that process a lot.
+[4079.00s -> 4084.00s]  Any questions?
+[4084.00s -> 4087.00s]  Oh, I have a question about sleep.
+[4087.00s -> 4104.00s]  So in sleep, where we are, yeah, so when we are, oh sorry, not sleep, exit, I won't say exit, yeah.
+[4104.00s -> 4116.00s]  Yeah, so why are we, why are we grabbing original parent before we reparent, is that necessary?
+[4117.00s -> 4131.00s]  This is grim code that's wrestling with the possibility that a process and its parent may exit at the same time.
+[4131.00s -> 4142.00s]  And there's some, you know, even though ordinarily there's like nothing interesting going on, process exits, its parent waits for it, everything's fine.
+[4142.00s -> 4147.00s]  But it could be that a parent, that a process exits, and its parent process exits at the same time.
+[4147.00s -> 4155.00s]  And so while we're trying to like wake up our parent to tell it we've exited, that parent is itself exiting.
+[4155.00s -> 4170.00s]  And a lot of this code here, which I feel I kind of understood a year ago, but don't any longer understand, is about taking care of this rare case of concurrent exits of a parent and child.
+[4170.00s -> 4181.00s]  And if it weren't for that, it would all be extremely straightforward, a parent, the process would have a parent, and it would just wake up its parent at this point.
+[4181.00s -> 4190.00s]  And we wouldn't, if it weren't for concurrent exits of parent and child, the child could just wake up its parent, period.
+[4190.00s -> 4192.00s]  Okay, I see, thank you.
+[4192.00s -> 4195.00s]  Sorry, sorry to not really be explaining here.
+[4196.00s -> 4206.00s]  I have a quick question. So why are we setting the process state to zombie after we wake up the parent? Wouldn't we want to do that before?
+[4206.00s -> 4208.00s]  Oh, yeah.
+[4208.00s -> 4220.00s]  It turns out because we've acquired the exiting process, had acquired its own process lock, the parent can't look at this process.
+[4220.00s -> 4230.00s]  We've acquired our own lock here, and then we're going to call sched. The parent's wait acquires the child's lock, which is prlock.
+[4230.00s -> 4244.00s]  And so that means that between this acquire and when after we call sched and the scheduler thread releases this prlock, the parent can't look at this process in this block of code.
+[4244.00s -> 4245.00s]  Okay.
+[4245.00s -> 4262.00s]  So the order of this stuff doesn't matter, and indeed, if we didn't have the lock on, it's possible some other order, well, in most situations, no order would work if we didn't hold the lock.
+[4262.00s -> 4267.00s]  Anyway, yeah, because we hold the lock, the order sort of doesn't matter because the parent can't look.
+[4267.00s -> 4268.00s]  That makes sense.
+[4268.00s -> 4275.00s]  Yeah.
+[4275.00s -> 4278.00s]  Okay.
+[4278.00s -> 4285.00s]  Okay, so the trick here is, the trick I wanted to emphasize was that
+[4285.00s -> 4304.00s]  to a great extent, actually, the child doesn't, in the end, the child doesn't free all its resources because it can't because it's still using them while it executes, and instead, some other thread, namely the parent, does the freeing of the delicate resources that are required for execution.
+[4304.00s -> 4312.00s]  So that's sort of a trick to allow us to greatly simplify exit.
+[4312.00s -> 4314.00s]  Okay.
+[4314.00s -> 4317.00s]  A last thing I want to look at is kill.
+[4317.00s -> 4334.00s]  So the, you know, the kill system call, one process in Unix can make the kill system call and pass it the process ID of a different process, and the goal is that that should cause that other process, the target process, to stop executing.
+[4334.00s -> 4342.00s]  And if we're not careful, you know, this risks, especially if that other process is executing in the kernel,
+[4342.00s -> 4353.00s]  this risks this problem I mentioned a few minutes ago where, gosh, that, you know, the kernel thread of the process we're trying to kill might be in the middle of updating something, you know, updating the file system, creating a file, for example.
+[4353.00s -> 4362.00s]  And we can't just, like, kill it dead on the spot because that would leave some delicate multi-step operation only halfway completed.
+[4362.00s -> 4369.00s]  So we know that kill can't really just stop the target process.
+[4369.00s -> 4377.00s]  And indeed, an xv6 and other Unixes as well, kill does almost absolutely nothing.
+[4377.00s -> 4388.00s]  It scans the process table looking for the target process ID and just sets this flag in that process's process structure.
+[4388.00s -> 4393.00s]  And also if it was sleeping, causes it to be runnable so it'll wake up from the sleep.
+[4393.00s -> 4402.00s]  But all it does is set this flag. It doesn't stop the other process from executing or anything like it.
+[4402.00s -> 4408.00s]  So kill itself is very gentle.
+[4408.00s -> 4417.00s]  And the game is that the target process, at points in the kernel code where it would be safe to stop executing,
+[4417.00s -> 4421.00s]  the other process checks its own killed flag.
+[4421.00s -> 4428.00s]  And if it's set, the other process sort of voluntarily exits, you know, calls this exit function.
+[4428.00s -> 4437.00s]  And you can see some of those points in trap.c. In fact, you can see all the points in trap.c.
+[4437.00s -> 4442.00s]  So if we're in user trap in a system call, before actually executing the system call,
+[4442.00s -> 4451.00s]  if the process has already been killed, or if kill has been called for this process, then the process calls exit and goes away.
+[4451.00s -> 4456.00s]  And this is a point in the kernel where it's not holding any locks. It's not in the middle of doing anything.
+[4456.00s -> 4463.00s]  And so it's completely safe for the process to just quit and call exit.
+[4463.00s -> 4469.00s]  And there's a similar check at the end of user trap.
+[4469.00s -> 4475.00s]  So after a system call, the process also checks if it's being killed.
+[4475.00s -> 4483.00s]  And indeed, this code here executes even if the process is interrupted by an interrupt.
+[4483.00s -> 4495.00s]  So for example, if a timer interrupt goes off, then this code will execute and we'll see that the process has been killed and then the process will exit.
+[4495.00s -> 4505.00s]  And so what that means is that what kill means, the meaning of kill or the effect of kill is not exactly stop the other process right now.
+[4505.00s -> 4516.00s]  It's much more like, well, you know, if the other process is in user space, then the next time it makes a system call, it will exit.
+[4516.00s -> 4522.00s]  Or the next time a timer interrupt goes off while executing user code in the target process,
+[4522.00s -> 4527.00s]  if it's interrupted by a timer interrupt or some other interrupt, then it will also exit.
+[4527.00s -> 4535.00s]  So there might be a significant delay between when one process calls kill and when the other process actually exits.
+[4535.00s -> 4540.00s]  And that's just the way it is.
+[4540.00s -> 4553.00s]  There is a sort of intermediate question, though, of if the process is not in its own user space, but is in the middle of a system call and it's killed, do we need to do anything special?
+[4553.00s -> 4559.00s]  The reason why this may come up is suppose the process is reading from the console, right?
+[4559.00s -> 4564.00s]  You know, reading for the next character you type. Well, you might not type another character until tomorrow.
+[4564.00s -> 4571.00s]  And it would be nice if when you killed the process, it actually went away before tomorrow.
+[4571.00s -> 4587.00s]  And for that reason, in a number of points in XV6 in which a process is sleeping, XV6 actually arranges that if it's killed while sleeping in the kernel, it will actually exit.
+[4587.00s -> 4590.00s]  So let me show you the machinery for that.
+[4591.00s -> 4595.00s]  The first thing to look at is in kill itself.
+[4595.00s -> 4602.00s]  You can see that if the target process is sleeping, then kill will set its state to runnable.
+[4602.00s -> 4609.00s]  And that'll mean that even if it had called sleep, the scheduler will now run it and it will simply return from sleep.
+[4609.00s -> 4615.00s]  And so let's look at a place where that actually matters in the pipe code.
+[4615.00s -> 4623.00s]  If a process is in sleep waiting to read a pipe and it's killed, kill will set it to runnable.
+[4623.00s -> 4627.00s]  It'll return from sleep. It'll go back to the top of this loop.
+[4627.00s -> 4632.00s]  It'll probably, if there was no data in the pipe before, there'll probably still be no data in the pipe.
+[4632.00s -> 4637.00s]  And now this pipe read at least checks whether the process has been killed.
+[4637.00s -> 4642.00s]  And if it has been killed, instead of sleeping again, the pipe read will return.
+[4642.00s -> 4644.00s]  Return an error doesn't really matter.
+[4644.00s -> 4651.00s]  But what we're returning to is this syscall, since we're in a system call,
+[4651.00s -> 4656.00s]  where pipe read really returns to in the end is returns from the system call.
+[4656.00s -> 4662.00s]  And then user trap checks PR killed again and will now exit.
+[4662.00s -> 4671.00s]  So for sleeps that we know it's OK to just bail out of when a process is killed,
+[4672.00s -> 4674.00s]  those loops check the killed flag.
+[4674.00s -> 4682.00s]  But there are also sleeps where it would not be OK for a process to quit if it's killed in that sleep.
+[4682.00s -> 4688.00s]  So, for example, if a process is in the middle of updating the file system on disk to create a new file,
+[4688.00s -> 4692.00s]  that is a bad time. Even if it's sleeping waiting for the disk,
+[4692.00s -> 4696.00s]  that's a bad time for a process to just decide to quit because it's been killed.
+[4696.00s -> 4701.00s]  We want to finish the complete file system operation and only then have the process exit.
+[4701.00s -> 4708.00s]  And so you can see this. We haven't looked at this, but I will show you in the disk driver
+[4708.00s -> 4713.00s]  an example of a sleep loop that doesn't check killed.
+[4716.00s -> 4724.00s]  So here we are. This is the sleep in which a process waits for the disk to finish reading a disk block,
+[4724.00s -> 4730.00s]  and it absolutely doesn't check killed because it wants to finish maybe in the middle of creating a file,
+[4730.00s -> 4735.00s]  which involves multiple disk reads and writes, want to finish the entire file system operation,
+[4735.00s -> 4742.00s]  the entire system call, and only then check PR killed and exit.
+[4742.00s -> 4746.00s]  Questions about anything?
+[4746.00s -> 4751.00s]  I have a question about why is kill allowed in the way it is?
+[4751.00s -> 4759.00s]  Why wouldn't the process kill all the other processes so that it can run by itself?
+[4759.00s -> 4768.00s]  Well, you know, you do that at MIT on an Athena timesharing machine, they'll probably kick you out of school.
+[4768.00s -> 4771.00s]  Right, but why is it allowed, I guess?
+[4771.00s -> 4779.00s]  It's allowed in XV6 because XV6 is a toy operating system that,
+[4779.00s -> 4788.00s]  it's just like anything that has to do with permissions, it just doesn't exist in XV6.
+[4788.00s -> 4795.00s]  In Linux or a real operating system, every process has a user ID that corresponds to the more or less
+[4795.00s -> 4798.00s]  to the human user who's executing the process.
+[4798.00s -> 4806.00s]  And some system calls use the user ID of the process to kind of check is the process allowed to do this.
+[4806.00s -> 4817.00s]  And so in Linux, you would see an extra check here that said that the calling process has to have the same user ID
+[4817.00s -> 4821.00s]  as the process is trying to kill, otherwise it's not allowed.
+[4821.00s -> 4828.00s]  And that, at least in a timesharing context, where we have multiple users and we don't want them to kill each other's processes,
+[4828.00s -> 4837.00s]  that's more or less sufficient to keep people from, to make it hard for people to kill other people's processes.
+[4837.00s -> 4841.00s]  Okay, I see. Thank you.
+[4841.00s -> 4845.00s]  Does the init process ever exit?
+[4845.00s -> 4850.00s]  Let me check.
+[4850.00s -> 4856.00s]  Yes. If fork fails, it will exit. However, the real answer to your question is no.
+[4856.00s -> 4866.00s]  The intent is that init never exits. It just sits in this loop and what it's doing is calling wait over and over again.
+[4866.00s -> 4872.00s]  If init exits, I think that's a fatal error and the system will crash.
+[4872.00s -> 4887.00s]  And there's code somewhere in the kernel that says maybe an exit. Let's just check exit.
+[4887.00s -> 4894.00s]  Yeah, here we are in the beginning of exit. If it looks like the current process is the init process, it's a panic.
+[4894.00s -> 4904.00s]  Because the system would eventually grind to a halt if there were a no init, because then there'd be nothing to call wait on these exiting processes,
+[4904.00s -> 4912.00s]  and nothing to complete the freeing of the processes, and gradually we'd run out of processes, and then that would be some other error.
+[4912.00s -> 4918.00s]  But we have to have an init. So the real answer is that no init really can't be allowed to exit.
+[4918.00s -> 4924.00s]  Better not exit.
+[4924.00s -> 4928.00s]  Okay.
+[4928.00s -> 4932.00s]  Any other questions?
+[4932.00s -> 4944.00s]  I guess another question. So, I guess we haven't really talked about it much in this class yet but like what happens, or what needs to happen to like shut down the OS?
+[4944.00s -> 4950.00s]  Gotta unplug it.
+[4950.00s -> 4962.00s]  This is like very complex and it depends on what you're running. If the machine is currently doing nothing, well,
+[4962.00s -> 4967.00s]  part of the answer to the question is that the file system ends up being...
+[4967.00s -> 4977.00s]  Because the file system is permanent, you know, the file system is carried over from reboot to reboot, we need to leave the file system in good shape.
+[4977.00s -> 4986.00s]  So if we were in the middle of some update to the file system, like creating a file, and we want to shut the system down or the power field or something,
+[4986.00s -> 4993.00s]  we absolutely need a strategy to make sure that even though we were in the middle of some complex update to the file system,
+[4993.00s -> 5002.00s]  that we don't leave the file system in a state. We don't expose any broken invariance in the on disk file system structures.
+[5002.00s -> 5006.00s]  Because the file system is really just a data structure that lives on disk.
+[5006.00s -> 5015.00s]  So there's like a lot of sort of machinery involved and like making sure that if you shut down or the power fails or who knows what,
+[5015.00s -> 5024.00s]  we can recover the file system on disk. For the rest though, if it's not for that,
+[5024.00s -> 5031.00s]  then whether you have to do anything special to shut down depends on what processes you're running.
+[5031.00s -> 5038.00s]  If you're running some important server, you know, a database server that a lot of other computers depend on and use over the network,
+[5038.00s -> 5047.00s]  who knows? You know, the answer may be that you just cannot be allowed to shut down because you're providing a service that's critical to a bunch of other computers.
+[5047.00s -> 5056.00s]  If your computer is not doing much of anything, then you can just turn it off and it will stop executing.
+[5056.00s -> 5061.00s]  And there's not much to do. I mean, really, maybe the answer to your question is if you want to shut down the computer,
+[5061.00s -> 5067.00s]  make sure the file system is in good shape and then stop executing instructions. And that's fine.
+[5067.00s -> 5072.00s]  That makes sense. Yeah. Thank you.
+[5072.00s -> 5077.00s]  Anything else?
+[5077.00s -> 5084.00s]  Oh, sorry. I have another question. So what is the Semaphore interface?
+[5084.00s -> 5089.00s]  Talking about P and V.
+[5089.00s -> 5094.00s]  So just those two functions?
+[5094.00s -> 5096.00s]  Yeah.
+[5096.00s -> 5101.00s]  XPC doesn't have Semaphores, really, but the book Semaphores, I think it's just P and V.
+[5101.00s -> 5107.00s]  Those are two methods. You have a Semaphore object that has two methods, P and V.
+[5107.00s -> 5116.00s]  OK, I see. Thank you.
+[5116.00s -> 5121.00s]  Anything else?
+[5121.00s -> 5150.00s]  All right.

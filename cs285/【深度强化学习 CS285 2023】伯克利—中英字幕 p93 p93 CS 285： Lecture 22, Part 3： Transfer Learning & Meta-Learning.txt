@@ -1,0 +1,166 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.04s]  All right, now let's talk about how we can take these meta-learning ideas and apply them
+[5.04s -> 7.20s]  to RL.
+[7.20s -> 14.88s]  So the generic learning picture that we had before is that regular learning is when you
+[14.88s -> 20.48s]  take the argmin of some loss function on a training set, and that corresponds to
+[20.48s -> 23.80s]  some kind of learning function, FLearn, which is typically something like gradient
+[23.80s -> 25.52s]  descent.
+[25.52s -> 30.68s]  So generic meta-learning can be viewed as minimizing a loss function on a test set where the parameters
+[30.68s -> 35.96s]  that go into the loss function are given by a learned function f theta applied to detrain.
+[35.96s -> 39.88s]  So we can, by analogy, apply the same idea to reinforcement learning.
+[39.88s -> 44.88s]  We can say that regular reinforcement learning is when you maximize the expected reward
+[44.88s -> 52.08s]  under some policy, pi theta, and that can be viewed as a learning function, FRL, but
+[52.08s -> 53.84s]  FRL is not applied to a training set anymore.
+[53.84s -> 59.96s]  It's applied to an MDP M. So FRL is a function of an MDP.
+[59.96s -> 69.24s]  Meta-reinforcement learning then can be viewed as maximizing the expected reward of a policy
+[69.24s -> 75.08s]  with some parameters phi i, where the parameters phi i are given by applying a learned function
+[75.08s -> 79.96s]  of theta to an MDP M i.
+[80.08s -> 84.88s]  So we just kind of transported the same definition into the RL setting.
+[84.88s -> 89.04s]  So meta-reinforcement learning, what this implies, meta-reinforcement learning will
+[89.04s -> 93.96s]  be a reinforced learning procedure, but what it will train is this f theta, which itself
+[93.96s -> 103.08s]  reads in MDP and outputs some kind of representational policy.
+[103.08s -> 105.08s]  So let's try to instantiate this idea.
+[105.08s -> 109.88s]  So we have a set of MDPs, and these are called meta-training MDPs, and in order for
+[109.88s -> 113.84s]  this to work, we need to assume that these meta-training MDPs are drawn from some distribution
+[113.84s -> 118.80s]  P of M, and then at test time, we're going to have a new test MDP M test that is drawn
+[118.80s -> 122.66s]  from that same distribution, and we're going to get the parameters for our policy by
+[122.66s -> 126.68s]  applying this learned function f theta to M test.
+[126.68s -> 129.72s]  It's important to assume that they come from the same distribution, because just
+[129.72s -> 134.20s]  like in supervised learning, learning only works when the training and test are from
+[134.20s -> 135.20s]  the same distribution.
+[135.20s -> 140.04s]  In meta-learning, it also only works when the training and test are from the same distribution.
+[140.04s -> 145.52s]  So for example, the different MDPs might correspond to a robot doing different tasks, and then
+[145.52s -> 149.56s]  M test would be the robot learning a new task, or it might be something much simpler,
+[149.56s -> 153.84s]  maybe it involves the half-cheetah robot from your homework running at different speeds
+[153.84s -> 161.28s]  forward and backward, and then M test would be a new speed.
+[161.28s -> 164.20s]  Training and contextual policies are very closely related.
+[164.20s -> 175.02s]  So you could imagine that one way to view meta-learning is as the problem of training
+[175.02s -> 181.84s]  a policy, pi theta, that is conditioned on all of your experience in the test MDP.
+[181.84s -> 186.64s]  So essentially what f theta does is it takes the experience in the test MDP, or in the
+[186.64s -> 192.16s]  meta-training MDP, whatever MDP it's being run on, and summarizes into some summary
+[192.16s -> 196.24s]  statistic that is then used to determine what your policy will do.
+[196.24s -> 200.04s]  And that's basically the same as having a policy that is conditioned on all the history
+[200.04s -> 206.36s]  that you've experienced in this MDP.
+[206.36s -> 210.28s]  So the relationship between this and contextual policies is that this is basically just a
+[210.28s -> 216.52s]  contextual policy, except now the context is all of the experience in the MDP-MI.
+[216.52s -> 223.40s]  Okay, this is not maybe the most obvious idea, so it would be a good idea to sort
+[223.40s -> 227.54s]  of pause and think about this a little bit, so let me repeat.
+[227.54s -> 234.52s]  The procedure on the left, where the parameters for the new task, phi i, are obtained by
+[234.52s -> 240.16s]  running some learning procedure f theta on mi, is basically the same as deploying a policy
+[240.16s -> 245.12s]  that is conditioned on all of the experience in the test MDP.
+[245.12s -> 248.18s]  Because that's what f theta is really executed on, f theta is a function of MDP, but it's
+[248.18s -> 250.72s]  really a function of the experience you gathered in that MDP.
+[250.72s -> 260.90s]  So as long as you can feed all that experience into your policy, then you're doing meta-learning.
+[260.90s -> 270.00s]  So that is to say that the context, which we call z or omega or something like that,
+[270.00s -> 275.14s]  is the phi i that we have here.
+[275.14s -> 280.60s]  So phi i is basically the context in a contextual policy.
+[280.60s -> 284.04s]  The main difference, of course, is that when we talked about multitask learning before,
+[284.04s -> 287.08s]  the context was provided for us, someone would just say like, oh, your job is to
+[287.08s -> 289.00s]  do the laundry, your job is to do the dishes.
+[289.00s -> 295.34s]  And now the context is inferred from experience in mi.
+[295.34s -> 301.22s]  So in multitask, our L was given, in meta-learning, it's inferred.
+[301.22s -> 304.84s]  Okay, so let's try to make this a little more concrete.
+[304.84s -> 306.94s]  Let's try to actually instantiate this idea.
+[306.94s -> 311.54s]  And instantiating this idea basically amounts to implementing f theta mi, implementing an
+[311.54s -> 317.20s]  encoder that will read in everything you've experienced in the MDP mi and inform your
+[317.20s -> 318.90s]  policy how to act.
+[318.92s -> 320.84s]  So what should f theta mi do?
+[320.84s -> 323.52s]  Well, of course, it needs to improve the policy of experience from mi.
+[323.52s -> 329.80s]  So it needs to read in that experience and help the policy do better.
+[329.80s -> 334.04s]  And it also needs to choose how to interact.
+[334.04s -> 335.68s]  And this is different from supervised learning.
+[335.68s -> 337.92s]  So in supervised meta-learning, we don't have to deal with this.
+[337.92s -> 343.92s]  But in meta-reinforcement learning, we have to also be smart about choosing how to
+[343.92s -> 351.54s]  explore in the MDP mi, how to actually choose the actions.
+[351.54s -> 354.30s]  But let's leave that one for later and let's talk about the first part, which is going
+[354.30s -> 362.12s]  to work out in a very similar way as in supervised meta-learning, improve with experience.
+[362.12s -> 366.70s]  So our experience consists of transitions, consists of state, action, next state, and
+[366.70s -> 367.70s]  reward.
+[367.70s -> 372.18s]  So we could apply directly the analogy from supervised meta-learning and simply set up
+[372.24s -> 377.40s]  some kind of model that can read in all of our experience in the MDP mi.
+[377.40s -> 380.40s]  The simplest version of this would simply be a recurrent neural network that reads in
+[380.40s -> 389.04s]  a sequence of transitions, S1, A1, S2, R1, S2, A2, S3, R2, S3, A3, S4, R3, etc., etc.,
+[389.04s -> 393.00s]  out of every transition that we've experienced in this MDP.
+[393.00s -> 397.12s]  This is a little different in a subtle way from policies that depend on history because
+[397.12s -> 399.36s]  these transitions would go across episodes.
+[399.36s -> 406.38s]  So if you've experienced five different episodes, you would encode all the episodes together.
+[406.38s -> 409.70s]  And then the RNN would represent this with some kind of hidden vector.
+[409.70s -> 413.54s]  That hidden vector would be fed into a policy head that takes in a state and the hidden
+[413.54s -> 416.30s]  vector and produces an action.
+[416.30s -> 421.46s]  So this is a very straightforward way to represent f theta that can read in all of
+[421.46s -> 427.50s]  the experience and use it to inform what the policy should do.
+[427.50s -> 432.20s]  And then of course the parameters theta are the parameters of this RNN encoder and the
+[432.20s -> 435.08s]  policy head at the end.
+[435.08s -> 439.52s]  So as before, phi i is just represented by the parameters of that little policy head
+[439.52s -> 442.08s]  and the hidden state of the RNN.
+[442.08s -> 445.68s]  And the hidden state of the RNN is the only thing that you're actually inferring
+[445.68s -> 453.40s]  at meta test time when you adapt to a new MDP.
+[453.40s -> 457.98s]  All right, so that might seem a little simplistic, right?
+[457.98s -> 463.10s]  Because we made a really big deal out of meta-learning, we introduced a lot of formalism,
+[463.10s -> 467.34s]  but then it seems like all we end up with is we just have to train an RNN policy.
+[467.34s -> 470.14s]  Is that really all we have to do?
+[470.14s -> 473.58s]  Well, the answer is basically yes.
+[473.58s -> 479.50s]  And to convince ourselves that this is true, let's walk through a little example of meta-learning
+[479.50s -> 482.86s]  with this kind of history-dependent policy.
+[482.92s -> 486.52s]  Let's say that we have a mouse and its goal is to get the cheese.
+[486.52s -> 489.40s]  And on different episodes, the cheese will be in a different place or maybe the wall
+[489.40s -> 490.56s]  will be in a different place.
+[490.56s -> 495.78s]  So it has to adapt to different MDPs with different placements of cheese and walls.
+[495.78s -> 499.40s]  So let's imagine that on the first time step, the mouse goes right.
+[499.40s -> 503.16s]  So the first transition that we give to the RNN has the action going right and a reward
+[503.16s -> 504.52s]  of zero.
+[504.52s -> 508.36s]  Then the mouse goes left, then we encode that, and then the episode ends.
+[508.36s -> 511.60s]  Let's say the episodes are only two time steps in length, okay?
+[511.60s -> 514.46s]  So now a new episode begins, the blue episode.
+[514.46s -> 515.46s]  But we don't stop the RNN.
+[515.46s -> 519.06s]  The RNN is still reading in all this experience.
+[519.06s -> 523.10s]  Now the mouse goes up and it goes right, and it got the cheese.
+[523.10s -> 524.70s]  So that's what's been encoded so far.
+[524.70s -> 528.62s]  Now internally, the RNN should be able to figure out that the cheese is in the top
+[528.62s -> 530.26s]  right.
+[530.26s -> 534.56s]  So then when a new episode begins, remember, we don't reset the hidden state of the RNN.
+[534.56s -> 536.70s]  So the RNN still has this context.
+[536.70s -> 539.78s]  It's going to encode the experience of going up, the experience of going right and getting
+[539.78s -> 541.42s]  plus one.
+[541.42s -> 549.60s]  So here you could see that because the hidden state is not reset between episodes, the RNN
+[549.60s -> 553.76s]  can actually figure out where the cheese is, and it can also figure out how to explore
+[553.76s -> 559.40s]  because it'll explore in such a way as to get the largest reward, given the experience
+[559.40s -> 565.88s]  that it's seen so far in that MDP.
+[565.88s -> 568.56s]  So let's talk about exploration a little bit more.
+[568.56s -> 571.98s]  Why does this method learn to explore effectively?
+[571.98s -> 581.58s]  Well, this is the sequence of actions that we see during adaptation, and each color
+[581.58s -> 585.88s]  represents an episode, so between episodes you reset to the initial state.
+[585.88s -> 588.08s]  The full sequence is a kind of a meta episode.
+[588.08s -> 591.52s]  So a meta episode consists of a catenation of different episodes.
+[591.52s -> 595.68s]  So because the RNN didn't see a reward on that first episode going right, then it
+[595.68s -> 599.72s]  should know, if it was meta trained successfully, that on the second episode it shouldn't go
+[599.72s -> 600.72s]  right again.
+[600.72s -> 601.72s]  It should go somewhere else.
+[601.72s -> 605.92s]  And if it is meta trained on a variety of MDPs, then these patterns will become
+[605.92s -> 607.02s]  apparent to it.
+[607.02s -> 610.40s]  So regular reinforcement learning will actually be able to recover these kinds of exploration
+[610.40s -> 612.80s]  strategies.
+[612.80s -> 613.80s]  It's a little bit of a trick.
+[613.80s -> 619.20s]  Basically the trick is that once you give the policy this entire meta episode, then
+[619.20s -> 623.60s]  the problem of exploration really becomes the problem of solving this kind of higher
+[623.60s -> 627.48s]  level MDP.
+[627.48s -> 632.96s]  So then regular RL, which just maximizes reward with this policy representation that
+[632.96s -> 636.52s]  reads in entire meta episodes, will actually solve the problem.
+[636.52s -> 641.32s]  So optimizing the total reward over the entire meta episode with an RNN policy actually
+[641.32s -> 642.92s]  ends up automatically learning to explore.
+[642.92s -> 649.40s]  And that's a very important idea in meta RL.
+[649.40s -> 652.76s]  Now people have instantiated this idea in various ways, including with actor-critic
+[652.76s -> 655.44s]  methods, policy gradient methods, and many others.
+[655.44s -> 658.96s]  More recently transformers have been used as representations for this, but the high
+[658.96s -> 660.32s]  level principle is the same.
+[660.32s -> 666.24s]  Somehow inform your policy about the entire history of your experience with that MDP,
+[666.24s -> 674.04s]  and it'll figure out how to both explore and adapt to new MDPs from the same distribution.
+[674.04s -> 676.32s]  There are of course a variety of architectural choices.
+[676.32s -> 681.52s]  So a standard RNN architecture would just basically concatenate all the different episodes into
+[681.52s -> 684.84s]  one long history into meta episodes.
+[684.84s -> 688.96s]  There have also been methods that have been proposed that use attention on temporal convolution,
+[688.96s -> 692.80s]  as well as parallel encoders, I'll talk about those a little bit later, as well
+[692.80s -> 693.80s]  as transformers.
+[693.80s -> 697.56s]  So if you want to learn more about architectures for this, then maybe check out these papers,
+[697.56s -> 698.92s]  and I'll stop there.

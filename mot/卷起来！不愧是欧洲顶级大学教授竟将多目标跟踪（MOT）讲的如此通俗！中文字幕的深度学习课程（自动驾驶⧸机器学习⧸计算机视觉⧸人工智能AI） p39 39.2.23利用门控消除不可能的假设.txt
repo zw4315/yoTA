@@ -1,0 +1,96 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.88s]  To understand why we want to use gating, you can imagine that we are planning to use a
+[5.88s -> 11.12s]  PDA filter when the number of measurements MK is very large.
+[11.12s -> 15.22s]  For instance, suppose you have an amazing sensor that detects the objects with a high
+[15.22s -> 22.16s]  probability that has a fairly small clutter intensity that has an enormous field of view.
+[22.16s -> 27.00s]  Under these conditions, we may expect the PDA filter to perform well, but if the
+[27.00s -> 31.64s]  field of view is sufficiently big, we may receive a very large number of clutter
+[31.64s -> 36.74s]  detections at every time instance. To implement a PDA filter, we should compute
+[36.74s -> 40.72s]  the posterior mean and covariance, which means that we should compute these
+[40.72s -> 45.08s]  summations over all measurements, which could be computationally demanding
+[45.08s -> 49.96s]  if MK is sufficiently large. However, for the measurements that are far from the
+[49.96s -> 54.14s]  predicted measurements, the weights are practically zero, which means that they
+[54.14s -> 58.22s]  do not contribute much to the posterior mean and covariance.
+[58.22s -> 62.98s]  To save computations, we would like to avoid computing the weights, means, and
+[62.98s -> 67.48s]  covariances for the hypotheses that have insignificant weights.
+[67.48s -> 71.70s]  Another way to think of this is that we want to ignore measurements that are far from
+[71.70s -> 75.58s]  the predicted measurement. Gating is a technique for doing precisely
+[75.58s -> 80.66s]  this. It should be noted, though, that gating is a general technique and that it can also
+[80.66s -> 85.46s]  be used, for instance, in Gaussian sum filters. The basic idea is to form a gate
+[85.46s -> 89.30s]  in the measurement space and pretend that we know that all measurements
+[89.30s -> 93.98s]  outside this gate are clutter measurements. In many cases, this can reduce the
+[93.98s -> 98.42s]  number of hypotheses considerably. We can form gates in different ways,
+[98.42s -> 103.02s]  where axis-aligned rectangular gates are arguably among the simpler
+[103.02s -> 107.14s]  alternatives. In this video, we focus on ellipsoidal gates,
+[107.14s -> 111.54s]  which are natural under Gaussian assumptions. To motivate why we use
+[111.54s -> 116.54s]  ellipsoidal gates, we can look at the unnormalized weights, w tilde k,
+[116.54s -> 121.74s]  for a hypothesis hk in a Gaussian sum filter. The PDA and nearest-neighbor
+[121.74s -> 125.74s]  equations can be viewed as special cases of this equation. Note that we are
+[125.74s -> 129.94s]  considering which measurement associations that can be ignored, and we therefore
+[129.94s -> 134.22s]  focus on the case where theta k is greater than zero. When theta k is greater
+[134.22s -> 137.90s]  than zero, the unnormalized weight is Pd times the predicted
+[137.90s -> 142.34s]  likelihood divided by the clutter intensity. If we assume that lambda c is
+[142.34s -> 146.94s]  roughly constant, at least locally, we can see that the weight is maximized
+[146.94s -> 151.02s]  when the measurement z theta k is equal to the predicted measurement
+[151.02s -> 155.02s]  z bar hk minus one, since that maximizes the predicted
+[155.02s -> 158.94s]  likelihood. Similarly, if the measurement is far from the predicted
+[158.94s -> 163.50s]  measurement, in the sense that this quadratic form is large, the predicted
+[163.50s -> 167.50s]  likelihood takes small values, since the quadratic form appears in the
+[167.50s -> 172.50s]  negative exponent inside the expression for the above Gaussian density.
+[172.50s -> 177.70s]  This implies that the weight w tilde is also small. We refer to the value
+[177.70s -> 182.70s]  of this quadratic form as the squared distance, and denote it as d square
+[182.70s -> 188.30s]  with sub-medicines hk minus one theta k, since hk minus one determines
+[188.30s -> 192.10s]  the predicted measurement distribution, and theta k determines the new
+[192.30s -> 196.30s]  measurement. Since the weights shrink with this distance, we say that the measurement
+[196.30s -> 200.30s]  is clutter if the distance d square is larger than a threshold g.
+[200.30s -> 204.30s]  You can think of this as a pruning technique that prunes hypotheses
+[204.30s -> 208.30s]  without ever computing the specific weights. In this example, we have
+[208.30s -> 213.30s]  received seven measurements at time k, and we have two predicted hypotheses.
+[213.30s -> 217.30s]  The gates for the two hypotheses are illustrated using the two ellipsoids.
+[217.30s -> 221.30s]  The predicted measurement and gate for the first hypothesis is
+[221.50s -> 225.50s]  illustrated in blue, and the only measurement inside that gate is
+[225.50s -> 229.50s]  zk4. That is, under that hypothesis, we disregard
+[229.50s -> 233.50s]  all other measurements as clutter. The gate for the second hypothesis
+[233.50s -> 237.50s]  is illustrated using a green point dashed ellipsoid, and the only
+[237.50s -> 242.50s]  measurements inside that gate is zk4 and zk6.
+[242.50s -> 246.50s]  This example illustrates what the gates might look like in 2D.
+[246.50s -> 250.50s]  But gating is of course more important in scenarios where we receive many
+[250.70s -> 254.70s]  more measurements. In order for gating to work well, we need to
+[254.70s -> 258.70s]  select an appropriate threshold g. To some extent, you
+[258.70s -> 262.70s]  can think of that as selecting the size of the ellipsoids. If the threshold
+[262.70s -> 266.70s]  g is too large, we might accept too many measurements.
+[266.70s -> 270.70s]  On the other hand, if the gate is too small, we increase the probability
+[270.70s -> 274.70s]  that the object detection is outside the gate. A common strategy
+[274.70s -> 278.70s]  for selecting the threshold is to select it such that the probability
+[278.90s -> 282.90s]  that the object detection is outside the gate is sufficiently small.
+[282.90s -> 286.90s]  We introduce a parameter Pg as the probability that the object
+[286.90s -> 290.90s]  measurement is outside the gate, given a predicted hypothesis
+[290.90s -> 294.90s]  hk-1, and an association hypothesis theta k
+[294.90s -> 298.90s]  where theta k is greater than zero. That is, when
+[298.90s -> 302.90s]  we compute Pg, we assume that measurement number theta k
+[302.90s -> 306.90s]  is the object measurement, stating that the measurement z
+[307.10s -> 311.10s]  theta k is outside the gate for hypothesis hk-1
+[311.10s -> 315.10s]  is the same as saying that the distance d squared
+[315.10s -> 319.10s]  of hk-1 theta k is larger than the threshold g.
+[319.10s -> 323.10s]  Given hk-1 and theta k, one can show that the distance
+[323.10s -> 327.10s]  d squared is chi-square distributed with
+[327.10s -> 331.10s]  nz degrees of freedom, where nz is the dimensionality
+[331.10s -> 335.10s]  of the measurement vector. Interestingly, because of how d squared
+[335.30s -> 339.30s]  is defined, this distribution does not depend on the distribution
+[339.30s -> 343.30s]  of the predicted measurements, such as the covariance s.
+[343.30s -> 347.30s]  Now, since the distance d squared has a simple distribution,
+[347.30s -> 351.30s]  we can compute the probability Pg as a function of the threshold g
+[351.30s -> 355.30s]  and we do this using the cumulative distribution. To select
+[355.30s -> 359.30s]  the threshold g, a common strategy is to select a value for Pg
+[359.30s -> 363.30s]  say 0.995
+[363.50s -> 367.50s]  and then use the cumulative distribution for the chi-square distribution to find g.
+[367.50s -> 371.50s]  To summarize, gating is a technique to disregard measurements
+[371.50s -> 375.50s]  as clutter, without ever computing the weights. Most of the
+[375.50s -> 379.50s]  algorithms that we present later start every update with gating
+[379.50s -> 383.50s]  to reduce the computational complexity. We have seen that the ellipsoidal
+[383.50s -> 387.50s]  gate, where we place a threshold on the distance d squared,
+[387.50s -> 391.50s]  is a natural choice in Gaussian settings. It's important to select a suitable
+[391.70s -> 395.70s]  threshold g, and we typically do this by selecting a value for the
+[395.70s -> 399.70s]  probability Pg, and then compute the value of g
+[399.70s -> 403.70s]  that gives the desired value for Pg.

@@ -1,0 +1,1758 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 2.12s]  system lab compares to, say, the walking lab?
+[7.36s -> 9.52s]  Seems a bit more straightforward.
+[9.52s -> 10.44s]  Good.
+[10.44s -> 11.24s]  Are you complete?
+[11.24s -> 13.32s]  Have you finished the lab where you're?
+[16.28s -> 19.04s]  I just started yesterday, and I'm halfway.
+[19.04s -> 19.60s]  OK, good.
+[19.60s -> 22.10s]  I guess that's good news for other people that are starting.
+[22.10s -> 25.16s]  Anybody finished it yet?
+[25.16s -> 26.04s]  I have.
+[26.04s -> 27.48s]  I finished it.
+[28.24s -> 32.44s]  Any nasty surprises, or it worked out reasonably well?
+[32.44s -> 35.12s]  I think it worked out OK.
+[35.12s -> 36.72s]  Yeah.
+[36.72s -> 38.00s]  Good.
+[38.00s -> 40.28s]  Was it easier than the walk lab?
+[40.28s -> 42.20s]  I think so, at least.
+[42.20s -> 44.80s]  Well, hopefully it'll be the case for everybody else, too.
+[48.80s -> 50.96s]  Let me get started.
+[50.96s -> 54.08s]  And the topic I want to talk about today
+[54.08s -> 56.92s]  is virtual memory for user applications
+[56.92s -> 67.32s]  on sort of guided by this paper from 91 by Appel and Lee.
+[67.32s -> 69.12s]  And so the starting point, basically,
+[69.12s -> 75.80s]  is that, as you well know now, the OS kernels
+[75.80s -> 80.96s]  use virtual memory page tables in Creative Wave.
+[80.96s -> 88.92s]  And you have seen that we have the lazy allocation
+[88.92s -> 93.56s]  lab, the copyright lab, as well as
+[93.56s -> 99.04s]  on many other sort of features, or aspects
+[99.04s -> 100.64s]  of the implementation in xv6.
+[100.64s -> 106.60s]  So basically, the argument that the paper makes,
+[106.60s -> 111.72s]  the paper argues that the user application should actually
+[111.72s -> 115.24s]  benefit, too, or should have the same powers.
+[115.24s -> 123.40s]  These user apps can use VM, too.
+[123.40s -> 126.28s]  And what I mean with VM, of course,
+[126.28s -> 128.32s]  user applications are running with virtual memory.
+[128.32s -> 130.32s]  But what I really mean with VM is
+[130.32s -> 133.04s]  that they would like to have the same mechanisms
+[133.04s -> 136.52s]  that the kernel has to its access in user application.
+[137.40s -> 139.64s]  So for example, being able to take page faults
+[139.64s -> 142.08s]  and then respond to those page faults,
+[142.08s -> 144.76s]  be able to change the protection bits
+[144.76s -> 151.04s]  or the privilege levels in the page table.
+[151.04s -> 155.20s]  And so the paper argues this case
+[155.20s -> 159.20s]  by looking at a bunch of different applications,
+[159.20s -> 161.32s]  like six or seven different types of applications.
+[161.32s -> 162.80s]  And maybe it will ask you, what
+[162.84s -> 167.12s]  was your favorite application that you
+[167.12s -> 168.16s]  encountered in the paper?
+[170.88s -> 177.52s]  Anybody want to chime in and talk to her?
+[180.84s -> 183.88s]  They can allow the user application
+[183.88s -> 188.96s]  to decide that a page is going to be, I guess,
+[188.96s -> 193.88s]  to change the access bits for some particular page.
+[193.88s -> 195.32s]  Yeah, that's one of the mechanisms.
+[195.32s -> 196.88s]  I'm just curious which applications.
+[196.88s -> 198.52s]  So to make the case, we have a bunch
+[198.52s -> 203.72s]  of different applications, like the garbage collector
+[203.72s -> 207.92s]  or concurrent garbage collector, and a couple other ones.
+[207.92s -> 209.56s]  I was just wondering which ones you
+[209.56s -> 211.28s]  thought were most interesting.
+[219.96s -> 221.80s]  So what other applications did they use
+[221.80s -> 224.52s]  or did they use to make their case?
+[227.76s -> 231.08s]  I thought the data compression application was pretty cool.
+[231.08s -> 234.04s]  Yeah, OK.
+[234.04s -> 239.88s]  Any others that people were compelled by?
+[244.88s -> 247.24s]  I thought the sort of shared virtual memory
+[247.24s -> 248.68s]  between multiple different systems
+[248.68s -> 249.96s]  that was pretty cool.
+[249.96s -> 251.32s]  I don't think I fully understood
+[251.32s -> 253.32s]  how it worked, but the general idea
+[253.32s -> 255.04s]  of using the protection bits to make sure
+[255.04s -> 257.56s]  that different machines are using that shared
+[257.56s -> 259.72s]  memory in the right way and protecting invariance.
+[259.72s -> 260.64s]  Makes sense.
+[260.64s -> 263.80s]  Yeah, that's it.
+[263.80s -> 266.44s]  Basically, it turns out that that whole area developed
+[266.44s -> 270.48s]  in that one paper that originally described
+[270.48s -> 275.08s]  the SVM developed in a whole research area
+[275.08s -> 277.20s]  where people have all kinds of clever tricks
+[277.20s -> 280.72s]  to try to make that scheme to fly.
+[280.72s -> 281.32s]  Any others?
+[290.60s -> 293.32s]  Because as we go off, we do a couple other applications.
+[293.32s -> 295.60s]  And they basically argue that if you
+[295.60s -> 297.88s]  look at all these quite different applications,
+[297.88s -> 300.08s]  like the shared virtual memory, the data compression
+[300.08s -> 302.60s]  to garbage collector, very different in nature.
+[302.60s -> 304.28s]  But it turns out that all of them
+[304.28s -> 306.84s]  actually rely on a small number of virtual memory
+[306.88s -> 309.44s]  primitives to actually make it work.
+[309.44s -> 312.32s]  And so the first question that the paper addresses
+[312.32s -> 314.60s]  is like, OK, what should the primitives look
+[314.60s -> 318.76s]  like that a user application needs
+[318.76s -> 322.36s]  if they want to implement one of those applications?
+[322.36s -> 324.84s]  And so let me talk a little bit about that first.
+[324.84s -> 326.04s]  What primitives?
+[326.04s -> 338.64s]  And so the obvious one, of course,
+[338.64s -> 342.84s]  is you need something of a primitives, what I call trap,
+[342.84s -> 346.04s]  basically to allow a page fault that
+[346.04s -> 351.12s]  happens inside the kernel to be propagated up to user space.
+[351.12s -> 354.08s]  And then in user space, a handler
+[354.12s -> 356.36s]  can then deal with its page fault,
+[356.36s -> 358.68s]  and then, of course, return in the usual way
+[358.68s -> 361.68s]  back to the kernel, and then resume the instruction.
+[361.68s -> 363.92s]  So clearly, in a primitive like that, it's necessary,
+[363.92s -> 365.76s]  because otherwise, you couldn't do anything
+[365.76s -> 368.24s]  in response to a page fault.
+[368.24s -> 371.20s]  The other primitive that I talked about
+[371.20s -> 380.00s]  is Prop 1, which decreases the accessibility of a page.
+[380.00s -> 383.52s]  They talk a lot about accessibility.
+[383.56s -> 386.20s]  And what does it mean with accessibility?
+[390.76s -> 391.32s]  Anybody?
+[394.00s -> 398.88s]  Oh, whether it's read, write, or for user.
+[398.88s -> 401.52s]  Yeah, so there's different ways in which you can decrease
+[401.52s -> 403.00s]  the accessibility.
+[403.00s -> 405.60s]  You go from a page that maybe has read and write,
+[405.60s -> 407.36s]  you go to just read only.
+[407.36s -> 409.56s]  Or maybe you go from read only
+[409.56s -> 411.20s]  to actually have no access at all.
+[414.36s -> 417.84s]  They also propose that basically there
+[417.84s -> 420.72s]  should be one for each individual page, so that's Prop 1.
+[420.72s -> 422.52s]  There also should be one that actually you
+[422.52s -> 424.16s]  can do for that the application can
+[424.16s -> 427.60s]  call for a collection of pages.
+[427.60s -> 430.24s]  And so basically, Prop n boils down in principle
+[430.24s -> 433.36s]  to calling Prop 1 n times.
+[433.36s -> 436.80s]  But why do they argue that you should have actually
+[436.80s -> 440.16s]  a Prop n version of this primitive too?
+[443.72s -> 448.04s]  Is it because actually it's more efficient
+[448.04s -> 452.36s]  because the overhead of protecting the n pages
+[452.36s -> 454.44s]  is not much more than protecting one
+[454.44s -> 457.88s]  because they talked about something
+[457.88s -> 462.76s]  like amortizing the work of?
+[462.76s -> 464.96s]  Yeah, you're absolutely right.
+[464.96s -> 466.92s]  So basically, if you do a Prop 1,
+[466.92s -> 469.48s]  basically you have to change the page table bits
+[469.48s -> 471.12s]  and do some work.
+[471.12s -> 472.92s]  And then at the end of that Prop 1,
+[472.92s -> 475.20s]  typically one has to flush the TOB.
+[475.20s -> 479.56s]  You may remember this from the xv6 implementation.
+[479.56s -> 481.32s]  Flushing the TOB is expensive.
+[481.32s -> 483.64s]  And so it would be nice if you could amortize basically
+[483.64s -> 487.20s]  flushing the TOB over all the page table changes.
+[487.20s -> 489.20s]  And so basically, Prop n boils down
+[489.20s -> 495.72s]  to n times changing page table bits plus one TOB flush.
+[495.72s -> 497.36s]  And if you did n times Prop 1,
+[497.36s -> 501.68s]  you would have one page table switch plus or one page table
+[501.68s -> 504.80s]  modification plus one TOB flush for each page.
+[504.80s -> 507.72s]  And so you can save the TOB flushes.
+[507.72s -> 508.52s]  Does that make sense?
+[517.76s -> 519.40s]  OK.
+[519.40s -> 524.56s]  Then the primitive unprotect, and basically this
+[524.56s -> 530.12s]  increases accessibility, as they call it,
+[530.16s -> 532.88s]  basically meaning if the page, for example,
+[532.88s -> 534.60s]  wasn't read-only access, now you're
+[534.60s -> 536.16s]  going to promote it to actually have
+[536.16s -> 537.60s]  read and write access.
+[537.60s -> 539.92s]  And there are two other primitives that are mentioning.
+[539.92s -> 541.96s]  One is a primitive to actually find out
+[541.96s -> 544.16s]  which page are dirty.
+[544.16s -> 547.16s]  And another primitive, Map 2, which
+[547.16s -> 553.56s]  allows an application to map a particular range twice
+[553.56s -> 558.52s]  in the same address space, but with
+[558.52s -> 562.72s]  different degrees of accessibility.
+[562.72s -> 566.68s]  And we'll see that showing up in a second.
+[566.68s -> 568.48s]  So you look at these primitives.
+[568.48s -> 573.12s]  Does xv6 support any of these for use
+[573.12s -> 574.52s]  in local applications?
+[574.52s -> 590.36s]  Not out of the box, but maybe the alarm handler
+[590.36s -> 592.64s]  that we implemented feels close.
+[592.64s -> 593.88s]  Good, good, good.
+[593.88s -> 595.64s]  Keep the alarm handler in mind.
+[595.64s -> 597.68s]  That certainly feels very close, correct,
+[597.68s -> 598.84s]  just related to the Trap 1.
+[599.60s -> 603.40s]  But other than that, xv6 supports none of these, right?
+[603.40s -> 605.64s]  xv6 has a very minimal Unix interface
+[605.64s -> 610.24s]  and doesn't support any of these more advanced virtual
+[610.24s -> 613.52s]  memory primitives, even though, internally, the kernel itself
+[613.52s -> 616.64s]  does have all the mechanisms available,
+[616.64s -> 618.92s]  but users are not exposed to user space
+[618.92s -> 620.92s]  in the form of system calls.
+[620.92s -> 622.72s]  And so the reason why the paper is arguing
+[622.72s -> 625.04s]  is that any sort of good operating systems
+[625.04s -> 627.28s]  should provide the ability to do that.
+[627.32s -> 628.96s]  Good operating systems should provide
+[628.96s -> 630.68s]  these primitives as a system call
+[630.68s -> 633.00s]  so the applications can use them.
+[633.00s -> 634.36s]  Naturally, it relates to the question like,
+[634.36s -> 637.12s]  again, what's this group with Unix today?
+[639.12s -> 641.56s]  Are these available?
+[641.56s -> 643.16s]  And it turns out that basically,
+[643.16s -> 645.64s]  any sort of, if you look at a modern Unix,
+[645.64s -> 649.72s]  like say Linux, these primitives are there.
+[649.72s -> 652.24s]  Maybe not exactly in the same flavor
+[652.24s -> 655.48s]  as argued in the paper, but they are there.
+[655.48s -> 656.88s]  And you even saw it in the paper, correct?
+[657.32s -> 658.96s]  Some of the operating system did have it,
+[658.96s -> 660.92s]  some version had a subset of them,
+[662.00s -> 664.92s]  but today they're basically sort of widely supported.
+[664.92s -> 667.24s]  So if you look at Unix today,
+[667.24s -> 670.12s]  you know, let's see how to actually there instantiate it.
+[672.60s -> 674.04s]  And so one of the first ones
+[674.04s -> 675.68s]  that is probably the most important one
+[675.68s -> 677.68s]  is something that's a system called mmap
+[679.52s -> 682.48s]  that can be used to take some object
+[682.48s -> 686.04s]  and map it into the address space of the caller.
+[686.04s -> 688.20s]  So for example, if you want to map a file,
+[690.60s -> 693.76s]  then the system calls something of this following form,
+[693.76s -> 695.00s]  you know, you call mmap.
+[697.36s -> 699.72s]  And that actually has a quite a sort of
+[699.72s -> 702.28s]  bewildering number of arguments.
+[702.28s -> 703.44s]  The first basically says like,
+[703.44s -> 706.36s]  what are you, you can specify a particular address
+[706.36s -> 708.68s]  where you would like it to be mapped to,
+[708.68s -> 711.00s]  or you can collect the kernel of the site
+[711.00s -> 713.60s]  to choose the address.
+[713.60s -> 716.92s]  And in that case, you specify there's no,
+[716.92s -> 718.76s]  and you know, the kernel will pick an address
+[718.76s -> 721.00s]  where to map, you know, the object,
+[721.00s -> 722.96s]  you specify the length,
+[722.96s -> 725.00s]  you specify the protection bits,
+[725.00s -> 728.84s]  you know, for example, read, let's write.
+[730.08s -> 730.92s]  And then, you know,
+[730.92s -> 732.48s]  some argument that I don't really want to talk about,
+[732.48s -> 734.40s]  but there's something called like map private.
+[734.40s -> 736.80s]  Basically you have to say something about how,
+[736.80s -> 741.80s]  what happens if you have to write to that particular object.
+[746.88s -> 748.88s]  But let's skip that mostly.
+[748.88s -> 752.00s]  And then you can actually pass in the file descriptor
+[752.00s -> 752.84s]  and then offset.
+[754.20s -> 756.28s]  And basically what this says is that, you know,
+[756.28s -> 758.52s]  you should map the content of, you know,
+[758.52s -> 762.88s]  the file object pointed to by the file descriptor,
+[762.88s -> 765.12s]  and you take the file content of that object,
+[765.12s -> 767.92s]  you know, at offset and map that basically,
+[767.92s -> 771.72s]  that particular address with that length.
+[771.72s -> 773.56s]  And so this basically allows you to sort of,
+[773.56s -> 775.00s]  what is called memory map a file.
+[775.00s -> 776.76s]  You know, so you can basically bring the contents
+[776.76s -> 779.00s]  of the file into your address space
+[779.00s -> 783.52s]  with actually having to call read and write system calls.
+[783.52s -> 784.68s]  And it's sort of convenient, correct?
+[784.68s -> 786.80s]  Because then you can manipulate the file just,
+[786.80s -> 788.20s]  you know, with ordinary pointers,
+[788.20s -> 790.04s]  you can write at particular locations,
+[790.04s -> 791.52s]  and then, you know, at some point you can write
+[791.52s -> 794.68s]  the content back to the disk.
+[795.16s -> 797.16s]  And so this is a convenient interface to, you know,
+[797.16s -> 800.00s]  manipulate data structures that we might be stored into,
+[800.00s -> 801.40s]  might be stored in a file.
+[802.52s -> 806.28s]  In fact, you will be implementing
+[806.28s -> 808.52s]  this specific version of MMAP or some version,
+[808.52s -> 811.76s]  the file-based MMAP actually in the next lab.
+[814.24s -> 815.68s]  So this basically integrates, you know,
+[815.68s -> 817.92s]  the file system part of xv6, you know,
+[817.92s -> 819.60s]  or the virtual memory part of xv6,
+[819.60s -> 820.76s]  and you get sort of hooked them up
+[820.76s -> 823.28s]  and by surprising, by actually implementing MMAP.
+[824.16s -> 826.80s]  MMAP can also be used in other ways.
+[826.80s -> 828.56s]  So you can use the map file,
+[828.56s -> 832.04s]  you can also use it to map anonymous memory.
+[834.76s -> 836.96s]  And that's basically sort of an alternative to S-Break,
+[836.96s -> 838.72s]  you know, where you can sort of ask, you know,
+[838.72s -> 839.56s]  the kernel queries, you know,
+[839.56s -> 842.68s]  give me a bunch of memory and, you know,
+[842.68s -> 845.32s]  map it at, you know, this particular address.
+[847.64s -> 851.92s]  So that is one of the core system calls.
+[851.96s -> 854.56s]  And we'll lead it back to the primitives in a second.
+[856.76s -> 858.68s]  Okay, there's a couple more, you know,
+[858.68s -> 862.00s]  calls that are necessary to actually support
+[862.00s -> 865.00s]  the primitives that the paper argues for,
+[865.00s -> 868.70s]  and Unix has them, so there's more Unix today.
+[870.88s -> 873.52s]  There's an mprotect system call.
+[874.96s -> 878.56s]  So once you have something mapped into the address space,
+[878.56s -> 879.80s]  you can actually, you know,
+[879.80s -> 884.80s]  change the permissions.
+[885.10s -> 887.16s]  So whatever you can make it just, you know,
+[887.16s -> 888.64s]  and protect a particular,
+[888.64s -> 890.20s]  so you can map something in the address space
+[890.20s -> 891.56s]  and you can mprotect, for example,
+[891.56s -> 893.80s]  for a subset of that part of all of it
+[893.80s -> 896.20s]  and map it at a particular protection level.
+[896.20s -> 897.64s]  And so for example, if you did this, you know,
+[897.64s -> 900.20s]  basically, you know, loads could be executed,
+[900.20s -> 905.20s]  but stores would change into a page fault.
+[906.00s -> 907.12s]  And similarly, if you want to make sure
+[907.12s -> 908.84s]  that a range in the address space
+[908.88s -> 909.96s]  is completely inaccessible,
+[909.96s -> 913.98s]  no, you can mprotect it with none.
+[913.98s -> 915.84s]  And, you know, basically then both,
+[917.12s -> 919.08s]  you know, ever being basically any access,
+[919.08s -> 920.36s]  you know, to that particular page
+[920.36s -> 922.44s]  or to do that address range,
+[922.44s -> 925.20s]  starting from address to address plus length
+[925.20s -> 927.46s]  will result in a page fault.
+[929.32s -> 933.56s]  There's a similar, there's a corresponding call to mmap
+[933.56s -> 937.12s]  called mmap that allows you to basically remove a mapping
+[937.16s -> 938.92s]  or move an address range.
+[943.80s -> 945.36s]  And actually, if you're curious, you know,
+[945.36s -> 946.96s]  exactly how these calls work, you know,
+[946.96s -> 951.64s]  you should look up the man page of these system calls.
+[953.72s -> 954.76s]  And then finally, you know,
+[954.76s -> 956.76s]  the one that we really need
+[958.28s -> 960.70s]  is a system called sick action.
+[964.68s -> 966.68s]  And basically this is a signal handler.
+[967.12s -> 972.12s]  And it allows the application to say like, you know,
+[973.76s -> 976.44s]  if a particular signal happens,
+[976.44s -> 979.56s]  then, you know, call this particular function.
+[979.56s -> 982.28s]  So you can install basically function F
+[982.28s -> 985.66s]  as the signal handler for a particular signal.
+[985.66s -> 987.60s]  And in the case of, you know, page faults,
+[987.60s -> 991.84s]  you know, the signal that is generated
+[991.84s -> 993.80s]  is something that's called sick fault.
+[993.84s -> 998.76s]  And typically you might have seen sick faults, you know,
+[998.76s -> 1001.24s]  yeah, in user code before, you know,
+[1001.24s -> 1002.60s]  typically what happens in the sick fault
+[1002.60s -> 1005.06s]  is basically the application stops and crashes.
+[1005.06s -> 1008.72s]  But if the application had installed a handler
+[1008.72s -> 1012.20s]  for, you know, a sick fault event or sick fault signal,
+[1012.20s -> 1015.08s]  then instead of the application being stopped,
+[1015.08s -> 1017.70s]  then the handler would have been called by the kernel.
+[1017.70s -> 1019.70s]  And then the application can maybe respond, you know,
+[1019.70s -> 1021.20s]  to that particular sick fault.
+[1021.20s -> 1022.52s]  In the same way, in some sense,
+[1022.76s -> 1025.32s]  the kernel responds to a page fault and, you know,
+[1025.32s -> 1027.12s]  maybe, you know, fixes up the page table
+[1027.12s -> 1030.60s]  so that, you know, the execution can continue.
+[1030.60s -> 1031.44s]  And in this case,
+[1031.44s -> 1032.64s]  maybe the handler will actually, you know,
+[1032.64s -> 1036.64s]  call and protect or change the permissions
+[1036.64s -> 1039.64s]  so that actually the instruction can resume and continue.
+[1041.52s -> 1045.24s]  And so in this aspect, you know,
+[1045.24s -> 1048.22s]  if you were the most familiar version
+[1048.22s -> 1049.92s]  that we were the thing that we have seen
+[1049.96s -> 1053.08s]  like a sick action was like sick alarm,
+[1053.08s -> 1055.82s]  as Amir mentioned a little bit earlier,
+[1055.82s -> 1059.80s]  in the sick alarm lab where you could install,
+[1059.80s -> 1063.50s]  you know, the alarm program basically installed,
+[1063.50s -> 1066.28s]  a handler that will have to be called at every clock tick
+[1066.28s -> 1068.62s]  or every, you know, period of time.
+[1069.68s -> 1071.16s]  And, you know, basically sick action
+[1071.16s -> 1072.88s]  is sort of the equivalent of that,
+[1072.88s -> 1075.92s]  but the general version of it where it basically can
+[1075.92s -> 1078.00s]  respond to different types of signals.
+[1079.00s -> 1080.48s]  Any questions about this?
+[1083.32s -> 1086.90s]  It seems like mprotect implies that you can add
+[1086.90s -> 1089.60s]  different permission levels on individual addresses.
+[1089.60s -> 1092.52s]  Whereas in like xv6 that we've been working with,
+[1092.52s -> 1094.80s]  you can only apply permissions on full pages.
+[1094.80s -> 1098.02s]  Is that a difference that's a present?
+[1098.02s -> 1100.64s]  No, it's not a real difference, you know,
+[1100.64s -> 1102.98s]  that works at a page level granularity.
+[1104.56s -> 1106.72s]  And it doesn't expose, you know,
+[1106.72s -> 1109.80s]  there's a separate call to find out what the page size is,
+[1109.80s -> 1111.52s]  if you're curious about it.
+[1113.80s -> 1114.64s]  Thank you.
+[1116.24s -> 1117.64s]  So if you think about, you know, these,
+[1117.64s -> 1119.16s]  you know, the primitives that were in the paper,
+[1119.16s -> 1120.72s]  you know, we can sort of map them correctly,
+[1120.72s -> 1123.16s]  like what currently Unix or what Unix typically provides.
+[1123.16s -> 1126.44s]  So what equivalent correct the trap, you know,
+[1126.44s -> 1128.56s]  that we're in Unix would be provided
+[1128.56s -> 1132.96s]  is something called the sick action call, right?
+[1133.96s -> 1136.32s]  And how about, you know, prod in and prod one?
+[1138.96s -> 1140.56s]  What is the equivalent for that?
+[1146.84s -> 1148.64s]  Okay, so basically all three of them, correct?
+[1148.64s -> 1149.48s]  You know, basically,
+[1149.48s -> 1151.40s]  or it can be implemented using mprotect.
+[1154.68s -> 1157.12s]  And mprotect is flexible enough
+[1157.12s -> 1158.16s]  that you could do it by, you know,
+[1158.16s -> 1161.36s]  a single page, just ask,
+[1161.36s -> 1162.28s]  or you can actually, you know,
+[1162.44s -> 1164.20s]  provide something that consists of multiple pages
+[1164.20s -> 1165.24s]  and then you could do,
+[1165.24s -> 1168.28s]  you get the same benefit of like one TOB flush
+[1168.28s -> 1172.80s]  for changing the permissions on a whole series of pages.
+[1175.16s -> 1178.04s]  Okay, these calls sort of almost directly map
+[1178.04s -> 1179.48s]  into some of the primitives.
+[1180.52s -> 1181.92s]  It turns out that, you know,
+[1181.92s -> 1184.36s]  dirty actually is a little bit harder to do.
+[1184.36s -> 1186.44s]  And there's not a direct primitive for,
+[1186.44s -> 1187.72s]  or a system call for,
+[1187.72s -> 1190.40s]  although you can sort of more or less get it done
+[1190.40s -> 1191.56s]  with some tricks.
+[1191.60s -> 1194.68s]  And I'll talk a little bit later about map two.
+[1194.68s -> 1196.72s]  There's also not a sort of,
+[1196.72s -> 1197.56s]  there's a way to do it,
+[1197.56s -> 1198.84s]  but it's not completely, you know,
+[1198.84s -> 1202.00s]  sort of a system called just directly maps onto map two.
+[1202.00s -> 1203.92s]  It turns out that if you,
+[1203.92s -> 1205.72s]  with multiple n maps,
+[1208.96s -> 1210.24s]  you can actually achieve
+[1211.72s -> 1214.44s]  this particular functionality too.
+[1216.32s -> 1219.36s]  Okay, so one way to think about this paper is,
+[1219.36s -> 1221.36s]  you know, kernel developers,
+[1222.04s -> 1223.56s]  you know, maybe not totally driven by this paper,
+[1223.56s -> 1228.56s]  but kernel developers have extended these,
+[1229.72s -> 1232.68s]  or have provided these primitives actually to,
+[1232.68s -> 1234.68s]  you know, today's user applications.
+[1237.64s -> 1240.08s]  Okay, I wanna say a few words about,
+[1240.08s -> 1241.12s]  you know, the implementation,
+[1241.12s -> 1244.08s]  just much more at the sketch level,
+[1245.08s -> 1247.40s]  and then talk a little bit about, you know,
+[1247.40s -> 1250.20s]  the applications themselves,
+[1250.20s -> 1251.04s]  and then, you know,
+[1251.04s -> 1252.84s]  see how they use these particular primitives.
+[1260.96s -> 1263.48s]  Okay, so let's talk about,
+[1263.48s -> 1265.28s]  there's two aspects that are sort of interesting.
+[1265.28s -> 1267.08s]  One is actually what actually happens,
+[1267.08s -> 1268.68s]  you know, inside the virtual memory system
+[1268.68s -> 1270.00s]  to actually support this.
+[1274.76s -> 1276.04s]  I'm just gonna sketch this out,
+[1276.04s -> 1278.32s]  like what the most important pieces are.
+[1278.32s -> 1279.68s]  And in fact, you know,
+[1280.28s -> 1281.12s]  this is sort of a little bit relevant
+[1281.12s -> 1284.84s]  to the MMAP lab that is coming up,
+[1284.84s -> 1286.56s]  because you're gonna do something similar.
+[1286.56s -> 1290.32s]  So address space typically, you know,
+[1290.32s -> 1292.84s]  in the units today is represented by, you know,
+[1292.84s -> 1294.96s]  of course the hardware page table,
+[1294.96s -> 1296.72s]  which contains the translations,
+[1297.72s -> 1300.44s]  but typically it's augmented
+[1300.44s -> 1302.76s]  with a set of sort of OS data structures,
+[1302.76s -> 1305.92s]  not unrelated to any specific hardware design.
+[1305.92s -> 1310.92s]  And these are called virtual memory areas,
+[1317.44s -> 1319.76s]  or in short, VMAs.
+[1322.92s -> 1327.92s]  And basically what a VMA represents is, you know,
+[1328.08s -> 1330.44s]  to record some information
+[1330.44s -> 1332.76s]  about a contiguous range of addresses.
+[1335.92s -> 1340.92s]  So if you think about an address space,
+[1342.36s -> 1344.44s]  it might have, you know,
+[1344.44s -> 1346.44s]  a number of sections in the address space,
+[1346.44s -> 1348.12s]  you know, each forming sort of a contiguous range,
+[1348.12s -> 1349.72s]  you know, basically for each section,
+[1349.72s -> 1351.92s]  there would be a VMA.
+[1351.92s -> 1353.88s]  And the VMA basically says, you know,
+[1353.88s -> 1357.76s]  the VMA also has all the same permissions.
+[1357.76s -> 1361.32s]  So all the pages in that range have the same permissions,
+[1361.32s -> 1366.32s]  and they're backed, you know, by the same object.
+[1375.28s -> 1380.28s]  For example, if you have an mmapped file,
+[1380.60s -> 1384.48s]  then there would be VMA for that file
+[1384.48s -> 1387.04s]  that describes, you know, whatever the permissions
+[1387.04s -> 1390.36s]  for the file, as well as, you know,
+[1390.36s -> 1392.48s]  the information about the file itself, you know,
+[1392.48s -> 1394.28s]  the file descriptor, for example,
+[1394.28s -> 1396.40s]  that goes along with that particular VMA,
+[1397.48s -> 1399.28s]  and, you know, the offset in the file
+[1399.28s -> 1402.88s]  where that VMA corresponds to.
+[1404.84s -> 1407.32s]  And in fact, you know, in the lab, upcoming lab,
+[1407.32s -> 1410.28s]  you know, you will implement a very simple version
+[1410.28s -> 1412.76s]  of, you know, VMAs and use that
+[1412.76s -> 1417.76s]  to actually implement the mmapped system call for files,
+[1418.72s -> 1421.04s]  where basically you can record in the VMA,
+[1421.04s -> 1423.36s]  literally the file descriptor and the offset
+[1423.36s -> 1425.56s]  that corresponds to that particular mmapped call
+[1425.56s -> 1427.40s]  or the range that is being mapped.
+[1429.56s -> 1430.80s]  Any questions about this?
+[1437.08s -> 1438.64s]  Okay, so then the second piece,
+[1438.64s -> 1440.20s]  you know, the sort of important,
+[1440.20s -> 1442.20s]  and we have a little bit of experience with it,
+[1442.20s -> 1444.60s]  but it's probably worthwhile, you know,
+[1444.60s -> 1448.08s]  going through is actually how trap or seek action,
+[1451.20s -> 1454.44s]  the handler, how an actual trap will work.
+[1457.76s -> 1459.20s]  Be a little bit more careful.
+[1461.36s -> 1464.96s]  So how the user level traps are implemented.
+[1467.48s -> 1470.76s]  And this, you know, follows very much, you know,
+[1470.76s -> 1475.76s]  the same outline as actually the seek alarm system call,
+[1476.24s -> 1479.04s]  and then the up call that happened
+[1479.04s -> 1484.04s]  when a clock tick actually passed the time limit.
+[1484.52s -> 1487.16s]  And so the sort of setting here is not, you know,
+[1487.16s -> 1488.64s]  clock ticks, but, you know, page tables.
+[1488.64s -> 1493.64s]  So let's assume there are some PTE that's marked,
+[1495.64s -> 1500.28s]  you know, invalid, or maybe it's not agreed only,
+[1500.72s -> 1501.56s]  and you actually restore to it.
+[1501.56s -> 1504.52s]  And so what happens, you know, when the application,
+[1504.52s -> 1507.60s]  you know, accesses that PTE that actually is basically
+[1507.60s -> 1510.92s]  invalid or it doesn't result in a valid translation.
+[1510.92s -> 1515.92s]  Well, as we know, then the CPU jumps into kernel mode,
+[1520.44s -> 1523.44s]  jumps into the kernel at a fixed address, you know,
+[1523.44s -> 1526.88s]  you have looked at the, think the trampoline code,
+[1526.88s -> 1528.88s]  the kernel, you know, save state,
+[1530.56s -> 1532.44s]  so for example, save to trap frame,
+[1536.20s -> 1539.40s]  and then basically asks, you know, the VM system,
+[1540.96s -> 1545.32s]  you know, what now, what to do.
+[1547.56s -> 1549.36s]  And the VM system actually might do something.
+[1549.36s -> 1551.48s]  So for example, in case like this happened
+[1551.48s -> 1555.36s]  in the lazy lab and in the copy on write lab,
+[1555.36s -> 1557.04s]  where, you know, you're, you know,
+[1557.04s -> 1559.24s]  the trap handler code sort of looks at
+[1559.72s -> 1561.24s]  page table data structures, and in this case,
+[1561.24s -> 1564.20s]  presumably it will look at the VMAs and, you know,
+[1564.20s -> 1566.60s]  see, you know, what the scoop is for the address
+[1566.60s -> 1570.88s]  that where the processor folded on
+[1570.88s -> 1572.84s]  and see when it needs to be done.
+[1572.84s -> 1574.84s]  And so for example, if it is a sec fault
+[1574.84s -> 1577.92s]  and the application had installed, you know,
+[1577.92s -> 1579.16s]  a handler to deal with it,
+[1579.16s -> 1583.76s]  then basically that up call or the handler of the event
+[1583.76s -> 1585.92s]  would be propagated to user space.
+[1585.92s -> 1588.84s]  And so basically let's say there was a handler installed,
+[1589.40s -> 1591.68s]  and basically we're going to get an up call
+[1591.68s -> 1596.68s]  to into user space in the same way as in the sick alarm lab,
+[1600.32s -> 1602.04s]  you know, that will run, you know,
+[1602.04s -> 1605.56s]  the handler in user space, the handler, you know,
+[1605.56s -> 1607.88s]  might call, you know, and protect, you know,
+[1607.88s -> 1609.52s]  if you change the protections
+[1612.76s -> 1615.52s]  and then the handler returns to user,
+[1615.52s -> 1617.16s]  handler returns to kernel code.
+[1619.84s -> 1621.48s]  There's the kernel,
+[1624.04s -> 1627.96s]  and then the kernel basically resumes, you know,
+[1627.96s -> 1630.56s]  the interrupted process.
+[1635.40s -> 1638.12s]  Okay, and you know, if the,
+[1638.12s -> 1640.24s]  when the kernel resumes that interrupted process,
+[1640.24s -> 1641.92s]  you know, if for example,
+[1641.92s -> 1644.24s]  the handler fixed up sort of the address space
+[1644.24s -> 1646.60s]  of the user program, then, you know,
+[1646.64s -> 1649.08s]  the instruction might just execute correctly,
+[1649.08s -> 1651.08s]  or if, you know, something is wrong, you know,
+[1651.08s -> 1653.64s]  maybe trapped back into the kernel right away again,
+[1653.64s -> 1658.64s]  if, you know, if the hardware still can translate
+[1660.04s -> 1661.60s]  that particular virtual address.
+[1663.08s -> 1664.20s]  Does this make sense?
+[1666.04s -> 1668.96s]  Maybe there's a, remember again,
+[1668.96s -> 1672.28s]  the sick alarm lab, and then this would be quite familiar.
+[1673.28s -> 1675.56s]  Yeah, I have a question.
+[1675.56s -> 1676.40s]  Yeah.
+[1677.24s -> 1682.12s]  What kind of, I think when we're allowing the user
+[1682.12s -> 1686.60s]  to effectively run a handler code on a page fault,
+[1686.60s -> 1689.48s]  aren't there additional like security vulnerabilities
+[1689.48s -> 1690.76s]  that could result as a part of this?
+[1690.76s -> 1692.68s]  So I was wondering if you could speak to that.
+[1692.68s -> 1694.56s]  Yeah, yeah, that's a great question.
+[1695.52s -> 1697.08s]  By the way, can you like maybe everybody turn
+[1697.08s -> 1701.80s]  on their cameras or see if possible,
+[1702.20s -> 1704.24s]  if you're comfortable doing that, I really appreciate it.
+[1704.24s -> 1706.48s]  I think many students in the class
+[1706.48s -> 1707.64s]  will appreciate it too.
+[1708.76s -> 1710.96s]  Yeah, so, you know, is there a security issue?
+[1712.88s -> 1717.16s]  In the first, what do people think?
+[1718.28s -> 1720.32s]  You know, does this break user kernel
+[1720.32s -> 1723.32s]  or, you know, the isolation between different processes?
+[1729.48s -> 1730.68s]  Another way of asking that question,
+[1730.68s -> 1733.24s]  is it sick alarm break, you know, the isolation?
+[1740.72s -> 1745.52s]  Wouldn't it be okay because that code
+[1745.52s -> 1748.20s]  that the handler would still have access
+[1748.20s -> 1752.60s]  to the same virtual, I mean,
+[1752.60s -> 1754.64s]  if there are different virtual memories for the process
+[1754.64s -> 1756.72s]  and for like for each of the processes,
+[1756.72s -> 1759.68s]  then that handler shouldn't be able to look
+[1759.72s -> 1763.60s]  into other processes' memory, so it shouldn't be okay.
+[1763.60s -> 1765.76s]  Yeah, so when we do the up call, correct,
+[1765.76s -> 1768.32s]  we make the up call in that specific user space
+[1768.32s -> 1770.44s]  that actually installed the handler.
+[1770.44s -> 1772.72s]  So the handler basically runs in the same context
+[1772.72s -> 1774.92s]  as it runs with the same page table
+[1774.92s -> 1778.12s]  as the application that installed the handler.
+[1778.12s -> 1779.68s]  And so the only thing it really can do
+[1779.68s -> 1781.44s]  is, you know, affect that application.
+[1781.44s -> 1783.88s]  But, you know, that is the application problem.
+[1783.88s -> 1786.16s]  It can't really affect anybody, any other application
+[1786.16s -> 1787.76s]  because it doesn't have any access
+[1787.76s -> 1791.72s]  to the other application's page tables,
+[1791.72s -> 1793.84s]  or can force a switch into them.
+[1795.36s -> 1796.76s]  So this turns out to be fine.
+[1796.76s -> 1798.24s]  Of course, if the handler doesn't return
+[1798.24s -> 1799.68s]  or does something bad, you know, in the end,
+[1799.68s -> 1802.48s]  the kernel will just kill, can always kill the process.
+[1802.48s -> 1804.56s]  So nothing really, you know,
+[1805.92s -> 1807.48s]  the only thing that can go bad is, you know,
+[1807.48s -> 1809.04s]  the process can hurt itself,
+[1809.04s -> 1811.00s]  but it can't hurt any other processes.
+[1813.24s -> 1814.68s]  Amir, does that make sense?
+[1815.68s -> 1816.84s]  Yes, thank you.
+[1818.20s -> 1822.20s]  Okay, so now I want to go through a couple of examples
+[1824.08s -> 1825.60s]  and sort of see how you could use it.
+[1825.60s -> 1828.88s]  And I'll start out with a very simple example
+[1828.88s -> 1829.92s]  to get ourselves into it.
+[1829.92s -> 1832.64s]  And then we'll move to the garbage collector
+[1832.64s -> 1833.88s]  because lots of people ask questions
+[1833.88s -> 1834.72s]  about the garbage collector.
+[1834.72s -> 1837.12s]  So that seems like a good one to dive into.
+[1839.36s -> 1841.88s]  Okay, the first example I want to talk about
+[1841.88s -> 1843.76s]  is a trivial idea,
+[1844.64s -> 1848.16s]  but, you know, in fact, it's not even mentioned in the paper,
+[1849.88s -> 1853.52s]  but it is sort of a cool way of illustrating, you know,
+[1853.52s -> 1855.56s]  the power that applications get
+[1855.56s -> 1858.96s]  if they actually have these primitives available to them.
+[1858.96s -> 1860.80s]  And the basic idea is to actually build
+[1860.80s -> 1865.80s]  a huge memoization table.
+[1871.52s -> 1873.44s]  And the memoization table is basically what it does.
+[1873.96s -> 1874.88s]  It just remembers, you know,
+[1874.88s -> 1877.20s]  the result of some computation.
+[1877.20s -> 1878.32s]  And so, for example, you can think about it
+[1878.32s -> 1879.16s]  in the following way.
+[1879.16s -> 1881.48s]  Let's say we have, here's our table
+[1881.48s -> 1883.40s]  and, you know, table starts at, you know,
+[1883.40s -> 1885.48s]  whatever zero, there's some N.
+[1885.48s -> 1890.04s]  And what the table stores is the result
+[1890.04s -> 1891.96s]  of running some expensive function
+[1894.20s -> 1897.36s]  for that argument zero or for whatever F N.
+[1898.40s -> 1900.12s]  Okay, so if you wanted to, you know,
+[1900.12s -> 1902.48s]  if this table were sort of pre-computed, you know,
+[1902.48s -> 1904.36s]  once in the beginning of time,
+[1904.36s -> 1906.16s]  and then you wanted to look up, like, you know,
+[1906.16s -> 1909.28s]  you wanted to know what like the value for F I was,
+[1909.28s -> 1913.88s]  well, what you just do is you just look up in the table,
+[1913.88s -> 1915.60s]  you know, in the slot I,
+[1915.60s -> 1918.24s]  and basically you get the value
+[1918.24s -> 1921.68s]  that F I would have computed.
+[1921.68s -> 1925.04s]  And so basically you turn maybe an expensive computation,
+[1925.04s -> 1926.84s]  you know, maybe F is very expensive,
+[1926.84s -> 1930.28s]  into a basically table lookup.
+[1930.36s -> 1931.52s]  It's sort of a cool trick, you know,
+[1931.52s -> 1936.52s]  to basically store the results of pre-computers
+[1936.64s -> 1939.48s]  and store the results of an expensive computation.
+[1939.48s -> 1940.32s]  And if that, you know,
+[1940.32s -> 1942.56s]  same computation is executed many, many times,
+[1942.56s -> 1944.40s]  then, you know, pre-computing at once,
+[1944.40s -> 1948.60s]  you know, might be an advantage, a smart thing to do.
+[1951.08s -> 1952.48s]  Does that setup make sense?
+[1953.92s -> 1955.64s]  Okay, so then the issue,
+[1956.52s -> 1958.52s]  you know, of course, is that the table
+[1958.52s -> 1959.84s]  or the challenge,
+[1963.24s -> 1964.60s]  now the table might be big.
+[1968.96s -> 1970.32s]  It might be actually in fact very big,
+[1970.32s -> 1972.96s]  it might be bigger than maybe your physical memory.
+[1976.28s -> 1978.40s]  But it's still nice to have it.
+[1978.40s -> 1979.44s]  And so the solution, you know,
+[1979.44s -> 1981.28s]  one solution, you know, that you could
+[1984.04s -> 1985.44s]  use to solve this problem
+[1985.44s -> 1988.00s]  is to basically use the virtual memory primitives.
+[1989.52s -> 1991.96s]  That's described in the paper, primitives.
+[1997.00s -> 1998.56s]  And, you know, what you do is, you know,
+[1998.56s -> 2000.60s]  first of all, you allocate a huge range.
+[2006.40s -> 2007.92s]  But don't really map, you know,
+[2007.92s -> 2009.80s]  don't actually allocate any physical memory
+[2009.80s -> 2010.92s]  corresponding to that range.
+[2010.92s -> 2013.28s]  Just take a huge part of the address space
+[2013.28s -> 2015.48s]  and say like, I'm gonna use that part of my address space
+[2015.48s -> 2017.72s]  so you have to store the table.
+[2018.12s -> 2021.24s]  And then on a,
+[2021.24s -> 2024.44s]  so the page state, there's no content in the table.
+[2024.44s -> 2026.16s]  The address ranges exist.
+[2026.16s -> 2027.68s]  And so if you do like a table lookup,
+[2027.68s -> 2029.96s]  like a table I, you know,
+[2029.96s -> 2032.08s]  that will result into a page fault.
+[2036.16s -> 2038.16s]  And so the basic plan then is on the page fault,
+[2038.16s -> 2039.40s]  you know, you compute, you know,
+[2039.40s -> 2040.96s]  all the entries or, you know,
+[2040.96s -> 2043.24s]  all the page basically covers
+[2043.24s -> 2044.96s]  a bunch of entries in the table.
+[2044.96s -> 2046.04s]  And for each one of them,
+[2046.04s -> 2047.28s]  you're basically, you know,
+[2047.28s -> 2049.76s]  you compute the function fi
+[2049.76s -> 2052.20s]  and store it in the slot table I,
+[2053.12s -> 2055.96s]  and then basically resume, you know, the application.
+[2055.96s -> 2056.80s]  Right, and now,
+[2059.96s -> 2061.96s]  of course, and map the physical page, you know,
+[2061.96s -> 2063.80s]  so basically you take the page fault,
+[2063.80s -> 2064.96s]  you allocate a page,
+[2068.64s -> 2071.60s]  and basically store, you know, in that page,
+[2071.60s -> 2075.08s]  the results of fi for all the slots in the page.
+[2076.92s -> 2078.32s]  And the advantage of it is, correct,
+[2078.32s -> 2080.76s]  if you now, a couple of advantages,
+[2080.76s -> 2083.44s]  if you have to ever, you know, compute fi again,
+[2083.44s -> 2085.76s]  you know, you're gonna actually do the table lookup,
+[2085.76s -> 2086.80s]  and you don't actually have to do
+[2086.80s -> 2088.84s]  any expensive computation, just the table lookup.
+[2088.84s -> 2091.56s]  And in fact, you know, even if you do table I plus one,
+[2091.56s -> 2092.38s]  like, you know,
+[2092.38s -> 2093.92s]  there's only gonna be a bunch of entries
+[2093.92s -> 2095.64s]  in that particular page,
+[2095.64s -> 2097.20s]  they're all basically gonna now be free,
+[2097.20s -> 2099.44s]  you know, just table lookups.
+[2099.44s -> 2101.40s]  Of course, if you keep doing this,
+[2101.40s -> 2103.80s]  then you're gonna consume all physical memory.
+[2103.80s -> 2106.40s]  And so, you know, the page fault handler also, you know,
+[2106.40s -> 2108.44s]  has to throw out some pages if, you know,
+[2108.44s -> 2109.52s]  you're running out of memory.
+[2109.52s -> 2112.76s]  So if, you know, much memory is in use,
+[2117.00s -> 2120.50s]  is in use, free some of them, free some pages.
+[2123.64s -> 2125.40s]  And of course, then you're gonna have to change
+[2125.40s -> 2126.72s]  the protection level, correct,
+[2126.72s -> 2128.12s]  you have to make sure that, you know,
+[2128.12s -> 2129.12s]  you're gonna get in the future
+[2129.12s -> 2131.24s]  a page fault for those entries.
+[2131.24s -> 2134.28s]  So you have to, you know, presumably call, you know,
+[2134.28s -> 2139.28s]  prod one or prod n to reduce the accessibility
+[2139.72s -> 2142.76s]  of the page and the terminology of the paper.
+[2142.76s -> 2143.60s]  Does this make sense?
+[2143.60s -> 2144.92s]  That's sort of a plan?
+[2149.80s -> 2150.64s]  Any questions?
+[2150.64s -> 2151.56s]  Oh, sorry, Ben?
+[2151.56s -> 2153.64s]  Yeah, we need to map it,
+[2153.64s -> 2156.96s]  it would need to request from the operating system
+[2156.96s -> 2159.84s]  to map it to a particular address, right?
+[2159.88s -> 2162.04s]  Does it control it anywhere, okay.
+[2162.04s -> 2163.76s]  Yeah, or it could be anywhere as long as, you know,
+[2163.76s -> 2166.20s]  the operating system tells where it actually is.
+[2167.72s -> 2168.96s]  Oh, okay.
+[2168.96s -> 2170.36s]  Maybe to make it a little bit more concrete,
+[2170.36s -> 2173.20s]  actually I have a little implementation of this plan
+[2173.20s -> 2174.72s]  and we can just look at it
+[2174.72s -> 2179.24s]  and see whether, you know, how you actually do that
+[2179.24s -> 2182.08s]  with using the existing, you know, the Unix primitives.
+[2189.88s -> 2190.72s]  Okay.
+[2196.72s -> 2200.12s]  Can everybody see the Emacs buffer?
+[2201.72s -> 2203.00s]  Is the font large enough?
+[2207.24s -> 2209.36s]  I assume that is a yes.
+[2209.36s -> 2214.36s]  So here's the application, let me go to the bottom.
+[2214.52s -> 2217.80s]  So here's main, main basically sets up
+[2217.80s -> 2221.56s]  the square root region, basically allocates address space,
+[2221.56s -> 2224.12s]  but doesn't really allocate
+[2224.12s -> 2226.60s]  the physical pages belonging to it.
+[2226.60s -> 2228.92s]  And then it calls this function test square root region
+[2228.92s -> 2230.76s]  that basically goes through that table
+[2230.76s -> 2234.08s]  in sort of a random order and, you know,
+[2234.08s -> 2236.96s]  basically checks whether the square root entry
+[2236.96s -> 2238.76s]  in the table for that position
+[2238.76s -> 2241.16s]  is indeed the correct, you know, square root value
+[2241.16s -> 2245.44s]  by just computing it literally before that, okay?
+[2245.44s -> 2248.20s]  So basically test square root region is gonna run
+[2248.20s -> 2250.04s]  and it's gonna presumably generate page faults
+[2250.04s -> 2253.00s]  because none of the tables actually filled in so far.
+[2254.36s -> 2256.84s]  So how does it, you know, how do we get those page faults?
+[2256.84s -> 2260.44s]  Well, here's the sort of the fragment of code
+[2260.44s -> 2263.40s]  that you need to basically install a handler,
+[2263.40s -> 2265.68s]  a signal handler for a particular event.
+[2265.68s -> 2270.20s]  We were basically saying here, install for a sick,
+[2270.20s -> 2272.36s]  you know, the sick-sec-v event,
+[2272.36s -> 2274.36s]  the handler sick-sec-v.
+[2274.36s -> 2278.48s]  And so when a sick-fault happens or a page fault happens,
+[2278.48s -> 2281.56s]  basically the function, the kernel will call sick,
+[2281.56s -> 2285.00s]  handle sick-sec-v and basically you can extract,
+[2285.00s -> 2286.48s]  you know, the faulting address.
+[2286.48s -> 2287.68s]  You know, this looks very similar
+[2287.68s -> 2288.88s]  to your sort of trap code
+[2288.88s -> 2291.20s]  that you've seen many, many times before.
+[2291.20s -> 2294.76s]  And basically the plan is very straightforward.
+[2294.76s -> 2299.12s]  We map a page at that particular address, you know,
+[2299.12s -> 2302.48s]  because that's the address that we wanna fill in
+[2303.48s -> 2305.16s]  so my expensive function here,
+[2305.16s -> 2308.60s]  or the replacement for the expensive function
+[2308.60s -> 2310.16s]  or the role of the expensive function
+[2310.16s -> 2311.52s]  is the square root function.
+[2311.52s -> 2313.08s]  And so we wanna basically fill in, you know,
+[2313.08s -> 2317.72s]  the square root of whatever value has to be there
+[2317.72s -> 2319.88s]  at that particular location in the table.
+[2319.88s -> 2323.60s]  So we allocate a page and map it there.
+[2323.60s -> 2326.08s]  And then, you know, we calculate for that page
+[2326.08s -> 2329.84s]  all the square root entries and then we're done.
+[2329.88s -> 2332.56s]  And this application is a little bit extreme.
+[2332.56s -> 2334.96s]  What I did is basically I run this table
+[2334.96s -> 2337.20s]  with only one physical page allocated.
+[2337.20s -> 2339.36s]  So whatever the last page was,
+[2339.36s -> 2343.20s]  we just release it by unmapping it.
+[2343.20s -> 2345.20s]  And so we have a gigantic table
+[2345.20s -> 2348.64s]  that's basically represented it by one physical page.
+[2349.64s -> 2351.32s]  And we can just run, you know,
+[2351.32s -> 2352.80s]  we wanted to, we could run this application
+[2352.80s -> 2355.44s]  but it's not gonna be that particularly exciting,
+[2356.32s -> 2358.40s]  but why not?
+[2360.04s -> 2363.68s]  So I think I've compiled it, you know,
+[2363.68s -> 2364.88s]  and basically go through
+[2364.88s -> 2367.04s]  and just randomly bounces around in the table,
+[2367.04s -> 2367.92s]  presumably, you know,
+[2367.92s -> 2369.92s]  causing a lot of different page falls
+[2369.92s -> 2371.88s]  and all the entries, you know, actually work out.
+[2371.88s -> 2374.16s]  And so even though there's this gigantic,
+[2374.16s -> 2375.52s]  you know, a square root page table,
+[2375.52s -> 2378.88s]  a table, virtual square root table,
+[2378.88s -> 2381.08s]  the actually physical representation of that table
+[2381.08s -> 2383.32s]  just consists of a single page.
+[2383.32s -> 2385.68s]  And this is sort of an example of like one of the,
+[2385.68s -> 2386.80s]  you know, a very simple example
+[2386.80s -> 2389.00s]  of one of the sort of cool things you can do
+[2389.96s -> 2391.76s]  if, you know, these virtual memory payment
+[2391.76s -> 2393.64s]  is available to user applications.
+[2396.56s -> 2397.96s]  Any questions about this?
+[2398.92s -> 2402.48s]  Could you just quickly go over that last point
+[2402.48s -> 2404.68s]  on why there's only one physical page?
+[2404.68s -> 2406.40s]  Do I guess I was thinking like during it,
+[2406.40s -> 2409.44s]  like, oh, like this sounds similar to like lazy allocation
+[2409.44s -> 2410.64s]  why is it different?
+[2410.64s -> 2412.08s]  And I think that like answered my question,
+[2412.08s -> 2415.52s]  but I didn't quite follow why we ended up on physical.
+[2415.52s -> 2417.52s]  Okay, the reason, okay, so when we started,
+[2417.52s -> 2418.64s]  when we set it up,
+[2419.64s -> 2421.16s]  we have no pages.
+[2421.16s -> 2422.68s]  So the set of square root region
+[2422.68s -> 2425.52s]  actually allocates address space,
+[2425.52s -> 2428.56s]  but then unmaps all the physical memory associated
+[2428.56s -> 2431.12s]  with that address immediately.
+[2431.12s -> 2432.56s]  So the point of startup,
+[2432.56s -> 2434.12s]  there's no physical pages allocated
+[2434.12s -> 2435.84s]  to this particular table.
+[2435.84s -> 2437.00s]  Does that make sense?
+[2439.28s -> 2440.16s]  Yeah.
+[2440.16s -> 2442.72s]  Okay, then when we get a page fault,
+[2442.72s -> 2444.84s]  that means there's like one page out of the whole table
+[2444.84s -> 2448.04s]  that we have not mapped and we have mapped no pages,
+[2448.28s -> 2449.12s]  but we're gonna page fault
+[2449.12s -> 2451.08s]  and now we're gonna map one page.
+[2451.08s -> 2453.80s]  And in that one page, we're gonna fill in whatever,
+[2453.80s -> 2456.60s]  the square root of I, I plus one, I plus whatever,
+[2456.60s -> 2458.40s]  just for that particular page.
+[2460.12s -> 2462.48s]  And then if we had a page mapped,
+[2462.48s -> 2465.24s]  which in this case the first time around we didn't,
+[2465.24s -> 2467.00s]  there's nothing to be done.
+[2467.00s -> 2469.32s]  So now the application runs
+[2469.32s -> 2472.96s]  and looks up some more interest in the square root table.
+[2472.96s -> 2475.80s]  I mean, you get another page fault
+[2475.80s -> 2477.54s]  because it's looking up a square root entry
+[2477.90s -> 2480.26s]  that actually is not on the allocated page.
+[2480.26s -> 2481.22s]  Okay?
+[2481.22s -> 2483.58s]  So at that point, we get another page fault
+[2483.58s -> 2486.74s]  and then we allocate a second page.
+[2486.74s -> 2490.14s]  We calculate the square roots for that particular page
+[2490.14s -> 2492.22s]  and then we unmap the last page.
+[2493.22s -> 2495.46s]  And this is like in practice, you would never do this.
+[2495.46s -> 2497.98s]  In practice, you would try to keep like a working set
+[2497.98s -> 2499.86s]  of set of pages or something like that.
+[2499.86s -> 2502.62s]  But just to show that you can go pretty extreme,
+[2502.62s -> 2505.06s]  that you can represent like this huge page,
+[2505.06s -> 2507.78s]  this huge table with a single page of memory,
+[2507.78s -> 2509.26s]  this particular fragment of code,
+[2509.26s -> 2511.82s]  unmaps that last, the one but last page.
+[2512.98s -> 2514.10s]  And then it keeps running.
+[2514.10s -> 2517.50s]  And so at any point in instance, at any point in time,
+[2517.50s -> 2519.74s]  there's only one physical page being used.
+[2523.00s -> 2524.86s]  Does that answer your question?
+[2526.94s -> 2527.78s]  Yeah, I think so.
+[2527.78s -> 2528.62s]  Thank you.
+[2528.62s -> 2529.90s]  Okay, good.
+[2529.90s -> 2532.74s]  I think it's just like, it's more like,
+[2532.74s -> 2534.38s]  this is clearly not something you would do in practice,
+[2534.58s -> 2536.82s]  but it is more sort of like to show
+[2536.82s -> 2538.14s]  the power of the primitives,
+[2538.14s -> 2540.22s]  that you can represent this gigantic table
+[2540.22s -> 2541.82s]  using one single physical page.
+[2544.86s -> 2545.86s]  Any other questions?
+[2550.30s -> 2553.98s]  Okay, what I would like to do next then
+[2553.98s -> 2555.94s]  is talk about another example.
+[2555.94s -> 2560.34s]  And in particular, I wanna talk about the garbage collector
+[2561.58s -> 2564.14s]  since a lot of questions were about the garbage collector
+[2564.38s -> 2569.38s]  and so the garbage collectors are a way of basically
+[2585.18s -> 2587.78s]  for programming languages or languages
+[2587.78s -> 2591.66s]  that basically do memory allocation and freeing
+[2591.66s -> 2593.06s]  on behalf of the programmer.
+[2593.06s -> 2594.94s]  So the programmer doesn't have to call,
+[2594.94s -> 2596.70s]  like in C you have to call malloc
+[2596.70s -> 2598.10s]  and then you have to call free explicitly
+[2598.10s -> 2599.06s]  to free the memory.
+[2600.14s -> 2601.94s]  Languages that use garbage collectors,
+[2601.94s -> 2603.98s]  basically the application only has,
+[2604.90s -> 2606.90s]  only can basically call malloc
+[2606.90s -> 2609.06s]  but never has to worry about actually freeing the memory.
+[2609.06s -> 2610.74s]  Basically the garbage collector will do the work
+[2610.74s -> 2612.62s]  to determine if the memory still is in use
+[2612.62s -> 2614.06s]  and if the memory is not in use,
+[2614.06s -> 2616.54s]  then it actually will free it.
+[2616.54s -> 2617.50s]  And so it is nice.
+[2618.94s -> 2620.54s]  What are some example programming languages
+[2620.54s -> 2621.94s]  that have garbage collectors?
+[2623.74s -> 2624.70s]  Java?
+[2624.70s -> 2629.70s]  Yeah, Java, Python, Go, many of them actually, correct?
+[2629.98s -> 2632.90s]  Almost, other than maybe C and Rust,
+[2634.02s -> 2635.14s]  every other programming language
+[2635.14s -> 2637.38s]  basically has a garbage collector, okay?
+[2637.38s -> 2640.34s]  And so as you can imagine, there's a huge literature
+[2641.78s -> 2644.26s]  design space for garbage collectors
+[2644.26s -> 2646.34s]  and the point of this paper is not like to say,
+[2646.34s -> 2647.98s]  well, here's the best garbage collector possible
+[2647.98s -> 2650.22s]  but here basically illustrate
+[2650.22s -> 2651.94s]  that garbage collectors could take advantage
+[2651.94s -> 2654.50s]  of these usual level of memory primitives.
+[2655.86s -> 2657.78s]  And so the particular garbage collector
+[2657.78s -> 2661.06s]  the paper discusses is a copying garbage collector.
+[2671.94s -> 2673.94s]  And the basic plan is sort of,
+[2673.94s -> 2677.54s]  the top level outline is as follows.
+[2677.54s -> 2680.78s]  You basically have a memory heap
+[2680.78s -> 2682.74s]  from which memory is allocated.
+[2682.74s -> 2686.58s]  You divide the memory in the heap in two pieces.
+[2686.58s -> 2687.74s]  One is the from piece
+[2688.62s -> 2690.74s]  or what the paper calls the from space
+[2690.74s -> 2692.30s]  and the other is the to space.
+[2693.70s -> 2696.62s]  And let's say we're having started
+[2696.62s -> 2698.38s]  with the application to starch
+[2698.38s -> 2699.94s]  and so all memory is free.
+[2699.94s -> 2702.90s]  You basically start allocating memory in the from space.
+[2702.90s -> 2707.26s]  So let's say we allocate maybe a tree-like data structure
+[2707.98s -> 2711.98s]  that has here's the root of the tree
+[2711.98s -> 2715.74s]  and that maybe has a pointer to another object
+[2715.74s -> 2718.34s]  and that maybe has a pointer to another object
+[2718.34s -> 2720.22s]  and that is also pointed to by the root
+[2720.22s -> 2725.22s]  sort of a little cycle of objects.
+[2725.90s -> 2730.26s]  And maybe the application used a lot of other memory too
+[2730.26s -> 2732.94s]  but there's nothing pointing to it anymore.
+[2732.94s -> 2735.06s]  And so basically the only objects,
+[2735.06s -> 2736.22s]  live objects are the ones
+[2736.22s -> 2739.06s]  that actually are basically accessible from the root.
+[2739.06s -> 2740.74s]  So at some point,
+[2740.74s -> 2743.34s]  like maybe I've allocated lots of memory before
+[2743.34s -> 2745.70s]  and we allocate one more object
+[2745.70s -> 2747.74s]  and it turns out there's no space anymore
+[2747.74s -> 2750.10s]  where the application asks for one more object
+[2750.10s -> 2751.78s]  and it turns out there's no space anymore for it
+[2751.78s -> 2754.70s]  because the whole from space is basically has been used.
+[2755.74s -> 2757.06s]  So then the basic idea is
+[2757.06s -> 2758.86s]  in this copying garden collector
+[2758.86s -> 2760.98s]  is to take the objects
+[2760.98s -> 2765.86s]  and copying them over to the to space
+[2765.86s -> 2768.34s]  and the way you do it is you start from the root
+[2768.34s -> 2770.50s]  because that's, so every application
+[2770.50s -> 2772.74s]  or every has a set of registers
+[2772.74s -> 2775.82s]  where basically this top level pointers are stored
+[2775.82s -> 2779.90s]  or maybe they're the local variables of the stack
+[2779.90s -> 2781.78s]  and basically there's a set of roots
+[2781.78s -> 2782.70s]  and this for simplicity
+[2782.70s -> 2784.30s]  I'm just gonna assume there's one root
+[2784.30s -> 2786.94s]  and you start tracing basically from the top level.
+[2786.94s -> 2790.02s]  And so you copy the root object over
+[2790.02s -> 2791.06s]  through the to space
+[2791.98s -> 2796.26s]  and that's the only thing you do at that point.
+[2796.26s -> 2798.82s]  And then of course that leaves the pointers
+[2800.06s -> 2802.10s]  still pointing to whatever objects
+[2802.10s -> 2803.62s]  there were there before.
+[2806.58s -> 2808.38s]  And then once you copied the object over
+[2808.38s -> 2811.26s]  you go and inspect where you scan the object
+[2811.26s -> 2812.74s]  then of course the language runtime
+[2812.74s -> 2814.70s]  knows exactly what type the object is
+[2814.70s -> 2816.22s]  and knows where the pointers are
+[2816.22s -> 2817.50s]  and just looks at these pointers
+[2817.50s -> 2820.14s]  and says like, okay, maybe I should copy some more
+[2821.46s -> 2824.58s]  pointers over because those are actually
+[2824.58s -> 2827.42s]  ultimately part of a live data structure.
+[2827.42s -> 2830.70s]  And so basically maybe we'll take the top level pointer
+[2830.70s -> 2833.38s]  look at that object, copy that object over
+[2833.38s -> 2838.38s]  to the to space updates the pointer here
+[2840.62s -> 2843.66s]  to actually indicate that actually it has been here
+[2843.66s -> 2846.70s]  pointing it to the now copied version of the object
+[2846.70s -> 2849.58s]  and then of course later on we need to remember
+[2849.62s -> 2852.38s]  that actually this object has been copied.
+[2852.38s -> 2854.90s]  And so we just store a little bit of extra information
+[2854.90s -> 2856.70s]  and remember that this object
+[2856.70s -> 2858.26s]  is actually now stored there.
+[2860.02s -> 2863.46s]  And this process of sort of moving an object
+[2863.46s -> 2866.14s]  from the from space to the to space
+[2866.14s -> 2867.86s]  and leaving a forwarding pointer
+[2867.86s -> 2870.50s]  in the from space is called forwarding.
+[2870.50s -> 2875.50s]  Okay, so we now, we did this, we did fix this pointer
+[2884.74s -> 2888.02s]  we fixed that pointer, there's one more left.
+[2888.02s -> 2892.38s]  So we look up that object and we copy it over
+[2892.38s -> 2896.18s]  like before and it still has a pointer
+[2896.18s -> 2897.70s]  pointing to this object.
+[2897.70s -> 2900.10s]  So now we look at that particular pointer
+[2900.70s -> 2903.74s]  and see, ah, that actually has already been copied.
+[2903.74s -> 2905.94s]  And in fact, we know what the new location is
+[2905.94s -> 2907.66s]  and so we can just straight update it
+[2907.66s -> 2909.16s]  to point to the right place.
+[2910.86s -> 2912.46s]  Okay, and so at this point,
+[2912.46s -> 2915.78s]  all the pointers have been correctly updated
+[2915.78s -> 2918.10s]  into the whole structure,
+[2918.10s -> 2919.74s]  the whole cycle basically of objects
+[2919.74s -> 2923.10s]  as we moved from space to space.
+[2923.10s -> 2924.74s]  And so at this point we're done.
+[2930.10s -> 2935.10s]  At this point we're done, we forwarded all the objects
+[2938.22s -> 2940.82s]  and basically the from space now,
+[2940.82s -> 2942.42s]  you know, all the objects in the from space
+[2942.42s -> 2945.42s]  are being discarded and it's now free space.
+[2957.50s -> 2959.50s]  Does that make sense?
+[2959.50s -> 2962.22s]  That's the basic plan in a copy and garbage collector.
+[2963.78s -> 2967.06s]  Okay, now the scheme that is used in the paper
+[2968.74s -> 2971.14s]  has a couple of sophistication.
+[2971.14s -> 2972.54s]  So I wanna talk about them.
+[2975.10s -> 2979.22s]  The first sophistication is that, you know,
+[2979.22s -> 2980.10s]  they're actually, they're called,
+[2980.10s -> 2984.98s]  this is called bigger algorithm, it's an old algorithm.
+[2984.98s -> 2988.26s]  And one of the nice, you know, features it has
+[2989.50s -> 2993.34s]  is that it's sometimes it's originally called real time.
+[2993.34s -> 2994.94s]  When real what it meant is it's sort of,
+[2994.94s -> 2997.90s]  it's an incremental garbage collector.
+[3002.90s -> 3006.30s]  So, and the main idea is that
+[3011.50s -> 3016.50s]  here if we have our two from space and through space,
+[3020.34s -> 3022.22s]  the main idea is that, you know,
+[3022.22s -> 3027.14s]  we have our root again, here's our root,
+[3027.14s -> 3032.14s]  it had two pointers and it's pointing it back.
+[3034.94s -> 3036.26s]  The main idea is that, you know,
+[3036.26s -> 3039.22s]  it's not really necessary sort of to stop the world
+[3040.18s -> 3042.18s]  and copy everything over
+[3042.18s -> 3044.54s]  and then basically resume computation.
+[3044.54s -> 3046.18s]  The only thing really necessary
+[3047.10s -> 3049.02s]  is to actually move copy over the root
+[3051.82s -> 3053.54s]  and basically do nothing else.
+[3053.54s -> 3055.42s]  And so basically, you know, at this point, you know,
+[3055.42s -> 3058.50s]  the root has been copied, but you know,
+[3058.50s -> 3062.74s]  it's pointers are still pointing, you know,
+[3062.74s -> 3065.06s]  the year because that object has not been scanned,
+[3065.06s -> 3066.10s]  you know, it hasn't been,
+[3066.10s -> 3068.14s]  it's point it hasn't been updated yet.
+[3069.14s -> 3071.54s]  And the basic idea is then
+[3071.54s -> 3074.94s]  whenever the application calls new,
+[3077.02s -> 3081.78s]  you know, on every new call,
+[3081.78s -> 3083.54s]  you scan a few more objects
+[3083.54s -> 3085.46s]  or you forward a couple more objects.
+[3095.06s -> 3096.38s]  And that's sort of nice, Greg,
+[3096.38s -> 3098.18s]  because basically you spread, you know,
+[3098.18s -> 3099.46s]  the cost of actually, you know,
+[3099.46s -> 3102.02s]  copying the complete, you know,
+[3102.02s -> 3104.54s]  active or life heap from the application
+[3104.54s -> 3105.78s]  in incremental steps, you know,
+[3106.38s -> 3108.22s]  every new, every call allocates, you know,
+[3108.22s -> 3109.46s]  contributes a little bit, you know,
+[3109.46s -> 3111.46s]  to actually the complete copy operation.
+[3113.10s -> 3115.94s]  Now, of course the application might also be using,
+[3115.94s -> 3117.06s]  you know, some of these pointers.
+[3117.06s -> 3118.18s]  Like for example, if you know,
+[3118.18s -> 3120.90s]  the root will be dereferencing, you know,
+[3120.90s -> 3123.54s]  like say this second red pointer,
+[3123.54s -> 3125.58s]  it's still actually pointing into the from space.
+[3125.58s -> 3126.98s]  And of course that is dangerous
+[3126.98s -> 3128.58s]  because we shouldn't be tracking pointers
+[3128.58s -> 3129.58s]  in the from space.
+[3130.62s -> 3131.98s]  And so basically this means that like,
+[3131.98s -> 3133.46s]  every time you dereference,
+[3136.78s -> 3138.18s]  if you reference a pointer,
+[3140.58s -> 3141.58s]  you need to check,
+[3143.78s -> 3145.62s]  check if it's in the from space,
+[3145.62s -> 3147.30s]  if in from space,
+[3149.18s -> 3152.62s]  and if so, you know, do the forwarding.
+[3157.02s -> 3159.10s]  And so the application is allowed to use like the pointers,
+[3159.10s -> 3160.26s]  but basically the run, you know,
+[3160.26s -> 3162.98s]  the compiler has to instrument the application
+[3162.98s -> 3164.34s]  that basically every pointer access
+[3164.50s -> 3166.58s]  is surrounded by that check.
+[3166.58s -> 3168.10s]  So that, you know,
+[3168.10s -> 3170.46s]  we basically maintain the invariant that all,
+[3172.10s -> 3173.50s]  that any pointer in the to space,
+[3173.50s -> 3176.22s]  no points to objects in the to space.
+[3176.22s -> 3177.78s]  And we need to ensure that's correct
+[3177.78s -> 3179.62s]  because when we, in the end we're done,
+[3179.62s -> 3182.98s]  you know, we wanna remove the from space
+[3182.98s -> 3185.94s]  and have, so that we can discard it
+[3185.94s -> 3187.90s]  and reuse it as free space.
+[3189.98s -> 3191.50s]  Okay, any questions about this?
+[3191.50s -> 3193.14s]  This is sort of the basic setup.
+[3194.34s -> 3199.34s]  Okay, if there are no questions again,
+[3203.42s -> 3206.22s]  the paper makes two points, you know, about the scheme.
+[3207.30s -> 3210.02s]  And one is, you know,
+[3210.02s -> 3211.54s]  it's annoying or too bad
+[3211.54s -> 3214.42s]  that you actually have to do this dereference every time.
+[3214.42s -> 3217.82s]  So basically this means that what a loader store instruction
+[3217.82s -> 3219.50s]  instead of being single instruction,
+[3219.50s -> 3220.78s]  it actually is a bunch of instructions
+[3220.78s -> 3222.62s]  namely branch instruction
+[3222.70s -> 3223.54s]  and then perhaps, you know,
+[3223.54s -> 3226.66s]  in calling a function to actually do the forwarding.
+[3226.66s -> 3229.14s]  And so, you know, that increases the cost
+[3229.14s -> 3230.78s]  of the application.
+[3232.26s -> 3234.02s]  And the second thing that actually sort of points out
+[3234.02s -> 3237.86s]  is that it is not that easy to paralyze
+[3239.94s -> 3242.34s]  this, the garbage collector
+[3242.34s -> 3243.54s]  because like maybe in a nice setting,
+[3243.54s -> 3245.66s]  it's like you're running in a multi-core machine
+[3245.66s -> 3248.66s]  where you have a lot of free CPU's basically.
+[3248.66s -> 3250.26s]  I realize that the collector,
+[3250.26s -> 3251.90s]  you know, it's just good in the background,
+[3252.22s -> 3256.10s]  you know, traverse the object graph
+[3256.10s -> 3259.06s]  and, you know, copy things incrementally over
+[3259.06s -> 3260.82s]  as it continues.
+[3260.82s -> 3263.38s]  But if the application at the same time,
+[3263.38s -> 3265.22s]  you know, is using the graph,
+[3265.22s -> 3266.22s]  there's a risk, you know,
+[3266.22s -> 3267.42s]  that the application maybe, you know,
+[3267.42s -> 3269.42s]  there's one of the reference check,
+[3269.42s -> 3270.38s]  one of these checks,
+[3270.38s -> 3271.70s]  it starts copying an object
+[3271.70s -> 3272.54s]  while at the same time,
+[3272.54s -> 3273.82s]  the collector is also copying the object
+[3273.82s -> 3275.54s]  and, you know, we're not very carefully,
+[3275.54s -> 3277.10s]  we may end up with, you know,
+[3277.10s -> 3278.46s]  the object copied twice
+[3278.46s -> 3281.10s]  and the pointer's not pointing in the right places.
+[3281.14s -> 3282.34s]  You know, you can easily see, correct,
+[3282.34s -> 3283.74s]  that there is a race condition,
+[3283.74s -> 3286.38s]  a possibility of a race condition.
+[3288.46s -> 3292.54s]  And so the paper basically describes the scheme
+[3292.54s -> 3293.38s]  and it says like,
+[3293.38s -> 3294.22s]  if you had, you know,
+[3294.22s -> 3296.18s]  these, you know, user level primitives,
+[3296.18s -> 3297.78s]  then actually you could do something different.
+[3297.78s -> 3299.70s]  You could do a cool trick
+[3299.70s -> 3301.38s]  and you can actually use VM,
+[3303.06s -> 3303.90s]  you know, virtual memory
+[3303.90s -> 3307.98s]  to basically reduce the cost of the check
+[3307.98s -> 3311.34s]  and almost get, you know, concurrency for free.
+[3313.34s -> 3316.10s]  And so the basic idea is as follows,
+[3316.10s -> 3317.18s]  you know, we have our
+[3320.90s -> 3323.34s]  same setup, you know, our from,
+[3324.62s -> 3326.46s]  and here's our to,
+[3326.46s -> 3328.54s]  and what we're gonna do is like,
+[3328.54s -> 3329.82s]  we're gonna have, you know,
+[3329.82s -> 3331.70s]  we're gonna say have,
+[3331.70s -> 3332.70s]  we're gonna have a region,
+[3332.70s -> 3335.10s]  you know, we can actually divide the two space,
+[3335.10s -> 3337.74s]  sort of virtually or not literally,
+[3338.54s -> 3339.38s]  but we divide the two space
+[3339.38s -> 3341.18s]  in an area that is unscanned.
+[3345.02s -> 3346.82s]  So, I mean, a little bit more clear.
+[3348.94s -> 3349.78s]  We have an area,
+[3349.78s -> 3352.46s]  basically the area that is scanned
+[3354.58s -> 3356.94s]  and then there's an area that's unscanned.
+[3359.22s -> 3360.26s]  And initially, basically,
+[3360.26s -> 3363.14s]  you know, the whole area is unscanned,
+[3364.18s -> 3365.54s]  you know, so when you start out,
+[3365.54s -> 3366.90s]  you know, you make the flip
+[3366.94s -> 3369.18s]  from the from to the to space,
+[3369.18s -> 3371.06s]  nothing has been scanned yet
+[3371.06s -> 3372.42s]  because there's no objects yet in it.
+[3372.42s -> 3373.58s]  And so, but then basically
+[3373.58s -> 3375.06s]  the scheme starts in the same way
+[3375.06s -> 3378.46s]  and we copy over the root object.
+[3380.50s -> 3381.78s]  Now, it used to be there,
+[3381.78s -> 3383.06s]  you know, we copy it over,
+[3383.06s -> 3384.10s]  it has some pointers,
+[3384.10s -> 3385.62s]  you know, basically these pointers
+[3385.62s -> 3387.34s]  point still back into the,
+[3393.22s -> 3394.58s]  oops, yeah,
+[3394.58s -> 3396.06s]  and these pointers point back
+[3396.10s -> 3397.78s]  into the old from space.
+[3398.78s -> 3399.62s]  And so that's it.
+[3399.62s -> 3401.94s]  And now we're basically say,
+[3401.94s -> 3403.62s]  and what we're gonna do is
+[3403.62s -> 3405.98s]  for the unscanned area,
+[3405.98s -> 3407.90s]  which is at this point everything,
+[3407.90s -> 3409.58s]  we're gonna just basically map them,
+[3409.58s -> 3412.38s]  map them with no permission,
+[3412.38s -> 3413.30s]  map them none.
+[3416.50s -> 3417.78s]  And so what does that mean?
+[3417.78s -> 3419.66s]  Well, that means that the first time around
+[3419.66s -> 3420.94s]  the application, you know,
+[3420.94s -> 3422.62s]  after we did the flip,
+[3422.62s -> 3423.74s]  the garbage collector did the flip,
+[3423.74s -> 3425.82s]  the first time the application uses the root
+[3426.66s -> 3429.26s]  pointer, it will get a page fault, right?
+[3429.26s -> 3430.10s]  Because you know,
+[3430.10s -> 3432.78s]  that part of the address range
+[3432.78s -> 3434.14s]  is actually in mapped.
+[3434.14s -> 3435.54s]  And so basically then the idea is
+[3435.54s -> 3436.66s]  in the fault handler,
+[3442.54s -> 3443.86s]  scan, you know,
+[3443.86s -> 3445.14s]  one page of objects
+[3452.10s -> 3454.54s]  and forward the ones that need to be forwarded.
+[3456.98s -> 3458.90s]  So basically, you know,
+[3458.90s -> 3460.10s]  we in this particular setting
+[3460.10s -> 3461.22s]  where we're only copied over
+[3461.22s -> 3462.94s]  just the root so far,
+[3462.94s -> 3464.66s]  you know, we have,
+[3464.66s -> 3467.26s]  we're gonna just copy over the root.
+[3467.26s -> 3468.10s]  We're gonna scan,
+[3468.10s -> 3471.14s]  you know, the pointers in the objects
+[3471.14s -> 3472.62s]  in which the root is pointing.
+[3472.62s -> 3473.46s]  In this case,
+[3473.46s -> 3474.30s]  there are only two of them.
+[3474.30s -> 3476.02s]  You know, we kind of copy over those two objects,
+[3476.02s -> 3478.66s]  you know, into the unscanned space,
+[3478.66s -> 3479.70s]  or maybe let me draw
+[3479.70s -> 3481.90s]  in a slightly different here.
+[3481.90s -> 3483.62s]  Just make it look like
+[3483.62s -> 3485.82s]  we can copy over those two objects,
+[3486.42s -> 3487.66s]  you know, that we're pointing to.
+[3487.66s -> 3489.02s]  And basically we update,
+[3489.02s -> 3490.18s]  you know, the, you know,
+[3490.18s -> 3492.70s]  we move this scan line,
+[3492.70s -> 3496.30s]  you know, from here to there.
+[3496.30s -> 3497.58s]  So this is now scanned.
+[3500.42s -> 3501.94s]  And so after we scan the page,
+[3501.94s -> 3504.46s]  you know, we can actually increase,
+[3504.46s -> 3507.22s]  you know, basically protect
+[3507.22s -> 3508.54s]  or basically unprotect.
+[3511.06s -> 3512.50s]  You can unprotect the page.
+[3513.70s -> 3515.06s]  Unprotect the scan page.
+[3515.82s -> 3520.82s]  Okay.
+[3524.26s -> 3525.46s]  And, you know,
+[3525.46s -> 3526.34s]  and then the application,
+[3526.34s -> 3527.18s]  you know, can just,
+[3527.18s -> 3528.62s]  you know, access the particular object
+[3528.62s -> 3529.46s]  because, you know,
+[3529.46s -> 3530.30s]  we translated, you know,
+[3530.30s -> 3531.54s]  the pointers inside of the objects
+[3531.54s -> 3533.90s]  are safe to expose it to the application.
+[3533.90s -> 3535.82s]  The application can traverse those pointers.
+[3535.82s -> 3536.66s]  Of course,
+[3536.66s -> 3538.06s]  if those pointers are still pointing to objects
+[3538.06s -> 3540.50s]  that haven't been scanned in,
+[3540.50s -> 3543.02s]  then we'll get a page fault again.
+[3543.02s -> 3543.86s]  And then, you know,
+[3543.86s -> 3545.02s]  we scan a little bit more.
+[3545.06s -> 3546.38s]  And so basically it has the benefits,
+[3546.38s -> 3548.06s]  you know, it's still incremental.
+[3551.50s -> 3552.34s]  You know, we can still do
+[3552.34s -> 3553.22s]  a little bit of work,
+[3553.22s -> 3554.06s]  you know, every time.
+[3554.06s -> 3555.70s]  We can also do it every time on a new,
+[3555.70s -> 3556.54s]  we can actually allocate,
+[3556.54s -> 3558.30s]  you know, do some work.
+[3558.30s -> 3559.90s]  But it has the additional benefits.
+[3559.90s -> 3561.86s]  There's no pointer check anymore.
+[3565.22s -> 3567.14s]  The pointer check is still there,
+[3567.14s -> 3568.78s]  but it's done in hardware.
+[3568.78s -> 3570.98s]  The VM hardware does it for us.
+[3575.02s -> 3580.02s]  Does that make sense?
+[3582.14s -> 3583.66s]  Any questions about this,
+[3583.66s -> 3584.50s]  about this plan?
+[3585.86s -> 3587.30s]  I have a question.
+[3587.30s -> 3588.42s]  Yeah.
+[3588.42s -> 3591.86s]  So in the handler,
+[3591.86s -> 3595.02s]  you're saying that you scan one page of objects,
+[3595.02s -> 3598.62s]  but how do you know that the objects
+[3598.62s -> 3602.90s]  that the root has references to will be,
+[3602.90s -> 3604.38s]  will fall into the same,
+[3604.78s -> 3606.06s]  how do you know that the objects
+[3606.06s -> 3609.02s]  that really need to be forwarded
+[3609.02s -> 3611.86s]  in order to not violate the invariant
+[3611.86s -> 3613.66s]  will be in the same page?
+[3614.98s -> 3616.42s]  Okay.
+[3616.42s -> 3618.62s]  There's some set of objects in the page.
+[3619.62s -> 3620.46s]  You're starting, okay.
+[3620.46s -> 3621.54s]  But let's say, you know,
+[3621.54s -> 3622.38s]  what the,
+[3624.06s -> 3624.90s]  okay.
+[3627.46s -> 3628.38s]  At the beginning,
+[3628.38s -> 3629.62s]  when we flipped the spaces,
+[3629.62s -> 3631.22s]  there's nothing in the to space.
+[3632.50s -> 3633.94s]  What we could do is like,
+[3634.46s -> 3635.50s]  what the runtime could do is just copy.
+[3635.50s -> 3637.02s]  I described it as copying one page,
+[3637.02s -> 3638.70s]  but basically we could copy over
+[3638.70s -> 3641.34s]  or forward one page,
+[3641.34s -> 3643.66s]  basically copy N objects over
+[3643.66s -> 3646.90s]  so that they fill a complete page, right?
+[3646.90s -> 3649.78s]  So now we have N objects sitting on that one page,
+[3649.78s -> 3650.90s]  all unscanned.
+[3651.94s -> 3652.78s]  Then at some point,
+[3652.78s -> 3654.70s]  the page fall handler will happen.
+[3654.70s -> 3655.54s]  And then, you know,
+[3655.54s -> 3656.70s]  the garbage collector,
+[3656.70s -> 3660.82s]  your collector go through each object on that one page
+[3660.82s -> 3661.70s]  and looks, you know,
+[3661.70s -> 3663.38s]  for its pointers.
+[3663.86s -> 3664.70s]  And for its pointers,
+[3664.70s -> 3666.78s]  it copies over those, you know,
+[3667.78s -> 3669.74s]  objects into the,
+[3671.22s -> 3674.34s]  into the unscanned part of the to space.
+[3674.34s -> 3675.50s]  And so that if, you know,
+[3675.50s -> 3677.38s]  anybody or if the application ever would use
+[3677.38s -> 3678.54s]  one of those unscanned objects,
+[3678.54s -> 3679.38s]  we'll get a page fault
+[3679.38s -> 3680.66s]  and I can scan those,
+[3680.66s -> 3681.86s]  et cetera, et cetera.
+[3683.86s -> 3685.22s]  Does that answer the question?
+[3685.22s -> 3686.14s]  Yeah.
+[3686.14s -> 3687.26s]  Good.
+[3687.26s -> 3688.10s]  Okay.
+[3689.06s -> 3689.90s]  Any other questions?
+[3689.90s -> 3691.26s]  I also had a question.
+[3691.26s -> 3692.30s]  Yeah.
+[3692.30s -> 3693.58s]  So after you do this,
+[3693.58s -> 3696.34s]  do you flip the two in the front?
+[3696.34s -> 3698.62s]  Or, okay.
+[3698.62s -> 3699.46s]  Thank you.
+[3699.46s -> 3700.94s]  You start out in the front space,
+[3700.94s -> 3701.78s]  you fill it up,
+[3701.78s -> 3702.74s]  you flip to the,
+[3702.74s -> 3704.54s]  you copy it over to the two space
+[3704.54s -> 3706.22s]  and then you call the front.
+[3706.22s -> 3709.26s]  Once you're done with the completely scanning
+[3709.26s -> 3711.06s]  and you're done with the front space
+[3711.06s -> 3711.90s]  is completely clear,
+[3711.90s -> 3713.42s]  you know, just you flip the names
+[3713.42s -> 3715.38s]  and you start using the two space
+[3715.38s -> 3717.74s]  to actually do allocations until it's full
+[3717.74s -> 3719.10s]  and then you flip again.
+[3722.98s -> 3723.82s]  Thank you.
+[3728.22s -> 3730.98s]  Any further questions?
+[3733.10s -> 3733.94s]  So one of the,
+[3733.94s -> 3735.74s]  one of the things that,
+[3735.74s -> 3737.30s]  one of the arguments the paper also makes
+[3737.30s -> 3738.62s]  is that, you know,
+[3738.62s -> 3740.38s]  one other thing that the VM system
+[3740.38s -> 3743.30s]  or using VM simplifies
+[3743.30s -> 3744.62s]  is basically concurrency.
+[3746.62s -> 3747.86s]  And the argument is that
+[3749.54s -> 3750.66s]  basically the collector,
+[3750.66s -> 3751.50s]  you know,
+[3751.54s -> 3753.38s]  we go through the unscanned pages.
+[3753.38s -> 3754.82s]  So we have,
+[3754.82s -> 3755.66s]  you know,
+[3755.66s -> 3756.50s]  we go through the unscanned pages
+[3756.50s -> 3758.22s]  and basically scan one page,
+[3758.22s -> 3759.54s]  you know, at the time.
+[3759.54s -> 3762.02s]  And if it's guaranteed
+[3762.02s -> 3764.14s]  that the application has no pointers
+[3764.14s -> 3767.50s]  or cannot access in the same time that page
+[3767.50s -> 3769.42s]  because it's unmapped.
+[3769.42s -> 3770.26s]  And so,
+[3771.18s -> 3772.02s]  you know,
+[3772.02s -> 3775.54s]  as long as the paging hardware
+[3775.54s -> 3776.86s]  basically sort of introduces
+[3776.86s -> 3778.58s]  kind of extra explicit synchronization
+[3778.58s -> 3781.14s]  or protection against races
+[3781.14s -> 3783.54s]  because only the collector can access that page
+[3783.54s -> 3784.38s]  and the from,
+[3784.38s -> 3787.14s]  and the application can actually not access the page.
+[3788.10s -> 3790.66s]  So it gives sort of a nice automatic
+[3790.66s -> 3791.50s]  sort of parallelism
+[3791.50s -> 3793.78s]  where the application can run and do its business.
+[3793.78s -> 3795.90s]  The collector can do its business
+[3795.90s -> 3799.10s]  and they will never step on each other's toes
+[3799.10s -> 3802.14s]  because if the application ever will touch
+[3802.14s -> 3803.58s]  an unscanned page
+[3803.58s -> 3805.02s]  and we'll get a page fault.
+[3805.78s -> 3810.78s]  And the collector never touches scan pages.
+[3811.98s -> 3814.54s]  And so it will never interfere with the application.
+[3815.78s -> 3819.86s]  So you get sort of concurrency for free,
+[3819.86s -> 3821.66s]  but it actually has a tricky issue.
+[3828.02s -> 3829.94s]  So although it's almost for free,
+[3829.94s -> 3830.78s]  you know,
+[3830.78s -> 3833.02s]  there's actually one thing you actually have to arrange,
+[3833.02s -> 3833.86s]  which is
+[3834.78s -> 3836.42s]  the area,
+[3836.42s -> 3837.26s]  correct,
+[3837.26s -> 3839.26s]  in the unscanned area was actually unmapped.
+[3839.26s -> 3843.74s]  So if we look at our picture from before,
+[3843.74s -> 3845.90s]  here are two,
+[3845.90s -> 3847.66s]  or here's our from,
+[3847.66s -> 3848.82s]  here's our to,
+[3848.82s -> 3849.66s]  and, you know,
+[3849.66s -> 3850.50s]  we have, you know,
+[3850.50s -> 3854.94s]  that sort of split into unscanned and scanned area
+[3854.94s -> 3856.38s]  and unscanned it has no,
+[3856.38s -> 3857.22s]  you know,
+[3857.22s -> 3858.06s]  there's none protected none.
+[3859.26s -> 3861.22s]  So that raises the question,
+[3861.22s -> 3862.06s]  you know,
+[3862.06s -> 3863.06s]  how does actually do collector,
+[3863.10s -> 3863.94s]  you know,
+[3863.94s -> 3866.34s]  go through it because we can't actually access those pages
+[3866.34s -> 3867.18s]  because you know,
+[3867.18s -> 3868.02s]  they're unmapped, correct?
+[3868.02s -> 3870.18s]  Or they're protected with the,
+[3870.18s -> 3871.78s]  they're inaccessible.
+[3871.78s -> 3872.62s]  And so,
+[3872.62s -> 3874.42s]  and the trick is it basically follows,
+[3874.42s -> 3876.74s]  and this is where map two comes in.
+[3878.46s -> 3879.38s]  What we're gonna do is actually,
+[3879.38s -> 3882.18s]  we're gonna map that same physical memory.
+[3882.18s -> 3883.18s]  We mapped it once,
+[3883.18s -> 3884.02s]  correct?
+[3884.02s -> 3885.66s]  We mapped it once in this way,
+[3885.66s -> 3887.74s]  we're gonna map it in a second time
+[3887.74s -> 3890.42s]  in the collector's views
+[3890.42s -> 3893.46s]  or the collector's view of the two space.
+[3894.66s -> 3895.66s]  So here's the collector's view,
+[3895.66s -> 3897.42s]  here's the app view.
+[3897.42s -> 3898.66s]  And in the collector's view,
+[3898.66s -> 3899.50s]  you know,
+[3899.50s -> 3903.22s]  where I still have to and from exactly like before steps
+[3903.22s -> 3904.06s]  and try,
+[3904.94s -> 3907.46s]  we have to and from.
+[3909.26s -> 3910.82s]  And what we're doing actually,
+[3910.82s -> 3911.66s]  you know,
+[3911.66s -> 3912.66s]  here's our unscanned area.
+[3916.50s -> 3917.90s]  But in the collector,
+[3917.90s -> 3918.74s]  you know,
+[3918.74s -> 3919.58s]  we map actually the unscanned
+[3919.58s -> 3920.54s]  area read and write.
+[3921.98s -> 3924.14s]  And so that the collector actually can go through,
+[3924.14s -> 3924.98s]  look at the,
+[3924.98s -> 3925.82s]  scan the objects,
+[3925.82s -> 3926.66s]  you know,
+[3926.66s -> 3928.82s]  and forward pointers as necessary.
+[3928.82s -> 3930.14s]  And so this is like at the place
+[3930.14s -> 3932.78s]  where this map two call is necessary,
+[3932.78s -> 3935.02s]  where a range,
+[3936.58s -> 3937.42s]  a physical,
+[3937.42s -> 3938.94s]  a piece of physical memory is actually mapped twice
+[3938.94s -> 3940.46s]  in the address space of an application,
+[3940.46s -> 3943.02s]  one at two different levels of protection
+[3943.02s -> 3945.38s]  to basically make the scenario like this work.
+[3947.10s -> 3948.38s]  Any questions about this?
+[3949.58s -> 3950.42s]  Okay.
+[3958.42s -> 3959.46s]  I have a question.
+[3959.46s -> 3960.30s]  Do you,
+[3961.42s -> 3966.26s]  do you kind of give each like the collector and the app
+[3968.06s -> 3971.58s]  different versions of the page table or?
+[3971.58s -> 3972.42s]  No,
+[3972.42s -> 3973.62s]  they have the same page table,
+[3973.62s -> 3974.46s]  correct?
+[3974.46s -> 3977.30s]  But they have the memory mapped in two places,
+[3977.30s -> 3979.42s]  the physical memory mapped in two different places
+[3979.42s -> 3980.26s]  in the address space,
+[3980.26s -> 3982.70s]  in two different places in the page table.
+[3983.74s -> 3985.66s]  And in one place,
+[3985.66s -> 3989.62s]  you make basically the mappings invalid
+[3989.62s -> 3991.42s]  and in the other address range,
+[3991.42s -> 3993.34s]  you make the mapping read, write.
+[3996.14s -> 3996.98s]  Okay.
+[3999.62s -> 4000.46s]  Well,
+[4000.46s -> 4002.46s]  to make this a little bit more clear,
+[4004.34s -> 4006.30s]  since there were so many questions about it,
+[4007.14s -> 4010.70s]  I sort of have a trivial implementation of actually
+[4013.18s -> 4014.66s]  this basic ID,
+[4014.66s -> 4016.78s]  the ID that was described in the paper
+[4016.78s -> 4018.94s]  and just to make it a little bit more concrete.
+[4020.38s -> 4024.02s]  And so let me walk through this and ask,
+[4024.90s -> 4026.42s]  feel free to jump in.
+[4026.42s -> 4027.94s]  This is basically toy implementation
+[4027.94s -> 4029.46s]  of what is described in the paper.
+[4029.46s -> 4030.78s]  And I'm sure it has bugs.
+[4030.78s -> 4032.38s]  I mean,
+[4032.38s -> 4035.26s]  I haven't really tested this in any way seriously,
+[4035.26s -> 4037.34s]  and it's mostly there to illustrate,
+[4037.34s -> 4040.02s]  to make everything slightly more concrete.
+[4040.02s -> 4041.06s]  So the collector,
+[4041.06s -> 4042.38s]  the API, if you will,
+[4042.38s -> 4045.98s]  that the application uses is a new and read pointer.
+[4045.98s -> 4049.50s]  And read pointer is that basically does the check
+[4049.50s -> 4052.70s]  whether the pointer's in the from space
+[4052.70s -> 4054.10s]  and if there's in the from space,
+[4054.10s -> 4055.42s]  then it needs to be copied.
+[4055.42s -> 4056.26s]  And of course,
+[4056.26s -> 4058.10s]  when we're using VM tricks,
+[4058.10s -> 4060.14s]  then basically this read pointer is going to be very cheap
+[4060.14s -> 4062.34s]  as we basically return the existing,
+[4062.34s -> 4063.38s]  return this argument.
+[4065.54s -> 4067.14s]  And for just for the simple application,
+[4067.14s -> 4070.74s]  I have a linked list and it has two routes,
+[4070.74s -> 4072.14s]  pointing one to the head
+[4072.14s -> 4074.46s]  and one to the last node of the linked list.
+[4074.46s -> 4076.14s]  It's a circular linked list
+[4076.14s -> 4078.46s]  and nothing really too exciting going on.
+[4078.46s -> 4081.22s]  Basically what the application thread does is,
+[4082.14s -> 4084.54s]  a thousand times makes the list
+[4084.54s -> 4087.42s]  and makes a list and then checks the list.
+[4087.42s -> 4089.02s]  And so it generates a lot of garbage.
+[4089.02s -> 4091.26s]  Like every time after the make list is done,
+[4091.26s -> 4092.18s]  it's gonna make a new one.
+[4092.18s -> 4094.90s]  And so the last list is basically garbage.
+[4095.42s -> 4096.94s]  And so the collector actually has something to do
+[4096.94s -> 4101.38s]  and the make list is basically a little bit of ugly code,
+[4101.38s -> 4104.14s]  mostly because every pointer needs to be wrapped
+[4104.14s -> 4106.02s]  in this read pointer check.
+[4106.02s -> 4107.26s]  Right, so normally, of course,
+[4107.26s -> 4109.10s]  this would be generated by a compiler
+[4109.10s -> 4110.54s]  but I don't really have a compiler
+[4110.54s -> 4111.90s]  for a garbage collected language.
+[4111.90s -> 4113.94s]  And so I'm just simulating
+[4113.94s -> 4117.34s]  what maybe a compiler might have generated.
+[4119.22s -> 4122.50s]  And basically what the code does,
+[4122.90s -> 4126.70s]  it builds a list of at least list size,
+[4126.70s -> 4127.98s]  allocates a new element
+[4129.30s -> 4131.66s]  and sticks it there,
+[4131.66s -> 4133.10s]  pre-pends it at the beginning of the list
+[4133.10s -> 4134.78s]  and then updates the last pointer
+[4134.78s -> 4136.94s]  to point basically to the beginning of the list.
+[4136.94s -> 4137.90s]  So that's circular.
+[4140.06s -> 4142.54s]  Any questions about this little fragment of code?
+[4146.54s -> 4147.62s]  So the most interesting question, of course,
+[4147.62s -> 4149.50s]  is what goes on exactly in the collector.
+[4149.50s -> 4150.90s]  And let's first look at the case
+[4151.18s -> 4153.14s]  where there's no virtual memory,
+[4153.14s -> 4155.58s]  where we're not using these tricks.
+[4155.58s -> 4158.14s]  And so we just have to look at two APIs.
+[4158.14s -> 4161.34s]  One is new and a read pointer.
+[4161.34s -> 4165.34s]  So use new, I forget the mutexes,
+[4165.34s -> 4167.26s]  that is for the VM-based solution.
+[4168.74s -> 4171.38s]  And basically, and I forget that we're assuming
+[4171.38s -> 4172.46s]  that we're actually not scanning,
+[4172.46s -> 4174.26s]  we're not collecting for a while.
+[4174.26s -> 4178.70s]  We're basically recheck if there's enough space left
+[4180.90s -> 4182.38s]  in a free space.
+[4182.38s -> 4184.54s]  If there's enough in a free space left,
+[4184.54s -> 4186.70s]  we just bump up the pointer a little bit
+[4186.70s -> 4189.50s]  to allocate that object and return it.
+[4189.50s -> 4193.10s]  And if there's not enough space left,
+[4193.10s -> 4194.58s]  then we basically have to flip.
+[4194.58s -> 4196.86s]  We have to do a garbage collection run.
+[4196.86s -> 4198.86s]  And so we're gonna look at flip.
+[4201.18s -> 4203.98s]  Flip basically switches the to and from pointers around.
+[4205.38s -> 4208.42s]  And then basically forward,
+[4208.42s -> 4210.74s]  the two routes that this application has
+[4213.54s -> 4215.78s]  from the from space to the to space.
+[4215.78s -> 4217.14s]  So let's look at forward.
+[4225.18s -> 4226.30s]  So use forward.
+[4227.26s -> 4232.26s]  It looks if the object that is pointed to by O,
+[4232.62s -> 4234.58s]  it looks if O is actually in the from space.
+[4234.58s -> 4236.42s]  If it is in the from space
+[4236.46s -> 4238.98s]  and it has not been copied before,
+[4238.98s -> 4243.98s]  then we're gonna copy it and then we're done.
+[4244.18s -> 4248.06s]  So we moved the object from space to the to space.
+[4248.06s -> 4249.58s]  If we already copied it,
+[4249.58s -> 4251.90s]  then basically we can replace the pointer
+[4251.90s -> 4255.74s]  with the new pointer is actually the pointer
+[4255.74s -> 4259.14s]  to the already moved object and return that.
+[4261.74s -> 4262.86s]  So that's forwarding.
+[4263.86s -> 4266.42s]  And so then read pointer,
+[4269.90s -> 4271.66s]  the pointer basically goes through.
+[4277.94s -> 4279.42s]  Let's see what the read pointer
+[4279.42s -> 4281.98s]  where the garbage collector does with read pointer.
+[4281.98s -> 4283.14s]  It's like right here.
+[4284.54s -> 4287.98s]  If we're not using VM,
+[4287.98s -> 4289.50s]  basically what it does,
+[4289.50s -> 4291.86s]  it does a forward operation and the forward operation
+[4291.90s -> 4293.66s]  is checking if it's in the from space.
+[4293.66s -> 4294.98s]  If it's not in the from space,
+[4294.98s -> 4297.58s]  then do nothing.
+[4297.58s -> 4298.86s]  If it is in the from space,
+[4298.86s -> 4300.70s]  then do this copy again.
+[4300.70s -> 4302.86s]  And so here we see this as sort of the expensive check
+[4302.86s -> 4304.42s]  is really checking if the object
+[4304.42s -> 4306.10s]  actually sits in the from space.
+[4308.66s -> 4309.50s]  Any questions
+[4311.34s -> 4313.14s]  before I jump into sort of the version
+[4313.14s -> 4316.98s]  that actually uses the VM tricks?
+[4317.82s -> 4322.06s]  Okay, let's look at actually what the VM tricks.
+[4323.22s -> 4327.18s]  So the setup is a little bit easier.
+[4328.46s -> 4331.82s]  Basically, there's a call called shared mem open
+[4331.82s -> 4334.78s]  that allows you to create a shared memory object.
+[4334.78s -> 4337.14s]  It's a Linux call or a Unix call.
+[4337.14s -> 4339.14s]  And it just almost behaves like a file,
+[4339.14s -> 4342.10s]  but it's not, it behaves like a file,
+[4342.10s -> 4343.02s]  but it is not a file.
+[4343.02s -> 4344.02s]  It just sits in memory.
+[4344.02s -> 4346.22s]  There's no disk space associated with it or anything.
+[4346.30s -> 4348.94s]  It's like an in-memory file system, if you will.
+[4348.94s -> 4352.42s]  And basically, what we're doing is
+[4352.42s -> 4354.78s]  we allocate one of the shared memory objects.
+[4354.78s -> 4356.82s]  We truncate the shared memory object
+[4356.82s -> 4360.62s]  to be the size of the sum of the two in the from space.
+[4360.62s -> 4362.58s]  So we have a space
+[4363.98s -> 4365.62s]  and then we map it once
+[4368.50s -> 4369.34s]  for the mutator
+[4369.34s -> 4371.30s]  and we map it once for the collector.
+[4373.06s -> 4374.58s]  And so this is basically
+[4374.62s -> 4376.70s]  this sort of sequence of operations here,
+[4376.70s -> 4379.58s]  the shared mem open, the truncate, and the two end maps
+[4379.58s -> 4382.74s]  are basically sort of the equivalent of the map to calls.
+[4384.70s -> 4385.90s]  And so when we look at,
+[4387.90s -> 4391.50s]  let's go back up to our implementation.
+[4392.82s -> 4396.14s]  The read pointer in the VM case does nothing.
+[4396.14s -> 4397.38s]  There's no check whatsoever.
+[4397.38s -> 4399.10s]  We just return a pointer straight.
+[4400.66s -> 4402.70s]  And then, of course, if we use the pointer,
+[4402.70s -> 4403.82s]  we're gonna get a page fault,
+[4403.82s -> 4407.54s]  like as before in the SIGROOTS table application.
+[4407.54s -> 4409.50s]  And if you use the page fault handler,
+[4410.82s -> 4414.38s]  so if it's a page on an,
+[4414.38s -> 4417.14s]  actually, let me, I'm running a little bit ahead here.
+[4419.62s -> 4422.66s]  If the object moves from where earlier
+[4422.66s -> 4424.42s]  and is sitting in the unscanned area,
+[4424.42s -> 4425.54s]  we're getting a page fault
+[4425.54s -> 4428.54s]  and basically the scan page function runs.
+[4429.38s -> 4434.10s]  And, but the scan page function runs actually
+[4434.10s -> 4437.42s]  with the address ranges of the collector.
+[4437.42s -> 4438.58s]  And so it actually can work
+[4438.58s -> 4441.34s]  because otherwise the mutator correct,
+[4441.34s -> 4443.82s]  the application cannot touch those pages
+[4443.82s -> 4446.38s]  because that would take a result in a page fault.
+[4448.02s -> 4451.94s]  And once we have scanned all the pages,
+[4451.94s -> 4456.94s]  then the collector actually makes the page fault
+[4458.78s -> 4461.22s]  and the page actually accessible to the user application.
+[4464.86s -> 4466.90s]  It may be helpful to look at flip again,
+[4466.90s -> 4469.38s]  just to see what happens.
+[4469.38s -> 4471.70s]  Okay, so I'll flip what happens.
+[4471.70s -> 4475.26s]  We switch from the, so the front space is full.
+[4475.26s -> 4477.42s]  We make basically mark the whole two space
+[4477.42s -> 4480.50s]  as non-accessible to the application.
+[4480.50s -> 4482.74s]  And then we move, the collector moves actually
+[4482.74s -> 4484.62s]  the root head and the root last
+[4484.62s -> 4489.62s]  to the two space that the application cannot access
+[4489.94s -> 4490.94s]  or at least not directly.
+[4490.94s -> 4492.18s]  And, you know, that will resolve
+[4492.18s -> 4495.34s]  whenever the application access is root head or root last,
+[4495.34s -> 4498.26s]  it will actually result in a page fault.
+[4498.26s -> 4500.30s]  And then the collector can copy things over
+[4500.30s -> 4501.94s]  and then unprotect the one page.
+[4503.90s -> 4505.02s]  Does that make sense?
+[4514.70s -> 4516.70s]  Okay, noting the handler, correct,
+[4516.70s -> 4519.10s]  that is actually crucial that first the page is scanned
+[4519.10s -> 4521.26s]  before, you know, you make, you know,
+[4521.26s -> 4523.58s]  the page accessible to the application,
+[4523.58s -> 4528.58s]  because if you were to make it accessible before
+[4529.06s -> 4530.94s]  you scan that, you know,
+[4530.94s -> 4533.30s]  and if there were multiple application threads,
+[4533.30s -> 4535.94s]  then those applications might be looking at, you know,
+[4535.94s -> 4538.70s]  objects on the, in the unscanned area.
+[4538.70s -> 4540.42s]  And of course that we need to forbid that.
+[4540.42s -> 4542.34s]  And so the discovery is,
+[4542.34s -> 4544.34s]  we need to forbid that that's over the,
+[4544.34s -> 4545.94s]  this code basically first scans
+[4545.94s -> 4549.34s]  and then raises the protection level
+[4549.34s -> 4551.66s]  so that the application can access the pages.
+[4556.30s -> 4557.70s]  Any questions about the collector
+[4557.70s -> 4561.82s]  and the tricks to use virtual memory?
+[4567.50s -> 4569.66s]  Okay, well, in that case,
+[4569.66s -> 4572.06s]  I want to wrap up in a couple of points.
+[4572.66s -> 4574.86s]  I want to make, or one point basically,
+[4577.22s -> 4578.74s]  before wrapping up.
+[4582.62s -> 4583.82s]  You know, one question to ask,
+[4583.82s -> 4585.82s]  you know, should you use VM for this?
+[4590.94s -> 4593.54s]  And really is, you know, doesn't these tricks pay off?
+[4593.54s -> 4596.70s]  And because many of the, you know,
+[4596.70s -> 4597.74s]  for example, the garbage collectors
+[4597.74s -> 4599.06s]  and the many garbage collectors out there
+[4599.06s -> 4602.54s]  that actually don't use, you know, virtual memory at all,
+[4602.54s -> 4604.14s]  but use basically instrument, you know,
+[4604.14s -> 4607.58s]  the compiler is very aware of the code generated
+[4607.58s -> 4609.74s]  and instrument, you know, the code correctly,
+[4609.74s -> 4611.62s]  and has all kinds of other tricks to reduce,
+[4611.62s -> 4613.62s]  you know, the performance overhead.
+[4613.62s -> 4616.58s]  So, you know, observation is that in most cases,
+[4616.58s -> 4618.02s]  you know, it can be,
+[4619.74s -> 4621.14s]  most cases could have been implemented
+[4621.14s -> 4622.30s]  with extra instructions.
+[4629.06s -> 4634.06s]  And, you know, that is, you know,
+[4636.94s -> 4637.78s]  if you were basically,
+[4637.78s -> 4639.46s]  if it's a compiler or a runtime
+[4639.46s -> 4640.66s]  or for a programming language,
+[4640.66s -> 4643.26s]  and then maybe that's not so bad
+[4643.26s -> 4645.70s]  because the compiler can do the instrumentation.
+[4645.70s -> 4647.70s]  But if, you know, there's not a runtime,
+[4647.70s -> 4649.10s]  it is not a compiler application
+[4649.10s -> 4651.30s]  or a programming language sort of setting,
+[4651.30s -> 4653.38s]  then that might be painful.
+[4653.38s -> 4655.30s]  And so it turns out that for, you know,
+[4655.30s -> 4657.02s]  some of these applications where, you know,
+[4657.02s -> 4658.70s]  like there's no compiler involved at all,
+[4658.70s -> 4661.06s]  for example, like, you know, checkpointing
+[4661.06s -> 4665.10s]  or, you know, the shared virtual memory,
+[4666.14s -> 4667.22s]  you know, those actually, you know,
+[4667.22s -> 4670.54s]  really, you know, need these kind of primitives.
+[4670.54s -> 4672.22s]  And so in practice, you know,
+[4672.22s -> 4673.50s]  it is the case that, you know,
+[4673.50s -> 4674.70s]  enough application programmers
+[4674.70s -> 4676.06s]  that find these primitive work well
+[4676.06s -> 4678.82s]  that basically today's operating systems support them.
+[4678.82s -> 4679.66s]  Okay.
+[4689.02s -> 4690.94s]  Some people ask, or a lot of people actually ask,
+[4690.94s -> 4693.50s]  you know, what has changed, you know, since,
+[4696.66s -> 4698.10s]  what's it changed since 91?
+[4702.26s -> 4703.94s]  Yeah, and one thing that has changed,
+[4703.94s -> 4704.78s]  of course, like, you know,
+[4704.78s -> 4707.38s]  most Unixes do support the primitives now.
+[4707.38s -> 4710.10s]  And in fact, there are many changes, you know, since 91.
+[4710.10s -> 4712.90s]  Yeah, you know, maybe, you know, hard to imagine,
+[4712.90s -> 4715.34s]  but basically there's a continuous development
+[4715.34s -> 4716.38s]  in the VM system.
+[4716.38s -> 4719.18s]  So if you look at like the, you know,
+[4719.18s -> 4721.46s]  Linux, you know, git log,
+[4721.46s -> 4724.42s]  you'll see, you know, there's, you know,
+[4724.42s -> 4725.70s]  there's continuous development
+[4725.70s -> 4727.46s]  of all the aspects of the kernel,
+[4727.46s -> 4728.78s]  but including, you know,
+[4728.78s -> 4731.02s]  a continuous development of the VM system.
+[4732.62s -> 4734.18s]  And, you know, some of the bigger changes,
+[4734.18s -> 4736.06s]  you know, what are some big changes in the last,
+[4736.10s -> 4737.62s]  you know, whatever, in years.
+[4739.78s -> 4743.58s]  There, you know, there's now a five level page table,
+[4743.58s -> 4745.42s]  you know, to deal with really large,
+[4747.54s -> 4748.66s]  bigger addresses.
+[4749.58s -> 4751.90s]  There is address space identifiers
+[4751.90s -> 4756.54s]  to deal with TOB, the cost of TOB flushes.
+[4758.14s -> 4760.54s]  More recently, a year ago, or something like that,
+[4760.54s -> 4761.86s]  or something that was introduced,
+[4761.86s -> 4765.10s]  it's called KPTI, kernel page table isolation.
+[4766.98s -> 4770.50s]  Which, you know, is there because of the meltdown attacks
+[4770.50s -> 4772.90s]  and which we'll talk about later in the semester.
+[4773.86s -> 4777.26s]  So, you know, the virtual memory system
+[4777.26s -> 4779.30s]  is absolutely not a static system,
+[4779.30s -> 4781.62s]  almost after no aspect of any kernel,
+[4781.62s -> 4783.14s]  the Linux kernel is static.
+[4783.14s -> 4784.74s]  There's a dramatic amount of changes,
+[4784.74s -> 4787.22s]  like almost, you know, every couple of months
+[4787.22s -> 4789.26s]  in different aspects of the kernel.
+[4789.26s -> 4791.30s]  And so in systems, once in a while,
+[4791.30s -> 4793.46s]  actually completely rewritten.
+[4793.46s -> 4795.90s]  So it's always in flux.
+[4797.10s -> 4798.70s]  Okay, let me stop with that.
+[4798.70s -> 4800.90s]  And if anybody has more questions,
+[4800.90s -> 4803.26s]  you know, please feel free to ask them,
+[4803.26s -> 4805.78s]  or if you have to go, you know, feel free to go.
+[4812.26s -> 4815.34s]  Could I ask about one of the first slides?
+[4815.34s -> 4818.82s]  Where, sorry, I'm trying to see it.
+[4818.82s -> 4823.38s]  It's VM implementation, like two slides after this one.
+[4824.22s -> 4825.46s]  Yes, that one.
+[4826.66s -> 4831.06s]  What do you mean exactly by contiguous range of addresses?
+[4832.46s -> 4835.46s]  Yeah, a continuous range of virtual addresses.
+[4835.46s -> 4837.34s]  So, you know, the VMA, you know,
+[4837.34s -> 4840.54s]  the VMA covers a range, say from 1,000 to 2,000.
+[4841.66s -> 4843.98s]  And if you had another address range,
+[4843.98s -> 4846.22s]  like 2100 or something like that,
+[4846.22s -> 4848.10s]  that would be, has its own VMA.
+[4848.82s -> 4853.82s]  So every VMA covers a continuous range of addresses.
+[4855.02s -> 4856.30s]  So no holes in it.
+[4857.58s -> 4859.14s]  Okay.
+[4859.14s -> 4861.54s]  And it makes it easier, as you will see in the,
+[4863.02s -> 4864.42s]  as you will see in the M-Ab lab,
+[4864.42s -> 4866.86s]  that will make it much easier to reason about things.
+[4868.18s -> 4870.90s]  Okay, I see that each address in the range of the VMA
+[4870.90s -> 4872.22s]  has no hole in it.
+[4874.58s -> 4875.94s]  Okay, okay.
+[4875.98s -> 4879.42s]  So those are for this particular
+[4881.02s -> 4884.54s]  use case for M-Ab, I guess, right?
+[4884.54s -> 4886.70s]  Yeah, for M-Ab, yeah.
+[4886.70s -> 4887.82s]  Okay, I see.
+[4887.82s -> 4889.06s]  Thank you.
+[4889.06s -> 4890.22s]  So basically you can think about it
+[4890.22s -> 4892.34s]  like for every M-Ab call, there's one VMA.
+[4892.34s -> 4894.02s]  If the M-Ab's don't overlap.
+[4896.06s -> 4897.30s]  Oh, okay.
+[4897.30s -> 4899.22s]  Okay, I think I understand.
+[4899.22s -> 4900.30s]  Thank you.
+[4900.30s -> 4901.14s]  You're welcome.
+[4901.98s -> 4905.94s]  I wanted to ask, so for,
+[4908.58s -> 4913.10s]  for the, hi, the to and from like garbage collection,
+[4913.10s -> 4916.18s]  when do you stop and start again?
+[4916.18s -> 4919.14s]  Like, I guess collector runs can run all the time
+[4919.14s -> 4920.34s]  if it's concurrent.
+[4920.34s -> 4921.98s]  Yeah, that's like one of the cool things
+[4921.98s -> 4923.38s]  about the VM solution,
+[4923.38s -> 4925.54s]  the collector can just run all the time
+[4925.54s -> 4928.62s]  and it can stop once basically it has,
+[4928.62s -> 4930.62s]  there's no more unscanned objects.
+[4932.02s -> 4934.46s]  Okay, so you have, but you have to go through,
+[4934.46s -> 4939.06s]  that means you, so you'll go through all of the stuff,
+[4939.06s -> 4941.34s]  like all of the objects in the from section
+[4941.34s -> 4943.74s]  and you're either like gonna collect them
+[4943.74s -> 4944.94s]  or copy them over.
+[4944.94s -> 4947.74s]  How do you know you've gone through all of them?
+[4947.74s -> 4952.14s]  At some point, you trace the object graph down, correct?
+[4952.14s -> 4954.74s]  And at some point you're not adding any objects anymore
+[4954.74s -> 4957.06s]  because you already copied them in the past.
+[4957.06s -> 4958.50s]  Okay, okay, that makes sense, yeah.
+[4958.50s -> 4959.34s]  You don't add anymore,
+[4959.54s -> 4961.62s]  basically your unscanned area is not growing.
+[4961.62s -> 4963.30s]  So if your unscanned area is not growing anymore,
+[4963.30s -> 4964.86s]  you don't.
+[4964.86s -> 4967.34s]  Okay, okay, and then when you copy it over,
+[4967.34s -> 4971.06s]  you unmap it so if someone tries to like access
+[4971.06s -> 4973.26s]  the old pointer, it's gonna be invalid.
+[4973.26s -> 4974.10s]  Yeah.
+[4974.10s -> 4976.26s]  Right, okay, that makes sense, thanks.
+[4976.26s -> 4978.42s]  All right, I'll see you guys later.
+[4978.42s -> 4979.50s]  Yep, you too.
+[4981.34s -> 4982.62s]  Thank you.
+[4982.62s -> 4983.46s]  You're welcome.
+[4989.34s -> 4994.34s]  Okay, I think that may be it for today.

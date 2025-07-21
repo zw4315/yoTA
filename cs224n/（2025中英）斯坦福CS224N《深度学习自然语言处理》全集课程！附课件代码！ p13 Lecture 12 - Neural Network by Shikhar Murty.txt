@@ -1,0 +1,826 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 9.24s]  Okay, cool, let's just get started.
+[9.24s -> 14.58s]  Welcome everyone to Lecture 12.
+[14.58s -> 20.92s]  So far we've learned a lot about how we convert words into vectors, how we convert
+[20.92s -> 28.16s]  sentences into vectors and basically take actions in the real world using that.
+[28.16s -> 34.12s]  So like classified documents, we learned about transformers, we learned about pre-training.
+[34.12s -> 36.36s]  Today's going to be a little bit different.
+[36.36s -> 43.64s]  I'm going to be talking about how you can train large models on GPUs and a few basics
+[43.64s -> 47.48s]  about how these ML systems work.
+[47.48s -> 50.60s]  It has nothing to do with natural language at all, but hopefully it's going to be useful
+[50.60s -> 53.52s]  for final projects.
+[53.52s -> 59.20s]  So I'm going to spend some time on mixed precision training, some time on multi-GPU training with
+[59.20s -> 64.68s]  DDP and FSDP and hopefully by the end of the lecture these terms will make sense, and
+[64.68s -> 68.52s]  some time on parameter efficient fine-tuning.
+[68.52s -> 74.56s]  But before we get into the lecture, just some announcements.
+[74.56s -> 78.96s]  Proposal grades are going to be coming out shortly, hopefully by the end of the
+[78.96s -> 79.96s]  day.
+[79.96s -> 81.04s]  Thank you so much for all the hard work.
+[81.04s -> 86.40s]  I know it's kind of getting a little bit crammed with a lot of deadlines for assignment
+[86.40s -> 91.64s]  4 and the project proposal, so thank you so much for all your hard work.
+[91.64s -> 98.04s]  The other thing is the project milestone details should be out shortly, if not already
+[98.04s -> 100.68s]  out on the website.
+[100.68s -> 103.56s]  So it's worth 5% of the overall grade.
+[103.56s -> 108.24s]  It's due 12 days from now, and it's a maximum of two pages.
+[108.24s -> 112.60s]  And really the way to think about the milestone is to use this as a forcing function to get
+[112.60s -> 116.12s]  work done for your final project.
+[116.12s -> 120.80s]  And yeah, with that out of the way, let's just jump into the material.
+[120.80s -> 126.72s]  So I'm going to start by thinking about how parameters and gradients and generally
+[126.72s -> 132.24s]  numbers are represented in computers, and I promise it's going to be relevant to deep
+[132.24s -> 133.88s]  learning pretty soon.
+[133.88s -> 137.52s]  So let's start with floating point.
+[137.52s -> 143.76s]  How many people here are familiar with this cartoon depiction of FP32?
+[143.76s -> 145.76s]  So some of you.
+[145.76s -> 149.84s]  Let's recap how floating points are represented in computers.
+[149.84s -> 153.04s]  So firstly, FP32, that's like 32 bytes.
+[153.04s -> 158.56s]  So the memory requirement is 32 bits, so the memory requirement is 4 bytes.
+[158.56s -> 162.48s]  And so if you're thinking about neural networks, then for every single neural net parameter,
+[162.48s -> 164.96s]  you need 4 bytes of GPU memory.
+[164.96s -> 169.52s]  And the way to convert this cartoon into a real number is something like this.
+[169.52s -> 174.76s]  So the first bit there is the sign, and then the stuff in green represents the range,
+[174.76s -> 181.44s]  and then the stuff in blue represents precision.
+[181.44s -> 189.60s]  And so for FP32, you can represent a pretty large range, and it's fairly precise.
+[189.60s -> 195.00s]  And so the larger the stuff in green is, the more numbers you can represent, which
+[195.00s -> 199.28s]  means more smaller numbers and also larger numbers.
+[199.28s -> 208.84s]  And the more stuff in blue we have, the greater precision in representing actual numbers.
+[208.84s -> 216.52s]  So another popular data type that takes half the memory of FP32 is FP16.
+[216.52s -> 221.88s]  And the way we reduce memory is we're going to reduce the stuff in green, so there's going
+[221.88s -> 226.52s]  to be less range, less dynamic range, and also the stuff in blue, which means there's
+[226.52s -> 229.72s]  going to be less precision.
+[229.72s -> 232.60s]  But the good thing is that we can save memory.
+[232.60s -> 236.80s]  So we slash memory requirements in half.
+[236.80s -> 242.96s]  So let's think of a scenario where you're trying to train a big neural network and
+[242.96s -> 247.16s]  your model parameters and gradients are represented in FP32.
+[247.16s -> 253.16s]  You start training and suddenly you get an out of memory CUDA error.
+[253.16s -> 257.44s]  And so just based on what you've seen so far, one possible solution is you cast
+[257.44s -> 260.94s]  everything into FP16.
+[260.94s -> 265.60s]  And if you do that, you reduce memory usage by half.
+[265.60s -> 270.62s]  So let's work through what are some possible problems with doing something like that.
+[270.62s -> 275.50s]  So like I said, because there's less stuff in green, there's going to be less range,
+[275.50s -> 283.46s]  and so that means a lot of very small numbers will get converted to zero and a lot
+[283.46s -> 288.12s]  of really large numbers will get converted into NaNs.
+[288.12s -> 293.30s]  And there's also less precision because you have less bits in blue, which means you're
+[293.30s -> 295.82s]  going to get rounding errors.
+[295.82s -> 303.30s]  For example, 1.0001 gets converted to one in half precision.
+[303.30s -> 309.32s]  And I have a little screenshot of how you can test various properties of data types.
+[309.32s -> 315.04s]  So basically the things to look at are the epsilon.
+[315.04s -> 320.22s]  The epsilon is like the smallest number such that if you add that to one, you don't
+[320.22s -> 321.22s]  lose any precision.
+[321.22s -> 325.30s]  If you add a number that's smaller than epsilon to one, that gets just rounded down
+[325.30s -> 326.36s]  to one.
+[326.36s -> 332.48s]  And the smallest normal is the smallest number that can be represented in FP16.
+[332.48s -> 336.82s]  Anything smaller than that, it goes straight to zero.
+[336.82s -> 342.62s]  And for neural network training, if a lot of small numbers get rounded down to zero,
+[342.62s -> 343.62s]  that's actually not good.
+[343.62s -> 350.38s]  So here is a diagram that I took from an Nvidia blog post that's just showing just
+[350.38s -> 352.92s]  sort of some gradients during the course of training.
+[352.92s -> 359.30s]  And more than half of these gradients will literally just get set to zero in FP16, which
+[359.30s -> 362.22s]  is kind of a problem.
+[362.22s -> 367.82s]  And that has to do with the range of FP16, and the second problem is with precision.
+[367.82s -> 376.98s]  So we have basically less precision, and so our updates are not going to be precise.
+[376.98s -> 380.22s]  So the solution, here's one possible solution.
+[380.22s -> 385.78s]  So we're going to use FP16, but we're also going to use FP32.
+[385.78s -> 388.30s]  So that's sort of the high-level idea.
+[388.30s -> 393.54s]  And what we're going to do is we're going to maintain a copy of the model in FP32,
+[393.54s -> 395.90s]  and let's call those master weights.
+[395.90s -> 400.46s]  And then you get a little bit of data, you run a forward pass, and then when you run
+[400.46s -> 406.62s]  your forward pass, you run it by converting from FP32 into FP16.
+[406.62s -> 411.86s]  And then you get a gradient, run a backward pass, and then get your gradient in FP16.
+[411.86s -> 414.90s]  So everything so far has happened in FP16.
+[414.90s -> 421.22s]  Then you take your gradients, upcast them into FP32, and then update your master weights.
+[421.22s -> 425.22s]  And then once you update your master weights, you copy them into the FP16 version of the
+[425.22s -> 427.62s]  neural network.
+[427.62s -> 429.70s]  So this seems like a reasonable scheme.
+[429.70s -> 436.54s]  I'm using FP16 on my GPU, but I have the full sort of 32-bit precision also lying
+[436.54s -> 440.98s]  around somewhere so I can have more precise updates.
+[440.98s -> 446.62s]  Can someone tell me why this is still problematic?
+[446.62s -> 447.62s]  Any guesses?
+[447.62s -> 448.62s]  Yeah.
+[448.62s -> 458.26s]  Would it be really slow if you have to copy the 32-bit versions from my GPU to some
+[458.26s -> 459.26s]  disk memory?
+[459.26s -> 461.30s]  Yeah, so that's a good point.
+[461.30s -> 468.22s]  So you can often overlap IO with forward and backward passes.
+[468.22s -> 469.94s]  So practically, this is not a problem.
+[469.94s -> 471.34s]  But yeah, that's a good point.
+[471.34s -> 474.94s]  Potentially, if your network is very, very small, this would be a problem.
+[474.94s -> 482.78s]  Individual gradients are usually very small, and when you copy the FP16 computer gradients
+[482.78s -> 488.26s]  onto FP32, you may be sending your network somewhere else where you don't want it to be.
+[488.26s -> 491.18s]  So yeah, that's pretty much the right answer.
+[491.18s -> 496.02s]  So let's kind of go back to this diagram that we had.
+[496.02s -> 498.78s]  So this shows gradients in the backward pass.
+[498.78s -> 502.54s]  And I said that we're going to compute all our gradients in FP16.
+[502.54s -> 503.82s]  What's going to happen?
+[503.82s -> 507.96s]  Most of them will just get converted to zero, which is something that we really would
+[507.96s -> 509.70s]  like to avoid.
+[509.70s -> 511.62s]  So here's a possible solution.
+[511.62s -> 517.74s]  So what you can do is you get your batch of data, you run your forward pass in FP16,
+[517.74s -> 520.24s]  you compute your gradient.
+[520.24s -> 525.62s]  But then when you have the—sorry, so we're here.
+[525.62s -> 531.14s]  So you get a batch of data, you compute a forward pass in FP16, you get your loss,
+[531.14s -> 536.28s]  you scale the loss by some large value, let's say 100, let's say 1,000.
+[536.28s -> 537.54s]  And then you compute gradients.
+[537.54s -> 539.92s]  And now you just scale your gradient by a large number.
+[539.92s -> 544.84s]  And so everything that we had on the left-hand side of this red line just gets shifted to
+[544.84s -> 545.84s]  the right.
+[545.84s -> 551.56s]  And hopefully there's less stuff that will get rounded down to zero.
+[551.56s -> 556.60s]  And then compute your gradient in FP16, copy it into FP32, and then divide it by the
+[556.60s -> 561.82s]  scaling factor, and then you update your master wins.
+[561.82s -> 566.48s]  So this will solve both the problems that we talked about.
+[566.48s -> 571.84s]  And so this is basically what we call mixed precision training.
+[572.26s -> 576.10s]  It's relatively simple to implement this in PyTorch.
+[576.10s -> 585.20s]  All you have to do is you need to instantiate this gradscaler object, and then within the
+[585.20s -> 591.24s]  context of this autocast, you want to run your forward and backward passes, and
+[591.24s -> 598.96s]  then scale down your gradient, and then update your model parameters.
+[598.96s -> 601.16s]  But then this seems a little complex.
+[601.16s -> 606.30s]  We have to deal with scaling the loss, and then scaling it back down.
+[606.30s -> 612.68s]  What if you multiplied it by 10,000, and that leads to NaNs, and so then you have to update
+[612.68s -> 613.68s]  your scalar.
+[613.68s -> 619.22s]  You have to, in the next iteration, multiply by 1,000, and you have to adjust to network
+[619.22s -> 620.22s]  dynamics.
+[620.22s -> 623.78s]  So we'd like to not do gradient scaling.
+[623.78s -> 626.26s]  So can we do something better?
+[626.26s -> 636.66s]  So the reason why we have to do the scaling is just recall the role of the bits in green.
+[636.66s -> 641.72s]  That kind of tells you what is the dynamic range of the data type, and we needed scaling
+[641.72s -> 648.38s]  because FP16 has a much smaller range compared to FP32.
+[648.38s -> 651.94s]  And so because of that, FP16 cannot represent very small numbers.
+[651.94s -> 654.44s]  So how do we solve this?
+[654.44s -> 664.32s]  Any ideas?
+[664.32s -> 665.32s]  Here's a problem, right?
+[665.32s -> 669.92s]  So in FP16, because you have fewer bits for the exponent, you can't represent very
+[669.92s -> 670.92s]  small numbers.
+[670.92s -> 679.44s]  So if you have something that's smaller than, I don't know, 6e-5, it gets sort of rounded
+[679.44s -> 681.32s]  down to zero.
+[681.32s -> 683.50s]  And that's because of the dynamic range of FP16.
+[683.56s -> 688.56s]  So how do you solve that?
+[688.56s -> 691.76s]  Absolutely, yeah, so that's the right answer.
+[691.76s -> 696.30s]  So what we're going to do is we're going to sacrifice precision.
+[696.30s -> 702.70s]  So that's the idea for bfloat16, which stands for brain float 16.
+[702.70s -> 708.36s]  So you're going to have exactly the same number of bits for representing the range.
+[708.36s -> 710.02s]  So that's going to be eight bits.
+[710.02s -> 715.82s]  So it has the same dynamic range as FP32, but a lot less precision.
+[715.82s -> 720.42s]  And it turns out that this is OK for neural network training.
+[720.42s -> 725.42s]  And now if you use bfloat16, you don't need to use gradscalers anymore.
+[725.42s -> 730.02s]  It's as simple as wrapping your model forward pass and backward pass within the right
+[730.02s -> 733.34s]  context.
+[733.34s -> 737.54s]  The one caveat about bfloat16 is that it's not available on all GPUs, so you need to
+[737.54s -> 746.46s]  have the latest sort of ampere NVIDIA architectures, which the H100s, the A100s, the A6000s have.
+[746.46s -> 750.66s]  But if you have like an older GPU, then you might not be able to utilize bfloat16.
+[750.66s -> 756.66s]  Sorry, can you play about why having less precision for the same amount of ebits?
+[756.66s -> 763.66s]  Yeah, so it's bfloat16 and, oh, never mind, sorry.
+[763.66s -> 767.46s]  So here are some kind of results.
+[767.46s -> 775.06s]  So someone fine-tuned this little bird for sentiment classification on a single A100.
+[775.06s -> 781.60s]  At the very top is float64, which is like really, really rich 64-bit representation
+[781.60s -> 783.04s]  of floating points.
+[783.04s -> 786.42s]  It takes about 25 minutes.
+[786.42s -> 791.24s]  And you get a pretty high accuracy, but it also takes a lot more memory.
+[791.24s -> 795.50s]  And all the way down, we're using mixed precision training with bfloat16.
+[795.54s -> 800.14s]  And now we have reduced training time by roughly a third.
+[800.14s -> 804.30s]  More or less have the same accuracy, a little bit better actually, because there's some
+[804.30s -> 816.14s]  regularizing effect from the half-precision representation, and then a lot less memory.
+[816.14s -> 821.02s]  And the reason we see speed-ups for training is because matrix multipliers tend to be faster
+[821.06s -> 825.06s]  when you are multiplying in half-precision.
+[825.06s -> 829.82s]  OK, so before we move on, are there any questions about this?
+[833.78s -> 834.70s]  OK, cool.
+[834.70s -> 840.58s]  So let's keep going, and let's change the setting.
+[840.58s -> 842.94s]  So now we have more than one GPU.
+[842.94s -> 848.18s]  Now we have multiple GPUs, and we want to train a network over all of the multiple GPUs
+[848.18s -> 850.38s]  that we have.
+[850.46s -> 852.70s]  So let's start with some basics.
+[852.70s -> 861.74s]  So here's a cartoon showing basically a model and an optimizer receiving some data from
+[861.74s -> 863.60s]  a data set.
+[863.60s -> 867.74s]  And let's kind of work through what's stored on GPU VRAM.
+[867.74s -> 874.18s]  And this is going to be somewhat of a lie, and I will point out what my lie is soon.
+[874.18s -> 879.28s]  But just to keep things simple, we have the neural net parameters.
+[879.28s -> 884.12s]  So let's say we're doing mixed-precision training, and so it's stored in FP16.
+[884.12s -> 886.96s]  And then we have an optimizer.
+[886.96s -> 895.08s]  And when I first saw this a few years back, I was very surprised to see that optimizers
+[895.08s -> 896.20s]  also need memory.
+[896.20s -> 903.02s]  But if you're using something like Adam, then you need to store the Adam momentum
+[903.02s -> 904.16s]  term and the Adam variance.
+[904.16s -> 907.44s]  And every time you get a gradient, you have to update Adam momentum and variance.
+[907.44s -> 911.56s]  And that's what you use for updating your parameters.
+[911.56s -> 914.96s]  And because you're using mixed-precision training, these have to be represented in
+[914.96s -> 919.96s]  sort of FP32.
+[919.96s -> 924.12s]  So that's what the picture looks like if you have a single GPU.
+[924.12s -> 927.64s]  Now let's say we have multiple GPUs.
+[927.64s -> 932.24s]  And what we'd like to do is first divide our data set into, let's say we have four
+[932.24s -> 933.24s]  GPUs.
+[933.24s -> 935.64s]  So we'll divide our data set into four parts.
+[935.64s -> 940.56s]  And we'll maintain a synchronized copy of the model.
+[940.56s -> 945.72s]  And every model receives its own slice of the data set.
+[945.72s -> 950.12s]  In the beginning, we have a synchronized model, and everyone has their own copy.
+[950.12s -> 952.56s]  We run a forward pass.
+[952.56s -> 957.04s]  So this forward pass receives different data points.
+[957.04s -> 960.92s]  And so every model is going to have different activations.
+[960.92s -> 965.00s]  And correspondingly, every model is going to have different gradients.
+[965.00s -> 966.60s]  So you run a backward pass.
+[966.60s -> 970.56s]  Every model has a different gradient because there's different data points.
+[970.56s -> 972.96s]  And then we're going to run a synchronization step.
+[972.96s -> 979.96s]  And what synchronization is going to do is communicate gradients between different workers.
+[979.96s -> 985.40s]  And so I'm going to introduce the first sort of MPI primitive in this lecture.
+[985.40s -> 989.12s]  And that primitive is called the allreduce operation.
+[989.12s -> 997.88s]  What allreduce does is it takes four pieces of information in this example on four different
+[997.88s -> 998.94s]  GPUs.
+[998.94s -> 1005.90s]  It sort of merges everything together and then distributes it to all of the GPUs.
+[1005.90s -> 1009.64s]  And the communication overhead of doing that is two bytes per parameter.
+[1009.64s -> 1013.24s]  Because remember, we have FP16 gradients.
+[1013.24s -> 1015.28s]  So two bytes per gradient.
+[1015.28s -> 1019.02s]  And then this needs to be communicated.
+[1019.02s -> 1022.00s]  And so the overhead is two bytes per parameter.
+[1022.00s -> 1023.00s]  Okay?
+[1023.00s -> 1025.78s]  So that's the allreduce operation.
+[1025.78s -> 1030.48s]  And then once gradients have been communicated, so they have to be communicated by sort
+[1030.48s -> 1034.68s]  of gathering on one worker and just sort of distributing the cumulative gradient.
+[1034.68s -> 1039.00s]  At that point, every optimizer has the full gradient.
+[1039.00s -> 1045.56s]  And then the optimizer can update the model so that you maintain synchronization.
+[1045.56s -> 1047.56s]  So that's the basic.
+[1047.56s -> 1052.52s]  That's known as distributed data parallel.
+[1052.52s -> 1053.52s]  That's good.
+[1053.52s -> 1056.66s]  But it turns out that it has really poor memory scaling.
+[1056.66s -> 1062.98s]  So let's kind of go through our math for how much memory is needed, right?
+[1062.98s -> 1066.14s]  So we have the model parameters.
+[1066.14s -> 1069.44s]  That's FP16 because we're doing mixed position training.
+[1069.44s -> 1073.30s]  And then for the gradient, we also have the gradient in FP16, right?
+[1073.30s -> 1076.42s]  So two bytes for the gradient.
+[1076.42s -> 1078.08s]  And then we have the stuff in green.
+[1078.08s -> 1080.68s]  The stuff in green is, let's say we're doing Adam.
+[1080.68s -> 1085.90s]  So we need to store the master weights regardless of whether we're doing Adam or not.
+[1085.90s -> 1088.56s]  And then we need to store the momentum and the variance, okay?
+[1088.56s -> 1092.98s]  So that's 12 extra bytes per parameter.
+[1092.98s -> 1097.82s]  And this needs to be stored on every single GPU, okay?
+[1097.82s -> 1102.04s]  And so the question is, can we do better than this, okay?
+[1102.04s -> 1104.60s]  And so now things are going to get a little bit more tricky.
+[1104.60s -> 1111.60s]  So if you have questions, just stop me and we can go from there.
+[1111.60s -> 1120.06s]  So the way we're going to improve our memory sort of scaling is we are a set of techniques
+[1120.06s -> 1123.44s]  that are together known as ZERO.
+[1123.44s -> 1125.90s]  That stands for Zero Redundancy Optimizer.
+[1125.90s -> 1134.24s]  So this was a set of techniques released by Microsoft as part of their Deep Speed project.
+[1134.24s -> 1139.76s]  And the idea is going to be that we are going to instead of having every GPU maintain
+[1139.76s -> 1144.00s]  all of this state, so by the state I mean the stuff in blue, the stuff in orange,
+[1144.00s -> 1147.18s]  and the stuff in green, we're going to sort of shard it, okay?
+[1147.18s -> 1154.14s]  So there's going to be shards so that not every GPU has all of the parameters or all
+[1154.14s -> 1157.94s]  of the gradient, but by communication they can sort of synchronize, okay?
+[1157.94s -> 1164.22s]  So that's pretty much what the sketch for this is going to look like, okay?
+[1164.22s -> 1165.96s]  So let's look at stage one.
+[1165.96s -> 1170.10s]  So like ZERO has like multiple stages, so there's stage one, two, and three.
+[1170.10s -> 1173.44s]  In stage one, we're going to shard the stuff in green.
+[1173.44s -> 1179.56s]  The stuff in green was the optimizer state, and so the way we're going to shard and still
+[1179.56s -> 1182.76s]  maintain synchronization is something like this, okay?
+[1182.76s -> 1191.44s]  So every GPU has the full set of parameters in FP16, and every GPU has its gradient
+[1191.44s -> 1193.34s]  for its data, okay?
+[1193.34s -> 1198.08s]  But it only has a sharded copy of the full optimizer state.
+[1198.08s -> 1204.62s]  And the other requirement is that every GPU is responsible for updating the parameters
+[1204.62s -> 1207.44s]  corresponding to its own shard, okay?
+[1207.44s -> 1212.24s]  So if you go step by step, this is what it looks like.
+[1212.24s -> 1215.96s]  Every GPU has its own data.
+[1215.96s -> 1219.96s]  Every GPU gets a gradient on its subset of the data, okay?
+[1219.96s -> 1221.76s]  Then we perform reduced scatter.
+[1221.76s -> 1224.92s]  So now this is the second MPI operation of the lecture.
+[1224.92s -> 1226.64s]  So we've done all reduce.
+[1226.64s -> 1227.64s]  This is the second one.
+[1227.64s -> 1229.56s]  This is called reduce scatter.
+[1229.56s -> 1237.50s]  What a reduce scatter does is every GPU has the full gradient on its data, and what
+[1237.50s -> 1243.00s]  you want to do is you want to take the chunk corresponding to, let's say, GPU one.
+[1243.00s -> 1247.76s]  So let's say you're GPU zero, and you've computed the full gradient for all the parameters,
+[1247.76s -> 1253.98s]  and you want to communicate the chunk for GPU one to GPU one, okay?
+[1253.98s -> 1256.40s]  And same for GPU two and three, okay?
+[1256.40s -> 1260.84s]  So what you're going to do is, from the full gradient, just communicate the bits that a
+[1260.84s -> 1263.74s]  different worker wants to that worker, okay?
+[1263.74s -> 1265.58s]  And every GPU has to do that.
+[1265.58s -> 1268.74s]  So that's called a reduce scatter, okay?
+[1268.74s -> 1275.02s]  And then once every worker gets the gradient corresponding to its shard, they're going
+[1275.02s -> 1280.58s]  to update its parameters, and then once they have updated their shard, they're going
+[1280.58s -> 1282.70s]  to sort of perform an all-gather.
+[1282.72s -> 1287.60s]  So what that means is, let's say you have a neural network with just, let's say, eight
+[1287.60s -> 1290.04s]  parameters, two parameters on each GPU.
+[1290.04s -> 1295.20s]  At the end of this, each GPU has updated their subset of parameters, and then they're
+[1295.20s -> 1298.72s]  going to sort of do an all-gather to just sort of maintain synchronization.
+[1298.72s -> 1303.00s]  So every GPU gets the full set of parameters that are all updated.
+[1303.00s -> 1329.74s]  So what we're going to do is shard the optimizer state.
+[1329.74s -> 1333.66s]  So let's say in our running example, we have a neural network with eight parameters, okay?
+[1333.66s -> 1338.70s]  Earlier, we needed the optimizer state for all of the eight parameters.
+[1338.70s -> 1344.08s]  Now every GPU has to maintain optimizer state for only two parameters, okay?
+[1344.08s -> 1350.92s]  So after the reduce scatters are done, you have the full gradient corresponding to just
+[1350.92s -> 1353.34s]  two parameters, okay?
+[1353.34s -> 1358.02s]  So the optimizer state is just the gradient for two parameters.
+[1358.02s -> 1372.42s]  The model is going to update only two parameters using the partial sort of optimizer state.
+[1372.42s -> 1377.48s]  So you have the entire set of parameters, you have all the stuff in blue, and you
+[1377.48s -> 1382.98s]  have the full gradient for your subset, but you don't have the full optimizer state.
+[1382.98s -> 1388.26s]  So what you can do is you can only update the parameters for the bits of optimizer
+[1388.26s -> 1391.02s]  state you have, okay?
+[1391.02s -> 1397.38s]  So in our running example that I just made up, GPU0 updates two parameters, GPU1
+[1397.38s -> 1400.12s]  updates two parameters, and so on, okay?
+[1400.12s -> 1406.74s]  And then they communicate updated parameters to maintain synchronization, okay?
+[1406.74s -> 1409.46s]  More questions about this?
+[1409.46s -> 1414.54s]  Okay, so let's keep going.
+[1414.54s -> 1417.46s]  So far we have looked at three MPI operations.
+[1417.46s -> 1426.06s]  We looked at all gather, we looked at reduce scatter, and we looked at all reduce, okay?
+[1426.06s -> 1433.90s]  So turns out that all reduce is actually equivalent to running a reduce scatter followed
+[1433.90s -> 1436.98s]  by an all gather operation.
+[1436.98s -> 1442.14s]  And just recall that for DDP, all we had to do was this all reduce operation, and
+[1442.14s -> 1446.14s]  we computed what's the communication overhead of that.
+[1446.14s -> 1449.94s]  And turns out that when you're doing this optimizer state sharding, you have to
+[1449.94s -> 1456.02s]  do exactly the same amount of communication overhead, just because an all reduce is equivalent
+[1456.02s -> 1459.40s]  to a reduce scatter followed by an all gather, okay?
+[1459.40s -> 1462.34s]  And so we basically saved memory for free, okay?
+[1462.34s -> 1468.22s]  So just, I mean, you should just always use this, okay?
+[1468.22s -> 1471.98s]  Because you're going to get memory savings, and you don't have any additional communication
+[1471.98s -> 1474.24s]  overhead, okay?
+[1474.24s -> 1480.00s]  So we are happy we saved memory, and now we want to shard even more things, okay?
+[1480.00s -> 1483.78s]  So let's start doing zero stage two.
+[1483.78s -> 1488.94s]  And now along with sharding this stuff in green, which was my optimizer state, I'm
+[1488.94s -> 1492.88s]  also going to shard gradients, okay?
+[1492.88s -> 1497.76s]  And now this is going to be a little bit more complex, because we kind of still need the
+[1497.76s -> 1501.38s]  full gradient for the worker's data slice, okay?
+[1501.38s -> 1509.44s]  But each GPU only has enough memory for instantiating the gradient for a small subset
+[1509.44s -> 1510.44s]  of parameters.
+[1510.44s -> 1513.78s]  So how are we going to deal with that?
+[1513.78s -> 1518.38s]  So we are actually never going to instantiate the full gradient factor.
+[1518.38s -> 1526.66s]  And then whenever a GPU gets a gradient in the backward pass, you instantiate a vector
+[1526.66s -> 1531.22s]  sort of temporarily for the parameter for which you just received a gradient, and
+[1531.22s -> 1534.74s]  then compute the gradient, and then just send it to the right worker, and then you
+[1534.74s -> 1537.82s]  destroy the memory that you just created, okay?
+[1537.82s -> 1543.24s]  That's kind of the sketch, and let's kind of go through this step by step, okay?
+[1543.24s -> 1546.52s]  So we have four workers, okay?
+[1546.52s -> 1551.08s]  Each worker performs a backward pass, and the backward pass happens layer by layer,
+[1551.08s -> 1552.08s]  right?
+[1552.08s -> 1555.98s]  So recall the lecture on autodiff.
+[1555.98s -> 1559.68s]  So you have the loss, and then you have this backward pass where layer by layer you
+[1559.68s -> 1561.00s]  compute gradients, okay?
+[1561.00s -> 1566.74s]  So now let's say you're at layer J. You take the upstream gradient, you compute gradient
+[1566.74s -> 1570.56s]  for the parameters at layer J, okay?
+[1570.56s -> 1575.04s]  Immediately the moment you compute those gradients, send it to the right worker, okay?
+[1575.04s -> 1580.70s]  So there exists some worker that is responsible for layer J, okay?
+[1580.70s -> 1587.20s]  And what's going to happen is every GPU that's just computed the gradient for layer J, for
+[1587.20s -> 1591.48s]  its data slice, sends it to the right worker, okay?
+[1591.48s -> 1596.48s]  And then the moment you've done that, you deallocate this memory that you just created,
+[1596.48s -> 1597.78s]  okay?
+[1597.78s -> 1604.56s]  And so this is kind of a fourth MPI operation, but really not very different from a reduce
+[1604.56s -> 1605.56s]  scatter.
+[1605.56s -> 1606.56s]  This is just a reduce.
+[1606.56s -> 1611.20s]  So there are four GPUs that have a gradient, and then they just have to communicate it
+[1611.20s -> 1619.32s]  to whoever is responsible for maintaining gradient for that layer, okay?
+[1619.32s -> 1625.68s]  And then, yeah, so there exists some worker that is responsible for a given layer.
+[1625.68s -> 1632.52s]  They're going to update its parameter shard using the full gradient that it received
+[1632.52s -> 1636.80s]  via this communication along with the optimizer state, okay?
+[1636.80s -> 1643.40s]  And then at the end, to synchronize everything, you have to perform an all-gather as before.
+[1643.40s -> 1651.04s]  Any questions about this high-level sketch?
+[1651.04s -> 1656.92s]  Okay, so let's keep moving.
+[1657.12s -> 1665.36s]  Okay, so recall that for zero stage one, it was basically free because it turns out that
+[1665.36s -> 1670.06s]  an all-reduce is equivalent to a reduce scatter plus an all-gather, and we're kind
+[1670.06s -> 1671.52s]  of doing the same thing here.
+[1671.52s -> 1677.76s]  We have a reduce followed by an all-gather, so this is practically also for free, okay?
+[1677.76s -> 1683.80s]  So we've gotten away with saving memory without any communication overhead compared
+[1683.80s -> 1686.10s]  to DDP so far, okay?
+[1686.10s -> 1687.10s]  So let's keep going.
+[1687.10s -> 1691.44s]  Let's try and see if we can shard even more things, okay?
+[1691.44s -> 1695.16s]  And I think someone sort of alluded to this in the audience early on.
+[1695.16s -> 1699.74s]  So what happens if you shard even your model parameters, okay?
+[1699.74s -> 1704.04s]  So let's say you run into a situation where, you know, forget about the optimizer state.
+[1704.04s -> 1707.76s]  Even your model wouldn't fit on a single GPU.
+[1707.76s -> 1711.08s]  And so in that case, what you do is you split up your model.
+[1711.08s -> 1713.66s]  So you split up your model across all the different GPUs.
+[1713.66s -> 1717.92s]  So you shard your model parameters, which is the stuff in blue.
+[1717.92s -> 1722.96s]  But the caveat is that now we're not going to get this for free.
+[1722.96s -> 1724.48s]  We're not going to get memory savings for free.
+[1724.48s -> 1728.20s]  There's going to be some communication overhead, okay?
+[1728.20s -> 1729.68s]  And this is zero stage three.
+[1729.68s -> 1731.48s]  This is the final stage of zero.
+[1731.48s -> 1737.50s]  This is also known as FSDP, fully sharded data parallel, for anyone who's heard that
+[1737.50s -> 1741.72s]  term before.
+[1741.72s -> 1745.00s]  And here's sort of the high-level sketch, okay?
+[1745.00s -> 1749.82s]  And I feel like this is kind of the easiest to understand compared to zero stage one
+[1749.82s -> 1755.52s]  and two, just because there needs to be communication at every step of the way, right?
+[1755.52s -> 1758.96s]  You can't get away without communicating.
+[1758.96s -> 1763.06s]  So the first thing we're going to do is we're going to take our model, and we're
+[1763.06s -> 1767.82s]  going to convert the entire model into FSDP units, okay?
+[1767.82s -> 1771.70s]  So here's a sketch, a simple deep neural network.
+[1771.70s -> 1778.74s]  I'm going to convert that into multiple FSDP units, three FSDP units here, okay?
+[1778.74s -> 1781.36s]  So that's just a data structure, an FSDP unit, okay?
+[1781.36s -> 1784.64s]  We've not done anything so far.
+[1784.64s -> 1786.92s]  And then I have this FSDP unit.
+[1786.92s -> 1791.24s]  I'm going to convert this into another data structure called a flat parameter, and then
+[1791.24s -> 1797.48s]  I'm going to assign a subset of these parameters to every single GPU, okay?
+[1797.48s -> 1803.80s]  So here we have 16 GPUs and a flat parameter consisting of 14 parameters plus some extra
+[1803.80s -> 1807.58s]  padding so that things divide properly.
+[1807.58s -> 1814.58s]  And I'm going to assign each parameter to a distinct GPU, okay?
+[1814.58s -> 1818.32s]  And so that's basically just a complex way of saying that we created some data structures
+[1818.32s -> 1823.14s]  and we just like divided up model parameters to every GPU, okay?
+[1823.14s -> 1826.42s]  So every GPU gets a subset of model parameters.
+[1826.42s -> 1831.54s]  Okay, now let's start thinking about what my forward pass will look like.
+[1831.54s -> 1834.46s]  So there's no GPU that has a full set of parameters, okay?
+[1834.46s -> 1837.78s]  So you're running a forward pass, let's say you're at layer 4.
+[1837.78s -> 1842.34s]  Now there's no GPU that has all of layer 4, so you have to communicate.
+[1842.34s -> 1847.98s]  So we need to do an all-gather operation, that's the operation that we did to, you
+[1847.98s -> 1854.38s]  know, accumulate multiple things that are on multiple GPUs so that every GPU has the
+[1854.38s -> 1855.38s]  full thing.
+[1855.38s -> 1860.92s]  So you perform an all-gather, so you have all pieces of layer 4.
+[1860.92s -> 1862.90s]  You run a forward pass, okay?
+[1862.90s -> 1869.20s]  And now you don't need layer 4, so you now discard your parameter shards, okay?
+[1869.20s -> 1871.66s]  And now you have to run your backward pass, right?
+[1871.66s -> 1875.94s]  So you computed your loss and now you have to do a backward pass.
+[1875.94s -> 1880.94s]  Then let's say you're back at layer 4, you have your upstream gradient, you don't have
+[1880.94s -> 1881.94s]  layer 4.
+[1881.94s -> 1887.66s]  So you need to do another all-gather, so you get all the parameters of layer 4.
+[1887.66s -> 1893.26s]  And then you run a backward pass for layer 4, so you compute the gradient for your
+[1893.26s -> 1894.34s]  subset of parameters.
+[1894.34s -> 1898.38s]  So recall that every GPU has different data points, right?
+[1898.38s -> 1902.42s]  So there's going to be different gradients for every GPU, okay?
+[1902.42s -> 1908.12s]  So then for layer 4, you do an all-gather, get all parameters, compute a gradient.
+[1908.12s -> 1913.88s]  Every GPU has different gradients, and then you have to do a reduced scatter so that
+[1913.88s -> 1918.66s]  you can send the full gradient to the GPU that's responsible for whatever parts
+[1918.66s -> 1923.30s]  of layer 4 that you're sending, okay?
+[1923.30s -> 1929.66s]  So yeah, so that's basically full FSDP.
+[1929.66s -> 1935.90s]  And then once you run the forward and backward pass, then each GPU will update its own parameter
+[1935.90s -> 1941.82s]  shard using the full gradient that it received just now.
+[1941.82s -> 1944.94s]  And then you do a synchronization, right?
+[1944.94s -> 1952.46s]  So let's kind of do a quick review of everything we've looked at so far.
+[1952.46s -> 1960.06s]  So there's DDP, which was you don't shard anything, you have the full model, full gradient,
+[1960.06s -> 1964.42s]  the full optimizer state on every single GPU, and all you're going to divide up is
+[1964.42s -> 1965.58s]  the full dataset, right?
+[1965.58s -> 1972.06s]  So you have a big dataset of a thousand examples, every GPU gets 250 examples, okay?
+[1972.06s -> 1976.66s]  And then you compute a forward pass and a backward pass, every GPU has a different gradient,
+[1976.66s -> 1981.42s]  you need to communicate that gradient, and then you synchronize, okay?
+[1981.42s -> 1986.58s]  And so that was called an all-reduce operation in MPI terms.
+[1986.58s -> 1990.42s]  And then we looked at zero, which is, now we want to save some memory.
+[1990.42s -> 1995.30s]  We don't want the full sort of memory requirements of models, gradients, and optimizer
+[1995.30s -> 1997.62s]  state on every single GPU.
+[1997.62s -> 2003.74s]  And in zero stage one, we sharded the optimizer state so that there is, you know, so that
+[2003.74s -> 2007.58s]  you don't have to maintain the full optimizer state for every GPU, you kind of break
+[2007.58s -> 2010.90s]  that down between all the different GPUs that you have.
+[2010.90s -> 2015.62s]  And we saw that the communication overhead of maintaining synchronization in zero stage
+[2015.62s -> 2021.90s]  one boiled down to basically just doing an all-reduce through this identity that says
+[2021.90s -> 2026.42s]  that an all-reduce is a reduced scatter plus an all-gather, okay?
+[2026.42s -> 2030.74s]  And we saved memory for free with zero stage one and two, so you should just do it,
+[2030.74s -> 2033.30s]  you know.
+[2033.30s -> 2038.34s]  And then with zero stage three, things got a little bit more complex because you have
+[2038.34s -> 2044.18s]  to divide up your model parameters, the optimizer state, and the gradient.
+[2044.18s -> 2047.94s]  And so while you're running your forward pass, you kind of have to do some communication
+[2047.94s -> 2054.46s]  to get the full parameters for any layer, for layer four in our example, and then
+[2054.46s -> 2059.06s]  also have to do an all-gather in the backward pass so you get the full gradient, and then
+[2059.06s -> 2063.22s]  you have to do a reduced scatter so that you can send the full gradient for whatever
+[2063.22s -> 2066.86s]  chunk of the parameter to the right GPU.
+[2066.86s -> 2072.42s]  And overall, that's like two all-gatherers plus a reduced scatter, so that's a lot more
+[2072.42s -> 2075.94s]  overhead than stages one and two.
+[2075.94s -> 2081.10s]  But if you don't have enough GPU VRAM so that you can even load your model onto
+[2081.10s -> 2084.86s]  a GPU, then this is kind of what you have to do.
+[2084.86s -> 2086.98s]  All right.
+[2086.98s -> 2092.34s]  Any questions about MPI primitives or stages of zero or FSDP?
+[2096.86s -> 2100.98s]  Okay, cool.
+[2100.98s -> 2108.66s]  So I'm going to fix the lie that I said earlier about the GPU VRAM calculation.
+[2108.66s -> 2113.94s]  So I said that there's just like model parameters and gradients and the optimizer
+[2113.94s -> 2117.74s]  state, but there is this thing, there's this like final thing, the model activation.
+[2117.74s -> 2122.90s]  So like, you know, we've all seen that as you keep, you know, you want to increase
+[2122.90s -> 2130.34s]  the batch size, and there's a point when the GPU says that it can't fit more stuff.
+[2130.34s -> 2135.30s]  And that's because you also need to store model activations in the backward pass, right?
+[2135.30s -> 2138.46s]  And that scales linearly with the batch size.
+[2138.46s -> 2141.90s]  So the larger the batch size, the more the number of model activations that need
+[2141.90s -> 2143.38s]  to be stored.
+[2143.38s -> 2147.98s]  And by the way, if you're doing mixed precision, this is in FP16 or BF16, but it scales with
+[2147.98s -> 2150.00s]  the batch size, okay?
+[2150.00s -> 2154.40s]  And so that's sort of the other thing that you have to think about.
+[2154.40s -> 2160.28s]  And you know, none of the techniques that we've looked at so far help with kind of sharding
+[2160.28s -> 2163.52s]  model activations.
+[2163.52s -> 2170.48s]  So okay, so we looked at a bunch of like, you know, basics of like multi GPU training
+[2170.48s -> 2175.80s]  and, you know, like floating point, but it kind of boils down to this very simple
+[2175.80s -> 2180.56s]  flow chart, which you can use for your final projects when you're fine tuning models.
+[2180.56s -> 2184.08s]  So the first thing is always use mixed precision training.
+[2184.08s -> 2189.00s]  You know, you barely ever see a hit in performance.
+[2189.00s -> 2194.72s]  By performance I mean like a generalization or like, you know, F1 or accuracy.
+[2194.72s -> 2200.92s]  And if you're using the newer Ampere architectures, the H100s or the A100s or the A6000s,
+[2200.92s -> 2203.24s]  always use BF16.
+[2203.24s -> 2205.12s]  It's just better.
+[2205.16s -> 2208.16s]  And you can check that with that torch command.
+[2208.16s -> 2211.92s]  Okay, so always use mixed precision training.
+[2211.92s -> 2215.48s]  Now ask yourself this question.
+[2215.48s -> 2220.36s]  Does batch size one fit on a single GPU?
+[2220.36s -> 2223.72s]  If it fits, then try a larger batch size, okay?
+[2223.72s -> 2229.92s]  Batch size one is too small, try a larger batch size and or use zero stage two, okay?
+[2229.92s -> 2232.12s]  Zero stage two is for free.
+[2232.12s -> 2235.12s]  Just use zero stage two and increase your batch size.
+[2235.12s -> 2241.80s]  If you can't fit even batch size one, then you have to see if zero stage three fixes
+[2241.80s -> 2247.08s]  your out of memory issues, because now you're going to shard your model parameters, okay?
+[2247.08s -> 2249.40s]  And all of this is in the context of full fine tuning, right?
+[2249.40s -> 2256.80s]  So I'm fine tuning all of my model parameters, okay?
+[2256.80s -> 2259.72s]  Sometimes the answer to that question is also no.
+[2259.72s -> 2269.64s]  So you can't full fine tune your model on four, whatever, A100s or A6000s, and you've
+[2269.64s -> 2274.92s]  tried zero stage three, you've tried mixed precision training, you have a batch size
+[2274.92s -> 2281.24s]  of one, maybe you did gradient checkpointing, activation checkpointing, and nothing works.
+[2281.24s -> 2284.64s]  And so now basically you can't do full fine tuning.
+[2284.64s -> 2288.80s]  So the thing to do is to try parameter efficient fine tuning, okay?
+[2288.80s -> 2293.84s]  And that's going to give you a lot more memory savings, okay?
+[2293.84s -> 2299.96s]  So let's talk about parameter efficient fine tuning, okay?
+[2299.96s -> 2303.04s]  So why is it called parameter efficient fine tuning?
+[2303.04s -> 2307.94s]  So in full fine tuning, you run a forward pass and a backward pass and you update
+[2307.94s -> 2310.48s]  every single model parameter.
+[2310.48s -> 2315.88s]  And in parameter efficient fine tuning, you're only going to update a small subset of the
+[2315.88s -> 2319.84s]  full set of parameters, okay?
+[2319.84s -> 2322.24s]  And why would you want to do that?
+[2322.24s -> 2327.76s]  So maybe you're in a setting where you cannot full fine tune even with batch size
+[2327.76s -> 2332.24s]  one, you've tried all the tricks possible, it just wouldn't fit.
+[2332.24s -> 2337.28s]  And so maybe you have to do parameter efficient fine tuning.
+[2337.28s -> 2344.48s]  Maybe the other possible reason why you want to do it is slightly more scientific.
+[2345.08s -> 2351.72s]  Models these days are heavily overparameterized and you have a small data set and you believe
+[2351.72s -> 2360.32s]  that if you do parameter efficient fine tuning, then you can get a better generalization, okay?
+[2360.32s -> 2365.04s]  Or you believe that it's going to match full fine tuning, okay?
+[2365.04s -> 2370.16s]  Sort of a second reason for wanting to do efficient adaptation.
+[2370.40s -> 2377.92s]  So the plot on the right here shows in red, it's sort of the estimated growth in training
+[2377.92s -> 2382.08s]  compute for training the largest AI models.
+[2382.08s -> 2386.94s]  And the line in blue is the global compute capacity.
+[2386.94s -> 2391.00s]  So very soon we are going to overshoot the global compute capacity and going to
+[2391.00s -> 2395.10s]  need a lot more compute than the global capacity.
+[2395.10s -> 2404.02s]  So this is kind of not sustainable and there are arguments to be made about how if we keep
+[2404.02s -> 2410.18s]  going down this route, then AI development becomes concentrated in only the hands of
+[2410.18s -> 2416.76s]  a few well funded organizations and as students we can't do it.
+[2416.76s -> 2421.50s]  And so that's a problem and then also if there's only a small number of players that
+[2421.54s -> 2427.66s]  are training and fine tuning models, then they may bias the model in specific ways that reflect
+[2427.66s -> 2433.14s]  their value systems and not sort of the broader public.
+[2433.14s -> 2439.26s]  And so that's another reason to think about efficient adaptation.
+[2439.26s -> 2447.34s]  And there's sort of this paradigm in machine learning in general and NLP specifically to focus
+[2447.34s -> 2451.66s]  a lot on accuracy instead of efficiency.
+[2451.66s -> 2458.94s]  And so the plot on the right here shows the percentage of papers where the main contribution
+[2458.94s -> 2467.66s]  is a method that produces just more accurate models versus methods that produce same accuracy
+[2467.66s -> 2470.10s]  for more efficiency.
+[2470.10s -> 2477.06s]  And so we can see that for most conferences, the vast majority of papers are about accuracy
+[2477.06s -> 2482.34s]  and there's very few papers about efficiency.
+[2482.34s -> 2485.90s]  And so maybe this is kind of leading to this monoculture and maybe that's why we want
+[2485.90s -> 2487.54s]  to focus on efficiency.
+[2487.54s -> 2493.98s]  The second maybe bigger sort of concern is that there's this huge hidden environmental
+[2493.98s -> 2498.92s]  cost of training and fine tuning large language models.
+[2498.92s -> 2503.56s]  So I was just reading some report where they said that the cost of training GPT-3
+[2503.56s -> 2511.16s]  was equivalent to 1.1 billion tons of carbon emission or some such number and they kind
+[2511.16s -> 2519.64s]  of estimated that that's the cost of running a coal power plant for 10 hours straight.
+[2519.64s -> 2527.64s]  And for an example, closer to home, in the reinforcement learning class, there was
+[2527.64s -> 2534.28s]  like the final project, not the final project, a homework assignment and a lot of students
+[2534.28s -> 2541.58s]  implemented kind of a common algorithm, one or two algorithms that sort of outperformed
+[2541.58s -> 2545.48s]  everything else were used a lot more power.
+[2545.48s -> 2551.72s]  And someone did this calculation that if everyone had used the most efficient algorithm,
+[2551.72s -> 2563.04s]  that would have reduced the power consumption of the class by about 880 kilowatt hours,
+[2563.04s -> 2567.08s]  which is what an American household uses in a month.
+[2567.08s -> 2573.76s]  So these are all reasons to think about efficiency and how you can fine tune your
+[2573.76s -> 2577.86s]  models with less resources.
+[2577.86s -> 2582.42s]  So let's kind of jump back into parameter efficient fine tuning.
+[2582.42s -> 2588.22s]  Let's start by recapping what full fine tuning is.
+[2588.22s -> 2594.86s]  Any questions so far about any of this?
+[2594.86s -> 2596.92s]  So yeah, so let's recap full fine tuning.
+[2596.92s -> 2606.66s]  So let's say we have some large pre-trained autoregressive language model, let's say it's a GPT.
+[2606.66s -> 2611.08s]  And maybe we want to use it for summarization, maybe we want it for semantic parsing, so
+[2611.08s -> 2616.02s]  like converting natural language to SQL commands, or maybe we want it to answer questions
+[2616.02s -> 2618.86s]  about paragraphs, okay?
+[2618.86s -> 2619.86s]  And what do we do?
+[2619.86s -> 2625.30s]  We collect a dataset of XY pairs and then we do full fine tuning.
+[2625.30s -> 2629.98s]  In full fine tuning, we are going to update all of the model parameters based on the
+[2629.98s -> 2634.86s]  gradient for some loss function, okay?
+[2634.86s -> 2640.46s]  And maybe that's not feasible, GPT-3 has 175 billion parameters, and so there's just
+[2640.46s -> 2646.38s]  like a lot more parameters to learn, and even once you have done full fine tuning,
+[2646.38s -> 2650.46s]  you kind of have to store all of the parameters, and if you're doing several tasks, you have
+[2650.46s -> 2654.22s]  to store parameters for every task, okay?
+[2654.22s -> 2659.48s]  So can we do better?
+[2659.48s -> 2668.24s]  So the main idea is instead of updating all of the parameters, I am going to update a
+[2668.24s -> 2673.06s]  much smaller number of parameters, okay?
+[2673.06s -> 2679.40s]  And then instead of finding sort of a delta theta, which is the same size as the entire
+[2679.40s -> 2684.54s]  set of parameters, I have to search over a much smaller space.
+[2684.54s -> 2691.90s]  And then the added benefit is I can store this much smaller delta pretty easily on disk,
+[2691.90s -> 2697.70s]  and hopefully it's going to require less compute, and hopefully it's going to generalize
+[2697.70s -> 2702.36s]  almost as well as full fine tuning, okay?
+[2702.36s -> 2709.78s]  So there's many different ways of kind of operationalizing this high level idea of parameter
+[2709.78s -> 2711.94s]  efficient fine tuning.
+[2711.98s -> 2717.26s]  The one I'm going to talk about today is LoRa, okay?
+[2717.26s -> 2725.16s]  That stands for low rank adaptation, and that basically comes from this observation
+[2725.16s -> 2731.98s]  that when you have big language models that you fine tune, oftentimes when you look
+[2731.98s -> 2739.30s]  at sort of the like geometric structure of the gradients, they tend to have a low intrinsic
+[2739.30s -> 2742.88s]  rank, okay?
+[2742.88s -> 2745.74s]  Do people remember rank and SVD?
+[2745.74s -> 2748.58s]  All right, okay.
+[2748.58s -> 2755.06s]  So these parameters, the gradients tend to have a low intrinsic rank, okay?
+[2755.06s -> 2762.64s]  And so what the authors realized is instead of fine tuning the entire set of parameters,
+[2762.64s -> 2769.56s]  you could instead fine tune a much smaller, let's say rank R matrix for every full rank
+[2769.56s -> 2773.74s]  matrix that exists in the model, okay?
+[2773.74s -> 2780.26s]  So let's say we have some pre-trained weight matrix W naught, and what I'm going to do
+[2780.26s -> 2787.02s]  is instead of applying some kind of arbitrary update, I'm going to make sure that the update
+[2787.02s -> 2790.08s]  has this following form, okay?
+[2790.08s -> 2795.44s]  So it's going to be the product of two low rank matrices, B and A, okay?
+[2795.44s -> 2804.78s]  So A is an R cross K matrix, and B is a D cross R matrix, okay?
+[2804.78s -> 2813.64s]  And R is the rank, much, much smaller than either the sort of incoming dimension and
+[2813.64s -> 2817.46s]  much, much smaller than the outgoing dimension, okay?
+[2817.46s -> 2823.14s]  And the term alpha, you can think of that as some kind of tradeoff between the knowledge
+[2823.14s -> 2828.70s]  that's already stored in the pre-trained model versus some additional knowledge that
+[2828.70s -> 2830.88s]  you want to add into the model, okay?
+[2830.88s -> 2833.04s]  So if alpha is zero, then you're not doing anything.
+[2833.04s -> 2836.70s]  If alpha is something really, really small, then you don't really want to change your
+[2836.70s -> 2841.24s]  model parameters all that much, and you want to add some really small task specific
+[2841.24s -> 2844.50s]  knowledge.
+[2844.50s -> 2857.90s]  And then additionally, the only trainable parameters here are going to be A and B, okay?
+[2857.90s -> 2863.64s]  And then sort of the other thing to note about this is since I'm representing updates
+[2863.64s -> 2870.22s]  as this product B times A, as I increase R, that's going to converge towards full
+[2870.22s -> 2871.22s]  fine tuning, right?
+[2871.22s -> 2876.42s]  You kind of have the slider that you can use to control how much fine tuning you want
+[2876.42s -> 2879.98s]  to do, essentially.
+[2879.98s -> 2883.20s]  And then the other important thing is inference latency.
+[2883.20s -> 2889.68s]  So what you can do is you can just store these learned matrices for every task, and
+[2889.68s -> 2895.38s]  whenever you switch to a different task, you can just remove the extra term that you've
+[2895.38s -> 2901.12s]  added to every matrix for that task and add in sort of the task specific terms for
+[2901.12s -> 2905.68s]  the new task that you want to run inference on, okay?
+[2905.68s -> 2911.00s]  And the cost of storing these much smaller matrices is also way lower than storing
+[2911.00s -> 2915.80s]  sort of the full delta, okay?
+[2915.80s -> 2919.20s]  And we'll kind of see where you should apply LoRa, but generally you want to apply
+[2919.20s -> 2924.18s]  it to the weight matrices in self-attention, okay?
+[2924.18s -> 2929.94s]  So in code, it actually looks fairly simple.
+[2929.94s -> 2936.30s]  So what you're going to do is when you're running the regular forward pass, then you
+[2936.30s -> 2941.20s]  sort of, you know, just like compute the hidden state as, let's say, the product
+[2941.20s -> 2945.50s]  of the matrix and the incoming feature vector.
+[2945.50s -> 2949.58s]  Now with LoRa, what you're going to do is you're going to freeze your model parameters.
+[2949.58s -> 2952.42s]  You're going to compute the H as before.
+[2952.42s -> 2956.92s]  And then to that, you're going to add this additional offset term, and that's the only
+[2956.92s -> 2960.28s]  thing that's going to be trainable, okay?
+[2960.28s -> 2962.14s]  And that's pretty much all you have to do.
+[2962.14s -> 2966.94s]  We have to do it for every single weight matrix for every single layer, okay?
+[2966.94s -> 2967.94s]  Yeah.
+[2967.94s -> 2972.66s]  So there's like an alpha term in the second class, like where do you define alpha in
+[2972.66s -> 2977.38s]  the first one, or do you just like put it somewhere?
+[2977.38s -> 2979.74s]  So yeah, so you define this somewhere.
+[2979.74s -> 2986.40s]  If you set it to one, that's like saying that I kind of want like an equal trade-off
+[2986.40s -> 2989.90s]  between pre-trained knowledge and the new task-specific knowledge.
+[2989.90s -> 2991.58s]  Typically, people set it to one.
+[2991.58s -> 2994.66s]  You could set it to something larger than one if you believe your task is something
+[2994.66s -> 2999.38s]  that the model, the pre-trained model has no idea about, or something smaller than
+[2999.38s -> 3007.90s]  one if you don't want to change the model too much.
+[3008.38s -> 3011.20s]  So that's basically LoRa.
+[3011.20s -> 3015.62s]  In practice, so I said there's a bunch of different parameter-efficient fine-tuning methods,
+[3015.62s -> 3016.62s]  right?
+[3016.62s -> 3020.80s]  So I'm not even going to name all of these.
+[3020.80s -> 3022.30s]  There's adapters.
+[3022.30s -> 3025.38s]  Some of you might have heard about adapters.
+[3025.38s -> 3030.18s]  There is BitFit, which is not here.
+[3030.18s -> 3033.30s]  And so there's like lots of different, like p-tuning.
+[3033.30s -> 3040.66s]  But it turns out that compared to a lot of these different methods, it's kind of pretty
+[3040.66s -> 3049.42s]  high-performing on a bunch of different tasks for these relatively smaller models.
+[3049.42s -> 3053.50s]  And then if we try and look at some of the bigger, like we're trying to fine-tune
+[3053.50s -> 3059.14s]  some of the bigger models, like GPT-3, and then compare it with other parameter-efficient
+[3059.14s -> 3061.62s]  fine-tuning methods.
+[3061.62s -> 3064.58s]  So full fine-tuning is at the very top.
+[3064.58s -> 3069.86s]  Then we have BitFit, which is you only fine-tune the bias terms.
+[3069.86s -> 3076.60s]  And adapters, compared to that, firstly LoRa requires a lot fewer additional parameters
+[3076.60s -> 3078.74s]  that you need to store.
+[3078.74s -> 3082.80s]  And it kind of gives you a good trade-off for accuracy compared to full fine-tuning.
+[3082.80s -> 3087.90s]  And sometimes there's a regularizing effect from fine-tuning only a small subset of
+[3087.98s -> 3089.98s]  your model parameters.
+[3092.98s -> 3095.10s]  Okay.
+[3095.10s -> 3103.34s]  So, you know, the question is, like, for every matrix, you can apply LoRa.
+[3103.34s -> 3111.30s]  And I said that you want to apply it to the various learned weight matrices inside self-attention.
+[3111.30s -> 3116.66s]  The question is what parameters you want to apply LoRa to.
+[3116.66s -> 3122.10s]  And generally the rule of the thumb is that if you apply it to the matrix that takes your
+[3122.10s -> 3126.94s]  hidden state and converts that into queries, and the matrix that converts your hidden
+[3126.94s -> 3131.58s]  state into values, apply LoRa to those, and that's pretty much going to give you the
+[3131.58s -> 3135.44s]  best performance overall.
+[3135.44s -> 3139.10s]  The other hyperparameter for LoRa is the optimal rank.
+[3139.10s -> 3144.42s]  So recall there are these two matrices, B and A, that are both low rank.
+[3144.42s -> 3151.38s]  And it turns out that already with a really small rank, you can get a pretty high performance.
+[3151.38s -> 3159.86s]  And this is much, much smaller than the hidden state dimensions of the matrices for most
+[3159.86s -> 3161.86s]  models these days.
+[3161.86s -> 3162.86s]  Okay.
+[3162.86s -> 3164.34s]  All right.
+[3164.34s -> 3166.26s]  So we covered a bunch of things.
+[3166.26s -> 3173.82s]  We talked about floating points and mixed precision training, multi-GPU training, DDP,
+[3173.82s -> 3182.06s]  FSDP, LoRa, kind of boils down to a very simple flow chart that you can just use for
+[3182.06s -> 3183.06s]  your project.
+[3183.06s -> 3186.46s]  So if you were sleeping through the entire lecture, maybe now is the time to wake up
+[3186.46s -> 3191.72s]  and just look at this flow chart.
+[3191.72s -> 3195.42s]  So always use mixed precision training.
+[3195.42s -> 3199.74s]  If you have the newer Ampere architectures, use bfloat16.
+[3199.74s -> 3201.74s]  Try the batch size one.
+[3201.74s -> 3206.26s]  If batch size one fits, try a larger batch size and then always just use zero stage
+[3206.26s -> 3207.26s]  two.
+[3207.26s -> 3208.26s]  Okay.
+[3208.26s -> 3210.74s]  Batch size one doesn't fit.
+[3210.74s -> 3212.88s]  Try zero stage three.
+[3212.88s -> 3215.22s]  Maybe try gradient checkpointing, activation checkpointing.
+[3215.22s -> 3217.22s]  Sorry, there's a question.
+[3217.22s -> 3227.74s]  So all of this applies only if you have more than one GPU.
+[3227.74s -> 3231.66s]  If you have a single GPU, yeah, you have to do other things.
+[3231.66s -> 3238.98s]  Maybe have to like heavily quantize the model and even then I don't think you can fine-tune
+[3238.98s -> 3243.44s]  some of the bigger models, yeah.
+[3243.44s -> 3249.46s]  So assuming you have multiple GPUs, you can try zero stage three if you have out
+[3249.46s -> 3252.10s]  of memory errors with a batch size of one.
+[3252.10s -> 3254.90s]  If that doesn't work, you can try LoRa, okay?
+[3254.90s -> 3261.24s]  The main hyperparameters in LoRa are the alpha, the rank, and what weight matrices
+[3261.24s -> 3266.82s]  to apply LoRa to, apply that to the query matrix, apply that to the value matrix, set
+[3266.82s -> 3267.82s]  rank to eight.
+[3267.82s -> 3269.16s]  Okay, that's a good starting point.
+[3269.16s -> 3270.16s]  Set alpha to one.
+[3270.16s -> 3273.36s]  Okay, just do that and you should be good to go.
+[3273.36s -> 3278.16s]  Okay, so you can fine-tune your models and things should be reasonably good.
+[3278.16s -> 3283.84s]  Okay, so I'm going to end now unless there's questions.
+[3283.84s -> 3287.80s]  Oh, there's one question in the back.
+[3287.80s -> 3294.28s]  I was wondering if you could just like go back to it and walk through it a little bit.
+[3294.28s -> 3297.28s]  On slide 48.
+[3297.28s -> 3306.24s]  Yeah, this diagram on the left.
+[3306.24s -> 3309.04s]  Right, okay.
+[3309.04s -> 3310.24s]  So let's go through this diagram.
+[3310.24s -> 3317.26s]  So basically what this diagram shows is how the communication overhead is really not that
+[3317.26s -> 3323.78s]  bad if you have a fairly big model, such that the time it takes to do a forward pass,
+[3323.78s -> 3328.44s]  you can already sort of prefetch all of the parameters for the next layer.
+[3328.44s -> 3329.50s]  So that's pretty much the idea.
+[3329.50s -> 3333.94s]  So that's kind of like a standard idea that I guess everyone should already be using.
+[3333.94s -> 3338.56s]  Like you want to make sure, PyTorch does this by default, by the way, like you want
+[3338.56s -> 3345.62s]  to make sure that, you know, you sort of fully saturate your GPU and then sort of
+[3345.62s -> 3350.26s]  make sure that you kind of overlay that with any additional compute you're doing.
+[3350.26s -> 3352.70s]  And that's pretty much what's going on here.
+[3352.70s -> 3356.62s]  But let's sort of go through this kind of step by step, okay?
+[3356.62s -> 3360.92s]  And so the starting point here is FSDP units.
+[3360.92s -> 3365.42s]  So 0, 1 and 2 are different FSDP units, okay?
+[3365.42s -> 3373.68s]  So what you start by doing is you want to run a forward pass on the first layer.
+[3373.68s -> 3374.90s]  You don't have the first layer, okay?
+[3374.90s -> 3378.86s]  So let's say you are GPU-K, you don't have the first layer, so you have to do an all-gather
+[3378.86s -> 3381.98s]  to get all of the parameters for the first layer.
+[3381.98s -> 3384.42s]  So that's AG0, okay?
+[3384.42s -> 3392.48s]  At the end of AG0, every GPU has the full set of parameters for the layers corresponding
+[3392.48s -> 3393.82s]  to FSDP unit 0.
+[3393.82s -> 3396.10s]  Let's just say that's layer 1, okay?
+[3396.10s -> 3399.02s]  Or let's just say that's layer 0, okay?
+[3399.02s -> 3402.46s]  So you have the full parameters for layer 0, you run a forward pass.
+[3402.46s -> 3405.10s]  That's the stuff in blue.
+[3405.10s -> 3410.26s]  And while you're running a forward pass through the first layer, you're going to be smart
+[3410.26s -> 3415.62s]  about communication overheads, and while you're running that, you're going to prefetch
+[3415.62s -> 3418.62s]  the parameters for the next FSDP unit, okay?
+[3418.62s -> 3421.24s]  So let's say layer 2 is a different FSDP unit.
+[3421.24s -> 3424.46s]  So that's AG1, okay?
+[3424.46s -> 3430.70s]  And so you can see that there is a little bit of overlap between forward 0 and AG1,
+[3430.70s -> 3431.70s]  okay?
+[3431.94s -> 3439.66s]  So at the end of getting all of the parameters for layer 1, you're going to do a forward pass, okay?
+[3439.66s -> 3440.66s]  And so on.
+[3440.66s -> 3446.84s]  And then you're going to do AG2, and at the same time, now let's say you just have
+[3446.84s -> 3449.58s]  way too many parameters on your GPU, okay?
+[3449.58s -> 3454.98s]  So you're going to do a little bit of memory free, you're going to free up some memory,
+[3454.98s -> 3455.98s]  okay?
+[3455.98s -> 3459.02s]  So that's the stuff in yellow, okay?
+[3459.02s -> 3460.08s]  And so that's how that goes.
+[3460.08s -> 3466.12s]  So you basically overlay all gather operations with the forward pass, okay?
+[3466.12s -> 3467.48s]  And that's how you run the forward pass, okay?
+[3467.48s -> 3471.92s]  So the communication overhead is really not that bad if you have a really big deep
+[3471.92s -> 3481.50s]  neural network, and assuming that you have kind of sharded everything properly, okay?
+[3481.50s -> 3483.38s]  And then you start the backward pass.
+[3483.38s -> 3492.22s]  So in the backward pass, I guess it's a little bit tricky, because you want to do these
+[3492.22s -> 3495.62s]  all gather operations to get the full gradient.
+[3495.62s -> 3497.92s]  So let's say it's a 10-layer neural network, okay?
+[3497.92s -> 3501.14s]  So you want to compute the full gradient at layer 10, you need to do an all gather
+[3501.14s -> 3507.10s]  operation to get all of the parameters at layer 10, and then you have to do a reduced
+[3507.10s -> 3508.10s]  scatter, okay?
+[3508.10s -> 3513.54s]  So you have four GPUs, everyone has the full set of parameters at layer 10.
+[3513.54s -> 3517.28s]  They have different gradients, and so they have to kind of merge their gradients and
+[3517.28s -> 3522.02s]  then sort of split them up to the right GPU, and so that's the reduced scatter.
+[3522.02s -> 3526.00s]  But that's not too bad, because you can still overlay reduced scatter operations
+[3526.00s -> 3527.46s]  with the backward pass, okay?
+[3527.46s -> 3533.12s]  And so that's what you see happening on the backward pass there, okay?
+[3533.12s -> 3540.60s]  And then along with these forward and backward passes, at sort of regular intervals, you
+[3540.60s -> 3543.82s]  have to make sure that you kind of free up GPU memory.
+[3543.82s -> 3548.44s]  So for example, once you have run a forward pass through layer 1, now you're onto layer
+[3548.44s -> 3553.60s]  2, you don't need anything in layer 1, so you just free up the memory in layer 1, okay?
+[3553.60s -> 3556.96s]  That's pretty much the idea behind this diagram.
+[3556.96s -> 3560.04s]  So there's a few details here.
+[3560.04s -> 3565.44s]  One of the details is like, in FSDP, unit 0 is sort of treated differently.
+[3565.44s -> 3568.76s]  So you'll see that unit 0 is never freed up.
+[3568.76s -> 3571.44s]  That's just sort of an implementation detail in FSDP.
+[3571.44s -> 3575.72s]  I'll just quickly say one more thing about FSDP and take a question, okay?
+[3575.72s -> 3581.74s]  So the presentation here makes it seem like it's so simple and that it can be applied
+[3581.74s -> 3584.76s]  to any neural network, right?
+[3584.76s -> 3588.20s]  But it turns out that that's not the full picture.
+[3588.20s -> 3593.32s]  So you need to do this kind of, like you need to kind of divide up your neural network
+[3593.32s -> 3596.64s]  into FSDP units, okay?
+[3596.64s -> 3602.32s]  And depending on how you, depending on what policy you use for dividing up your parameters
+[3602.32s -> 3606.84s]  into FSDP units, there's different communication overheads, okay?
+[3606.84s -> 3613.52s]  So for example, it makes sense to kind of have like multiple like consecutive layers
+[3613.52s -> 3616.02s]  in the same FSDP unit and so on.
+[3616.02s -> 3618.18s]  And so this is like very architecture specific.
+[3618.18s -> 3626.06s]  So when you start to use this in PyTorch, you will see that the FSDP wrapper requires
+[3626.06s -> 3629.18s]  a sort of a sharding policy.
+[3629.18s -> 3630.94s]  And that is like very architecture specific.
+[3630.94s -> 3636.98s]  So because everyone uses transformers now, they're like very sort of handcrafted, fine-tuned
+[3636.98s -> 3643.66s]  policies for transformer, like for creating FSDP units and sharding strategies for transformers.
+[3643.66s -> 3647.10s]  And let's say you want to, you know, for your final project, you came up with a new
+[3647.10s -> 3651.70s]  architecture, sub-quadratic attention, whatever.
+[3651.70s -> 3656.06s]  Maybe it's not going to be as efficient just because you don't have the right sharding
+[3656.06s -> 3657.06s]  policy, okay?
+[3657.06s -> 3661.34s]  So that's like one detail about FSDP that maybe you want to keep in mind.
+[3661.34s -> 3662.34s]  Okay.
+[3662.34s -> 3663.34s]  You had a question?
+[3663.34s -> 3664.34s]  Just a clarification.
+[3664.34s -> 3669.06s]  When you mentioned you can throw away the weights that you don't need after each layer
+[3669.06s -> 3674.42s]  of forward pass, but when you compute backward pass, do you stream them back in each time?
+[3674.42s -> 3679.34s]  Or do you sort of cache some or cache recent, or is there any caching going on, or do
+[3679.34s -> 3683.22s]  you throw them all away and stream them all back?
+[3683.22s -> 3691.26s]  So there might be some caching in the system, but the idea is that you just sort of throw
+[3691.26s -> 3692.26s]  them away.
+[3692.26s -> 3695.46s]  Or at least to the user, it seems like you've thrown it all away in terms of like
+[3695.46s -> 3696.46s]  GPU RAM utilization.
+[3696.46s -> 3702.78s]  And then we stream them in each layer again one moment.
+[3702.78s -> 3706.22s]  And so that's why it's important to shard it properly, right?
+[3706.22s -> 3712.14s]  So for example, if every consecutive layer is sharded such that it's on multiple GPUs,
+[3712.14s -> 3714.62s]  then you kind of always are communicating, right?
+[3714.62s -> 3721.38s]  As opposed to, you know, you kind of did all gather, and then all of the next three
+[3721.38s -> 3723.58s]  layers are loaded in, okay?
+[3723.58s -> 3726.66s]  So that's why I like, you know, how you shard, and this like sharding policy becomes
+[3726.66s -> 3727.66s]  important.
+[3727.66s -> 3742.14s]  Okay, so if there's no more questions, let's end early.
+[3742.14s -> 3742.62s]  Thank you so much.

@@ -1,0 +1,1186 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 9.30s]  Okay, so here's what I was thinking about doing today. You know, it's the last day
+[9.30s -> 13.08s]  of the quarter for us, we should make it a little bit casual. There's one piece of
+[13.08s -> 17.08s]  content that we haven't gotten to that we do in some previous years and I always
+[17.08s -> 19.76s]  think it's kind of interesting for you all to know given that like you're always
+[19.76s -> 22.82s]  talking about, oh my God, we're out of memory bandwidth. I just wanted to talk
+[22.82s -> 26.20s]  a little bit about how memory works. So we'll talk a little bit about that. I'll
+[26.24s -> 30.20s]  do a really quick wrap up and things like that and then we'll maybe open it
+[30.20s -> 35.64s]  into just a little bit of an AMA. We can talk, we can leave early, we can talk a
+[35.64s -> 40.48s]  little bit about now that you've taken CS 149, what might be some things that
+[40.48s -> 45.08s]  might be useful at Stanford to go do next. So that's the goal. Okay, so
+[45.08s -> 48.88s]  let's get into accessing memory which has actually been a pretty
+[48.88s -> 53.76s]  abstract concept so far in the course given its importance, right? So in your
+[53.80s -> 57.72s]  head you're probably thinking about okay there's a processor and then there's
+[57.72s -> 62.68s]  memory which some of you might be think of as DRAM and I'll explain what that
+[62.68s -> 67.28s]  means in a second and then to make memory faster and by faster I mean
+[67.28s -> 72.80s]  reduced memory access time and increased memory bandwidth we have this cache
+[72.80s -> 78.08s]  sitting in a modern computer. So if you think about this box here as the
+[78.08s -> 82.84s]  CPU or the core you've got a processor core in there like you know for
+[82.84s -> 87.72s]  example the Intel chips that you ran on have four cores and myth they had
+[87.72s -> 91.32s]  forgetting now what they had on AWS I think we gave you eight core machines
+[91.32s -> 95.64s]  with 16 virtual you know two hyper threads per core and then there's
+[95.64s -> 99.04s]  some caches and on this diagram I'm only drawing one of them I'm drawing
+[99.04s -> 103.48s]  what's called the the last level cache so if you have like an l1 l2 and l3
+[103.48s -> 108.56s]  your l3 is your last level cache or if you just have an l1 well your l1 is
+[108.56s -> 111.40s]  the last level cache. We often like to think about the last level cache
+[111.40s -> 115.64s]  because that's the that's the point in which memory requests that don't hit the
+[115.64s -> 121.60s]  cache now have to go out to memory and and then there's a box on any modern
+[121.60s -> 125.80s]  processor that's called the memory controller and the memory controller is
+[125.80s -> 130.92s]  responsible for when the the last level cache takes a cache miss the
+[130.92s -> 135.28s]  processor has to go get the data from memory and the memory controller is
+[135.28s -> 140.76s]  responsible for for making that request out to memory and then grabbing
+[140.76s -> 143.64s]  the results when they come back and making sure the data gets into the
+[143.64s -> 147.60s]  appropriate cache so that's what we're talking about so so what we're gonna go
+[147.60s -> 153.28s]  is we're gonna talk about the implementation of memory now as memory
+[153.28s -> 160.56s]  as DRAM so if you if you you know got upset about the final and bashed your
+[160.56s -> 164.60s]  laptop over your knee and you opened it up and looked inside you would
+[164.60s -> 168.64s]  actually see some some DRAM chips in there and one way you could think
+[168.64s -> 175.32s]  about a single single DRAM chip is as an array like a big array of memory cells
+[175.32s -> 182.52s]  so every box on this diagram is you can think about as holding a bit and
+[182.52s -> 186.88s]  this is a memory cell so we're actually working in the analog world
+[186.88s -> 190.28s]  at this point and how do you think a bit you know a bit is represented by
+[190.28s -> 194.24s]  an amount of charge stored in each of these cells it's kind of like the
+[194.24s -> 199.16s]  inverse of a photo cell and your digital camera right like you have an
+[199.16s -> 204.08s]  array of pixels and light hits the photosensitive material and generates a
+[204.08s -> 207.12s]  voltage and you have a capacitor to hold that voltage it says this is how
+[207.12s -> 209.96s]  many photons hit the thing here's the opposite we're trying to store
+[209.96s -> 213.68s]  information so if you want to store a one we encode that as some voltage and
+[213.68s -> 218.40s]  we want to store zero we encode it as a different voltage okay so you have
+[218.40s -> 222.12s]  all of these different bits and they're organized on a DRAM chip actually in
+[222.12s -> 226.92s]  this 2d manner now down here at the bottom of the chip there's two
+[226.92s -> 231.88s]  important you know structural pieces first of all you have your wires your
+[231.88s -> 236.44s]  data pins that actually connect this chip to the rest of the computer so
+[236.44s -> 241.00s]  there's eight data pins here which means this DRAM chip at any one clock
+[241.00s -> 245.64s]  can only send eight bits of information there's a one or a zero on
+[245.64s -> 251.36s]  each of these wires and in order to access the DRAM chip the DRAM chip
+[251.36s -> 259.64s]  doesn't actually send data from the the the the DRAM array onto the wires it
+[259.64s -> 266.08s]  actually has a buffer here which is like a digital buffer that stores the
+[266.08s -> 272.88s]  the values the bits in one row of the the DRAM chip so this is called the
+[272.88s -> 277.84s]  row buffer so this stores one row and so when you access data from a DRAM
+[277.84s -> 282.84s]  chip you're actually only accessing data for a byte-sized chunk of
+[282.84s -> 287.64s]  information stored in this row buffer and I'll tell you okay so so let's say
+[287.64s -> 293.64s]  that we have you we take a cache miss and the cache like the the actual
+[293.64s -> 300.36s]  load instruction is I need to access the address X at this point where we're
+[300.36s -> 306.16s]  talking about like the physical address X in memory so the memory controller
+[306.16s -> 310.76s]  gets this command or this request from the processor so say give me X and
+[310.76s -> 315.32s]  really what that is is give me the cache line that contains X so when I say
+[315.32s -> 322.32s]  X just think about X being like the start of a cache line and every byte
+[322.32s -> 328.72s]  that the processor might access is gonna be a contiguous part of some row
+[328.72s -> 332.08s]  in this DRAM array so let's say we want to access the byte that I'm
+[332.12s -> 342.56s]  highlighting here in red so we need to to read the values out of those memory
+[342.56s -> 347.36s]  cells and then communicate those values back to the processor here over
+[347.36s -> 351.72s]  these these bit lines and so there's a number of steps to be able to do this
+[351.72s -> 355.72s]  basically to convert this this voltage this charge stored on these capacitors
+[355.72s -> 361.20s]  into digital ones and zeros so the first step in DRAM terminology is
+[361.20s -> 367.96s]  actually called called pre-charge which is kind of like getting ready to read a
+[367.96s -> 373.16s]  particular row and in other words what you can think about it is as there's
+[373.16s -> 377.48s]  these bit lines there's these these wires that go all the way through the
+[377.48s -> 381.76s]  chip that are supposed to read off the voltage in those cells and
+[381.76s -> 388.04s]  communicate that voltage all in one from one row into the row buffer so if
+[388.04s -> 391.60s]  this was software I would say we need to make a copy of the data in one of these
+[391.60s -> 396.68s]  rows put it in the row buffer so we can access the row buffer but making
+[396.68s -> 401.28s]  that copy is actually communicating electrical voltage down these wires so
+[401.28s -> 407.16s]  we have to set these wires to sort of a known amount and that's like sort
+[407.16s -> 409.80s]  of this pre-charge and that takes some time and so on this slide I'm
+[409.80s -> 413.60s]  saying it takes about 10 nanoseconds so in memory we taught we think
+[413.60s -> 417.60s]  usually in terms of nanoseconds because you know we we might be in a
+[417.60s -> 421.68s]  different clock rate in DRAM than the processor so if we said clocks it's a
+[421.68s -> 425.12s]  little confusing on what clock we're talking about so you know on the order
+[425.12s -> 428.96s]  of about 10 nanoseconds this is like okay these wires are now kind of
+[428.96s -> 433.64s]  normalized to some known voltage and if we drain the capacitor in the
+[433.64s -> 437.36s]  capacitance of some row onto these wires you know that they're gonna their
+[437.36s -> 442.56s]  voltage is gonna go up or down so then we basically lock into the row
+[442.56s -> 448.28s]  that we want and we row activate and row activate is basically reading the
+[448.28s -> 452.92s]  charge from this row and bringing it down into that row buffer at the bottom
+[452.92s -> 458.56s]  of the chip so that's the the copy of information and actually it's
+[458.56s -> 462.20s]  interesting since this is analog that copy actually destroys the value in
+[462.20s -> 466.18s]  that row so the only place where that row of information sits is actually
+[466.18s -> 469.96s]  down here at this point so I had 10 nanoseconds to kind of get the
+[469.96s -> 474.18s]  communication lines ready and another 10 nanoseconds to sort of read off the
+[474.18s -> 477.94s]  voltage in that row and now that information is sitting down here in the
+[477.94s -> 483.84s]  row buffer and then given whatever particular byte that I want then I can
+[483.84s -> 489.28s]  select that information it's called column selection because like the byte
+[489.28s -> 493.28s]  that you want is selecting certain columns in that row and transferring
+[493.28s -> 497.32s]  that bit those bits onto the memory bus and now they're moving back to the
+[497.32s -> 500.72s]  memory controller on the chip and the chips gonna put them in the right cache
+[500.72s -> 508.04s]  and so on and so on so this process of reading a byte actually is like get
+[508.04s -> 514.04s]  ready activate the appropriate row then select the right column and then move
+[514.04s -> 522.20s]  the contents from those eight columns on to the to the wires yeah great
+[522.20s -> 526.40s]  question so what would happen if the next byte that you wanted to read was
+[526.48s -> 532.16s]  the next byte over in that row you can't be able to read it from the row and not
+[532.16s -> 535.00s]  only you can't you don't really want to because you have the whole row
+[535.00s -> 539.04s]  sitting right down there in the row buffer and so you just move over so
+[539.04s -> 544.16s]  if your first access was like needed a column access a row activation and then
+[544.16s -> 548.92s]  a column selection your second access is actually faster because all you need
+[548.92s -> 556.00s]  to do is read off more read off the next byte in the row the data that's
+[556.00s -> 560.84s]  already in the row buffer okay so this is kind of interesting right like DRAM
+[560.84s -> 565.12s]  so we've talked about accessing memory has a variable access times depending on
+[565.12s -> 569.92s]  whether or not you hit the cache if you miss the cache DRAM has variable
+[569.92s -> 574.92s]  access times depending on the access pattern that you actually choose DRAM
+[574.92s -> 580.12s]  may not be prepared or ready to to deal with your request it might need
+[580.12s -> 584.16s]  20 extra nanoseconds to sort of get prepared and that can be a big deal
+[584.28s -> 596.36s]  there are a few questions yeah yeah yeah you can almost think about this is like
+[596.36s -> 600.48s]  we're basically digital at this point and and we're just sending those
+[600.48s -> 604.80s]  information that out and what has to happen is periodically like like if
+[604.80s -> 608.36s]  before we read the next row let's say another let's say we want to read
+[608.36s -> 612.60s]  like this byte here the first thing the DRAM has to do is actually write
+[612.84s -> 619.00s]  data back to that row so we don't lose that information so if we switch to a
+[619.00s -> 625.20s]  different row there's actually an extra step it's right back then you know like
+[625.20s -> 629.52s]  ready the data pins then activate the new row so it can actually be quite
+[629.52s -> 632.88s]  slow if you're moving around memory
+[632.88s -> 641.00s]  the number of data means is it the same as well yes and and that's because you
+[641.00s -> 645.08s]  would love to have more pins but this is expensive but that'd be like saying
+[645.08s -> 648.80s]  like you know why doesn't highway one have a thousand lanes because we would
+[648.80s -> 652.96s]  benefit from a thousand lanes at rush hour right so we'll get back to that
+[652.96s -> 656.16s]  comment though in a second right and and the other thing that you're saying
+[656.16s -> 659.76s]  is well why not more pins or something like that you know there's
+[659.76s -> 666.20s]  this is actually the basic unit of DRAM and so if you want a wider memory bus
+[666.20s -> 670.80s]  you will use more of these so you know DRAM's got to be cheap because it's kind
+[670.80s -> 675.72s]  of a commodity and so the industry is standard on a basic DRAM chip with you
+[675.72s -> 679.32s]  know like pin width 8 and so if you want more of these we're gonna start
+[679.32s -> 682.88s]  stacking them and I'll we'll get to that in a second so okay so so you
+[682.88s -> 685.68s]  know if everything you know if you take away anything from that sequence it's
+[685.68s -> 691.32s]  like DRAM latency is not fixed you know all all addresses are not the same it
+[691.32s -> 695.20s]  depends on your access pattern how much you might get out of that and that's a
+[695.20s -> 698.64s]  pretty big difference right like just think about it I can either grab a
+[698.64s -> 704.24s]  bite every cycle or I might have and it takes about 10 nanoseconds to
+[704.24s -> 708.00s]  push that over the bus or I could have like a whole 40 nanosecond 30
+[708.00s -> 712.92s]  nanosecond process to get the next bite and all of a sudden I've just cut
+[712.92s -> 723.88s]  my DRAM bandwidth by a factor of three or four so so what I'm talking about here
+[723.88s -> 732.28s]  is like saying when I when the computer the processor requests address
+[732.28s -> 738.16s]  data and address X it is the memory controllers implementation it's that
+[738.16s -> 747.08s]  responsibility to map that to a place in that 2d array you and software have
+[747.08s -> 753.00s]  very few mechanisms to address that and there's some reasons why which might be
+[753.00s -> 757.04s]  more apparent later so the thing that you're noticing is that let's say I
+[757.04s -> 761.56s]  have to make four memory accesses to these locations that I've highlighted in
+[761.56s -> 767.00s]  and in different colors like let's say you're like walking through a linked
+[767.00s -> 770.56s]  list or something like that or you don't know where that data is going to be at
+[770.56s -> 773.96s]  where Malik put the data in the address space you know some of these
+[773.96s -> 780.60s]  so I have just my operations are pre charge ready the bit lines row access
+[780.60s -> 787.20s]  strobe so RAS is select your row and the column access you know select
+[787.20s -> 791.00s]  your row and bring the data to the row buffer and the column access strobe
+[791.00s -> 796.24s]  the CAS is the read the appropriate columns out of the row buffer okay and
+[797.00s -> 801.40s]  and so I'm highlighting the CAS in red because that's when the data moves over
+[801.40s -> 807.20s]  the memory bus the memory pins and if the memory pins are like the most
+[807.20s -> 811.72s]  precious resource in the system your goal should be to make everything you
+[811.72s -> 816.12s]  know you want to be able to use those pins at all times if you're not
+[816.12s -> 819.52s]  making a hundred percent utilization of them you are wasting your scarcest
+[819.52s -> 824.12s]  resource in the system so what are some things that we could do given that
+[824.12s -> 827.68s]  this particular you know what's the utilization of the memory bus in this
+[827.68s -> 830.96s]  example you know there's one two three four five six seven eight nine ten
+[830.96s -> 838.04s]  you know about four tenths only four out of those ten boxes are so what are
+[838.04s -> 841.28s]  some standard tricks from this class and making better use out of
+[841.28s -> 846.96s]  something so we could pipeline it now how do we do that
+[846.96s -> 856.40s]  yeah okay you're on the right track there's a couple of different things you
+[856.40s -> 858.72s]  could say
+[862.44s -> 867.04s]  and what do you make you actually mean increase the the minimum request size
+[867.04s -> 874.92s]  or something like two row buffers okay so so basically you're kind of saying I
+[874.96s -> 879.28s]  want some multi-threading kind of ideas yeah yes and you were kind of
+[879.28s -> 881.84s]  getting closer yeah it's totally on the right first of all I want to just go
+[881.84s -> 889.44s]  with the easiest one first is you allow the the chip to support bulk
+[889.44s -> 895.52s]  transfers like you have actually a like ability of like the command of
+[895.52s -> 898.92s]  the chip is not give me a byte but the command of the chip is give me
+[898.92s -> 903.20s]  like 64 contiguous bytes so the first thing in any computer system is you do
+[903.24s -> 907.68s]  bulk stuff if you want to amortize overhead right so that's that's one way
+[907.68s -> 912.64s]  to do it and that's one way to do it if your access pattern affords big
+[912.64s -> 917.32s]  contiguous data by the way there's a reason why if you run right through
+[917.32s -> 920.48s]  your memory system you get the best performance and it's not just you're
+[920.48s -> 924.12s]  using the whole cache line it's actually that the memory controller can
+[924.12s -> 927.44s]  communicate with the DRAM system in the most efficient way possible if it
+[927.44s -> 931.68s]  knows the access pattern is is all contiguous that's also the reason why
+[931.68s -> 936.24s]  there are cache lines you know cache lines are 64 bytes which helps suggest
+[936.24s -> 940.00s]  you know a big bulk contiguous granularity transfers are more
+[940.00s -> 945.56s]  efficient right like a memory bus is 64 bits on modern Intel stuff a modern
+[945.56s -> 949.68s]  cache line is 64 bytes eight times larger which means there's a lot of
+[949.68s -> 955.48s]  bulk bulk transfer there now what you all were hitting at are really good
+[955.48s -> 958.52s]  ideas and that's exactly what's gonna happen so basically what's going on
+[958.52s -> 963.68s]  here is this is your classic problem if I have an operation with some latency I
+[963.68s -> 970.20s]  need to hide that latency and in this class if you you want kind of arbitrary
+[970.20s -> 973.56s]  latency hiding you multi-thread and if you want kind of more structured
+[973.56s -> 978.52s]  latency hiding you pipeline right you put more operations in flight and we're
+[978.52s -> 981.12s]  definitely gonna pipeline this thing so here's what we're gonna do is every
+[981.12s -> 986.28s]  DRAM chip has like one of these arrays and it has a row buffer and the
+[986.32s -> 989.76s]  way they do their pipeline is they're gonna take all of this and they're
+[989.76s -> 994.60s]  gonna replicate it so here's what's gonna happen is we're gonna share the
+[994.60s -> 1001.32s]  data pins remember like multi-threading was like sharing the processor and
+[1001.32s -> 1005.72s]  having different outstanding requests here the outstanding requests are into
+[1005.72s -> 1010.08s]  the array we're gonna share the data pins but we're gonna build more row
+[1010.08s -> 1017.12s]  buffers and more sorry sorry we're gonna build we're gonna share the row
+[1017.12s -> 1021.44s]  buffer and the data pins and we're gonna build more DRAM arrays okay so
+[1021.44s -> 1027.24s]  we're gonna have what in DRAM terminology are different banks so
+[1027.24s -> 1031.80s]  what's going on here is while we are waiting for data pin for sorry for a
+[1031.80s -> 1036.52s]  rose to activate on one bank we're gonna make a request and start reading
+[1036.52s -> 1041.36s]  the data from other banks and sending data over the bus from other banks so
+[1041.36s -> 1047.60s]  notice here that if your addresses are interleaved over the banks I can start
+[1047.60s -> 1054.84s]  the the processing for bank zero or removing the data for bank zero when
+[1054.84s -> 1059.76s]  I'm initiating the the row access on bank one this is your classic
+[1059.76s -> 1065.12s]  pipelining example like you said so every DRAM chip if you like go buy a
+[1065.24s -> 1069.48s]  DRAM chip it's gonna have some number of data pins which is basically gonna be
+[1069.48s -> 1073.40s]  eight it's gonna have a row buffer to store a row from any of these DRAM
+[1073.40s -> 1078.64s]  arrays and there'll be multiple DRAM arrays which are called banks that's
+[1078.64s -> 1086.76s]  packaged up and then if you want a 64-bit bus this is an 8-bit bus then
+[1086.76s -> 1091.98s]  you start stacking them wide so this is you know like when you go to or you
+[1091.98s -> 1098.22s]  go on Amazon or Newegg you buy yourself a DRAM DIMM so the DIMM is in the IMM is
+[1098.22s -> 1104.30s]  the inline memory module there's just eight of these DRAM chips sitting there
+[1104.30s -> 1111.02s]  so this is now a 64-bit memory bus one two three four five six seven eight
+[1111.02s -> 1115.74s]  so your Intel processor your standard processor connected to a 64-bit memory
+[1115.74s -> 1122.82s]  bus the memory controller is sending a command and that command is not I want
+[1122.82s -> 1131.46s]  address X but that command is I want the the byte at bank B row R column
+[1131.46s -> 1137.10s]  whatever and all 8 DRAM chips get that same command they all return their
+[1137.10s -> 1144.50s]  data in bank B row R column zero and that altogether is 8 bytes of data so
+[1144.50s -> 1148.54s]  it's the memory controller's responsibility to say oh if I'm supposed
+[1148.54s -> 1157.06s]  to get a 64-byte cache line at this address where in this 3d address space
+[1157.06s -> 1164.34s]  of bank rows and columns is that data and you issue the request
+[1164.34s -> 1177.10s]  people looking confused yeah we're not replicating here there's no data
+[1177.10s -> 1182.46s]  replicated there's just simply in this case three banks
+[1190.42s -> 1195.90s]  here's the pre so if if I'm accessing bank zero here's the pre on
+[1195.90s -> 1200.74s]  zero here's the grabbing the row into the row buffer and then there's the
+[1200.74s -> 1204.98s]  read the data out of the row buffer for an access to bank zero while we are
+[1204.98s -> 1208.34s]  reading the data out of the row buffer on bank zero we're pre-charging bank one
+[1208.34s -> 1218.10s]  so the the vertical data lines are replicated the replicated lines there
+[1218.10s -> 1224.54s]  are n different DRAM arrays and they all hold different data yeah
+[1224.54s -> 1234.26s]  smart to try to scatter these across well let's let's think about it a
+[1234.26s -> 1241.86s]  little bit so let's think about reading one cache line from this thing right so
+[1241.86s -> 1248.70s]  one cache line is 64 bytes or 512 bits okay so imagine that I do the the
+[1248.70s -> 1253.98s]  most simple thing which is I put because like the the width of these DRAM
+[1253.98s -> 1257.82s]  arrays is like 2,000 bytes so maybe I put the whole cache line and
+[1257.82s -> 1265.14s]  contiguous continuous row of one DRAM chip how long does it take me to read
+[1265.14s -> 1270.42s]  an entire cache line so my first eight my first byte comes from this DRAM chip
+[1270.42s -> 1275.26s]  my second byte comes from that DRAM chip my third byte comes from that
+[1275.26s -> 1279.38s]  DRAM chip and so on and so on so even though I had a 64-bit memory bus
+[1279.38s -> 1286.62s]  I'm only using 8 bytes so what does this suggest the answer needs to be I
+[1286.78s -> 1291.70s]  have to yeah I mean like like one thing is I should interleave the address space
+[1291.70s -> 1298.30s]  over my DRAM chips so that notice now when I say read bank B row R column
+[1298.30s -> 1303.46s]  zero the same address we're not the same address the same like location and
+[1303.46s -> 1308.34s]  all of the chips I get what happens to be eight consecutive bytes in the
+[1308.34s -> 1313.26s]  physical address space now of course if I wanted 64 bytes for the cache line I
+[1313.26s -> 1319.38s]  would need to do this eight times in time yeah
+[1334.26s -> 1338.58s]  what I want you to think of sorry yeah this diagram here every one of these
+[1338.58s -> 1344.06s]  boxes is a DRAM chip and every DRAM chip inside of it has multiple banks which I
+[1344.06s -> 1347.10s]  did not illustrate here on the slide anymore sorry about that yeah I probably
+[1347.10s -> 1350.10s]  should have done that but you could just think about it a DRAM chip is a
+[1350.10s -> 1355.06s]  module which except as input a request which says give me the byte at
+[1355.06s -> 1362.02s]  the in bank B row are starting at columns at column zero right and so now
+[1362.02s -> 1366.18s]  now keep in mind that if I do this let's let's do this let's go here
+[1366.18s -> 1372.06s]  okay so let's say I stride my bytes across the DRAM chips does it make sense
+[1372.06s -> 1376.26s]  that we're gonna get eight consecutive bytes here right okay so but we have a
+[1376.26s -> 1380.14s]  whole cache line right we need the next eight bytes so I would probably
+[1380.14s -> 1384.38s]  put the next byte interleave it amongst the DRAM chips but put it in
+[1384.38s -> 1387.54s]  a different bank on those DRAM chips because I want to initiate that row
+[1387.54s -> 1393.38s]  access to the next byte immediately in the next cycle yeah I should change
+[1393.38s -> 1396.06s]  that diagram to show that there's a couple of banks under each of these
+[1396.06s -> 1410.74s]  yeah no it'll look like this it'll look like there will be a come well the
+[1410.74s -> 1415.78s]  the DRAM okay so the in everything about it this way in every clock the
+[1415.78s -> 1424.30s]  memory controller is sending this command so let's say it starts getting
+[1424.30s -> 1427.66s]  started on that command immediately just for simplicity in the next clock it'll
+[1427.66s -> 1432.30s]  start pre charging bank B plus one or something like that right because the
+[1432.30s -> 1437.42s]  next command will say I want the data at bank B plus one right so the memory
+[1437.42s -> 1441.98s]  controller is going to give the memory system requests in a manner that
+[1442.06s -> 1446.66s]  based on its knowledge of how memory works it can satisfy those requests as
+[1446.66s -> 1452.86s]  quickly yeah yeah yeah it's pipelining the request straight in and if it's a
+[1452.86s -> 1457.14s]  whole cache line let's say it's 64 bytes that request actually could be
+[1457.14s -> 1463.94s]  burst mode transfer I want eight bytes located starting at B R and column zero
+[1463.94s -> 1468.50s]  right because what I would probably do is I'd put the next bank if those are
+[1468.50s -> 1472.94s]  bytes I'm reading there well the next byte I read from every DRAM chip will
+[1472.94s -> 1476.54s]  actually be in the same oh sorry I'm in the wrong but in the in the same
+[1476.54s -> 1480.58s]  row so in this case I would not start a new bank transfer I would just
+[1480.58s -> 1483.94s]  say look I need eight consecutive bytes from the same row of all DRAM
+[1483.94s -> 1494.62s]  chips times eight DRAM chips that's gonna get me to my 64 no there's
+[1494.62s -> 1500.10s]  usually like a command bus also yeah yeah usually a 64-bit data bus and then
+[1500.10s -> 1503.50s]  there's a command bus I haven't ever implemented one of these myself I'm not
+[1503.50s -> 1507.26s]  sure if there's any clever temporal multiplexing of the pins but I'm pretty
+[1507.26s -> 1510.94s]  sure that there would not be because in modern DDR you're you're actually
+[1510.94s -> 1514.30s]  doing transfers twice on the rising edge and the closing edge of the
+[1514.30s -> 1518.10s]  clock so unless you're really creative I don't see how you could squeeze any
+[1518.10s -> 1523.14s]  more information but yeah okay so so this is like your basic memory unit
+[1523.14s -> 1528.10s]  and then sometimes you'll hear things like dual channel memory system or
+[1528.10s -> 1532.22s]  something like that and so like you can think about this as one channel
+[1532.22s -> 1539.26s]  between the memory controller and a memory module again and notice that
+[1539.26s -> 1544.78s]  like one channel has one command per clock or something like that the same
+[1544.78s -> 1550.02s]  command is given to everybody a dual channel memory system is just to take
+[1550.02s -> 1558.02s]  this and make another one right so here's an example of oh sorry no I got
+[1558.02s -> 1563.58s]  ahead myself so one more thing before we talk about dual channel is remember
+[1563.58s -> 1570.50s]  we have the processor down here and the processor is just make generating
+[1570.50s -> 1574.98s]  cache misses and cache misses turn into I need this cache line and those
+[1574.98s -> 1578.46s]  are requests to the memory controller and the memory controller takes all
+[1578.46s -> 1582.98s]  these requests for cache lines and translates those into memory channel
+[1582.98s -> 1587.42s]  requests which is like I need this bank this byte this row right so the
+[1587.42s -> 1592.86s]  memory controller is mapping physical linear addresses to spots in a DRAM array
+[1592.86s -> 1598.10s]  now the memory controller is getting just kind of random cache misses you
+[1598.10s -> 1602.14s]  know what it went you know whatever the algorithm does and what any modern
+[1602.14s -> 1607.78s]  memory controller does is it just starts in queuing those and buffers
+[1607.78s -> 1614.10s]  them up and then reorders all of those cache misses such that if they can find
+[1614.10s -> 1617.94s]  cat you know like like requests that it needs to make to the same bank or
+[1617.94s -> 1624.38s]  sites of the same row it will reorder the requests in order to maximize this
+[1624.38s -> 1630.10s]  sort of hit rate so it's gonna basically reorder all the processors
+[1630.10s -> 1636.78s]  memory requests in order to try and and get the highest bank pipelining and
+[1636.78s -> 1640.66s]  the highest row buffer locality because one of the processors memory requests
+[1640.66s -> 1645.02s]  might be coming from all the different applications on the system so you might
+[1645.02s -> 1649.82s]  have an application that's reading linearly through memory it could be
+[1649.82s -> 1652.54s]  another application that's linearly reading through memory running on a
+[1652.54s -> 1656.50s]  different core and think about how those two and memory request streams
+[1656.50s -> 1659.98s]  are going to interact all of a sudden you thought you laid out your
+[1659.98s -> 1664.18s]  data perfectly but now it's like core zeros over here core ones over here
+[1664.18s -> 1667.78s]  now you're going to thrash that memory DRAM chip.
+[1667.78s -> 1674.18s]  So how many requests are we going to wait for when we're going to order these requests again?
+[1674.18s -> 1681.78s]  This is an implementation detail right so you have on one hand buffering will increase latency
+[1681.78s -> 1687.38s]  on the other hand buffering and reordering could increase bandwidth
+[1687.38s -> 1693.14s]  so if you're bandwidth bound you want to buffer aggressively and maximize bandwidth
+[1693.14s -> 1698.54s]  if your application is latency sensitive like it's some real-time thing
+[1698.54s -> 1702.54s]  you might not be so happy with the heavily buffering memory controller
+[1702.54s -> 1707.14s]  an Nvidia memory controller is probably the most complicated part of the chip
+[1707.14s -> 1712.14s]  and could be buffering tens of thousands of memory requests actually
+[1712.14s -> 1715.14s]  because everything is bandwidth bound on the GPU so it's just like
+[1715.14s -> 1719.34s]  I'm gonna wait and see if there's any more requests for this open row for the next like 10 nanoseconds
+[1719.34s -> 1721.74s]  and if anything else comes in I'm gonna let them go to the front of the queue
+[1721.74s -> 1724.34s]  because they're gonna be really cheap.
+[1724.34s -> 1730.14s]  The latency versus bandwidth bound, does the memory control dynamically determine that
+[1730.14s -> 1733.94s]  or if you build one memory controller it will be confused?
+[1733.94s -> 1738.74s]  That is your discretion as the implementer of the memory controller thing.
+[1738.74s -> 1746.94s]  So what's happened is that all the sophistication of an out-of-order complex super scaler processor
+[1746.94s -> 1749.34s]  we kind of stopped getting more sophisticated there
+[1749.34s -> 1752.94s]  we even went built cheaper or simpler processors for a while there
+[1752.94s -> 1758.54s]  like you know a modern GPU probably doesn't do nearly as much smart stuff in the core
+[1758.54s -> 1761.14s]  than even still a modern CPU does.
+[1761.14s -> 1762.54s]  What's happened?
+[1762.54s -> 1764.94s]  And so we started building all these cores
+[1764.94s -> 1767.54s]  but all of those cores share a memory system
+[1767.54s -> 1772.54s]  and so all of that scheduling logic that we used to have to schedule instructions
+[1772.54s -> 1778.54s]  has turned into papers and algorithms and other stuff to figure out
+[1778.54s -> 1782.34s]  how do I take a look at my cache miss stream as it's coming in
+[1782.34s -> 1785.54s]  and guess whether this is latency bound or not latency bound
+[1785.54s -> 1788.34s]  and how do I come up with a good scheduling policy?
+[1788.34s -> 1794.94s]  So in the late you know like in the from like 2012 to 2015 or 16
+[1794.94s -> 1797.94s]  computer architecture was all over this, right?
+[1797.94s -> 1800.14s]  Whereas like in the 90s or early 2000s
+[1800.14s -> 1803.54s]  they were all over how to build a branch predictor for an instruction stream.
+[1803.54s -> 1805.54s]  So they took the complexity out of the processor
+[1805.54s -> 1807.54s]  and basically shoved it in the memory controller
+[1807.54s -> 1812.74s]  which is getting requests from like 16 cores or like 32 hyper threads
+[1812.74s -> 1815.54s]  and it's trying to figure out how to reorder all of these requests
+[1815.54s -> 1821.54s]  from different processes to maximize pin utilization of the DRAM bus or energy.
+[1821.54s -> 1827.14s]  The other thing is like you're actually trying to maximize energy too or minimize energy.
+[1827.14s -> 1830.34s]  Okay so the last piece of this is take what we just did
+[1830.34s -> 1833.34s]  and if we want more bandwidth we're going to start replicating.
+[1833.34s -> 1837.14s]  So if you hear dual channel DDR4 memory system
+[1837.14s -> 1841.14s]  that's just that 64 bit bus connected to a DIM
+[1841.14s -> 1843.74s]  there's just two of those connected to two DIMs.
+[1843.74s -> 1846.74s]  And now when you have two channels you could actually say
+[1846.74s -> 1851.14s]  you know maybe this channel is actually sending different commands to this DIM
+[1851.14s -> 1853.14s]  than that other DIM
+[1853.14s -> 1856.14s]  but everything connected in a channel is the same command.
+[1856.14s -> 1862.14s]  So here's an example of something you know like something you might see on a website like DDR.
+[1862.14s -> 1864.94s]  So DDR4 that's a memory technology
+[1864.94s -> 1868.94s]  the number after it's actually just the clock rate of the memory bus.
+[1868.94s -> 1873.94s]  And so all of these things are 64 bit memory buses these days.
+[1873.94s -> 1878.94s]  And the 2400 is kind of you know bigger numbers sound better in computing.
+[1878.94s -> 1881.94s]  It's really a 1.2 gigahertz memory bus.
+[1881.94s -> 1885.94s]  So it's sending data or like the cycle is 1.2 gigahertz.
+[1885.94s -> 1892.94s]  And it turns out that the first D or the DDR is actually called double data rate on memory technology.
+[1892.94s -> 1898.94s]  It actually sends two transactions per clock on the rising edge and the falling edge of the clock.
+[1898.94s -> 1906.94s]  So if you multiply 1.2 by 2 you get 2400 memory transactions per second over a 64 bit bus.
+[1906.94s -> 1912.94s]  So if you say 64 bits times 2 times 1.2 you actually get 19.2 gigabytes per second.
+[1912.94s -> 1917.94s]  And if it's dual channel you just multiply everything by 2
+[1917.94s -> 1921.94s]  and you go look up at the specs of the memory system
+[1921.94s -> 1925.94s]  you'll say something like oh the memory system can do 38 gigabytes per second of bandwidth
+[1925.94s -> 1928.94s]  and that's where that number comes from.
+[1928.94s -> 1933.94s]  So this is like a very standard thing in like a modest PC or something like that.
+[1933.94s -> 1936.94s]  And then it says like you know like at the time when I looked this up
+[1936.94s -> 1939.94s]  it was about a 13 nanoseconds CAS.
+[1939.94s -> 1944.94s]  So that's how long it takes to get data that's already in the row buffer
+[1944.94s -> 1949.94s]  out of the DRAM chips over the outlet to the bus.
+[1951.94s -> 1952.94s]  Yeah?
+[1952.94s -> 1959.94s]  I see that the only reason I care about the CAS over like DRAM, row buffer and all that
+[1959.94s -> 1964.94s]  is that just because you can't, you might want to stack it to root.
+[1964.94s -> 1969.94s]  Yeah you kind of think about that because like if you've got a nice friendly memory access pattern
+[1969.94s -> 1973.94s]  it's how quickly can you get that data out, yeah.
+[1973.94s -> 1975.94s]  Yep.
+[1975.94s -> 1978.94s]  Okay.
+[1978.94s -> 1980.94s]  And that's non-trivial right?
+[1980.94s -> 1983.94s]  Because if you think about a modern processor running at 3 gigahertz
+[1983.94s -> 1986.94s]  you know at 1 gigahertz that's what?
+[1986.94s -> 1988.94s]  That's a nanosecond right?
+[1988.94s -> 1990.94s]  Did I do that right?
+[1990.94s -> 1991.94s]  Yeah.
+[1991.94s -> 1996.94s]  And then so if you're running at 3 gigahertz it's 0.3 nanoseconds
+[1996.94s -> 2001.94s]  and so you're taking 30x that just to get the column out of the row
+[2001.94s -> 2002.94s]  that's non-trivial.
+[2002.94s -> 2005.94s]  Now of course you should also, your memory access time is going to be all the cycles
+[2005.94s -> 2010.94s]  needed to get from the processor to miss a couple of caches and get off chips
+[2010.94s -> 2013.94s]  so there's a lot more latency in there than just accessing the DRAM itself
+[2013.94s -> 2016.94s]  but that's just how it adds up.
+[2016.94s -> 2017.94s]  Yeah.
+[2017.94s -> 2021.94s]  I'm just wondering how does the memory system do fault tolerance?
+[2021.94s -> 2025.94s]  Oh, so one thing I did not talk about here is any kind of, you know, fault tolerance
+[2025.94s -> 2028.94s]  meaning like if a bit flips or something like that.
+[2028.94s -> 2032.94s]  Typically what happens is you have these error correcting codes
+[2032.94s -> 2038.94s]  and so if you buy slightly more expensive memory or server memory largely
+[2038.94s -> 2044.94s]  instead of a DIMM with 8 chips in it there'll be a 9th chip
+[2044.94s -> 2047.94s]  and the 9th chip is the redundancy.
+[2047.94s -> 2056.94s]  So basically you can check to see if you have, depending on how many extra,
+[2056.94s -> 2059.94s]  how you do things like you can actually check to see if you,
+[2059.94s -> 2062.94s]  at least detect if there's an error.
+[2062.94s -> 2069.94s]  So you just actually burn a little bit more capacity for that.
+[2069.94s -> 2070.94s]  Okay.
+[2070.94s -> 2074.94s]  So, you know, I think the takeaway would be that's a little bit on how DRAM works
+[2074.94s -> 2077.94s]  and the big conclusion is there's a significant amount of complexity
+[2077.94s -> 2082.94s]  in the memory controller scheduler to take requests from the processor
+[2082.94s -> 2088.94s]  and reorder them such that those requests hit the DRAM in a very, very friendly order.
+[2088.94s -> 2091.94s]  You can think about it like you did with your flash attention, right?
+[2091.94s -> 2094.94s]  Like you're reordering the computation so it hits the cache.
+[2094.94s -> 2098.94s]  This is about reordering the cache misses so they hit the DRAM in a nice way
+[2098.94s -> 2103.94s]  and obviously this is being done by hardware, not by the programmer.
+[2103.94s -> 2104.94s]  Okay.
+[2104.94s -> 2105.94s]  That's all I wanted to say on that.
+[2105.94s -> 2110.94s]  Just kind of cool just so you, you know, if you ever get asked in an interview
+[2110.94s -> 2115.94s]  how would you schedule a DRAM request stream.
+[2115.94s -> 2117.94s]  It's pretty cool.
+[2117.94s -> 2118.94s]  All right.
+[2118.94s -> 2124.94s]  So, now the problem, of course, is that we are bandwidth bound all the time
+[2124.94s -> 2127.94s]  and so one way to, you know, so you can think about it as like
+[2127.94s -> 2131.94s]  DRAM sits over here, you know, on the board
+[2131.94s -> 2134.94s]  and then there's those pins and those pins go over the entire board
+[2134.94s -> 2136.94s]  to the processor over here.
+[2136.94s -> 2139.94s]  Now, the problem is like the only reason why we have eight pins
+[2139.94s -> 2143.94s]  is that those are, you know, really expensive to your question earlier.
+[2143.94s -> 2148.94s]  So there's a lot of interest in bringing that processor a lot closer to the memory
+[2148.94s -> 2151.94s]  so that the distance information travels is less
+[2151.94s -> 2154.94s]  which makes it economical to build a lot more pins.
+[2154.94s -> 2159.94s]  And the number one way you're seeing this like two day in high performance things
+[2159.94s -> 2165.94s]  is via these, a combination of chip stacking and co-locating the memory
+[2165.94s -> 2169.94s]  on the same die, silicon die as the processor.
+[2169.94s -> 2174.94s]  So here's a diagram of kind of how like if you went and got like a server class GPU today
+[2174.94s -> 2178.94s]  that you might hear about this HBM, high bandwidth memory
+[2178.94s -> 2181.94s]  or HBC, you know, hybrid memory cube.
+[2181.94s -> 2184.94s]  I think HBM, I think, has basically won the competition.
+[2184.94s -> 2186.94s]  So, you know, you get a lot of HBM these days.
+[2186.94s -> 2187.94s]  So here's how it works.
+[2187.94s -> 2189.94s]  Here's my GPU or CPU over here
+[2189.94s -> 2195.94s]  and typically that GPU or CPU is plugged into a board, you know, a motherboard
+[2195.94s -> 2199.94s]  and then there are traces, you know, almost copper traces over that motherboard
+[2199.94s -> 2203.94s]  to a DRAM chip that I plug into the motherboard.
+[2203.94s -> 2206.94s]  These days if you want this high bandwidth memory
+[2206.94s -> 2210.94s]  this is your CPU or GPU
+[2210.94s -> 2213.94s]  and it's right on a silicon chip.
+[2213.94s -> 2215.94s]  It's on a silicon chip
+[2215.94s -> 2220.94s]  and on that same silicon chip is a memory module right into it.
+[2220.94s -> 2225.94s]  So now the connections between these two are actually wires on a piece of silicon.
+[2225.94s -> 2228.94s]  They're not board traces.
+[2228.94s -> 2231.94s]  And then the DRAM chip is actually stacked
+[2231.94s -> 2238.94s]  which means that these DRAM chips are on top of each other physically.
+[2238.94s -> 2244.94s]  And the key technology was this thing called the TSV, through silicon via.
+[2244.94s -> 2248.94s]  So you can think about the wires that used to be like eight wires at the edge of the chip
+[2248.94s -> 2252.94s]  are now wires that leave the chip throughout the DRAM array
+[2252.94s -> 2255.94s]  so you kind of get area amount of space
+[2255.94s -> 2258.94s]  and not one edge of the chip amount of space.
+[2258.94s -> 2261.94s]  So you can run a lot more wires right off the bottom of the chip
+[2261.94s -> 2264.94s]  like from everywhere in that array
+[2264.94s -> 2268.94s]  and those wires have to run through the DRAM chips below it.
+[2268.94s -> 2272.94s]  So there's these vertical wires
+[2272.94s -> 2276.94s]  that then go right into a piece of silicon right over the GPU.
+[2276.94s -> 2281.94s]  So if you bought one of these things, this is all in the same package.
+[2281.94s -> 2285.94s]  What I mean by that is that it will look like one chip.
+[2285.94s -> 2290.94s]  So that's allowed people to put a lot more wires out of the memory system to the CPU.
+[2290.94s -> 2295.94s]  And I'm talking about not 64 bits anymore but 1024 bits.
+[2295.94s -> 2301.94s]  And so if you go buy a modern Intel high-end like super-competing Intel thing
+[2301.94s -> 2304.94s]  or AMD or Nvidia GPU
+[2304.94s -> 2308.94s]  this is now the chip, this is the processor.
+[2308.94s -> 2311.94s]  This is what's called the silicon interposer
+[2311.94s -> 2314.94s]  which is a piece of silicon and that processor is on the silicon
+[2314.94s -> 2317.94s]  and then there's four different stacked DRAMs next to it
+[2317.94s -> 2320.94s]  all of which are 1024 bits into the chip.
+[2320.94s -> 2323.94s]  So this is a 4000-bit memory bus.
+[2323.94s -> 2325.94s]  This is fast.
+[2325.94s -> 2331.94s]  This is now delivering 720 gigabytes per second of bandwidth into the chip
+[2331.94s -> 2333.94s]  and that was back in 2016.
+[2333.94s -> 2335.94s]  Now we're significantly higher.
+[2335.94s -> 2338.94s]  I think we're closer to 2 terabytes.
+[2338.94s -> 2340.94s]  But this is a fixed amount of memory.
+[2340.94s -> 2343.94s]  So this is 16 gigabytes of memory only back in 2016.
+[2343.94s -> 2345.94s]  Now we're higher.
+[2345.94s -> 2347.94s]  And if you want large amounts of memory
+[2347.94s -> 2351.94s]  then you have a traditional memory bus that goes out to DDR5 or DDR4
+[2351.94s -> 2354.94s]  and you might have hundreds of gigabytes or terabytes of that.
+[2354.94s -> 2359.94s]  So this is a form of DRAM that is not the cache.
+[2359.94s -> 2362.94s]  There might be like an 80 megabyte L3 cache here.
+[2362.94s -> 2365.94s]  If you miss the 80 megabyte L3
+[2365.94s -> 2368.94s]  you have access to, in this case, 16 gigabytes
+[2368.94s -> 2371.94s]  of about a terabyte per second of stacked DRAM.
+[2371.94s -> 2373.94s]  And if you don't fit in the stacked DRAM
+[2373.94s -> 2376.94s]  then you've got to put your data out in conventional memory
+[2376.94s -> 2380.94s]  and now you're back to 300 or 400 gigabytes per second.
+[2380.94s -> 2385.94s]  So the memory hierarchies are getting really, really deep
+[2385.94s -> 2389.94s]  and Flash Attention, the thing you guys implemented
+[2389.94s -> 2394.94s]  was initially designed to fit the intermediate matrix
+[2394.94s -> 2398.94s]  in the 16 gigabytes of HBM.
+[2398.94s -> 2402.94s]  Instead of going out to DRAM on these chips.
+[2402.94s -> 2403.94s]  Yeah?
+[2403.94s -> 2405.94s]  Is the latency like...
+[2405.94s -> 2406.94s]  It's lower also.
+[2406.94s -> 2407.94s]  It's also lower.
+[2407.94s -> 2409.94s]  Higher bandwidth, lower latency.
+[2409.94s -> 2412.94s]  Now on a GPU we don't care as much about that latency
+[2412.94s -> 2414.94s]  because we can hide it with multi-threading.
+[2414.94s -> 2415.94s]  Yeah.
+[2415.94s -> 2416.94s]  Or pipelining.
+[2416.94s -> 2419.94s]  But yes, lower latency, higher bandwidth, lower energy.
+[2421.94s -> 2422.94s]  Okay.
+[2422.94s -> 2425.94s]  So, you know, last day of class
+[2425.94s -> 2427.94s]  if you walk away with anything
+[2427.94s -> 2429.94s]  it's really that in a lot of times
+[2429.94s -> 2432.94s]  parallelization is pretty easy.
+[2432.94s -> 2435.94s]  It's really trying to figure out how to get data
+[2435.94s -> 2437.94s]  to your damn processors that's hard.
+[2437.94s -> 2439.94s]  It's scheduling that's hard.
+[2439.94s -> 2443.94s]  And so you've been doing it yourself in this class.
+[2443.94s -> 2446.94s]  Flash Attention, your CUDA programming assignment
+[2446.94s -> 2448.94s]  was very much about locality.
+[2448.94s -> 2450.94s]  And then the hardware folks
+[2450.94s -> 2453.94s]  are designing better memory systems for you.
+[2453.94s -> 2456.94s]  And the general design principles are like
+[2456.94s -> 2459.94s]  look, either data needs to be located next to the processor
+[2459.94s -> 2462.94s]  or the processor has to be brought closer to the data.
+[2462.94s -> 2465.94s]  And one thing that we haven't talked about very much in this class
+[2465.94s -> 2467.94s]  is if you're bandwidth bound
+[2467.94s -> 2469.94s]  it almost always pays off to data compress.
+[2469.94s -> 2471.94s]  Because if you're bandwidth bound
+[2471.94s -> 2473.94s]  your CPU is idle, or your GPU is idle.
+[2473.94s -> 2477.94s]  So actually have it burn more instructions to move less data.
+[2477.94s -> 2479.94s]  So like GPUs for example
+[2479.94s -> 2481.94s]  for texture data and other stuff
+[2481.94s -> 2483.94s]  actually when you take a cache miss
+[2483.94s -> 2486.94s]  it compresses the data before putting it out in memory
+[2486.94s -> 2488.94s]  so it actually moves less data.
+[2488.94s -> 2490.94s]  And then when you want the data back
+[2490.94s -> 2492.94s]  it actually moves the compressed data onto the chip
+[2492.94s -> 2495.94s]  and then decompresses it into the full cache line.
+[2495.94s -> 2497.94s]  Very common thing to do in graphics.
+[2498.94s -> 2501.94s]  Alright, so that was a little bit on memory these days.
+[2501.94s -> 2504.94s]  Anybody worked on any of this stuff actually?
+[2504.94s -> 2507.94s]  Like Nvidia internship or Apple internship or anything like that?
+[2507.94s -> 2508.94s]  No?
+[2508.94s -> 2511.94s]  It's Apple you probably couldn't say, so.
+[2511.94s -> 2514.94s]  Okay, I think we're basically done.
+[2514.94s -> 2515.94s]  We're basically done.
+[2515.94s -> 2519.94s]  So let me wrap up some technical stuff here.
+[2519.94s -> 2521.94s]  A few takeaways.
+[2521.94s -> 2523.94s]  For the foreseeable future
+[2523.94s -> 2525.94s]  I mean if you look at Apple Silicon these days
+[2525.94s -> 2527.94s]  and your iPhone or Android phone
+[2527.94s -> 2530.94s]  it is a heterogeneous multi-core processor
+[2530.94s -> 2532.94s]  with multiple CPU cores
+[2532.94s -> 2534.94s]  multiple GPU cores
+[2534.94s -> 2535.94s]  neural cores
+[2535.94s -> 2539.94s]  cores specific for processing the data in your sleep schedule
+[2539.94s -> 2541.94s]  and stuff like that.
+[2541.94s -> 2544.94s]  The only way things are going to get more efficient going forward
+[2544.94s -> 2548.94s]  until there is some massive breakthrough in technology
+[2548.94s -> 2550.94s]  you know on the level of like
+[2550.94s -> 2553.94s]  being more optical or being more quantum or something like that
+[2553.94s -> 2555.94s]  but for the foreseeable future
+[2555.94s -> 2557.94s]  it's going to be through
+[2557.94s -> 2559.94s]  it's already happened through parallelization
+[2559.94s -> 2562.94s]  it's going to be through specialization of certain sorts.
+[2562.94s -> 2569.94s]  And so there's huge interest in making these specialized processors easier to program.
+[2571.94s -> 2575.94s]  The other thing that I really hope people walk away from here is
+[2575.94s -> 2579.94s]  most software is shockingly inefficient
+[2579.94s -> 2583.94s]  compared to what modern computers can actually do.
+[2583.94s -> 2585.94s]  Like we saw in assignment one that
+[2585.94s -> 2589.94s]  a well written C program is 40 times slower on our laptops
+[2589.94s -> 2595.94s]  than an extremely well written program that uses the vector units and uses the SIMD.
+[2595.94s -> 2599.94s]  And specialized processing is another 10 to 100x on that.
+[2599.94s -> 2605.94s]  So just when you're working in labs and doing future work
+[2605.94s -> 2608.94s]  if someone says okay we're about to scale up to a big cluster
+[2608.94s -> 2612.94s]  sometimes that's the right idea because it can be hard to optimize your program
+[2612.94s -> 2614.94s]  but sometimes it's like gosh
+[2614.94s -> 2617.94s]  we can either work really hard to scale up to a big cluster
+[2617.94s -> 2619.94s]  or wait overnight or something like that
+[2619.94s -> 2622.94s]  or we can put a little bit of effort in and run a thousand times faster
+[2622.94s -> 2625.94s]  sometimes that can be absolutely game changing for folks
+[2625.94s -> 2629.94s]  or it might allow something that nobody thought was possible in mobile
+[2629.94s -> 2632.94s]  to become possible in mobile.
+[2633.94s -> 2635.94s]  The fun thing about this class at least
+[2635.94s -> 2639.94s]  is that almost all computing applications these days
+[2639.94s -> 2642.94s]  are actually the types of applications
+[2642.94s -> 2645.94s]  that fit into the mold of what we talk about in this class.
+[2645.94s -> 2649.94s]  We don't have to go to big scale scientific computing to be applicable.
+[2649.94s -> 2652.94s]  You take an interview at Apple to work on mobile team right now
+[2652.94s -> 2656.94s]  efficient software and power efficiency is what they care about.
+[2656.94s -> 2659.94s]  You go to Waymo that's what they're going to care about.
+[2659.94s -> 2663.94s]  And so there's just a lot of places that one could go
+[2663.94s -> 2667.94s]  from this class even more so with all these large AI based language models
+[2667.94s -> 2670.94s]  that are extremely efficiency bound right now.
+[2671.94s -> 2673.94s]  We've talked about a few themes
+[2673.94s -> 2677.94s]  like we've talked about identifying parallelism
+[2677.94s -> 2680.94s]  which I say often is kind of the easiest thing for everybody to do
+[2680.94s -> 2684.94s]  what's harder is scheduling that parallelism once you know the dependencies.
+[2685.94s -> 2690.94s]  And we've talked about that in the small and the large
+[2690.94s -> 2693.94s]  and then we've also talked a lot about how to make our lives easier
+[2693.94s -> 2698.94s]  by relying on higher level abstractions which in future courses
+[2698.94s -> 2701.94s]  if you're programming in TensorFlow or PyTorch
+[2701.94s -> 2704.94s]  or programming in SQL or something like that
+[2704.94s -> 2705.94s]  you can think about oh my gosh
+[2705.94s -> 2707.94s]  like think about all the parallelization and efficiency
+[2707.94s -> 2709.94s]  that's going on under the hood
+[2709.94s -> 2710.94s]  that you don't have to think about
+[2710.94s -> 2713.94s]  because someone's put in place a useful abstraction.
+[2715.94s -> 2718.94s]  And we've talked a little bit about how hardware works
+[2718.94s -> 2721.94s]  so that at the very least if somebody comes up to you and says
+[2721.94s -> 2724.94s]  this computation's taking three hours
+[2724.94s -> 2727.94s]  you can kind of call a little bullshit on them
+[2727.94s -> 2728.94s]  you're like you know if I think about it
+[2728.94s -> 2730.94s]  this thing should only take five seconds
+[2730.94s -> 2732.94s]  you must be doing something really really wrong
+[2732.94s -> 2734.94s]  with how you're scheduling it
+[2734.94s -> 2736.94s]  you'd be surprised how much that happens.
+[2738.94s -> 2740.94s]  Let's see so just some practical things
+[2740.94s -> 2743.94s]  next steps we do teach other courses
+[2743.94s -> 2747.94s]  so Kunlei has his hardware programming class
+[2747.94s -> 2749.94s]  next quarter I believe
+[2749.94s -> 2752.94s]  so if you're interested in using Spatial
+[2752.94s -> 2754.94s]  I think they teach in Spatial if I remember correctly
+[2754.94s -> 2756.94s]  that could be interesting
+[2756.94s -> 2758.94s]  there's as some of you know
+[2758.94s -> 2761.94s]  there's 229S the new course
+[2761.94s -> 2763.94s]  that's simultaneous with this one
+[2763.94s -> 2765.94s]  which you know maybe we should think about putting those
+[2765.94s -> 2766.94s]  on different quarters in the future
+[2766.94s -> 2769.94s]  because it feels like you should take 149
+[2769.94s -> 2771.94s]  and then you'll get a ton out of 229
+[2771.94s -> 2773.94s]  but that's a great course
+[2773.94s -> 2775.94s]  I've been tracking that new course
+[2775.94s -> 2776.94s]  that's really cool
+[2776.94s -> 2779.94s]  in the spring you know I teach graphics next quarter
+[2779.94s -> 2781.94s]  so if you're interested in graphics by all means join us
+[2781.94s -> 2783.94s]  but if you're not interested in graphics
+[2783.94s -> 2785.94s]  I teach this hybrid graphics
+[2785.94s -> 2787.94s]  like basically if you take 149
+[2787.94s -> 2789.94s]  and you take vision and graphics
+[2789.94s -> 2790.94s]  and you put them together
+[2790.94s -> 2793.94s]  348K in the spring is that
+[2793.94s -> 2794.94s]  it's a small course
+[2794.94s -> 2796.94s]  we typically keep it around 30 people
+[2796.94s -> 2799.94s]  we read papers on how to build systems
+[2800.94s -> 2803.94s]  systems like video processing at Google
+[2803.94s -> 2806.94s]  or Halide or these days
+[2806.94s -> 2810.94s]  like how to serve chat GPT in the data center
+[2810.94s -> 2811.94s]  or something like that
+[2811.94s -> 2814.94s]  so we read very very recent papers
+[2814.94s -> 2815.94s]  we discuss them
+[2815.94s -> 2817.94s]  and then it's a project based course
+[2817.94s -> 2819.94s]  so the idea is how to think about building
+[2819.94s -> 2821.94s]  these visual computing systems
+[2821.94s -> 2824.94s]  where the goal is to produce or understand pixels
+[2825.94s -> 2829.94s]  yeah and then of course there's like a lot of the standard fare
+[2829.94s -> 2831.94s]  like EE280 is a great course
+[2831.94s -> 2833.94s]  if you want to get into more hardware
+[2833.94s -> 2834.94s]  operating systems here
+[2834.94s -> 2836.94s]  I mean there's so many courses in the department
+[2836.94s -> 2839.94s]  that start touching on parallelism in different ways
+[2839.94s -> 2844.94s]  okay so then there's the idea of research
+[2844.94s -> 2847.94s]  right and you know after taking 149
+[2847.94s -> 2849.94s]  with the assignments that we give you
+[2849.94s -> 2852.94s]  which are not the easiest
+[2852.94s -> 2854.94s]  like many of you through this course
+[2854.94s -> 2856.94s]  have really built up some real
+[2856.94s -> 2859.94s]  started to build up some real programming chops
+[2859.94s -> 2862.94s]  like you know the fundamentals
+[2862.94s -> 2865.94s]  and so you now kind of stand to
+[2865.94s -> 2866.94s]  if you're interested
+[2866.94s -> 2867.94s]  maybe kind of fitting in a little bit
+[2867.94s -> 2869.94s]  in one of the research labs
+[2869.94s -> 2870.94s]  in a systems group
+[2870.94s -> 2872.94s]  like Kooling Eyes
+[2872.94s -> 2874.94s]  or any of the other systems faculty
+[2874.94s -> 2877.94s]  and I do encourage people to think about that
+[2877.94s -> 2879.94s]  not because I'm really advocating for research
+[2879.94s -> 2881.94s]  there's folks that work with us all the time
+[2881.94s -> 2884.94s]  they're like I do not want to be an academic or a researcher
+[2884.94s -> 2886.94s]  but they want to treat an independent study
+[2886.94s -> 2888.94s]  just like a class
+[2888.94s -> 2890.94s]  they'll take three units or four units
+[2890.94s -> 2894.94s]  and their role is to jump in on an existing research project
+[2894.94s -> 2897.94s]  and often perform more of a software engineering
+[2897.94s -> 2898.94s]  or support role
+[2898.94s -> 2900.94s]  saying hey we were thinking about parallelizing this
+[2900.94s -> 2902.94s]  but like you know we don't have anybody to do it
+[2902.94s -> 2905.94s]  would you want to like see if you can make this a hundred times faster
+[2905.94s -> 2906.94s]  and if so like we can put you on a paper
+[2906.94s -> 2909.94s]  and you can be part of writing a paper or something like that
+[2909.94s -> 2912.94s]  I think one of the coolest things about being at Stanford
+[2912.94s -> 2914.94s]  is like and compared to other places
+[2914.94s -> 2916.94s]  like you can probably take a pretty good parallel programming class
+[2916.94s -> 2919.94s]  at many universities across the world
+[2919.94s -> 2921.94s]  you know it really is the peer group at Stanford
+[2921.94s -> 2923.94s]  that's so interesting right
+[2923.94s -> 2924.94s]  like working with your partner
+[2924.94s -> 2927.94s]  or working with other people in the class or the CAs
+[2927.94s -> 2929.94s]  that's what's really interesting around here
+[2929.94s -> 2931.94s]  and so if you can believe that your master students
+[2931.94s -> 2933.94s]  or undergrads that you're working with now
+[2933.94s -> 2935.94s]  you're like wow those folks are really cool folks
+[2935.94s -> 2936.94s]  I like working with them
+[2936.94s -> 2938.94s]  you know our PhD students are not too shabby either
+[2938.94s -> 2943.94s]  and so you know like it can really open your mind up
+[2943.94s -> 2946.94s]  I'm like whoa that person's only two, three years older than me
+[2946.94s -> 2948.94s]  and they are awesome
+[2948.94s -> 2950.94s]  maybe I should be you know like I can get to that level too
+[2950.94s -> 2953.94s]  so you know it can be kind of fun if you find the right fit
+[2953.94s -> 2957.94s]  so let me just tell you about like one project in my lab
+[2957.94s -> 2960.94s]  just to be more concrete about things
+[2960.94s -> 2963.94s]  so as many of you have probably experienced
+[2963.94s -> 2968.94s]  well people are very interested in training AI agents
+[2968.94s -> 2971.94s]  whether they are robotics or just software agents these days
+[2971.94s -> 2974.94s]  to do things in the real world
+[2974.94s -> 2976.94s]  and I come from you know I'm interested in graphics
+[2976.94s -> 2980.94s]  and so for me I'm like oh you guys are doing all this stuff in these simulators
+[2980.94s -> 2985.94s]  well there's not you know what is a game engine is a simulator
+[2985.94s -> 2987.94s]  and so a lot of this work
+[2987.94s -> 2991.94s]  here's an example you might have heard of like the open AI dota playing bots
+[2991.94s -> 2993.94s]  kind of old news now
+[2993.94s -> 2997.94s]  here's another example where like there was this two on two game of hide and seek
+[2997.94s -> 3001.94s]  where two of the agents had to hide and the other two agents had to find them
+[3001.94s -> 3005.94s]  there's a lot of stuff in robotics and stuff
+[3005.94s -> 3010.94s]  well the problem is that in general people were basically taking unity or unreal
+[3010.94s -> 3013.94s]  and running a simulation in them
+[3013.94s -> 3017.94s]  and if you don't know anything about this modern AI stuff
+[3017.94s -> 3021.94s]  it's that well there's kind of two things you can do
+[3021.94s -> 3023.94s]  is you can have an LLM tell you what to do
+[3023.94s -> 3025.94s]  which sometimes works
+[3025.94s -> 3028.94s]  and then the other thing that sometimes works
+[3028.94s -> 3031.94s]  is you could just have large amounts of trial and error
+[3031.94s -> 3033.94s]  you know robot try and do this task
+[3033.94s -> 3034.94s]  oops you fell on your face
+[3034.94s -> 3036.94s]  you know like okay take that as an error
+[3036.94s -> 3038.94s]  and make a small correction and try again
+[3038.94s -> 3040.94s]  and because of all this trial and error
+[3040.94s -> 3044.94s]  people are using pretty massive resources to learn these skills
+[3045.94s -> 3049.94s]  like clusters of GPUs, billions of time steps of trial
+[3049.94s -> 3052.94s]  and it was like computing all these time steps
+[3052.94s -> 3054.94s]  in like these 3D environments was taking all this time
+[3054.94s -> 3058.94s]  and as a result they were just loading up on big clusters
+[3058.94s -> 3062.94s]  and so one of my students kind of saw all this and said
+[3062.94s -> 3065.94s]  well the reason why they're doing that is they're running like
+[3065.94s -> 3068.94s]  10,000 copies of unity all on a different server
+[3068.94s -> 3070.94s]  playing the same game
+[3070.94s -> 3072.94s]  you know like one server per
+[3072.94s -> 3076.94s]  or you run like 30 copies of unity on the same box
+[3076.94s -> 3078.94s]  and that's like you know they start thrashing
+[3078.94s -> 3080.94s]  and like this is a bad way to do this
+[3080.94s -> 3083.94s]  if your goal is to like play out 10,000 games
+[3083.94s -> 3084.94s]  so he started going like
+[3084.94s -> 3087.94s]  okay what if we just design like a mini game engine from scratch
+[3087.94s -> 3092.94s]  and the goal of the game engine was not to render pictures for humans
+[3092.94s -> 3097.94s]  but was to carry out 10,000 independent copies of a game
+[3097.94s -> 3099.94s]  but do so kind of in a lock step
+[3099.94s -> 3103.94s]  so we can get all the good coherence and all the good properties of parallelism
+[3103.94s -> 3106.94s]  so you know here's an example of a game that was created in his system
+[3106.94s -> 3109.94s]  so you can just kind of see some of the requirements
+[3109.94s -> 3111.94s]  this is that hide and seek thing
+[3111.94s -> 3114.94s]  there's two teams like there's these two guys
+[3114.94s -> 3118.94s]  I think or maybe yeah I think there's these two guys and those two guys
+[3118.94s -> 3121.94s]  you see that they've learned to like win the game by like pulling
+[3121.94s -> 3124.94s]  it's like a small child like you pull something in front of your face
+[3124.94s -> 3128.94s]  and technically by the rules of the game they can't be seen and so they win
+[3128.94s -> 3129.94s]  alright so I'll play that again
+[3129.94s -> 3131.94s]  so they have to learn how to like hide
+[3131.94s -> 3135.94s]  other people like in this case like they have to learn to go
+[3135.94s -> 3137.94s]  you know see someone else
+[3137.94s -> 3139.94s]  I think that's what the guy walking to the right is
+[3139.94s -> 3141.94s]  but some interesting things happen
+[3141.94s -> 3145.94s]  this is some work originally done by OpenAI and we just replicated it
+[3145.94s -> 3148.94s]  so there's a lot of pretty gnarly computations
+[3148.94s -> 3149.94s]  like you've got to do physics
+[3149.94s -> 3151.94s]  you've got to simulate the physical world
+[3151.94s -> 3156.94s]  by the rules of this game or even just to give people a sense of the environment
+[3156.94s -> 3157.94s]  you actually have to do a bunch of ray tracing
+[3157.94s -> 3160.94s]  because you have to say who can see who
+[3160.94s -> 3163.94s]  and then there are just rules like game play logic
+[3163.94s -> 3166.94s]  like when I get close to this block and like press the button
+[3166.94s -> 3169.94s]  it should attach to me because I picked it up or something like that
+[3169.94s -> 3171.94s]  so there's arbitrary logic
+[3171.94s -> 3173.94s]  so you want to be able to write your game logic
+[3173.94s -> 3175.94s]  like okay like here's an event handler
+[3175.94s -> 3178.94s]  here's some basic script to say when I'm close to this thing and I pick it up
+[3178.94s -> 3182.94s]  you know it's who owns it property turns into me and stuff like that
+[3182.94s -> 3184.94s]  so you write your game in your normal way
+[3184.94s -> 3186.94s]  but we have ways of basically like
+[3186.94s -> 3190.94s]  think about like ISPCnify it or CUDAify it across everything
+[3190.94s -> 3194.94s]  and we actually run the simulation like this
+[3194.94s -> 3198.94s]  so you don't think parallel but we parallelize it
+[3198.94s -> 3201.94s]  and now we line up tens of thousands of games at once
+[3201.94s -> 3206.94s]  and just by this kind of basic CS149 kind of thinking
+[3206.94s -> 3208.94s]  we can go quite fast
+[3208.94s -> 3212.94s]  so this is on the order of speed ups over off the shelf open source things
+[3212.94s -> 3215.94s]  on the order of two to three orders of magnitude
+[3215.94s -> 3219.94s]  so stuff that used to take like 64 GPU clusters for a week
+[3219.94s -> 3222.94s]  can now be done on a single GPU in an hour or two
+[3222.94s -> 3226.94s]  or someone training this overcooked AI thing
+[3226.94s -> 3228.94s]  which is a common reinforcement thing
+[3228.94s -> 3230.94s]  used to be about four hours for a training run
+[3230.94s -> 3232.94s]  that turned into three seconds
+[3232.94s -> 3234.94s]  because like these are pretty simple games
+[3234.94s -> 3236.94s]  so that's like an example right
+[3236.94s -> 3239.94s]  and it's pretty easy on a project like this to be like
+[3239.94s -> 3243.94s]  oh yeah we'd love to have someone add a feature to the game engine
+[3243.94s -> 3246.94s]  so we had an undergraduate who's a good undergraduate
+[3246.94s -> 3250.94s]  has taken my 348 class as like a freshman or something like that
+[3250.94s -> 3255.94s]  he's the one that actually just built a brand new rendering system
+[3255.94s -> 3259.94s]  that amortizes over 10,000 different scenes
+[3259.94s -> 3261.94s]  and builds the rendering system
+[3261.94s -> 3263.94s]  so now like we can render these things
+[3263.94s -> 3265.94s]  so if we don't render pixels
+[3265.94s -> 3267.94s]  we can run this thing at like 2 million frames per second
+[3267.94s -> 3269.94s]  but now we're actually rendering pixels
+[3269.94s -> 3273.94s]  in case you wanted to train an agent that actually took images to actions
+[3273.94s -> 3275.94s]  we can do that around 200,000 frames per second
+[3275.94s -> 3278.94s]  so for small images and stuff like that
+[3278.94s -> 3279.94s]  so that's a pretty big difference
+[3279.94s -> 3281.94s]  you know 200,000 frames per second
+[3281.94s -> 3283.94s]  okay let's drop it to 100,000
+[3283.94s -> 3285.94s]  because you got to run like a deep network or something too
+[3285.94s -> 3287.94s]  so you know about half and half simulation
+[3287.94s -> 3289.94s]  so it's like 100,000 frames per second
+[3289.94s -> 3293.94s]  in 10 seconds you have a million examples of experience
+[3293.94s -> 3297.94s]  so you're getting close to a billion examples in a weekend
+[3297.94s -> 3299.94s]  so maybe that'll allow some stuff
+[3299.94s -> 3301.94s]  so there's ways to like
+[3301.94s -> 3305.94s]  it'd be really great to be able to write the scripts in Python
+[3305.94s -> 3308.94s]  and have the Python compile the CUDA PTX stuff
+[3308.94s -> 3311.94s]  so that you can write your scripts in Python instead of CUDA right now
+[3311.94s -> 3313.94s]  there's a whole bunch of little projects
+[3313.94s -> 3316.94s]  that would be extremely technical that people could help out with
+[3316.94s -> 3318.94s]  so that's an example of a project where
+[3318.94s -> 3320.94s]  if folks are really good implementers
+[3320.94s -> 3322.94s]  it's really easy to get you involved
+[3322.94s -> 3325.94s]  other projects are harder to get involved
+[3325.94s -> 3329.94s]  you know we have one master student that took 149 last year
+[3329.94s -> 3332.94s]  and he just wanted to start implementing Minecraft in this thing
+[3332.94s -> 3336.94s]  so he's implementing his own Minecraft that runs at like 600,000 frames per second
+[3336.94s -> 3340.94s]  so the hypothesis here is just like
+[3340.94s -> 3343.94s]  you know like now that you are kind of midway
+[3343.94s -> 3346.94s]  or three quarters of the way through Stanford career
+[3346.94s -> 3349.94s]  it's probably a good time to start thinking about
+[3349.94s -> 3352.94s]  what the heck do you actually want to do when you get out of here
+[3352.94s -> 3355.94s]  and this is the point at which you know sometimes
+[3355.94s -> 3357.94s]  like starting to do some of your own projects
+[3357.94s -> 3359.94s]  or some less directed stuff
+[3359.94s -> 3363.94s]  can be a heck of a lot more useful to you
+[3363.94s -> 3365.94s]  if you're disappointed about it
+[3365.94s -> 3368.94s]  than just taking the next course and figuring out what the next
+[3368.94s -> 3370.94s]  you know like some professor comes up with like five assignments
+[3370.94s -> 3372.94s]  you're like okay I don't want to think about what to do
+[3372.94s -> 3374.94s]  I'm just going to do what they're told
+[3374.94s -> 3377.94s]  so that's just something I like to tell people
+[3377.94s -> 3379.94s]  roughly around this time in their careers
+[3379.94s -> 3382.94s]  like what's the conventional path at Stanford
+[3382.94s -> 3384.94s]  and let's be honest it's the conventional path
+[3384.94s -> 3386.94s]  at like every other top university
+[3386.94s -> 3389.94s]  which is you guys all got really good AP scores
+[3389.94s -> 3392.94s]  probably took more AP classes than other people
+[3392.94s -> 3396.94s]  and there's this notion that like if you get A's in a whole bunch of CS classes
+[3396.94s -> 3398.94s]  you're sort of doing a good job right
+[3398.94s -> 3400.94s]  like so you get that 4.0 GPA
+[3400.94s -> 3402.94s]  you can go to the job fair
+[3402.94s -> 3404.94s]  you can hang out in a tent with some free food
+[3404.94s -> 3406.94s]  some people give you some callbacks
+[3406.94s -> 3408.94s]  and you're going to get a good job
+[3408.94s -> 3410.94s]  you're definitely going to get that first round interview
+[3410.94s -> 3412.94s]  you're going to get a good job
+[3412.94s -> 3414.94s]  you know wherever the good jobs are these days
+[3414.94s -> 3418.94s]  I don't know where the hot place is these days
+[3418.94s -> 3420.94s]  but you know it used to be like
+[3420.94s -> 3422.94s]  if you could get your Facebook
+[3422.94s -> 3425.94s]  or meta or at the time Facebook
+[3425.94s -> 3428.94s]  if you get your Facebook, Google and like Dropbox offers
+[3428.94s -> 3430.94s]  in your senior year
+[3430.94s -> 3432.94s]  play them against each other and then you're done
+[3432.94s -> 3434.94s]  just go there for two years or something like that
+[3434.94s -> 3436.94s]  nowadays I actually am not sure if it's so obvious
+[3436.94s -> 3441.94s]  where the so-called default job offer is coming from
+[3441.94s -> 3443.94s]  I'm actually curious
+[3443.94s -> 3446.94s]  is there like a singular set of like three or four companies
+[3446.94s -> 3448.94s]  that everybody's trying to pursue
+[3448.94s -> 3450.94s]  I don't get the sense that that's true anymore actually
+[3450.94s -> 3451.94s]  yeah
+[3456.94s -> 3458.94s]  yeah I don't think it works anymore actually
+[3458.94s -> 3460.94s]  but it used to be that case
+[3461.94s -> 3465.94s]  but you know the thing that does work a lot better
+[3465.94s -> 3467.94s]  and I'm using my name on this slide
+[3467.94s -> 3469.94s]  I'm not saying come work with me or anything like that
+[3469.94s -> 3471.94s]  but like you know every year
+[3471.94s -> 3473.94s]  there's a few folks that come up and say
+[3473.94s -> 3475.94s]  hey that you know this course I took with you
+[3475.94s -> 3477.94s]  one of these things was pretty cool
+[3477.94s -> 3479.94s]  is there anything else I can do
+[3479.94s -> 3481.94s]  and sometimes I say hey like yeah
+[3481.94s -> 3483.94s]  I remember like your assignment three
+[3483.94s -> 3485.94s]  like you did like every extra credit in the book
+[3485.94s -> 3488.94s]  like yeah sure you seem like you know what you're doing
+[3489.94s -> 3491.94s]  and then I'm like oh well
+[3491.94s -> 3494.94s]  we definitely are looking for someone to like
+[3494.94s -> 3497.94s]  hack some hardcore CUDA code right now
+[3497.94s -> 3499.94s]  or be able to like
+[3499.94s -> 3501.94s]  implement a new application and benchmark the hell out of it
+[3501.94s -> 3503.94s]  because we want to compare that benchmark
+[3503.94s -> 3505.94s]  to something that we're doing in the lab
+[3505.94s -> 3507.94s]  that's like basically how people start to get involved
+[3507.94s -> 3510.94s]  like you just kind of are useful in some way
+[3510.94s -> 3514.94s]  and sometimes not all the time
+[3514.94s -> 3516.94s]  I would say about 50% of the time
+[3516.94s -> 3518.94s]  maybe 30% of the time
+[3518.94s -> 3522.94s]  it really is the right student to get involved with my PhD students
+[3522.94s -> 3525.94s]  and they basically just start acting like a PhD student
+[3525.94s -> 3527.94s]  for independent study credit or something like that
+[3527.94s -> 3529.94s]  and we get to know them
+[3529.94s -> 3531.94s]  and they have a really good time
+[3531.94s -> 3533.94s]  and they start doing something a hell of a lot harder
+[3533.94s -> 3536.94s]  than anything I could reasonably ask you to do in a class
+[3536.94s -> 3539.94s]  if I asked everybody in the class to do some of the things that my PhD students do
+[3539.94s -> 3541.94s]  that would be a tough class
+[3541.94s -> 3544.94s]  and typically what happens is
+[3544.94s -> 3547.94s]  there's a whole bunch of letters of recommendation and all this fully
+[3547.94s -> 3549.94s]  but typically what happens
+[3549.94s -> 3551.94s]  is that student gets around to the senior year
+[3551.94s -> 3552.94s]  and at some point like
+[3552.94s -> 3553.94s]  I don't know I'm bored
+[3553.94s -> 3555.94s]  I'm like hey by the way like what are you doing
+[3555.94s -> 3557.94s]  like next year or something like that
+[3557.94s -> 3558.94s]  and they're like I don't know
+[3558.94s -> 3560.94s]  I've got these offers from these companies
+[3560.94s -> 3562.94s]  but I'm not so excited about them
+[3562.94s -> 3563.94s]  or they're like
+[3563.94s -> 3566.94s]  I just really want to get into this part of the industry
+[3566.94s -> 3568.94s]  and sometimes
+[3568.94s -> 3570.94s]  sometimes I know people
+[3571.94s -> 3572.94s]  and what I mean by that is
+[3572.94s -> 3574.94s]  it's not I'm calling in favors
+[3574.94s -> 3578.94s]  it's like one of the more interesting aspects of the job
+[3578.94s -> 3581.94s]  is to get students that are great
+[3581.94s -> 3583.94s]  where they want to be
+[3583.94s -> 3585.94s]  so it's a good thing for me to go
+[3585.94s -> 3587.94s]  oh like the students like in my class
+[3587.94s -> 3589.94s]  and they've been like in the lab for like the last six months
+[3589.94s -> 3591.94s]  so I know them pretty well
+[3591.94s -> 3593.94s]  that's when I go call my friend up
+[3593.94s -> 3595.94s]  and like oh they want to go into the game industry
+[3595.94s -> 3598.94s]  and like I don't know like Roblox is offering them this like
+[3598.94s -> 3600.94s]  entry level driver position or something like that
+[3600.94s -> 3602.94s]  that's a total waste
+[3602.94s -> 3605.94s]  that's when I go call the lead engineer at Roblox
+[3605.94s -> 3607.94s]  and say there's like a superstar here at Stanford
+[3607.94s -> 3608.94s]  that wants to work for you
+[3608.94s -> 3610.94s]  like can you get him a good job
+[3610.94s -> 3612.94s]  right and so that's the stuff that opens up doors
+[3612.94s -> 3615.94s]  it's not like you got to know people to
+[3615.94s -> 3618.94s]  because they like if you know someone you'll get a good job
+[3618.94s -> 3620.94s]  it's more like you know Stanford professors
+[3620.94s -> 3623.94s]  are pretty well connected with other people in the industry
+[3623.94s -> 3625.94s]  that are doing interesting stuff
+[3625.94s -> 3627.94s]  because they used to be our students
+[3627.94s -> 3629.94s]  we're hanging out with them and stuff like that
+[3629.94s -> 3631.94s]  and everybody in the world
+[3631.94s -> 3634.94s]  loves to pass on really strong people to other people
+[3634.94s -> 3635.94s]  and make stuff happen
+[3635.94s -> 3637.94s]  and so that's a really great part of my job
+[3637.94s -> 3639.94s]  I love that a lot more than like
+[3639.94s -> 3642.94s]  you know dealing with people that have to take a remote exam next week
+[3642.94s -> 3643.94s]  you know
+[3643.94s -> 3645.94s]  that's like the least
+[3645.94s -> 3647.94s]  the last thing I want to do
+[3647.94s -> 3650.94s]  and that's where you find the pretty interesting stuff
+[3650.94s -> 3652.94s]  right like I'll give you an example
+[3652.94s -> 3654.94s]  there was a student
+[3654.94s -> 3656.94s]  quite a while ago now like five years from now
+[3657.94s -> 3661.94s]  came up to me in my equivalent of CS348K
+[3661.94s -> 3664.94s]  it was like I'm really interested in PhD programs
+[3664.94s -> 3667.94s]  in graphics and actually at the time like photography
+[3667.94s -> 3669.94s]  like Google photography stuff
+[3669.94s -> 3672.94s]  and this student was good
+[3672.94s -> 3675.94s]  but I was like you don't have a chance of getting into like
+[3675.94s -> 3678.94s]  you know you're going to want to go to a good PhD program
+[3678.94s -> 3680.94s]  and I was like let's just be honest
+[3680.94s -> 3682.94s]  you haven't done the research
+[3682.94s -> 3685.94s]  you don't have the background to get into
+[3685.94s -> 3686.94s]  to good
+[3686.94s -> 3688.94s]  to the type of places that you want to get
+[3688.94s -> 3690.94s]  I was like I know you're good enough but you just don't have the
+[3690.94s -> 3693.94s]  there's no way it can be justified in the admissions process
+[3693.94s -> 3695.94s]  and so I was like well what do you want to do
+[3695.94s -> 3698.94s]  he's like I want to do like really awesome like
+[3698.94s -> 3701.94s]  fancy Google camera app kind of stuff
+[3701.94s -> 3703.94s]  and I said oh okay
+[3703.94s -> 3705.94s]  so here's what we're going to do is we're going to take
+[3705.94s -> 3707.94s]  so Google had just published the paper
+[3707.94s -> 3713.94s]  on how their HDR and portrait mode stuff works
+[3713.94s -> 3715.94s]  and I said okay in my class
+[3715.94s -> 3717.94s]  because this is an open ended class project
+[3717.94s -> 3718.94s]  here's what I want you to do
+[3718.94s -> 3719.94s]  I want you to read the paper
+[3719.94s -> 3721.94s]  and I want you to try and implement the paper
+[3721.94s -> 3723.94s]  that's your class project
+[3723.94s -> 3725.94s]  and if you can get this thing implemented
+[3725.94s -> 3726.94s]  and get it to work
+[3726.94s -> 3729.94s]  that's like the perfect opening for me to go tell the person
+[3729.94s -> 3731.94s]  who I know that runs that group
+[3731.94s -> 3735.94s]  that you're looking to like get in with his PhD students
+[3735.94s -> 3736.94s]  and do some work
+[3736.94s -> 3738.94s]  because this is a person that was like
+[3738.94s -> 3740.94s]  second half of senior year
+[3740.94s -> 3742.94s]  there was no opportunity for them to do research
+[3742.94s -> 3744.94s]  to build a resume anymore
+[3744.94s -> 3747.94s]  and the folks like saw that class project
+[3747.94s -> 3748.94s]  and they were like yeah
+[3748.94s -> 3751.94s]  if he's taking like Kayvon's classes
+[3751.94s -> 3753.94s]  and Kayvon says this person's good
+[3753.94s -> 3756.94s]  and this person has put their actions on like
+[3756.94s -> 3759.94s]  reading our work and implementing their own version
+[3759.94s -> 3760.94s]  we think this person's hireable
+[3760.94s -> 3763.94s]  even though most people we hire are PhD students
+[3763.94s -> 3764.94s]  and so they struck a deal
+[3764.94s -> 3768.94s]  they said look we'll have you work with all of our PhD hires
+[3768.94s -> 3769.94s]  as long as you promise you
+[3769.94s -> 3771.94s]  you know if we're going to put the time into you
+[3771.94s -> 3772.94s]  we need to stay for two years
+[3772.94s -> 3773.94s]  or something like that right
+[3773.94s -> 3774.94s]  and so he said okay fine
+[3774.94s -> 3776.94s]  like there's no better way for me to prepare to grad school
+[3776.94s -> 3778.94s]  than go work with the top people in the field
+[3778.94s -> 3780.94s]  in Google at the time
+[3780.94s -> 3781.94s]  and that's how it worked out
+[3781.94s -> 3782.94s]  he worked with them
+[3782.94s -> 3783.94s]  by the second year
+[3783.94s -> 3786.94s]  they had given this person some opportunity to write a paper or two
+[3786.94s -> 3788.94s]  and then he had the strongest resume in the planet
+[3788.94s -> 3790.94s]  and got into Berkeley two years later
+[3790.94s -> 3792.94s]  was already halfway done
+[3792.94s -> 3794.94s]  got out of Berkeley I think in like four years
+[3794.94s -> 3796.94s]  and I think now he's at Anthropic or something like that
+[3796.94s -> 3797.94s]  and stuff
+[3797.94s -> 3799.94s]  so that's just an example of like
+[3799.94s -> 3802.94s]  if you get to know your faculty a little bit better
+[3802.94s -> 3804.94s]  we want to help
+[3804.94s -> 3807.94s]  so that's just some advice
+[3807.94s -> 3810.94s]  again not for me, maybe for anybody here at Stanford
+[3810.94s -> 3812.94s]  you might like other classes better
+[3812.94s -> 3816.94s]  but usually you're here because the people around here are pretty good
+[3816.94s -> 3819.94s]  so use that resource
+[3819.94s -> 3821.94s]  so just a few practical things about that
+[3821.94s -> 3824.94s]  here's what happens almost all the time
+[3824.94s -> 3825.94s]  so I get students all the time saying
+[3825.94s -> 3827.94s]  I'm really interested in parallel systems
+[3827.94s -> 3828.94s]  is there anything I can do in your lab?
+[3828.94s -> 3831.94s]  which at first I was like great, that's awesome
+[3831.94s -> 3834.94s]  and then I start wondering
+[3834.94s -> 3836.94s]  my next question to myself in my head is
+[3836.94s -> 3839.94s]  can I find a good fit for the student?
+[3839.94s -> 3843.94s]  and a lot of the students come up to me and say this
+[3843.94s -> 3846.94s]  before taking 149 or any of these classes
+[3846.94s -> 3848.94s]  and for those students I kind of have to say
+[3848.94s -> 3852.94s]  look, we have to assume you have some base knowledge
+[3852.94s -> 3855.94s]  we can't teach you the assignments in 149
+[3855.94s -> 3856.94s]  in an independent study
+[3856.94s -> 3857.94s]  you might as well just take the course
+[3858.94s -> 3860.94s]  so typically what the faculty look like is like
+[3860.94s -> 3863.94s]  is the student really interested or do they just kind of think that they're interested?
+[3863.94s -> 3865.94s]  and if they're really interested
+[3865.94s -> 3867.94s]  they would have taken your course
+[3867.94s -> 3869.94s]  and they would have done a really good job
+[3869.94s -> 3871.94s]  on at least something in the course
+[3871.94s -> 3873.94s]  to show that they're really interested in it
+[3873.94s -> 3874.94s]  like if somebody comes up to me and says
+[3874.94s -> 3876.94s]  I have a B in 149
+[3876.94s -> 3878.94s]  I'm like well if you were really interested
+[3878.94s -> 3881.94s]  I gave you some of the coolest stuff that I can think of
+[3881.94s -> 3883.94s]  why didn't that get you excited?
+[3883.94s -> 3885.94s]  and sometimes they're like well I had this other thing
+[3885.94s -> 3887.94s]  if you look carefully my last two projects are awesome
+[3887.94s -> 3889.94s]  I'm like oh yeah that's true
+[3889.94s -> 3891.94s]  like let's go forward
+[3891.94s -> 3893.94s]  so there's a little bit of that
+[3893.94s -> 3895.94s]  so there is a filter of
+[3895.94s -> 3897.94s]  there are plenty of opportunities in class
+[3897.94s -> 3899.94s]  to show that you're super interested
+[3899.94s -> 3901.94s]  especially in classes with projects
+[3901.94s -> 3903.94s]  so I kind of ask my question
+[3903.94s -> 3904.94s]  you know questions like this
+[3904.94s -> 3907.94s]  have they taken the courses that are relevant to doing anything in that area?
+[3907.94s -> 3910.94s]  are there examples of them just going beyond expectations
+[3910.94s -> 3912.94s]  like this person's actually interested?
+[3912.94s -> 3914.94s]  have they been talking to me in office hours?
+[3914.94s -> 3916.94s]  have they worked on anything of sort in related classes?
+[3916.94s -> 3919.94s]  or do they have like an industry internship at NVIDIA?
+[3919.94s -> 3921.94s]  I'm like oh you've been on like the CUDA team at NVIDIA?
+[3921.94s -> 3923.94s]  like you totally know what you're talking about or something like that
+[3923.94s -> 3927.94s]  okay so there's also a few pitfalls after I say all this stuff
+[3927.94s -> 3929.94s]  so first of all
+[3929.94s -> 3931.94s]  I often get a lot of emails
+[3931.94s -> 3933.94s]  right during finals week
+[3933.94s -> 3935.94s]  and like everybody else
+[3935.94s -> 3938.94s]  like our heads are kind of going all over the place during finals week
+[3938.94s -> 3940.94s]  and sometimes like after we get all the grades done
+[3940.94s -> 3942.94s]  that's like right when I'm about to head off to family
+[3942.94s -> 3946.94s]  and I just don't get around to responding until I get back
+[3946.94s -> 3950.94s]  and at that point that email is like a thousand emails down in my inbox
+[3950.94s -> 3952.94s]  so if I don't respond
+[3952.94s -> 3955.94s]  just please keep emailing again and emailing again loudly
+[3955.94s -> 3960.94s]  it sounds very uppity
+[3960.94s -> 3963.94s]  but there is a point for your Stanford faculty
+[3963.94s -> 3968.94s]  where it is no longer possible to actually answer the emails that we get
+[3968.94s -> 3970.94s]  with a personal level
+[3970.94s -> 3972.94s]  and so if we don't respond
+[3972.94s -> 3974.94s]  it's not because we're not interested in you
+[3974.94s -> 3976.94s]  it's just slip through the cracks
+[3976.94s -> 3978.94s]  and just be persistent
+[3978.94s -> 3980.94s]  so email again in all caps
+[3980.94s -> 3982.94s]  in a friendly way with a smiley face
+[3982.94s -> 3984.94s]  or plant your set outside my door
+[3984.94s -> 3986.94s]  and say hey at some point today you're going to be free
+[3986.94s -> 3989.94s]  I'm just going to stand outside and wait till you're free
+[3989.94s -> 3991.94s]  the other thing is that
+[3991.94s -> 3993.94s]  we want you to have a good experience
+[3993.94s -> 3995.94s]  and sometimes it's hard to find a good fit
+[3995.94s -> 3998.94s]  you know there are projects where we're just getting started
+[3998.94s -> 4000.94s]  we don't really know what we're doing
+[4000.94s -> 4002.94s]  and so it's hard to give somebody something to do
+[4002.94s -> 4004.94s]  if it's like three days later we're like
+[4004.94s -> 4005.94s]  oh just kidding we thought that was a good idea
+[4005.94s -> 4007.94s]  now we're going this direction
+[4007.94s -> 4008.94s]  so sometimes I'm just going to say like
+[4008.94s -> 4009.94s]  look you're awesome
+[4009.94s -> 4013.94s]  but I just don't know how to fit you into anything right now
+[4013.94s -> 4016.94s]  and so that will happen as well
+[4016.94s -> 4019.94s]  so don't take that personally from any faculty
+[4019.94s -> 4023.94s]  so I think that the big point here is
+[4023.94s -> 4027.94s]  now that we get later in the junior, senior
+[4027.94s -> 4029.94s]  masters programs
+[4029.94s -> 4032.94s]  your job is to try and start making some decisions
+[4032.94s -> 4034.94s]  about where do you really want to get yourself
+[4034.94s -> 4036.94s]  make some bets
+[4036.94s -> 4040.94s]  and sometimes those bets are best done outside the classroom
+[4040.94s -> 4043.94s]  sometimes they're not done outside the classroom
+[4043.94s -> 4046.94s]  and so I just want to make sure that people aren't
+[4046.94s -> 4049.94s]  over fitting to
+[4049.94s -> 4051.94s]  some stuff that you might hear which is like
+[4051.94s -> 4054.94s]  look like you have to have this internship
+[4054.94s -> 4056.94s]  you have to have this many A's or something like that
+[4056.94s -> 4058.94s]  in order to get those good jobs
+[4058.94s -> 4064.94s]  that's how you get like the hard to get normal jobs
+[4064.94s -> 4066.94s]  I think actually
+[4066.94s -> 4069.94s]  but there are definitely grades that you can
+[4069.94s -> 4071.94s]  figuratively get from working with folks
+[4071.94s -> 4073.94s]  through a recommendation or through
+[4073.94s -> 4074.94s]  you know just some professor going
+[4074.94s -> 4075.94s]  hey have you ever thought about this company
+[4075.94s -> 4079.94s]  because like you might be really interested in going there
+[4079.94s -> 4081.94s]  there's ways to do things that are
+[4081.94s -> 4083.94s]  maybe a little bit better than A's and A pluses
+[4083.94s -> 4085.94s]  so I'll leave it at that
+[4085.94s -> 4086.94s]  we have five minutes
+[4086.94s -> 4088.94s]  I guess I can hang out a little bit
+[4088.94s -> 4089.94s]  have a good break
+[4089.94s -> 4091.94s]  send me a postcard or something if you're going somewhere interested
+[4091.94s -> 4092.94s]  I'll put it on my bulletin board
+[4092.94s -> 4094.94s]  alright let's get out of here

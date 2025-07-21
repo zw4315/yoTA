@@ -1,0 +1,100 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 11.58s]  Typically, multiple object tracking is based on sensor detections.
+[11.58s -> 18.18s]  We have a sensor or possibly multiple sensors, and from these we get data.
+[18.18s -> 23.38s]  Common sensors in multiple object tracking are cameras, radars, and lidars.
+[23.38s -> 28.80s]  The sensor data serves as input to a so-called detector, which outputs measurements
+[28.80s -> 30.32s]  or detections.
+[30.32s -> 36.32s]  In this course, we will use the terms measurements and detections interchangeably.
+[36.32s -> 41.56s]  For example, from a camera data, we typically get image bounding boxes.
+[41.56s -> 46.64s]  From radars, we get range, bearing, and Doppler measurements, and from lidar sensors,
+[46.64s -> 49.08s]  we get so-called point clouds.
+[49.08s -> 54.36s]  The measurements that we get from the detector serves as input into a multiple object tracking
+[54.36s -> 58.72s]  system, here abbreviated MOT.
+[58.72s -> 64.98s]  The output from the MOT system is posterior densities for the object states.
+[64.98s -> 71.70s]  The focus of this course is on this last step, that is, tracking based on detections.
+[71.70s -> 76.84s]  One thing that is important to note is that detectors work on a single frame of
+[76.84s -> 83.94s]  data, that is, a single camera image, a single radar scan, or a single lidar scan.
+[83.94s -> 89.44s]  The MOT algorithm, however, it works on detections from multiple frames, and these
+[89.44s -> 92.68s]  detections are processed sequentially.
+[92.68s -> 100.56s]  So let's illustrate this sensor detector MOT algorithm scheme using an example application.
+[100.56s -> 106.76s]  In this case, the sensor is a monocamera, which means that we have a single camera,
+[106.76s -> 112.22s]  and the camera is mounted, in this case, on a car facing forwards.
+[112.22s -> 117.44s]  The data that we get from the camera is image data, and on the right here, we can see a
+[117.44s -> 119.94s]  photographic image at the top.
+[119.94s -> 126.64s]  We see the roadway, we see some cars, and some surrounding vegetation and buildings.
+[126.64s -> 132.34s]  The detector that was employed here was constructed using so-called deep learning.
+[132.34s -> 135.72s]  Deep learning is outside the scope of this course, but it's something that's quite
+[135.72s -> 140.60s]  interesting and that you can look into after studying this course.
+[140.60s -> 146.90s]  The output from the deep learning detector is bounding boxes for the vehicles in the image.
+[146.90s -> 154.14s]  So here, these bounding boxes are indicated by colored rectangles that fit snugly around the cars.
+[154.14s -> 159.76s]  In addition to each bounding box, in this particular example, the deep learning detector
+[159.76s -> 165.18s]  also outputs a measurement of the distance from the camera to the detected car.
+[165.18s -> 169.64s]  This means that the output from the detector is somewhat similar to the detections from
+[169.68s -> 171.26s]  a radar detector.
+[171.26s -> 177.36s]  We get a range measurement that is the distance from the sensor to the detected car, and using
+[177.36s -> 182.76s]  these image detections from the location of the bounding box in the image, we can
+[182.76s -> 188.24s]  figure out what the bearing from the sensor to the car is.
+[188.24s -> 194.80s]  And lastly, the output from the MOT algorithm is posterior densities for the object states.
+[194.80s -> 200.18s]  In this example, the object states our position and velocity in three dimensions.
+[200.18s -> 205.84s]  And on the right, we have visualized the X and Y dimensions from a top-down perspective,
+[205.84s -> 207.84s]  or bird's eye view.
+[207.84s -> 212.76s]  So the plus signs illustrate the object's position, and the ellipses illustrate the
+[212.76s -> 219.08s]  covariance matrices, or the uncertainties of the object estimates.
+[219.08s -> 223.88s]  We're going to have a look at some different examples of tracking based on detections.
+[223.96s -> 229.70s]  However, before that, we need to briefly mention tracking without a detector, something that
+[229.70s -> 233.80s]  is called track before detect, or TBD for short.
+[233.80s -> 241.84s]  Now, instead of using a detector, the raw sensor data is fed into the MOT algorithm.
+[241.84s -> 246.88s]  One example where this approach is used is in radar-based tracking with very low
+[246.88s -> 250.40s]  signal-to-noise ratio, or SNR.
+[250.40s -> 256.86s]  In these two images in the example, we have high SNR on the left and low SNR on the right.
+[256.86s -> 259.90s]  So let's have a look at the high SNR case first.
+[259.90s -> 264.36s]  The radar has transmitted a signal, and some of the signal power has been reflected
+[264.36s -> 267.32s]  by an object back to the radar sensor.
+[267.32s -> 273.38s]  If we looked at the received power, we see a peak in the data around range equal
+[273.38s -> 277.60s]  to about 40 and Doppler equal to about 10.
+[277.60s -> 283.16s]  The peak is quite distinct, and we could easily apply a threshold to the power of about
+[283.16s -> 288.00s]  5 or 10 and only keep what is larger than this threshold.
+[288.00s -> 292.60s]  This would give us a detection with range 40 and Doppler 10.
+[292.60s -> 296.96s]  Now, consider instead the low SNR case on the right.
+[296.96s -> 298.28s]  The setup is the same.
+[298.28s -> 300.48s]  A radar has transmitted energy.
+[300.48s -> 303.20s]  Some of it has been reflected back by an object.
+[303.24s -> 308.76s]  However, the power returned by the object in this case is not very strong and does
+[308.76s -> 311.24s]  not stand out from the background.
+[311.24s -> 315.40s]  We can't really see any distinct peak in the data.
+[315.40s -> 320.92s]  In this case, if we employed a threshold to the data, we would either get no detection
+[320.92s -> 327.36s]  if the threshold is too high, or if we lowered the threshold, we might get a detection,
+[327.36s -> 330.92s]  but we might also get many incorrect detections.
+[330.92s -> 337.04s]  So therefore, in the low SNR case, we could instead use an MOT algorithm that is designed
+[337.04s -> 344.28s]  to work directly on the reflected radar energy and process the radar scans sequentially this way.
+[344.28s -> 350.24s]  However, this track-before-detect approach is not as common as tracking based on using
+[350.24s -> 358.80s]  a detector, and because of that, track-before-detect is not included in the scope of this course.
+[358.80s -> 363.56s]  Let's go back to tracking with detections and focus on the number of detections we get
+[363.56s -> 364.56s]  per object.
+[364.56s -> 370.56s]  Let's do this by revisiting the example with vehicle tracking using images.
+[370.56s -> 375.28s]  As you can see in this video clip, there are several cars in the image, and we get
+[375.28s -> 378.24s]  at most one detection per car.
+[378.24s -> 383.08s]  Some of the cars are not detected, for example, the one that can be seen in the bottom left
+[383.08s -> 388.68s]  of the image, and we can also see some cars in the very far distance that are not
+[388.72s -> 391.80s]  detected until they come closer to the camera.
+[391.80s -> 396.68s]  However, most of the cars that are in the center of the image close enough to the camera
+[396.68s -> 398.20s]  are detected.
+[398.20s -> 403.76s]  So in this example, where we tracked cars using image data, we had either no detection
+[403.76s -> 407.36s]  or one detection per car.
+[407.36s -> 413.28s]  Let's have a look at another example, which is tracking pedestrians using a LiDAR sensor.
+[413.28s -> 418.54s]  As you can see in this video clip, in the bottom left here, where we show the detections,
+[418.54s -> 421.52s]  there are multiple detections for each pedestrian.
+[421.52s -> 425.78s]  We get a small cluster of detections for each pedestrian.
+[425.78s -> 430.32s]  And you can also see that when the pedestrians pass behind each other, they become occluded
+[430.32s -> 431.70s]  to the sensor.
+[431.70s -> 435.92s]  And when that happens, we don't get any detections at all.
+[435.92s -> 441.66s]  So in this example, where we track pedestrians using 2D LiDAR, we get somewhere between
+[441.66s -> 447.94s]  zero detections up to tens of detections for each pedestrian in each time step.
+[447.94s -> 452.90s]  And in general, the number of measurements that we get for an object in each time step
+[452.90s -> 455.26s]  will depend on the sensor that we use.
+[455.26s -> 459.40s]  It will also depend on the detector that we use, and it will depend on the types
+[459.40s -> 462.30s]  of objects that we are tracking.
+[462.30s -> 467.16s]  And based on this, the different number of detections we get from each object in each
+[467.16s -> 471.78s]  time step, we can define some different types of tracking.
+[471.78s -> 476.46s]  So what we're going to do next is to have a look at different types of tracking.

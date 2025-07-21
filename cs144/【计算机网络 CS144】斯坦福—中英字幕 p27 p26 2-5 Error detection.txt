@@ -1,0 +1,244 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.44s]  Networks aren't perfect, and neither are the hosts that run on them.
+[5.44s -> 9.32s]  They can introduce errors, and for a network to be able to run properly, it needs to be
+[9.32s -> 11.48s]  able to detect these errors.
+[11.48s -> 14.82s]  For example, let's say that a router along our path has a bad memory cell, such
+[14.82s -> 17.68s]  that sometimes it flips a bit in a packet.
+[17.68s -> 22.28s]  Imagine, for example, if the bit flipped is the most significant bit of the amount
+[22.28s -> 24.06s]  to charge a credit card.
+[24.06s -> 27.68s]  We need to be able to detect that error occurred so we don't accept the corrupted
+[27.68s -> 29.80s]  data as correct data.
+[29.80s -> 34.52s]  Networks today usually use three different error detection algorithms, checksums, cyclic
+[34.52s -> 39.48s]  redundancy codes or CRCs, and message authentication codes, or MACs.
+[39.48s -> 42.16s]  Each of them has very different characteristics.
+[42.16s -> 43.56s]  Understanding their differences is important.
+[43.56s -> 47.10s]  I've actually been at meetings in the IETF where a few people weren't aware
+[47.10s -> 48.10s]  of the differences.
+[48.10s -> 51.80s]  If you don't know, you might make a bad protocol decision or protocol analysis.
+[59.80s -> 79.28s]  At a high level, error detection looks like this.
+[79.28s -> 81.16s]  We have a payload of data.
+[81.16s -> 85.72s]  We'll calculate some error detection bits over that data and either append or prepend
+[85.72s -> 87.28s]  it to the payload.
+[87.28s -> 92.96s]  For example, Ethernet appends a cyclic redundancy code, or CRC, while transport layer security,
+[92.96s -> 95.48s]  TLS, appends a message authentication code.
+[95.48s -> 99.84s]  IP prepends a checksum, which it places in the IP header.
+[99.84s -> 104.12s]  TLS and Ethernet have a footer, protocol information which follows the payload, which
+[104.12s -> 129.08s]  is where they put the CRC and MAC.
+[129.08s -> 142.68s]  The first of the three commonly used error detection algorithms is a checksum.
+[142.68s -> 144.32s]  You just add up all the data in the packet.
+[144.32s -> 147.00s]  It's what TCP and IP use.
+[147.00s -> 150.80s]  Checksums are nice because they are very fast and cheap to compute, even in software.
+[150.80s -> 154.00s]  Back when the internet started and everything was in software, this was valuable.
+[154.00s -> 157.92s]  Their major drawback is that they have pretty weak error detection guarantees.
+[157.92s -> 161.40s]  While they can catch a lot of random errors, it's easy to fool a checksum with as few
+[161.40s -> 164.96s]  as two-bit errors, if the two-bit errors cancel each other out.
+[164.96s -> 169.04s]  For example, if one bit error adds 32 and another bit error subtracts 32, the checksum
+[169.04s -> 170.72s]  won't catch the error.
+[170.72s -> 173.92s]  So a checksum can catch a lot of errors, but it turns out to have very weak guarantees
+[173.92s -> 176.64s]  on what errors it will catch.
+[176.64s -> 180.14s]  The second of the three commonly used error detection algorithms is a cyclic redundancy
+[180.14s -> 181.76s]  code, or CRC.
+[181.76s -> 187.18s]  A CRC is much more computationally expensive than a checksum, but also much more robust.
+[187.18s -> 189.10s]  It computes the remainder of a polynomial.
+[189.10s -> 191.62s]  I'll show what this means and how it works in a few minutes.
+[191.62s -> 195.40s]  With today's processors, it's easy to do, and it's really easy to do on hardware.
+[195.40s -> 197.66s]  It's what ethernet and many link layers use.
+[197.66s -> 201.70s]  In some ways, TCP and IP can get away with checksums because link layers use CRCs.
+[201.70s -> 209.06s]  If you have a CRC that's C-bits long, a CRC can detect any one-bit error, any two-bit
+[209.06s -> 214.06s]  error, and any single burst of errors less than or equal to C-bits long, as well as any
+[214.06s -> 216.02s]  odd number of errors.
+[216.02s -> 217.66s]  So it can detect a lot of errors.
+[217.66s -> 222.34s]  Much stronger guarantees than a checksum.
+[222.34s -> 226.30s]  The final algorithm is something called a message authentication code, or MAC.
+[226.30s -> 230.26s]  A message authentication code combines the packet with some secret information to generate
+[230.26s -> 231.26s]  a value.
+[231.26s -> 235.22s]  In theory, someone can only generate or check the MAC if they have the secret.
+[235.22s -> 238.14s]  So if you receive a packet and the MAC is correct, then you're pretty sure the
+[238.14s -> 240.42s]  computer to the computer to the MAC has the secret.
+[240.42s -> 243.84s]  Unless I have the secret, it's amazingly difficult to generate the correct MAC for
+[243.84s -> 245.44s]  a packet.
+[245.44s -> 248.28s]  So a bad guy can't easily generate a new packet.
+[248.28s -> 253.04s]  In fact, if you have a strong MAC algorithm, then given one packet and its MAC, I have
+[253.04s -> 257.08s]  zero information on what the MAC will look like if I flip a single bit.
+[257.08s -> 261.14s]  Message authentication codes are therefore robust to malicious modifications.
+[261.14s -> 264.32s]  Message authentication codes are used in Transport Layer Security, TLS, which is what
+[264.32s -> 268.84s]  you use when you browse web pages securely.
+[268.84s -> 271.28s]  But they're actually not great for catching errors.
+[271.28s -> 277.00s]  If I flip a single bit in a packet, there is a 1 in 2 to the C chance that the changed
+[277.00s -> 279.26s]  packet will have the same MAC.
+[279.26s -> 282.60s]  I've seen people make this mistake with togma error correction, thinking a MAC is
+[282.60s -> 284.50s]  just as good as a CRC.
+[284.50s -> 285.50s]  It's not.
+[285.50s -> 289.80s]  If I have a 16-bit CRC, I'm assured that I'll detect a burst of errors that is 16
+[289.80s -> 291.18s]  bits long or shorter.
+[291.18s -> 295.08s]  If I have a 16-bit MAC, I'm only assured that I'll detect bit errors with very
+[295.08s -> 300.86s]  high probability, 99.90%, or 1 in 65,536.
+[300.86s -> 304.98s]  That's high, but think about how many packets you've watched just receiving this video.
+[304.98s -> 310.02s]  I'll now go into each of these algorithms in greater detail.
+[310.02s -> 311.02s]  Let's start with a checksum.
+[311.02s -> 314.58s]  IP, UDP, and TCP use 1's complement checksums.
+[314.58s -> 318.58s]  This means they add up the packet using 1's complement arithmetic, a version of binary
+[318.58s -> 320.72s]  arithmetic some older computers used.
+[320.72s -> 323.58s]  Most today use 2's complement arithmetic.
+[323.58s -> 325.02s]  The algorithm is pretty simple.
+[325.02s -> 327.90s]  You start by setting the checksum field of the packet to zero.
+[327.90s -> 330.58s]  Then you add every 16-bit word in the packet.
+[330.58s -> 335.78s]  Any time you have to carry, because the sum is greater than 2 to the 16, or 65,535,
+[335.78s -> 337.22s]  you carry the bit back in.
+[337.22s -> 348.26s]  So 60,000 plus 8,000 is 68,000 minus 65,535 plus 1, or 2,466.
+[348.26s -> 352.10s]  Once you've added up the complete packet, flip the bits in your sum and make this
+[352.10s -> 354.50s]  the checksum of the packet.
+[354.50s -> 358.38s]  Then if you add up the complete packet, including this checksum value, you should
+[358.38s -> 362.38s]  get 0xFFFF, all 1's.
+[362.38s -> 363.38s]  There's one edge case.
+[363.38s -> 367.32s]  If the computed checksum is all 1's, you don't make the checksum field zero, you
+[367.32s -> 368.32s]  make it all 1's.
+[368.32s -> 372.86s]  In IP, UDP, and TCP, a checksum field of zero means there's no checksum.
+[372.86s -> 373.86s]  That's it.
+[373.86s -> 375.32s]  You can write this in just a few lines of C code.
+[375.32s -> 377.60s]  It's fast, easy to compute, and easy to check.
+[377.60s -> 380.70s]  All you need to do is add the bytes of a packet and check that the checksum is
+[380.70s -> 381.70s]  all 1's.
+[381.70s -> 389.50s]  Given that most internet implementations were in software, this is really helpful.
+[389.50s -> 391.50s]  The drawback is that it's not really that robust.
+[391.50s -> 395.94s]  While it definitely detects a lot of random errors, the guarantees it can give on what
+[395.94s -> 397.78s]  errors it detects are really weak.
+[397.78s -> 401.10s]  In practice, it can only promise to catch single-bit errors.
+[401.10s -> 405.86s]  But it works pretty well, and link layers do a lot of the heavy lifting for us.
+[405.86s -> 410.82s]  Link layers do their heavy lifting with something called a Cyclic Redundancy Check, or CRC.
+[410.82s -> 414.70s]  The idea of a CRC is that I want to take the n bits of source data, and somewhat distill
+[414.70s -> 418.70s]  them down to c bits of error detection data, where c is much smaller than n.
+[418.70s -> 424.50s]  For example, I might have a 1500-byte Ethernet frame with a 4-byte 32-bit CRC.
+[424.50s -> 428.28s]  USB and Bluetooth use 16-bit CRCs.
+[428.28s -> 430.34s]  Of course, we can't detect all errors.
+[430.34s -> 436.66s]  Given some other random packet, the chances the CRC matches is 2-c, or 1 and 2-c.
+[436.66s -> 443.10s]  For example, if I use an 8-bit CRC, then out of the space of all packets, 1 and 256, or
+[443.10s -> 447.78s]  0.4%, have the same CRC as my packet.
+[447.78s -> 450.22s]  But CRCs are stronger than checksums.
+[450.22s -> 454.10s]  They can detect there's an error in any packet with an odd number of errors, 2-bit
+[454.10s -> 459.42s]  errors, or any single burst of errors equal to or less than c bits long.
+[459.42s -> 463.14s]  They can't guarantee detecting errors besides these, but they do a good job at it.
+[463.14s -> 468.22s]  For example, a 16-bit CRC can't guarantee it will detect two bursts of 3-bit errors
+[468.22s -> 472.78s]  spaced far apart in a packet, but it's likely it will detect it.
+[472.78s -> 474.74s]  Link layers typically use CRCs.
+[474.74s -> 478.28s]  They're pretty robust, and as many link layers are vulnerable to bursts of errors,
+[478.28s -> 481.62s]  the burst detection capabilities of CRCs is useful.
+[481.62s -> 488.00s]  It's not hard to make hardware compute them quickly, and you can compute them incrementally
+[488.00s -> 490.62s]  as your reader writes the packet.
+[490.62s -> 492.14s]  How does a CRC work?
+[492.18s -> 496.78s]  It distills these n bits into c bits using something called polynomial long division.
+[496.78s -> 500.94s]  You take the bits of a message and use them to describe a polynomial m.
+[500.94s -> 504.82s]  Each bit in a packet is the coefficient of one term of the polynomial.
+[504.82s -> 506.42s]  If the bit is 0, the term is absent.
+[506.42s -> 509.02s]  If the bit is 1, the term is present.
+[509.02s -> 517.86s]  So, for example, a message of 10011101 is the polynomial x to the seventh plus x to
+[517.86s -> 523.54s]  the fourth plus x to the third plus x squared plus 1, which is x to the zero.
+[523.54s -> 530.50s]  This is because the seventh, fourth, third, second, and zeroth bits are set in the message.
+[530.50s -> 533.86s]  When we calculate a CRC, we have something called a generator polynomial.
+[533.86s -> 536.62s]  This is defined by the CRC algorithm.
+[536.62s -> 542.10s]  For example, the CRC16 algorithm used by USB has a generator polynomial of x to the
+[542.10s -> 547.14s]  sixteenth plus x to the fifteenth plus x squared plus one.
+[547.14s -> 550.78s]  For frustrating historical reasons, the generator polynomial is one term longer than its number
+[550.78s -> 551.78s]  of bits.
+[551.78s -> 552.78s]  The first term is always one.
+[552.78s -> 559.10s]  So the CRC16 generator polynomial is written as 0x8005, even though it has an x to the
+[559.10s -> 561.42s]  sixteenth term.
+[561.42s -> 567.82s]  To compute a CRC, you take the message m, pad it with zeros equal to the CRC length,
+[567.82s -> 570.98s]  and divide this padded value by g.
+[570.98s -> 574.14s]  The remainder is the CRC, which you append to the message.
+[574.14s -> 579.62s]  To check a CRC, you divide the message plus CRC by the generator polynomial g.
+[579.62s -> 581.78s]  If the remainder is zero, then the CRC passes.
+[581.78s -> 585.10s]  I won't go into the details of how this works mathematically, but it turns out
+[585.10s -> 588.50s]  it can be implemented very quickly and efficiently in hardware.
+[588.50s -> 592.30s]  The strength of your CRC algorithm depends on what generator polynomial g you pick.
+[592.30s -> 595.70s]  There's been a lot of study of this and so many good options which have the error
+[595.70s -> 599.96s]  detection properties I mentioned earlier, but you might not get the same error detection
+[599.96s -> 603.22s]  strength if you pick your own generator polynomial.
+[603.22s -> 606.62s]  The third and final kind of error detection algorithm you commonly see in networks is a
+[606.62s -> 608.96s]  message authentication code, or MAC.
+[608.96s -> 613.02s]  Like CRCs, there's a deep and rich mathematical background on how message authentication
+[613.02s -> 614.02s]  codes work.
+[614.02s -> 615.02s]  There are good ones and bad ones.
+[615.02s -> 618.42s]  So you generally want to use an existing scheme rather than invent your own.
+[618.42s -> 622.02s]  Thankfully, standards usually specify what MAC to use, and though there are some mistakes
+[622.02s -> 625.82s]  in the late 90s where standards picked poor algorithms, nowadays security is important
+[625.82s -> 630.62s]  enough that everyone relies on a small number of really well-studied approaches.
+[630.62s -> 634.90s]  Message authentication codes use cryptography, a branch of mathematics that deals with secrets.
+[634.90s -> 639.26s]  The idea behind most message authentication codes is that the two parties share a secret
+[639.26s -> 644.42s]  S. This secret is just a set of randomly generated bits, random so it's hard to
+[644.42s -> 645.46s]  guess.
+[645.46s -> 650.34s]  To calculate a message authentication code C, you apply the MAC algorithm to the message
+[650.34s -> 655.18s]  M and this secret S. MAC algorithms have the property that if you don't have S,
+[655.18s -> 658.18s]  then it's really hard to generate the correct C for a message M.
+[658.74s -> 663.06s]  Furthermore, it's very hard to create a message M whose message authentication code
+[663.06s -> 667.98s]  is C. By hard, I mean is that the best case you just have to exhaustively try.
+[667.98s -> 671.50s]  Having M and C gives you almost no information on what S is.
+[671.50s -> 675.78s]  This means that if you receive a message M with the correct message authentication
+[675.78s -> 682.34s]  code, this means the computer that generated the message probably has the secret, or someone
+[682.34s -> 686.46s]  replayed a message generated by that computer.
+[686.46s -> 690.66s]  Because the goal is to keep S a secret, cryptographically strong message authentication
+[690.66s -> 691.98s]  codes have an interesting property.
+[691.98s -> 697.54s]  If you change a single bit in M, then this results in a completely new CRC, where
+[697.54s -> 701.94s]  the probability any bit in C is 0 or 1 is seemingly random and independent of the
+[701.94s -> 703.74s]  earlier C.
+[703.74s -> 707.98s]  If this weren't the case, then someone could take a message, flip a single bit, change
+[707.98s -> 712.50s]  a dollar value, and it wouldn't be that difficult to generate the correct C.
+[712.54s -> 718.02s]  This means that technically, message authentication codes have no error detection guarantees.
+[718.02s -> 722.96s]  If you flip a single bit, you could end up with the exact same MAC.
+[722.96s -> 726.54s]  Message authentication codes are very useful, but they're first and foremost a security
+[726.54s -> 727.86s]  mechanism.
+[727.86s -> 731.66s]  Being able to get both error detection and security with one mechanism is efficient
+[731.66s -> 736.06s]  and nice, but their security properties mean that their error detection isn't as good
+[736.06s -> 739.34s]  as other approaches.
+[739.34s -> 741.18s]  Let's go over the answers.
+[741.18s -> 743.14s]  Both checksums can detect a single bit error.
+[743.14s -> 747.58s]  Remember, this is one of the errors a checksum guarantees detecting.
+[747.58s -> 751.82s]  Both CRCs can also detect a single bit error.
+[751.82s -> 754.94s]  A MAC can't guarantee that it'll detect a single bit error.
+[754.94s -> 758.46s]  For security reasons, it could be that the new MAC is the same as the old one, so
+[758.46s -> 760.22s]  it can't guarantee detecting it.
+[760.22s -> 765.14s]  In fact, a MAC can't guarantee detecting any errors, so we can mark NO for all the
+[765.14s -> 769.02s]  columns for the message authentication code.
+[769.02s -> 770.98s]  So how about two bit errors?
+[770.98s -> 774.62s]  Channels can't guarantee detecting two bit errors, so NO for both of them.
+[774.62s -> 779.22s]  CRCs, though, can detect guaranteeing bit errors runs less than or equal to the length
+[779.22s -> 780.66s]  of the CRC.
+[780.66s -> 784.86s]  Since two bits is shorter than both 8-bit and 16-bits, both CRCs can detect a run
+[784.86s -> 786.50s]  of two bit errors.
+[786.50s -> 791.70s]  Correspondingly, an 8-bit CRC can't guarantee detecting a run of 9-bit errors,
+[791.70s -> 794.06s]  but a 16-bit CRC can.
+[794.06s -> 800.26s]  So NO for the 8-bit CRC and YES for the 16-bit CRC for 9-bit error runs.
+[800.26s -> 802.70s]  How about two bit errors 100 bits apart?
+[802.70s -> 806.18s]  It turns out none of these algorithms can guarantee detecting this error, so NO for
+[806.18s -> 807.46s]  all of them.
+[807.46s -> 810.22s]  Looking at this matrix, you might think error detection is a waste.
+[810.22s -> 812.34s]  The algorithms promise very little.
+[812.34s -> 814.74s]  But guarantee is a very strong statement.
+[814.74s -> 819.14s]  While an 8-bit checksum can't guarantee it'll catch a run of 9-bit errors, there's
+[819.14s -> 820.82s]  a high probability it will.
+[820.82s -> 825.42s]  Similarly, a 16-bit CRC has a very high probability of detecting two bit errors 100
+[825.42s -> 826.58s]  bits apart.
+[826.58s -> 829.70s]  And in practice, high probability is often good enough.
+[829.70s -> 834.38s]  If failures are rare, then you only sometimes have to do something more expensive to recover.
+[834.38s -> 837.66s]  But it means in practice you tend to have multiple layers of error detection.
+[837.66s -> 842.66s]  The link layer detects them with CRCs, IP detects them with checksums, TCP detects
+[842.66s -> 846.26s]  them with checksums, and then often the application has its own error detection.
+[846.26s -> 850.50s]  So all put together, the chances of errors creeping through is very, very low.
+[850.50s -> 855.06s]  So we've seen three error detection schemes, checksums, CRCs, and message authentication
+[855.06s -> 857.26s]  codes.
+[857.30s -> 861.18s]  Data error detection is a great example of the end-to-end principle.
+[861.18s -> 863.38s]  It's actually what originally motivated the principle.
+[863.38s -> 867.22s]  The only way a layer can be sure that it communicates data correctly is to perform
+[867.22s -> 869.54s]  an end-to-end check.
+[869.54s -> 872.58s]  Ethernet needs to be sure that its frames don't have errors so it can parse them correctly
+[872.58s -> 874.26s]  so it has a CRC.
+[874.26s -> 878.58s]  IP needs to be sure that its packets don't have errors so it can parse them correctly.
+[878.58s -> 883.82s]  IP can't depend on what Ethernet is doing to check for its own check.
+[883.82s -> 888.98s]  The Ethernet card or driver might introduce an error after the driver checks the packet.
+[888.98s -> 892.90s]  So IP has to do its own end-to-end check at the network layer.
+[892.90s -> 896.42s]  TLS, using message authentication codes, is another example.
+[896.42s -> 899.94s]  It's especially interesting because TLS has very different error detection requirements
+[899.94s -> 901.64s]  than IP Ethernet.
+[901.64s -> 906.74s]  It wants security, so it has to provide its own end-to-end error detection scheme
+[906.74s -> 911.66s]  as it's the only way it can be sure its requirements are met.

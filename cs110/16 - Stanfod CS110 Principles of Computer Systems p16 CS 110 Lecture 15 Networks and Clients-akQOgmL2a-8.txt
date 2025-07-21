@@ -1,0 +1,735 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 8.56s]  Okay so we are going to continue our discussion about networks. I hope the
+[8.56s -> 12.32s]  assignment is going well. I am going to have some office hours right after
+[12.32s -> 17.80s]  class today for an hour, hour and a half or so, so feel free to stop by if you'd like.
+[17.80s -> 23.60s]  But today we're going to continue working on networks and I think we're
+[23.60s -> 27.88s]  going to get to a point today where you go, oh I see what's going on here
+[27.88s -> 33.80s]  with the way the internet works a little bit and hopefully it'll be
+[33.80s -> 38.04s]  interesting. But there is a handout because there's tons of code and today
+[38.04s -> 41.32s]  is going to be another day where I'm not going to just like furiously type code.
+[41.32s -> 45.16s]  I actually did this lecture last quarter and it was a nightmare because it was
+[45.16s -> 47.34s]  like my fingers were cramped by the end of it and people were saying
+[47.34s -> 50.20s]  that's a ridiculous amount of code to put on the board or to try to do
+[50.20s -> 54.68s]  live. So you've got a whole bunch of code here. We will go through it slow
+[54.68s -> 58.44s]  enough on the board so that you can either take notes or ask whatever
+[58.44s -> 63.00s]  questions you have. So hopefully that will work out.
+[63.00s -> 70.24s]  So let's go back to where we were at the end of Monday's lecture which was
+[70.24s -> 77.80s]  to say we built our first client and the client was as simple as basically
+[77.80s -> 82.96s]  saying okay we are going to create a client socket and we're going to dig
+[82.96s -> 86.96s]  into those details. We're going to do it a little more manually today and
+[86.96s -> 90.44s]  you'll see some more details but there will be details we see today that I
+[90.44s -> 93.68s]  don't want you to concentrate on. You could look at them and go oh those
+[93.68s -> 96.20s]  are some details but I don't want you to think about the real talk about
+[96.20s -> 102.56s]  those next week but that's like how the connection is built. And then we
+[102.56s -> 108.52s]  basically set up a little stream to be able to in this case to be able to
+[108.52s -> 113.96s]  read from the server whatever the server tells us and that's it and then
+[113.96s -> 117.64s]  we're printing it out. So this is like the most basic server. Now often
+[117.64s -> 121.52s]  you want to actually have some sort of like you want to send the server some
+[121.52s -> 127.64s]  information which we will do by via the actual URL today and then of
+[127.64s -> 130.20s]  course you want to get more information back maybe in another
+[130.20s -> 135.00s]  particular form. So we will see how that works with a couple of examples.
+[135.00s -> 138.84s]  Okay so the first example we're going to look at and I mentioned it I talked a
+[138.84s -> 141.72s]  little bit about how it works and I showed you an example on Monday is
+[141.72s -> 150.98s]  this wget function. This is a built-in for Linux and you can see
+[150.98s -> 158.20s]  that by typing wgetgoogle.com and it will actually pull down the results of
+[158.20s -> 164.00s]  google.com to a file. In this case it saves it as index.html and
+[164.00s -> 169.32s]  that's it. So there's the Google home page right there in a file
+[169.32s -> 173.68s]  called index.html which I just used wget to get. It's a pretty simple thing.
+[173.68s -> 176.48s]  You need to request it from the website, the website sends it back to
+[176.48s -> 182.20s]  you, end of story. So that's what we're going to build. Okay and here's what
+[182.20s -> 188.00s]  we're going to do with it. Okay we are going to we have to remember the
+[188.00s -> 196.12s]  we're going to build the server part as it turns out. Okay and the in this case
+[196.12s -> 198.92s]  or rather not the server part sorry we're going to build the client part
+[198.92s -> 206.76s]  in this case which is going to take a URL and it's going to get the URL and
+[206.76s -> 210.72s]  break it into its parts. Okay so that's like Google's not a great
+[210.72s -> 224.88s]  example but web.stanford.edu slash class slash cs110 is like what you
+[224.88s -> 228.00s]  might pass into it and what it needs to do is this is the part that you
+[228.00s -> 232.88s]  connect to, web.stanford.edu and the rest is basically the path name. So we
+[232.88s -> 238.44s]  need to break that into parts. So we can actually use the part a parse URL
+[238.44s -> 244.28s]  function to do this. Okay and most of our URLs are going to start with HTTP
+[244.28s -> 250.68s]  colon colon. As it turns out HTTP that's basically tells you hey you're going
+[250.68s -> 254.28s]  to the World Wide Web. Most of the websites you go to these days are
+[254.28s -> 259.08s]  HTTPS which stands for secure which is a much better way of doing it so the
+[259.08s -> 264.64s]  data actually comes across encrypted because as you may or may not know I
+[264.68s -> 269.16s]  mean when radio signals get sent to the router unless it's an encrypted site all
+[269.16s -> 273.44s]  of the text that's sent back and forth is completely unencrypted. Now if
+[273.44s -> 276.24s]  you have a password or if you have that sort of thing they encrypt they
+[276.24s -> 281.08s]  can you can encrypt that in other ways but in general HTTP sites are not
+[281.08s -> 285.44s]  encrypted. Now it doesn't matter that much for some sites but it does mean that
+[285.44s -> 289.28s]  you could have what's called a man-in-the-middle attack where you
+[289.48s -> 294.92s]  I guess you could for HTTPS too to some extent but you could have an attack
+[294.92s -> 298.72s]  where you think you're getting data back from a non-secure site and it's
+[298.72s -> 301.64s]  coming from some other site and that might not be what you want. So you
+[301.64s -> 306.26s]  should prefer HTTPS. For now we're just going to do with HTTP because we
+[306.26s -> 309.24s]  don't want to deal with any encryption. Most of it actually happens at a
+[309.24s -> 313.44s]  lower level than what we're dealing with anyway but for now we're gonna go
+[313.44s -> 320.60s]  with HTTP. And the default path is just slash. That means like if you google.com
+[320.60s -> 325.40s]  the default path is just slash. So what we're doing in here is we are
+[325.40s -> 330.08s]  basically pulling the URL apart and we're just saying look if it starts
+[330.08s -> 337.56s]  with if it starts with HTTP then we actually need to get the rest of it
+[337.56s -> 344.32s]  which is what this substring line does here. And then you're then going
+[344.32s -> 349.84s]  to look for a slash and if you have a slash everything after
+[349.84s -> 355.48s]  the slash is the actual path name. So that's kind of what it is and the rest
+[355.48s -> 360.20s]  is the host part of it which is like google.com or
+[360.20s -> 364.32s]  web.stanford.edu. That's all this is doing. Not that much to it.
+[365.00s -> 370.04s]  It is returning a pair. Why is it returning a pair? Because C++ only
+[370.04s -> 374.04s]  allows you to return one thing and so in this case we're returning we want to
+[374.04s -> 377.96s]  return both the host and a path so we're returning a pair. You could also
+[377.96s -> 382.56s]  return a vector or an array or something like that whatever but the
+[382.56s -> 386.08s]  point is that in this case we're just making a pair sending that back and
+[386.08s -> 392.28s]  dealing with the first and second of the pair. Okay pretty straightforward and
+[392.40s -> 397.56s]  this by the way means if you are trying to use the find on the string if
+[397.56s -> 403.08s]  the find is not found that's string colon colon end pos that means that you
+[403.08s -> 406.68s]  are going to use the default path which is just slash means there you
+[406.68s -> 412.76s]  just said hey I want google.com with no extra stuff on it. Okay that's that.
+[412.76s -> 416.32s]  Main in this case is just gonna have one it's gonna call one function which
+[416.32s -> 421.44s]  is pull content which is going to actually do the request and get the
+[421.48s -> 425.24s]  result back and then save it into a file. That's we're doing. We'll break
+[425.24s -> 429.24s]  these up into other little parts as we go. That's really all we're doing right
+[429.24s -> 433.36s]  we're going to a website requesting the website and then asking for that and
+[433.36s -> 437.32s]  then getting the data and saving to a file that's all wget does as it turns
+[437.32s -> 448.56s]  out. Okay questions on that? Yes that's like google.com slash which is
+[449.00s -> 454.44s]  your question what it's the slash part is the default path and that just means
+[454.44s -> 459.56s]  there's no extra stuff after the view of the actual website you're going to.
+[459.56s -> 462.80s]  We'll see why that makes a difference in a little bit but it makes
+[462.80s -> 466.72s]  difference for doing like class slash class last cs110 that's our class
+[466.72s -> 471.56s]  which is a shared website on all the entire Stanford web service.
+[471.84s -> 480.36s]  Good anybody else? Okay all right so pull content is going to do the actual like
+[480.36s -> 485.24s]  hey we need to set up a client socket. Okay we will see again we'll see in a
+[485.24s -> 487.88s]  little bit doing some things a little different with this one but for
+[487.88s -> 494.16s]  now we're just going to set up the client socket okay and we are going to
+[494.16s -> 498.08s]  then do a little error checking if we with the sock didn't get set up then
+[498.08s -> 502.88s]  we're setting up a stream and the stream is going to be to actually be able
+[502.88s -> 509.00s]  to send to the to the server to say hey give me the data okay so we're setting
+[509.00s -> 513.24s]  up the stream and then we're issuing a request we are going to skip all the
+[513.24s -> 517.48s]  headers remember when a website comes back it actually gives you a whole
+[517.48s -> 520.16s]  bunch of details and we're going to look into you we're going to see those
+[520.16s -> 524.32s]  some of those details a little later and those details we don't care about for
+[524.32s -> 529.60s]  this website you might care about them you can ask for a you can ask for a
+[529.60s -> 533.32s]  website to be compressed coming back to you if you want and so that would be a
+[533.32s -> 536.52s]  header saying hey this is a compression I chose and then you'd have
+[536.52s -> 538.76s]  to decompress it yourself but we're not going to worry about that we're
+[538.76s -> 542.84s]  just getting raw text back from the server okay and then we're going to
+[542.84s -> 547.68s]  actually have to save it to a file as well okay so we're going to create a
+[547.68s -> 553.20s]  client socket okay by the way that what we need for that we need just the
+[553.24s -> 557.08s]  first part just the URL because that's how you set it up we don't care that
+[557.08s -> 562.56s]  it's slash class slash cs110 we care that it's web.stanford.edu that's what
+[562.56s -> 569.00s]  we're connecting to on a particular port for the internet ports are 80 like
+[569.00s -> 574.04s]  that's the main internet port sometimes you also see 80 80 or 8,000 or
+[574.04s -> 577.80s]  whatever those are some kind of default ones but the world wide web
+[577.80s -> 584.60s]  lives on port 80 for servers it's just generally where it lives okay and again
+[584.60s -> 587.68s]  you can change that if you have a home network you don't want any other people
+[587.68s -> 591.12s]  to know about you can say hey forward my traffic to a different port
+[591.12s -> 593.88s]  or get it get my website from a different port and people won't
+[593.88s -> 597.00s]  necessarily know how to connect to it unless they say the port number
+[597.00s -> 602.72s]  that's that's the way that works okay what questions do you have on this
+[602.72s -> 612.56s]  yes the components is the pair that we passed in it's the host and the actual path name
+[612.56s -> 619.36s]  okay yes good question anybody else all right still pretty pretty straightforward so far okay
+[619.36s -> 623.76s]  now we have to start doing the details now remember when I did telnet the other day
+[623.76s -> 631.88s]  okay the telnet command for internet websites or not the telnet command the actual HTTP request
+[631.88s -> 641.32s]  is very well defined and it starts out with get and then the path and then it says what protocol
+[641.32s -> 647.32s]  we're using in this case HTTP 1.0 or 1.1 probably doesn't matter which one you use in this case and
+[647.32s -> 653.76s]  then it has this interesting backslash R backslash N well we know what backslash N
+[653.76s -> 660.24s]  means it means newline well it kind of means newline but really it means newline in the sense
+[660.28s -> 667.68s]  that it means go directly down to the next line the backslash R is what we call a carriage return
+[667.68s -> 674.04s]  and a carriage return comes from the typewriter days where when you hit like the well used to be
+[674.04s -> 679.20s]  you actually had to hit a little lever that pushed this carriage where the paper was moving
+[679.20s -> 683.16s]  back and forth that's what happened in typewriters you should check them out sometime come to my
+[683.16s -> 687.64s]  office you can see a cool typewriter project or a couple of them and anyway the carriage
+[687.64s -> 692.44s]  return meant that the entire paper would go back to the other side I guess from your
+[692.44s -> 696.76s]  perspective it sits right back to the other side and that's what's happening with the backslash
+[696.76s -> 704.56s]  R backslash R backslash N is what you really should send whenever you are saying I am
+[704.56s -> 710.40s]  done with a line to the server it just happens to be that's the way it was that's the way it
+[710.40s -> 715.88s]  ends up working out Unix just kind of doesn't really use the backslash R often it just means
+[715.92s -> 719.52s]  look I want to go to the next line and go all the way to the front this but you do need the
+[719.52s -> 727.56s]  backslash R in there as well why don't you use end L good question end L will only send a
+[727.56s -> 734.24s]  backslash N as it turns out yeah good question though backslash N just does the back it's the
+[734.24s -> 739.80s]  Unix way of doing it just does backslash N which is not just what we want okay so it
+[739.80s -> 744.00s]  does that then the next line it says the host that you're on and the actual that takes the
+[744.00s -> 749.56s]  host and then another backslash R backslash N telnet will send that for you by the way
+[749.56s -> 755.96s]  correctly and then we send another blank line say we're done with our request and then we flush
+[755.96s -> 761.84s]  now we have to flush the actual data which means if it's buffered in the system somewhere
+[761.84s -> 766.44s]  make sure it actually gets to the other computer okay sometimes if you don't it's like if you
+[766.44s -> 771.36s]  don't do backslash N when you do printf or the end L sometimes the characters won't show up
+[771.36s -> 775.92s]  until you get that end L this is what the flush is all about it says look make sure the data is
+[775.92s -> 781.44s]  sent because otherwise the web server will have no idea when to respond or not okay let's do this
+[781.44s -> 792.08s]  example again yeah Davis no the flush doesn't check anything it just actually says oh if I've
+[792.08s -> 796.88s]  got some buffered data I haven't sent yet make sure it goes out that's really what it does it
+[796.88s -> 801.20s]  just says I could buffer it and keep it to myself time keep I'm gonna collect it all then send
+[801.20s -> 805.40s]  it all at once it says look now I want you to send it definitely send it now that's what it's
+[805.40s -> 811.68s]  there for yeah you could have flushed earlier sure it doesn't really matter the member of the
+[811.68s -> 815.16s]  web server is expecting all of the data it won't do anything until it gets all of it good
+[815.16s -> 825.04s]  question yeah a good question why do you need to flush it just turns out that there might be
+[825.28s -> 833.36s]  a situation where without a just the the backslash N might not actually do the push it like actually
+[833.36s -> 837.88s]  might not say I've got enough data to send and who knows but the flush definitely says look
+[837.88s -> 842.64s]  I'm ready to send the data make sure it goes all that goes from this point forward that's how
+[842.64s -> 847.52s]  it works that's what it's a safeguard in that sense I we could try it without it and see
+[847.52s -> 852.04s]  if it works but the odds are that it might work new lines normally send a flush but you
+[852.04s -> 867.12s]  just never know in this case yeah let me show you if we do telnet google.com 80 right and then
+[867.12s -> 875.20s]  we say get right we need the path name okay so that's the actual that's the path name I'll show
+[875.20s -> 878.48s]  it to you again that you can look in the code but I'll show you again and then we say we
+[878.48s -> 885.64s]  are gonna tell it what one slash one point I guess one point oh in this case for our example okay
+[885.64s -> 894.76s]  and then we send a return then we say host and in this case www.google.com and then you hit a
+[894.76s -> 898.00s]  new line and then it come it gets all out there so that is the three things we needed to send
+[898.00s -> 903.56s]  and that's exactly what we're sending in our program let's take a look we're saying get right
+[903.56s -> 913.28s]  here they were saying you know every time I connect to my this this tablet doesn't seem to work when
+[913.28s -> 920.04s]  I connect to when I try to go back and forth between programs don't exactly know why but there
+[920.04s -> 927.12s]  it is okay so we do the get and then we do the path which in this case was slash there was
+[927.12s -> 931.96s]  no path for Google and we didn't reason you wanted the original index dot HTML the original
+[932.00s -> 938.72s]  like slash path and then we say oh we're doing HTTP 1.0 new line and the next line we tell it
+[938.72s -> 943.92s]  what host we're on this is the google.com www.google.com and then we send a couple new
+[943.92s -> 951.76s]  lines the order does matter yeah it expects it in exactly this order why would you post
+[951.76s -> 955.36s]  second I don't know that's the way they designed the protocol I mean you're already
+[955.36s -> 959.32s]  connected to google.com you already know you're connected there but then it just says hey which
+[959.56s -> 964.60s]  particular host of it might be that the that the website you're connected to has multiple IP
+[964.60s -> 973.76s]  addresses but different hosts on that IP address yeah like max yeah it's something else dot google.com
+[973.76s -> 984.00s]  docs.google.com might be a different one too yeah it might might need that yeah no good
+[984.00s -> 988.16s]  question town that is town that is just a way to connect via the terminal that's all
+[988.20s -> 993.28s]  that is wget is the program that's doing this via a network we're writing it you'll see how
+[993.28s -> 997.60s]  the end of the actual word but we're writing the program wget which asks the request the
+[997.60s -> 1005.12s]  website gets it downloads it saves to a file that's what wget does question anybody else okay
+[1005.12s -> 1010.92s]  so that's all the issue request function is going to do it basically says hey get the
+[1010.92s -> 1018.88s]  request okay and then we need to do what we need to skip all these headers skipping the
+[1018.88s -> 1024.96s]  headers is relatively straightforward you read a bunch of lines until you get an empty line okay
+[1024.96s -> 1028.68s]  so there's a whole bunch of the first thing that comes back from the web server is all this
+[1028.68s -> 1034.64s]  header information and the way it's defined is header header header header blank line the
+[1034.64s -> 1039.24s]  rest is data that's all it is in this case we don't care what those headers are we could
+[1039.24s -> 1042.46s]  print them out if we wanted to we could look at them or whatever but for our cases we don't we
+[1042.46s -> 1048.80s]  don't care so all we're doing is doing a whole bunch of get lines and when until the line is
+[1048.80s -> 1054.44s]  empty we're just going to keep reading them now some servers aren't nice and they just send
+[1054.44s -> 1057.92s]  new lines because some people who write these things don't realize that you also need the
+[1057.92s -> 1063.56s]  backslash are we will also if we just get a line that has a backslash are on it we
+[1063.56s -> 1068.00s]  will also figure that was just a new line yeah it's just kind of a hack in that case
+[1068.00s -> 1080.00s]  yeah why are we doing it to while I think it probably saves a line of code I mean you would
+[1080.00s -> 1086.68s]  have to set you'd have to basically set the line up to be not empty and then you see what I
+[1086.68s -> 1090.96s]  mean like you'd have to set it up to some other some other way say some default value and
+[1090.96s -> 1095.68s]  then do while and then get it and you could do it sure but in this case that just saves the
+[1095.68s -> 1110.56s]  line or two or code yeah so this good question so why why get well get is one of the ways you
+[1110.56s -> 1117.72s]  can request information from a web server you can also do a post which is which means I'm
+[1117.72s -> 1123.04s]  sending data to the web server like I have a file I want to send or a name or you know something else
+[1123.04s -> 1127.84s]  you know post you can also do there's another one that you're gonna do for next assignment and
+[1127.84s -> 1131.32s]  I'm forgetting what it is there's a there's more of them too but it's just it's part of the
+[1131.32s -> 1137.20s]  language of HTTP it's all it is it's just the HTTP protocol one of the things you do is
+[1137.20s -> 1148.16s]  you use get or you use post or use some of these other ones chase if you just do slash R and not
+[1148.16s -> 1153.44s]  slash N the web server might get confused I mean it just might go are you done with the line yet
+[1153.44s -> 1157.40s]  I don't know you know just you that's why you need the protocol says you have to have both so
+[1157.40s -> 1162.84s]  we send both that's the way it works and again this is why when computers talk to each other
+[1162.88s -> 1167.84s]  they need to know exactly the right information this is why we hammer this into you and one of six
+[1167.84s -> 1171.76s]  a and B and one of seven whatever that has to be exactly the same output and it's not just
+[1171.76s -> 1175.36s]  because we're being jerks about it it's so that computers because and it's because our auto
+[1175.36s -> 1179.48s]  graders are computers right they were trying to talk to but it's you will see this again
+[1179.48s -> 1188.40s]  and again and again you need to be exact in your output the header information contains
+[1188.40s -> 1192.56s]  what kind of data is it sending back whether or not and we'll see this example we'll
+[1192.56s -> 1197.08s]  see an example of some header data we care about later it's got whether or not it's compressed
+[1197.08s -> 1203.40s]  it's got a whole bunch of whether or not the website can ask for the data when it's not on the
+[1203.40s -> 1209.72s]  website I mean so many times a website doesn't just willy-nilly give data to some other computer
+[1209.72s -> 1214.16s]  through certain methods and this in this case the the header could tell you yeah it's okay or
+[1214.16s -> 1217.76s]  maybe we don't want to do that whether it's cached or not I mean there's lots of different
+[1217.96s -> 1226.16s]  you can just look up HTTP headers and see the hundreds of them that it could be yeah
+[1226.16s -> 1229.60s]  header it's a it's one line at a time one header another header another header another and then
+[1229.60s -> 1234.80s]  the last one is a blank line and then we're into data yeah that's just the protocol pretty
+[1234.80s -> 1239.72s]  straight pretty simple all things considered a whole bunch of headers newline data it's all
+[1239.72s -> 1251.76s]  there's two okay all right so that's that let's see as we go to the next one here
+[1251.76s -> 1266.56s]  oh that's not what I wanted to do okay so we are going to then look at the get file
+[1266.88s -> 1271.36s]  name function okay and by the way this is all because all like in you can look at the code
+[1271.36s -> 1276.60s]  and see what happens but it's basically we're just decomposing this into here the get file
+[1276.60s -> 1286.60s]  name is just going to take the path and it's going to convert the path to a file name if
+[1286.60s -> 1292.16s]  it's if it's the I guess the last part of the path the file name it doesn't have a file
+[1292.16s -> 1298.20s]  name it uses index dot HTML which is like the default file name for web pages if you've never
+[1298.20s -> 1306.16s]  done any web if you've ever done any web writing you'll probably have seen index dot HTML which is
+[1306.16s -> 1311.08s]  basically the like first page you get to on a web page normally that's the way that works
+[1311.08s -> 1317.48s]  okay so it's pretty easy to do it just basically says look if the path is empty or if you've got
+[1317.52s -> 1325.04s]  slash the end just return index dot HTML okay otherwise you're going to you're going to find
+[1325.04s -> 1332.56s]  everything from the last slash this is what they are fine does and return that part of it
+[1332.56s -> 1337.40s]  that's all there is to it okay so just finding the actual file name because we're about to write
+[1337.40s -> 1347.08s]  the file out okay so what do we have to do for saving the payload well we have to read
+[1347.36s -> 1351.40s]  in okay we're going to be given a file name to save to which we're going to get from get
+[1351.40s -> 1357.68s]  file name and we're going to be given some stream that we are going to be in this case
+[1357.68s -> 1361.88s]  reading from that's the network basically okay we're going to set this up and get the
+[1361.88s -> 1366.52s]  network stream that we're reading from so we can read all the data okay and how are we
+[1366.52s -> 1372.76s]  going to do that we are going to basically say while we are not have not read all the data
+[1372.76s -> 1377.08s]  this is the do this is a wild do because we can do that in this case as it turns out for this
+[1377.08s -> 1382.28s]  kind of stream we can do that and then we just read all the data right we're going to try to
+[1382.28s -> 1388.12s]  read as much as we can into our buffer which is a fixed length why 2014 I don't know maybe
+[1388.12s -> 1395.20s]  2014 it could be whatever we want and then we count up all the data and then we write it out
+[1395.20s -> 1406.16s]  to the buffer that we actually are sorry we write it out to the we write it to the buffer
+[1406.16s -> 1411.72s]  and then let's see sorry we're reading it into the buffer so we're writing it to the output
+[1411.72s -> 1415.72s]  we are writing the buffer to the output the amount of data that we read that's all there is
+[1415.72s -> 1421.36s]  to that okay and then it said it counted up how many bytes so we know how many bytes go
+[1421.36s -> 1433.32s]  right yeah that's a good question why do we need the get filing function remember what
+[1433.32s -> 1442.52s]  if what would the file name be if I asked for web.stamp.edu slash class slash cs110 would
+[1442.52s -> 1448.04s]  it be class slash cs110 that doesn't really make sense for a file name so we just want the
+[1448.04s -> 1452.36s]  last part of it so in this case would be cs110 which actually wouldn't work for ours because
+[1452.36s -> 1458.36s]  we would be would have to request cs110 slash but if we did this would be the file in just the last
+[1458.36s -> 1462.32s]  part of it so we got the path which we're going to request but then the file name is just the
+[1462.32s -> 1467.20s]  last part of the path it's it's a bit you know we're just creating that because that's
+[1467.20s -> 1481.48s]  the way w get works yeah so what is an IO sock stream okay this is so you know how you can do
+[1481.48s -> 1487.00s]  C out and you can use that and you can do C out stuff and it works well that's a stream
+[1487.00s -> 1492.68s]  and a stream is C++ is way of saying hey here's some relatively easy ways of doing input
+[1492.68s -> 1500.32s]  and output IO sock stream is a class that's created to make wrap a network file descriptor
+[1500.32s -> 1506.76s]  into a stream so that it's easy to use that's all I have socks just a class that we're using
+[1506.76s -> 1513.60s]  to make it easy to do so that we can do things like we can do things like output dot right we
+[1513.60s -> 1519.16s]  can do things like where we read in from the SS right here SS dot read right that's like you
+[1519.20s -> 1522.72s]  do that from this stream and so forth it buffers it all for you and you don't need to worry about
+[1522.72s -> 1527.00s]  the having a while loop it does you know certain only certain amount of data and so
+[1527.00s -> 1540.08s]  it does all that for you David get a question SS dot g-count is the amount of data you get you
+[1540.08s -> 1545.48s]  got back I believe I believe that's what it is so it basically says how much we just read well
+[1545.48s -> 1551.36s]  how much did we just read right and then it just up keeps that updated from the read alright
+[1551.36s -> 1555.76s]  alright so these are all kind of helper functions right now that were that we're dealing with okay
+[1555.76s -> 1561.12s]  so let's see was that the only though that was it actually that's the week we've actually
+[1561.12s -> 1567.12s]  done everything and it's some miss a it looks no we didn't miss anything we actually had all of
+[1567.12s -> 1573.68s]  it in here because we needed to first issue the request which we saw how to do here the
+[1573.68s -> 1579.72s]  get request okay and then we skip all the headers read all those headers and then the new line and
+[1579.72s -> 1588.40s]  then we save the payload which is everything after the headers did we not have this did I
+[1588.40s -> 1593.44s]  skip the skip headers function no there is there it is yeah that's it okay so just reads
+[1593.44s -> 1597.40s]  all that all right that's how that's all we have to do in this case okay and that's it
+[1597.40s -> 1607.04s]  let's check let's check it out and see that it works okay let's see see us 110 spring live
+[1607.04s -> 1618.12s]  lecture that out of the way okay and then if we do networking and we do W web get and let's
+[1618.12s -> 1624.88s]  try google.com right well it says fetch 219 bytes which means something went wrong there
+[1625.00s -> 1633.76s]  let's look at it probably means that it didn't have the right let's see then index dot HTML
+[1633.76s -> 1642.64s]  yeah it says it has moved to google.com slash so we need to do slash and oh we need to do
+[1642.64s -> 1648.60s]  we need the www probably there we go now we've got enough bytes we got 46,000 bytes so that
+[1648.60s -> 1657.56s]  actually works what was going on if we did the if we did without like we did www if we did just
+[1657.56s -> 1663.16s]  google.com without the www well if we look at what it says it says hey that document has
+[1663.16s -> 1671.44s]  moved to www.google.com so that's just the way that's yeah it basically there's a difference
+[1671.44s -> 1678.72s]  between google.com and www.google.com right and so Google has set it up such that whenever
+[1678.72s -> 1684.56s]  you ask for google.com it says no no no please ask for www.google.com and your browser does
+[1684.56s -> 1688.36s]  all that for you you just type google.com it'll go to google.com get this message back
+[1688.36s -> 1696.28s]  and go I got I would do another request and get the real version back yeah yeah let me pull
+[1696.28s -> 1708.24s]  it up the same payload function yes ah good question so in this case because we're trying
+[1708.24s -> 1712.84s]  to read the question was why is there a terminating backslash I guess I skipped right over that when
+[1712.84s -> 1720.80s]  you you're reading in this actually says hey create the entire buffer full of zeros what it
+[1720.80s -> 1724.04s]  does in this case so they're all already zeros so it doesn't mean it means you don't have to
+[1724.04s -> 1729.68s]  put one at the end when you've read all the data in so it's already yeah good question okay
+[1729.68s -> 1739.20s]  would you also have to close the output no in this case of stream you don't need to close those
+[1739.20s -> 1744.76s]  like this case yeah I think actually I believe it gets closed when it goes out of scope because
+[1744.76s -> 1752.60s]  the way it works all right now let's look at a much more interesting and kind of a cool
+[1752.64s -> 1758.56s]  example that by the end of I think you'll see that you go oh this is cool this is how the
+[1758.56s -> 1762.24s]  internet works and this is how this is not really how you would necessarily create a web
+[1762.24s -> 1766.96s]  page but it's pretty close as it turns out okay you don't necessarily need to create your
+[1766.96s -> 1775.28s]  own web server most of the times when you put a page on a server it will get run for you
+[1775.28s -> 1780.64s]  by the web server which is already running on your computer we're gonna do a much more lower
+[1780.68s -> 1785.72s]  level version of this right now but it but it basically you can kind of see what the web
+[1785.72s -> 1792.64s]  server has to do to get your data to shoot it out to a some other client that requests it
+[1792.64s -> 1798.20s]  okay so here's what we're going to do we're going to look at and we're going to look at
+[1798.20s -> 1806.08s]  an example that which has which is kind of it's an AP it's got an API associated with it
+[1806.28s -> 1812.44s]  basically an application programming interface which basically means we know what we have to send
+[1812.44s -> 1817.48s]  to the server and it will give us back data in some form that we can understand okay who here
+[1817.48s -> 1825.84s]  has heard of JSON before J S O N okay almost everybody not quite everybody J S O N is a format
+[1825.84s -> 1832.08s]  that's machine readable but also pretty human readable okay and we'll see the actual format
+[1832.08s -> 1837.76s]  when we get to it but we're going to output our results of what I'm going to show you in this
+[1837.76s -> 1842.58s]  format so that if we wanted to and at the end I'll show you a little web page I built that uses
+[1842.58s -> 1847.84s]  that we can actually get the data formatted such that our computer can understand it and do
+[1847.84s -> 1851.32s]  something interesting with it put it on the screen in an interesting way or use it to do
+[1851.32s -> 1856.08s]  some calculations or or whatever but that's we're going to end up creating so what we're
+[1856.08s -> 1860.88s]  going to do is we're going to create this little program that uses a program called Scrabble
+[1860.88s -> 1867.20s]  word finder and this program you certainly can go look at it but that's a 106 B program basically
+[1867.20s -> 1871.84s]  takes letters that you might have from a who's played Scrabble before mostly everybody word
+[1871.84s -> 1877.64s]  finder some other like words with friends whatever you have a number of letters and the
+[1877.64s -> 1881.64s]  number of letters you have to use to make words and they're all scrambled scrambled up and
+[1881.64s -> 1887.72s]  this program will find all the words in a dictionary that are come from those letters
+[1888.60s -> 1896.28s]  that's all it's going to do let me show you an example of this let's see Scrabble word finder
+[1896.28s -> 1905.20s]  Stanford okay and it will print out all the different words that you can make from the
+[1905.20s -> 1911.68s]  letters in Stanford okay that's what the program does okay and yeah make whatever words are in the
+[1911.68s -> 1919.60s]  dictionary we'll make okay Scrabble word finder network okay we'll print out all the ones that
+[1919.60s -> 1923.60s]  happen to be words you can make from network and that's what we're going to use so let's
+[1923.60s -> 1929.56s]  pretend we have a website that wants to do this well we might create a Stanford we might
+[1929.56s -> 1936.54s]  create a Scrabble word finder program that does exactly this it takes as a parameter into the
+[1936.70s -> 1942.18s]  program the letters and it's it spits out all the words that create from those letters created
+[1942.18s -> 1948.70s]  from those letters okay so what we want to do is we want to do a server that uses this program
+[1948.70s -> 1951.70s]  or does the same thing except instead of printing it out to the screen it shoots it
+[1951.70s -> 1958.06s]  off to our client in a form that the client can understand namely JSON format okay you
+[1958.06s -> 1965.42s]  might think okay let's go into the stance Scrabble word finder program wherever it does see out
+[1965.46s -> 1971.06s]  let's set up a network connection let's do a client or we'll do a little server connection
+[1971.06s -> 1976.78s]  and we'll have an accept and all that no why would we do that if we've already got a program
+[1976.78s -> 1983.22s]  that works perfectly well there was a assignment you all did where you used other programs and
+[1983.22s -> 1989.62s]  got the results from those programs what was that program you wrote sub process right this let's
+[1989.62s -> 1995.38s]  leverage sub process to actually get the words from this exact program in our server needs to
+[1995.38s -> 2001.18s]  be this tiny little thing which basically just translates request comes in use the Scrabble word
+[2001.18s -> 2008.22s]  finder get the words send them back to be client end of story okay there's a fair amount
+[2008.22s -> 2012.70s]  of details that we're going to go through as we do this but as you see that that's what we
+[2012.70s -> 2018.78s]  want to do we don't want to modify the program that already works perfectly well if we can use
+[2018.82s -> 2027.10s]  say sub process to do this okay all right here's what JSON looks like by the way this is a the
+[2027.10s -> 2033.62s]  results of what we're going to do we are going to run this program let's run this server let's
+[2033.62s -> 2044.70s]  say it's on port 1 3 1 3 3 on myth 54 and when we request myth 54 colon 1 3 1 3 3 slash lexical
+[2044.94s -> 2051.66s]  we will take lexical and feed those letters into our Scrabble word finder so we need to we need
+[2051.66s -> 2055.10s]  to figure this and we need to parse out the various you know parts of this so that we can
+[2055.10s -> 2060.02s]  get the letters from that so we're gonna do that and then we're going to generate something
+[2060.02s -> 2066.62s]  like this we are going to say how long it took to do the request we are going to say
+[2066.62s -> 2072.14s]  whether or not it was cached or not so the assignment not this assignment but the next
+[2072.14s -> 2079.58s]  assignment in fact the big networking assignment you're going to do is a web cache program which is
+[2079.58s -> 2084.94s]  actually kind of cool but caching in networking basically means if you've already done something
+[2084.94s -> 2089.54s]  before don't do it again because networking itself is relatively slow but in this case it's
+[2089.54s -> 2094.38s]  not really that it's really if the program we have already gotten a bunch of letters and
+[2094.38s -> 2098.62s]  we've already converted them into words we might as well save those words in case somebody
+[2098.62s -> 2103.50s]  requests those same letters again in a cache and we're just going to report back whether or not it
+[2103.50s -> 2108.50s]  was cached why would the client care about this who knows maybe the client cares about it but
+[2108.50s -> 2111.98s]  we're going to tell them whether or not it was cached and then it's just and then it's
+[2111.98s -> 2119.50s]  just going to be a an array of all of the words okay so this is actually a little it's
+[2119.50s -> 2126.06s]  basically a map time and then it gives the time comma cached false and then possibilities
+[2126.06s -> 2132.98s]  and it's an array this is what JSON looks like notice it's relatively readable once you understand
+[2132.98s -> 2138.34s]  that oh this is what a what a map looks like in JSON you go oh now I can read it that's pretty
+[2138.34s -> 2144.22s]  straightforward and your your JavaScript program can read that very easily as it turns out which
+[2144.22s -> 2150.94s]  is what the you're going to probably be requesting the server the client data from okay all
+[2150.94s -> 2154.34s]  right so that's what we're going to end up doing here by doing this let's see what we
+[2154.34s -> 2158.74s]  how we're going to actually do this we're going to leverage as I said we're going to leverage sub
+[2158.74s -> 2164.18s]  process to do this and it's just going to we're just going to use it get the output and do
+[2164.18s -> 2170.98s]  that do we need to send any data into Scrabble word finder no which we're doing it via the
+[2170.98s -> 2175.06s]  command line so we don't actually need to actually say what the letters are you could have
+[2175.06s -> 2177.50s]  set the program to do that but we just do it by the command line so it's going to be
+[2177.50s -> 2183.26s]  fairly straightforward okay so here's the main function what's the main function do for our
+[2183.26s -> 2188.50s]  server it should look relatively similar to other servers let's see let me find this on here so you
+[2188.50s -> 2199.38s]  guys can copy along it is on page three maybe no oh that's right it's at the end of the program
+[2199.38s -> 2205.58s]  right on page eight sorry on page eight is where the actual main is for this okay so what
+[2205.58s -> 2211.42s]  we're doing here is we are setting up the server kind of like what we've done in the in
+[2211.42s -> 2218.02s]  the past okay we are going to create the that's right I'm zoomed in here we're going to create
+[2218.02s -> 2224.74s]  the server socket okay we are first going to extract the port that's actually a relatively
+[2224.74s -> 2228.38s]  easy easy thing we're basically just gonna get that from the command line all right and
+[2228.38s -> 2232.14s]  we're gonna get the port number because what you can do is you are going when you run this
+[2232.14s -> 2237.38s]  you can say what port you want to run it on and then we are going to if you don't it's
+[2237.38s -> 2243.26s]  going to have a default and then we are going to create the server socket okay and then we're
+[2243.26s -> 2246.54s]  going to say with what report we're listening on big deal we're going to set up this thing
+[2246.54s -> 2253.94s]  called a thread pool remember the reason we're doing this is so that we can accept connections
+[2253.94s -> 2260.62s]  very quickly up to 16 connections very quickly and shoot off threads based on those connections
+[2260.62s -> 2264.50s]  okay so it's going to be a way to do it you will build thread pool for the next assignment
+[2264.70s -> 2270.82s]  okay then we're gonna have a cache and in this case the cache is going to be those letters mapped
+[2270.82s -> 2276.50s]  to the vector of the strings of the result what do you think we're gonna have to do to the strings
+[2276.50s -> 2284.34s]  to make sure that if we get ABCD and then we get DCBA aren't those going to create the
+[2284.34s -> 2290.18s]  exact same set of words what should we do to this to the word we get in before putting it
+[2290.18s -> 2294.94s]  on a map yeah sort it just put it in sort it they're all gonna be the same but we will do
+[2294.94s -> 2301.22s]  that okay then we are going to need a mutex because we're dealing with threads we're gonna
+[2301.22s -> 2309.62s]  need a mutex for the cache lock here or for the cache basically because if we're reading from
+[2309.62s -> 2315.26s]  the cache and anybody else is trying to write to it at the exact time that could be bad news we
+[2315.26s -> 2319.18s]  might get the wrong data it might corrupt something the writing might get you know something
+[2319.18s -> 2322.18s]  might go on it probably not gonna actually corrupt anything but you might get the wrong
+[2322.18s -> 2327.82s]  data or it may actually end up being in a situation where the state is not known so
+[2327.82s -> 2333.62s]  we're going to lock anytime we read or write to that cache okay this is kind of the
+[2333.62s -> 2338.86s]  demonstration of that okay then we're gonna have our regular old while loop for our server
+[2338.86s -> 2344.10s]  that's going to accept connections okay and we're going to do things a little bit differently
+[2344.10s -> 2347.90s]  here this is the part where I said don't pay any attention to this just look at it and
+[2347.90s -> 2352.70s]  go wow we'll learn about that next week we are going to set up a this thing called a
+[2352.70s -> 2359.26s]  struct sock address underscore I end for the actual IP address the reason we're gonna do
+[2359.26s -> 2363.26s]  this is because whenever we get a client we want to actually know what IP address it came
+[2363.26s -> 2368.62s]  from why might we care about that we want to log it maybe we're maybe we're a program who
+[2368.62s -> 2373.94s]  cares about Scrabble words the most in the world what I like what regions of the world
+[2374.10s -> 2378.38s]  we might log that or whatever trust me every website you go to logs your data
+[2378.38s -> 2382.94s]  it logs your IP address it logs what you asked for it look this is how people get collect your
+[2382.94s -> 2387.10s]  data always logging details about you in this case we're going to care about what the IP
+[2387.10s -> 2392.98s]  address is okay and the way we're going to do this is this stuff which I'm not going to
+[2392.98s -> 2398.66s]  go through the details now but we will see it next week and it's it's basically used to get
+[2398.74s -> 2406.30s]  the client IP address in this case okay and we are going to once we get it by doing all this
+[2406.30s -> 2414.46s]  fancy searching through the response we're going to say that where we got it from and we have
+[2414.46s -> 2418.50s]  to actually print it out correctly and so forth but it's basically gonna say hey received a
+[2418.50s -> 2424.54s]  connection request from IP address that's what we care about okay then we are going to schedule
+[2424.74s -> 2429.26s]  the thread so that we can then go back quickly and do another accept and we're going to do that
+[2429.26s -> 2435.30s]  by path by calling our publish Scrabble words function which itself will call self-process and
+[2435.30s -> 2440.14s]  we're going to do that we need to pass in the client we're going to the file descriptor
+[2440.14s -> 2444.74s]  for that pass in the cache by reference as it turns out and passion the cache lock also by
+[2444.74s -> 2449.90s]  reference that's we're going to do okay that's the big idea of our program and then
+[2449.94s -> 2455.38s]  everything happens in publish Scrabble words where everything starts to happen there questions
+[2455.38s -> 2465.18s]  on this one no fair asking about the details we'll do next week okay all right so like I said
+[2465.18s -> 2470.26s]  all of this address size INET and top we'll talk about that next week it's kind of cool
+[2470.26s -> 2475.10s]  okay publish Scrabble words is going to rely on sub process we are going to eventually create
+[2475.10s -> 2482.14s]  JSON output and then we are going to see how that works so let's take a look and this next function
+[2482.14s -> 2487.94s]  is pretty detailed we'll do it line by line it's called publish Scrabble words and it is on what
+[2487.94s -> 2496.02s]  page seven so I'm very good for it okay all right so here's what it is you've got it on
+[2496.02s -> 2500.62s]  your thing I'll try to hopefully you can kind of see it from the back there so here's what
+[2500.62s -> 2505.54s]  we're gonna do in publish Scrabble words okay we're going to make it so that we can write to
+[2505.54s -> 2511.70s]  the client pretty easily or read and write as it turns out from the client pretty easily okay
+[2511.70s -> 2515.74s]  we are going to call a function called get letters which is going to request that which
+[2515.74s -> 2522.62s]  is going to take the request we've got and figure out what this after the slash for the
+[2522.62s -> 2528.30s]  web page that we're looking for and use those as the letters okay then as we said we're
+[2528.30s -> 2533.10s]  gonna sort them because we don't care what the order is but it's gonna make set make
+[2533.10s -> 2538.38s]  a difference for our cash okay we're then gonna time it so why do we care about timing it again
+[2538.38s -> 2543.14s]  it's this is like our own little benefit of hey how long did it take to do this maybe it's
+[2543.14s -> 2547.38s]  gonna take too long or whatever guess what the cached one should take much fewer much
+[2547.38s -> 2551.22s]  less time than they actually run on the program let's hope that that's the case we'll see if
+[2551.22s -> 2555.78s]  that's the case as we go okay we're gonna just get the time for the start and that's how
+[2555.78s -> 2561.46s]  you do that this is kind of what I showed you last week when we did the client the time server
+[2561.46s -> 2566.22s]  client similar sort of idea here now we're about to update the cache or rather we're
+[2566.22s -> 2574.10s]  gonna see if our letters are in the cache so first we lock it then we do a find on our
+[2574.10s -> 2581.98s]  map okay and then we immediately unlock don't lock for longer than you have to okay we could
+[2581.98s -> 2589.94s]  just don't lock guard into the rest of the function just been guarding that that variable
+[2589.94s -> 2594.74s]  or the map but we don't want to because we want other threads to also be able to read
+[2594.74s -> 2598.82s]  to it and other threads to be able to update it so don't lock for longer than you have to
+[2598.82s -> 2603.98s]  that is a definite style issue that also can just affect your program runtime so be very
+[2603.98s -> 2609.70s]  careful about doing that okay if we were basically coming up with a little Boolean that says
+[2609.78s -> 2616.54s]  whether or not we found the cash or not or found the string in the cache and we're going to create
+[2616.54s -> 2622.34s]  a vector that we're going to put those words in if we are cached we're done right we basically
+[2622.34s -> 2628.74s]  say great the words that in the vector are the words from our cache and a story okay the way
+[2628.74s -> 2633.18s]  find works is it gives you back a pair the second part of the pair of the iterator rather
+[2633.18s -> 2638.46s]  it gives you back an iterator and the second the second thing in the iterator is the actual
+[2638.50s -> 2644.26s]  vector in that case the the value from the map okay so it's going to do that otherwise we didn't
+[2644.26s -> 2649.74s]  find it in the cache well now we need to actually go and use our sub process so we're going to call
+[2649.74s -> 2653.26s]  our sub process we're going to set up our sub process command how are we going to do that
+[2653.26s -> 2658.06s]  Scrabble word finder is the name of the program letters dot C string that's the letters
+[2658.06s -> 2663.74s]  we just obtained that's the second parameter the first parameter to our through our program
+[2663.78s -> 2669.30s]  and then no that should look pretty familiar from your ship Stanford shell okay then we're
+[2669.30s -> 2676.02s]  going to call a function called pull formable words and we're going to pass in a reference to
+[2676.02s -> 2680.94s]  the vector and we're going to pass in the file descriptor we get back from sub process
+[2680.94s -> 2685.54s]  this is basically doing saying hey we're going to get all the words out of sub process throw
+[2685.54s -> 2691.58s]  them into that vector one line at a time fairly straightforward and don't forget we have to
+[2691.58s -> 2695.78s]  wait till we're done right if you're doing the multi-processing you have to do weight PID
+[2695.78s -> 2702.62s]  this is this example ties in everything we've done so far as it turns out okay and then once
+[2702.62s -> 2708.10s]  we get the result back we know we weren't cached before we better put our vector into
+[2708.10s -> 2717.02s]  the cache so we lock our we lock our variable our map we lock around our map I should say
+[2717.02s -> 2726.26s]  via the cache lock then we update the cache with the vector based on the key of the letters
+[2726.26s -> 2730.94s]  that have been there that are sorted now and that's it we can use a lock guard because when
+[2730.94s -> 2734.18s]  this goes out of scope the lock comes on really it gets unlocked
+[2734.18s -> 2748.54s]  wait wait wait say it say again we purposely previously said to do what
+[2748.54s -> 2763.14s]  oh right right right we shouldn't call sub process with you can call let's see you
+[2763.14s -> 2768.14s]  can call in this oh good question that's a question questions wait we shouldn't we shouldn't
+[2768.14s -> 2778.98s]  mix threading and multi-processing in this case it's actually going to be okay because sub
+[2778.98s -> 2785.74s]  processes we're very careful in sub process only to allow the it's still in the same thread in
+[2785.74s -> 2790.54s]  that case okay I mean the thread now you do have you're right you do have multiple you
+[2790.54s -> 2795.74s]  do multiple process in that but we are waiting for it properly and we are doing that okay so
+[2795.74s -> 2801.22s]  yeah in this case it's all right yeah I think let me look into a little more detail and yeah
+[2801.22s -> 2807.42s]  that's a good point though because we always said we said don't mix don't mix those in that
+[2807.42s -> 2812.26s]  way yeah it does turn out it works but that's good question so I'll look into it yeah good
+[2812.26s -> 2819.30s]  question yes yeah of course we're gonna go down this path now okay why should we not
+[2819.30s -> 2827.90s]  usually mix if you are if you are in a thread and you're calling multi you're calling at your
+[2827.90s -> 2836.14s]  you're forking off a process right well then the thread is now kind of outside your process
+[2836.14s -> 2842.22s]  and like it's in its own like that the thread has to coordinate now wait wait now I've got this
+[2842.22s -> 2846.14s]  other process going on but I'm process and I've got three so it's not necessarily a good thing
+[2846.14s -> 2850.30s]  which is why I have to look up why this actually works but the in that sense you don't want to
+[2850.30s -> 2854.70s]  you've got a thread manager and a process manager and they don't always work well together
+[2854.70s -> 2859.86s]  okay in a process you should be able to call threads but we're doing the opposite here so I
+[2859.86s -> 2863.98s]  will look this up and see why yeah I'm not but otherwise you don't it's basically because
+[2863.98s -> 2867.62s]  you've got two scheduling things going on that don't like to necessarily they won't
+[2867.62s -> 2871.18s]  necessarily work well together a good good question this is a good point
+[2871.18s -> 2891.82s]  yeah right so the question is go over again why we use the locking here and not the lock
+[2891.82s -> 2896.34s]  guard but we're able to use the lock guard down here and you're absolutely correct your
+[2896.34s -> 2903.90s]  comment was up here we need to unlock here before there's any scoping going on anything going out
+[2903.90s -> 2907.30s]  of scope nothing here is going out of scope so if we tried to use a lock guard it wouldn't
+[2907.30s -> 2912.18s]  actually go out there with the lock wouldn't release until somewhere down here where we're
+[2912.18s -> 2917.14s]  out of a scope and that's not what we want but here because the last thing we're about to
+[2917.14s -> 2921.74s]  do is update the cache and then to definitely go right out of scope we can use the lock guard
+[2921.74s -> 2928.66s]  exactly right yeah you don't have to you could do lock here unlock after the cache perfectly fine
+[2928.66s -> 2934.58s]  you will not get marked out nope it's not a style issue no it's just it's a style it's a style but
+[2934.58s -> 2938.62s]  it's not a bad thing to do with the lock unlock perfectly fine chase you had a question
+[2938.62s -> 2943.90s]  no okay another hand over here okay good questions on here very good questions but that's that's
+[2943.90s -> 2949.02s]  the meat of this here after we get the words out well that's how long it took so then we
+[2949.02s -> 2956.46s]  get the end time okay then we do a little a couple more commands to our functions to
+[2956.46s -> 2963.30s]  actually figure out what the duration of the time was in seconds this is using the another
+[2963.30s -> 2971.62s]  time Eve time valve struct and in this case just it just uses the seconds plus the millisecond
+[2971.62s -> 2977.18s]  or microseconds divided by a million which gives you the seconds and that's how that one works
+[2977.22s -> 2984.62s]  out and then we are going to set up the payload now the payload in this case is we're gonna
+[2984.62s -> 2991.70s]  basically construct the payload from the words from whether or not we've been cached or not and
+[2991.70s -> 2996.46s]  from the time and then we were passing in this string we want a string that we were
+[2996.46s -> 3001.06s]  gonna send back to the client we have to construct that doesn't kind of come for free we
+[3001.06s -> 3008.02s]  have to kind of create a JSON string out of it okay once we construct that payload we then
+[3008.02s -> 3016.62s]  send it using another function called send response okay all right the payload is a string
+[3016.62s -> 3021.26s]  that we're gonna send back to the client and that's JSON you'll see it when we when we build
+[3021.26s -> 3026.46s]  it okay this is a long function other questions very good question about the thread multi-threading
+[3026.46s -> 3030.82s]  multi-processing other questions on this one and good throws a good question a lot
+[3030.82s -> 3047.42s]  okay yeah the question is hey how does this time thing work basically up here we are creating a
+[3047.42s -> 3053.02s]  very local variable called start it happens we have a type type time struct time valve and
+[3053.10s -> 3057.54s]  then we're populating with the current time get time of day we'll say what time is it right now
+[3057.54s -> 3062.54s]  and populates that and then whenever we and then we just keep that locally and then later
+[3062.54s -> 3067.38s]  after we do all of our checking or all of our creating the words and so forth we then say
+[3067.38s -> 3071.74s]  that took this much time we do it again we get the time of day now subtract the two and
+[3071.74s -> 3076.26s]  we get the duration exactly what you would have done in the midterm again it's
+[3076.26s -> 3091.46s]  tying everything together the sock stream at the top is for basically reading in the data
+[3091.46s -> 3098.22s]  which we will let's see we will write out the data here and then let's see do we read it
+[3098.22s -> 3104.46s]  anywhere else or do we already have it ready yes the get letters get letters is going to read
+[3104.46s -> 3112.86s]  from that one an o-string stream is we are going to build up a string and that's how you do this
+[3112.86s -> 3118.50s]  right it actually it allows you to take a string and build it up one piece at a time
+[3118.50s -> 3122.86s]  it's kind of how it works you could do it as a regular string but this is like a string
+[3122.86s -> 3127.82s]  builder in Java you know you might have used in job so you'll see how it works you'll see
+[3127.82s -> 3136.94s]  other questions on this one okay let's move on okay so the poll formable words this is where we
+[3136.94s -> 3143.54s]  need to use the file descriptor we got from our sub process to actually create all those words
+[3143.54s -> 3148.30s]  and put the words into a vector it's pretty straightforward right we are going to do this
+[3148.30s -> 3155.42s]  which is not something you may have seen before this is actually creating a it's basically
+[3155.50s -> 3161.58s]  creating a data structure that allows you to create an input stream for that for C++
+[3161.58s -> 3170.54s]  that's all that is and then we read one line at a time from the sub process and after we read
+[3170.54s -> 3178.70s]  one line at a time we until we get to the end we then push it into the vector all there is to
+[3178.70s -> 3183.82s]  it there and that vectors of reference so we don't need to return or anything okay all right
+[3183.82s -> 3189.18s]  send response well remember we've already constructed the payload we'll see that in a
+[3189.18s -> 3196.34s]  minute okay send response does the following well it actually is the reverse of the get command
+[3196.34s -> 3204.82s]  okay the get function it's the server sending data back before when we did the get time server
+[3204.82s -> 3210.54s]  we didn't care what the format was it was our own special format we now want this to be
+[3210.54s -> 3218.46s]  so that a web a web like a client or a web browser could use our server we're actually raising up the
+[3218.46s -> 3223.66s]  stakes here now we're saying oh let's do this from our from our browser so the browser is
+[3223.66s -> 3229.50s]  expecting the response to be in the following format it's expecting us to say we are using
+[3229.50s -> 3238.50s]  HTTP 1.1 slash or 1.1 then it says what is the status okay in this case it's 200 and if
+[3238.50s -> 3253.26s]  you go look up let's see suit this way each HTTP 200 it says it says the HTTP HTTP 200
+[3253.26s -> 3260.50s]  okay status response code indicates that the request has succeeded so you get back a 200
+[3260.50s -> 3264.94s]  that says hey your request succeeded there are lots of things that could go wrong the server
+[3264.94s -> 3268.54s]  could timeout some reason that would be a different command there would be a different one the server
+[3268.54s -> 3272.66s]  could have moved remember the one we got before which was what was it 300 or whatever it says
+[3272.66s -> 3279.34s]  look this means the server has moved you can look up the all the you can look up all the
+[3279.34s -> 3285.82s]  status codes and all the status codes are right here 200 is okay 201 means it's something's
+[3285.82s -> 3290.90s]  created there's an accepted you're basically the server sending back to the data to the client
+[3290.90s -> 3295.54s]  saying here's what's going on right now and it's and generally you're looking for 200 which says
+[3295.54s -> 3300.74s]  great everything worked out okay the ones that did redirection is the ones we saw before okay
+[3300.74s -> 3305.62s]  and that's the command the ones that client errors or 400 say the client says oh I screwed
+[3305.62s -> 3309.38s]  up right or you screwed up I get server saying hey you screwed up you didn't ask for the
+[3309.38s -> 3313.78s]  right thing or you didn't give him the right form or whatever bad request or unauthorized or
+[3313.78s -> 3319.82s]  whatever 500s are I screwed up the server screwed up which are down here internal server error
+[3319.86s -> 3327.18s]  maybe I gave the wrong issue there's timeouts or whatever there's one that let's see there's one
+[3327.18s -> 3335.70s]  called I am a teapot which is 418 that one in here there we go one of the original web servers
+[3335.70s -> 3340.78s]  ever was a little web server that basically said whether or not coffee was ready in an office
+[3340.78s -> 3344.90s]  sounds pretty banal but that's the way things work you know when they create these things the
+[3344.90s -> 3350.14s]  first web server was this so somebody coded this up and said if you get 418 back it means you're
+[3350.14s -> 3356.46s]  a teapot why well that's the way it goes it's kind of an easter egg it turns out okay all
+[3356.46s -> 3367.94s]  right so so we will send back okay we will send back the I am using HTTP 1.1 0 200 and
+[3367.94s -> 3372.06s]  then you also send it okay which says everything worked out great and then you send your little
+[3372.06s -> 3377.66s]  backslash our backslash and then you send some headers now this is where the server is sending
+[3377.66s -> 3385.30s]  headers to the client okay the header in this case is text slash one of them is called content
+[3385.30s -> 3390.34s]  type you will see that all the time if you're doing back-end server work content type is what
+[3390.34s -> 3395.38s]  kind of data am I sending back in this case we're sending text slash JavaScript and then
+[3395.38s -> 3400.46s]  we're also saying what character set we are using which is good because the computers around the
+[3400.50s -> 3407.26s]  world know how to translate what we're sending the text slash JavaScript is a little weird I looked
+[3407.26s -> 3413.10s]  it up I was I was confused about why we were using that why we were using that ourselves so
+[3413.10s -> 3428.54s]  I just looked up like what what should be the content type what should the content content type
+[3429.34s -> 3434.70s]  be for JSON and if you look it up there's the first link there of course the stack overflow
+[3434.70s -> 3438.34s]  it says I've been messing around here are all the ones that I've used seen used which one is
+[3438.34s -> 3443.54s]  correct when we were using his application slash no it was text slash JavaScript so you
+[3443.54s -> 3448.82s]  can use that one but somebody says no no no you should use application no sorry you
+[3448.82s -> 3454.26s]  should use application slash JSON that's what we should be using so we could change this
+[3454.50s -> 3459.38s]  basically your browser if you can figure it out and it knows most of these it will figure it out
+[3459.38s -> 3463.90s]  that's what we're trying to in this case it's saying hey what's the format of the response
+[3463.90s -> 3471.42s]  going to be and that's what we're doing there okay all right then we are saying how
+[3471.42s -> 3477.46s]  long the data is so the content length is how many bytes am I about to send you why do we
+[3477.46s -> 3481.94s]  need to send the data why can't we just put a zero at the end it could be binary data it
+[3481.98s -> 3487.18s]  could be a JPEG or some other data that's not text and you can't have some particular character
+[3487.18s -> 3492.86s]  say when the data is ending you have to send the length so the client knows to keep reading
+[3492.86s -> 3498.30s]  for that amount of data okay now it could read until it ends which is also probably fine
+[3498.30s -> 3502.22s]  but it's good to know it good to send up the data so it knows how much data it's expecting
+[3502.22s -> 3505.94s]  and normally it would just keep reading until nothing's left and then say oh that's all
+[3505.94s -> 3511.42s]  the data but that's that remember after our headers newline so we're sending that newline there
+[3511.42s -> 3516.90s]  and then we send the entire payload and then we flush to make sure that it gets sent over
+[3516.90s -> 3526.06s]  the data or the network okay so that's going on there questions on this one these functions
+[3526.06s -> 3534.06s]  this response is what we're have to send back so the website or so the web browser knows what
+[3534.06s -> 3542.54s]  to expect all right a couple other ones we're going to look at here the get letters function
+[3542.54s -> 3551.62s]  which is basically getting the letters from your clients okay how does that work remember if you
+[3551.62s -> 3563.02s]  say if you say myth 58 slash ABCDE well we need that you need the port number in there too
+[3563.02s -> 3567.90s]  but it's the ABCDE part we want to grab off of this so let's see how we do that okay what are
+[3567.90s -> 3571.46s]  we going to do we are given the socket stream that we already set up this is where we set that
+[3571.46s -> 3576.62s]  up earlier because we're about to read it we are going to create a method string a path string
+[3576.62s -> 3584.90s]  and a protocol string because remember there's get and then the path ABCD and then the
+[3584.90s -> 3593.34s]  HTTP 1.1 etc okay so we need to do that method path protocol we're going to read them in nice
+[3593.34s -> 3598.10s]  thing about a stream is you can do it one after the other boom boom boom read them in
+[3598.10s -> 3603.18s]  one one after the other reads it ignores the white space in there or it breaks on the white
+[3603.18s -> 3609.10s]  space all right and then we need to get the rest which is one more line because we know
+[3609.18s -> 3616.10s]  that the net we're going to have one more line after that okay and then we are going to just
+[3616.10s -> 3622.86s]  use the path that's the only part that we use to do the to get the end of that path to get
+[3622.86s -> 3628.02s]  our letters out of it so basically we're using the fact that you're sending to a particular path
+[3628.02s -> 3635.22s]  we're using that path as the letters and that's how we're doing that okay that's all
+[3635.22s -> 3643.70s]  there is to that return pause equals equals string and but we didn't find anything right
+[3643.70s -> 3649.06s]  what are we going to return back we're going to return back the entire path otherwise we're
+[3649.06s -> 3662.66s]  going to return just the stuff after the slash all right and then the construct payload part
+[3662.66s -> 3668.82s]  is going to do the JSON part now JSON is a very particular format it starts with a curly brace
+[3668.82s -> 3673.22s]  and it ends with a curly brace and inside it's got some fancy things in fact the one that's on
+[3673.22s -> 3676.82s]  the slide here I modified a little bit so that I could show you something in a few minutes
+[3676.82s -> 3682.50s]  basically generally real JSON actually needs another quote around all the different parts here
+[3682.50s -> 3686.90s]  so basically it needs a quote around all the parts and it's not reflected here so I guess
+[3686.90s -> 3691.42s]  I should update that but basically we're gonna say the time put the time whether or not it's
+[3691.42s -> 3699.06s]  cached we're gonna put whether true or false and then the the entire a vector of strings
+[3699.06s -> 3712.74s]  that we got back from when we said the status is okay we're we're saying if we got to this
+[3712.74s -> 3718.14s]  point we're about to send you a good string that's what means the status is okay so if you're
+[3718.18s -> 3721.54s]  to the point where you've collected all your data it's good to go and you're ready to send
+[3721.54s -> 3725.94s]  a response back and everything looks fine you send okay you say yeah I'm ready it sounds like
+[3725.94s -> 3729.42s]  you give me a good response here it is and that's that now if anything else breaks in the
+[3729.42s -> 3732.98s]  middle like the network goes down or something you just won't get a response and then it'll time
+[3732.98s -> 3741.42s]  out in the web browser and so forth good question all right so we are ready to test it
+[3741.42s -> 3745.26s]  and then I want to show you a couple other fun things okay so I've got it all written here
+[3745.26s -> 3757.62s]  it's going to be it is Scrabble is Scrabble Scrabble word finder server I am on myth 59 and
+[3757.62s -> 3764.98s]  oh no oh I bet I'm on it that's okay let's do one two three four five and see if that
+[3764.98s -> 3770.46s]  way there we go okay so we're now on one two three four five so if in another window we go
+[3770.46s -> 3779.90s]  to telnet myth 59 one two three four five okay over here notice it says received your connection
+[3779.90s -> 3785.22s]  request from 171 dot 64 dot 15 dot 17 that's a log it said that's the that's where we got the
+[3785.22s -> 3790.14s]  request from your IP address gets sent to whoever it has to of course get sent to whoever your
+[3790.14s -> 3794.86s]  the server is and it gets logged okay all right so let's do our little get command we want to
+[3794.86s -> 3807.30s]  get slash let's say Stanford and then we're gonna do HTTP colon slash 1.1 and then we want to have
+[3807.30s -> 3814.14s]  like a host myth 59 I don't think it just kind of ignores that for ours and then that's that
+[3814.14s -> 3820.74s]  and look what we got back right we got all our words back which is kind of cool right so
+[3820.74s -> 3826.38s]  far so good well I promised you that we would be able to do this from a web browser let's see if
+[3826.38s -> 3835.46s]  that works okay so if I type in myth 59 colon one two three four five slash somebody give me a
+[3835.46s -> 3845.86s]  bunch of letters a b c d e f g okay if this all works well there's our JSON that we got
+[3845.86s -> 3849.38s]  back okay it's kind of small but that's what it is and that's what we got back from our
+[3849.38s -> 3855.38s]  web so we created a web sir we made a web server that actually did this okay now this is kind of
+[3855.38s -> 3860.02s]  interesting and by the way notice how long it took 0.04 seconds that's how long it took to do
+[3860.02s -> 3865.86s]  all that if we do the same request again it took 1.5 to 10 in the negative fifth sets because
+[3865.86s -> 3870.10s]  it was cached for us we had those words were already created for us they were cached our
+[3870.10s -> 3875.22s]  server just went there you go I don't need to recall that sub process baloney anymore and
+[3875.22s -> 3879.62s]  Eva tells this is probably not a good thing to do anyway so it worked that that's how that worked
+[3879.62s -> 3884.70s]  okay now you're saying yourself great this doesn't look like any web page I've ever been
+[3884.70s -> 3891.90s]  to right with this stuff so what you can do is you can sorry that's true okay what you can
+[3891.90s -> 3903.70s]  do is when you open up let me go to okay and let me go up here and do the same thing
+[3903.70s -> 3912.10s]  here but in this case myth let's see 59 colon 1345 okay so I didn't put a that time I didn't
+[3912.10s -> 3918.14s]  put an actual thing in there in JavaScript you can actually request websites from JavaScript
+[3918.14s -> 3925.62s]  okay so let's actually do that what you can do in what's kind of cool about your your browser
+[3925.62s -> 3930.94s]  and this is why I was using I was using Chrome because I happen to know how to use these ones
+[3931.02s -> 3936.74s]  pretty well let's see that one you can close so let's see this is gonna make this bigger yes
+[3936.74s -> 3941.94s]  I can okay we're gonna actually use what's called the fetch command to do this so if I
+[3941.94s -> 3947.50s]  type fetch that's actually has the ability to fetch from a website okay and if I type
+[3947.50s -> 3959.18s]  HTTP colon slash slash myth 59 dot Stanford dot edu colon 1 2 3 4 5 that's where we are slash
+[3959.18s -> 3969.34s]  let's do Leland let's say we had those letters okay and then method you take the method in this
+[3969.34s -> 3983.30s]  case what's wrong there's no why oh man like that yeah sorry sorry I feel bad now okay I'm
+[3983.30s -> 3988.58s]  not gonna work here much longer don't tell anybody please okay let's get we're gonna use
+[3988.58s -> 3995.62s]  the get method here oops I do need it thank you very much syntax highlighting is nice okay
+[3995.62s -> 4004.34s]  so we're gonna do get in this case okay and then we're actually going to do a thing called
+[4004.34s -> 4009.10s]  then which is the part of the request that says how to do this you do not need to know this
+[4009.10s -> 4013.62s]  obviously I'm just showing you that it works we're gonna return data dot JSON because we know
+[4013.62s -> 4020.14s]  it's JSON that's what we're expecting okay and then we do another then and in this case
+[4020.14s -> 4025.14s]  this is the one that actually does the response okay and what we can do is we can print it out
+[4025.54s -> 4033.66s]  console dot log with printed to the log response okay and like that and then we can actually catch
+[4033.66s -> 4037.62s]  the error if there's an error there shouldn't be in this case there might be who knows error
+[4037.62s -> 4046.78s]  and let's see console dot log and whatever the error is we can do that okay if all goes
+[4046.78s -> 4052.06s]  well let's see there we go it gave us the amount of time it took and it gave us that and
+[4052.06s -> 4055.94s]  that's that so we just wrote a little JavaScript function do that again you're saying yourself that
+[4055.94s -> 4062.78s]  doesn't look like any webpage I've ever been to okay but what you can do is where do I want to
+[4062.78s -> 4067.34s]  go here I think I put it yeah I put it on your website by the way you all can go from
+[4067.34s -> 4070.94s]  your web browser and do this I don't know if anybody tried that in the last five minutes but
+[4070.94s -> 4076.38s]  what's that oh yeah people are doing it thank you I guess everybody's doing it you can
+[4076.38s -> 4084.14s]  do that I guess you people are doing that class cs110 www okay let's see it is called
+[4084.14s -> 4091.22s]  scrabble word finder dot HTML I wrote a little HTML program to do this and the reason I'm
+[4091.22s -> 4096.30s]  changing it right now is because I hard-coded shouldn't do this but I hard-coded the wrong I
+[4096.30s -> 4100.74s]  didn't know it was gonna be there on one one two three four five in there okay and basically
+[4100.74s -> 4105.30s]  it's setting up a little web page so if you've done any web were bad web stuff before you'll
+[4105.34s -> 4109.74s]  see I'm just sitting up ahead of the title of the web page and a couple of places to put the
+[4109.74s -> 4116.90s]  details and whatever and if all goes right we should make this a little bigger oops we should
+[4116.90s -> 4126.22s]  be able to go to web.stanford.edu slash class slash cs110 slash scrabble what did I do it
+[4126.46s -> 4135.18s]  scrabble word finder word finder dot HTML and there we go okay we have our letters and if we
+[4135.18s -> 4142.66s]  type L E L A N D correct this time right we should get it back and there's our web page so
+[4142.66s -> 4146.66s]  we created a and that used by the way that fetch and whatever and use the JavaScript and said
+[4146.66s -> 4151.66s]  oh I know what these things are and it made it into us still a dumb looking web page certainly
+[4151.66s -> 4159.90s]  but it now works just like any other web page that you might might care about okay so what are
+[4159.90s -> 4167.02s]  there weird words in there you can get adorns from Leland I don't know if you do that what's
+[4167.02s -> 4177.34s]  that no you can't you're right wait a minute this didn't work what happened with that say
+[4177.34s -> 4187.78s]  again no I didn't I did I probably did oh my gosh I did you're right okay I'll fix I'll fix that
+[4187.78s -> 4193.74s]  Wow good call that doesn't make any sense okay yeah for some reason it would be easy enough
+[4193.74s -> 4199.58s]  to get why why didn't anyway I didn't do it so oh there it is right there we'll fix it
+[4199.58s -> 4204.78s]  right now since we can it's letters I knew I got it out of there I just forgot to do that
+[4205.34s -> 4213.74s]  let's see plus let's do this slash plus letters okay live changing the website right there let's
+[4213.74s -> 4226.74s]  see if this works better okay okay I don't know the good thing when you get applause after you
+[4226.74s -> 4232.30s]  make a dumb mistake fixing it might be the good thing okay one other question you have about this
+[4232.30s -> 4235.82s]  that was a lot of code to look through today but it's all in there and it's a lot of stuff
+[4235.82s -> 4240.30s]  we've seen over the years I will find out about the multi-processing sets a great question and then
+[4240.30s -> 4262.22s]  we'll do it yeah oh yeah so good question if you just type
+[4262.22s -> 4268.74s]  myth 59 the web server is a different computer altogether the actual Stanford web server is not
+[4268.74s -> 4274.34s]  on the myth machines we created our own little server which is kind of a cool part right but we
+[4274.34s -> 4279.30s]  created our own little server the web server that Stanford uses is a professionally built well
+[4279.30s -> 4283.74s]  open source but professionally built server that is that serves all the regular old Stanford
+[4283.74s -> 4288.38s]  web pages that you go to web.stanford.edu that's where I put this one but remember this
+[4288.38s -> 4300.86s]  one goes to myth 59 and I highlight I did hardcode go to myth 59 in this okay that's
+[4300.86s -> 4315.14s]  chrome this tab is my computer talking directly to myth 59 how does it know where myth 59 is
+[4315.14s -> 4319.86s]  remember the DNS server I mentioned the other day that's where the domain name sort of you say
+[4319.86s -> 4326.14s]  go to myth 59 your computer and you're through your browser basically looks up what is that what
+[4326.14s -> 4333.02s]  IP addresses that connect to then it goes directly there this goes directly to myth 59 if I'm in
+[4333.02s -> 4339.50s]  the website here now I'm on the Stanford website which I'm cannot talk the browser is talking to
+[4339.50s -> 4345.70s]  Stanford website the Stanford website and through JavaScript and it that comes to me and then it
+[4345.70s -> 4353.30s]  tells me the JavaScript I need to go to myth 59 directly so basically I'm loading the web page
+[4353.30s -> 4360.50s]  from web.stanford.edu which is the main Stanford website and then I'm myself talking directly to
+[4360.50s -> 4368.66s]  myth 59 on my computer here to get the actual words you could probably do it a different way
+[4368.70s -> 4374.46s]  where you had this website or my computer talk back to the Stanford website which then
+[4374.46s -> 4379.30s]  talks to myth 59 and does a one more layer of indirection but in this case we skipped that
+[4379.30s -> 4393.34s]  layer of indirection I know so it's a little there's a lot going on there yeah the port
+[4393.34s -> 4403.78s]  closing happens it is it happens when the client socket goes out of scope so it's basically back
+[4403.78s -> 4409.18s]  wherever we created it I think we created right here so it goes out of scope like down here at
+[4409.18s -> 4413.78s]  the end of this function and then it closes it that's where this that's where the in our case
+[4413.78s -> 4419.86s]  the server closes the connection to the client okay good questions all right I like I said I'm
+[4419.86s -> 4423.94s]  delighted to do ops hours now feel free to stop by right after class and ask more questions and
+[4423.94s -> 4425.22s]  we'll see you guys in lab

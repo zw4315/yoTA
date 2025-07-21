@@ -1,0 +1,1739 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 11.56s]  So let's get going from a review from last time because sometimes it's good to page
+[11.56s -> 14.12s]  back in what we learned.
+[14.12s -> 16.44s]  So I asked you a couple of trivial questions.
+[16.44s -> 19.88s]  One of those questions was, what is a computer program?
+[19.88s -> 23.76s]  And really I meant what is a computer program as we're going to think about it
+[23.76s -> 28.16s]  in this class from the perspective of a computer.
+[28.20s -> 30.56s]  So what was a computer program?
+[30.56s -> 33.80s]  It's in the habit of just shouting out things that are maybe even obvious.
+[33.80s -> 36.44s]  And it'll just keep the list of instructions.
+[36.44s -> 39.16s]  Or if you want to even, I could ask you what's an instruction.
+[39.16s -> 42.60s]  If we want to be more abstract, it's just a list of commands.
+[42.60s -> 45.84s]  A program is a list of commands telling the machine you will do this,
+[45.84s -> 47.40s]  you will do that.
+[47.40s -> 50.34s]  So I have here the slides of a list of processor instructions.
+[50.34s -> 55.32s]  At the end of the day, this program text turns into a list of commands.
+[58.60s -> 62.24s]  And what did a processor do?
+[62.24s -> 66.88s]  Given a list of commands, what does a processor do?
+[66.88s -> 68.32s]  It executes those commands.
+[68.32s -> 69.56s]  I'll give you that one.
+[69.56s -> 71.52s]  But when we talk about executing the commands,
+[71.52s -> 73.84s]  what are the effects of those commands?
+[73.84s -> 76.44s]  What do they do?
+[76.44s -> 77.44s]  Modify state.
+[77.44s -> 79.04s]  Modify state.
+[79.04s -> 81.16s]  And we talked about two types of state.
+[81.16s -> 83.32s]  We talked about registers.
+[83.32s -> 87.76s]  And we talked about main memory.
+[87.76s -> 90.64s]  So this processor, it executes instructions.
+[90.64s -> 94.50s]  I gave you this really simplistic notion, just enough detail
+[94.50s -> 95.96s]  to help us think about it.
+[95.96s -> 99.36s]  It's useful to think about there's components of the processor that
+[99.36s -> 101.16s]  are about control.
+[101.16s -> 103.96s]  Given the program, what do I do next?
+[103.96s -> 105.32s]  What's the next operation?
+[105.32s -> 107.64s]  Or if there's a branch, where do I go next?
+[107.64s -> 110.92s]  I typically just have that as my orange boxes here, fetch and decode.
+[110.92s -> 112.72s]  Then you have a part of a processor, some
+[112.72s -> 115.44s]  of the hardware that's actually responsible for doing stuff.
+[115.44s -> 117.48s]  So I'm calling that the execution unit.
+[117.48s -> 119.28s]  And we have two forms of context.
+[119.28s -> 122.36s]  We have the register state of the processor.
+[122.36s -> 126.20s]  And then not shown on the diagram, we have memory.
+[126.20s -> 129.32s]  And my simple processor last time
+[129.32s -> 132.12s]  was going to execute one instruction every clock
+[132.12s -> 133.08s]  tick, making progress.
+[136.80s -> 138.12s]  But then we said something else.
+[138.12s -> 141.04s]  We said, well, if we look at the instructions in a program,
+[141.04s -> 143.72s]  if we look at those instructions,
+[143.72s -> 146.70s]  and this was a larger program, we
+[146.70s -> 148.34s]  could take a look at them and say,
+[148.34s -> 151.72s]  not all the instructions depend on the previous one
+[151.72s -> 153.46s]  in the sequence.
+[153.46s -> 155.70s]  So this was a sequence where I really
+[155.70s -> 159.62s]  recommend that you go offline and confirm to yourself
+[159.62s -> 162.34s]  that if these are the numbers of the instructions,
+[162.34s -> 164.50s]  and I'm representing those instructions
+[164.50s -> 167.58s]  as a node in the graph, there are certain dependencies.
+[167.58s -> 172.46s]  I have to do instruction two, for example,
+[172.46s -> 175.38s]  after I do instruction zero and one.
+[175.38s -> 177.94s]  Because I can't add two numbers if I haven't brought them
+[177.94s -> 181.62s]  in from memory or something like that.
+[181.62s -> 184.02s]  And so we said that in the same way
+[184.02s -> 186.42s]  that you can look at this program and go,
+[186.42s -> 189.54s]  I know I'm supposed to get an answer that's
+[189.54s -> 194.70s]  the same as if I ran these all serially.
+[194.70s -> 197.74s]  But if I had extra resources sitting around,
+[197.74s -> 200.50s]  I can do some of these things in parallel
+[200.50s -> 203.34s]  without really telling anybody that I changed the order,
+[203.34s -> 204.58s]  and they'll never know.
+[204.58s -> 206.02s]  All they'll see is that this program
+[206.02s -> 207.94s]  goes a little bit faster.
+[207.94s -> 211.82s]  And so we talked about this one idea last time
+[211.82s -> 215.14s]  of super scalar execution.
+[215.14s -> 217.56s]  If you break down the word, it's kind of a weird term,
+[217.56s -> 218.98s]  but if you think about it, it's
+[218.98s -> 220.46s]  like scalar execution, which is
+[220.46s -> 222.46s]  doing one thing at a time.
+[222.46s -> 226.50s]  And the super scalar is kind of like a fancy technical term
+[226.50s -> 229.12s]  for saying, we're actually doing a little bit more
+[229.12s -> 230.88s]  than that, but your program is still saying
+[230.88s -> 233.20s]  I'm doing one thing at a time.
+[233.24s -> 235.36s]  So it's something that's going on under the hood.
+[235.36s -> 237.50s]  So this was the first thing that we talked about,
+[237.50s -> 239.20s]  where there was a little bit difference
+[239.20s -> 242.92s]  between the abstraction, the meaning of a program.
+[242.92s -> 244.58s]  A program is a list of instructions
+[244.58s -> 247.74s]  and says if you perform these operations on this state,
+[247.74s -> 250.92s]  at the end of the day, you should get this answer.
+[250.92s -> 253.96s]  Then there's the implementation in a modern processor
+[253.96s -> 256.72s]  that says, we can do them in a little bit different order.
+[256.72s -> 261.00s]  It'll be better for you, and you'll never know.
+[261.04s -> 264.24s]  So that was a little bit what we talked about with processing.
+[264.24s -> 266.44s]  We also talked a little bit about memory.
+[266.44s -> 268.92s]  And I asked you, what was memory?
+[268.92s -> 271.52s]  So in the same way, if I ask you, what is a program?
+[271.52s -> 273.80s]  It's just a list of commands, where those commands
+[273.80s -> 276.12s]  modify state in a machine.
+[276.12s -> 278.84s]  What is memory?
+[278.84s -> 281.72s]  Yeah, memory is just, logically, abstractly,
+[281.72s -> 283.98s]  it's just an array of bytes.
+[283.98s -> 286.32s]  It's part of that state for that program.
+[286.32s -> 290.92s]  And if a program says, please read the value at address 42,
+[290.92s -> 293.64s]  memory says, well, address 42 has some value.
+[293.64s -> 296.36s]  And sure, I'll give you that value.
+[296.36s -> 298.80s]  If a processor says, write the value to address,
+[298.80s -> 302.02s]  write the value foo bar to address 42, well, memory says,
+[302.02s -> 303.88s]  OK, I'll take care of that value,
+[303.88s -> 306.24s]  and I'll put the value foo bar there.
+[306.24s -> 310.84s]  So we talked about memory just being a big array of bytes.
+[310.84s -> 314.44s]  But we didn't talk very much about, oh, right,
+[314.44s -> 317.36s]  and I even showed you, like, OK,
+[317.36s -> 320.68s]  but we didn't talk very much about implementation.
+[320.68s -> 323.32s]  So notice how I'm setting this up over and over.
+[323.32s -> 326.00s]  What something means, it's semantics.
+[326.00s -> 328.60s]  Like, add these two numbers, then add those two numbers.
+[328.60s -> 332.38s]  Or there is an array of addresses,
+[332.38s -> 334.40s]  and every address has a value.
+[334.40s -> 338.60s]  And then the underlying implementation of that.
+[338.60s -> 340.52s]  So if I tell you memory, many of you
+[340.52s -> 344.12s]  might say the word DRAM, or remember a big stick of memory
+[344.12s -> 346.44s]  that you might have shoved into a laptop at some time,
+[346.44s -> 348.08s]  or something like that.
+[348.12s -> 352.08s]  And so what a DRAM chip does is it provides,
+[352.08s -> 354.80s]  it's the implementation of this abstraction.
+[354.80s -> 356.64s]  You send that DRAM chip a command that says,
+[356.64s -> 359.08s]  give me the value that's stored at address, you know,
+[359.08s -> 364.52s]  hex B, and this memory chip will send 255 back.
+[364.52s -> 366.60s]  But we talked about last time how
+[366.60s -> 368.84s]  it could take a while to go get that message out there
+[368.84s -> 372.04s]  to memory and come back.
+[372.04s -> 378.84s]  And so all modern systems have some form of a cache.
+[378.84s -> 381.80s]  And this cache is another form of storage
+[381.80s -> 385.32s]  that's part of the implementation of memory.
+[385.32s -> 390.40s]  But if the processor says, I need address 4,
+[390.40s -> 392.32s]  well, that value might be stored in cache,
+[392.32s -> 394.88s]  and it can get the answer much, much faster.
+[394.88s -> 397.20s]  So that was kind of right where we left off last time.
+[398.20s -> 401.12s]  OK.
+[401.12s -> 402.88s]  Any questions?
+[402.88s -> 404.80s]  Just trying to, you know, like, I often
+[404.80s -> 406.76s]  overlap just a little bit because it's good.
+[406.76s -> 407.26s]  Oh, yes, sir?
+[407.26s -> 407.76s]  Oh.
+[407.76s -> 410.68s]  Do you manage the controller?
+[410.68s -> 412.32s]  Like, dynamic RAM?
+[412.32s -> 413.88s]  Yeah, just dynamic RAM.
+[413.88s -> 418.16s]  And it's dynamic in that if you cut the power, you know,
+[418.16s -> 422.00s]  as opposed to something that's persistent, like SSD or whatever
+[422.00s -> 423.36s]  that is to say.
+[423.36s -> 423.86s]  OK.
+[423.86s -> 425.04s]  You need to read the value.
+[425.04s -> 425.60s]  That's true.
+[425.64s -> 427.58s]  Even reading a value destroys the value.
+[427.58s -> 429.16s]  So when you read a value, you actually
+[429.16s -> 432.08s]  got to put it back, otherwise you lose it.
+[432.08s -> 436.20s]  For fun, we actually have 30 minutes on DRAM, very, very
+[436.20s -> 438.36s]  much at the end of class.
+[438.36s -> 442.28s]  But for now, you should think about it as it's far away.
+[442.28s -> 444.08s]  And since it's far away, it's
+[444.08s -> 445.92s]  like it's standing in the back of the room,
+[445.92s -> 447.96s]  or it's storage in your garage or something like that.
+[447.96s -> 448.96s]  If you want to go get something there,
+[448.96s -> 450.42s]  it's going to take a little bit.
+[450.42s -> 452.00s]  And you should think about the cache
+[452.00s -> 454.64s]  as like, what's right on my desk?
+[454.64s -> 456.72s]  So these addresses that you're going to be doing,
+[456.72s -> 459.16s]  they are sitting on the DRAM, right?
+[459.16s -> 460.60s]  Don't think about implementation.
+[460.60s -> 461.60s]  They're just addresses.
+[461.60s -> 464.04s]  I have something, you know, I have this concept.
+[464.04s -> 465.08s]  I have memory.
+[465.08s -> 468.40s]  Memory takes an address, it gives you a value.
+[468.40s -> 470.24s]  DRAM is one way to implement that.
+[470.24s -> 472.52s]  The cache is going to be another way to implement that.
+[472.52s -> 473.96s]  And this is something we haven't stressed very much
+[473.96s -> 475.36s]  in the class in previous years.
+[475.36s -> 476.52s]  And so this is kind of, we're
+[476.52s -> 479.00s]  trying to set the stage a little bit more this year.
+[479.00s -> 481.32s]  So there's two kind of details
+[481.32s -> 483.96s]  of how a data cache works that are kind of useful
+[484.00s -> 484.84s]  to think about.
+[485.72s -> 487.72s]  One is, even though memory says,
+[487.72s -> 490.62s]  if you give me an address, I'll give you a value,
+[490.62s -> 493.32s]  the underlying implementation in any modern system
+[493.32s -> 496.60s]  that I know about will move data from memory
+[496.60s -> 500.92s]  into the cache at some larger granularity of cache lines.
+[500.92s -> 504.64s]  So in this figure, this cache holds data
+[504.64s -> 506.12s]  for two cache lines.
+[506.12s -> 509.54s]  Each of those cache lines is four bytes.
+[509.54s -> 513.92s]  So the bytes store, you know, beginning at address four,
+[513.92s -> 515.88s]  so four, five, six, seven.
+[515.88s -> 517.80s]  These are the values out in memory
+[517.80s -> 519.20s]  that are replicated in the cache.
+[519.20s -> 520.44s]  You should be able to confirm that
+[520.44s -> 522.80s]  if I did not mess up my figure, right, zero, zero, six,
+[522.80s -> 524.36s]  zero, okay?
+[524.36s -> 526.92s]  So this is a cache that has the ability
+[526.92s -> 528.80s]  to replicate eight bytes.
+[528.80s -> 531.88s]  It's organized into two cache lines of four bytes each.
+[536.00s -> 539.16s]  And what I'm highlighting in red is sort of the place
+[539.16s -> 541.48s]  in the address space that corresponds
+[541.48s -> 542.72s]  to these two cache lines.
+[542.72s -> 544.12s]  I've seen a bunch of questions, yeah.
+[544.12s -> 545.76s]  Address you want to send to,
+[545.76s -> 549.08s]  and if it's 0x5, will we just send to the next four?
+[549.08s -> 550.00s]  This is up to 0x5.
+[550.00s -> 550.84s]  Yeah, good question.
+[550.84s -> 553.64s]  Think about, you're gonna access and move data
+[553.64s -> 557.76s]  from DRAM memory onto the chip
+[557.76s -> 560.08s]  in the granularity of four bytes
+[560.08s -> 563.24s]  rooted at address mod four.
+[563.24s -> 565.62s]  So if you want address five,
+[565.62s -> 567.32s]  the actual command out to memory
+[567.32s -> 569.42s]  is give me the cache line of four.
+[569.42s -> 570.96s]  Yeah, yeah.
+[571.88s -> 575.48s]  Do different execution loops have different caches,
+[575.48s -> 576.32s]  or is there a?
+[576.32s -> 578.20s]  I'm not gonna answer the question just yet.
+[578.20s -> 579.50s]  I just want everybody to learn it
+[579.50s -> 581.00s]  for one processor just yet.
+[581.00s -> 583.28s]  Absolutely, yes, but,
+[583.28s -> 585.44s]  and you probably already thinking about how the heck
+[585.44s -> 587.16s]  if I replicate data all over the place,
+[587.16s -> 589.00s]  how do I keep things consistent?
+[589.00s -> 591.04s]  You are correct, but not today.
+[591.04s -> 591.88s]  Yeah.
+[591.88s -> 594.28s]  Why do you do DRAM so far away?
+[594.28s -> 597.20s]  Why not put a garage on my desk?
+[601.16s -> 604.16s]  Cool, yeah.
+[607.16s -> 609.60s]  Sorry, maybe you could explain one more time
+[609.60s -> 611.76s]  because that would be more of a cache line definition.
+[611.76s -> 612.60s]  Yeah, sure.
+[612.60s -> 616.04s]  So what is memory?
+[616.04s -> 619.92s]  Memory is an address space and a value at every address.
+[619.92s -> 621.68s]  Somehow we have to implement that.
+[623.08s -> 624.44s]  So somewhere in the system,
+[624.44s -> 627.68s]  I need to have storage for every address.
+[627.68s -> 630.94s]  And typically that is your off-chip memory these days.
+[632.44s -> 637.44s]  Now a cache is just keeping a copy of this information
+[637.50s -> 638.74s]  right on my desktop.
+[640.16s -> 643.68s]  Now the organization of almost any modern cache,
+[643.68s -> 645.04s]  anything you get on any chip
+[645.04s -> 646.54s]  that you're probably gonna run,
+[646.54s -> 651.54s]  is that data is gonna move between memory and the cache
+[651.66s -> 653.88s]  at the granularity of lines.
+[653.88s -> 657.76s]  So on an Intel chip, that's a 64-byte cache line.
+[657.76s -> 659.76s]  On my diagram, it's a four-byte cache line
+[659.76s -> 662.44s]  because I didn't want to draw 64 numbers.
+[662.44s -> 666.28s]  And so if you want address five in my cache,
+[666.28s -> 667.42s]  you're gonna go ask memory,
+[667.42s -> 670.08s]  give me all the information for the line
+[670.08s -> 671.40s]  starting at address four.
+[673.72s -> 674.56s]  That make sense?
+[675.68s -> 677.16s]  And next slide, I'm gonna get into
+[677.16s -> 680.32s]  why we work at granularity too, yeah.
+[680.32s -> 681.16s]  Okay?
+[681.16s -> 684.72s]  What's the Nordic address from which you take things
+[684.72s -> 686.64s]  is basically all these multiples of four
+[686.64s -> 687.52s]  or multiples of-
+[687.52s -> 688.68s]  Cache lines.
+[688.68s -> 689.52s]  Multiples of cache.
+[689.52s -> 690.72s]  Yeah, we're gonna work at that, great.
+[690.72s -> 691.64s]  Because we don't want to have
+[691.64s -> 693.72s]  a dynamic allocation situation here.
+[693.72s -> 697.12s]  We want, this is gonna be hardware.
+[697.12s -> 699.60s]  You know, the whole point is to be able to access.
+[699.60s -> 702.16s]  Like when this processor says I want address five,
+[702.16s -> 703.94s]  when we say load address five,
+[703.94s -> 705.40s]  okay, let's think about this.
+[705.40s -> 710.40s]  What happens if the processor says I want to load address,
+[710.60s -> 712.14s]  actually I'm gonna go with something else.
+[712.14s -> 714.52s]  Address, you know, let's say address five.
+[716.02s -> 718.40s]  Conceptually it's asking memory.
+[718.40s -> 720.76s]  Please give me the value at address five.
+[720.76s -> 722.72s]  But what it's first gonna do is it's gonna ask the cache
+[722.72s -> 724.28s]  hey, do you have address five?
+[725.22s -> 727.16s]  And the cache is gonna go yeah, I do actually.
+[727.16s -> 728.22s]  It has value zero.
+[730.16s -> 732.76s]  If the cache doesn't have the value,
+[732.76s -> 734.48s]  now we're gonna have to go get it.
+[734.48s -> 736.28s]  And then the cache is gonna ask memory
+[736.28s -> 739.34s]  hey, can I get the line that contains five?
+[740.34s -> 742.54s]  And that's when those four values come in in this case.
+[742.54s -> 745.70s]  So let's think about it in a slightly richer situation.
+[745.70s -> 746.54s]  This is what we were going through
+[746.54s -> 747.82s]  right at the end of class.
+[747.82s -> 749.26s]  In the class nobody knows, you know,
+[749.26s -> 751.14s]  everybody's tired, nobody remembers anything anyway,
+[751.14s -> 753.10s]  so we're doing it again, okay?
+[753.10s -> 757.42s]  So here is the value of memory.
+[757.42s -> 759.18s]  Notice that I'm really saying memory
+[759.18s -> 761.50s]  and I'm not saying DRAM or any implementation,
+[761.50s -> 763.06s]  even though almost all of us,
+[763.06s -> 765.14s]  if we say memory in computer architecture,
+[765.14s -> 767.84s]  we're probably thinking about off-chip stuff, okay?
+[767.84s -> 769.20s]  So this is just the state.
+[770.04s -> 771.64s]  This is the state of my program, these values.
+[771.64s -> 775.58s]  And here is a list of addresses
+[775.58s -> 777.72s]  that my program's gonna access.
+[777.72s -> 780.60s]  So it's gonna be like I'm gonna access address zero,
+[780.60s -> 784.44s]  then address one, then address two in time, okay?
+[784.44s -> 787.76s]  And what I'm gonna show here is what is the cache doing
+[787.76s -> 790.74s]  in response to those processor actions?
+[790.74s -> 793.60s]  So let's say that the program says
+[793.60s -> 795.90s]  please load the value at address zero.
+[796.90s -> 798.86s]  And let's just start from the place
+[798.86s -> 800.26s]  where there's nothing in the cache
+[800.26s -> 802.10s]  or everything's sort of invalid in the cache.
+[802.10s -> 803.50s]  Well, the cache is gonna go, hey, wait a minute,
+[803.50s -> 805.54s]  I don't have that value.
+[805.54s -> 808.66s]  So it's gonna go ask memory for a cache line
+[808.66s -> 810.82s]  or DRAM for, oh, right, and these are my cache lines.
+[810.82s -> 812.46s]  Sorry, I didn't draw that for you, right?
+[812.46s -> 815.26s]  So when we say, hey, I need address zero,
+[816.54s -> 818.58s]  the cache goes, you've never asked me for that before,
+[818.58s -> 819.74s]  why would I have it?
+[820.90s -> 822.86s]  This term called, so it's a cache miss.
+[822.86s -> 824.90s]  The value is not in the cache.
+[824.90s -> 827.62s]  And if you read a computer architecture textbook,
+[827.62s -> 831.12s]  they taxonomize the reason for these misses.
+[831.12s -> 834.00s]  And so in this case, I wrote on the slide cold miss
+[834.00s -> 836.98s]  because we have never even touched that data before.
+[836.98s -> 839.54s]  There's really no reason it should be in the cache.
+[839.54s -> 841.66s]  So the idea is that the data is cold
+[841.66s -> 844.50s]  compared to data that's hot that you're often accessing.
+[845.98s -> 848.10s]  So notice what happened in the cache state.
+[848.10s -> 850.18s]  The cache now has one valid line in it
+[850.18s -> 852.50s]  and it's the line beginning at address zero.
+[853.06s -> 856.34s]  So that may have taken a while.
+[856.34s -> 858.90s]  There might be some real latency in that operation.
+[860.70s -> 862.78s]  Now what happens when the processor says,
+[862.78s -> 866.12s]  in some later instruction, sometime later in the program,
+[866.12s -> 867.98s]  the cache hasn't changed, nothing's changed.
+[867.98s -> 869.58s]  It's done no other memory, and it says, you know what?
+[869.58s -> 870.88s]  I wanna read address one.
+[873.94s -> 875.14s]  What does the cache say?
+[876.90s -> 878.84s]  It says, I got address one, that's a hit.
+[878.84s -> 880.38s]  Nothing happens, right?
+[880.38s -> 882.62s]  So that can potentially be really, really fast.
+[882.62s -> 885.26s]  And the same is gonna happen for two, three.
+[886.86s -> 889.30s]  And then what happens if I go back to two?
+[889.30s -> 890.46s]  We're good, it's another hit.
+[890.46s -> 892.22s]  One, another hit.
+[892.22s -> 896.06s]  Four, don't have that.
+[896.06s -> 897.66s]  That's gotta get brought in.
+[897.66s -> 899.30s]  And now my cache in this example
+[899.30s -> 901.26s]  has capacity for two lines.
+[901.26s -> 903.18s]  So we'll just put that other thing in.
+[903.18s -> 905.54s]  When I go back to one, what happens?
+[907.06s -> 908.86s]  I'm good, exactly.
+[908.86s -> 911.22s]  So one thing I want you to take away from this slide
+[911.22s -> 914.98s]  is actually the cache is sort of solving two problems
+[914.98s -> 915.98s]  at the same time.
+[918.90s -> 921.14s]  I'm actually gonna go to the second one first.
+[921.14s -> 922.86s]  The one that I've kinda set this up for
+[922.86s -> 924.94s]  is if you've already touched data,
+[924.94s -> 928.20s]  if you've already accessed data, the cache has it,
+[928.20s -> 931.86s]  which means all subsequent accesses will be faster.
+[931.86s -> 935.62s]  So in general, one of the big reasons for a cache
+[935.62s -> 938.06s]  is that if I'm touching stuff a lot,
+[938.10s -> 939.82s]  the paper that I'm working on right now,
+[939.82s -> 941.02s]  the homework that I'm grading,
+[941.02s -> 942.22s]  that's why I keep it on my desk.
+[942.22s -> 943.34s]  I don't take it to the garage
+[943.34s -> 945.70s]  every single time I wanna look at it.
+[947.02s -> 949.42s]  So that's this notion of temporal locality,
+[949.42s -> 952.34s]  back-to-back accesses in time.
+[952.34s -> 953.50s]  That data's sitting there.
+[953.50s -> 954.82s]  So that's what's helping me with.
+[954.82s -> 958.40s]  It's preventing me from going out and looking at it.
+[958.40s -> 960.18s]  The other thing that you might have noticed
+[960.18s -> 963.26s]  is that this granularity of operating
+[963.26s -> 965.70s]  at the granularity of lines,
+[965.70s -> 968.86s]  first of all, bulk transfers are almost always efficient.
+[970.62s -> 973.54s]  So I can transfer data efficiently to the cache,
+[973.54s -> 974.86s]  but it's based on the assumption
+[974.86s -> 978.54s]  that if I access address zero,
+[978.54s -> 981.50s]  oftentimes programs then go access one, two, and three too
+[981.50s -> 985.22s]  because they're running right down an array, for example.
+[985.22s -> 988.94s]  So there's actually two forms of the way,
+[988.94s -> 991.26s]  reducing latency here.
+[991.26s -> 993.44s]  One form is almost like the line
+[993.44s -> 995.70s]  is functioning as a prefetch
+[995.70s -> 998.80s]  for the next items in the array.
+[998.80s -> 1001.64s]  The second one is, by bringing the data in now,
+[1001.64s -> 1004.22s]  I'm assuming you're probably gonna touch it again.
+[1004.22s -> 1005.84s]  Like a common thing would be to read something,
+[1005.84s -> 1008.10s]  do some logic, and then update it.
+[1008.10s -> 1010.32s]  So there's already two memory accesses.
+[1011.26s -> 1013.42s]  Now I wanna throw out one more pattern for you,
+[1013.42s -> 1014.76s]  which is kinda interesting.
+[1014.76s -> 1018.48s]  Same cache, and now all I'm gonna do
+[1018.48s -> 1020.84s]  is I'm gonna read right down an array.
+[1020.84s -> 1022.68s]  Notice that the addresses are just increasing
+[1022.68s -> 1023.96s]  by a byte every time.
+[1025.24s -> 1029.46s]  Except I am, yeah, okay.
+[1029.46s -> 1030.40s]  So let's just do this.
+[1030.40s -> 1033.96s]  So hit, right?
+[1033.96s -> 1036.28s]  Hit, hit, hit, now what happens?
+[1037.56s -> 1039.12s]  Miss, good.
+[1039.12s -> 1040.72s]  Hit, hit, hit.
+[1043.90s -> 1045.28s]  But what do I do?
+[1045.28s -> 1046.40s]  My cache is full.
+[1047.60s -> 1049.84s]  So now we gotta throw something out, right?
+[1049.84s -> 1052.40s]  And last time I told you that we're gonna take,
+[1053.00s -> 1056.50s]  in this class we're gonna assume a very simple policy
+[1056.50s -> 1057.76s]  of least recently used.
+[1057.76s -> 1059.82s]  There's some questions on the website about this.
+[1059.82s -> 1063.74s]  So the line that I have touched least recently,
+[1063.74s -> 1067.76s]  the longest time ago, is the one that I'm least likely,
+[1067.76s -> 1069.96s]  that's the assumption, to touch again.
+[1069.96s -> 1072.52s]  And in this case, what color would it be?
+[1072.52s -> 1075.32s]  It's red, so we're gonna drop red and bring in green.
+[1076.68s -> 1079.04s]  So this is a cold miss on green, right?
+[1079.04s -> 1081.10s]  Because I've never touched green before.
+[1082.10s -> 1083.98s]  It's the first time I've touched this data.
+[1084.98s -> 1086.70s]  So this will continue.
+[1086.70s -> 1090.06s]  Hit, then we get to address 12, or hex C.
+[1091.98s -> 1095.98s]  It's another cold miss, and we gotta throw out blue.
+[1097.06s -> 1097.94s]  Exactly.
+[1098.78s -> 1100.98s]  There's a question somewhere, yes?
+[1100.98s -> 1104.06s]  In computer architecture, isn't this called a capacity miss
+[1104.06s -> 1105.84s]  since you're throwing something out?
+[1105.84s -> 1108.12s]  No, this is a cold miss.
+[1108.12s -> 1110.06s]  It's the first time you've touched the data.
+[1110.06s -> 1112.06s]  The name of the miss is relative to the data
+[1112.06s -> 1113.90s]  that I'm accessing.
+[1113.90s -> 1117.18s]  If we would have had an infinitely sized cache,
+[1117.18s -> 1119.38s]  I still would have missed here, right?
+[1119.38s -> 1120.94s]  It's the first time I've touched it.
+[1122.12s -> 1124.40s]  But your question is relevant now.
+[1126.24s -> 1127.46s]  Your question is relevant now.
+[1127.46s -> 1129.66s]  So what happens when I go back?
+[1136.02s -> 1137.90s]  So here, look what's happened.
+[1137.94s -> 1140.94s]  I have already accessed address zero
+[1140.94s -> 1142.62s]  right at the very beginning.
+[1142.62s -> 1144.46s]  If I had an infinitely large cache,
+[1144.46s -> 1148.48s]  or arguably a cache that could store 16 bytes,
+[1148.48s -> 1149.88s]  that would have been a hit.
+[1150.80s -> 1153.14s]  So that's a miss that occurred because of the,
+[1153.14s -> 1155.06s]  actually I even got that wrong, that's a capacity miss.
+[1155.06s -> 1156.68s]  Sorry, yeah, hold on.
+[1157.70s -> 1158.54s]  One second.
+[1163.48s -> 1164.80s]  Yeah, my bad.
+[1168.46s -> 1172.86s]  Yeah, so this is a miss that occurred
+[1172.86s -> 1175.24s]  only because a cache has a finite size.
+[1176.84s -> 1178.62s]  If I could have put my garage on my desk,
+[1178.62s -> 1181.48s]  I would have been hitting on everything.
+[1183.78s -> 1185.34s]  You asked me about a capacity miss.
+[1185.34s -> 1187.50s]  A capacity miss is actually a miss
+[1187.50s -> 1189.78s]  that we will not talk about in this class,
+[1189.78s -> 1191.22s]  but comes from the fact that the cache
+[1191.22s -> 1192.82s]  might have been big enough,
+[1192.82s -> 1196.62s]  but the organization of where data goes
+[1196.62s -> 1198.92s]  doesn't allow the data to still be there.
+[1198.92s -> 1200.42s]  So we'd have to talk, what?
+[1200.42s -> 1202.70s]  You mixed it up, yeah, conflict.
+[1202.70s -> 1205.34s]  Oh, sorry, yeah, that's fine, yeah, sorry.
+[1205.34s -> 1207.78s]  A conflict miss is one where
+[1207.78s -> 1209.78s]  the organization of the cache means that like,
+[1209.78s -> 1211.04s]  hey, I could have put it somewhere
+[1211.04s -> 1213.14s]  if I could have put any data anywhere in the cache,
+[1213.14s -> 1217.14s]  but increasingly large caches tend to have policies
+[1217.14s -> 1218.66s]  that say this data can only go here
+[1218.66s -> 1220.86s]  and this data can only go here.
+[1220.86s -> 1221.70s]  Yeah.
+[1221.70s -> 1223.98s]  The types of change in names,
+[1223.98s -> 1225.18s]  is there anything different
+[1225.18s -> 1228.70s]  where the cache would miss and the other miss is like?
+[1228.70s -> 1233.14s]  There's only, no, the name is giving you a reason.
+[1234.66s -> 1237.54s]  And really if you, yeah, if you think about it as,
+[1237.54s -> 1241.22s]  so when you evict something, when you evict a line,
+[1241.22s -> 1242.86s]  your behavior will be different
+[1242.86s -> 1246.06s]  based on whether or not that line has been written to.
+[1246.06s -> 1247.92s]  Because if it hasn't been written to and only read,
+[1247.92s -> 1248.76s]  you just toss it.
+[1248.76s -> 1249.60s]  If it has been written to,
+[1249.60s -> 1251.26s]  you gotta push that data back out to memory.
+[1251.26s -> 1252.90s]  So that's the biggest difference.
+[1254.26s -> 1257.02s]  How long do you need to add this in order?
+[1257.02s -> 1260.84s]  You put it like up to zero, five, four,
+[1260.84s -> 1263.00s]  then add it to the data.
+[1264.50s -> 1266.26s]  Up to zero, up to four, so.
+[1266.26s -> 1267.62s]  So you got zero, one, two, three, four.
+[1267.62s -> 1270.10s]  Yeah, and then when you get to zero, five,
+[1270.10s -> 1272.94s]  it's zero, four, five, zero, four.
+[1273.94s -> 1275.46s]  I wonder, like, what would happen
+[1275.46s -> 1278.98s]  and would the line go from five to three?
+[1278.98s -> 1281.86s]  No, okay, so, and this would be a good thing
+[1281.86s -> 1282.84s]  for you to just work out.
+[1282.84s -> 1284.16s]  But what I do wanna say is,
+[1284.16s -> 1286.92s]  and this is similar to the earlier question,
+[1286.92s -> 1291.44s]  the cache, the mapping of cache lines to addresses,
+[1291.44s -> 1293.40s]  that is fixed.
+[1294.98s -> 1297.24s]  A cache doesn't even think about addresses, really,
+[1297.24s -> 1298.52s]  it thinks about cache lines.
+[1298.52s -> 1301.54s]  And so I've just divided my address space up
+[1301.54s -> 1305.00s]  into these cache lines, mod cache line size.
+[1305.00s -> 1306.24s]  So if you decided to go,
+[1306.24s -> 1310.24s]  I wanna read zero, one, two, three, five,
+[1311.08s -> 1314.62s]  five would trigger a load of the blue cache line.
+[1316.88s -> 1319.04s]  So what you've done is you've actually reduced
+[1319.04s -> 1321.96s]  the spatial locality of your accesses.
+[1321.96s -> 1326.04s]  So if you did zero, one, two, three, five,
+[1326.04s -> 1330.68s]  six, seven, eight, 10, you just would be loading
+[1330.68s -> 1333.14s]  four values in this case, the cache line,
+[1333.14s -> 1335.46s]  and never touching one of them, right?
+[1335.46s -> 1338.60s]  So you're incurring memory traffic or communication
+[1338.64s -> 1340.56s]  that you didn't need, but that's just the way
+[1340.56s -> 1343.00s]  the underlying implementation works.
+[1343.96s -> 1345.12s]  Okay, I'll take two more questions
+[1345.12s -> 1346.96s]  and I'll keep it moving, yeah.
+[1346.96s -> 1349.28s]  I'm wondering if you could say a little bit more
+[1349.28s -> 1351.04s]  about the difference between the capacity
+[1351.04s -> 1352.36s]  versus the conflict of this.
+[1352.36s -> 1354.12s]  I'd rather not right now, actually.
+[1354.12s -> 1357.20s]  Yeah, I don't believe that anybody
+[1357.20s -> 1359.36s]  has had any kind of set associativity
+[1359.36s -> 1362.88s]  or that kind of stuff, so I would, yeah, I'm not.
+[1362.88s -> 1364.08s]  You're asking questions about
+[1364.08s -> 1367.04s]  how to design real caches now, and yeah.
+[1367.04s -> 1369.32s]  Maybe I'm belaboring the point,
+[1369.32s -> 1371.76s]  but when we talk about capacity missing,
+[1371.76s -> 1374.94s]  forward missing, but the processor doesn't know
+[1374.94s -> 1376.20s]  it was capacity missing.
+[1376.20s -> 1378.52s]  Doesn't matter, yeah, maybe in hindsight,
+[1378.52s -> 1380.12s]  maybe I should just say miss.
+[1380.12s -> 1384.80s]  But for the sake of the class, it's a miss.
+[1384.80s -> 1386.90s]  Either way, it's I don't have the data,
+[1386.90s -> 1389.40s]  I've gotta go get it, and I need to invoke
+[1389.40s -> 1391.98s]  my eviction policy to figure out who's leaving.
+[1393.12s -> 1396.28s]  Yeah, the reason for that doesn't matter.
+[1396.28s -> 1398.08s]  The only thing that the reason matters for
+[1398.08s -> 1403.08s]  would be you might be able to, if you knew the reason,
+[1403.48s -> 1405.06s]  you might be able to change your program
+[1405.06s -> 1410.06s]  a little bit to avoid the miss.
+[1411.76s -> 1413.00s]  Okay, all good?
+[1413.00s -> 1414.64s]  All right, last one.
+[1414.64s -> 1417.56s]  Is there, what's the overhead for loading
+[1417.56s -> 1420.92s]  in a cache now, and if there's a significant overhead,
+[1420.92s -> 1424.52s]  is there a ratio of loads and cache hits
+[1424.52s -> 1426.56s]  that you need in order for it to be like time?
+[1426.56s -> 1428.94s]  We're gonna slowly graduate towards all that
+[1428.94s -> 1431.48s]  because the reason why I'm spending all this time
+[1431.48s -> 1434.48s]  on a cache is for those kind of reasons.
+[1434.48s -> 1436.68s]  But the main thing that I want you to take away
+[1436.68s -> 1441.04s]  is that caches exist.
+[1441.04s -> 1442.96s]  They're an implementation detail.
+[1442.96s -> 1445.50s]  If I took the cache out of a computer,
+[1445.50s -> 1447.56s]  you would get the same results.
+[1447.56s -> 1449.56s]  It just may run slower, right?
+[1449.56s -> 1451.96s]  That's the most important thing.
+[1451.96s -> 1455.32s]  And the caches exist to reduce the latency
+[1455.32s -> 1460.06s]  of memory access so that this processor is not waiting.
+[1460.06s -> 1462.08s]  Now under the hood, if I had to elaborate
+[1462.08s -> 1464.08s]  a little bit more, in the same way
+[1464.08s -> 1467.40s]  that I have a desktop, a filing cabinet,
+[1467.40s -> 1469.76s]  a hallway closet, and a garage,
+[1469.76s -> 1472.30s]  and I put different stuff in those different storages
+[1472.30s -> 1474.52s]  based on how often I might need them,
+[1474.52s -> 1479.00s]  most modern computers have a hierarchy of various caches.
+[1479.00s -> 1481.56s]  And I think a reasonable rule of thumb
+[1482.52s -> 1484.62s]  is that if a unit of storage is bigger,
+[1485.60s -> 1489.16s]  it is farther away, it has higher latency to access.
+[1489.16s -> 1490.58s]  And we'll also talk about how it actually
+[1490.58s -> 1492.62s]  has higher energy to access and stuff like that.
+[1492.62s -> 1496.16s]  But for example, if you rip open most modern machines,
+[1496.16s -> 1499.16s]  you usually see like a L1 cache that's pretty small,
+[1499.16s -> 1501.08s]  a few kilobytes right next to the processor
+[1501.08s -> 1503.92s]  that can be accessed in a few cycles.
+[1503.92s -> 1506.04s]  If you miss the L1, you'll ask the L2.
+[1506.04s -> 1509.00s]  If you miss the L2, often you'll see an L3.
+[1509.00s -> 1510.80s]  And if you miss the L3, you'll go out to DRAM.
+[1510.88s -> 1513.04s]  And this is something I showed you to finish class up.
+[1513.04s -> 1514.52s]  You asked, you started to hint about
+[1514.52s -> 1518.24s]  what are the consequences of missing.
+[1518.24s -> 1520.68s]  So these are all, this graph is to scale
+[1520.68s -> 1524.20s]  of the number of cycles a few years ago now
+[1524.20s -> 1525.92s]  on Intel CPUs that it took.
+[1525.92s -> 1527.62s]  If you issued an instruction,
+[1527.62s -> 1529.54s]  how long would it take to get the data?
+[1529.54s -> 1531.98s]  And an L1 cache hit was about four cycles.
+[1533.20s -> 1535.36s]  Pipeline, so you can actually really cover that.
+[1535.36s -> 1538.48s]  Now, you know, like if I did it in animation,
+[1538.48s -> 1539.92s]  it's not that fast.
+[1539.92s -> 1541.84s]  You get it out of the next level of cache,
+[1541.84s -> 1543.92s]  it's gonna take a little bit longer.
+[1543.92s -> 1544.92s]  The next level of cache,
+[1544.92s -> 1546.60s]  it's gonna take a little bit longer.
+[1546.60s -> 1550.02s]  And if you miss this cache hierarchy, you're waiting.
+[1550.02s -> 1551.42s]  You're definitely waiting.
+[1551.42s -> 1556.36s]  So consider a system that's like load, do some math,
+[1556.36s -> 1557.98s]  load, do some math.
+[1557.98s -> 1561.04s]  We're worried about using four cores,
+[1561.04s -> 1562.56s]  getting a 4x speed up.
+[1562.56s -> 1564.80s]  And if you get your memory wrong,
+[1564.80s -> 1567.24s]  you could potentially be off by a factor of 250.
+[1567.96s -> 1569.20s]  Okay.
+[1569.20s -> 1571.80s]  So the scale of these effects
+[1571.80s -> 1574.36s]  that deal with data movement are enormous.
+[1575.56s -> 1576.40s]  Okay.
+[1576.40s -> 1577.22s]  So I want you to just,
+[1577.22s -> 1578.44s]  that's like us finishing up last time.
+[1578.44s -> 1579.28s]  Yeah.
+[1579.28s -> 1582.16s]  One question is, you're taking it from that,
+[1582.16s -> 1583.16s]  what do you mean by that?
+[1583.16s -> 1585.84s]  Like, is that like bringing it down?
+[1585.84s -> 1588.56s]  Well, that's the latency that I'm talking about.
+[1588.56s -> 1590.54s]  Like, think about it this way is,
+[1590.54s -> 1593.80s]  if the data is in DRAM and the processor says,
+[1593.80s -> 1595.68s]  I want address X,
+[1595.72s -> 1597.00s]  let's think about the, you know,
+[1597.00s -> 1599.36s]  moving it from DRAM into the L3,
+[1599.36s -> 1600.88s]  bringing it from the L3 to the L2,
+[1600.88s -> 1603.96s]  L2 to the L1 all the way to the processor, that's 250.
+[1603.96s -> 1605.84s]  Is there a way to like just bring it to that thing
+[1605.84s -> 1607.00s]  that you want to just like directly use?
+[1607.00s -> 1607.82s]  There are ways.
+[1607.82s -> 1608.66s]  Yeah, there are ways.
+[1608.66s -> 1611.60s]  There are instructions you can say is read this data
+[1611.60s -> 1614.16s]  and I want you to bypass all the caches.
+[1614.16s -> 1616.94s]  I don't think there is much about reducing latency
+[1616.94s -> 1619.84s]  as they are about not polluting your caches.
+[1619.84s -> 1621.22s]  I think I don't,
+[1621.22s -> 1623.24s]  I have a feeling like it actually probably goes
+[1623.24s -> 1625.48s]  through the whole path and then just doesn't get stored
+[1626.14s -> 1628.04s]  how I would implement it, I guess.
+[1628.04s -> 1628.96s]  Yeah.
+[1628.96s -> 1630.04s]  Okay.
+[1630.04s -> 1630.88s]  Oops.
+[1630.88s -> 1631.72s]  Shoot.
+[1633.16s -> 1634.78s]  All right, I'm gonna reemphasize this,
+[1634.78s -> 1636.40s]  but apparently Keynote won't let me go through
+[1636.40s -> 1638.78s]  until the animation is done.
+[1640.28s -> 1641.20s]  Yeah, while we're waiting.
+[1641.20s -> 1642.16s]  Yes.
+[1642.16s -> 1642.98s]  Go ahead.
+[1642.98s -> 1645.04s]  I think that's okay.
+[1645.04s -> 1648.40s]  That's why I think you just read the data in DRAM
+[1648.40s -> 1651.72s]  instead of just update the data.
+[1651.72s -> 1653.96s]  Yeah, that was the question here is like,
+[1653.96s -> 1656.36s]  are there really any benefits on a modern system
+[1656.36s -> 1658.02s]  of bypassing the whole thing?
+[1658.02s -> 1660.10s]  They're not gonna be latency benefits.
+[1660.10s -> 1662.16s]  They're not gonna be latency benefits.
+[1664.78s -> 1668.88s]  Okay, so I wanna, let's put memory aside.
+[1668.88s -> 1671.76s]  It's coming back at the end of the day.
+[1671.76s -> 1674.06s]  But now let's go back to processing a little bit.
+[1674.06s -> 1676.80s]  So the rest of the lecture is gonna be talking about
+[1676.80s -> 1681.20s]  kind of three major ideas on parallelism,
+[1681.40s -> 1684.16s]  how we start adding more and more capability
+[1684.16s -> 1686.88s]  to do more stuff into a machine.
+[1686.88s -> 1689.16s]  And we're gonna come full circle and end up saying
+[1689.16s -> 1692.44s]  some of these ideas are about combating
+[1692.44s -> 1693.36s]  this latency problem.
+[1693.36s -> 1695.24s]  So I already gave you caches as one way
+[1695.24s -> 1696.84s]  to combat the latency problem.
+[1698.88s -> 1701.20s]  Okay, so here's an example program
+[1701.20s -> 1702.70s]  that I'm gonna use as the running example
+[1702.70s -> 1705.92s]  for the next 50 minutes or the next 47 minutes.
+[1705.92s -> 1708.16s]  This is some straight line C code.
+[1708.16s -> 1709.00s]  Take a look at it.
+[1709.00s -> 1710.46s]  Make sure you know what it does.
+[1710.58s -> 1714.66s]  What it does is it takes this input in array x,
+[1714.66s -> 1718.58s]  it reads values, n values from the array x,
+[1718.58s -> 1721.66s]  it writes n values to the array y.
+[1721.66s -> 1724.68s]  And what it does is for every input value x,
+[1724.68s -> 1729.36s]  it computes the sign or approximates the sign of x
+[1729.36s -> 1734.36s]  given a numerical approximation using the Taylor expansion.
+[1734.38s -> 1737.26s]  So like how it computes the sign of x doesn't matter.
+[1737.26s -> 1738.54s]  The only thing that matters really
+[1738.58s -> 1739.74s]  is you look at the C code, you go,
+[1739.74s -> 1742.94s]  okay, I've got a piece of C code for i equals,
+[1742.94s -> 1746.14s]  oh, sorry, outermost loop for i equals zero to n
+[1746.14s -> 1749.46s]  for every input element perform a computation
+[1749.46s -> 1751.12s]  that ultimately computes value
+[1751.12s -> 1753.58s]  and is stored to the output element.
+[1753.58s -> 1757.74s]  The inner for loop is just an iterative algorithm
+[1757.74s -> 1759.04s]  to approximate sign.
+[1760.98s -> 1762.94s]  So what this is doing doesn't really matter.
+[1762.94s -> 1764.66s]  You could just think about this as some function
+[1764.66s -> 1766.22s]  that takes this input x sub i
+[1766.22s -> 1768.22s]  and outputs sign of x sub i.
+[1769.10s -> 1770.06s]  Any questions about the code?
+[1770.06s -> 1772.22s]  Does anyone need any more time to?
+[1772.22s -> 1773.46s]  Okay, so that's all I want you to think about.
+[1773.46s -> 1775.58s]  And my illustration on the right
+[1775.58s -> 1777.48s]  just shows you all the input values of x
+[1777.48s -> 1779.94s]  and the output values of y, okay.
+[1779.94s -> 1781.66s]  So it just does that.
+[1781.66s -> 1783.64s]  Okay, so if we compile this program,
+[1783.64s -> 1786.64s]  we want clang or GCC, pick your favorite compiler,
+[1786.64s -> 1789.02s]  we're gonna get out a sequence of instructions
+[1789.02s -> 1789.90s]  for this program.
+[1790.90s -> 1793.98s]  And I want you to kind of focus on
+[1793.98s -> 1795.66s]  the sequence of instructions
+[1795.66s -> 1798.88s]  that's the basic block inside the for loop.
+[1798.88s -> 1801.34s]  So at the moment, we're gonna think about
+[1801.34s -> 1802.90s]  there's a sequence of instructions that says
+[1802.90s -> 1806.88s]  once I load x sub i, here's all the stuff I have to do
+[1806.88s -> 1809.72s]  to produce the value that is then stored to y sub i.
+[1814.54s -> 1816.38s]  And now given that sequence of instructions,
+[1816.38s -> 1817.54s]  we're gonna execute it, right?
+[1817.54s -> 1819.00s]  Like so that sequence of instructions,
+[1819.00s -> 1820.94s]  the processor's gonna say, okay, what's the next one?
+[1820.94s -> 1822.26s]  Oh, it's a load of this value,
+[1822.26s -> 1824.50s]  then there's a multiply and so on and so on.
+[1824.50s -> 1827.26s]  It'll run those instructions, it'll produce a value,
+[1827.26s -> 1828.50s]  and then at some point at the end of that,
+[1828.50s -> 1829.74s]  there will be a store instruction,
+[1829.74s -> 1833.32s]  which says store this value to the address given by x sub i.
+[1835.24s -> 1839.22s]  And just to repeat myself, if that processor is smart,
+[1839.22s -> 1841.02s]  it might look into that program,
+[1841.02s -> 1842.62s]  into that instruction sequence and go,
+[1842.62s -> 1844.24s]  yeah, there's some of those instructions
+[1844.24s -> 1846.00s]  that can be done in parallel, right?
+[1846.00s -> 1847.50s]  Let me back up and let's look at it.
+[1847.50s -> 1852.10s]  Like, we certainly can find some stuff, right?
+[1852.10s -> 1855.06s]  Like this computing the numerator
+[1855.06s -> 1858.26s]  is independent of computing the denominator, right?
+[1858.26s -> 1859.30s]  So there's a little bit
+[1859.30s -> 1861.98s]  of instruction level parallelism there.
+[1861.98s -> 1863.88s]  And so one way for me to run this program
+[1863.88s -> 1867.26s]  a little bit faster would be to take the superscaler idea.
+[1867.26s -> 1868.32s]  I'm gonna build a processor.
+[1868.32s -> 1870.42s]  It still has like one set of registers.
+[1870.42s -> 1872.72s]  It has access to memory,
+[1872.72s -> 1874.56s]  but it has the ability to kind of figure out
+[1874.56s -> 1877.38s]  if there's two instructions that can be done in parallel
+[1877.38s -> 1880.30s]  and it has two execution units to do them if it wants to.
+[1881.24s -> 1884.02s]  Again, like, you compile your program in C,
+[1884.02s -> 1885.98s]  you see a sequence of instructions,
+[1885.98s -> 1887.36s]  processor Intel does this
+[1887.36s -> 1890.60s]  or AMD does this under the hood, you never know, right?
+[1890.60s -> 1892.22s]  But in this program,
+[1892.22s -> 1894.86s]  or at least in this region of the program at least,
+[1895.78s -> 1899.46s]  there's not any ILP, you know,
+[1899.46s -> 1901.94s]  just in those instructions that I chose,
+[1901.94s -> 1903.66s]  they are all dependent.
+[1903.66s -> 1905.26s]  So this processor,
+[1905.26s -> 1907.90s]  if it was running that sequence of instructions,
+[1907.90s -> 1909.06s]  is only gonna be making use
+[1909.06s -> 1910.54s]  of one of these execution units
+[1910.54s -> 1912.62s]  and one of these fetch and decodes, right?
+[1912.62s -> 1913.92s]  There's no ILP here.
+[1915.32s -> 1919.38s]  So this gets back to
+[1922.14s -> 1922.98s]  the broader thing,
+[1922.98s -> 1925.86s]  but there's tons of parallelism in this program, right?
+[1925.86s -> 1928.30s]  Because we can process every element
+[1928.30s -> 1931.22s]  of this array completely in parallel.
+[1932.28s -> 1934.98s]  But if all the processor is doing
+[1934.98s -> 1938.86s]  is kind of looking at like micro instruction sequences,
+[1939.62s -> 1941.20s]  all it sees is dependent instructions.
+[1941.20s -> 1943.06s]  It doesn't have the ability
+[1943.06s -> 1945.22s]  or it would be intractable to kind of,
+[1945.22s -> 1947.46s]  to have the ability to look over
+[1947.46s -> 1950.02s]  a huge window of the program,
+[1950.02s -> 1952.46s]  like that outer for loop and go,
+[1952.46s -> 1955.74s]  oh, even though this is a for loop in C++,
+[1955.74s -> 1958.46s]  and technically every loop iteration is dependent
+[1958.46s -> 1961.38s]  because there's I plus plus,
+[1961.38s -> 1965.82s]  they all seem to be accessing different input variables.
+[1965.82s -> 1967.38s]  That's the type of analysis
+[1967.42s -> 1969.86s]  that goes well beyond what could happen
+[1969.86s -> 1972.66s]  in a clock tick in a hardware, in hardware.
+[1972.66s -> 1976.82s]  So what hardware architects did is they said,
+[1976.82s -> 1977.66s]  you know what?
+[1977.66s -> 1981.30s]  Let's just assume that the programmer
+[1981.30s -> 1984.92s]  tells us where that parallelism is.
+[1984.92s -> 1987.46s]  So we don't have to work so hard for it.
+[1987.46s -> 1989.60s]  So this is, I made that diagram
+[1989.60s -> 1990.44s]  that I had on the last slide
+[1990.44s -> 1992.04s]  just a little bit fancier.
+[1992.04s -> 1996.22s]  I said, look, you had this out of order execution logic.
+[1996.22s -> 1999.02s]  Outside of this class, there's all this other fun stuff
+[1999.02s -> 2000.38s]  that's in a processor to make
+[2000.38s -> 2002.02s]  an instruction stream go faster.
+[2002.02s -> 2004.66s]  A lot of it's about not accessing memory.
+[2004.66s -> 2006.66s]  Like, you might put a big old data cache
+[2006.66s -> 2007.90s]  that has a ton of transistors
+[2007.90s -> 2009.74s]  to hold a bunch of data on cache.
+[2009.74s -> 2011.70s]  You might actually have logic that predicts
+[2011.70s -> 2013.54s]  what memory you're gonna access in the future
+[2013.54s -> 2014.62s]  as a prefetcher.
+[2014.62s -> 2016.38s]  They had all this fancy stuff in there
+[2016.38s -> 2019.56s]  to try and make the inner loop go as fast as possible.
+[2021.30s -> 2022.68s]  But there's this outer loop
+[2022.68s -> 2024.28s]  that's trivial to parallelize.
+[2024.66s -> 2027.42s]  So idea number one is,
+[2027.42s -> 2030.40s]  let's take some of this fancy stuff out.
+[2031.24s -> 2033.06s]  Maybe a little bit smaller data cache.
+[2033.06s -> 2034.64s]  We're not gonna maybe do as much
+[2034.64s -> 2037.52s]  out of order execution or anything like that.
+[2037.52s -> 2040.28s]  And if we clear all that stuff out,
+[2040.28s -> 2042.48s]  we just have our basic processor
+[2042.48s -> 2046.04s]  with just a few, which use far fewer transistors.
+[2046.04s -> 2047.54s]  And I'm gonna use all those transistors
+[2047.54s -> 2048.80s]  I have on a modern chip
+[2049.72s -> 2051.96s]  to just replicate this,
+[2051.96s -> 2053.66s]  to make more of these processors.
+[2055.28s -> 2057.68s]  So now I have a processor,
+[2057.68s -> 2059.16s]  but it's a parallel processor.
+[2059.16s -> 2061.74s]  And this is, I'm gonna use the term core,
+[2061.74s -> 2064.64s]  but there's nothing precise about this in the industry.
+[2064.64s -> 2067.48s]  So now I have a multi-core processor
+[2067.48s -> 2070.22s]  that just duplicated everything that was needed
+[2070.22s -> 2073.26s]  to run one instruction stream.
+[2073.26s -> 2077.48s]  So if I give this processor two instruction streams
+[2077.48s -> 2080.10s]  and say, hey, core zero, run this instruction stream
+[2080.10s -> 2083.04s]  and core two, do that instruction stream,
+[2083.04s -> 2084.68s]  I might be better off, right?
+[2084.68s -> 2086.80s]  Like, for example, maybe these cores,
+[2086.80s -> 2089.00s]  because they don't have all the fancy stuff in them,
+[2089.00s -> 2093.52s]  can run one instruction stream 25% slower, right?
+[2093.52s -> 2094.76s]  Maybe they take more cache misses
+[2094.76s -> 2095.80s]  because the cache is smaller.
+[2095.80s -> 2099.52s]  Maybe they mispredicted a branch or something like that.
+[2099.52s -> 2101.48s]  But now, with those same resources,
+[2101.48s -> 2103.48s]  I could have two of these things.
+[2103.48s -> 2104.96s]  And if I put both of them running
+[2104.96s -> 2107.84s]  on different elements of the array at the same time,
+[2107.84s -> 2109.12s]  I have a two-core processor
+[2109.12s -> 2111.36s]  that might run 1.5 times faster.
+[2112.32s -> 2113.40s]  OK, I see some questions.
+[2113.40s -> 2113.90s]  Yes?
+[2113.90s -> 2115.56s]  You talked about the execution on this.
+[2115.56s -> 2117.72s]  Like, how do we keep with the registers here?
+[2117.72s -> 2119.60s]  Yeah, we just duplicated everything.
+[2119.60s -> 2122.80s]  We duplicated the hardware for executing instructions.
+[2122.80s -> 2124.36s]  We duplicated the registers.
+[2124.36s -> 2126.24s]  There's an R0, R1, R2 here.
+[2126.24s -> 2128.72s]  There's an R0, R1, R2 here.
+[2128.72s -> 2131.26s]  And there's the ability for each of these processing cores
+[2131.26s -> 2133.00s]  to take a look at the instruction stream
+[2133.00s -> 2134.84s]  that they're supposed to run and say,
+[2134.84s -> 2136.40s]  my little exec unit here needs
+[2136.40s -> 2138.14s]  to run this instruction next.
+[2138.14s -> 2141.66s]  And if that instruction is multiply R0 and R0 and R1,
+[2141.66s -> 2143.90s]  that's modifying these registers.
+[2143.90s -> 2146.46s]  I just think, compared to what I'm used to,
+[2146.46s -> 2150.90s]  I could actually go back to using my end-to-end
+[2150.90s -> 2152.82s]  hardware execution contents.
+[2152.82s -> 2154.10s]  I'm not sure if that's how it's going to be.
+[2154.10s -> 2155.82s]  Yeah, we're duplicating everything.
+[2155.82s -> 2158.50s]  We're duplicating everything.
+[2158.50s -> 2159.22s]  Yeah?
+[2159.22s -> 2163.38s]  So talking about the resources, you just mentioned.
+[2163.38s -> 2167.34s]  So basically, using two transistors, you have an option.
+[2167.34s -> 2169.38s]  You can either create a superscalar processor
+[2169.38s -> 2171.38s]  or create two cores.
+[2171.38s -> 2172.50s]  Two simpler?
+[2172.50s -> 2174.18s]  Yeah, exactly.
+[2174.18s -> 2176.54s]  Now, notice that both my multi-core processor
+[2176.54s -> 2179.06s]  and a superscalar processor both have two fetch
+[2179.06s -> 2182.42s]  and decode units and two execution units.
+[2182.42s -> 2185.02s]  But I've decided to organize them a little bit differently
+[2185.02s -> 2189.42s]  and now duplicate the execution context.
+[2189.42s -> 2194.20s]  So I got rid of all that logic to try and find ILP.
+[2194.20s -> 2196.62s]  I got rid of logic maybe to have a really big data cache
+[2196.62s -> 2198.50s]  to avoid stalls.
+[2198.50s -> 2201.02s]  But now I have the ability to, if you gave me
+[2201.02s -> 2203.18s]  two instruction streams, I'll guarantee
+[2203.18s -> 2205.70s]  that you'll run both of them and get double the performance.
+[2205.70s -> 2207.20s]  Yeah?
+[2207.20s -> 2209.58s]  If I don't get the outer loop,
+[2209.58s -> 2210.86s]  then it's standardized, right?
+[2210.86s -> 2211.36s]  OK.
+[2211.36s -> 2213.58s]  So it doesn't know the instructions that?
+[2213.58s -> 2214.06s]  It could.
+[2214.06s -> 2215.38s]  It could.
+[2215.38s -> 2220.42s]  But then it's only working on stuff that it knows statically.
+[2220.42s -> 2224.90s]  In this case, modern advanced compilers probably could.
+[2224.94s -> 2227.36s]  But the minute I throw a small wrinkle in that program,
+[2227.36s -> 2228.60s]  the compiler is going to go, I don't know.
+[2228.60s -> 2230.18s]  I can't reason about this anymore.
+[2230.18s -> 2231.82s]  And we have to rely on the hardware.
+[2231.82s -> 2232.90s]  Yes?
+[2232.90s -> 2235.62s]  Could you like trivially just add it by just saying
+[2235.62s -> 2238.30s]  that, OK, instead, like, I'm going to do it in chunks?
+[2238.30s -> 2240.00s]  So you know, for i and n, like, OK,
+[2240.00s -> 2241.00s]  it's trivially, like.
+[2241.00s -> 2241.50s]  Hold on.
+[2241.50s -> 2243.58s]  I love these comments because it's fun.
+[2243.58s -> 2246.82s]  You're saying, can't you trivially just do it?
+[2246.82s -> 2248.38s]  That's the point.
+[2248.38s -> 2250.94s]  In a program like this, which looks a lot like a tensor
+[2250.94s -> 2255.06s]  operation, right, it's trivial for you, the programmer,
+[2255.06s -> 2257.58s]  or maybe even a software compiler,
+[2257.58s -> 2261.78s]  to generate code that says this is different from this.
+[2261.78s -> 2262.46s]  It's parallel.
+[2262.46s -> 2264.14s]  Trust me.
+[2264.14s -> 2267.14s]  We don't need to rely on hardware to do it.
+[2267.14s -> 2269.90s]  So the observation is that doing that automatically
+[2269.90s -> 2273.98s]  in hardware is not an efficient use of resources.
+[2273.98s -> 2278.26s]  What's better is to push that up the stack, OK?
+[2278.26s -> 2280.38s]  Now, right now, this is C code.
+[2280.42s -> 2281.96s]  This is valid, compilable C code.
+[2281.96s -> 2284.84s]  If you compile it, Clang will kick out,
+[2284.84s -> 2288.02s]  unless you're turning on some very fancy stuff,
+[2288.02s -> 2290.98s]  a single instruction stream because the semantics
+[2290.98s -> 2293.62s]  of this program are serial, OK?
+[2293.62s -> 2296.98s]  So if I take this program and I run it on my dual core
+[2296.98s -> 2299.84s]  processor, I'm going to create one instruction stream
+[2299.84s -> 2301.30s]  to run on one of those cores.
+[2301.30s -> 2303.00s]  And those cores are wimpy cores.
+[2303.00s -> 2305.50s]  It's going to run slower.
+[2305.50s -> 2308.22s]  Does that make sense?
+[2308.22s -> 2310.22s]  So I've got to change my program.
+[2310.26s -> 2312.66s]  So let's do it in the only way that we know how,
+[2312.66s -> 2314.96s]  assuming that you've taken 1.11,
+[2314.96s -> 2317.54s]  is let's spawn some threads.
+[2317.54s -> 2319.86s]  So take a look at this program.
+[2319.86s -> 2320.62s]  Take a break.
+[2320.62s -> 2321.70s]  I've been talking a lot.
+[2321.70s -> 2324.54s]  Talk to your partner or your friend or your enemy
+[2324.54s -> 2327.08s]  or whatever for 45 seconds.
+[2327.08s -> 2329.40s]  And I want you to tell me what this program does.
+[2329.40s -> 2330.78s]  And specifically what I mean is
+[2330.78s -> 2333.78s]  it computes the same answer as everything I've shown you.
+[2333.78s -> 2335.24s]  But there's two threads.
+[2335.24s -> 2338.66s]  There's the original thread, and there's the thread that I spawn.
+[2338.66s -> 2340.74s]  One thread deals with some elements.
+[2340.74s -> 2342.70s]  Another thread deals with some other elements.
+[2342.70s -> 2344.02s]  What thread does what?
+[2344.02s -> 2346.06s]  Take 30 seconds to just talk that over.
+[2351.74s -> 2352.24s]  All right.
+[2352.24s -> 2354.26s]  Somebody tell me, how does this program
+[2354.26s -> 2355.50s]  divide the parallel work?
+[2355.50s -> 2356.00s]  Yeah.
+[2356.00s -> 2358.50s]  So the main thread does the second half
+[2358.50s -> 2361.18s]  to the original part, which is sin x.
+[2361.18s -> 2363.22s]  The main program does the second half.
+[2363.22s -> 2365.86s]  And the thread does the first half.
+[2365.86s -> 2367.56s]  So I have two threads.
+[2367.58s -> 2369.96s]  They both call sin x.
+[2369.96s -> 2374.88s]  The main thread actually works on the pointers
+[2374.88s -> 2380.64s]  at x plus n, which is actually n over 2, args n.
+[2380.64s -> 2384.32s]  So the thread I spawned does the first half.
+[2384.32s -> 2388.64s]  The thread that I already had does the second half.
+[2388.64s -> 2390.04s]  That doesn't matter.
+[2390.04s -> 2392.38s]  What does matter is as the programmer
+[2392.38s -> 2396.04s]  I've created two threads.
+[2396.04s -> 2397.92s]  And from the programmer's perspective,
+[2397.92s -> 2400.36s]  a thread, from the machine's perspective,
+[2400.36s -> 2401.96s]  two instruction streams.
+[2401.96s -> 2403.80s]  The operating system here, which we're not
+[2403.80s -> 2405.08s]  going to talk about, just says, oh, look,
+[2405.08s -> 2406.54s]  here's a program with two threads,
+[2406.54s -> 2407.68s]  two instruction streams.
+[2407.68s -> 2410.28s]  Hey, processor, here's two instruction streams.
+[2410.28s -> 2412.60s]  And the processor goes, OK, I'll run one on core zero
+[2412.60s -> 2415.52s]  and the other one on core one.
+[2415.52s -> 2418.56s]  But without me explicitly creating parallelism
+[2418.56s -> 2422.48s]  or some magical compiler explicitly creating parallelism,
+[2422.48s -> 2424.84s]  this processor is not given two instruction streams
+[2424.84s -> 2427.10s]  you want to run.
+[2427.10s -> 2428.64s]  Now, another way to think about this
+[2428.64s -> 2430.56s]  is you're like, gosh, this is kind of gnarly.
+[2430.56s -> 2432.56s]  I even had to ask you to parse the code.
+[2432.56s -> 2434.40s]  Really, the way you want to think about it
+[2434.40s -> 2437.64s]  is if I go back to the original program,
+[2437.64s -> 2439.84s]  you'd probably be like, it's a lot more intuitive just
+[2439.84s -> 2442.36s]  to have some way to say that outer for loop is
+[2442.36s -> 2446.20s]  parallel or is independent, by saying, look,
+[2446.20s -> 2447.92s]  everything is outer for loop.
+[2447.92s -> 2449.88s]  You can do independently on different threads.
+[2449.88s -> 2452.40s]  If you want to, you go figure out
+[2452.40s -> 2454.12s]  what threads should do what.
+[2454.12s -> 2458.80s]  And so you should assume that in modern programming languages,
+[2458.80s -> 2464.52s]  whether it be PyTorch or any kind of programming language
+[2464.52s -> 2466.16s]  that has parallel constructs, there's
+[2466.16s -> 2469.24s]  almost always some way to have some form of a for loop,
+[2469.24s -> 2473.80s]  an iterator, where you, the programmer, declare, trust me,
+[2473.80s -> 2476.80s]  I know you can do all the loop iterations in parallel
+[2476.80s -> 2479.16s]  if you want to.
+[2479.16s -> 2481.72s]  So what I did here is I made up syntax.
+[2481.72s -> 2483.60s]  This is not valid C anymore.
+[2483.60s -> 2486.48s]  And I just said, imagine a for all loop,
+[2486.48s -> 2489.48s]  where instead of saying I plus plus,
+[2489.48s -> 2491.12s]  instead of empirically saying, here's
+[2491.12s -> 2493.20s]  how we iterate all the loop, I just said, look,
+[2493.20s -> 2494.40s]  there's a for all loop.
+[2494.40s -> 2497.68s]  There's going to be n iterations.
+[2497.68s -> 2501.80s]  You can identify your current iteration by the variable i.
+[2501.80s -> 2504.68s]  And I guarantee you that I wrote the program.
+[2504.68s -> 2506.64s]  I know that all those iterations
+[2506.64s -> 2509.36s]  are potentially parallel.
+[2509.36s -> 2512.00s]  You can do them in parallel, and you'll get the same answer.
+[2512.00s -> 2514.40s]  We're good.
+[2514.40s -> 2518.00s]  And if I write code in this higher level of abstraction,
+[2518.00s -> 2520.04s]  shoot, it's not hard at all.
+[2520.04s -> 2522.62s]  All of you could sit down and go, I know how I'd do that.
+[2522.62s -> 2524.16s]  I would actually, if I was running
+[2524.16s -> 2526.88s]  on a machine with two cores, I would create two threads.
+[2526.88s -> 2528.76s]  And then I would create a for loop on each.
+[2528.76s -> 2530.12s]  And one of them would do half.
+[2530.12s -> 2531.62s]  You could kind of think through how
+[2531.62s -> 2535.76s]  you would transform this program into this program
+[2535.76s -> 2539.20s]  if you knew you were running on a two-core processor.
+[2539.20s -> 2541.44s]  Now, imagine we weren't running on a two-core processor.
+[2541.44s -> 2543.40s]  You were running on a four-core processor.
+[2543.40s -> 2545.92s]  If you wrote code with p-threads like this, you would be like,
+[2545.92s -> 2548.52s]  shoot, I'm only actually going to use two of those four
+[2548.52s -> 2551.96s]  cores, whereas that's why it's kind of useful to sort
+[2551.96s -> 2554.56s]  of think about how the programming model can give me
+[2554.56s -> 2556.80s]  a much more abstract way to just say,
+[2556.80s -> 2558.86s]  this stuff is independent.
+[2558.86s -> 2561.96s]  And however you want to schedule it in parallel, you can.
+[2561.96s -> 2564.56s]  Because if I start writing code like this,
+[2564.56s -> 2566.48s]  if I happen to run on a four-core machine,
+[2566.48s -> 2570.16s]  under the hood, that runtime can spawn four threads.
+[2570.16s -> 2572.54s]  Or if I'm running on a 16-core machine,
+[2572.54s -> 2575.50s]  it can spawn 16 threads.
+[2575.50s -> 2577.00s]  I don't need to know as a programmer.
+[2577.00s -> 2578.62s]  All I'm doing is I'm saying, trust me,
+[2578.62s -> 2580.28s]  these iterations are independent.
+[2580.28s -> 2581.74s]  Create as many instruction streams
+[2581.74s -> 2583.48s]  as you feel appropriate on the computer
+[2583.48s -> 2585.32s]  that you're running on.
+[2585.32s -> 2587.04s]  So I can scale up to a lot of cores
+[2587.04s -> 2590.08s]  pretty quickly if I take out a lot of the fancy stuff,
+[2590.08s -> 2594.52s]  if I start getting rid of a lot of super scalar execution,
+[2594.52s -> 2596.48s]  if I kind of maybe move to smaller caches.
+[2596.48s -> 2598.50s]  I do all the things that architects
+[2599.14s -> 2602.74s]  have done to make single instruction streams run fast.
+[2602.74s -> 2603.90s]  I can rip some of them out.
+[2603.90s -> 2606.32s]  And in a modern era, I can get a lot of cores on a chip.
+[2606.32s -> 2607.98s]  So here's an Intel CPU.
+[2607.98s -> 2609.44s]  If you look at a chip diagram, you
+[2609.44s -> 2611.86s]  can kind of just see where the transistors
+[2611.86s -> 2613.10s]  for the various cores are.
+[2615.78s -> 2617.46s]  That's a 10-core Intel.
+[2617.46s -> 2619.86s]  This is actually the RTX 4090.
+[2619.86s -> 2622.02s]  And if you look closely, the replicated unit
+[2622.02s -> 2623.26s]  is about this size.
+[2623.26s -> 2626.46s]  There's about 144 of them on there.
+[2627.46s -> 2630.66s]  NVIDIA likes to call them SMs for shared multiprocessors,
+[2630.66s -> 2634.22s]  but that's the granularity of the duplication.
+[2634.22s -> 2636.22s]  Pull out your iPhone.
+[2636.22s -> 2639.12s]  And if you look at Apple's Bionic chip,
+[2639.12s -> 2641.32s]  there's six CPU cores in there.
+[2641.32s -> 2642.94s]  They're actually heterogeneous.
+[2642.94s -> 2645.22s]  They're not even the same design.
+[2645.22s -> 2648.14s]  So you have two cores that are bigger cores that
+[2648.14s -> 2651.26s]  have more of the big caches, the out-of-order execution,
+[2651.26s -> 2653.34s]  in order to run single threads fast.
+[2653.34s -> 2655.76s]  And then for stuff where you have more parallelism,
+[2655.76s -> 2658.20s]  they have additional four small cores,
+[2658.20s -> 2661.76s]  where more of that superscalar stuff has been ripped out
+[2661.76s -> 2662.76s]  and things like that.
+[2667.12s -> 2669.20s]  And yeah, we've kind of already
+[2669.20s -> 2672.04s]  discussed this a little bit.
+[2672.04s -> 2675.88s]  So I said that if I write code in this kind of manner,
+[2675.88s -> 2677.88s]  I said, here's what we need to compute.
+[2677.88s -> 2679.68s]  But here are the computations that
+[2679.68s -> 2682.88s]  can be done independently.
+[2682.88s -> 2686.72s]  There's another property of this code that's pretty nice.
+[2686.72s -> 2691.58s]  I'm saying that everything that is being done independently,
+[2691.58s -> 2694.52s]  it's actually doing the same thing.
+[2694.52s -> 2696.44s]  The body of the loop is being done.
+[2696.44s -> 2699.76s]  The same body of the loop is being done by all threads
+[2699.76s -> 2701.00s]  if I execute this thing.
+[2701.00s -> 2703.42s]  The only thing different is that they're loading and storing
+[2703.42s -> 2705.16s]  different values.
+[2705.16s -> 2709.44s]  So that gets me to the next major idea here.
+[2709.44s -> 2714.16s]  So what folks said is, in a lot of these modern applications,
+[2714.16s -> 2717.04s]  machine learning for sure, graphics for sure,
+[2717.04s -> 2719.40s]  any kind of numerical computing or data science
+[2719.40s -> 2721.02s]  or anything like that, you're often
+[2721.02s -> 2725.04s]  working on code that looks a lot kind of like this.
+[2725.04s -> 2726.50s]  I've got a big array of values.
+[2726.50s -> 2727.38s]  I've got a tensor.
+[2727.38s -> 2730.00s]  I need to do the same thing on everything.
+[2730.00s -> 2733.20s]  So what they decided to do is now
+[2733.20s -> 2734.64s]  there's a change to my diagram,
+[2734.64s -> 2737.64s]  no change at all to the orange box.
+[2737.64s -> 2741.72s]  There's still a processor that grabs one operation per clock.
+[2741.72s -> 2744.12s]  It can kind of do the control, like, OK, what is it?
+[2744.12s -> 2744.84s]  Oh, it's an add.
+[2744.84s -> 2745.76s]  Oh, it's a multiply.
+[2745.76s -> 2747.40s]  Oh, it's a load.
+[2747.40s -> 2751.48s]  But now I've actually replicated my ALUs.
+[2751.48s -> 2754.84s]  So I have eight ALUs on this diagram or eight execution units.
+[2754.84s -> 2757.30s]  And what's going to happen is that if the next instruction's
+[2757.30s -> 2761.46s]  an add, we're not just going to do one add on one value.
+[2761.46s -> 2764.56s]  We're going to do eight adds on eight different values.
+[2764.56s -> 2766.32s]  So all of these are kind of locked together
+[2766.32s -> 2768.28s]  with the same control.
+[2768.28s -> 2770.84s]  And for now, one way to think about it
+[2770.84s -> 2774.66s]  is I also took all the registers, R0, R1, or whatever,
+[2774.66s -> 2778.60s]  and I turned them into eight wide vector registers.
+[2778.60s -> 2783.20s]  So when I say add pro, you know, so let's see here.
+[2783.20s -> 2786.16s]  So I used to have a program that when we compiled it,
+[2786.16s -> 2788.04s]  we would compile it to instructions
+[2788.04s -> 2790.28s]  that worked on scalar registers,
+[2790.28s -> 2795.24s]  like 32-bit values or 64-bit values.
+[2795.24s -> 2798.00s]  That's what the C code does.
+[2798.00s -> 2801.28s]  But now I have a processor that has the ability
+[2801.28s -> 2805.86s]  to run an instruction that runs on a vector of eight values
+[2805.86s -> 2810.96s]  and should read and write vectors of registers.
+[2810.96s -> 2813.60s]  So one way I can get the compiler
+[2813.60s -> 2818.88s]  to generate these new instructions that I need
+[2818.88s -> 2822.96s]  is I can open up my favorite parallel programming library,
+[2822.96s -> 2826.16s]  and I can change every variable in my program
+[2826.16s -> 2829.52s]  to the equivalent variables using these macros,
+[2829.52s -> 2833.00s]  these intrinsic macros, that every variable here
+[2833.00s -> 2841.32s]  is a 256-bit or an 8 by 32-bit float vector.
+[2841.32s -> 2843.24s]  So all I did is I rewrote the program where
+[2843.24s -> 2847.52s]  I took here an int or a float, and I turned it
+[2847.56s -> 2850.08s]  into a float vector of eight things
+[2850.08s -> 2852.44s]  or an int vector of eight things.
+[2852.44s -> 2855.92s]  And then notice that my for loop, my outermost for loop,
+[2855.92s -> 2862.28s]  is not for i equals 0 to n, but i equals 0 to n by 8.
+[2862.28s -> 2863.92s]  So every time through this for loop,
+[2863.92s -> 2866.08s]  I'm actually doing the same logic,
+[2866.08s -> 2868.60s]  but I'm doing it for eight things.
+[2868.60s -> 2870.84s]  And I've also made the code almost impossible to read.
+[2870.84s -> 2871.34s]  OK.
+[2877.80s -> 2880.08s]  So now when this program gets compiled
+[2880.08s -> 2884.52s]  by a compiler that supports these little macro functions,
+[2884.52s -> 2891.28s]  the output are instructions that modify vectors, not
+[2891.28s -> 2893.76s]  instructions that modify scalars.
+[2893.76s -> 2894.84s]  So you see the difference.
+[2894.84s -> 2897.16s]  I changed my R0s to these XMMs just
+[2897.16s -> 2900.64s]  to indicate that they were something different.
+[2900.96s -> 2906.20s]  So my compiled program processes eight elements simultaneously
+[2906.20s -> 2910.32s]  using vector instructions with one instruction stream.
+[2910.32s -> 2912.84s]  So I still have one instruction stream,
+[2912.84s -> 2915.92s]  but the instructions now are these wide ones.
+[2915.92s -> 2920.36s]  Now I can combine that with multiple instruction streams.
+[2920.36s -> 2925.52s]  So if I take this new type of core
+[2925.52s -> 2928.40s]  and I apply it to my 16-core processor,
+[2928.40s -> 2932.40s]  I have a 16-core processor that runs 16 instruction
+[2932.40s -> 2935.40s]  streams, but the instructions in those streams
+[2935.40s -> 2939.18s]  are processing eight pieces of data at once.
+[2939.18s -> 2944.34s]  So all together, my chip has 16 cores, 16 instruction
+[2944.34s -> 2950.64s]  streams, 16 times 8, or 128 execution units,
+[2950.64s -> 2955.16s]  which means I can do work on 128 pieces of data at once.
+[2955.16s -> 2959.04s]  So arguably, I could maybe be going 128 times faster
+[2959.04s -> 2960.28s]  on the 16-core chip.
+[2962.88s -> 2968.08s]  Notice that you could imagine, if I asked you to,
+[2968.08s -> 2970.28s]  if you knew this was a for-all loop,
+[2970.28s -> 2971.96s]  you could turn this for-all loop,
+[2971.96s -> 2974.44s]  if you were a little compiler, in fact, assignment one,
+[2974.44s -> 2979.60s]  you'll do this, into 16 threads and those vector
+[2979.60s -> 2982.28s]  instructions inside those threads
+[2982.28s -> 2984.68s]  and change that for-all loop for i equals 0 to n
+[2984.68s -> 2987.80s]  to for i equals 0 to n by 8.
+[2987.80s -> 2989.96s]  So you can imagine how, if I ask
+[2989.96s -> 2991.88s]  you to do this in one assignment,
+[2991.88s -> 2994.58s]  the value comes from you being told
+[2994.58s -> 2996.68s]  what is potentially independent.
+[2996.68s -> 2999.16s]  The value is not from the mechanical transformation
+[2999.16s -> 3002.16s]  into vector instructions or threads.
+[3002.16s -> 3003.08s]  Question, yeah.
+[3003.08s -> 3005.08s]  If you were just taking through being
+[3005.08s -> 3008.64s]  able to show all this into the registers,
+[3008.64s -> 3011.08s]  is it just trivial then to fetch all of that?
+[3011.08s -> 3012.08s]  Well, we're going to have some.
+[3012.08s -> 3013.88s]  I mean, we've got to move that data.
+[3013.88s -> 3016.64s]  We are suspending disbelief temporarily
+[3016.64s -> 3020.20s]  on how costly it is to move data,
+[3020.20s -> 3023.04s]  and we're first getting set up on how to crank on that data.
+[3023.04s -> 3023.92s]  And then we're going to come back
+[3023.92s -> 3027.84s]  with a question at the end of, can we get the data there?
+[3027.84s -> 3028.36s]  OK.
+[3028.36s -> 3031.76s]  So this was kind of like a pretty big intellectual change.
+[3031.76s -> 3034.68s]  I'd like everybody to, this is a good sign
+[3034.68s -> 3037.92s]  to raise your hand if you can't mentally think
+[3037.92s -> 3042.72s]  through what's going on here.
+[3042.76s -> 3047.32s]  I have 16 threads running on a 16-core chip.
+[3047.32s -> 3050.52s]  And those threads, the instruction stream,
+[3050.52s -> 3055.56s]  contains instructions that are processing eight-wide vectors.
+[3055.56s -> 3058.68s]  And if I think of what's going on at any moment in time,
+[3058.68s -> 3061.16s]  there's 128 pieces of work getting
+[3061.16s -> 3063.16s]  done at any point in time.
+[3063.16s -> 3067.32s]  So if I perfectly parallelize and I compare my performance
+[3067.32s -> 3070.56s]  to my original starting processor that had one
+[3070.60s -> 3073.28s]  core and one ALU per core, I might
+[3073.28s -> 3074.60s]  be up to 128 times faster.
+[3084.48s -> 3086.76s]  Well, the first answer to your question
+[3086.76s -> 3089.28s]  is, now I have eight execution units that
+[3089.28s -> 3092.76s]  can do eight things per core instead of one execution
+[3092.76s -> 3094.76s]  unit that can do one thing.
+[3094.76s -> 3097.96s]  Your real question is, well, why don't we just
+[3097.96s -> 3100.48s]  make eight times more cores?
+[3100.92s -> 3102.72s]  What's going on is we're amortizing
+[3102.72s -> 3106.48s]  a lot of the costs of controlling or processing
+[3106.48s -> 3110.36s]  an instruction stream over these eight execution units.
+[3110.36s -> 3112.08s]  And in my cartoon diagram, notice
+[3112.08s -> 3115.00s]  that there's still one fetch and decode unit.
+[3115.00s -> 3116.88s]  You still do, what's the next instruction?
+[3116.88s -> 3118.08s]  OK, that instruction?
+[3118.08s -> 3118.72s]  Great.
+[3118.72s -> 3119.64s]  Now you're just going to say, I'm
+[3119.64s -> 3122.24s]  going to run that instruction on vector registers
+[3122.24s -> 3123.72s]  with my vector of ALUs.
+[3123.72s -> 3130.16s]  So this is a good idea because I can amortize
+[3130.16s -> 3135.52s]  the costs of the processor across many execution units.
+[3135.52s -> 3139.32s]  And I can do that if my code does the same thing.
+[3139.32s -> 3143.12s]  It needs the same logic for all of the elements.
+[3143.12s -> 3147.04s]  In terms of resources involved, I think like a single,
+[3147.04s -> 3156.00s]  like 16 single code processor, like single, 16 code,
+[3156.00s -> 3159.52s]  16 code processors that are messing up the terminal.
+[3159.52s -> 3163.92s]  But basically, 16 cores, you would be surprised,
+[3163.92s -> 3165.28s]  I know what you're getting at,
+[3165.28s -> 3170.28s]  how few resources are needed to produce an arithmetic unit
+[3170.28s -> 3172.84s]  compared to everything else, especially one that's
+[3172.88s -> 3176.20s]  not high precision floating point.
+[3176.20s -> 3178.60s]  So the idea here is those things are cheap.
+[3178.60s -> 3181.88s]  We can pack a chip full of those
+[3181.88s -> 3184.72s]  if the code is set up to use them.
+[3184.72s -> 3186.44s]  That's the main idea.
+[3186.44s -> 3189.24s]  And now we're going to get to something that might,
+[3189.24s -> 3191.80s]  oh sorry, I meant to go this way.
+[3191.80s -> 3194.52s]  OK.
+[3194.52s -> 3197.00s]  Now there's this question, is the code set up to use them?
+[3197.00s -> 3199.84s]  So I'm going to change the example for just one slide.
+[3199.84s -> 3201.72s]  Imagine that this was my piece of code
+[3201.72s -> 3205.68s]  for all n elements do this logic.
+[3205.68s -> 3207.92s]  So for all n elements, every element
+[3207.92s -> 3209.92s]  can be processed independently.
+[3209.92s -> 3210.80s]  Do this logic.
+[3210.80s -> 3213.20s]  Read the value.
+[3213.20s -> 3216.12s]  And then maybe you need to do the if statement
+[3216.12s -> 3217.72s]  and maybe you need to do the else.
+[3221.80s -> 3224.16s]  But I just built a processor that
+[3224.16s -> 3226.76s]  has every core has eight execution units that
+[3226.76s -> 3228.96s]  have to do the same thing.
+[3228.96s -> 3231.48s]  And now I have iterations of the loop
+[3231.48s -> 3233.90s]  that some of them need these instructions and some of them
+[3233.90s -> 3235.12s]  need these instructions.
+[3235.12s -> 3237.52s]  So I'm going to diagram this out for you
+[3237.52s -> 3240.36s]  as going down the slide is like time
+[3240.36s -> 3242.20s]  as we execute the program.
+[3242.20s -> 3245.76s]  Going across the slide is what each of the ALUs are doing.
+[3245.76s -> 3249.16s]  This is just about what's going on in one core.
+[3249.16s -> 3250.64s]  So at the beginning of the program,
+[3250.64s -> 3253.16s]  the ALUs are just doing what I just told you.
+[3253.16s -> 3257.64s]  Like they loaded x sub i all in one big vector operation.
+[3257.64s -> 3260.24s]  They actually even can do the if t is greater,
+[3261.16s -> 3263.16s]  for every iteration, if the value loaded
+[3263.16s -> 3264.72s]  is greater than 0.
+[3264.72s -> 3267.88s]  And they'll get a vector, a bool vector,
+[3267.88s -> 3270.14s]  of trues and falses as a result of those tests.
+[3270.14s -> 3273.00s]  Notice that some of these iterations evaluate to true
+[3273.00s -> 3277.46s]  and some of them evaluate to false.
+[3277.46s -> 3278.88s]  What do you think happens next?
+[3283.32s -> 3284.96s]  Any ideas?
+[3284.96s -> 3285.68s]  Yeah?
+[3285.68s -> 3288.88s]  It has to be like only the trues and then only the falses.
+[3288.88s -> 3291.36s]  Because the rules of my underlying implementation
+[3291.36s -> 3293.48s]  are I execute eight things at once
+[3293.48s -> 3295.92s]  and they've got to be the same instruction.
+[3295.92s -> 3298.28s]  And in this case, what I might do is I might say,
+[3298.28s -> 3299.30s]  you know what?
+[3299.30s -> 3302.20s]  I know that this code that I have to run
+[3302.20s -> 3304.64s]  has to run the instructions in the if branch.
+[3304.64s -> 3305.96s]  So let's do it.
+[3305.96s -> 3308.64s]  Let's run those instructions in the if branch.
+[3308.64s -> 3313.80s]  And then let's just mask off or not even run,
+[3313.80s -> 3317.56s]  maybe cancel out the operation of any ALU that's
+[3317.56s -> 3320.28s]  responsible for data that actually
+[3320.28s -> 3322.40s]  doesn't need that instruction.
+[3322.40s -> 3324.68s]  And then we're going to run the else branch.
+[3324.68s -> 3327.16s]  And we'll flip that mask.
+[3327.16s -> 3330.92s]  And so at the end of the day, not all ALUs
+[3330.92s -> 3331.96s]  are doing useful work.
+[3331.96s -> 3334.84s]  I built this chip that has eight things in it
+[3334.84s -> 3337.40s]  because I know that if I could do eight things at once,
+[3337.40s -> 3340.68s]  I got a really big, I got a lot of compute for free.
+[3340.68s -> 3345.76s]  But if code isn't set up to do eight things at once,
+[3345.76s -> 3347.84s]  I'm essentially just spinning my wheels
+[3347.84s -> 3350.76s]  on some of those execution units that don't have anything to do.
+[3353.92s -> 3358.36s]  Can you see why the worst case is one-eighth?
+[3358.36s -> 3359.24s]  Right.
+[3359.24s -> 3359.76s]  Question?
+[3359.76s -> 3360.26s]  Yeah?
+[3360.26s -> 3361.24s]  Why wouldn't it be zero?
+[3361.24s -> 3365.20s]  Shouldn't it always be the true case and then
+[3365.20s -> 3366.04s]  do the false case?
+[3366.04s -> 3366.48s]  Oh, I see.
+[3366.48s -> 3370.48s]  Well, first of all, two clarifications.
+[3370.48s -> 3375.50s]  Oh, because if none of the iterations
+[3375.54s -> 3378.14s]  need the if case, we can be smarter about it
+[3378.14s -> 3379.18s]  and skip the thing.
+[3379.18s -> 3379.70s]  Yes.
+[3379.70s -> 3380.38s]  Yeah.
+[3380.38s -> 3381.90s]  So here's a question for you.
+[3381.90s -> 3383.24s]  This is something to talk over.
+[3383.24s -> 3385.38s]  Can you give me the simplest piece of code
+[3385.38s -> 3386.66s]  that you can think of?
+[3386.66s -> 3388.62s]  And by simplest piece of code, I actually say,
+[3388.62s -> 3391.54s]  can you do it with one if statement
+[3391.54s -> 3395.18s]  that overall, on average, this processor
+[3395.18s -> 3396.94s]  will be running at one-eighth?
+[3396.94s -> 3399.02s]  Notice that it's not in this scenario
+[3399.02s -> 3401.58s]  because it's running at three-eighths efficiency up
+[3401.62s -> 3405.90s]  here and five-eighths efficiency down here.
+[3405.90s -> 3408.14s]  Can you give me a piece of code
+[3408.14s -> 3412.46s]  that will create a situation where we're
+[3412.46s -> 3413.98s]  at one-eighths efficiency?
+[3413.98s -> 3415.82s]  Give yourself some time to talk about it.
+[3415.82s -> 3417.62s]  And you only get to use one if statement.
+[3417.62s -> 3423.14s]  All right.
+[3423.14s -> 3424.58s]  Any thoughts?
+[3424.58s -> 3425.54s]  Let's go to the back.
+[3425.54s -> 3427.02s]  Yes, sir.
+[3427.02s -> 3430.26s]  Could we take whatever is in the yellow block,
+[3430.26s -> 3432.74s]  put it into one equation, and multiply it
+[3432.74s -> 3435.38s]  by T greater than 0.0?
+[3435.38s -> 3436.70s]  OK, say that again.
+[3436.70s -> 3439.94s]  OK, so we have this code here.
+[3439.94s -> 3442.54s]  And what goes in the yellow box?
+[3442.54s -> 3444.54s]  Yeah, so we can just multiply that
+[3444.58s -> 3449.70s]  by that Boolean statement by plus that Boolean statement
+[3449.70s -> 3451.58s]  times whatever is in the else.
+[3451.58s -> 3454.82s]  So if it's true, it will be 1 times whatever
+[3454.82s -> 3457.42s]  is in the yellow box plus 0 times that thing.
+[3457.42s -> 3458.90s]  OK.
+[3458.90s -> 3460.38s]  We have the proper answer.
+[3460.38s -> 3461.98s]  And then in the other case, it
+[3461.98s -> 3464.54s]  will be 0 times whatever is in the yellow box
+[3464.54s -> 3467.50s]  plus 1 times whatever is in the blue box.
+[3467.50s -> 3469.58s]  And then we'll get whatever is in the else.
+[3469.58s -> 3473.22s]  So we don't have to beat those things.
+[3473.22s -> 3474.74s]  Oh, oh, oh, oh, I see.
+[3474.74s -> 3476.50s]  OK.
+[3476.50s -> 3479.94s]  So what you said was, I see what you're doing here.
+[3479.94s -> 3481.54s]  So I set up this thing where there's
+[3481.54s -> 3483.54s]  an if statement in the code.
+[3483.54s -> 3486.42s]  And what you're proposing is let's remove the if statement
+[3486.42s -> 3489.02s]  and the else statement altogether.
+[3489.02s -> 3492.70s]  The code is just the orange box followed by the blue box.
+[3492.70s -> 3497.42s]  And we'd get the same effect if we multiply these results
+[3497.42s -> 3501.66s]  by 0 at the appropriate time and these results by 0
+[3501.66s -> 3502.78s]  at the appropriate time.
+[3503.30s -> 3507.54s]  So that is a good implementation of this if statement.
+[3507.54s -> 3508.94s]  But what you've created is you've
+[3508.94s -> 3512.38s]  created something that still does all the same instructions
+[3512.38s -> 3514.94s]  and has the same costs.
+[3514.94s -> 3517.30s]  So what you've said is if you wanted to compile this
+[3517.30s -> 3521.32s]  to a machine that has no if statements in the instructions,
+[3521.32s -> 3523.58s]  you've actually given me a good lowering of the if
+[3523.58s -> 3528.06s]  statement to what's called predication.
+[3528.06s -> 3532.26s]  So good compiler optimization, but we're still
+[3532.26s -> 3534.70s]  running exactly the same performance as before.
+[3534.70s -> 3536.66s]  So what I'm looking for is a solution
+[3536.66s -> 3538.98s]  that, given that if statement or given
+[3538.98s -> 3541.10s]  your implementation of that if statement,
+[3541.10s -> 3544.66s]  gets me running at 1-8 utilization.
+[3544.66s -> 3547.86s]  100% utilization is every ALU is doing useful work
+[3547.86s -> 3550.14s]  on every step.
+[3550.14s -> 3551.50s]  1-8 utilization.
+[3551.50s -> 3554.90s]  1-8 at any given time or 1-8 at all times?
+[3554.90s -> 3558.06s]  On almost all times, yeah.
+[3559.06s -> 3560.54s]  Yeah.
+[3560.54s -> 3563.14s]  Should you modify it to like if x of i
+[3563.14s -> 3565.54s]  is larger than x of i minus 1?
+[3565.54s -> 3567.54s]  Because then the next branch has
+[3567.54s -> 3569.50s]  to depend on the previous branch.
+[3569.50s -> 3574.42s]  So like x of i, I mean, there's no dependency.
+[3574.42s -> 3577.86s]  But we don't know the values of the data.
+[3577.86s -> 3580.54s]  So what data would you give me to make that?
+[3580.54s -> 3586.26s]  Yeah, I send you like, you can do the same thing, right,
+[3586.26s -> 3590.54s]  where you move like the block into the extra register.
+[3590.54s -> 3595.66s]  But if the output of each solution point makes it.
+[3595.66s -> 3597.78s]  But if you decide to put a sequential dependency
+[3597.78s -> 3599.78s]  between every iteration?
+[3599.78s -> 3600.58s]  Yes, you, OK.
+[3600.58s -> 3602.06s]  But by that definition, yes, you
+[3602.06s -> 3603.70s]  are running at worst case performance,
+[3603.70s -> 3606.38s]  but you've made the entire program non-parallel.
+[3606.38s -> 3607.90s]  I'm actually thinking about something
+[3607.90s -> 3609.86s]  that stays with the parallel program.
+[3609.86s -> 3610.34s]  Yeah.
+[3610.34s -> 3612.74s]  Would you just say if i is odd?
+[3612.74s -> 3615.58s]  If i is odd, then we're half and half, right?
+[3615.58s -> 3617.02s]  Yeah, but then you're.
+[3617.02s -> 3619.22s]  So I'm running at 50% utilization in both parts.
+[3619.22s -> 3621.86s]  I see you're not rearranging.
+[3621.86s -> 3624.74s]  OK, yeah.
+[3624.74s -> 3627.46s]  If x of i equals x of 0?
+[3627.46s -> 3631.86s]  If x of i, well, if x of i equals x of 0,
+[3631.86s -> 3635.62s]  you're either going to be all true or all false, right?
+[3635.62s -> 3637.42s]  So I'm going to run at 100% utilization,
+[3637.42s -> 3639.46s]  because everybody's either going to go true or false,
+[3639.46s -> 3641.14s]  and then the other block gets skipped.
+[3641.14s -> 3647.14s]  You could make it if i is 0 mod 8?
+[3647.14s -> 3650.58s]  i is mod 0 mod 8, or let's say I change my input data such
+[3650.58s -> 3654.62s]  that every eighth item is going to trigger a true,
+[3654.62s -> 3655.90s]  and all the other ones true.
+[3655.90s -> 3661.66s]  So that'll get me one orange bar and seven blue bars.
+[3661.66s -> 3662.78s]  I'm still not guaranteed.
+[3662.78s -> 3664.42s]  If those are equal cost things, I'm
+[3664.42s -> 3666.74s]  running at 50% utilization, because half the time
+[3666.74s -> 3670.02s]  I'm 7-8, so now the other half the time I'm 1-8.
+[3670.06s -> 3672.58s]  I thought it was with just an if statement and no ifs,
+[3672.58s -> 3674.54s]  so we're only running the ifs.
+[3674.54s -> 3676.06s]  That's what we were discussing.
+[3676.06s -> 3676.54s]  Oh, I see.
+[3676.54s -> 3677.66s]  If you're only running the ifs.
+[3677.66s -> 3679.18s]  OK, yeah, if you're only running the if,
+[3679.18s -> 3681.54s]  but I was thinking about if it's an if-else.
+[3681.54s -> 3682.10s]  But you're almost there.
+[3682.10s -> 3683.10s]  We've almost got it.
+[3683.10s -> 3686.94s]  So if you send one-eighth of the iterations down the if,
+[3686.94s -> 3691.78s]  seven-eighths down the ifs, I'm still at 50% utilization,
+[3691.78s -> 3695.22s]  and let's make some assumptions about the cost.
+[3695.22s -> 3697.86s]  You'd be in a state where take 2 down and the other state
+[3697.86s -> 3702.50s]  if I send one iteration down if, and if is a billion
+[3702.50s -> 3705.70s]  instructions, and seven-eighths down else,
+[3705.70s -> 3707.90s]  and that's the cheap path, which is almost the same,
+[3707.90s -> 3709.38s]  basically, as what you were doing.
+[3709.38s -> 3711.34s]  Yeah, exactly.
+[3711.34s -> 3713.14s]  So you see that?
+[3713.14s -> 3715.18s]  So I can make this chip with an if-else run
+[3715.18s -> 3717.42s]  at one-eighth performance.
+[3717.42s -> 3721.54s]  And by essentially making the if clause very cheap,
+[3721.54s -> 3723.94s]  the else clause very expensive, and making
+[3723.94s -> 3726.58s]  sure when I'm running the if clause, only one out of eight
+[3726.58s -> 3727.50s]  are actually running.
+[3727.78s -> 3732.06s]  So that is conceptually equivalent to your suggestion.
+[3732.06s -> 3733.42s]  This can be a problem, right?
+[3733.42s -> 3736.86s]  And on modern Intel hardware and AMD hardware,
+[3736.86s -> 3738.34s]  the vector width is 8.
+[3738.34s -> 3741.74s]  So on modern GPU hardware, that vector width
+[3741.74s -> 3744.26s]  could be as high as sometimes 32.
+[3744.26s -> 3746.26s]  So you might be like, well, if I mess things up,
+[3746.26s -> 3749.30s]  if I'm running at 132 of my total peak performance,
+[3749.30s -> 3752.50s]  that's a little frustrating sometimes.
+[3752.50s -> 3754.70s]  Just some terminology.
+[3754.70s -> 3757.66s]  You'll hear, especially if you read a lot of GPU programming
+[3757.66s -> 3759.30s]  stuff, you'll hear people go, you
+[3759.30s -> 3760.58s]  have to have coherent execution.
+[3760.58s -> 3762.26s]  You have to have coherent execution.
+[3762.26s -> 3765.78s]  Coherent execution is just kind of a jargon and slang
+[3765.78s -> 3767.70s]  for saying, I have a program where
+[3767.70s -> 3770.34s]  all of the iterations in my loop, everything that's going on
+[3770.34s -> 3772.18s]  needs the same instruction string.
+[3772.18s -> 3774.78s]  And the lack of coherence is often called divergence,
+[3774.78s -> 3777.10s]  meaning you think about it as different control
+[3777.10s -> 3778.46s]  paths are needed.
+[3778.46s -> 3781.98s]  So divergent code will not run well on a SIMD architecture
+[3781.98s -> 3783.06s]  like this.
+[3783.06s -> 3786.50s]  Coherent code will run at high utilization.
+[3786.50s -> 3788.94s]  And here, this slide's just some extra facts
+[3788.94s -> 3791.58s]  that you can see on your own, where
+[3791.58s -> 3796.10s]  widths vary from about four wide SIMD on mobile chips,
+[3796.10s -> 3798.38s]  especially a lot of the ARM SIMD instructions,
+[3798.38s -> 3800.82s]  all the way out to about 32 wide SIMD
+[3800.82s -> 3804.54s]  on a modern high-end GPU.
+[3804.54s -> 3808.30s]  I will create a supplemental video talking a little bit
+[3808.30s -> 3812.42s]  about some slight differences between how GPUs implement
+[3812.42s -> 3815.42s]  this concept and how CPUs implement this concept.
+[3815.42s -> 3817.26s]  So I'll talk about it.
+[3817.26s -> 3821.02s]  I'll do an offline, just watch the video to get into that.
+[3821.02s -> 3822.58s]  OK, so this is kind of interesting.
+[3822.58s -> 3824.98s]  We have three different ideas that we're
+[3824.98s -> 3826.90s]  mixing and matching together.
+[3826.90s -> 3828.94s]  They are orthogonal ideas.
+[3828.94s -> 3831.70s]  We have the idea of superscalar execution,
+[3831.70s -> 3834.46s]  which is a hardware implementation detail that
+[3834.46s -> 3837.82s]  requires no change to the program at all, which
+[3837.82s -> 3841.06s]  is if there are independent instructions in one instruction
+[3841.06s -> 3843.14s]  stream, the hardware figures it out
+[3843.14s -> 3846.14s]  and can execute two of them in parallel, inside the same core,
+[3846.14s -> 3848.62s]  inside the same instruction stream.
+[3848.62s -> 3852.46s]  We talked about SIMD, which is the program itself,
+[3852.46s -> 3855.46s]  most of the time, says, here are eight operations,
+[3855.46s -> 3857.46s]  or 32 operations that can be done in parallel.
+[3857.46s -> 3861.18s]  I have one instruction stream, usually.
+[3861.18s -> 3864.50s]  And it's just issuing these vector or larger operations,
+[3864.50s -> 3867.22s]  again, with an asterisk on I will clarify.
+[3867.22s -> 3869.18s]  That statement's not precise for GPUs,
+[3869.18s -> 3870.90s]  but conceptually it's the same.
+[3870.90s -> 3872.54s]  And then you have the idea of multicore,
+[3872.54s -> 3874.34s]  which is taking one of these cores that
+[3874.34s -> 3876.82s]  can run one instruction stream, maybe with vector
+[3876.82s -> 3879.50s]  instructions, maybe with superscalar,
+[3879.50s -> 3882.22s]  and copying that as many times as you have the resources
+[3882.22s -> 3883.62s]  to fit on a chip.
+[3883.62s -> 3885.38s]  So here are some examples.
+[3885.38s -> 3890.82s]  This processor, one core, superscalar.
+[3890.82s -> 3895.30s]  This processor down here, two cores, no vector,
+[3895.30s -> 3897.14s]  no superscalar.
+[3897.18s -> 3900.58s]  This processor here, four cores, eight-wide vector,
+[3900.58s -> 3904.02s]  no superscalar.
+[3904.02s -> 3905.62s]  And I can keep mixing things together.
+[3905.62s -> 3909.18s]  Like, if I had to draw a diagram of the myth machines,
+[3909.18s -> 3909.94s]  not quite that.
+[3909.94s -> 3914.14s]  Four cores, three-way superscalar, eight vector.
+[3916.82s -> 3920.38s]  Four cores, every core can run three instructions per clock.
+[3920.38s -> 3925.22s]  Those instructions might all be vector instructions.
+[3925.22s -> 3928.82s]  Nvidia GPU, about 80 of these cores.
+[3928.82s -> 3932.98s]  Each one of those cores has about 128 ALUs
+[3932.98s -> 3937.18s]  that are actually organized in 32-wide SIMD instructions.
+[3937.18s -> 3939.86s]  All the same idea is just different scales.
+[3939.86s -> 3941.74s]  Some of these scales cause keynote to crash
+[3941.74s -> 3943.34s]  because you can't draw the diagram.
+[3943.34s -> 3943.84s]  Yes?
+[3943.84s -> 3945.34s]  If you go to the previous slide,
+[3945.34s -> 3948.94s]  I see only one execution vertex, but shouldn't each
+[3948.94s -> 3949.44s]  Per core.
+[3949.44s -> 3951.70s]  fetch and decode have an execution?
+[3951.70s -> 3956.42s]  Superscalar execution is the core is given one thread.
+[3956.42s -> 3958.66s]  That thread has a sequence of instructions.
+[3958.66s -> 3960.98s]  If it finds one, because those instructions are
+[3960.98s -> 3962.90s]  in one thread, they're all reading and writing
+[3962.90s -> 3963.82s]  the same registers.
+[3963.82s -> 3966.44s]  There's only one thread, one execution context.
+[3966.44s -> 3967.98s]  If there happens to be the ability
+[3967.98s -> 3969.38s]  to find a couple of those instructions that
+[3969.38s -> 3971.78s]  can be run in parallel, this chip may find up to three.
+[3975.86s -> 3980.94s]  How many vectors is one core run in this type?
+[3981.70s -> 3983.42s]  So often, I want you to think about what's
+[3983.42s -> 3985.62s]  going on in a core, because multi-core is just
+[3985.62s -> 3987.06s]  replicating things.
+[3987.06s -> 3989.66s]  Inside a core, I have one instruction stream.
+[3989.66s -> 3991.48s]  Register is right here.
+[3991.48s -> 3993.64s]  This core is running instructions in the instruction
+[3993.64s -> 3994.14s]  stream.
+[3994.14s -> 3995.62s]  Every tick, it runs the next one.
+[3995.62s -> 3997.62s]  If it happens to find instructions
+[3997.62s -> 4001.50s]  that are independent, maybe it can run three.
+[4001.50s -> 4004.70s]  If those instructions are eight-wide vector instructions,
+[4004.70s -> 4008.46s]  you'll get eight-wide vectors.
+[4008.46s -> 4012.14s]  So if you count here, there's 24 execution units.
+[4012.14s -> 4015.70s]  Peak performance of this core is 24 operations per clock.
+[4015.70s -> 4018.46s]  Peak performance of this chip is 4 times 24,
+[4018.46s -> 4021.82s]  96 operations per clock.
+[4021.82s -> 4025.54s]  Peak performance of this chip is 128 times 80,
+[4025.54s -> 4028.14s]  and I can't do the math, operations per clock.
+[4031.14s -> 4032.54s]  Yes?
+[4032.54s -> 4034.98s]  Eight-wide vector operations unit?
+[4035.82s -> 4041.10s]  I want you to think about an eight-wide vector instruction
+[4041.10s -> 4043.66s]  as an instruction, just like there's an add instruction.
+[4043.66s -> 4045.02s]  And an add instruction usually
+[4045.02s -> 4047.58s]  is add this scalar register to the scalar register, which
+[4047.58s -> 4052.22s]  means add 42 and 10, and you get 52.
+[4052.22s -> 4054.74s]  A 70-vector instruction is an instruction
+[4054.74s -> 4057.02s]  that says, please add this eight-wide vector
+[4057.02s -> 4060.38s]  to this eight-wide vector element-wise.
+[4060.38s -> 4063.94s]  So a single instruction does eight scalar operations.
+[4065.98s -> 4069.78s]  Like imagine you're writing code in NumPy or PyTorch,
+[4069.78s -> 4072.06s]  and you have an eight-wide tensor and another eight-wide
+[4072.06s -> 4074.78s]  tensor, and you use the plus operation.
+[4074.78s -> 4078.74s]  That's a machine instruction.
+[4078.74s -> 4079.42s]  OK?
+[4079.42s -> 4079.94s]  Yeah?
+[4079.94s -> 4083.10s]  When will this change happen that there'll
+[4083.10s -> 4086.06s]  be more forms of this vector?
+[4086.06s -> 4090.06s]  On x86, it was something called SSE instructions,
+[4090.06s -> 4090.90s]  and I don't know.
+[4090.90s -> 4092.06s]  They were four-wide.
+[4092.06s -> 4094.58s]  I feel like they were probably early 2000s.
+[4095.30s -> 4098.02s]  And they were four-wide for RGBA for simple graphics
+[4098.02s -> 4100.18s]  operations.
+[4100.18s -> 4100.66s]  OK.
+[4100.66s -> 4102.66s]  So I've kind of beaten in early in the lecture
+[4102.66s -> 4105.34s]  about the effects of latency, right?
+[4105.34s -> 4108.50s]  And we motivated caches as being
+[4108.50s -> 4110.78s]  this thing in a processor that is
+[4110.78s -> 4116.22s]  critical to not running at 1 250th of peak performance
+[4116.22s -> 4118.34s]  waiting on these things.
+[4118.34s -> 4126.66s]  And I also told you a little bit
+[4126.66s -> 4129.82s]  about, well, one of the major hogs of resources
+[4129.82s -> 4132.86s]  in a modern chip is putting these big caches everywhere
+[4132.86s -> 4137.70s]  you can in order to avoid stalls due to memory, right?
+[4137.70s -> 4140.06s]  And we talked a little bit about this access pattern,
+[4140.06s -> 4143.10s]  where even though it was really predictable and going
+[4143.10s -> 4147.30s]  right through the array, when we came back around,
+[4147.30s -> 4149.42s]  we still missed.
+[4149.42s -> 4150.82s]  We still missed, even though.
+[4150.82s -> 4153.30s]  So another thing that processors
+[4153.30s -> 4156.82s]  have in them, in addition to caches,
+[4156.82s -> 4160.98s]  is they actually have prefetchers.
+[4160.98s -> 4163.14s]  They actually analyze your program in the same way
+[4163.14s -> 4165.10s]  that they're looking for independent instructions
+[4165.10s -> 4165.98s]  and superscaler.
+[4165.98s -> 4167.66s]  They might look at your access pattern
+[4167.66s -> 4169.24s]  and go, I'm pretty sure you're going
+[4169.24s -> 4171.12s]  to be accessing this variable next.
+[4171.12s -> 4174.50s]  So I'm going to go ahead and preload that address for you.
+[4174.50s -> 4176.66s]  And so in a predictable access pattern,
+[4176.70s -> 4178.94s]  like I just showed you here, where we're kind of running
+[4178.94s -> 4181.46s]  right through the loop, it's very possible
+[4181.46s -> 4183.38s]  that this may not, I've got to fix that.
+[4183.38s -> 4184.96s]  It's not a conflict mess.
+[4184.96s -> 4186.58s]  It's very possible that that last load
+[4186.58s -> 4192.10s]  might have been predicted and actually might be there.
+[4192.10s -> 4196.62s]  But not all code runs like this, right?
+[4196.62s -> 4199.18s]  Sometimes it's hard to predict something.
+[4199.18s -> 4201.46s]  Imagine you're walking through a linked list,
+[4201.46s -> 4206.22s]  or imagine you have some value.
+[4206.26s -> 4207.94s]  And you just computed a value, and you're
+[4207.94s -> 4209.94s]  going to do an array lookup based on that value.
+[4209.94s -> 4213.22s]  A very common thing is give an array of indices,
+[4213.22s -> 4215.70s]  go look up the data at that index or something like that.
+[4215.70s -> 4219.78s]  So you can't, in these throughput computing ideas,
+[4219.78s -> 4224.10s]  you can't really assume that you can predict what's coming.
+[4224.10s -> 4226.78s]  And in order to make room for all of these cores,
+[4226.78s -> 4229.14s]  we might have taken out of the prefetching logic.
+[4229.14s -> 4231.14s]  We might have shrunk the size of the cache.
+[4231.14s -> 4232.70s]  So we've made it even more likely
+[4232.70s -> 4234.54s]  that we're going to take cache misses.
+[4234.54s -> 4237.88s]  Yet we pack the machine full of ALUs,
+[4237.88s -> 4240.42s]  which means we're going to make even more memory accesses.
+[4240.42s -> 4241.80s]  I need to make them even faster
+[4241.80s -> 4243.84s]  to keep all these things busy.
+[4243.84s -> 4245.26s]  So we've really created ourselves
+[4245.26s -> 4246.64s]  a little bit of a problem here.
+[4246.64s -> 4247.98s]  We have these amazing processors
+[4247.98s -> 4252.50s]  that have all this stuff, yet they're waiting on memory.
+[4252.50s -> 4255.90s]  And so in my house tonight, I had a PhD student graduate
+[4255.90s -> 4257.82s]  a couple of weeks ago, and we're inviting him
+[4257.82s -> 4260.18s]  and his girlfriend over for hot pot.
+[4260.18s -> 4262.98s]  And so there's going to be a lot of prep going on.
+[4263.06s -> 4265.56s]  And so I want you to think about some real life examples.
+[4265.56s -> 4266.86s]  Let's say you're cooking in a kitchen.
+[4266.86s -> 4268.42s]  Let's say you're doing your laundry tonight,
+[4268.42s -> 4272.02s]  because it's already day four, so you might be onto that.
+[4272.02s -> 4274.02s]  How many of you, when you're doing your laundry,
+[4274.02s -> 4277.98s]  put the load in the washer and sit there and wait?
+[4277.98s -> 4279.78s]  How many people start boiling water
+[4279.78s -> 4281.74s]  and sit there and wait until it is ready
+[4281.74s -> 4284.42s]  before you put the food in?
+[4284.42s -> 4286.18s]  What do you do instead?
+[4286.18s -> 4289.12s]  Maybe some of you do wait, I don't know.
+[4289.12s -> 4292.16s]  If not, you're going to come away from this class with a good life hack.
+[4293.16s -> 4294.68s]  So what do you do?
+[4294.68s -> 4297.08s]  You put your laundry in, you boil your water.
+[4297.08s -> 4299.24s]  What's going on?
+[4299.24s -> 4301.72s]  You sit around and wait?
+[4301.72s -> 4304.08s]  I mean, you watch all of my lectures on 2X,
+[4304.08s -> 4306.80s]  so I know you don't sit around and wait while you're.
+[4306.80s -> 4307.76s]  So what do you do?
+[4311.48s -> 4312.48s]  Sorry?
+[4312.48s -> 4314.08s]  You do something else, right?
+[4314.08s -> 4318.52s]  And you do your homework in 149.
+[4318.52s -> 4321.44s]  So the main idea is if you know something
+[4321.44s -> 4324.40s]  that you need to be done is not going to be done for a while,
+[4324.40s -> 4326.00s]  you just go do something else.
+[4326.00s -> 4328.32s]  Now, that means you have to have something else to do.
+[4328.32s -> 4331.32s]  Maybe all of your lives are such that given anything else
+[4331.32s -> 4333.52s]  I have to do, I'd rather sit here and wait.
+[4333.52s -> 4336.08s]  But most of us have multiple things
+[4336.08s -> 4337.96s]  that we can do that we'd rather do.
+[4337.96s -> 4340.64s]  So this gets to the last idea today.
+[4340.64s -> 4344.36s]  We're going to build processors that, remember,
+[4344.36s -> 4346.36s]  I just gave you a chip that, what did I say?
+[4346.36s -> 4350.56s]  It had 16 cores times 8 wide 70s,
+[4350.56s -> 4354.20s]  so it had 128 execution units in it,
+[4354.20s -> 4358.36s]  which means it can do 128 things at once.
+[4358.36s -> 4360.76s]  But imagine you're doing some machine learning operation.
+[4360.76s -> 4363.24s]  Imagine you're processing a four megapixel photo
+[4363.24s -> 4365.84s]  off your iPhone, or I guess it's 8 or 12 these days.
+[4365.84s -> 4367.52s]  You have millions of pixels.
+[4367.52s -> 4369.08s]  You have way more things that you
+[4369.08s -> 4373.76s]  need to do than the things you can actually do at once.
+[4373.76s -> 4375.72s]  And so if you're going to sit there and wait
+[4375.72s -> 4379.32s]  on some of those things, let's just go do,
+[4379.32s -> 4381.48s]  start working on something else.
+[4381.48s -> 4382.88s]  So here's the main idea.
+[4382.88s -> 4385.04s]  We're going to take that core that we had.
+[4385.04s -> 4386.80s]  Notice that in this diagram, it's
+[4386.80s -> 4389.84s]  a single instruction stream.
+[4389.84s -> 4393.20s]  It's got no superscaler, one instruction per clock,
+[4393.20s -> 4395.44s]  but I'm going to allow that to be a vector instruction
+[4395.44s -> 4397.24s]  just for the sake of things.
+[4397.24s -> 4399.68s]  And now what I'm going to do is I'm going to take
+[4399.68s -> 4403.64s]  the execution context, the registers, and the address
+[4403.64s -> 4406.24s]  space associated with them, and now I'm
+[4406.28s -> 4409.56s]  going to duplicate this.
+[4409.56s -> 4413.60s]  So remember I said that an instruction stream,
+[4413.60s -> 4416.68s]  the execution context represents the state
+[4416.68s -> 4417.84s]  of the instruction stream.
+[4417.84s -> 4421.48s]  Or in other words, we could say the state of a thread.
+[4421.48s -> 4424.00s]  Now what I'm going to do is the processor,
+[4424.00s -> 4427.56s]  the orange and the yellow, is staying exactly the same.
+[4427.56s -> 4429.76s]  But I'm going to give that processor the ability
+[4429.76s -> 4433.24s]  to hold state for four instruction
+[4433.24s -> 4436.36s]  streams, for four threads.
+[4436.36s -> 4439.52s]  So we're going to start executing normally.
+[4439.52s -> 4443.44s]  So now we're going to say, look, for this processor,
+[4443.44s -> 4446.36s]  your program is going to say create four threads now.
+[4446.36s -> 4449.40s]  For one core, four execution contexts,
+[4449.40s -> 4451.60s]  here, have four threads to do.
+[4451.60s -> 4454.72s]  And so the processor is going to move along,
+[4454.72s -> 4456.20s]  and it's going to run a thread.
+[4456.20s -> 4457.48s]  That's what I'm trying to show you here.
+[4457.48s -> 4458.64s]  It's going to run this thread.
+[4458.64s -> 4460.56s]  Maybe it's executing some of the instructions,
+[4460.60s -> 4464.88s]  but at one point it gets to a load, cache miss.
+[4464.88s -> 4467.72s]  This thread cannot make progress for a long time.
+[4467.72s -> 4470.20s]  Let's say this is the point at which it becomes runnable
+[4470.20s -> 4472.24s]  again, because the data came back from memory.
+[4472.24s -> 4475.96s]  That was the 250 cycles that we were waiting.
+[4475.96s -> 4479.60s]  So do you think this core is going to stay idle?
+[4479.60s -> 4482.00s]  Nope, the minute it's like I can't make any progress
+[4482.00s -> 4483.40s]  because I've got to wait, I'm
+[4483.40s -> 4485.08s]  like, I've got three other threads
+[4485.08s -> 4486.84s]  that I can go make progress on.
+[4486.84s -> 4489.00s]  So we're going to swap.
+[4489.00s -> 4491.40s]  And when I say swap, I'm talking about the hardware just
+[4491.40s -> 4493.56s]  starts executing instructions from the next thread,
+[4493.56s -> 4496.02s]  like no delay or anything.
+[4496.02s -> 4498.06s]  It's just, oh, I can't make any progress
+[4498.06s -> 4499.48s]  with this instruction stream.
+[4499.48s -> 4500.92s]  I've got another one sitting here.
+[4500.92s -> 4502.92s]  Next cycle, I'm going to run that one.
+[4502.92s -> 4504.76s]  I'm going to run whatever is available.
+[4504.76s -> 4506.40s]  And then maybe that one stalls,
+[4506.40s -> 4508.00s]  but we've got another one.
+[4508.00s -> 4509.00s]  Maybe that one stalls.
+[4509.00s -> 4510.08s]  We've got another one.
+[4510.08s -> 4515.36s]  By the time that fourth one has stalled,
+[4515.36s -> 4518.96s]  we are past the point in time where this one is ready.
+[4518.96s -> 4520.08s]  So we can get going again.
+[4520.08s -> 4522.12s]  We can just start working on that other thread.
+[4522.12s -> 4525.04s]  And let's say it finishes, and we move on, and so on.
+[4525.04s -> 4529.60s]  What is the utilization of this processor?
+[4529.60s -> 4532.28s]  100%.
+[4532.28s -> 4535.20s]  What is the latency of actually finishing any one thread?
+[4535.20s -> 4536.92s]  It's actually longer, because it actually
+[4536.92s -> 4539.52s]  had this time where it could have started running here,
+[4539.52s -> 4542.32s]  but it actually runs here.
+[4542.32s -> 4544.60s]  That's the last big idea here,
+[4544.60s -> 4548.52s]  is we're actually slowing down the wall clock time
+[4548.52s -> 4551.60s]  to get anything done in order to get everything done quicker
+[4551.60s -> 4554.52s]  because we're running at 100%.
+[4554.52s -> 4555.84s]  I'll stop there.
+[4555.84s -> 4557.72s]  So we'll review this again next time.
+[4557.72s -> 4561.66s]  And then we'll get into combining
+[4561.66s -> 4563.32s]  the memory and the superscaler.
+[4563.32s -> 4565.32s]  But you have everything you need
+[4565.32s -> 4568.40s]  to get started and do 90% of your homework assignment.

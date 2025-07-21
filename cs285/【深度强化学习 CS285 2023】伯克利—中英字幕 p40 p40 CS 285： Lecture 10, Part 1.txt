@@ -1,0 +1,248 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.36s]  Alright, welcome to the lecture 10 of CS285. Today we're going to shift gears
+[6.36s -> 10.36s]  and we're going to go from discussing model-free reinforcement learning
+[10.36s -> 14.84s]  algorithms to discussing algorithms that actually utilize models. But
+[14.84s -> 18.72s]  before we actually can talk about model-based reinforcement learning in
+[18.72s -> 22.46s]  detail, we need to understand a little bit about how models can
+[22.46s -> 26.28s]  actually be used to make decisions, regardless of whether those models are
+[26.28s -> 31.48s]  learned or pre-specified manually. So in today's lecture we're going to talk
+[31.48s -> 35.76s]  about algorithms for optimal control and planning. These are methods that
+[35.76s -> 40.28s]  assume access to a known model of the system and that use that model to make
+[40.28s -> 45.08s]  decisions. And these algorithms will look very different from the model-free
+[45.08s -> 48.28s]  reinforcement learning algorithms that we learned about in the first nine
+[48.28s -> 53.08s]  lectures of the course. So in today's lecture there actually will not be any
+[53.08s -> 57.92s]  learning at all, but then in subsequent lectures we'll see how some of these
+[57.92s -> 61.96s]  optimal control and planning algorithms can be used in conjunction
+[61.96s -> 68.40s]  with learned models to make decisions more optimally. Alright, so in today's
+[68.40s -> 72.96s]  lecture we're going to get an introduction to model-based
+[72.96s -> 76.38s]  reinforcement learning. We're going to talk about what we can do if we know
+[76.38s -> 81.00s]  the dynamics and how we can make decisions. We'll discuss some stochastic
+[81.00s -> 85.04s]  black-box optimization methods which are very simple and commonly used
+[85.04s -> 89.56s]  because of their simplicity. We'll talk about Monte Carlo tree search and then
+[89.56s -> 92.56s]  we'll talk about trajectory optimization, specifically the linear
+[92.56s -> 97.48s]  quadratic regulator and its nonlinear extensions. So the goals for today's
+[97.48s -> 100.88s]  lecture will be to understand how we can perform planning with known
+[100.88s -> 106.72s]  dynamics models in discrete and continuous spaces and get some overview
+[106.72s -> 110.24s]  for the kinds of algorithms for optimal control and trajectory optimization
+[110.28s -> 118.24s]  that are widely in use. Okay, so let's start with a little recap. In the
+[118.24s -> 123.16s]  preceding lectures we learned about algorithms that optimize the
+[123.16s -> 126.60s]  reinforcement learning objective, and the reinforcement learning objective is
+[126.60s -> 130.88s]  given here on this slide. The objective is to maximize the expected
+[130.88s -> 136.32s]  value under the trajectory distribution p-theta-tau induced by your policy
+[136.32s -> 143.08s]  pi-theta of the total reward along that trajectory. And we learned about a number
+[143.08s -> 147.48s]  of variants on this basic recipe, including methods that use discounts.
+[147.48s -> 153.32s]  The trajectory distribution is formed by multiplying together the initial
+[153.32s -> 158.32s]  state probability, the policy probabilities pi-theta-a-t given s-t,
+[158.32s -> 165.12s]  and the transition probabilities p-s-t plus 1 given s-t-a-t. And I'm going to use
+[165.12s -> 169.36s]  p-theta of tau or interchangeably pi-theta of tau to denote the trajectory
+[169.36s -> 174.16s]  distribution and make it clear that it depends on theta. So in the algorithms
+[174.16s -> 178.44s]  that we've discussed so far, we've assumed a model-free formulation,
+[178.44s -> 183.20s]  meaning that we assume that we do not know p of s-t plus 1 given s-t-a-t,
+[183.20s -> 187.92s]  and not only that, but we don't even attempt to learn. So these were all
+[187.92s -> 193.60s]  algorithms that managed to get away with only sampling from p of s-t plus 1
+[193.60s -> 197.76s]  given s-t along full trajectories without ever needing to actually know
+[197.76s -> 202.56s]  what the probabilities were or ever needing to make predictions about, for
+[202.56s -> 206.04s]  example, what would have happened if you had taken a different action from
+[206.04s -> 210.56s]  the same state. In fact, if you recall our discussion of Q-learning, we managed
+[210.56s -> 214.64s]  to intentionally avoid this issue by switching over from value functions and
+[214.64s -> 219.20s]  policy iteration over to Q-functions. So, so far we've assumed that the transition
+[219.20s -> 226.08s]  probabilities are not known and made no attempt to actually learn them. But what if we do
+[226.08s -> 230.58s]  know the transition probabilities? And as a bit of terminology, I'm going to say
+[230.58s -> 235.40s]  transition probabilities, transition dynamics, dynamics or models, all of those
+[235.40s -> 239.64s]  things basically mean the same thing. They all refer to p of s-t plus 1 given
+[239.64s -> 244.64s]  s-t-a-t, although in some cases those transition dynamics might actually be
+[244.64s -> 248.72s]  deterministic, meaning that only one state has a probability of 1 and all
+[248.76s -> 252.12s]  other states have a probability of 0. So hopefully it'll be clear from context
+[252.12s -> 258.16s]  which one I'm talking about. All right, so oftentimes in practical problems we
+[258.16s -> 261.96s]  do actually know the transition dynamics. For example, if you are playing
+[261.96s -> 267.12s]  a game like an Atari game or chess or Go, in all those settings you really
+[267.12s -> 269.88s]  do know the rules that govern the game, either because it was programmed
+[269.88s -> 274.44s]  by hand or, as in the case of board games, because the rules are known and
+[274.48s -> 281.72s]  specified in a rulebook somewhere. Some systems can easily be modeled by hand, so
+[281.72s -> 286.84s]  if you have a physical system where perhaps the true transition dynamics are
+[286.84s -> 290.52s]  not known exactly, it might still be a system that is easy to manually model.
+[290.52s -> 295.44s]  So for instance, the physical properties of a vehicle on a dark road are very
+[295.44s -> 299.68s]  difficult to model, but the kinematic properties of a car driving on a
+[299.68s -> 303.92s]  smooth clean road without slippage are actually fairly easy to model. You
+[303.96s -> 308.00s]  can write down some equations of motion and that serves a pretty good model in
+[308.00s -> 314.16s]  practice. And of course, many of the tasks that we want to solve, we have
+[314.16s -> 318.44s]  simulated environments, simulated analogs for those tasks, in which case we also
+[318.44s -> 321.92s]  technically do know the transition dynamics, although we may not be able to
+[321.92s -> 326.04s]  express some convenient quantities like derivatives in closed form if we have a
+[326.04s -> 332.86s]  very complex simulator. All right, now in many other cases, even if we don't know
+[332.90s -> 339.50s]  the dynamics, they might be fairly easy to learn. A very large kind of subdomain
+[339.50s -> 343.82s]  in robotics, for example, is system identification. System identification
+[343.82s -> 348.58s]  deals with the problem of fitting unknown parameters of a known model. So
+[348.58s -> 354.02s]  for example, if you know that your robot has four legs and you know
+[354.02s -> 357.22s]  roughly how long those legs are, but you might not know their masses and
+[357.22s -> 361.22s]  motor torques, system identification deals with the problem of fitting those
+[361.26s -> 367.66s]  unknown quantities to your known and well-modeled scaffold. You could also fit
+[367.66s -> 371.62s]  general-purpose models to observe transition data, and that is going to be
+[371.62s -> 375.10s]  the focus of many of the model-based RL algorithms that we'll cover in this
+[375.10s -> 381.70s]  course. So does knowing the dynamics, the transition dynamics, the model, etc.,
+[381.70s -> 387.22s]  does it make things easier? Well, oftentimes yes. Oftentimes if we know
+[387.22s -> 390.66s]  the dynamics, there is a range of algorithms available to us in our
+[390.66s -> 394.94s]  toolbox that we would not be able to use in the model-free setting, and many
+[394.94s -> 398.18s]  of these algorithms can be extremely powerful, as I'll show you at the end
+[398.18s -> 405.70s]  of today's lecture. All right, so let's summarize what's going on with these
+[405.70s -> 411.46s]  model-based methods. Model-based reinforcement learning refers to a way
+[411.46s -> 415.42s]  of approaching RL problems where we first learn transition dynamics and
+[415.46s -> 419.26s]  then use those learned transition dynamics to figure out how to choose
+[419.26s -> 424.74s]  actions. Today we're going to talk about how we can make decisions if we know
+[424.74s -> 429.18s]  the dynamics. So how can you choose actions under perfect knowledge of the
+[429.18s -> 434.74s]  model? So perfect knowledge of the model means that you know exactly what
+[434.74s -> 441.02s]  this edge in the POMDP graphical model is. You know all of the entries in the
+[441.02s -> 444.82s]  corresponding CPT, or you know the functional form of the distribution in
+[445.10s -> 450.94s]  the corresponding CPD in the continuous case. So this is the domain
+[450.94s -> 456.58s]  of algorithms that go under names like optimal control, trajectory optimization,
+[456.58s -> 461.70s]  and planning. The distinction between these is a little bit murky, but
+[461.70s -> 466.42s]  generally trajectory optimization refers to a specific problem of selecting a
+[466.42s -> 473.26s]  sequence of states and actions that optimize some outcome. Planning usually
+[473.30s -> 477.14s]  refers to the discrete analog of that problem, although planning can also
+[477.14s -> 480.54s]  refer to its continuous version, in which case planning and trajectory optimization
+[480.54s -> 484.66s]  are essentially the same thing, although typically algorithms that go under the
+[484.66s -> 488.34s]  name planning consider multiple possibilities in a kind of discrete
+[488.34s -> 492.10s]  branching setting, whereas trajectory optimization algorithms typically
+[492.10s -> 496.76s]  perform smooth gradient-based optimization. Optimal control refers to
+[496.76s -> 502.38s]  the more general problem of selecting controls that optimize some reward or
+[502.38s -> 507.46s]  minimize some cost. So trajectory optimization can be viewed as a way to
+[507.46s -> 512.18s]  approach the optimal control problem. In fact, arguably all of reinforcement
+[512.18s -> 515.54s]  learning really is tackling the problem of optimal control from the
+[515.54s -> 521.50s]  perspective of learning. Okay, and then next week we're going to discuss what
+[521.50s -> 525.50s]  happens when we have unknown dynamics. So in today's lecture we're entirely in the
+[525.50s -> 528.82s]  setting where we assume the dynamics were given to us. Next week we'll talk
+[528.82s -> 536.70s]  about what to do when they weren't. And then also later on we'll talk about
+[536.70s -> 540.50s]  how we can also learn policies. So in today's lecture we're just concerned
+[540.50s -> 545.26s]  with figuring out near-optimal actions without policies, but later on
+[545.26s -> 549.06s]  we'll also talk about how if you learn a model you could also use it to
+[549.06s -> 557.94s]  learn a policy. Okay, so what is the objective for these planning or control
+[557.94s -> 563.74s]  methods? Well, there's no policy anymore, there's just states and actions. So if
+[563.74s -> 566.90s]  you're in this tiger environment, a very reasonable way to formulate a
+[566.90s -> 570.82s]  planning objective is to plan a sequence of actions that will minimize
+[570.82s -> 575.42s]  your probability of getting eaten by the tiger. That is basically a planning
+[575.42s -> 579.02s]  problem. If you're only concerned with selecting those actions, you don't care
+[579.02s -> 582.62s]  about the resulting policy, then you're doing planning or trajectory
+[582.62s -> 589.58s]  optimization in continuous spaces. So you can express this as the problem of
+[589.58s -> 595.50s]  selecting a sequence of actions to minimize a sum of costs or maximize a
+[595.50s -> 600.74s]  sum of rewards. But if we simply formulate an unconstrained problem
+[600.74s -> 606.60s]  which is to select a sequence of actions to minimize C-S-D-A-T, then we're
+[606.60s -> 610.42s]  not really accounting for the fact that future states are influenced by past
+[610.46s -> 614.62s]  actions. So in order to turn this into an optimization problem, you have to
+[614.62s -> 618.56s]  actually write it as a constrained optimization problem, minimized with
+[618.56s -> 622.86s]  respect to a1 through aT, the sum of the costs from time step 1 to T,
+[622.86s -> 627.38s]  subject to the constraint that every successive state is equal to the
+[627.38s -> 632.98s]  dynamics applied to the previous state and action. This is the formulation for
+[632.98s -> 637.12s]  the deterministic dynamics case. We can also extend it to the stochastic
+[637.12s -> 641.60s]  dynamics case by expressing things in terms of distributions and expectations.
+[641.60s -> 647.16s]  We will typically use notation for the deterministic case in this lecture, but
+[647.16s -> 651.08s]  I will note when appropriate how these methods can be extended to the
+[651.08s -> 658.52s]  stochastic case. Okay, so the deterministic case is actually
+[658.52s -> 663.20s]  relatively straightforward. You have an agent and you have an environment. The
+[663.20s -> 666.64s]  environment tells your agent what state they're in, so the environment
+[667.16s -> 671.84s]  tells them you're in state s1, and then the agent performs an optimization. Given
+[671.84s -> 676.72s]  that they are in state s1, can they imagine a sequence of actions, a1
+[676.72s -> 683.80s]  through aT, that will minimize that total cost? And then they send
+[683.80s -> 688.72s]  these actions back to the world and those actions get executed. So those
+[688.72s -> 695.72s]  actions a1 through aT represent the agent's plan. So if you want to write
+[695.76s -> 700.12s]  things in terms of rewards, you can formulate this optimization as I did on
+[700.12s -> 704.60s]  the previous slide where a1 through aT is selected as the argmax of
+[704.60s -> 709.60s]  the reward, subject to the constraint that St plus 1 is equal to F of St aT.
+[709.60s -> 713.32s]  I apologize, there was a small typo on the slide that aT plus 1 should be an
+[713.32s -> 720.26s]  St plus 1. Okay, so in the deterministic case this is all good, but what
+[720.30s -> 726.50s]  happens in the stochastic case? So in the stochastic case now you can define a
+[726.50s -> 731.62s]  distribution over a sequence of states conditioned on a sequence of actions. So
+[731.62s -> 736.58s]  you can say that, well, the probability of s1 through sT given
+[736.58s -> 742.54s]  a1 through aT is given by probability of s1 times the product of
+[742.54s -> 748.62s]  the St plus 1 given St aT terms. Notice that the probability of aT given
+[748.62s -> 752.86s]  St doesn't appear here because we are conditioning everything on a plan, we are
+[752.86s -> 761.14s]  conditioning everything on a sequence of actions. So in this case we can
+[761.14s -> 766.42s]  select our sequence of actions as the sequence a1 through aT that
+[766.42s -> 770.54s]  maximizes the expected value of the reward conditioned on that action sequence,
+[770.54s -> 776.42s]  where the expectation is taken under the distribution shown at the top. This
+[776.42s -> 780.74s]  is a reasonable way to approach the planning problem in stochastic
+[780.74s -> 785.90s]  environments, but I'm going to claim that this is in some cases not a very
+[785.90s -> 790.10s]  good idea. So the deterministic case on the previous slide was fine, you can
+[790.10s -> 794.94s]  get optimal behaviors that way, but this can actually be very suboptimal in
+[794.94s -> 801.26s]  some cases. Take a moment to think about this. In which case would
+[801.26s -> 805.50s]  planning a sequence of actions in this way in the stochastic case be
+[805.50s -> 810.38s]  extremely suboptimal? Try to think of a concrete example, try to think of a
+[810.38s -> 815.86s]  situation where this kind of plan, when you go and execute it, might lead to
+[815.86s -> 825.98s]  very bad outcomes. So the kind of situations where this type of planning
+[825.98s -> 831.30s]  is a bad idea are ones where information will be revealed to you in
+[831.30s -> 837.02s]  the future that will be useful for taking better actions. Here's an instance
+[837.02s -> 840.06s]  of a stochastic planning problem that many of you might be familiar with.
+[840.06s -> 845.82s]  Let's say that I tell you that I will give you a math exam, and it's a
+[845.82s -> 849.14s]  very easy math exam, let's say it's just testing arithmetic, you know, 1 plus
+[849.14s -> 854.50s]  3 equals 4 or something, that's just a long list of questions. I won't tell you
+[854.50s -> 860.68s]  the questions in advance because it's an exam, and I will tell you, given the
+[860.68s -> 863.24s]  state that you're in, the state where I'm about to hand you the exam but you
+[863.24s -> 866.32s]  haven't seen the questions yet, tell me the sequence of actions that you will
+[866.32s -> 871.16s]  take to maximize your reward. So the trouble with this situation is that you
+[871.16s -> 874.36s]  might know exactly how to answer every possible question on that exam.
+[874.36s -> 878.16s]  Without knowing which questions are on the exam, you can't tell me right now
+[878.16s -> 882.30s]  what your actions will be. So if I ask you to solve this open-loop planning
+[882.30s -> 886.16s]  problem, you might imagine the possible outcomes if you write different
+[886.16s -> 889.96s]  answers. Without knowing the questions, try and imagine writing the answers,
+[889.96s -> 893.60s]  you'll probably only come up with outcomes where the rewards are very bad,
+[893.60s -> 897.96s]  because for pretty much every possible sequence of answers you might write,
+[897.96s -> 901.76s]  there's probably some exam that has high likelihood where those answers are
+[901.76s -> 905.16s]  incorrect. So you might opt for a highly suboptimal action, which is to
+[905.16s -> 909.16s]  say I don't want to take the exam at all because I know I can't do well,
+[909.16s -> 914.04s]  you know, come back tomorrow with something else. But if you somehow had a way to
+[914.04s -> 918.70s]  do closed-loop planning, if you had some way to observe S2 where the
+[918.74s -> 924.18s]  questions are revealed to you, then you can get a much higher reward. So as an
+[924.18s -> 927.58s]  aside for terminology, what is all this business with loops, some of which
+[927.58s -> 931.42s]  appear to be open and some of which appear to be closed? Well, when we say
+[931.42s -> 936.98s]  closed-loop, what we mean is that an agent observes a state, takes an action,
+[936.98s -> 940.62s]  typically according to some policy, and this process repeats repeatedly. So the
+[940.62s -> 943.90s]  agent gets to actually look at the state before taking the action, and in this
+[943.90s -> 949.06s]  way they close the loop between perception and control. The open-loop
+[949.06s -> 953.18s]  case is what we've discussed so far in this lecture. In the open-loop case
+[953.18s -> 956.58s]  you're given a state and then you have to commit to a sequence of actions
+[956.58s -> 961.82s]  and you will execute those actions without actually looking at what new
+[961.82s -> 966.26s]  state is revealed to you. So this is called the open-loop case because you
+[966.26s -> 970.10s]  commit to a sequence of actions and those actions are executed in open-loop.
+[970.10s -> 973.26s]  They're executed without regard for what is going on in the world at
+[973.30s -> 978.06s]  subsequent states. Open-loop planning can be optimal in simple deterministic
+[978.06s -> 983.22s]  settings, but in general in stochastic settings, settings where some new
+[983.22s -> 986.74s]  information is revealed to you in the form of the new states that you
+[986.74s -> 991.62s]  observe, open-loop planning is generally suboptimal and we prefer to typically
+[991.62s -> 999.58s]  do closed-loop planning. So in open-loop planning you can think of this as the
+[999.58s -> 1003.46s]  state is revealed to you at t equals 1 and then it's a kind of one-way
+[1003.46s -> 1011.30s]  communication. Okay, so if there is this closed-loop case, an open-loop case, and
+[1011.30s -> 1014.38s]  so far we've talked about the open-loop case, an obvious question we
+[1014.38s -> 1018.30s]  could ask is, well, what does the closed-loop case look like? In a
+[1018.30s -> 1023.54s]  closed-loop case, each time step the agent observes a state and then
+[1023.54s -> 1027.02s]  responds with an action, which you can also think of as observing the first
+[1027.02s -> 1030.70s]  state and then committing to a closed-loop policy. So instead of
+[1030.70s -> 1035.22s]  sending back a sequence of actions, you send back a relationship between states
+[1035.22s -> 1039.30s]  and actions, a mapping that tells the world for every state the agent might
+[1039.30s -> 1043.74s]  be in, which action would they take. So reinforcement learning typically
+[1043.74s -> 1051.18s]  solves closed-loop problems. So in the closed-loop case you create a policy
+[1051.18s -> 1056.50s]  pi a t given s t and now you don't condition on a fixed set of policies,
+[1056.50s -> 1060.18s]  sorry, on a fixed set of actions, but you condition on an entire
+[1060.18s -> 1065.06s]  policy. And then your objective is exactly the same as the reinforcement
+[1065.06s -> 1070.26s]  learning objective from before. Now there are many different choices we
+[1070.26s -> 1074.30s]  can make for the form of pi. So so far in the course we've talked about
+[1074.30s -> 1080.90s]  very expressive classes of policies like neural networks, but you can do near
+[1080.94s -> 1085.78s]  optimal closed-loop planning with much less expressive policy classes. So you
+[1085.78s -> 1090.22s]  can think of a neural net as a kind of global policy. It tells the
+[1090.22s -> 1094.14s]  agent what to do in every possible state they might encounter. But you could
+[1094.14s -> 1098.26s]  also imagine a very local policy. So you could look at the initial state s1
+[1098.26s -> 1102.22s]  and say, well, I'm going to stay in a fairly narrow state region if I start
+[1102.22s -> 1106.06s]  from the state, so I could produce a kind of a local policy, like for
+[1106.06s -> 1110.22s]  instance a time-varying linear policy. This is much more common in optimal
+[1110.22s -> 1114.42s]  control applications, for instance, if you are controlling a rocket to fly
+[1114.42s -> 1117.78s]  some trajectory. That is technically a stochastic setting because the
+[1117.78s -> 1121.82s]  rocket can deviate from the planned trajectory due to random
+[1121.82s -> 1126.82s]  perturbations in air currents, wind, and motor properties. However,
+[1126.82s -> 1129.58s]  it's not going to deviate very much. And if you correct those
+[1129.58s -> 1133.18s]  deviations quickly, you will mostly stay close to your planned
+[1133.18s -> 1136.14s]  trajectory. So you can get away with a very simple, very local
+[1136.14s -> 1140.06s]  policy, such as a policy that simply provides linear feedback
+[1140.06s -> 1143.34s]  on the state that says, well, as your state deviates, you
+[1143.38s -> 1146.22s]  apply action in the opposite direction, proportional to the
+[1146.22s -> 1150.14s]  amount of deviation. So these kinds of controllers are much
+[1150.14s -> 1153.42s]  more common in the domain of optimal control and trajectory
+[1153.42s -> 1157.54s]  optimization. Okay, so more on this later.

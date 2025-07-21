@@ -1,0 +1,141 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.20s]  Okay, so at this point we've almost developed a practical deep Q learning
+[5.20s -> 8.56s]  algorithm that we could actually use, but there's another component that we
+[8.56s -> 14.52s]  need to discuss to really get a stable and reliable procedure. So there is
+[14.52s -> 18.28s]  another problem that we haven't tackled yet. So, so far we dealt with
+[18.28s -> 22.20s]  the problem of our samples being correlated by introducing a replay
+[22.20s -> 25.92s]  buffer where we store all the data that we've collected so far, and each
+[25.92s -> 29.34s]  time we have to take a step on the parameters of our Q function, we
+[29.38s -> 33.98s]  actually take that step using a batch of transitions that are sampled IID from
+[33.98s -> 38.78s]  our buffer. But we still have this other problem to contend with, which is that Q
+[38.78s -> 43.02s]  learning is not gradient descent, and in particular the problem that Q
+[43.02s -> 47.30s]  learning has is that it has a moving target. So you could think of it as
+[47.30s -> 52.14s]  squared error regression, except that the regression target itself changes
+[52.14s -> 56.42s]  all the time, and it changes out from under us, which makes it very hard for
+[56.42s -> 61.40s]  the learning process to ever converge. So we'll deal with the correlation by
+[61.40s -> 68.98s]  using a replay buffer, but this part is still a problem. So what does Q
+[68.98s -> 73.36s]  learning really have to do with regression? In the full fitted Q
+[73.36s -> 78.74s]  iteration algorithm that I described before, step three performs what looks a
+[78.74s -> 84.68s]  lot like supervised learning, essentially regression onto target values yi. And in
+[84.72s -> 89.14s]  fact, in general, step three in the full fitted Q iteration algorithm will
+[89.14s -> 92.36s]  converge if you run into convergence, but then your targets will change out
+[92.36s -> 95.56s]  from under you, so maybe you don't want it to converge. Essentially,
+[95.56s -> 99.32s]  trading to convergence on the wrong targets isn't necessarily a good thing
+[99.32s -> 103.40s]  to do, which is why in practice we often use a much smaller number of
+[103.40s -> 108.36s]  gradient steps, as few as one gradient step, and then we have this moving
+[108.36s -> 111.36s]  target problem where every gradient step our targets change and our
+[111.36s -> 115.96s]  gradient is not accounting for the change in the targets. So intuitively, what we
+[115.96s -> 118.88s]  would like to resolve this issue is something that's a little bit in between,
+[118.88s -> 123.46s]  where we could have some of the stability of the full fitted Q
+[123.46s -> 126.84s]  iteration algorithm where in step three we train to convergence, but at
+[126.84s -> 136.30s]  the same time don't actually train to convergence. So here's how we can do Q
+[136.30s -> 139.60s]  learning with a replay buffer and a target network, and this is going to
+[139.60s -> 143.64s]  look like a kind of mix between the online Q learning algorithm and the
+[143.64s -> 149.56s]  full-batch fitted Q learning algorithm. So we're going to collect our data set
+[149.56s -> 154.36s]  using some policy, and we add that policy to our buffer. This is now step
+[154.36s -> 158.76s]  two. Step one will be revealed later. We're going to then, in an inner loop,
+[158.76s -> 166.28s]  sample a batch sI aI sI' rI from this buffer, and then we will
+[166.32s -> 171.20s]  make an update on the parameters of our Q function. This update looks a lot like
+[171.20s -> 176.20s]  the update from before with replay buffers, but I've made one very small
+[176.20s -> 182.04s]  change where now the parameters and the max are different parameter vectors.
+[182.04s -> 186.30s]  So it used to be that I would take the max over a prime of Q phi, and now
+[186.30s -> 191.58s]  it's Q phi prime where phi prime is some other parameter vector. And then
+[191.58s -> 196.70s]  of course after I make K of these back-and-forth updates, which could be
+[196.70s -> 201.72s]  just K equals 1, I go out and collect more data. And then I have a big outer
+[201.72s -> 205.90s]  loop where after n steps of data collection, I'm going to actually update
+[205.90s -> 213.30s]  phi prime and set it to be phi. So this looks a lot like the fitted Q duration
+[213.30s -> 216.58s]  procedure I had before, because essentially I'm making multiple updates
+[216.62s -> 223.02s]  with the same target values, because if phi prime stays the same, then the entire
+[223.02s -> 226.26s]  target value stays the same, except that I might still be collecting more
+[226.26s -> 230.66s]  data in that inner loop. So step two, the data collection is now inside the
+[230.66s -> 235.02s]  updates to phi prime. And the reason for doing this is because in practice
+[235.02s -> 239.22s]  you often want to collect data as much as possible, whereas for stability
+[239.22s -> 242.62s]  you typically don't want to update your target network parameters
+[242.66s -> 248.46s]  quite as often. So, you know, some sensible back-of-the-envelope choices,
+[248.46s -> 253.34s]  K could be between 1 and 4, so we might take between 1 and 4 steps
+[253.34s -> 257.94s]  between each time when we collect more data, but n might be around 10,000.
+[257.94s -> 262.18s]  So I take as many as 10,000 steps before we change our target values,
+[262.18s -> 264.70s]  and that's to make sure that we're not trying to hit a moving target,
+[264.70s -> 267.90s]  because it's very hard to hit a moving target with supervised
+[267.98s -> 274.10s]  regression. So initially we initialize both phi and phi prime to be essentially a random
+[274.10s -> 278.10s]  initialization, and then after the first n steps, which could be 10,000,
+[278.10s -> 282.82s]  we're going to update phi prime to set it to be equal to phi, but then phi prime will
+[282.82s -> 287.78s]  remain static for the next 10,000 steps. And that means that step four starts looking a lot
+[287.78s -> 293.86s]  more like supervised regression, and for that reason step four is easier to do, it's much more
+[293.90s -> 298.14s]  stable and you're much more likely to get an algorithm that learns a meaningful Q function.
+[298.14s -> 307.62s]  So your targets don't change in the inner loop, and that means that essentially step two,
+[307.62s -> 312.46s]  three, and four looks a lot like supervised regression, with the only real difference being
+[312.46s -> 316.14s]  that you might collect more data, and that data could be collected using your latest,
+[316.30s -> 325.18s]  for instance, epsilon greedy policy. So based on this general recipe, one of the things we can
+[325.18s -> 332.42s]  derive is the kind of classic deep Q learning algorithm, which is sometimes called DQN. Don't
+[332.42s -> 336.26s]  be too confused by the name, DQN is essentially just Q learning with deep neural networks,
+[336.26s -> 342.26s]  which is a special case of this kind of general recipe that I outlined. So this particular
+[342.38s -> 348.58s]  special case looks like this. Step one, take an action AI and observe the resulting transition,
+[348.58s -> 353.62s]  and then add it to the buffer. So this looks a lot like online Q learning. Step two,
+[353.62s -> 359.82s]  sample a mini-batch from your buffer uniformly at random. So this mini-batch might not even
+[359.82s -> 366.54s]  contain the transition that you just took in the real world. Step three, compute a target
+[366.54s -> 372.18s]  value for every element in your mini-batch, and you compute these target values now using
+[373.10s -> 379.54s]  your target network, Q phi prime. Step four, update the current network parameters, phi,
+[379.54s -> 386.18s]  by essentially taking the gradient for the regression onto those target values. Now
+[386.18s -> 391.50s]  notice that so far, phi has not been used anywhere else, except maybe in step one,
+[391.50s -> 395.98s]  if you're using an epsilon greedy policy, because then in step one, you take your action
+[395.98s -> 401.62s]  based on the epsilon greedy sampling rule for the policy induced implicitly by the argmax
+[401.78s -> 407.30s]  over Q phi. So that's the other place where Q phi might be used. And then step five,
+[407.30s -> 413.94s]  which is only done every n steps, is to update phi prime by replacing phi prime with phi. And as
+[413.94s -> 421.90s]  I said, n might be around maybe 10,000. And then you repeat this process. Now something to
+[421.90s -> 426.62s]  note is that this procedure is basically a special case of the more general procedure at
+[426.62s -> 432.14s]  the top of the slide. Take a moment to think about this, take a moment to think about what
+[432.14s -> 438.02s]  particular settings of the parameters of the algorithm at the top would yield the classic
+[438.02s -> 444.78s]  deep Q-learning algorithm at the bottom. So you would basically get this algorithm if you
+[444.78s -> 449.18s]  choose k equals 1. That's essentially the only, the only thing you have to do, and if you
+[449.18s -> 458.14s]  choose k equals 1, then you will recover exactly the procedure at the bottom. Take a moment to think
+[458.14s -> 462.70s]  about this, it's not entirely obvious because the numbering of the steps has been rearranged a
+[462.70s -> 469.78s]  little bit, but they are basically the same method. Okay, and it's a good idea to have a
+[469.78s -> 473.74s]  pretty thorough understanding of this procedure, because all of you will actually be implementing
+[473.78s -> 480.70s]  it for homework 3. So if you use k equals 1, then you get exactly the procedure at the top.
+[480.70s -> 488.50s]  Now there are some other ways to handle target networks that have been used in the
+[488.50s -> 493.30s]  literature and that could be worth experimenting with. There's something a little strange about
+[493.30s -> 497.66s]  this way of updating target networks, and here's some intuition to illustrate some of the
+[497.66s -> 502.46s]  strangeness. This strangeness is not necessarily really bad, it's just a little bit strange.
+[502.70s -> 509.98s]  So let's say that I sampled my transition, and then I updated my phi, and then I sampled
+[509.98s -> 514.86s]  another transition, and I updated my phi again. So blue boxes are samples, that's basically step
+[514.86s -> 521.82s]  one, green boxes, that's step two, three, and four, and then I keep going like this.
+[521.82s -> 530.02s]  And then over here, on this step, maybe my target network is obtained from the first step,
+[530.06s -> 534.46s]  so perhaps at the first step when I started out, phi prime is equal to phi, so at the third step,
+[534.46s -> 540.46s]  I get my target values back from the first step. And at the second step, I get them from the
+[540.46s -> 546.34s]  first step, and the fourth step, I get them from the first step. And then if the fourth step
+[546.34s -> 550.02s]  is where I update phi prime to be equal to phi, so basically if my n is equal to 4,
+[550.02s -> 554.50s]  in practice n would be much larger, but let's say it's equal to 4, then at the fifth step,
+[554.74s -> 560.66s]  I get my phi prime from the preceding step. So it seems like in different steps,
+[560.66s -> 565.86s]  the target values are lagged by very different amounts. If you're at the step right after n,
+[565.86s -> 570.22s]  if you're at the n plus one step, your target network is only one step old, and if you're
+[570.22s -> 576.78s]  right before a flip, then it's n minus one step old. So it seems like at different points
+[576.78s -> 581.22s]  in time, your target values look more like a moving target than others. If you're right
+[581.26s -> 585.34s]  after that point where you set phi prime to phi, if you're right after one of these flips,
+[585.34s -> 590.02s]  then your target really looks like a moving target, and if it's been a long time,
+[590.02s -> 595.98s]  then it really doesn't look like a moving target. So this feels a little off. It's not
+[595.98s -> 600.94s]  actually that big of a problem, but if it feels a little bit off, then one common choice
+[600.94s -> 606.02s]  that you could do is you could use a different kind of update, which is kind of similar to
+[606.02s -> 610.46s]  polyac averaging. So those of you that are familiar with convex optimization might recognize
+[610.58s -> 617.58s]  this as essentially a variant of polyac averaging. So a popular alternative is to set phi prime
+[618.38s -> 624.14s]  at every single step to be tau times the old phi prime plus one minus tau times the
+[624.14s -> 628.78s]  new phi. So you can think of this as phi prime is gradually interpolating between
+[628.78s -> 633.58s]  its old value and the new value defined by phi, and you would choose tau to be a
+[633.58s -> 638.30s]  pretty big number. So for instance, you might choose it to be 0.999. So that means
+[638.30s -> 645.26s]  that one part out of a thousand is essentially coming from phi and the rest is coming from phi
+[645.26s -> 650.66s]  prime. Now it might seem a little weird to mix neural network parameters in this way,
+[650.66s -> 655.30s]  so one might suppose that, well, if you're mixing neural network parameters in this way,
+[655.30s -> 659.18s]  like, you know, networks are not linear in their parameters, so linearly interpolating
+[659.18s -> 664.50s]  their parameters might produce just complete garbage. It actually turns out that if phi
+[664.70s -> 669.90s]  prime was previously set to phi, so it's essentially just a lagged version of phi,
+[669.90s -> 674.74s]  this procedure does have some theoretical justification, not very formal justification,
+[674.74s -> 679.22s]  but some, and that comes from the connection to polyac averaging. I'm not going to go into
+[679.22s -> 683.30s]  it in this lecture, but if you want to learn more about why it's okay to linearly
+[683.30s -> 688.50s]  interpolate parameters to nonlinear functions in this way, look up polyac averaging. And of
+[688.50s -> 693.06s]  course, the caveat is that this only makes sense if phi prime is similar to phi.
+[693.14s -> 697.42s]  So if phi prime was a totally different neural network, trained in a totally separate way,
+[697.42s -> 702.34s]  this might be a little bit strange, but because you're gradually making phi prime more and more
+[702.34s -> 706.70s]  similar to phi, this procedure is actually alright. And of course, the nice thing about
+[706.70s -> 711.90s]  this is that now phi prime is updated the same way every single step, so every step is
+[711.90s -> 713.46s]  lagged by the same amount.

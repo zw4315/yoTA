@@ -1,0 +1,176 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.92s]  All right, the last category of deep RL exploration methods we'll talk about are
+[4.92s -> 12.52s]  methods based on information gain. So to recap, when we reason about information
+[12.52s -> 15.96s]  gain, what we want to do is we want to select an action that will result in
+[15.96s -> 20.28s]  an observation that in expectation will give us the most information
+[20.28s -> 25.40s]  about some variable of interest called z. And of course the question we have
+[25.40s -> 29.16s]  to answer when we actually implement these algorithms is information gain
+[29.20s -> 35.48s]  about what? So we could ask for information gain about the reward function, but
+[35.48s -> 38.84s]  that's not very useful if we have a hard exploration problem because the reward
+[38.84s -> 42.72s]  is probably zero almost everywhere, so that's not good. We could ask for
+[42.72s -> 46.80s]  information gain about the state density p of s, which sounds a bit
+[46.80s -> 50.70s]  strange but actually somewhat makes sense because information gain about the
+[50.70s -> 53.80s]  state density means that you want to do things that will change the state
+[53.80s -> 57.44s]  density, which means that you would do novel things, so that goes back to the
+[57.44s -> 61.24s]  first category of methods. So it's kind of a weird choice, but it actually kind of
+[61.24s -> 65.04s]  makes sense. Another thing you could do is information gain about dynamics,
+[65.04s -> 69.28s]  about p of s prime given sA. And this is a very reasonable choice
+[69.28s -> 72.84s]  because information gain about the dynamics shows that you're learning
+[72.84s -> 77.04s]  something about the MDP. So if you assume that the reward of the MDP is
+[77.04s -> 80.40s]  mostly sparse, meaning that it's mostly zero everywhere, then the main
+[80.40s -> 84.32s]  thing there is to learn about is the dynamics of the MDP. And since the MDP
+[84.32s -> 87.92s]  is fully determined by the initial state, the dynamics, and the reward, and
+[87.92s -> 91.04s]  the reward is not informative and the initial state is very easy to
+[91.04s -> 94.44s]  determine, then it makes sense that you would ask for information gain
+[94.44s -> 98.20s]  about the dynamics because that's the one thing that varies quite frequently
+[98.20s -> 104.08s]  and provides a useful signal. So this is a good proxy for learning the MDP,
+[104.08s -> 109.60s]  though it's still a heuristic. Now generally it's intractable to use
+[109.60s -> 112.96s]  information gain exactly, regardless of which one of these things you're
+[112.96s -> 117.92s]  estimating, if you have a large state space or action space. So if we want to
+[117.92s -> 121.28s]  use information gain for exploration, we have to make some kind of
+[121.28s -> 124.72s]  approximation. And a lot of the technical complexity in using these
+[124.72s -> 129.04s]  methods is really in the nature of approximation that you're going to make.
+[129.04s -> 134.36s]  So there are a few approximations. One approximation we could make is
+[134.36s -> 137.84s]  something called prediction gain. Prediction gain is not the same as
+[137.84s -> 141.24s]  information gain, but it can be shown to be a crude approximation to
+[141.24s -> 146.52s]  information gain. Prediction gain is the difference between log p theta of s
+[146.52s -> 152.24s]  and log p theta prime of s and log p theta of s. So if you think back
+[152.24s -> 157.36s]  to the lecture on pseudocounts, theta prime denotes the new parameters of a
+[157.36s -> 161.48s]  density model that we get after updating on the latest state theta. So if you
+[161.48s -> 164.92s]  just compare the log probabilities of that new state before and after
+[164.92s -> 168.96s]  updating on it, that refers to something called prediction gain, which is an
+[168.96s -> 173.68s]  approximation for information gain. It's specifically information about the
+[173.68s -> 177.52s]  state density. So this results in an algorithm that's maybe a little bit
+[177.52s -> 181.68s]  similar to that pseudocounts method, but doesn't actually involve explicitly
+[181.68s -> 186.32s]  trying to estimate pseudocounts. So the intuition is if the density changed a
+[186.32s -> 191.28s]  lot, then the state was very novel. Another kind of approximation we could
+[191.28s -> 196.20s]  use is variational inference. And this is what I'm going to go to in a
+[196.20s -> 201.04s]  little bit more detail in this front paper called fine. So an interesting
+[201.04s -> 205.72s]  observation is that information gain can be equivalently written as the KL
+[205.72s -> 211.20s]  divergence between p of z given y and p of z. It kind of makes sense that
+[211.20s -> 214.76s]  this would be the case, because if p of z given y is very similar to p of
+[214.76s -> 218.28s]  z, then you're not learning a lot about z for observing y. Whereas if they
+[218.28s -> 221.60s]  are very very different, then you are learning a lot about z for observing y.
+[221.80s -> 226.48s]  So in fact they are exactly, it's exactly equivalent to the KL divergence.
+[226.48s -> 231.80s]  Now we're going to be learning about the dynamics. So the quantity of interest z
+[231.80s -> 236.20s]  is the parameter vector theta that describes the dynamics model. So we
+[236.20s -> 240.48s]  have some dynamics model p theta of s t plus 1 given s t a t, using any of the
+[240.48s -> 243.84s]  techniques we discussed in the model-based RL lectures, and the
+[243.84s -> 250.44s]  quantity of interest z is theta. And the observation y is a transition. It's a
+[250.48s -> 254.72s]  tuple s t a t s t plus 1. And the question we're going to ask is, well, which
+[254.72s -> 257.92s]  action should we be taking to get the most informative transitions, the
+[257.92s -> 262.64s]  transitions that are the most informative about theta? So then the KL
+[262.64s -> 266.24s]  divergence that we want is the following. We want to maximize the KL
+[266.24s -> 270.08s]  divergence between p theta given our history, given all the data we've
+[270.08s -> 275.60s]  seen so far, and the new transition against p of theta given only the
+[275.60s -> 280.36s]  history. So h here denotes basically our replay buffer without the
+[280.36s -> 289.16s]  new transition added to it. And theta denotes the model parameters. So we want the model
+[289.16s -> 292.56s]  parameters after observing a new transition to be very different from
+[292.56s -> 295.92s]  the model parameters from only observing the history without that new
+[295.92s -> 301.56s]  transition. So the intuitions of a transition is more informative if it
+[301.56s -> 306.36s]  causes a belief over theta to change. Now the problem with this, of course, is
+[306.36s -> 310.28s]  that estimating a parameter posterior, as we've discussed multiple times now,
+[310.28s -> 314.28s]  is in general intractable. So if theta represents the parameters of some
+[314.28s -> 319.00s]  neural net, then we can't in general get a true posterior p theta, but we can
+[319.00s -> 323.20s]  get approximations to it. So the idea will be to use variational inference
+[323.20s -> 327.36s]  to estimate some approximate posterior that we're going to call q of theta
+[327.36s -> 331.88s]  given some variational parameters phi, which we're going to try to use to
+[331.88s -> 337.48s]  closely approximate p theta given h. And then given a new transition, we'll
+[337.52s -> 341.56s]  update the variational parameters phi to get new variational parameters phi
+[341.56s -> 348.16s]  prime, and then we'll compare these two distributions. So we're going to have
+[348.16s -> 353.08s]  our approximate posterior q of theta given phi, which is approximately equal
+[353.08s -> 358.76s]  to p theta given h. And then what we have to do is we have to actually
+[358.76s -> 362.32s]  train this approximate posterior, and we'll train it to optimize the
+[362.32s -> 366.24s]  variational lower bound, which is given by the KL divergence between q
+[366.24s -> 371.72s]  theta given phi and p of h given theta times p of theta. So this is the usual
+[371.72s -> 375.08s]  variational lower bound. If you're not familiar with variational lower
+[375.08s -> 377.84s]  bounds, don't worry, we'll cover them in a lot more detail in a subsequent
+[377.84s -> 382.92s]  lecture, but the short version is that you train q of theta given phi to be
+[382.92s -> 388.20s]  close to p of theta given h, and by Bayes' rule, that's actually the same as
+[388.20s -> 392.72s]  trying to make it close to p of h comma theta, which factorizes as p of h
+[392.72s -> 398.88s]  given theta times p of theta. So that's the objective for getting q. Now how do
+[398.88s -> 404.20s]  we represent q? Well, as we discussed before in the model-based RL lecture,
+[404.20s -> 407.90s]  one of the ways we can represent a distribution over parameters is as a
+[407.90s -> 412.36s]  product of independent Gaussians. So for every number in our parameter
+[412.36s -> 417.28s]  vector, we have a Gaussian with a mean and a variance, and phi represents
+[417.28s -> 420.26s]  the mean. It could also represent the variance, but for now let's just say
+[420.30s -> 424.78s]  represents the mean. So this is the this picture of the Bayesian neural network
+[424.78s -> 430.58s]  that we had in the model-based RL lectures. So p of theta given d is just
+[430.58s -> 436.42s]  the product over all of our parameter values of p of theta i given d. So i
+[436.42s -> 439.74s]  here indexes into the parameter vector. So the first number in the parameter vector,
+[439.74s -> 445.62s]  the second, the third, etc. And each of those independent marginals is just a
+[445.62s -> 450.18s]  Gaussian with some mean mu i and some variance sigma i, and that's what phi
+[450.18s -> 453.94s]  refers to, either just the mean or the mean and the variance. If we have just
+[453.94s -> 459.14s]  the mean, then it's a constant variance. All right, so one very simple method we
+[459.14s -> 462.74s]  could use, which I also referenced in the model-based RL slides, is this
+[462.74s -> 466.74s]  method by Blundell et al. called weight uncertainty in neural networks, and that
+[466.74s -> 469.54s]  paper describes an algorithm called Bayes-by-Bacprop, which is a very
+[469.54s -> 473.74s]  simple variational inference method for Bayesian neural nets that use the
+[473.74s -> 478.38s]  reparameterization trick. Okay, and then when we are given a new
+[478.38s -> 482.70s]  transition s comma a comma s prime, we're going to update phi to get phi
+[482.70s -> 486.98s]  prime. So we'll simply take that objective, that KL divergence, and we'll
+[486.98s -> 491.10s]  minimize it again with the new transition appended to it. So now we
+[491.10s -> 496.18s]  have two phi parameters, the old one before we saw the transition and the
+[496.18s -> 501.58s]  new one after we saw the transition. And they both define distributions over
+[501.58s -> 506.86s]  parameters, which means that we can compute a KL divergence between them. So
+[506.90s -> 510.66s]  when we observe a new transition, we update the means and variances of our
+[510.66s -> 514.94s]  Bayesian neural network, and then we can calculate the KL divergence between Q
+[514.94s -> 520.26s]  theta given phi prime and Q theta given phi as our approximate bonus. KL
+[520.26s -> 523.30s]  divergences between Gaussian distributions have a closed form
+[523.30s -> 527.70s]  equation, so we just look up the equations and plug it in. Intuitively,
+[527.70s -> 532.26s]  this equation will look very similar to the amount of change in the means. So
+[532.26s -> 536.38s]  after all is said and done, what we end up with is an algorithm that
+[536.42s -> 539.82s]  basically just updates our neural network, in this case a Bayesian neural
+[539.82s -> 543.50s]  network with uncertainty, and uses the amount by which the parameters changed
+[543.50s -> 547.42s]  as an estimate of information gain. And then we'll simply assign this as a
+[547.42s -> 550.70s]  bonus to that transition. So we'll assign a bonus to the transition
+[550.70s -> 554.06s]  based on the amount of information that we gained from that. And just like in
+[554.06s -> 559.94s]  the count-based methods, we'll simply construct a new reward R plus that
+[559.94s -> 567.70s]  has this bonus added to it. So in the paper, they describe how well this
+[567.70s -> 570.74s]  method works. They show some evaluations and illustrate that in fact
+[570.74s -> 575.46s]  adding this information gain bonus does result in some significant gains in
+[575.46s -> 580.90s]  exploration performance across a range of reinforcement learning tasks. One of
+[580.90s -> 583.86s]  the nice things about approximate information gain is that it does
+[583.86s -> 588.30s]  provide a very appealing mathematical formalism. One downside is that these
+[588.34s -> 592.34s]  models are somewhat complex. You have to train entire dynamics models just to
+[592.34s -> 595.26s]  get your exploration bonuses, and generally it's a bit harder to use
+[595.26s -> 599.46s]  these things effectively. So if you can estimate densities, maybe it's easier to
+[599.46s -> 602.86s]  use something like pseudo counts, even though these methods have some very
+[602.86s -> 610.86s]  appealing kind of theoretical formalisms behind them. Now, while the scale
+[610.86s -> 615.58s]  numbers can be seen as a change in network mean parameters phi, if we
+[615.58s -> 620.38s]  forget about information gain, there are many other ways to measure how much your
+[620.38s -> 623.42s]  network is changing. So here we have this variabation method that actually
+[623.42s -> 626.34s]  estimates distributions over parameters and measures the change in
+[626.34s -> 629.86s]  the distribution as an exploration bonus. But if we forget about
+[629.86s -> 634.54s]  distribution and just measure change in some parameter vector, we could
+[634.54s -> 637.70s]  essentially recover something that looks very similar to the error-based
+[637.70s -> 641.74s]  methods that we had before. So for example, we could encode our image
+[641.74s -> 644.94s]  observations using an autoencoder, build a predictive model on the
+[644.94s -> 649.02s]  autoencoder latent states, and then use model error as our exploration bonus.
+[649.02s -> 655.58s]  There's also some related work to this in this paper by Schmidt paper at all. You
+[655.58s -> 660.90s]  could use your exploration bonus for model error, for model gradient, and so
+[660.90s -> 667.22s]  on, and many other variations. So in general, this idea of using errors and
+[667.22s -> 672.14s]  models as exploration bonuses is a very very heavily studied one. Oftentimes it's
+[672.14s -> 678.70s]  not tied directly to information gain, but sometimes it is. Okay, so to recap, we
+[678.70s -> 681.96s]  discussed different classes of exploration methods in deep RL. We
+[681.96s -> 685.46s]  talked about optimistic exploration, like exploration with counts and
+[685.46s -> 689.46s]  pseudocounts, different models for estimating densities. We talked about
+[689.46s -> 693.14s]  Thompson sampling style algorithms, where you maintain a distribution over
+[693.14s -> 697.24s]  models via bootstrapping. For example, you could maintain a distribution over Q
+[697.24s -> 701.42s]  functions and then sample a different Q function for every episode. And then
+[701.42s -> 704.54s]  we talked about information gain style algorithms, which are generally
+[704.54s -> 707.70s]  intractable, but you can use things like variational approximations to
+[707.70s -> 712.50s]  information gain to actually get practical algorithms in this category. If
+[712.50s -> 716.42s]  you want to learn more about this material, a few suggested readings. So
+[716.42s -> 719.70s]  this is an older paper by Schmidt-Huber called The Possibility for
+[719.70s -> 722.78s]  Implementing Curiosity and Boredom in Model Building Neural Controllers.
+[722.78s -> 726.46s]  While it's a somewhat grandiose title, this paper does introduce some
+[726.46s -> 731.02s]  interesting exploration methods based on model error. This is another paper that
+[731.10s -> 734.02s]  uses model error incentivizing exploration and reinforcement learning
+[734.02s -> 738.86s]  with deep predictive models. This is the paper on posterior sampling deep
+[738.86s -> 744.18s]  exploration via Bootstrap DQM. This is the Vine paper. This is the paper on
+[744.18s -> 747.22s]  count-based exploration, pseudocount-based exploration, sorry.
+[747.22s -> 751.00s]  And this is the hashing paper, and this is the EX2 paper that I covered.
+[751.00s -> 755.02s]  So if you want to learn about exploration in reinforcement learning,
+[755.02s -> 760.30s]  maybe some of these papers could be good works to check out.

@@ -1,0 +1,109 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.80s]  All right. In the last portion of today's lecture, I'm going to talk about how we
+[4.80s -> 9.10s]  can go beyond covering state distributions and actually learn
+[9.10s -> 15.96s]  diverse skills. So what do I mean by this? Let's say that we have a policy
+[15.96s -> 21.44s]  pi of a given s comma z, where z is a task index. You know, maybe z is a
+[21.44s -> 27.28s]  categorical variable that takes on one of n different values. If you want
+[27.28s -> 30.20s]  the case where you have literally different policies for different skills,
+[30.20s -> 32.96s]  that's actually a special case of this. So you could imagine that you have n
+[32.96s -> 36.44s]  different policies that represent n different skills, maybe washing dishes
+[36.44s -> 42.28s]  is one of them, and you can construct this pi of a given s comma z by saying,
+[42.28s -> 45.66s]  well, first look at z, determine which skill you want, and then run the
+[45.66s -> 49.16s]  corresponding policy. But most generally, you can write it as one conditional
+[49.16s -> 52.84s]  distribution, a given s comma z. Just keep in mind this case where you have
+[52.84s -> 58.20s]  discrete skills is just a special case of this. So you could imagine, for
+[58.20s -> 62.88s]  instance, in a 2D navigation scenario, maybe the skill zero goes up, skill one
+[62.88s -> 66.76s]  goes right, etc, etc, etc. So if you have six different skills, you want them
+[66.76s -> 73.28s]  to do six different things. Now, reaching diverse goals is not the same as
+[73.28s -> 78.32s]  performing diverse tasks, because not all behaviors can be captured as goal
+[78.32s -> 83.36s]  reaching behaviors, at least not in the original state representation. So you
+[83.36s -> 87.68s]  could imagine, for instance, that you need to reach this green circle, this, sorry,
+[87.68s -> 92.28s]  this green ball, while avoiding the red circle. Now, there's no goal-conditioned
+[92.28s -> 95.64s]  policy that can do this. The goal-conditioned policy can go to the
+[95.64s -> 101.36s]  green ball, but there's no way to also tell it to avoid the red circle. So
+[101.36s -> 106.08s]  the space of all possible skills is larger than the space of all goal-
+[106.12s -> 112.48s]  reaching skills. The intuition is that different skills should visit different
+[112.48s -> 120.16s]  state-space regions, not just different individual states. So here's how we
+[120.16s -> 125.72s]  could learn skills that goes beyond just a state coverage. We could have a
+[125.72s -> 131.00s]  kind of diversity-promoting reward function. So we could, you know, in any RL
+[131.00s -> 138.80s]  problem, we define our policy as the argmax of some reward function, and what
+[138.80s -> 143.48s]  we're going to do is we're going to reward states for a given Z that are
+[143.48s -> 149.56s]  unlikely for other Zs. So if you're running the policy for Z equals 0, you
+[149.56s -> 153.16s]  should visit states that have low probability for Z equals 1 and Z equals
+[153.16s -> 157.54s]  2 and Z equals 3, etc. And that will ensure that for every Z you do
+[157.54s -> 161.50s]  something unique. Another way of putting this is, if you look at what
+[161.50s -> 165.18s]  states the policy visited, you should be able to guess which Z it was trying to
+[165.18s -> 172.32s]  fulfill. So one of the ways to do this is to have the reward be a
+[172.32s -> 176.82s]  classifier, a classifier that guesses which Z you are doing based on which
+[176.82s -> 181.06s]  state you're in. So this classifier predicts P of Z given S and will
+[181.06s -> 191.54s]  assign rewards as log P of Z given S. So we want to basically make it easy to
+[191.54s -> 195.18s]  guess which skill you were doing, and therefore you should visit
+[195.18s -> 200.00s]  states that have low probability for other skills. So the way that we
+[200.00s -> 202.42s]  can instantiate it, we can view it graphically like this. We have our
+[202.42s -> 206.74s]  usual RL loop, we have our policy in our environment, the skill is given to
+[206.74s -> 210.70s]  the policy in the beginning, and there's a discriminator, this classifier, that
+[210.70s -> 214.42s]  looks at the state and tries to predict which skill you were given when
+[214.42s -> 218.18s]  you reach that state. And every iteration you update the discriminator
+[218.18s -> 221.48s]  to be a better discriminator, and you update the policy to be better at
+[221.48s -> 228.02s]  maximizing log P of Z given S. We can imagine what this algorithm will do
+[228.02s -> 231.90s]  with a little visualization. So let's say that we have just two skills, green
+[231.90s -> 235.54s]  and blue, and initially they're kind of random and they kind of do similar
+[235.54s -> 239.38s]  things, but just through random chance they visit slightly different states.
+[239.42s -> 242.82s]  So when we then draw a decision boundary between them, maybe our
+[242.82s -> 245.90s]  classifier will say, well here's the decision boundary, everything to the
+[245.90s -> 248.58s]  lower left of this is blue, everything to the upper right of this is green.
+[248.58s -> 253.50s]  And when we then update the policy with RL with this classifier as our
+[253.50s -> 257.26s]  reward, the skills will move a little bit apart, and then the decision
+[257.26s -> 260.46s]  boundary will separate them even more cleanly, and then they'll move even more
+[260.46s -> 264.94s]  apart, and so on. And of course in reality we'll do this not with two
+[264.94s -> 268.70s]  skills, but with dozens of skills, maybe even hundreds of skills, so then they
+[268.70s -> 271.98s]  will get good coverage of the space, and they will actually do things that
+[271.98s -> 277.62s]  are more sophisticated than just reaching individual states. In fact if
+[277.62s -> 281.22s]  we actually run this on some standard kind of benchmark environments, we get
+[281.22s -> 284.54s]  pretty interesting behaviors. So this is what happens when we run this
+[284.54s -> 288.86s]  algorithm on the little cheetah task that you guys saw in homework one. So
+[288.86s -> 291.78s]  you can see that some of the skills involve running forward, some involve
+[291.78s -> 296.30s]  running backward, and some involve doing a cool flip. So intuitively it makes
+[296.30s -> 299.54s]  sense when you look at these different states, it's pretty clear that they're all
+[299.54s -> 303.10s]  different from each other. So if I told you that the backflip is skill number
+[303.10s -> 306.58s]  two, the forward run is skill number one, the backward run is skill number
+[306.58s -> 309.42s]  three, then just from looking at a still picture of this you could probably
+[309.42s -> 315.26s]  guess which one of these it was doing. Same thing for the ant, same thing
+[315.26s -> 318.38s]  for other environments, for mountain car, some of the skills actually just perform
+[318.38s -> 322.70s]  and solve the task. So it seems like this is a viable way to get diverse
+[322.70s -> 327.02s]  skills. But we could also ask, well what is this really doing? So it seems, again,
+[327.02s -> 330.06s]  just like with the other methods I described, at first it seems like a
+[330.06s -> 333.98s]  somewhat arbitrary recipe, but can it be shown to optimize a well-defined
+[333.98s -> 339.02s]  objective? Well it turns out that this method too has a very close
+[339.02s -> 342.50s]  connection to mutual information, and if you want to learn more about this
+[342.50s -> 345.34s]  there are two papers at the bottom, diversity is all you need and
+[345.34s -> 350.54s]  variational intrinsic control. So if you write down the mutual information
+[350.58s -> 356.66s]  between z and s, between the skill and the state, that as usual will factorize
+[356.66s -> 362.46s]  as h of z minus h of z given s. The first term you maximize just by
+[362.46s -> 365.98s]  choosing a uniform prior over skills. So essentially if you have n different
+[365.98s -> 369.58s]  skills they're all equally likely to be triggered, so you select uniformly from
+[369.58s -> 373.50s]  among the n. So that will very easily maximize the first term, so then all
+[373.50s -> 376.82s]  you have to do is minimize the second term. And the second term is minimized
+[377.18s -> 382.06s]  by maximizing log p of z given s. If z is very easy to predict from the state,
+[382.06s -> 388.14s]  that means that you are reaching, you're taking states where the entropy
+[388.14s -> 393.42s]  over z is very low. So simply being good at predicting the state, both by
+[393.42s -> 397.70s]  changing the policy and by changing your classifier, actually minimizes h of
+[397.70s -> 401.54s]  z given s, which means that the entire algorithm maximizes the mutual
+[401.54s -> 410.10s]  information between z and s. So to wrap up, you know, let me just describe some
+[410.10s -> 413.18s]  of the themes that many of you might have already noticed. So I described
+[413.18s -> 417.42s]  three different methods, although they're all very related, and all of these
+[417.42s -> 420.94s]  methods basically end up with some flavor of maximizing a mutual information
+[420.94s -> 427.30s]  between your outcome and some notion of goal or task. So your outcome might
+[427.30s -> 431.58s]  be your final state or any state, and some notion of goal or task might be
+[431.58s -> 437.38s]  the goal state or the skill z. And in all these cases, we saw that maximizing
+[437.38s -> 442.94s]  mutual information between outcomes and tasks is an effective way to perform
+[442.94s -> 449.02s]  unsupervised reinforcement learning. And in fact, we even saw that if you
+[449.02s -> 452.50s]  don't know which task will be given at test time, if the best you
+[452.50s -> 456.26s]  can assume is that you will be given an adversarially chosen task, then not
+[456.26s -> 461.70s]  only is this a good thing to do, it's actually the optimal thing to do. So
+[461.70s -> 465.46s]  hopefully this discussion gives you kind of a slightly different perspective
+[465.46s -> 469.02s]  on exploration, how we can think about exploration in the fully unsupervised
+[469.02s -> 473.58s]  setting, and even begin to break to bear some powerful mathematical tools
+[473.58s -> 477.02s]  that can give us a notion of optimality and can sort of discern the
+[477.02s -> 482.02s]  patterns in some of these seemingly arbitrary recipes.

@@ -1,0 +1,302 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.60s]  All right, let's talk about some practical model-based RL algorithms that we can build
+[4.60s -> 8.44s]  based on the design that I described before.
+[8.44s -> 12.30s]  So again, to reiterate, this is the design that we're talking about, which I dubbed
+[12.30s -> 16.26s]  model-based RL version 3.0, but there are, of course, a number of design decisions
+[16.26s -> 20.96s]  we have to make to turn this method into a reality.
+[20.96s -> 25.52s]  For the discussion in this portion of the lecture, the particular off-policy RL method
+[25.52s -> 29.36s]  that we will use for step four will be based on Q-learning, although I want to
+[29.40s -> 32.48s]  emphasize that everything that I'm going to discuss could just as well be
+[32.48s -> 37.08s]  implemented with Q-function actor-critic methods, and it works in basically
+[37.08s -> 41.92s]  exactly the same way. And basically the way to see this is to recall how in the
+[41.92s -> 47.04s]  discussion of Q-learning we talked about how, for example, training an actor
+[47.04s -> 50.44s]  as a learned maximizer basically looks more or less exactly like Q-learning,
+[50.44s -> 57.24s]  and that's the logic that we're going to follow here. So the classic
+[57.28s -> 61.48s]  algorithm, and as far as I know, the method that first proposed this basic
+[61.48s -> 65.64s]  concept was something called DINA, described by Richard Sutton in the,
+[65.64s -> 69.88s]  I believe, in the 1990s. DINA was a particular version of this kind of
+[69.88s -> 74.16s]  recipe, instantiated for online Q-learning, that used very short
+[74.16s -> 77.88s]  model-based RL-outs. In fact, it used model-based RL-outs that are exactly
+[77.88s -> 81.88s]  one time step in length. But even then, this provides significant benefit
+[81.88s -> 86.48s]  if you can learn a good model. So essentially, DINA is online Q-learning
+[86.52s -> 91.32s]  that performs model-free RL with the model. Here's how DINA works.
+[92.32s -> 95.80s]  It's very much going to follow online Q-learning, but then with a
+[95.80s -> 99.68s]  little modification. So step one, in the current state, pick an action
+[99.68s -> 102.56s]  A using your exploration policy. This is exactly the same as online
+[102.56s -> 106.64s]  Q-learning. Step two, observe the resulting next state S-prime and
+[106.64s -> 110.96s]  the reward to get a transition tuple S, A, S-prime, R. Now here's
+[110.96s -> 114.12s]  where the new stuff starts coming in. Use this transition tuple to
+[114.12s -> 117.84s]  update your model and your reward function. Now, DINA was
+[117.84s -> 121.56s]  proposed very much as an online method. So in classic DINA, both
+[121.56s -> 124.68s]  the model and the reward function would be updated with
+[124.68s -> 128.24s]  one step. Maybe one step of gradient descent if these are
+[128.24s -> 131.60s]  neural networks, or if it's a tabular model, maybe you would
+[131.68s -> 135.32s]  nix the old value in the table with some learning rate
+[135.32s -> 138.60s]  times the new value. But one step of update on just that
+[138.60s -> 143.32s]  transition. Then DINA performs a classic Q-learning update. So
+[143.32s -> 145.48s]  this is a Q-learning update on the transition that you just
+[145.48s -> 151.00s]  observed. But then here's the new thing. At this point, DINA
+[151.00s -> 154.12s]  is going to repeat this model-based procedure k times,
+[154.12s -> 157.88s]  where k is a hyperparameter, where it'll sample some old
+[157.88s -> 160.40s]  state action from the buffer, basically from previous states
+[160.40s -> 163.72s]  and actions that you've seen. And then it will re-simulate
+[165.16s -> 168.08s]  the next state for that state action using the learned
+[168.08s -> 174.80s]  model. So the expression here is exactly the same as the Q
+[174.80s -> 178.48s]  function updated before, except that s prime and r now are
+[178.48s -> 186.56s]  going to come from the learned model p-hat and r-hat. So this
+[186.56s -> 190.72s]  is the DINA procedure. Now, the DINA procedure classically
+[190.72s -> 192.76s]  makes a few design choices and those design choices don't
+[192.76s -> 196.52s]  have to be set in stone. For example, DINA uses the state
+[196.56s -> 199.08s]  and action from the buffer. Now, a very reasonable
+[199.08s -> 201.88s]  alternative is to pick the action according to the latest
+[201.88s -> 205.96s]  policy, for example, the argmax policy for that Q function.
+[205.96s -> 209.64s]  DINA also makes only one step on the model. You could make
+[209.64s -> 213.64s]  multiple steps. Now, the choices made in DINA are a
+[213.64s -> 216.04s]  little bit optimized for highly stochastic systems. If
+[216.04s -> 217.96s]  you have deterministic systems, of course, then if
+[217.96s -> 219.56s]  you run the same state and action through the model, you
+[219.56s -> 221.72s]  should get exactly the s prime that you saw before. But
+[221.72s -> 223.16s]  for stochastic systems, this actually makes a
+[223.16s -> 225.88s]  difference. So DINA does make a few decisions that are
+[225.88s -> 228.12s]  maybe a little bit peculiar and perhaps don't squeeze the
+[228.12s -> 230.28s]  maximum performance out of the model. Although these
+[230.28s -> 232.76s]  decisions are good if you expect your model to be very
+[232.76s -> 236.36s]  vulnerable to distributional shift because for one step
+[236.36s -> 238.44s]  and for the action that was in the buffer, it actually
+[238.44s -> 241.08s]  avoids all distributional shift issues. So in some statistical
+[241.08s -> 245.00s]  sense, this is actually a very safe algorithm. However,
+[245.00s -> 247.64s]  we can derive a generalized version of DINA, and that's
+[247.64s -> 250.28s]  a lot closer to what people actually use. This is not
+[250.28s -> 253.16s]  actually the original DINA method proposed by Sutton, but
+[253.16s -> 255.24s]  we can call it kind of DINA style in that it follows
+[255.24s -> 258.36s]  a similar philosophy. So here is kind of the generalized
+[258.36s -> 261.08s]  version. Collect some data consisting of transitions, and
+[261.08s -> 263.16s]  maybe this is just one time step, or maybe you're
+[263.16s -> 264.84s]  rolling out many trajectories. That's a choice that
+[264.84s -> 268.28s]  you can make. Learn your model and optionally your
+[268.28s -> 270.28s]  reward model. Sometimes the reward model is known, but
+[270.28s -> 272.04s]  sometimes you have to learn it. And maybe you learn
+[272.04s -> 274.60s]  this for many gradient steps or maybe you just update it
+[274.60s -> 277.96s]  for one gradient step. That's kind of up to you. And
+[277.96s -> 281.32s]  then do a bunch of model-based learning where
+[281.32s -> 283.56s]  every step of model-based learning involves sampling
+[283.56s -> 287.08s]  some states that you saw in your buffer, choosing some
+[287.08s -> 289.88s]  actions in those states, and again, you can make a choice
+[289.88s -> 291.80s]  as to whether that action is chosen from the buffer
+[291.80s -> 294.60s]  as well, from your latest policy, or even with some
+[294.60s -> 298.28s]  exploration strategy, or even entirely at random. And
+[298.28s -> 301.24s]  then simulate the next state from your model, and if
+[301.24s -> 302.76s]  you don't know the reward, then simulate the reward
+[302.76s -> 305.64s]  from your reward model, and potentially do this for
+[305.64s -> 310.28s]  multiple steps, right? And then you can use this to
+[310.28s -> 314.04s]  train your model-free RL algorithm, your Q-learning
+[314.04s -> 317.40s]  algorithm, using simulated data, okay? So this is kind
+[317.40s -> 320.04s]  of a generalization of the Dyna procedure from before.
+[321.00s -> 323.96s]  It only requires short rollouts from the model, maybe
+[323.96s -> 328.04s]  as few as one step, and it still visits diverse
+[328.04s -> 329.88s]  states because you're sampling the starting states for
+[329.88s -> 334.20s]  those rollouts directly from your buffer. So there
+[334.20s -> 336.84s]  is an entire class of modern model-based RL
+[336.84s -> 339.32s]  algorithms that are all essentially variants on this
+[339.32s -> 343.08s]  basic recipe. Now, when I describe this recipe in a
+[344.12s -> 345.96s]  kind of textual form like this, it might be a little
+[345.96s -> 349.24s]  hard to understand what all the moving parts are, so
+[349.24s -> 351.24s]  what I want to do on the next slide is actually
+[351.24s -> 353.56s]  present a more diagrammatic view of this method.
+[354.84s -> 359.40s]  So let's think back to the diagram of deep Q-learning
+[359.40s -> 362.52s]  that we discussed a few lectures ago as a collection
+[362.52s -> 364.92s]  of parallel processes. So if you recall, we talked
+[364.92s -> 366.92s]  about how there is a process that collects data
+[366.92s -> 369.08s]  from the environment and pushes into the buffer.
+[369.08s -> 370.84s]  There is a process that evicts old data from the
+[370.84s -> 373.40s]  buffer that's gotten too old. There is a process
+[373.40s -> 375.56s]  that updates the target network parameters using
+[375.56s -> 377.56s]  the latest network parameters, and of course,
+[377.56s -> 379.24s]  there is the process that performs Q-function
+[379.24s -> 381.48s]  regression by loading batches from the replay
+[381.48s -> 384.44s]  buffer, making updates on them using the target
+[384.44s -> 387.56s]  network, and updating the current parameters, okay?
+[387.56s -> 391.08s]  So this is the kind of schematic diagram of Q-learning
+[391.08s -> 393.40s]  that we saw in a previous lecture. And now
+[393.40s -> 395.08s]  what we can do is we can take this schematic
+[395.08s -> 398.68s]  diagram and we can add model-based acceleration
+[398.76s -> 401.56s]  into this. So this is basically exactly the process
+[401.56s -> 403.16s]  on the previous slide. I'm just going to visualize
+[403.16s -> 405.72s]  it graphically. So we're going to have another
+[405.72s -> 408.28s]  process that performs model training, and that
+[408.28s -> 410.52s]  process is going to load transitions from the
+[410.52s -> 413.40s]  buffer of real transitions, okay? So you want to
+[413.40s -> 414.92s]  use real transitions to train your model. You
+[414.92s -> 416.28s]  don't want to train the model on its own
+[416.28s -> 417.64s]  synthetic data because that would be very
+[417.64s -> 421.24s]  circular. Then there is a process that collects
+[421.24s -> 424.68s]  data using the model. So this process is going
+[424.68s -> 427.80s]  to sample a state from your buffer. It's going
+[427.80s -> 430.28s]  to take your trained model and it's going to run
+[430.28s -> 433.56s]  a short model-based rollout from that state.
+[434.12s -> 436.04s]  And there's a choice you can make here. You
+[436.04s -> 437.96s]  can either use your latest policy or the
+[437.96s -> 439.88s]  policy that collects the data or something
+[439.88s -> 441.88s]  else. The most common choice would be to use
+[441.88s -> 443.32s]  your latest policy, so you would actually use
+[443.32s -> 445.72s]  your current parameters phi and do the argmax or
+[445.72s -> 448.60s]  use the corresponding actor. And then you
+[448.60s -> 449.96s]  would take these transitions you're collecting
+[449.96s -> 451.96s]  from the model and you would push them into
+[451.96s -> 454.92s]  the buffer of model-based transitions. And
+[454.92s -> 456.20s]  now when you're doing your Q-function
+[456.20s -> 458.28s]  regression, you would sample some data from your
+[458.28s -> 460.60s]  model-based buffer and some data from your
+[460.60s -> 464.20s]  real buffer. You want to keep them separate
+[464.20s -> 466.28s]  because you want to be able to modulate how
+[466.28s -> 468.04s]  much real data versus how much synthetic data
+[468.04s -> 469.48s]  you use. And typically you would use a lot
+[469.48s -> 471.08s]  more synthetic data because the synthetic
+[471.08s -> 473.16s]  data is much more plentiful. So the figure is
+[473.16s -> 474.44s]  actually a little bit misleading. It looks like
+[474.44s -> 476.28s]  the real buffer is bigger, but typically the
+[476.28s -> 477.88s]  model-based buffer is actually much larger.
+[479.80s -> 481.40s]  You would also have a different eviction
+[481.40s -> 483.80s]  strategy for the model-based buffer because
+[483.88s -> 487.24s]  typically if you are mostly constrained by
+[487.24s -> 489.16s]  samples rather than compute, you would actually
+[489.16s -> 490.68s]  want to evict your model-based buffer
+[490.68s -> 492.04s]  each time you change your model. So if you
+[492.04s -> 493.64s]  improve your model, might as well flush
+[493.64s -> 495.48s]  your model-based buffer and collect entirely
+[495.48s -> 497.48s]  new data. It costs you compute, but it doesn't
+[497.48s -> 500.04s]  cost you any real-world sample collection.
+[500.04s -> 501.80s]  Although if you are concerned about compute
+[501.80s -> 503.32s]  costs, and these kinds of methods do tend to
+[503.32s -> 505.40s]  be very computationally expensive, you could
+[505.40s -> 507.72s]  also reuse some of the model-based data
+[507.72s -> 509.64s]  even if your model is changing. But typically
+[509.64s -> 510.84s]  you would have a slightly different eviction
+[510.84s -> 514.12s]  strategy for these algorithms. So it looks
+[514.12s -> 515.96s]  like there's a lot going on here, but really
+[515.96s -> 517.40s]  this additional model-based process that
+[517.40s -> 519.56s]  we've added is just a way to populate an
+[519.56s -> 520.76s]  additional buffer that we're going to be
+[520.76s -> 523.72s]  using to load up our batches for the Q-learning
+[523.72s -> 526.44s]  process. So hopefully this diagram makes it a
+[526.44s -> 528.28s]  little clearer how these methods really
+[528.28s -> 530.28s]  work under the hood kind of at a systems
+[530.28s -> 534.44s]  level. Now there have been a variety of
+[534.44s -> 536.12s]  algorithms that have actually been proposed
+[536.12s -> 537.88s]  in the literature that make use of this
+[537.88s -> 539.88s]  idea. These are just a few examples. They
+[539.88s -> 541.16s]  differ a little bit in some of the design
+[541.16s -> 543.96s]  decisions, especially in regard to which
+[543.96s -> 548.04s]  data is actually used for the Q-learning
+[548.04s -> 551.72s]  process and how it's used. So the procedure
+[551.72s -> 553.24s]  I described here, this is probably closest
+[553.24s -> 555.08s]  to model-based policy optimization or
+[555.08s -> 558.12s]  MBPO, but you could also imagine algorithms
+[558.12s -> 560.20s]  that use the model-based rollouts to get
+[560.20s -> 562.20s]  better target value estimates, but don't use
+[562.20s -> 563.96s]  them for training the Q-function itself. And
+[563.96s -> 566.68s]  that's what, for example, model-based value
+[566.68s -> 568.28s]  expansion does. So there are a few design
+[568.28s -> 570.12s]  choices to make here. I won't go into great
+[570.12s -> 571.72s]  detail about what exactly each of those
+[571.72s -> 573.80s]  design decisions are. If you want to learn
+[573.80s -> 575.32s]  more about them, you can read the three
+[575.32s -> 577.32s]  papers that I have mentioned at the bottom,
+[577.32s -> 579.08s]  but at a high level, they all have this
+[579.08s -> 581.56s]  basic recipe. Take some action and observe
+[581.56s -> 584.12s]  a transition, add it to your buffer, sample
+[584.12s -> 586.76s]  a mini-batch from your buffer uniformly, use
+[586.76s -> 588.92s]  that to update your model, sample some
+[588.92s -> 590.60s]  states from the buffer, for each of those
+[590.60s -> 592.52s]  states perform a model-based rollout with
+[592.52s -> 594.68s]  actions coming from your policy, and those
+[594.68s -> 596.60s]  are those branched rollouts, and then use
+[596.60s -> 598.92s]  all the transitions along the rollout to
+[598.92s -> 601.40s]  update your Q-function, perhaps in combination
+[601.40s -> 603.56s]  with a little bit of real-world transitions.
+[604.84s -> 608.68s]  Okay, so why is this a good idea? Well,
+[608.68s -> 610.20s]  generally the benefit of these kinds of
+[610.20s -> 611.56s]  methods is that they do tend to be more
+[611.56s -> 613.40s]  sample-efficient, because they're using
+[613.40s -> 615.00s]  their samples to train this model, which is
+[615.00s -> 617.24s]  then being used to amplify the data set. So
+[617.24s -> 619.08s]  it's being used to construct even more
+[619.08s -> 621.00s]  data than what you collected in the real
+[621.00s -> 623.48s]  MDP, and that additional data is then
+[623.48s -> 625.64s]  included in the Q-learning process, and if
+[625.64s -> 627.56s]  the model is good, then it will make Q-
+[627.56s -> 630.44s]  learning go better. Why might this be a
+[630.44s -> 634.68s]  bad idea? Well, there are a number of
+[634.68s -> 636.52s]  additional sources of bias that this
+[636.52s -> 639.64s]  kind of method incurs. Of course, the
+[639.64s -> 641.40s]  most obvious one is your model might
+[641.40s -> 642.92s]  not be correct. So if your model is
+[642.92s -> 645.32s]  not correct, then when you perform those
+[645.32s -> 648.68s]  model-based rollouts, then your policy
+[648.68s -> 651.96s]  will optimize the wrong thing. We can
+[651.96s -> 653.96s]  mitigate these issues by using some of
+[653.96s -> 655.32s]  the ideas that we discussed for
+[655.32s -> 657.08s]  model-based RL before. So for example, if
+[657.08s -> 658.92s]  you use ensembles of models, the
+[659.56s -> 661.56s]  additional stochasticity can help
+[661.56s -> 663.56s]  average out errors and reduce
+[663.56s -> 666.44s]  exploitation. There's another reason why
+[666.44s -> 667.72s]  this could be a bad idea, which is that
+[667.72s -> 669.72s]  when we make these short rollouts
+[669.72s -> 671.88s]  starting from buffer states, well, an
+[671.88s -> 673.40s]  off-policy algorithm can in principle
+[673.40s -> 674.92s]  handle the fact that it has the wrong
+[674.92s -> 676.92s]  state distribution, but in the end you
+[676.92s -> 680.92s]  still need to visit states where
+[680.92s -> 682.76s]  you're going to need your Q-function to
+[682.76s -> 684.28s]  be correct. So if you've never seen
+[684.28s -> 686.04s]  some state before and you're going to
+[686.04s -> 687.16s]  enter that state when you actually run
+[687.16s -> 688.76s]  in the real world, well then you're
+[688.76s -> 689.88s]  going to be in a lot of trouble,
+[689.88s -> 691.32s]  potentially, if that state is very
+[691.32s -> 692.44s]  different from anything you trained on.
+[693.16s -> 694.84s]  And the state distribution that you
+[694.84s -> 696.20s]  end up training on when you use
+[696.20s -> 697.80s]  these kinds of methods is kind of
+[697.80s -> 700.28s]  weird, right? As I mentioned before, the
+[700.28s -> 702.20s]  states that you see along these short
+[702.20s -> 704.60s]  rollouts originating from buffer states
+[704.60s -> 706.20s]  might come from neither the state
+[706.20s -> 707.64s]  distribution of the policy that
+[707.64s -> 709.64s]  collected the data nor the latest
+[709.64s -> 710.84s]  policy you're using. It's kind of a
+[710.84s -> 713.16s]  mix of the two. And, you know, oftentimes
+[713.16s -> 714.76s]  it actually works out okay, but in
+[714.76s -> 716.12s]  principle it can get you a state
+[716.12s -> 717.80s]  distribution that's very strange and
+[717.80s -> 719.88s]  very far from what you want. In
+[719.88s -> 721.40s]  practice what that usually means is
+[721.40s -> 723.16s]  that you can't go too long without
+[723.16s -> 724.44s]  collecting more data, so you do need to
+[724.44s -> 726.20s]  refresh the buffer by collecting more
+[726.20s -> 729.24s]  real world data so that the states
+[729.24s -> 731.56s]  that you sampled in step four are not
+[731.56s -> 732.76s]  too far away from the states that
+[732.76s -> 734.28s]  you would actually see if you were
+[734.28s -> 736.52s]  to run in the real world. And of
+[736.52s -> 738.36s]  course the model bias issues that
+[738.36s -> 740.36s]  come from having the wrong model can
+[740.36s -> 741.80s]  cause these methods to be a little bit
+[741.80s -> 744.52s]  problematic. In practice the trade-off
+[744.52s -> 745.88s]  that we tend to get with these kinds
+[745.88s -> 747.72s]  of model-based approaches is that they
+[747.72s -> 749.64s]  tend to learn significantly faster
+[749.64s -> 750.76s]  because they use the model-based
+[750.76s -> 752.84s]  acceleration, but they will sometimes
+[752.84s -> 754.44s]  plateau to a lower level of
+[754.44s -> 756.04s]  performance because the additional
+[756.04s -> 757.72s]  model bias basically puts a ceiling on
+[757.72s -> 761.24s]  how tightly they can fit to the real
+[761.24s -> 763.64s]  world dynamics. Although with shorter
+[763.64s -> 765.00s]  rollouts and with careful design
+[765.00s -> 767.00s]  decisions this gap has been to a
+[767.00s -> 768.60s]  large extent eliminated in many
+[768.60s -> 769.48s]  practical
+[769.48s -> 777.48s]  benchmark tasks.

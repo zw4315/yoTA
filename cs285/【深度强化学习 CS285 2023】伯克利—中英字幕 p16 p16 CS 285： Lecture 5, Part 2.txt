@@ -1,0 +1,138 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.80s]  All right, now that we've covered the mathematical derivation for policy gradients, let's work
+[6.80s -> 11.60s]  a little bit on developing some intuition for what policy gradients are actually doing.
+[11.60s -> 20.08s]  All right, so these are the equations that we saw before. We've got the approximate
+[20.08s -> 23.88s]  expression for the derivative of J theta, which is the sum over all of our samples
+[23.88s -> 29.04s]  of the sum of grad log pis along that sample trajectory times the total reward
+[29.04s -> 38.96s]  of that trajectory. So what is this grad log pi thing actually? Well, let's say that our policy
+[38.96s -> 44.00s]  for now is just a discrete. Let's say that it's just a mapping from images, maybe these are
+[44.00s -> 52.04s]  driving images, to a discrete action turn left or turn right. Then log pi is simply the log
+[52.12s -> 59.20s]  probability that this policy assigns to one of those two actions, and grad log pi is the derivative of
+[59.20s -> 65.40s]  that log probability. So a neural network will output those probabilities, and you can take the
+[65.40s -> 69.52s]  logarithm of that probability. When you do maximum likelihood training supervised learning,
+[69.52s -> 78.12s]  you're typically maximizing log probabilities of observed labels. So it's instructive, perhaps,
+[78.12s -> 84.40s]  to compare what policy gradients are doing to what maximum likelihood is doing. So in maximum
+[84.40s -> 88.68s]  likelihood, like in imitation learning, for instance, we would collect some data of humans
+[88.68s -> 93.20s]  selecting actions, and then we would run supervised learning on that data, and that would
+[93.20s -> 100.32s]  yield a policy pi theta a t given s t. The maximum likelihood objective, or the supervised
+[100.32s -> 107.16s]  learning objective, is just maximization of the log probabilities assigned to the observed actions.
+[107.88s -> 114.12s]  So the gradient of that is given by the sum over all of your samples and all your time steps of grad
+[114.12s -> 120.28s]  log pi a i t given s i t. Now, of course, when we're doing maximum likelihood, we assume that
+[120.28s -> 125.24s]  the actions in our data, a i t, are good actions to take. In policy gradient, that is not
+[125.24s -> 129.96s]  necessarily true, because we generated those actions by running our own previous policy,
+[129.96s -> 136.04s]  which might not have been very good. So the maximum likelihood gradient simply increases the log
+[136.04s -> 142.36s]  probabilities of all the actions, whereas the policy gradient might increase or decrease them,
+[142.36s -> 147.80s]  depending on the value of their reward. So, intuitively, high reward trajectories get their
+[147.80s -> 153.64s]  log probabilities increased, low reward trajectories get their log probabilities decreased.
+[153.64s -> 158.60s]  So you can think of it as a kind of weighted version of the gradient for the maximum likelihood
+[158.60s -> 163.24s]  objective. In fact, this interpretation will turn out to be very useful when it comes time to
+[163.24s -> 168.20s]  actually implement the policy gradient with modern automatic differentiation tools like PyTorch.
+[171.40s -> 175.88s]  Now, that was an example with discrete actions. What if we have continuous actions? What if, for
+[175.88s -> 182.68s]  example, we want to make this little humanoid robot run using policy gradients? Well, in that
+[182.68s -> 187.56s]  case, we need to select a representation for pi that can output distributions over continuous
+[187.56s -> 194.92s]  valued actions. For example, we might represent pi theta a t given s t as a multivariate normal
+[194.92s -> 199.96s]  distribution, or Gaussian distribution, where the mean is given by a neural network. So the
+[199.96s -> 203.72s]  neural network outputs the mean, and then you have some variance, which could be learned or
+[203.72s -> 209.64s]  could be fixed, and then you would like to train this neural network. In that case, you can
+[209.64s -> 215.56s]  write the log probability as, you know, by basically using the formula for the log probability
+[215.64s -> 221.08s]  under a multivariate normal distribution, which is simply the difference between the mean and
+[221.08s -> 226.92s]  the action under the covariance, the inverse covariance matrix. So this is one way of writing
+[226.92s -> 231.96s]  the log probability of a multivariate normal distribution, and you can then calculate the
+[231.96s -> 237.96s]  derivative of this thing with respect to the mean, and you just get this equation. So the
+[237.96s -> 243.16s]  derivative of your multivariate normal is just negative one-half times the inverse covariance
+[243.16s -> 250.76s]  times f s t minus a t times d f d theta. And in practice, the way that you would calculate this
+[250.76s -> 256.68s]  quantity is you would compute negative one-half sigma inverse f s t minus a t,
+[256.68s -> 260.44s]  and then backpropagate it through your network to get the derivative with respect to theta.
+[263.64s -> 268.68s]  All right, so that maybe gives us some intuition for what these grad log pi terms are actually
+[268.68s -> 275.32s]  doing, both in the discrete action and continuous action case. In both cases, they correspond to a
+[275.32s -> 279.48s]  kind of weighted version of the maximum likelihood gradient, if it's helpful for you to think about
+[279.48s -> 284.36s]  it that way, and you can compute them by basically using the formula for the log probability
+[284.36s -> 290.36s]  of whatever distribution class you choose to use. Now, what is the policy gradient actually doing
+[290.36s -> 297.56s]  intuitively? So I'll collect some of the terms and use slightly more concise notation to
+[297.56s -> 303.64s]  make this a little clearer, so you can equivalently write it as grad log pi theta of tau times r of tau,
+[305.00s -> 312.44s]  where this grad log pi theta tau is just the sum over the individual grad log pi thetas.
+[314.44s -> 321.00s]  The maximum likelihood gradient is given here, so it's just the same thing only without the r term.
+[321.72s -> 326.20s]  So intuitively what that means is that if you roll out some trajectories and you compute
+[326.20s -> 330.92s]  their rewards, and some of them have big positive rewards represented with green check marks,
+[330.92s -> 334.76s]  and some of them have big negative rewards represented by the red x, and some are kind of
+[334.76s -> 339.64s]  neutral, like that middle one, what you'd like to do is you'd like to take the log probabilities
+[339.64s -> 345.88s]  along the good trajectories and raise them, and take the log probabilities along the bad trajectories
+[345.88s -> 352.44s]  and lower them. So the policy gradient makes the good stuff more likely and makes the bad
+[352.44s -> 359.08s]  stuff less likely. So in a sense, you can think of the policy gradient as a kind of formalization
+[359.08s -> 364.60s]  of trial and error learning. If reinforcement learning refers to learning about trial and error,
+[364.60s -> 369.40s]  then policy gradient simply formalizes that notion as a gradient descent algorithm.
+[372.28s -> 378.92s]  Now what I would like to briefly mention next is a short aside regarding partial observability.
+[379.80s -> 383.88s]  So if we want to learn policies that are conditional on observations rather than states,
+[384.68s -> 390.20s]  the main difference is that states satisfy the Markov property, whereas observations in general
+[390.20s -> 395.56s]  do not. As a reminder, the Markov property simply says that future states are conditionally
+[395.56s -> 401.00s]  independent of past states given present states. States satisfy this, whereas observations
+[401.00s -> 407.64s]  in general don't. Now interestingly enough, when we derive the policy gradient,
+[407.96s -> 413.08s]  at no point do we actually use the Markov property, which means that if you wanted to
+[413.08s -> 418.44s]  derive the policy gradient for a partially observed system, you could do so and you would
+[418.44s -> 425.00s]  get exactly the same equation. Now for a partially observed system, the trajectory distribution now
+[425.00s -> 429.40s]  would be a distribution over states, actions, and observations, and you have to marginalize out the
+[429.40s -> 433.80s]  states. So the derivation for this is a little bit more involved, but you can do it at home.
+[433.80s -> 437.80s]  However, if you follow through that derivation, you will end up with exactly the same equation
+[437.80s -> 441.32s]  that we got before, only the s's will be replaced by o's.
+[442.76s -> 449.08s]  What this means is that you can use policy gradients in partially observed MDPs without
+[449.08s -> 454.44s]  any modification. Just use them, and for this version of the policy gradient algorithm,
+[455.24s -> 458.36s]  it'll work just fine insofar as regular policy gradients work.
+[458.60s -> 466.60s]  Okay, now I mentioned before that maybe policy gradients, as I've described them so far,
+[467.24s -> 470.20s]  won't necessarily work very well if you actually try to implement them.
+[470.84s -> 479.72s]  So what's wrong with a policy gradient? Well, here's one problem that we could think about.
+[480.92s -> 485.08s]  Let's say that the horizontal axis here denotes the trajectory, and I know the
+[485.16s -> 489.56s]  trajectory in general is not one-dimensional, but let's pretend it is, and the vertical axis
+[489.56s -> 496.04s]  represents the reward. So here we have a reward, it's kind of this bell curve shape
+[497.00s -> 506.60s]  with a peak here, and let's say that we have three samples, and the height of the bars here
+[507.24s -> 515.48s]  represents the reward of those samples. So the blue curve shows the probability
+[516.20s -> 521.56s]  under the policy, that's the bell curve, and the green bars show the rewards. So I apologize here,
+[521.56s -> 527.00s]  the y-axis is actually a little bit overloaded. It's showing both rewards and probability, so the
+[527.00s -> 531.00s]  blue thing is a probability, it's always positive, the green stuff is the reward, which may be
+[531.00s -> 538.60s]  positive or negative. Okay, so with these three samples, we could now imagine when we calculate
+[538.60s -> 543.56s]  the policy gradient, which way will the blue policy distribution move, which way will the
+[543.56s -> 549.00s]  trajectory distribution move? So take a moment to think about this.
+[552.76s -> 557.72s]  Now the policy gradient, you can think of it as basically a weighted maximum likelihood gradient.
+[557.72s -> 562.84s]  So we're going to take each of these three points and we're going to calculate log pi at each of
+[562.84s -> 568.52s]  these three points, and we'll multiply it by the value of the reward. So the sample on the left
+[568.52s -> 573.80s]  has a very negative reward, so we'll try to decrease the log probability there,
+[573.80s -> 578.84s]  and the two samples on the right have small but positive rewards, so it will somewhat increase
+[578.84s -> 584.44s]  their probabilities. So that means that the policy distribution will slide to the right,
+[585.16s -> 589.80s]  and it'll mainly try to just really avoid that big negative sample.
+[593.08s -> 599.40s]  Now we know that if we take the reward function in MDP and we offset it by a constant, meaning
+[599.40s -> 603.64s]  that we add the same constant to the rewards everywhere, the resulting optimal policy doesn't
+[603.64s -> 608.36s]  change, right? This is for the same reason that if you have a maximization problem,
+[608.92s -> 614.36s]  let's say you're maximizing f of x, the maximum for f of x is the same even if you add a
+[614.36s -> 618.68s]  constant. So the maximum for f of x is the same as the maximum for f of x plus 100, which is the
+[618.68s -> 626.20s]  same for f of x plus 1000. So let's add a constant to the rewards. So let's say that our
+[626.20s -> 630.68s]  rewards are now given by these bars. Now the relative rewards are exactly the same, so the
+[630.68s -> 634.20s]  samples on the right are still better than the samples on the left, but now I've added a
+[634.20s -> 641.16s]  constant to them so they're all positive. And now take a minute to imagine how the policy will
+[641.16s -> 648.76s]  change when we use these rewards. With these rewards, of course, the policy will want to
+[648.76s -> 652.92s]  increase the log probabilities at all three samples, although it will want to increase
+[652.92s -> 656.68s]  the ones on the right a bit more. So maybe the policy will change like this.
+[659.00s -> 664.68s]  Now you could imagine even more pathological changes to the reward. What if I, for example,
+[664.68s -> 670.04s]  change the reward so that the two samples on the right actually go all the way to zero?
+[671.48s -> 673.16s]  Or the sample on the left goes to zero?
+[676.20s -> 683.16s]  This issue is actually an instance of high variance. Essentially the policy gradient
+[683.72s -> 690.12s]  estimator that we've described before has very high variance in terms of the samples that you
+[690.12s -> 695.88s]  get. So depending on which samples you end up with randomly, you might end up with very
+[695.88s -> 700.84s]  different values of a policy gradient for any finite sample size. Now as the number of samples
+[700.84s -> 705.56s]  goes to infinity, the policy gradient estimator will always yield the correct answer, so this
+[705.56s -> 710.84s]  issue with adding constants to rewards will not make any difference. But for finite sample sizes,
+[710.84s -> 716.36s]  they will. And this makes policy gradients very hard to use. It means that in practice,
+[716.36s -> 719.88s]  in order to make policy gradients be an effective tool for reinforcement learning,
+[719.88s -> 725.56s]  we must somehow lower this very high variance. And a lot of advances in policy gradient algorithms
+[725.56s -> 730.60s]  basically revolve around different ways to reduce their variance, and we'll cover some of those
+[730.60s -> 737.40s]  in today's lecture. So you can think of an even more pathological version of this issue
+[737.40s -> 741.08s]  if some of the samples have a reward of zero, then their gradient basically doesn't matter at all.
+[742.28s -> 747.48s]  And in general, this issue doesn't go away completely as you increase the number of samples,
+[747.48s -> 752.52s]  but it ends up being greatly mitigated. All right, so to review what we've covered so far,
+[753.08s -> 757.96s]  we talked about evaluating the RL objective with samples, we talked about evaluating the policy
+[757.96s -> 763.64s]  gradient, where we have to use this log gradient trick to remove the terms that we don't know,
+[763.64s -> 768.28s]  namely the initial state probability and the transition probability, and then we can again
+[768.28s -> 772.84s]  evaluate the policy gradient using samples, and we talk about how we can understand the policy
+[772.84s -> 778.76s]  gradient a little bit better intuitively by treating it as the formalization of trial and
+[778.76s -> 784.84s]  error learning into a gradient descent algorithm. We briefly talked about how policy gradients can
+[784.84s -> 790.52s]  also handle partial observability. And then lastly, we talked about why policy
+[790.52s -> 796.68s]  gradients might be hard to use. So in the next portion of the lecture, we'll try to address this.

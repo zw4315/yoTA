@@ -1,0 +1,1807 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.22s]  Well, it must be sunny and 92 degrees outside because it looks like half of
+[5.22s -> 9.36s]  the people are here. Welcome, thank you for coming on this nice beautiful sunny
+[9.36s -> 15.60s]  day. You get air conditioning if you're in this building, so that's good. So, a
+[15.60s -> 21.90s]  couple of quick announcements. Hopefully assignment 3 is
+[21.90s -> 27.60s]  going well. I will stay, I will kind of have mini office hours right after
+[27.72s -> 33.52s]  lecture today in 219 in Gates for about an hour, hour and 15 minutes or so. So, if
+[33.52s -> 36.92s]  you want to come by and ask some questions about the assignment, feel free.
+[36.92s -> 41.44s]  Remember the assignments due on Sunday. There won't be any office hours Friday,
+[41.44s -> 45.64s]  Saturday, so you'll have to rely on Piazza or Sunday office hours, which
+[45.64s -> 49.88s]  may be jammed because lots of you will go. So, just keep plugging away
+[49.88s -> 54.52s]  before the weekend if you can on the on the assignment. Second quick
+[54.52s -> 60.84s]  announcement is that the midterm is next Thursday. Yeah, next week from Thursday
+[60.84s -> 66.20s]  and it's going to be in the evening. If you do have an OAE accommodation,
+[66.20s -> 70.70s]  haven't sent me something about that yet, please do. Otherwise, or if you have
+[70.70s -> 73.72s]  to take the exam during a different time because you've got some conflict,
+[73.72s -> 78.52s]  also please email me sooner than later. I will put up some practice
+[78.52s -> 82.88s]  midterm exams. I told somebody on Piazza today I may do it tomorrow, but it'll
+[82.92s -> 85.76s]  be in the next day or two, some practice exams. And we're going to go over a couple
+[85.76s -> 90.28s]  more practice problems today that are from previous exams and the kind of
+[90.28s -> 95.12s]  things you might see that it's good to get your answers out now if you have
+[95.12s -> 100.52s]  those. All right, so let's go back. Let's actually do a quick review on this
+[100.52s -> 104.64s]  problem because right after class about 20 of you had lots of good
+[104.64s -> 109.76s]  questions still about this problem. So, let's talk about a particular
+[109.80s -> 114.64s]  answer, which is this one. I think this is the answer that most people said,
+[114.64s -> 118.68s]  wait, I don't understand why this answer couldn't happen. So, let's quickly
+[118.68s -> 122.92s]  just go back over this program again. Here's what it is. We've got the main
+[122.92s -> 127.60s]  function has a signal handler in it and the signal handler is going to be
+[127.60s -> 132.08s]  for SIG user one. That is not any particular type of signal. It's for the
+[132.08s -> 136.68s]  user or your program to use to send to a different process. So, you don't
+[136.76s -> 140.12s]  need to send some specific signal. That's the signal. It's kind of a generic
+[140.12s -> 146.08s]  one to send. And what this says is set up whenever a SIG user one comes in,
+[146.08s -> 151.04s]  call the bat function, which is up here. The bat function simply prints
+[151.04s -> 156.08s]  pirate and then does an exit zero. And exit zero means that it never
+[156.08s -> 160.68s]  makes it back to the main program, which got interrupted when the signal
+[160.72s -> 167.04s]  handler comes in. Okay. There's a fork in here and then the fork, if you're
+[167.04s -> 171.00s]  the child, you're going to print ghost and then return zero. That
+[171.00s -> 175.48s]  doesn't immediately exit the program, but it does close the program
+[175.48s -> 180.08s]  because you're returning from main. So, that's that. And then if you
+[180.08s -> 184.92s]  are not the child in this case, we are going to send the SIG user one
+[184.92s -> 190.28s]  signal to the PID, which in this case is the return value from fork
+[190.28s -> 194.48s]  means it's the child that we're actually sending this to. And then
+[194.48s -> 198.16s]  after that, it will print ninja. So, that's how it works. We are
+[198.16s -> 200.48s]  assuming a couple things about this program that I might not have
+[200.48s -> 205.28s]  been quite clear about. Print Fs are atomic in this case. That
+[205.28s -> 210.36s]  means that if you are in the middle of a print F statement, you
+[210.36s -> 215.44s]  will, the print F statement will happen. Okay. And to completion.
+[215.44s -> 218.32s]  So, first of all, you won't get things like G H and then it'll
+[218.32s -> 222.48s]  go into the signal handler. You will get the whole print F or not.
+[222.68s -> 225.12s]  Whether this is true for all operating systems, we don't know,
+[225.12s -> 227.64s]  but we're assuming that for here. The second thing we're
+[227.64s -> 233.36s]  assuming is that if a signal handler comes into the child
+[233.36s -> 237.88s]  process, let's say, it will, unless you are like finished
+[237.88s -> 241.88s]  with the program, like it's already completed, then it will
+[241.88s -> 245.76s]  actually get called. So, even if you print ghost and then the
+[245.80s -> 248.92s]  signal handler happens in the middle of that, it will, before
+[248.92s -> 254.36s]  this returns zero, go and call this function here. Okay. So,
+[254.36s -> 258.72s]  that's the basic ideas here. Now, the question is, can you
+[258.72s -> 264.32s]  get ninja ghost to print out using our assumptions here? Okay.
+[264.32s -> 267.16s]  We say that that's no. And you might have some questions
+[267.16s -> 269.68s]  about what could happen. Let's just look at what that would
+[269.68s -> 274.08s]  entail doing printing ninja and then ghost. Well, it would
+[274.08s -> 279.16s]  mean that in main, we would fork. Okay. And then before
+[279.16s -> 285.04s]  ghost got printed, the parent process would call the kill or
+[285.04s -> 289.80s]  call a signal the child and then print ninja. Okay. Now,
+[289.92s -> 293.76s]  the parent could signal the child and print ninja before
+[293.76s -> 297.20s]  the child does anything. That absolutely could happen. So, you
+[297.20s -> 300.88s]  certainly could get ninja to print first. Okay. That
+[300.88s -> 303.44s]  could be a thing. But let's see if you could get it so
+[303.44s -> 309.12s]  that it prints ghost after you print ninja, but before pirate
+[309.12s -> 312.12s]  would ever get printed. And that's actually not really
+[312.12s -> 315.08s]  possible in this program. And let's see why. Let's see
+[315.08s -> 318.24s]  what would have to happen for that to be the case. Okay.
+[318.24s -> 322.68s]  So, let's say that you fork. We're not going to be inside
+[322.68s -> 327.68s]  printf yet, by the time printf ninja happens. Okay. Or
+[327.68s -> 333.36s]  even if we were, that's okay. But the point is
+[333.52s -> 337.96s]  printf ghost, if it's happening, then the signal has
+[337.96s -> 341.68s]  not reached the child yet. Okay. So, that's going to
+[341.68s -> 344.48s]  happen. Now, you'll agree, hopefully, that if you print
+[344.48s -> 347.48s]  up ghost before you even send this signal, obviously ghost is
+[347.48s -> 350.44s]  going to get printed before ninja and then you could not
+[350.44s -> 354.28s]  print ninja first. So, that's the first thing. Okay. Let's
+[354.28s -> 357.28s]  assume then that maybe you're in the middle, maybe the
+[357.28s -> 363.88s]  child is about to print ghost and this signal comes in.
+[363.92s -> 367.52s]  Well, if it's about to print ghost, then the signal could
+[367.52s -> 371.44s]  happen. Okay. If the signal happens, then pirate would
+[371.44s -> 373.96s]  get printed, and then the program would exit. So, that's
+[373.96s -> 377.08s]  not going to happen. That's not the case here. Let's say
+[377.08s -> 381.88s]  that even in the most generous case, let's say we were
+[381.88s -> 384.64s]  just about to print ghost, or maybe we were just in the
+[384.64s -> 388.56s]  middle of print, just one line away in the assembly code
+[388.56s -> 396.44s]  for printing ghost, the signal happens. And then it stops
+[396.44s -> 399.12s]  right before it prints ghost. And let's even assume, we
+[399.12s -> 404.52s]  can even assume that the signal handler won't get
+[404.52s -> 407.88s]  called. Let's just even assume that. And then ninja gets
+[407.88s -> 410.96s]  printed. So, we do get ninja. And then we get ghost
+[410.96s -> 414.80s]  printed, let's say. Okay, if we get ghost printed, the
+[414.80s -> 420.20s]  signal has already been sent to the child, it will because
+[420.20s -> 424.12s]  there's still the return here. Before that, the signal
+[424.12s -> 428.72s]  handler will happen. And therefore, you would end up
+[428.76s -> 431.00s]  going into the signal handler and printing pirate. So,
+[431.00s -> 434.68s]  there's really no way to have print apps be atomic,
+[435.08s -> 440.08s]  print ninja first, somehow call the signal handler, or
+[440.12s -> 443.76s]  have the signal handler not actually trigger the signal
+[443.76s -> 447.52s]  in the child, print ghost, and then have this program, or
+[447.52s -> 451.08s]  the child go to completion. Not really possible. Okay,
+[451.08s -> 462.36s]  question. You could, I mean, if you so I guess your
+[462.36s -> 465.76s]  question is why, right before print app, let's say that
+[465.76s -> 467.92s]  the signal came in before print app, well, we would
+[467.92s -> 470.08s]  assume that it would get it would get signal. Here's what
+[470.08s -> 474.32s]  happens in a in a program, the when you when it's program
+[474.32s -> 477.96s]  gets a signal, it immediately happens for that process, when
+[477.96s -> 481.00s]  a process gets a signal. So, it will happen if it's
+[481.00s -> 484.40s]  happy, if it comes in before the print app, then the
+[484.40s -> 486.04s]  signal will happen before the print app happens. If it
+[486.04s -> 488.08s]  comes in during the print app, it'll happen right
+[488.08s -> 491.00s]  after the print app. Okay, and then that's and then
+[491.00s -> 493.12s]  it would still happen in that case, it wouldn't be the
+[493.12s -> 496.88s]  case that you get two statements happening before the
+[496.92s -> 500.20s]  signal handler, if the signal has already been come into
+[500.20s -> 502.00s]  the program. But it wouldn't happen necessarily in the
+[502.00s -> 503.84s]  middle of the print app. Yeah, Hasan.
+[510.84s -> 512.76s]  Yeah, that's a good question. You return zero before
+[512.76s -> 517.68s]  you send the signal to parent. Yeah. That's the
+[517.68s -> 519.24s]  only way in which pirate wouldn't get printed out.
+[519.24s -> 521.16s]  Now, there's I was talking to somebody after class,
+[521.16s -> 523.76s]  but this is definitely a little nuanced. When you do
+[523.76s -> 526.08s]  return zero, well, there's there's still another
+[526.08s -> 529.80s]  function which called main it to begin with and not
+[529.80s -> 531.92s]  in your program, but it still might be the case that
+[531.92s -> 534.40s]  your signal handler is still set up. So it still
+[534.40s -> 537.92s]  might get called even right after the return zero. But
+[537.92s -> 539.80s]  at some point later, the signal handler will be
+[539.80s -> 542.80s]  destroyed while the program is being destroyed. Okay.
+[544.24s -> 546.88s]  Any other questions on that one? I think that one's
+[546.88s -> 548.36s]  a tricky one because you have to kind of be
+[548.36s -> 551.56s]  really nuanced about when the signal is happening in
+[551.56s -> 554.56s]  relation to all the print apps and so forth.
+[557.08s -> 560.72s]  Pretty good on that one. Okay, let's look at another
+[560.72s -> 563.60s]  one here. I will zoom in a little for this one.
+[563.60s -> 567.00s]  So this is another program. Same sort of thing. This
+[567.00s -> 570.72s]  wasn't a it was a problem on a midterm exam in
+[570.72s -> 572.88s]  the past. You should assume that print off their
+[572.88s -> 577.16s]  atomic processes run to completion, etcetera. And
+[577.16s -> 580.76s]  then everything succeeds. And I want you to list all
+[580.76s -> 585.08s]  the possible outputs for this program. Okay, why don't
+[585.08s -> 588.44s]  you do this? Take about a minute, two minutes or so,
+[588.44s -> 590.36s]  look through the program and just start thinking
+[590.36s -> 592.12s]  about it. Talk to your neighbor about that. I'll
+[592.12s -> 593.92s]  walk around and you can do that. Start
+[593.92s -> 595.84s]  thinking about it. Then we'll go through how I
+[595.84s -> 598.76s]  would think about it. Okay, don't be too scared
+[598.76s -> 600.12s]  of like, oh, how am I going to analyze this
+[600.12s -> 602.68s]  whole thing? But you do need to kind of dig in
+[602.68s -> 604.80s]  and go, okay, I've got to think about all the
+[604.80s -> 606.32s]  different parts here. So go ahead and do that
+[606.32s -> 607.84s]  for a couple minutes, two or three minutes, let's
+[607.84s -> 610.20s]  say, and we'll talk about it after you.
+[697.84s -> 699.40s]  I know.
+[727.84s -> 729.04s]  Okay.
+[757.84s -> 758.04s]  Okay.
+[787.84s -> 789.04s]  Okay.
+[817.84s -> 819.04s]  Okay.
+[847.84s -> 852.84s]  Let's take one more minute. One more minute.
+[877.84s -> 907.24s]  All right. First of all, you probably shouldn't
+[907.64s -> 909.20s]  be able to, you might not be able to do this
+[909.20s -> 911.40s]  problem in the five minutes that I gave you. So
+[911.40s -> 913.28s]  don't think, oh no, how is it? He's assuming we
+[913.28s -> 915.24s]  can do this so quickly. That's okay. At least
+[915.28s -> 917.32s]  hopefully you thought about it for a second. I
+[917.32s -> 920.00s]  guess my first question about this, what's going
+[920.00s -> 925.16s]  to absolutely get printed out first? One. What's
+[925.16s -> 928.60s]  absolutely going to get printed out last? Five.
+[928.60s -> 930.28s]  Yeah, it's the middle stuff that we have to
+[930.28s -> 933.00s]  actually think about a little bit. Almost. What's
+[933.00s -> 935.96s]  going to get printed second to last always? Six,
+[935.96s -> 937.92s]  actually. It's that, it's that middle stuff that
+[937.92s -> 939.76s]  we have to think about. Here's how I would do
+[939.76s -> 941.32s]  that. Now, if that, if you're like, how did
+[941.32s -> 943.00s]  you know that? Let's go through how I would
+[943.00s -> 944.24s]  have figured out how we would have figured that
+[944.24s -> 949.40s]  out. Okay. So the program's going along. Okay,
+[949.40s -> 951.24s]  there's a counter. Here's what I would
+[951.24s -> 952.92s]  generally do when I was, if I was looking
+[952.92s -> 955.44s]  at this program. I would say, fine, I have
+[955.48s -> 958.64s]  a parent here. Okay. And the parent has a
+[958.64s -> 963.24s]  counter that starts out at zero. Okay. And I
+[963.24s -> 965.48s]  would go down and say, okay, fine. This while
+[965.52s -> 968.20s]  loop, the counter is definitely less than two. And
+[968.20s -> 972.16s]  then we immediately fork. Well, when we fork, I'm
+[972.16s -> 974.52s]  going to say, okay, fine. Now there's a child,
+[975.00s -> 978.84s]  child, there we go, with a counter that's also
+[978.84s -> 980.48s]  zero. You get why that's the case? It
+[980.48s -> 983.96s]  gets copied. Okay. The counter gets copied. Then
+[983.96s -> 985.16s]  I would just keep going here and I'd go,
+[985.16s -> 987.60s]  all right, well, let's look at the next line.
+[987.68s -> 990.08s]  If, and remember, there's two processes doing this
+[990.08s -> 995.84s]  now. If the PID return value for fork is greater
+[995.84s -> 998.16s]  than zero, what it means for the parent, we
+[998.16s -> 1000.36s]  immediately break out of this while loop and we
+[1000.36s -> 1002.52s]  never go back to the while loop. So the
+[1002.52s -> 1004.96s]  parent comes down and, well, the parent is now
+[1004.96s -> 1008.24s]  down here. If the counter is greater than zero,
+[1008.24s -> 1009.92s]  well, the parent's counter is not greater than
+[1009.92s -> 1012.68s]  zero. Doesn't do that. If the PID is greater
+[1012.68s -> 1016.48s]  than zero, sure, the child, the parent's return
+[1016.48s -> 1018.84s]  value for PID is greater than zero because it's
+[1018.84s -> 1021.64s]  the child's PID. Therefore, we have to wait
+[1021.64s -> 1026.44s]  for the child. Wait for child. And in fact,
+[1026.44s -> 1028.56s]  I'll put child one because there's going to
+[1028.56s -> 1030.52s]  be another child in here in a minute. Okay,
+[1030.52s -> 1032.88s]  wait for child one. And then after that
+[1032.88s -> 1035.92s]  happens, well, then we add five to the
+[1035.92s -> 1037.92s]  counter, meaning the counter is now going to
+[1037.92s -> 1042.16s]  be five. Counter equals five for the parent.
+[1042.64s -> 1045.40s]  And then we print five. But that has to
+[1045.40s -> 1047.68s]  happen after the child one ends. So it's
+[1047.68s -> 1049.08s]  certainly not going to happen first if
+[1049.08s -> 1051.08s]  anything else happens in the middle. So far,
+[1051.08s -> 1053.84s]  so good? Okay, then let's start looking at
+[1053.84s -> 1055.40s]  what the child's doing. We're done with the
+[1055.40s -> 1057.00s]  parent for now. We'll get back to when
+[1057.00s -> 1059.36s]  that happens in a minute. The child one,
+[1059.36s -> 1062.64s]  well, all right. So we say if PID is
+[1062.64s -> 1064.24s]  greater than zero break, we don't break. So
+[1064.24s -> 1068.68s]  child one, well, its counter becomes one and
+[1068.68s -> 1073.88s]  then it immediately prints one. Print one. So
+[1073.88s -> 1076.48s]  we're definitely going to get one printed
+[1076.64s -> 1078.72s]  before anything else happens. There's no other
+[1078.72s -> 1080.36s]  way that could logically, anything else could
+[1080.36s -> 1084.36s]  logically happen. Okay, all right. And we've
+[1084.36s -> 1086.16s]  updated counter. Now we go back in the while
+[1086.16s -> 1088.24s]  loop. This is the child now. Goes back into
+[1088.24s -> 1089.96s]  the while loop. Counter is still less than
+[1089.96s -> 1092.56s]  two. Looks like it there. And we fork
+[1092.56s -> 1095.08s]  again. So you go, oh boy. Okay, well, now
+[1095.08s -> 1099.76s]  we've got child two. And child two has a
+[1099.76s -> 1103.08s]  counter that starts out with which value? One
+[1103.08s -> 1105.44s]  because it's being produced from the child.
+[1105.68s -> 1108.92s]  Okay, and then you kind of consider this now
+[1108.96s -> 1112.40s]  the new like parent. It gets a new value of
+[1112.40s -> 1115.20s]  PID because it's changed it. It actually
+[1115.20s -> 1118.08s]  reset its value of PID to the term value of
+[1118.08s -> 1120.48s]  fork. It's no longer zero. So PID is
+[1120.48s -> 1122.76s]  greater than zero for this child. What does
+[1122.76s -> 1127.12s]  this child do? Well, it breaks. And so then
+[1127.12s -> 1128.64s]  it goes down here and counter is greater than
+[1128.64s -> 1131.80s]  zero. Counter is greater than zero. Okay, so
+[1131.80s -> 1136.24s]  then we definitely print one. Now, we don't
+[1136.24s -> 1138.44s]  necessarily do this immediately. We've got
+[1138.44s -> 1139.56s]  some other things that are happening here.
+[1139.56s -> 1141.36s]  We didn't do any waiting in here. We
+[1141.36s -> 1144.36s]  definitely know we're going to print the one
+[1144.36s -> 1146.84s]  down here somewhere. So that's going to happen
+[1146.84s -> 1148.40s]  at some point. We just don't know exactly
+[1148.40s -> 1150.60s]  when yet. Okay, then what is it going to
+[1150.60s -> 1153.12s]  do? Well, PID is still greater than zero
+[1153.12s -> 1155.60s]  because it's the return value for the child
+[1155.60s -> 1158.32s]  one's fork call, which means it's the PID of
+[1158.32s -> 1161.24s]  child two. Therefore, we're going to wait for
+[1161.24s -> 1167.84s]  child two. Wait for child two. And then we're
+[1167.84s -> 1170.32s]  going to print what? Counter plus five. So
+[1170.32s -> 1173.52s]  counter is going to be equal to six. And
+[1173.52s -> 1178.92s]  then we're going to print six. Okay, and
+[1178.92s -> 1180.68s]  that's going to happen at some point. It's
+[1180.68s -> 1182.48s]  definitely true that the six is going to
+[1182.48s -> 1186.64s]  happen after the one because there's no other
+[1186.64s -> 1189.04s]  way in this logic it could happen. But you
+[1189.04s -> 1190.56s]  don't know when in the rest of the
+[1190.56s -> 1193.40s]  program is going to happen yet. So then you
+[1193.40s -> 1194.84s]  go over to the child two and you go,
+[1194.84s -> 1198.00s]  okay, fine, what's happening here? Well, child
+[1198.00s -> 1201.40s]  two is not, its PID, the return value from
+[1201.40s -> 1204.56s]  fork is not greater than zero. It's zero
+[1204.56s -> 1207.16s]  because it's the child of the fork call.
+[1207.16s -> 1211.12s]  Therefore, we update its counter to two. And
+[1211.12s -> 1216.64s]  then we print it out. Print two. Okay, but
+[1216.64s -> 1218.56s]  we don't really know when that happens. That
+[1218.56s -> 1221.40s]  doesn't necessarily happen before this one. It could,
+[1221.40s -> 1224.12s]  but it might not. We don't know yet. Okay,
+[1224.12s -> 1225.86s]  and that's a, that's a race condition in that
+[1225.86s -> 1227.72s]  case. All right, but then what does it
+[1227.72s -> 1231.20s]  do? It goes back to the top of
+[1231.20s -> 1233.00s]  the while loop. Counter is not less than two
+[1233.00s -> 1235.60s]  anymore. Therefore, it exits the while loop. And then
+[1235.60s -> 1237.04s]  if counter is greater than zero, it's going to
+[1237.04s -> 1238.72s]  print the counter. Well, guess what? It's got to
+[1238.72s -> 1242.24s]  print two again. We don't know exactly when. We
+[1242.24s -> 1243.76s]  know this two is going to happen after
+[1243.76s -> 1245.52s]  this two, but it's not really easy to tell
+[1245.52s -> 1247.76s]  in that case. Like it doesn't really matter in
+[1247.76s -> 1249.40s]  that case. First of all, there goes two, and
+[1249.40s -> 1251.52s]  it doesn't really matter, but that's going to happen
+[1251.52s -> 1253.88s]  there. And then it goes here, and PID is
+[1253.88s -> 1256.04s]  greater than zero. Well, it's not. It's the final
+[1256.04s -> 1258.48s]  child, and so it's PID value. It's return
+[1258.48s -> 1260.60s]  value from fork was zero. So it's just going
+[1260.60s -> 1264.76s]  to end. Okay, so logically, let's see what happens.
+[1264.76s -> 1268.48s]  We definitely print this one first. That has to
+[1268.48s -> 1271.36s]  happen. All right, okay. Then we have a couple
+[1271.36s -> 1275.04s]  different things could happen. We could print this one
+[1275.04s -> 1281.20s]  or this two or this two in any order. So
+[1281.20s -> 1286.00s]  we could print one, two, two, or we could
+[1286.00s -> 1292.16s]  print one and then one, two, or sorry, two, one,
+[1292.16s -> 1295.96s]  two. That's a one in there. Two, one, two. Or
+[1295.96s -> 1301.16s]  we could do one and then two, two, one. Because
+[1301.16s -> 1302.96s]  any of those things could happen anywhere. Nobody's
+[1302.96s -> 1306.28s]  waiting for anybody between this one and these two
+[1306.28s -> 1308.88s]  twos. Okay, they could happen in kind of anywhere.
+[1310.16s -> 1313.72s]  Then, by the time this two does finally print,
+[1313.96s -> 1318.68s]  right, well, then we definitely go back into the
+[1318.96s -> 1322.12s]  waiting here. And what happens there? We have to
+[1322.12s -> 1326.08s]  print the six, because this one's waiting for
+[1326.08s -> 1328.36s]  child two to end. Okay, and the only time that
+[1328.36s -> 1331.36s]  can happen is after that other two there. Okay, and
+[1331.36s -> 1333.48s]  it has to end. The six has to happen after
+[1333.48s -> 1334.88s]  this one, because there's no other way for that
+[1334.88s -> 1338.16s]  to do that in child number one. Okay, and
+[1338.16s -> 1340.08s]  so then the six happens in all of them.
+[1340.08s -> 1343.72s]  And then this child ends. Therefore, we're waiting
+[1343.72s -> 1347.20s]  for that child. We then definitely print five. So
+[1347.20s -> 1352.16s]  those are the three possible outputs. Okay, I
+[1352.16s -> 1353.48s]  think that would be hard to do in your
+[1353.48s -> 1356.32s]  head. Right, so I think you should like
+[1356.32s -> 1359.24s]  catalog this stuff and write it down as you
+[1359.24s -> 1362.24s]  go, and you should be able to get there
+[1362.24s -> 1364.52s]  eventually. What questions do you have about
+[1364.52s -> 1370.20s]  that? Everybody good on that one? Good. That
+[1370.20s -> 1371.76s]  one's not. That one takes a little bit of
+[1371.76s -> 1374.04s]  thinking, but hopefully isn't too, too bad. And
+[1374.04s -> 1375.72s]  five minutes is probably not quite enough time
+[1375.92s -> 1378.68s]  to go from the beginning there. Now, what
+[1378.68s -> 1383.36s]  would happen if we now change the counters
+[1383.36s -> 1385.56s]  greater than zero to the counter greater than or
+[1385.56s -> 1391.92s]  equal to zero? Right here. Well, now you've got
+[1391.92s -> 1394.60s]  all sorts of other things that could happen. Now,
+[1394.64s -> 1401.08s]  the parent of the, basically the original
+[1401.08s -> 1405.16s]  parent now is going to print its own counter,
+[1405.16s -> 1408.60s]  which at that point is what? Zero still. Well,
+[1408.64s -> 1411.80s]  that could happen before the one. If it
+[1411.80s -> 1413.12s]  happened before the one, that would give you
+[1413.16s -> 1416.56s]  three more different outputs. It could happen after
+[1416.56s -> 1418.28s]  the first one. That's going to be three more.
+[1418.28s -> 1420.40s]  It could happen after the second one, because
+[1420.40s -> 1422.40s]  nobody's waiting for anybody in this case. It
+[1422.40s -> 1425.04s]  could happen after the next one, three more.
+[1425.04s -> 1427.00s]  It could happen after the next one, three
+[1427.00s -> 1430.64s]  more. Could it even happen after the six?
+[1433.96s -> 1436.60s]  Probably, right? Because you could actually get
+[1436.60s -> 1438.68s]  the six happens after the original. This would
+[1438.68s -> 1441.08s]  take a lot of like weirdness kind of in
+[1441.08s -> 1442.80s]  the schedule, but it could. Nothing stopping it
+[1442.80s -> 1444.80s]  from saying the other two processes are going to
+[1444.80s -> 1447.52s]  go and go to completion before we even get to
+[1447.52s -> 1450.56s]  here in the original parent. So it could happen
+[1450.56s -> 1454.00s]  there. That's another three. Three, six, nine,
+[1454.04s -> 1458.92s]  12, 15, 18. 18 new total cases now that you
+[1458.92s -> 1460.32s]  could do. And you wouldn't want to write all
+[1460.32s -> 1461.44s]  those out, I guess, but you would. We didn't
+[1461.44s -> 1462.60s]  ask you to necessarily write those out.
+[1468.60s -> 1472.28s]  No question? You're good? Yeah. That's
+[1472.28s -> 1474.80s]  definitely, I think that's kind of the more
+[1474.80s -> 1476.20s]  challenging one at the moment, because you have to
+[1476.20s -> 1477.88s]  go, oh, now what's happening? And you don't
+[1477.88s -> 1480.36s]  really want to write all 18 out, although probably
+[1480.36s -> 1483.52s]  students did when they took this. Okay. Other
+[1483.52s -> 1486.64s]  questions on this question before we go on to
+[1486.64s -> 1492.08s]  the next one? All right. Good. Okay. Let's see.
+[1492.08s -> 1494.64s]  There we go. 18 more. Okay. Here's another one.
+[1494.88s -> 1497.08s]  Consider the following program. Seeing a pattern
+[1497.08s -> 1499.88s]  here, right? Assume that each call flushes to
+[1499.88s -> 1501.72s]  output to the console in full. That basically
+[1501.76s -> 1504.44s]  means that it's atomic. And further assume that
+[1504.44s -> 1506.20s]  none of the system calls fail. Same sort of
+[1506.20s -> 1508.72s]  thing before. Fork doesn't fail. Wait PID only
+[1508.72s -> 1511.36s]  returns negative one, because there are no child
+[1511.36s -> 1513.68s]  processes at the moment that it decides to return
+[1513.68s -> 1516.32s]  its return value. Okay. And the first question
+[1516.32s -> 1520.80s]  is, what's the output of this program? And
+[1520.80s -> 1522.76s]  notice that. What is the output of the
+[1522.76s -> 1525.44s]  program? You'll probably want to look through this
+[1525.44s -> 1527.88s]  and go, oh, that means there's probably only one
+[1527.88s -> 1530.24s]  output. Let's see if I can figure it out. So
+[1530.24s -> 1531.68s]  go ahead, take a few more minutes and do that.
+[1560.24s -> 1561.24s]  Okay.
+[1590.24s -> 1592.24s]  All right.
+[1620.24s -> 1622.24s]  Okay.
+[1650.24s -> 1652.24s]  Okay.
+[1680.24s -> 1682.24s]  Okay.
+[1710.24s -> 1712.24s]  Okay.
+[1740.24s -> 1742.24s]  Okay.
+[1770.24s -> 1773.24s]  All right. 30 more seconds.
+[1801.24s -> 1803.24s]  Okay.
+[1814.24s -> 1816.24s]  Okay.
+[1816.24s -> 1818.24s]  Okay.
+[1818.24s -> 1820.24s]  What questions do you have about this program
+[1820.24s -> 1822.24s]  before we go? I've seen some people who are
+[1822.24s -> 1824.24s]  like, oh, I don't know what's going on, or
+[1824.24s -> 1826.24s]  what questions. I see definitely a bunch of
+[1826.24s -> 1828.24s]  questions. Yes. Question one.
+[1828.24s -> 1840.24s]  When you do exit zero, that terminates the child.
+[1840.24s -> 1842.24s]  It never makes it back to the child. As it
+[1842.24s -> 1844.24s]  turns out, it may not matter for this. But
+[1844.24s -> 1846.24s]  that's definitely what happens. Yeah.
+[1846.24s -> 1848.24s]  Okay.
+[1856.24s -> 1858.24s]  Oh, good question. The question was, are you
+[1858.24s -> 1860.24s]  going to, if you do the second signal, and
+[1860.24s -> 1862.24s]  it's only in the child, does that mean
+[1862.24s -> 1864.24s]  there are now two handlers that happen
+[1864.24s -> 1866.24s]  somehow in both of them? No. It replaces
+[1866.24s -> 1868.24s]  the original. So the original handler is
+[1868.24s -> 1874.24s]  now gone. Okay. Good question.
+[1874.24s -> 1876.24s]  Good question.
+[1878.24s -> 1880.24s]  Are there not different handlers based
+[1880.24s -> 1882.24s]  on which process you're in? What do you
+[1882.24s -> 1884.24s]  think, knowing what you know about two
+[1884.24s -> 1886.24s]  separate processes, memory spaces?
+[1886.24s -> 1888.24s]  There are different. Yeah.
+[1888.24s -> 1890.24s]  So the parent, once this signal, now,
+[1890.24s -> 1892.24s]  when the, in the parent, when you say
+[1892.24s -> 1894.24s]  signal, both the signal, both the child
+[1894.24s -> 1896.24s]  and the parent are going to inherit
+[1896.24s -> 1898.24s]  that signal handler. And then when the
+[1898.24s -> 1900.24s]  child itself says signal for handler two,
+[1900.24s -> 1902.24s]  only the child gets replaced.
+[1902.24s -> 1904.24s]  Now they each have their individual ones.
+[1904.24s -> 1906.24s]  Question. Yeah.
+[1906.24s -> 1908.24s]  So then, when you call kill
+[1908.24s -> 1910.24s]  inside the child, and you send that
+[1910.24s -> 1912.24s]  to the parent,
+[1912.24s -> 1914.24s]  saying user one,
+[1914.24s -> 1916.24s]  the parent's handler
+[1916.24s -> 1918.24s]  says user one, and the handler
+[1918.24s -> 1920.24s]  says user one.
+[1920.24s -> 1922.24s]  Yes, and that's exactly right. So the
+[1922.24s -> 1924.24s]  parent's, the parent's
+[1924.24s -> 1926.24s]  handler gets called right here. Who missed
+[1926.24s -> 1928.24s]  that this was get parent PID?
+[1928.24s -> 1930.24s]  Get parent PID.
+[1930.24s -> 1932.24s]  I don't know if you saw that, but that's the parent's
+[1932.24s -> 1934.24s]  PID, meaning you're going to send it to the parent.
+[1934.24s -> 1936.24s]  Yes, it's the parent's
+[1936.24s -> 1938.24s]  signal handler, and the only one the parent
+[1938.24s -> 1940.24s]  has is handler one.
+[1940.24s -> 1942.24s]  Good question. So this is actually the way
+[1942.24s -> 1944.24s]  that the child's
+[1944.24s -> 1946.24s]  signal handler is going to be that one.
+[1946.24s -> 1948.24s]  Good questions. Yeah.
+[1948.24s -> 1950.24s]  Wait, will handler one return
+[1950.24s -> 1952.24s]  to the parent after it finishes?
+[1952.24s -> 1954.24s]  Handler one
+[1954.24s -> 1956.24s]  does what? Handler one
+[1956.24s -> 1958.24s]  sends a signal to
+[1958.24s -> 1960.24s]  it turns out that it's the child
+[1960.24s -> 1962.24s]  and then it returns back to the
+[1962.24s -> 1964.24s]  parent. So if there was anything
+[1964.24s -> 1966.24s]  that happened after
+[1966.24s -> 1968.24s]  the child's
+[1968.24s -> 1970.24s]  signal down here, yes
+[1970.24s -> 1972.24s]  it would
+[1972.24s -> 1974.24s]  happen. Good question.
+[1974.24s -> 1976.24s]  Yeah.
+[1976.24s -> 1978.24s]  Can you explain why
+[1978.24s -> 1980.24s]  in handler one
+[1980.24s -> 1982.24s]  the PID returns to the child?
+[1982.24s -> 1984.24s]  Ah, this is a very good question.
+[1984.24s -> 1986.24s]  Wait, why does the PID in handler one
+[1986.24s -> 1988.24s]  refer to the child? Where did we
+[1988.24s -> 1990.24s]  define PID?
+[1990.24s -> 1992.24s]  Global variable.
+[1992.24s -> 1994.24s]  Where did we set PID?
+[1994.24s -> 1996.24s]  Well, it's set when we
+[1996.24s -> 1998.24s]  call fork.
+[1998.24s -> 2000.24s]  Who gets the return
+[2000.24s -> 2002.24s]  value of zero?
+[2002.24s -> 2004.24s]  The child. Who gets the return value of the
+[2004.24s -> 2006.24s]  child? The parent.
+[2006.24s -> 2008.24s]  This is the parent's signal handler
+[2008.24s -> 2010.24s]  therefore the PID
+[2010.24s -> 2012.24s]  refers to the child's PID
+[2012.24s -> 2014.24s]  because that's when it got set.
+[2014.24s -> 2016.24s]  Yeah, very good question. This question has
+[2016.24s -> 2018.24s]  some tricky parts in it. Eva.
+[2018.24s -> 2020.24s]  Are global variables shared in memory space?
+[2020.24s -> 2022.24s]  Yeah, you tell me.
+[2022.24s -> 2024.24s]  Are global variables shared in memory space?
+[2024.24s -> 2026.24s]  They are not
+[2026.24s -> 2028.24s]  shared between child and
+[2028.24s -> 2030.24s]  parent. Completely separate.
+[2030.24s -> 2032.24s]  Remember, this is the beautiful thing about
+[2032.24s -> 2034.24s]  fork. The entire memory
+[2034.24s -> 2036.24s]  space gets copied
+[2036.24s -> 2038.24s]  and it only copied when things changed.
+[2038.24s -> 2040.24s]  That happens to be one place where it changes. PID is now
+[2040.24s -> 2042.24s]  going to be a different value. But no, they're not
+[2042.24s -> 2044.24s]  shared at all. If you want to share
+[2044.24s -> 2046.24s]  you have to set up some shared memory. You'll see
+[2046.24s -> 2048.24s]  an example of this in lab
+[2048.24s -> 2050.24s]  this week.
+[2050.24s -> 2052.24s]  Other questions before we run through?
+[2056.24s -> 2058.24s]  What is the return value for weight PID?
+[2058.24s -> 2060.24s]  Good question. It is
+[2060.24s -> 2062.24s]  the PID of the process
+[2062.24s -> 2064.24s]  that it's cleaning up.
+[2064.24s -> 2066.24s]  Or,
+[2066.24s -> 2068.24s]  it's negative
+[2068.24s -> 2070.24s]  one if there are no more
+[2070.24s -> 2072.24s]  children processes for
+[2072.24s -> 2074.24s]  that particular process.
+[2074.24s -> 2076.24s]  It could be zero
+[2076.24s -> 2078.24s]  if you have w no hang, but we don't.
+[2084.24s -> 2086.24s]  Yeah, what is this while true right here?
+[2088.24s -> 2090.24s]  It's a spin.
+[2090.24s -> 2092.24s]  So it just goes and spins right
+[2092.24s -> 2094.24s]  there forever and stops the child
+[2094.24s -> 2096.24s]  right there until something else
+[2096.24s -> 2098.24s]  happens like the signal handler gets
+[2098.24s -> 2100.24s]  called and then it exits.
+[2100.24s -> 2102.24s]  So it's definitely going to spin there.
+[2110.24s -> 2112.24s]  It does not exit the while loop.
+[2112.24s -> 2114.24s]  No, you're actually right. But look what happens
+[2114.24s -> 2116.24s]  in the child in the signal handler.
+[2116.24s -> 2118.24s]  You get an exit which means you're killing the process.
+[2118.24s -> 2120.24s]  Yeah, you had a question.
+[2120.24s -> 2122.24s]  When a parent is waiting on a child
+[2122.24s -> 2124.24s]  and receives a signal from the child
+[2124.24s -> 2126.24s]  does the parent wait until the child
+[2126.24s -> 2128.24s]  finishes?
+[2128.24s -> 2130.24s]  Oh, okay, hold on.
+[2130.24s -> 2132.24s]  That was the wrong question.
+[2132.24s -> 2134.24s]  Can you repeat it one more time?
+[2134.24s -> 2136.24s]  When the parent is waiting
+[2136.24s -> 2138.24s]  and receives a signal from the child
+[2138.24s -> 2140.24s]  does the signal handle the child's parents
+[2140.24s -> 2142.24s]  before the child
+[2142.24s -> 2144.24s]  finishes?
+[2144.24s -> 2146.24s]  The signal is handled by the parent before the child
+[2146.24s -> 2148.24s]  finishes, yes. Remember, when a signal is sent
+[2148.24s -> 2150.24s]  this immediately interrupts the program.
+[2150.24s -> 2152.24s]  Whatever it's doing, if it's waiting for the child
+[2152.24s -> 2154.24s]  I'll do this other thing now before it finishes
+[2154.24s -> 2156.24s]  waiting for the child, yes. Good question.
+[2156.24s -> 2158.24s]  Okay, let's go through this
+[2158.24s -> 2160.24s]  and see what the output is.
+[2160.24s -> 2162.24s]  Okay, let's just see what happens.
+[2162.24s -> 2164.24s]  I should have left this here.
+[2164.24s -> 2166.24s]  Parent and
+[2166.24s -> 2168.24s]  the child one is down here.
+[2168.24s -> 2170.24s]  Okay, so if we go through
+[2170.24s -> 2172.24s]  we look at this and we go, all right,
+[2172.24s -> 2174.24s]  in main we've got a signal handler for the parent
+[2174.24s -> 2176.24s]  then we fork.
+[2176.24s -> 2178.24s]  For the child we set up the signal handler for the child.
+[2178.24s -> 2180.24s]  Great.
+[2180.24s -> 2182.24s]  Then we send
+[2182.24s -> 2184.24s]  the signal to
+[2184.24s -> 2186.24s]  the parent of SIG user one
+[2186.24s -> 2188.24s]  which means that the parent
+[2188.24s -> 2190.24s]  gets signaled
+[2190.24s -> 2192.24s]  whatever the parent happens to have been doing
+[2192.24s -> 2194.24s]  let's assume that the parent kept going.
+[2194.24s -> 2196.24s]  If the parent had kept going
+[2196.24s -> 2198.24s]  it would get down here
+[2198.24s -> 2200.24s]  and wait and not print anything.
+[2200.24s -> 2202.24s]  There's no way the parent's going to print anything at this point
+[2202.24s -> 2204.24s]  until the child process ends.
+[2204.24s -> 2206.24s]  So we've said, nope, not going to print anything
+[2206.24s -> 2208.24s]  not going to end up here
+[2208.24s -> 2210.24s]  until after the child ends.
+[2210.24s -> 2212.24s]  So the signal
+[2212.24s -> 2214.24s]  gets sent whether or not
+[2214.24s -> 2216.24s]  the parent is here or not is irrelevant
+[2216.24s -> 2218.24s]  but whatever, the parent signal handler
+[2218.24s -> 2220.24s]  gets called. Okay, the parent's
+[2220.24s -> 2222.24s]  counter is what at this point?
+[2222.24s -> 2224.24s]  Counter starts out
+[2224.24s -> 2226.24s]  at zero, becomes one
+[2226.24s -> 2228.24s]  when we do ++ and then it prints
+[2228.24s -> 2230.24s]  out the counter value.
+[2230.24s -> 2232.24s]  So one is definitely going to get printed
+[2232.24s -> 2234.24s]  before anything else happens.
+[2244.24s -> 2246.24s]  If you comment out the while true, how did the functionality change?
+[2246.24s -> 2248.24s]  We will get there.
+[2248.24s -> 2250.24s]  That's actually the next question.
+[2250.24s -> 2252.24s]  We're not quite there yet.
+[2252.24s -> 2254.24s]  We're still answering what the output is.
+[2254.24s -> 2256.24s]  But we'll get there.
+[2256.24s -> 2258.24s]  That's next. Good question.
+[2258.24s -> 2260.24s]  So at this point we've said
+[2260.24s -> 2262.24s]  the parent's going to print out one
+[2262.24s -> 2264.24s]  and then it is going to send
+[2264.24s -> 2266.24s]  a signal to the PID value
+[2266.24s -> 2268.24s]  which happens to be the child
+[2268.24s -> 2270.24s]  because as we discussed before, it's global
+[2270.24s -> 2272.24s]  and it got created in the
+[2272.24s -> 2274.24s]  fork as a result of the fork.
+[2274.24s -> 2276.24s]  So it sends that signal to the child
+[2276.24s -> 2278.24s]  which ends up in here
+[2278.24s -> 2280.24s]  and then
+[2280.24s -> 2282.24s]  prints the child's
+[2282.24s -> 2284.24s]  by the way, the child's counter is still
+[2284.24s -> 2286.24s]  zero.
+[2286.24s -> 2288.24s]  So it is going to then print out
+[2288.24s -> 2290.24s]  it's going to add
+[2290.24s -> 2292.24s]  ten to zero, so it's going to be
+[2292.24s -> 2294.24s]  ten, so the counter becomes ten
+[2294.24s -> 2296.24s]  and then it's going to print that out.
+[2296.24s -> 2298.24s]  Here's what we have so far. We've got one printed
+[2298.24s -> 2300.24s]  then we are going to print ten from
+[2300.24s -> 2302.24s]  the child and then the child is
+[2302.24s -> 2304.24s]  going to exit and not do anything
+[2304.24s -> 2306.24s]  else. It's going to actually complete its
+[2306.24s -> 2308.24s]  process.
+[2308.24s -> 2310.24s]  And then down here
+[2310.24s -> 2312.24s]  we have in the parent
+[2312.24s -> 2314.24s]  the child is now ended.
+[2314.24s -> 2316.24s]  The return value for weight PID
+[2316.24s -> 2318.24s]  is the child's PID, so it's
+[2318.24s -> 2320.24s]  greater than zero, so the
+[2320.24s -> 2322.24s]  parent's counter
+[2322.24s -> 2324.24s]  goes up by a
+[2324.24s -> 2326.24s]  thousand, so it starts at one and now it's
+[2326.24s -> 2328.24s]  a thousand and one
+[2328.24s -> 2330.24s]  and that gets printed. One, zero, zero, one.
+[2330.24s -> 2332.24s]  And then the
+[2332.24s -> 2334.24s]  parent process ends.
+[2334.24s -> 2336.24s]  End of story.
+[2336.24s -> 2338.24s]  That's the only output we could have for this program.
+[2338.24s -> 2340.24s]  Question?
+[2362.24s -> 2364.24s]  Right, so the question
+[2364.24s -> 2366.24s]  is, how do you decide
+[2366.24s -> 2368.24s]  which fork to take
+[2368.24s -> 2370.24s]  first, which way to go first, the parent or the
+[2370.24s -> 2372.24s]  child or whatever. It is a little
+[2372.24s -> 2374.24s]  tricky. You're going to end up having to
+[2374.24s -> 2376.24s]  keep track of multiple things and it might be
+[2376.24s -> 2378.24s]  the case that
+[2378.24s -> 2380.24s]  you get to a point where you go, oh, well
+[2380.24s -> 2382.24s]  this is dependent on what happens to the other one or
+[2382.24s -> 2384.24s]  it's not. It could happen in a race condition
+[2384.24s -> 2386.24s]  situation. This is why I always write these
+[2386.24s -> 2388.24s]  things down and I always keep track of whose counter is where
+[2388.24s -> 2390.24s]  and if I get to a point where I go, oh,
+[2390.24s -> 2392.24s]  the nice thing is if you get to a weight
+[2392.24s -> 2394.24s]  and it's for the child, you go, ah, I know that
+[2394.24s -> 2396.24s]  at this point nothing else is going to happen here until
+[2396.24s -> 2398.24s]  the child ends and then I would go start looking at the child.
+[2398.24s -> 2400.24s]  So it definitely
+[2400.24s -> 2402.24s]  takes a little finesse. You'll have to practice these a few times.
+[2402.24s -> 2404.24s]  Like go back to this one when you do the practice and do this one again
+[2404.24s -> 2406.24s]  and say which order do I want to do
+[2406.24s -> 2408.24s]  this in. Good question.
+[2420.24s -> 2422.24s]  If the, the question is
+[2422.24s -> 2424.24s]  is there a way for the child to get killed
+[2424.24s -> 2426.24s]  before we signal, or before
+[2426.24s -> 2428.24s]  we go into the weight, it would be okay
+[2428.24s -> 2430.24s]  if a child ended before we went into
+[2430.24s -> 2432.24s]  weight PID? That would be fine.
+[2432.24s -> 2434.24s]  The return value
+[2434.24s -> 2436.24s]  is still, if there was one
+[2436.24s -> 2438.24s]  weighting, it would give you that one back.
+[2438.24s -> 2440.24s]  Yeah, good question. So weight, the return value
+[2440.24s -> 2442.24s]  for weight PID is if there are no more children
+[2442.24s -> 2444.24s]  that have weighed that you haven't cleaned up yet, they'll give you
+[2444.24s -> 2446.24s]  back the, it'll still give you back one of the ones
+[2446.24s -> 2448.24s]  that hasn't been cleaned up yet.
+[2448.24s -> 2450.24s]  Good question. Yeah.
+[2450.24s -> 2452.24s]  Can you go over it one more time?
+[2452.24s -> 2454.24s]  Why, when you call kill PID
+[2454.24s -> 2456.24s]  and handler 1
+[2456.24s -> 2458.24s]  and that PID is the child's
+[2458.24s -> 2460.24s]  PID, why?
+[2460.24s -> 2462.24s]  Because you don't call signal,
+[2462.24s -> 2464.24s]  because you call signal twice
+[2464.24s -> 2466.24s]  in the child
+[2466.24s -> 2468.24s]  with siguser 1, why doesn't
+[2468.24s -> 2470.24s]  end up giving both?
+[2470.24s -> 2472.24s]  Right. So the question is, wait, when you
+[2472.24s -> 2474.24s]  call kill on, with
+[2474.24s -> 2476.24s]  siguser 1 to the child, why doesn't
+[2476.24s -> 2478.24s]  the handler 1 and handler
+[2478.24s -> 2480.24s]  2 happen or whatever? When you
+[2480.24s -> 2482.24s]  say signal,
+[2482.24s -> 2484.24s]  whatever other function is already
+[2484.24s -> 2486.24s]  being called gets replaced with the new one.
+[2486.24s -> 2488.24s]  So there's no
+[2488.24s -> 2490.24s]  doubling up on the signals and so forth.
+[2490.24s -> 2492.24s]  There are other languages where that does happen.
+[2492.24s -> 2494.24s]  Not in this, not in C.
+[2494.24s -> 2496.24s]  Doesn't happen that way. Yeah, good question.
+[2496.24s -> 2498.24s]  Yes.
+[2498.24s -> 2500.24s]  Can you explain why, again, if you
+[2500.24s -> 2502.24s]  wait for the child process
+[2502.24s -> 2504.24s]  and get scored a reason for it, what do you call
+[2504.24s -> 2506.24s]  the PID?
+[2506.24s -> 2508.24s]  Yeah, so the question is, wait,
+[2508.24s -> 2510.24s]  if you say the child process ends
+[2510.24s -> 2512.24s]  before wait PID is called, does that still mean
+[2512.24s -> 2514.24s]  that wait PID gets the PID of the
+[2514.24s -> 2516.24s]  child? Yes. Wait PID,
+[2516.24s -> 2518.24s]  the operating system is keeping track of all the
+[2518.24s -> 2520.24s]  children that are ending, in this case only
+[2520.24s -> 2522.24s]  one, but all the children are ending, and then
+[2522.24s -> 2524.24s]  it's, if you say wait PID
+[2524.24s -> 2526.24s]  with a negative 1, it
+[2526.24s -> 2528.24s]  will say, oh, here's one that hasn't been cleaned up yet,
+[2528.24s -> 2530.24s]  give you back that PID and
+[2530.24s -> 2532.24s]  the status and so forth, so that you can
+[2532.24s -> 2534.24s]  clean it up. Good question.
+[2534.24s -> 2536.24s]  Alright, a lot of nuance
+[2536.24s -> 2538.24s]  from these kinds of problems.
+[2538.24s -> 2540.24s]  Get to the heart of these things, anyway.
+[2540.24s -> 2542.24s]  Kind of sitting on the second
+[2542.24s -> 2544.24s]  bullet point, when
+[2544.24s -> 2546.24s]  because it's spinning,
+[2546.24s -> 2548.24s]  I don't see how that would affect the output.
+[2548.24s -> 2550.24s]  Yeah, good question.
+[2550.24s -> 2552.24s]  Let's go on to the question about
+[2552.24s -> 2554.24s]  the next bullet point.
+[2554.24s -> 2556.24s]  What are the two potential
+[2556.24s -> 2558.24s]  outputs, now we're telling you there's two,
+[2558.24s -> 2560.24s]  of the above program if the while
+[2560.24s -> 2562.24s]  true is gone? So we're not spinning
+[2562.24s -> 2564.24s]  anymore.
+[2564.24s -> 2566.24s]  If we're not spinning
+[2566.24s -> 2568.24s]  anymore, what could happen here?
+[2568.24s -> 2570.24s]  It's definitely going to still
+[2570.24s -> 2572.24s]  do the same thing as before
+[2572.24s -> 2574.24s]  where it's got to print 1 first.
+[2574.24s -> 2576.24s]  There's no other way for that to happen, right?
+[2576.24s -> 2578.24s]  The signal is going to get,
+[2578.24s -> 2580.24s]  the parent is going to get signaled
+[2580.24s -> 2582.24s]  in here, and we're definitely going to get the 1.
+[2582.24s -> 2584.24s]  Now, we
+[2584.24s -> 2586.24s]  could, it could happen that
+[2586.24s -> 2588.24s]  the child comes
+[2588.24s -> 2590.24s]  off the processor here, and
+[2590.24s -> 2592.24s]  we end up going into the
+[2592.24s -> 2594.24s]  signal handler for 1, printing 1,
+[2594.24s -> 2596.24s]  sending the signal to the signal
+[2596.24s -> 2598.24s]  handler for the child, and printing 10,
+[2598.24s -> 2600.24s]  and then
+[2600.24s -> 2602.24s]  the child finishes, and we still print
+[2602.24s -> 2604.24s]  1001. That's still
+[2604.24s -> 2606.24s]  one way, one thing that could happen.
+[2606.24s -> 2608.24s]  Okay? The other
+[2608.24s -> 2610.24s]  thing that could happen is what?
+[2610.24s -> 2612.24s]  What if
+[2612.24s -> 2614.24s]  this didn't
+[2614.24s -> 2616.24s]  end right here, and this actually ended,
+[2616.24s -> 2618.24s]  the child ended before
+[2618.24s -> 2620.24s]  this signal
+[2620.24s -> 2622.24s]  went to the child handler process.
+[2622.24s -> 2624.24s]  Right? Or the child handler.
+[2624.24s -> 2626.24s]  Well, then, when you
+[2626.24s -> 2628.24s]  say, somebody asked this earlier, when you
+[2628.24s -> 2630.24s]  say, send a signal to
+[2630.24s -> 2632.24s]  a process that doesn't
+[2632.24s -> 2634.24s]  exist, well, the return value
+[2634.24s -> 2636.24s]  for kill is probably going to be negative 1
+[2636.24s -> 2638.24s]  or something. We don't actually care. It's not going to
+[2638.24s -> 2640.24s]  crash the parent or anything. It's just going to give you an
+[2640.24s -> 2642.24s]  error, and say, oh, you tried to send a signal
+[2642.24s -> 2644.24s]  but the process doesn't exist, what are you doing?
+[2644.24s -> 2646.24s]  But that's all that will happen. It won't actually crash
+[2646.24s -> 2648.24s]  anything or anything. So what would happen?
+[2648.24s -> 2650.24s]  This would not, nothing would get called here.
+[2650.24s -> 2652.24s]  So this 10 would just go away.
+[2652.24s -> 2654.24s]  Would the 1001 still happen?
+[2654.24s -> 2656.24s]  Sure it would, because
+[2656.24s -> 2658.24s]  it would then end up
+[2658.24s -> 2660.24s]  down, you'd still, the child process would
+[2660.24s -> 2662.24s]  still end, it would still return the
+[2662.24s -> 2664.24s]  value of the child
+[2664.24s -> 2666.24s]  process from WaitPID, therefore
+[2666.24s -> 2668.24s]  you would still print 1001.
+[2668.24s -> 2670.24s]  Those are the two solutions there.
+[2670.24s -> 2672.24s]  So, earlier,
+[2672.24s -> 2674.24s]  you said something
+[2674.24s -> 2676.24s]  to the effect that sometimes
+[2676.24s -> 2678.24s]  the handler will still
+[2678.24s -> 2680.24s]  go off
+[2680.24s -> 2682.24s]  even if the
+[2682.24s -> 2684.24s]  child is terminated?
+[2684.24s -> 2686.24s]  Well, so I didn't really
+[2686.24s -> 2688.24s]  say that if the child is terminated, the
+[2688.24s -> 2690.24s]  signal handler is gone. But there's
+[2690.24s -> 2692.24s]  definitely a time period in there where you might
+[2692.24s -> 2694.24s]  have returned from main, and the signal
+[2694.24s -> 2696.24s]  handler is still there.
+[2696.24s -> 2698.24s]  What do you do with that case? The signal handler might
+[2698.24s -> 2700.24s]  still go. But at some point, it's
+[2700.24s -> 2702.24s]  going to, the operating system is going to shut it down.
+[2702.24s -> 2704.24s]  But you just don't know exactly when.
+[2704.24s -> 2706.24s]  So you can kind of assume that after the
+[2706.24s -> 2708.24s]  return zero, it's going to be
+[2708.24s -> 2710.24s]  okay, you're not going to get any more signals called.
+[2710.24s -> 2712.24s]  But it's not quite as cut and dry as you
+[2712.24s -> 2714.24s]  might hope in that case.
+[2714.24s -> 2716.24s]  Could you ever get one 1001
+[2716.24s -> 2718.24s]  10?
+[2718.24s -> 2720.24s]  Could you ever get one 1001 10? How could you ever
+[2720.24s -> 2722.24s]  get the 1001
+[2722.24s -> 2724.24s]  if the child process has not
+[2724.24s -> 2726.24s]  finished yet?
+[2726.24s -> 2728.24s]  Because of what you just said, if it has finished
+[2728.24s -> 2730.24s]  but it hasn't received its signal yet,
+[2730.24s -> 2732.24s]  then you could get
+[2732.24s -> 2734.24s]  waitPID done
+[2734.24s -> 2736.24s]  and then print 1001 and then
+[2736.24s -> 2738.24s]  in the cleanup of the child?
+[2738.24s -> 2740.24s]  Or does waitPID only do that?
+[2740.24s -> 2742.24s]  WaitPID waits until the child is
+[2742.24s -> 2744.24s]  completely finished.
+[2744.24s -> 2746.24s]  No more signals than anything.
+[2746.24s -> 2748.24s]  It's completely finished and all ready to be cleaned up.
+[2748.24s -> 2750.24s]  Okay.
+[2750.24s -> 2764.24s]  WaitPID will only return one not if there are no children still running, but if there are no children that have not been cleaned up yet?
+[2764.24s -> 2766.24s]  Yes, waitPID, the question was
+[2766.24s -> 2768.24s]  waitPID, and it was a good comment,
+[2768.24s -> 2770.24s]  waitPID will, if there are children that
+[2770.24s -> 2772.24s]  have not been cleaned up, even if they're completed,
+[2772.24s -> 2774.24s]  it will return the PID of
+[2774.24s -> 2776.24s]  those children until you keep calling
+[2776.24s -> 2778.24s]  it in a loop, let's say, and then eventually there aren't any other children
+[2778.24s -> 2780.24s]  that haven't been cleaned up, and they're all finished,
+[2780.24s -> 2782.24s]  and therefore it will return
+[2782.24s -> 2784.24s]  negative one.
+[2784.24s -> 2786.24s]  Okay, there's a lot going on there.
+[2786.24s -> 2788.24s]  Yes?
+[2788.24s -> 2800.24s]  The return, see, now if you say exit zero from a signal handler, it means that
+[2800.24s -> 2802.24s]  the program was,
+[2802.24s -> 2804.24s]  or the process was interrupted
+[2804.24s -> 2806.24s]  at some point, goes to the signal handler
+[2806.24s -> 2808.24s]  and then the signal handler closes down the whole process
+[2808.24s -> 2810.24s]  with the exit zero.
+[2810.24s -> 2812.24s]  If it returned, you would end up
+[2812.24s -> 2814.24s]  slotting back into the original process
+[2814.24s -> 2816.24s]  wherever it got interrupted.
+[2816.24s -> 2818.24s]  If it's returned, that's what happens there.
+[2818.24s -> 2820.24s]  The return zero from main is just a return like any other function,
+[2820.24s -> 2822.24s]  and there's going to be some time in there
+[2822.24s -> 2824.24s]  when the main has not
+[2824.24s -> 2826.24s]  been completely destroyed,
+[2826.24s -> 2828.24s]  or the process is not completely destroyed,
+[2828.24s -> 2830.24s]  and you still might get a signal handler,
+[2830.24s -> 2832.24s]  but that's the only,
+[2832.24s -> 2834.24s]  it's not the biggest deal.
+[2834.24s -> 2836.24s]  Good.
+[2836.24s -> 2838.24s]  Now, the last bullet here,
+[2838.24s -> 2840.24s]  we've talked about how the two processes
+[2840.24s -> 2842.24s]  could be scheduled.
+[2842.24s -> 2844.24s]  Now let's say that we did get rid of this exit zero,
+[2844.24s -> 2846.24s]  let's say that this exit zero
+[2846.24s -> 2848.24s]  is now also gone,
+[2848.24s -> 2850.24s]  so we've got that gone and we've got that gone,
+[2850.24s -> 2852.24s]  we would return from the handler
+[2852.24s -> 2854.24s]  back to here,
+[2854.24s -> 2858.24s]  or it might not even have gone into the handler yet,
+[2858.24s -> 2860.24s]  we would end up down here.
+[2860.24s -> 2862.24s]  What is the weight PID
+[2862.24s -> 2864.24s]  for the child process
+[2864.24s -> 2866.24s]  always going to return?
+[2866.24s -> 2868.24s]  Negative one.
+[2868.24s -> 2870.24s]  Because there are no grandchildren
+[2870.24s -> 2872.24s]  in this case.
+[2872.24s -> 2874.24s]  So there are no children of the child,
+[2874.24s -> 2876.24s]  therefore, when you call weight PID
+[2876.24s -> 2878.24s]  in the child process,
+[2878.24s -> 2880.24s]  the operation goes up,
+[2880.24s -> 2882.24s]  no more children, here's your negative one,
+[2882.24s -> 2884.24s]  so it would never end up with a greater than zero value
+[2884.24s -> 2886.24s]  to ever do anything else.
+[2886.24s -> 2888.24s]  So really it's the same as the previous situation.
+[2888.24s -> 2890.24s]  If there were a grandchild,
+[2890.24s -> 2892.24s]  would the parent also
+[2892.24s -> 2894.24s]  return?
+[2894.24s -> 2896.24s]  Yeah, good question.
+[2896.24s -> 2898.24s]  If there was a grandchild, the parent and the grandchild
+[2898.24s -> 2900.24s]  are completely dissociated from each other.
+[2900.24s -> 2902.24s]  It doesn't matter that there are grandchildren
+[2902.24s -> 2904.24s]  processes at all.
+[2904.24s -> 2906.24s]  But in a way, aren't you always waiting for a grandchild
+[2906.24s -> 2908.24s]  because the parent would be waiting for a child,
+[2908.24s -> 2910.24s]  the child would be waiting for the grandchild.
+[2910.24s -> 2912.24s]  Well, now we're getting into nuance.
+[2912.24s -> 2914.24s]  Yes, if the child was
+[2914.24s -> 2916.24s]  waiting for a grandchild,
+[2916.24s -> 2918.24s]  you could have a situation where
+[2918.24s -> 2920.24s]  the child forks a grandchild
+[2920.24s -> 2922.24s]  and then the child ends
+[2922.24s -> 2924.24s]  and the fact that this grandchild
+[2924.24s -> 2926.24s]  is out there doing its thing, the parent
+[2926.24s -> 2928.24s]  can still finish
+[2928.24s -> 2930.24s]  and still get its weight PID of negative one eventually.
+[2930.24s -> 2932.24s]  The grandchild is not connected to the parent
+[2932.24s -> 2934.24s]  in any meaningful way.
+[2934.24s -> 2936.24s]  Good question.
+[2936.24s -> 2938.24s]  There's a lot of stuff on that.
+[2938.24s -> 2940.24s]  There are other questions on practice midterms
+[2940.24s -> 2942.24s]  that you will see.
+[2942.24s -> 2944.24s]  So
+[2944.24s -> 2946.24s]  here's the bottom line with some of the
+[2946.24s -> 2948.24s]  material we've covered.
+[2948.24s -> 2950.24s]  The stuff we have done
+[2950.24s -> 2952.24s]  is all the stuff you need to know for the final
+[2952.24s -> 2954.24s]  except in lab
+[2954.24s -> 2956.24s]  this week, they're going to go over a couple minor
+[2956.24s -> 2958.24s]  things about virtual memory
+[2958.24s -> 2960.24s]  and about
+[2960.24s -> 2962.24s]  why am I blanking on it.
+[2962.24s -> 2964.24s]  They're going to also go over
+[2964.24s -> 2966.24s]  another concept
+[2966.24s -> 2968.24s]  about processes
+[2968.24s -> 2970.24s]  that are, about the operating system
+[2970.24s -> 2972.24s]  holding a list of processes
+[2972.24s -> 2974.24s]  that are running
+[2974.24s -> 2976.24s]  or processes that are
+[2976.24s -> 2978.24s]  stopped or processes
+[2978.24s -> 2980.24s]  that are blocked and there are three
+[2980.24s -> 2982.24s]  different things. So in lab you will talk about that
+[2982.24s -> 2984.24s]  and then you will also
+[2984.24s -> 2986.24s]  talk about virtual memory a little bit.
+[2986.24s -> 2988.24s]  Other than that, the rest of starting in the next
+[2988.24s -> 2990.24s]  30 seconds is going
+[2990.24s -> 2992.24s]  to be after the midterm. So we're starting
+[2992.24s -> 2994.24s]  threads in a minute and threads
+[2994.24s -> 2996.24s]  is going to be after the midterm. In fact,
+[2996.24s -> 2998.24s]  the next assignment
+[2998.24s -> 3000.24s]  doesn't even use threads. So we're kind of jumping
+[3000.24s -> 3002.24s]  ahead in terms of learning threads before
+[3002.24s -> 3004.24s]  you finish this assignment or even do the next
+[3004.24s -> 3006.24s]  assignment. But there's a lot
+[3006.24s -> 3008.24s]  to happen on threads before you can get to the next
+[3008.24s -> 3010.24s]  assignment. So that's why we're doing that now.
+[3010.24s -> 3012.24s]  Okay? Yeah, question.
+[3012.24s -> 3014.24s]  This week's lab is in scope for midterm.
+[3014.24s -> 3016.24s]  This week's lab is in scope for midterm.
+[3016.24s -> 3018.24s]  Yes.
+[3018.24s -> 3020.24s]  Is the fourth assignment
+[3020.24s -> 3022.24s]  coming out Sunday or after?
+[3022.24s -> 3024.24s]  The fourth assignment is coming out Sunday
+[3024.24s -> 3026.24s]  but it's not due until
+[3026.24s -> 3028.24s]  a week and a half
+[3028.24s -> 3030.24s]  It's longer than you should
+[3030.24s -> 3032.24s]  need but it's longer than a regular
+[3032.24s -> 3034.24s]  weekend. This one's a longer one because there's four
+[3034.24s -> 3036.24s]  different parts to it. The next one is kind of
+[3036.24s -> 3038.24s]  not as many parts. It's still a big project
+[3038.24s -> 3040.24s]  but it has a longer time because of the midterm.
+[3040.24s -> 3042.24s]  So I don't want to
+[3042.24s -> 3044.24s]  make you overtaxed on trying to
+[3044.24s -> 3046.24s]  manage both of those. You still might want to start the
+[3046.24s -> 3048.24s]  the fourth assignment
+[3048.24s -> 3050.24s]  is going to be useful for helping you
+[3050.24s -> 3052.24s]  with the midterm just because of the same sort of stuff.
+[3052.24s -> 3054.24s]  But it's not critical
+[3054.24s -> 3056.24s]  that you finish it before the midterm or even
+[3056.24s -> 3058.24s]  when you focus too much on it
+[3058.24s -> 3060.24s]  because I'd rather you focus on the study.
+[3060.24s -> 3062.24s]  Good question.
+[3062.24s -> 3064.24s]  Okay, so let's move on
+[3064.24s -> 3066.24s]  to
+[3066.24s -> 3068.24s]  and we already covered all that.
+[3068.24s -> 3070.24s]  Let me cover that, cover that, cover that.
+[3070.24s -> 3072.24s]  There we go.
+[3072.24s -> 3074.24s]  Threads. So far in class
+[3074.24s -> 3076.24s]  we've talked about processes.
+[3076.24s -> 3078.24s]  And this is that multiple
+[3078.24s -> 3080.24s]  processes are
+[3080.24s -> 3082.24s]  caused by
+[3082.24s -> 3084.24s]  forking
+[3084.24s -> 3086.24s]  or by starting another program.
+[3086.24s -> 3088.24s]  Okay, and
+[3088.24s -> 3090.24s]  as we've already talked about today,
+[3090.24s -> 3092.24s]  they do not share any memory.
+[3092.24s -> 3094.24s]  Processes have separate memories
+[3094.24s -> 3096.24s]  and they are very
+[3096.24s -> 3098.24s]  independent. And the only way to really communicate
+[3098.24s -> 3100.24s]  between two processes is to
+[3100.24s -> 3102.24s]  actually send a signal.
+[3102.24s -> 3104.24s]  You can do shared memory
+[3104.24s -> 3106.24s]  but we didn't really cover that. You'll see it in lab
+[3106.24s -> 3108.24s]  but you don't need to know about shared memory
+[3108.24s -> 3110.24s]  for the exam or any
+[3110.24s -> 3112.24s]  projects.
+[3112.24s -> 3114.24s]  Threads on the other hand are
+[3114.24s -> 3116.24s]  similar to processes
+[3116.24s -> 3118.24s]  except that they do share
+[3118.24s -> 3120.24s]  memory and they are run by a
+[3120.24s -> 3122.24s]  separate engine that manages
+[3122.24s -> 3124.24s]  threads. Many operating
+[3124.24s -> 3126.24s]  systems will have threads
+[3126.24s -> 3128.24s]  kind of built into them
+[3128.24s -> 3130.24s]  but it's almost more a programming language
+[3130.24s -> 3132.24s]  sort of thing as well.
+[3132.24s -> 3134.24s]  So what happens with a thread
+[3134.24s -> 3136.24s]  okay, you still get
+[3136.24s -> 3138.24s]  you still get two things
+[3138.24s -> 3140.24s]  that can happen concurrently
+[3140.24s -> 3142.24s]  okay, you have a stack segment
+[3142.24s -> 3144.24s]  which is the regular
+[3144.24s -> 3146.24s]  stack segment that you would have for a program
+[3146.24s -> 3148.24s]  that now gets subdivided between
+[3148.24s -> 3150.24s]  all of your threads. So it is
+[3150.24s -> 3152.24s]  true that if you want to pass information on your
+[3152.24s -> 3154.24s]  stack to another
+[3154.24s -> 3156.24s]  thread, you could do that by just passing a pointer
+[3156.24s -> 3158.24s]  because they both share the same memory space
+[3158.24s -> 3160.24s]  in that sense. Global variables
+[3160.24s -> 3162.24s]  are shared. All the other memory
+[3162.24s -> 3164.24s]  is shared
+[3164.24s -> 3166.24s]  to the extent that you need to be
+[3166.24s -> 3168.24s]  careful about that. These are
+[3168.24s -> 3170.24s]  because it's so similar to regular
+[3170.24s -> 3172.24s]  old processes, sometimes we just call them
+[3172.24s -> 3174.24s]  lightweight processes. Why? Because
+[3174.24s -> 3176.24s]  there's not this huge copying
+[3176.24s -> 3178.24s]  endeavor and it's just a little
+[3178.24s -> 3180.24s]  smaller scope on what
+[3180.24s -> 3182.24s]  you can do with threads versus
+[3182.24s -> 3184.24s]  processes.
+[3184.24s -> 3186.24s]  You can't really, well
+[3186.24s -> 3188.24s]  you can mix and match threads
+[3188.24s -> 3190.24s]  in that you can have
+[3190.24s -> 3192.24s]  a process that uses threads.
+[3192.24s -> 3194.24s]  You should not have a thread
+[3194.24s -> 3196.24s]  that forks.
+[3196.24s -> 3198.24s]  It turns out that the two systems don't really like
+[3198.24s -> 3200.24s]  working that way together. It gets very
+[3200.24s -> 3202.24s]  tricky because when you fork, now all of a sudden
+[3202.24s -> 3204.24s]  you've got all these threads that think they have access
+[3204.24s -> 3206.24s]  to other threads that they don't now and
+[3206.24s -> 3208.24s]  don't do that. If you're in a process, you can have
+[3208.24s -> 3210.24s]  threads inside that process. The other way
+[3210.24s -> 3212.24s]  around, don't do.
+[3212.24s -> 3214.24s]  So you have to be a little bit careful
+[3214.24s -> 3216.24s]  with that.
+[3216.24s -> 3218.24s]  Now,
+[3218.24s -> 3220.24s]  what does the thread manager do?
+[3220.24s -> 3222.24s]  Well, it's the same thing that the regular
+[3222.24s -> 3224.24s]  process manager does. It time slices
+[3224.24s -> 3226.24s]  and it switches between the threads
+[3226.24s -> 3228.24s]  just like the
+[3228.24s -> 3230.24s]  process did. It says you get to go a couple lines
+[3230.24s -> 3232.24s]  of your code or one or two or ten or however
+[3232.24s -> 3234.24s]  many it wants. You get to do some lines of
+[3234.24s -> 3236.24s]  your code. Most of the time
+[3236.24s -> 3238.24s]  there's two things that happen to
+[3238.24s -> 3240.24s]  kick a process off
+[3240.24s -> 3242.24s]  I guess two or three things that happen that kick a
+[3242.24s -> 3244.24s]  process off a processor.
+[3244.24s -> 3246.24s]  One is that a time limit expires.
+[3246.24s -> 3248.24s]  You only get so much time to run before
+[3248.24s -> 3250.24s]  the next process gets its turn.
+[3250.24s -> 3252.24s]  The second thing is you're waiting for something
+[3252.24s -> 3254.24s]  and there's lots of things to wait for.
+[3254.24s -> 3256.24s]  If you write to memory or if you read
+[3256.24s -> 3258.24s]  from memory, that can be a very
+[3258.24s -> 3260.24s]  expensive operation
+[3260.24s -> 3262.24s]  as it turns out. In
+[3262.24s -> 3264.24s]  107, we never cared about that. We just said
+[3264.24s -> 3266.24s]  whatever, we don't care about the fact that it's expensive
+[3266.24s -> 3268.24s]  to get memory
+[3268.24s -> 3270.24s]  but it turns out it is. So that could be
+[3270.24s -> 3272.24s]  something that says, the operating system says
+[3272.24s -> 3274.24s]  oh, you want to access memory?
+[3274.24s -> 3276.24s]  Hold on while that memory happens. Let me
+[3276.24s -> 3278.24s]  run this other program or this other process
+[3278.24s -> 3280.24s]  or this other thread and so on and so forth.
+[3280.24s -> 3282.24s]  And then the other one
+[3282.24s -> 3284.24s]  could be if you're actually waiting for some
+[3284.24s -> 3286.24s]  other process like Wait PID.
+[3286.24s -> 3288.24s]  That's another reason it could pop off the
+[3288.24s -> 3290.24s]  actual processor.
+[3290.24s -> 3292.24s]  But anyway, the thread manager
+[3292.24s -> 3294.24s]  organizes
+[3294.24s -> 3296.24s]  these time slices for each
+[3296.24s -> 3298.24s]  process, for each thread
+[3298.24s -> 3300.24s]  and it means that they
+[3300.24s -> 3302.24s]  can go concurrently, they can
+[3302.24s -> 3304.24s]  actually go literally concurrently on different processors.
+[3304.24s -> 3306.24s]  As well, on different cores
+[3306.24s -> 3308.24s]  or processors as well.
+[3308.24s -> 3310.24s]  Alright.
+[3310.24s -> 3312.24s]  As I said, each thread
+[3312.24s -> 3314.24s]  does maintain its own stack
+[3314.24s -> 3316.24s]  but it's part of the bigger
+[3316.24s -> 3318.24s]  stack for that process.
+[3318.24s -> 3320.24s]  And then the virtual
+[3320.24s -> 3322.24s]  address space is all shared.
+[3322.24s -> 3324.24s]  You can get lots of race conditions.
+[3324.24s -> 3326.24s]  We're going to see some examples of this a little
+[3326.24s -> 3328.24s]  later. You can get lots of race conditions.
+[3328.24s -> 3330.24s]  You have to be very careful about those. We'll talk about
+[3330.24s -> 3332.24s]  lots of different ways to manage those.
+[3332.24s -> 3334.24s]  Debugging, as always,
+[3334.24s -> 3336.24s]  can be difficult for concurrent processes.
+[3336.24s -> 3338.24s]  And then it's hard to produce bugs.
+[3338.24s -> 3340.24s]  Okay, there's this thing called the Heisenbug
+[3340.24s -> 3342.24s]  which I've mentioned before maybe.
+[3342.24s -> 3344.24s]  A Heisenbug, which is
+[3344.24s -> 3346.24s]  basically a bug that happens sometimes and not others
+[3346.24s -> 3348.24s]  and you can't tell when it's going to happen
+[3348.24s -> 3350.24s]  and named after Heisenbug.
+[3350.24s -> 3352.24s]  The communication,
+[3352.24s -> 3354.24s]  as I said, is nice and easy between threads.
+[3354.24s -> 3356.24s]  Same process, same memory, so it's nice and easy.
+[3356.24s -> 3358.24s]  There's no memory protection.
+[3358.24s -> 3360.24s]  If you have one thread
+[3360.24s -> 3362.24s]  that starts writing over another
+[3362.24s -> 3364.24s]  thread's memory, well, it can do that
+[3364.24s -> 3366.24s]  because they share it. There's no way to do that in a process
+[3366.24s -> 3368.24s]  because you don't share the memory, but you can do that.
+[3370.24s -> 3372.24s]  Let's see.
+[3372.24s -> 3374.24s]  A pro-anticon,
+[3374.24s -> 3376.24s]  you get the same globals.
+[3376.24s -> 3378.24s]  If you want to share information with a global variable,
+[3378.24s -> 3380.24s]  it's very easy to do, but you have to manage that
+[3380.24s -> 3382.24s]  appropriately to make sure that you don't have race conditions.
+[3382.24s -> 3384.24s]  And then
+[3384.24s -> 3386.24s]  you can also share stack space for pointers.
+[3386.24s -> 3388.24s]  So that's how threads
+[3388.24s -> 3390.24s]  are actually the big idea
+[3390.24s -> 3392.24s]  for threads.
+[3394.24s -> 3396.24s]  You don't get support out of the box
+[3396.24s -> 3398.24s]  in C. There are some libraries you use.
+[3398.24s -> 3400.24s]  Now, today we're going to talk about
+[3400.24s -> 3402.24s]  threads in terms of
+[3402.24s -> 3404.24s]  the C language threads.
+[3404.24s -> 3406.24s]  They're low-level
+[3406.24s -> 3408.24s]  as it turns out, meaning there's some
+[3408.24s -> 3410.24s]  parameters and things that we're going to ignore
+[3410.24s -> 3412.24s]  and you have to pass void star pointers
+[3412.24s -> 3414.24s]  and all that, which is kind of ugly.
+[3414.24s -> 3416.24s]  Next week we're going to start talking about
+[3416.24s -> 3418.24s]  the C++ version of threads.
+[3418.24s -> 3420.24s]  It has its own thread class,
+[3420.24s -> 3422.24s]  which has all these niceties in it
+[3422.24s -> 3424.24s]  that are nice to use and easier
+[3424.24s -> 3426.24s]  and you can use lambda functions
+[3426.24s -> 3428.24s]  and so forth.
+[3428.24s -> 3430.24s]  So once we get to there, you're going to go,
+[3430.24s -> 3432.24s]  the lowest level stuff isn't there.
+[3432.24s -> 3434.24s]  But we're going to talk about
+[3434.24s -> 3436.24s]  some of the ones now.
+[3436.24s -> 3438.24s]  The library that we're going to use is called pthreads.
+[3438.24s -> 3440.24s]  And it generally
+[3440.24s -> 3442.24s]  comes with all Unix and Linux
+[3442.24s -> 3444.24s]  so your Mac has
+[3444.24s -> 3446.24s]  pthreads installed and so forth.
+[3446.24s -> 3448.24s]  There's this weird data type
+[3448.24s -> 3450.24s]  called pthread underscore t
+[3450.24s -> 3452.24s]  that you really don't know much about
+[3452.24s -> 3454.24s]  and you never need to.
+[3454.24s -> 3456.24s]  I say right here that it's opaque.
+[3456.24s -> 3458.24s]  Basically, you don't need to know what it is.
+[3458.24s -> 3460.24s]  It's a struct of sorts that has
+[3460.24s -> 3462.24s]  information that keeps the threads
+[3462.24s -> 3464.24s]  organized, but you don't need to worry about it.
+[3464.24s -> 3466.24s]  You just need to pass it around
+[3466.24s -> 3468.24s]  pointer to a pthread t
+[3468.24s -> 3470.24s]  when you need to. That's all I need about that.
+[3470.24s -> 3472.24s]  And then there's really only two functions
+[3472.24s -> 3474.24s]  we're going to care about.
+[3474.24s -> 3476.24s]  pthread create, which is when you create a pthread
+[3476.24s -> 3478.24s]  as it sounds like, and pthread join
+[3478.24s -> 3480.24s]  pthread join is very
+[3480.24s -> 3482.24s]  similar to wait PID
+[3482.24s -> 3484.24s]  in that if you say pthread join on
+[3484.24s -> 3486.24s]  a thread, it will wait until
+[3486.24s -> 3488.24s]  that thread ends. That's what join does.
+[3488.24s -> 3490.24s]  It says, oh, I'm just going to wait until that thread ends
+[3490.24s -> 3492.24s]  and then I'll move on to the next thing.
+[3492.24s -> 3494.24s]  Alright, so
+[3494.24s -> 3496.24s]  let's look at
+[3496.24s -> 3498.24s]  a particular program here, a relatively
+[3498.24s -> 3500.24s]  simple one.
+[3500.24s -> 3502.24s]  We're going to call it introverts.c
+[3502.24s -> 3504.24s]  Here's what introverts is going to do.
+[3504.24s -> 3506.24s]  It's basically going to have a function
+[3506.24s -> 3508.24s]  that we're going to call
+[3508.24s -> 3510.24s]  as a thread.
+[3510.24s -> 3512.24s]  It is
+[3512.24s -> 3514.24s]  basically we're going to set up the threads
+[3514.24s -> 3516.24s]  and say here's the function that is going to become
+[3516.24s -> 3518.24s]  our thread. So in some sense it's like a signal
+[3518.24s -> 3520.24s]  handler because you've got this function
+[3520.24s -> 3522.24s]  that's going to be used as your thread.
+[3522.24s -> 3524.24s]  Okay, and here's all we're going to do
+[3524.24s -> 3526.24s]  in this function. We're going to do a little
+[3526.24s -> 3528.24s]  printf. We're going to say printf
+[3528.24s -> 3530.24s]  and then
+[3530.24s -> 3532.24s]  I recharge
+[3532.24s -> 3534.24s]  by spending
+[3534.24s -> 3536.24s]  time alone
+[3536.24s -> 3538.24s]  like introverts generally do.
+[3538.24s -> 3540.24s]  It's not a bad thing. As an introvert
+[3540.24s -> 3542.24s]  I know that feeling very well.
+[3542.24s -> 3544.24s]  So that's it. We're just going to return
+[3544.24s -> 3546.24s]  no, the return value is a void star pointer.
+[3546.24s -> 3548.24s]  If we wanted to return anything
+[3548.24s -> 3550.24s]  we have to package it in a void star pointer.
+[3550.24s -> 3552.24s]  In fact, because of generics
+[3552.24s -> 3554.24s]  in C, the only way we actually
+[3554.24s -> 3556.24s]  get any
+[3556.24s -> 3558.24s]  the only way we get any
+[3558.24s -> 3560.24s]  the actual parameters
+[3560.24s -> 3562.24s]  is through a void star as well.
+[3562.24s -> 3564.24s]  It's pretty low level. Go back to your
+[3564.24s -> 3566.24s]  107 days for that.
+[3566.24s -> 3568.24s]  Okay, alright. And then in main
+[3568.24s -> 3570.24s]  what we're going to do is we're going to say
+[3570.24s -> 3572.24s]  let's say we're going to say
+[3572.24s -> 3574.24s]  printf
+[3574.24s -> 3576.24s]  we're going to have six
+[3576.24s -> 3578.24s]  introverts we're going to care about.
+[3578.24s -> 3580.24s]  And all we're going to do is we're going to say
+[3580.24s -> 3582.24s]  printf
+[3582.24s -> 3584.24s]  let's
+[3584.24s -> 3586.24s]  hear from
+[3586.24s -> 3588.24s]  percent zu because it's a size
+[3588.24s -> 3590.24s]  underscore t
+[3590.24s -> 3592.24s]  let's hear from that many introverts
+[3592.24s -> 3594.24s]  like that
+[3594.24s -> 3596.24s]  and then knum
+[3596.24s -> 3598.24s]  introverts
+[3598.24s -> 3600.24s]  like that
+[3600.24s -> 3602.24s]  and then we're going to do our pthread
+[3602.24s -> 3604.24s]  so pthread underscore
+[3604.24s -> 3606.24s]  t introverts
+[3606.24s -> 3608.24s]  and we're going to have an array
+[3608.24s -> 3610.24s]  which is knum introverts
+[3610.24s -> 3612.24s]  okay
+[3612.24s -> 3614.24s]  knum
+[3614.24s -> 3616.24s]  there we go, knum introverts
+[3616.24s -> 3618.24s]  okay we're going to have an array because we're going to keep track
+[3618.24s -> 3620.24s]  of all the different thread ids, basically what these are
+[3620.24s -> 3622.24s]  they're kind of like process ids except they're thread ids
+[3622.24s -> 3624.24s]  okay
+[3624.24s -> 3626.24s]  and then we're going to do a couple of for loops here
+[3626.24s -> 3628.24s]  for size
+[3628.24s -> 3630.24s]  ti equals zero
+[3630.24s -> 3632.24s]  i
+[3632.24s -> 3634.24s]  is less than
+[3634.24s -> 3636.24s]  knum introverts
+[3636.24s -> 3638.24s]  i plus
+[3638.24s -> 3640.24s]  plus
+[3640.24s -> 3642.24s]  and what are we actually going to do? We're going to do
+[3642.24s -> 3644.24s]  pthread
+[3644.24s -> 3646.24s]  create
+[3646.24s -> 3648.24s]  okay, and we have to pass in some
+[3648.24s -> 3650.24s]  information about this, we have to pass in a pointer to
+[3650.24s -> 3652.24s]  the pthread id so that it can populate
+[3652.24s -> 3654.24s]  it, so that we can use it later to join
+[3654.24s -> 3656.24s]  you'll see how that works in a minute
+[3656.24s -> 3658.24s]  introverts
+[3658.24s -> 3660.24s]  i
+[3660.24s -> 3662.24s]  null is if you wanted to pass in
+[3662.24s -> 3664.24s]  the priority of a thread, you can actually prioritize
+[3664.24s -> 3666.24s]  some other things about the threads
+[3666.24s -> 3668.24s]  some other attributes, you can pass that in if you want to
+[3668.24s -> 3670.24s]  we're going to pass in the function
+[3670.24s -> 3672.24s]  that's going to become our thread
+[3672.24s -> 3674.24s]  recharge
+[3674.24s -> 3676.24s]  and then we're going to
+[3676.24s -> 3678.24s]  do another null
+[3678.24s -> 3680.24s]  that one, I forget what that one is
+[3680.24s -> 3682.24s]  that one is
+[3682.24s -> 3684.24s]  oh, the arguments, we don't have any
+[3684.24s -> 3686.24s]  arguments to pass in because this function
+[3686.24s -> 3688.24s]  recharge doesn't take any arguments
+[3688.24s -> 3690.24s]  okay, this is a really simple one
+[3690.24s -> 3692.24s]  okay, so that's our first for loop
+[3692.24s -> 3694.24s]  now that we've spun off all those
+[3694.24s -> 3696.24s]  threads, they are now doing their thing
+[3696.24s -> 3698.24s]  we are going to then wait for
+[3698.24s -> 3700.24s]  them all, so i is t, i equals
+[3700.24s -> 3702.24s]  zero, i is less than k
+[3702.24s -> 3704.24s]  num introverts
+[3704.24s -> 3706.24s]  i plus plus
+[3706.24s -> 3708.24s]  and
+[3708.24s -> 3710.24s]  what we're going to do now is we are going to
+[3710.24s -> 3712.24s]  p thread join
+[3712.24s -> 3714.24s]  introverts
+[3714.24s -> 3716.24s]  i
+[3716.24s -> 3718.24s]  and the null basically
+[3718.24s -> 3720.24s]  is if you wanted to get the return value back
+[3720.24s -> 3722.24s]  again from that
+[3722.24s -> 3724.24s]  and then printf
+[3724.24s -> 3726.24s]  everyone
+[3726.24s -> 3728.24s]  is recharged
+[3728.24s -> 3730.24s]  like that
+[3730.24s -> 3732.24s]  and then we have a return zero
+[3732.24s -> 3734.24s]  i type
+[3734.24s -> 3736.24s]  i do that all the time
+[3736.24s -> 3738.24s]  thank you very much
+[3738.24s -> 3740.24s]  anything else?
+[3740.24s -> 3742.24s]  yes
+[3748.24s -> 3750.24s]  it's calling it by whatever id number
+[3750.24s -> 3752.24s]  good question, why don't you get an ampersand in here
+[3752.24s -> 3754.24s]  now we're just using the value
+[3754.24s -> 3756.24s]  remember we didn't even, this was uninitialized
+[3756.24s -> 3758.24s]  it's the p thread that places the value
+[3758.24s -> 3760.24s]  into that variable, how do we do that?
+[3760.24s -> 3762.24s]  we have to get a pointer to that particular
+[3762.24s -> 3764.24s]  p thread location address
+[3764.24s -> 3766.24s]  and the first null
+[3766.24s -> 3768.24s]  in create is
+[3768.24s -> 3770.24s]  the first null is for attributes, which we won't even worry about
+[3770.24s -> 3772.24s]  but it's like if you want to prioritize
+[3772.24s -> 3774.24s]  the thread and say this one gets more higher priority
+[3774.24s -> 3776.24s]  than the other one and some other things
+[3776.24s -> 3778.24s]  good question
+[3778.24s -> 3780.24s]  so that's that one
+[3780.24s -> 3782.24s]  if we make introverts and then run
+[3782.24s -> 3784.24s]  it says let's hear from six introverts
+[3784.24s -> 3786.24s]  and then you get a whole bunch of i recharge
+[3786.24s -> 3788.24s]  by spending time alone
+[3788.24s -> 3790.24s]  and they happen in any order
+[3790.24s -> 3792.24s]  we could have printed out the order
+[3792.24s -> 3794.24s]  and it would be in some non
+[3794.24s -> 3796.24s]  definite order
+[3796.24s -> 3798.24s]  it's just like processes
+[3798.24s -> 3800.24s]  where it's race condition in terms of who gets to go next
+[3800.24s -> 3802.24s]  question
+[3802.24s -> 3804.24s]  so the recharge function
+[3804.24s -> 3806.24s]  is essentially my thread
+[3806.24s -> 3808.24s]  the recharge function
+[3808.24s -> 3810.24s]  is the thread, right
+[3810.24s -> 3812.24s]  exactly
+[3812.24s -> 3814.24s]  whatever i put in that function
+[3814.24s -> 3818.24s]  is what each individual thread will run
+[3818.24s -> 3820.24s]  whatever you put in that function
+[3820.24s -> 3822.24s]  is whatever the thread runs
+[3822.24s -> 3824.24s]  and most of the time we have the same thread running
+[3824.24s -> 3826.24s]  and multiple ones
+[3826.24s -> 3828.24s]  yes
+[3828.24s -> 3830.24s]  that's a good question
+[3830.24s -> 3832.24s]  the thread can start in one function
+[3832.24s -> 3834.24s]  then call other functions
+[3834.24s -> 3836.24s]  it's just going to basically say
+[3836.24s -> 3838.24s]  oh great here's your program again
+[3838.24s -> 3840.24s]  it can call other functions inside the program
+[3840.24s -> 3842.24s]  remember it's shared memory
+[3842.24s -> 3844.24s]  and so forth
+[3844.24s -> 3846.24s]  so it's all the same address space
+[3846.24s -> 3848.24s]  the join is kind of like wait PID
+[3848.24s -> 3850.24s]  it says
+[3850.24s -> 3852.24s]  i am going to wait
+[3852.24s -> 3854.24s]  for the first one then the second one
+[3854.24s -> 3856.24s]  then the third one then the fourth one
+[3856.24s -> 3858.24s]  now they could happen in different orders
+[3858.24s -> 3860.24s]  but in this case it's going to wait one after the other
+[3860.24s -> 3862.24s]  how could you tell it to wait in any order?
+[3862.24s -> 3864.24s]  how could you tell it to wait in any order?
+[3864.24s -> 3866.24s]  like wait PID in negative one
+[3866.24s -> 3868.24s]  you really can't
+[3868.24s -> 3870.24s]  i think you have to say
+[3870.24s -> 3874.24s]  you have to give the actual thread ID
+[3874.24s -> 3876.24s]  to join for it to actually do it
+[3876.24s -> 3878.24s]  so waiting in any order in this case
+[3878.24s -> 3880.24s]  is not really possible
+[3880.24s -> 3882.24s]  so when you say that you could wait in any order
+[3882.24s -> 3884.24s]  is that once you start all these threads
+[3884.24s -> 3886.24s]  the sixth one could finish
+[3886.24s -> 3888.24s]  but you're still going to wait for the second one?
+[3888.24s -> 3890.24s]  good question
+[3890.24s -> 3892.24s]  the sixth one could finish first
+[3892.24s -> 3894.24s]  but you're still not going to clean it up until last
+[3894.24s -> 3896.24s]  in that case yes
+[3896.24s -> 3898.24s]  good question
+[3898.24s -> 3900.24s]  so that's the first one
+[3900.24s -> 3902.24s]  this can get a little tricky
+[3902.24s -> 3904.24s]  when you start to think
+[3904.24s -> 3906.24s]  by the way if you want to go look at the actual one run
+[3906.24s -> 3908.24s]  you can do that
+[3908.24s -> 3910.24s]  in the slideshow
+[3910.24s -> 3914.24s]  we talked about what was happening here
+[3914.24s -> 3916.24s]  as far as the actual
+[3916.24s -> 3918.24s]  all the details of this
+[3918.24s -> 3920.24s]  so this kind of goes over what we just talked about
+[3920.24s -> 3922.24s]  let's go on to the next example
+[3922.24s -> 3924.24s]  there can be
+[3924.24s -> 3926.24s]  conditions that you have to be very careful with
+[3926.24s -> 3928.24s]  this will happen in p-threads
+[3928.24s -> 3930.24s]  as you'll see in a second
+[3930.24s -> 3932.24s]  it will also happen in
+[3932.24s -> 3934.24s]  the thread library for C++
+[3934.24s -> 3936.24s]  you have to be very careful
+[3936.24s -> 3938.24s]  about what you're letting the thread go and do
+[3938.24s -> 3940.24s]  remember
+[3940.24s -> 3942.24s]  when I
+[3942.24s -> 3944.24s]  if we go back for a second
+[3944.24s -> 3946.24s]  let's go back to the next one
+[3946.24s -> 3948.24s]  the one in the back here
+[3948.24s -> 3950.24s]  if we go back one more
+[3950.24s -> 3952.24s]  when we launch a p-thread
+[3952.24s -> 3954.24s]  does the first
+[3954.24s -> 3956.24s]  for loop here wait around
+[3956.24s -> 3958.24s]  for that p-thread to do anything
+[3958.24s -> 3960.24s]  it doesn't
+[3960.24s -> 3962.24s]  you launch a p-thread and it goes
+[3962.24s -> 3964.24s]  and you go
+[3964.24s -> 3966.24s]  it's kind of like forking
+[3966.24s -> 3968.24s]  in the sense that you're doing two different things
+[3968.24s -> 3970.24s]  you're going down two different paths
+[3970.24s -> 3972.24s]  the thread is going and doing its thing
+[3972.24s -> 3974.24s]  and your parent process
+[3974.24s -> 3976.24s]  is doing its own
+[3976.24s -> 3978.24s]  so you can launch those six threads really fast
+[3978.24s -> 3980.24s]  and then
+[3980.24s -> 3982.24s]  be down to the joints
+[3982.24s -> 3984.24s]  especially before they all end
+[3984.24s -> 3986.24s]  you do it and it happens very very fast
+[3986.24s -> 3988.24s]  there's no waiting and no delay
+[3988.24s -> 3990.24s]  after you send
+[3990.24s -> 3992.24s]  that thread
+[3992.24s -> 3994.24s]  let's look at another one
+[3994.24s -> 3996.24s]  I'm going to call this one
+[3996.24s -> 3998.24s]  confused-friends.c
+[3998.24s -> 4000.24s]  here's what this one is going to be
+[4000.24s -> 4002.24s]  we're going to have a list of
+[4002.24s -> 4004.24s]  friends
+[4004.24s -> 4006.24s]  or people that are going to meet
+[4006.24s -> 4008.24s]  I took all these names from the class
+[4008.24s -> 4010.24s]  so you might recognize yours if you happen to be one of those six people there
+[4010.24s -> 4012.24s]  and there's probably some duplicates in there as well
+[4012.24s -> 4014.24s]  I just randomized it
+[4014.24s -> 4016.24s]  to the top six names
+[4016.24s -> 4018.24s]  what we're going to have
+[4018.24s -> 4020.24s]  is we're going to have a friends array
+[4020.24s -> 4022.24s]  and we're only going to
+[4022.24s -> 4024.24s]  access six of them
+[4024.24s -> 4026.24s]  there's also an imaginary friend in there
+[4026.24s -> 4028.24s]  which is not real
+[4028.24s -> 4030.24s]  I guess
+[4030.24s -> 4032.24s]  Sesame Street, right?
+[4032.24s -> 4034.24s]  You guys watch Sesame Street? I don't know if you're too young for Sesame Street
+[4034.24s -> 4036.24s]  but anyway
+[4036.24s -> 4038.24s]  oh good, okay
+[4038.24s -> 4040.24s]  so
+[4040.24s -> 4042.24s]  what we're going to do is we're going to
+[4042.24s -> 4044.24s]  have this
+[4044.24s -> 4046.24s]  set up so that we have six
+[4046.24s -> 4048.24s]  different friends and they're all going to meet in various
+[4048.24s -> 4050.24s]  thread, in a various thread kind of
+[4050.24s -> 4052.24s]  way, okay?
+[4052.24s -> 4054.24s]  and what we're going to do is we're going to get the k number of
+[4054.24s -> 4056.24s]  friends and we do this by
+[4056.24s -> 4058.24s]  just basically taking
+[4058.24s -> 4060.24s]  size of k
+[4060.24s -> 4062.24s]  friends
+[4062.24s -> 4064.24s]  divided by size of
+[4064.24s -> 4066.24s]  k friends
+[4066.24s -> 4068.24s]  zero
+[4068.24s -> 4070.24s]  and then we're going to subtract one
+[4070.24s -> 4072.24s]  from that to basically say we're going to get one less
+[4072.24s -> 4074.24s]  so there's going to be one, two, three, four, five, six
+[4074.24s -> 4076.24s]  number of friends
+[4076.24s -> 4078.24s]  even though we have seven in our array
+[4078.24s -> 4080.24s]  okay?
+[4080.24s -> 4082.24s]  alright
+[4082.24s -> 4084.24s]  I just didn't write six because this is kind of the generic way of doing it
+[4084.24s -> 4086.24s]  I could have written six to
+[4086.24s -> 4088.24s]  maybe save a little time I suppose
+[4088.24s -> 4090.24s]  what we're going to do now
+[4090.24s -> 4092.24s]  is we're going to have a little
+[4092.24s -> 4094.24s]  meetup function and the meetup function
+[4094.24s -> 4096.24s]  is going to be the following
+[4096.24s -> 4098.24s]  const char
+[4098.24s -> 4100.24s]  name equals
+[4100.24s -> 4102.24s]  k friends
+[4102.24s -> 4104.24s]  remember we share this, okay?
+[4104.24s -> 4106.24s]  asterisk size
+[4106.24s -> 4108.24s]  underscore t
+[4108.24s -> 4110.24s]  asterisk args
+[4110.24s -> 4112.24s]  now, what is going on
+[4112.24s -> 4114.24s]  there? right? well
+[4114.24s -> 4116.24s]  what's going on there is remember
+[4116.24s -> 4118.24s]  passing in an argument to a p thread
+[4118.24s -> 4120.24s]  you have to do it in this void star pointer way
+[4120.24s -> 4122.24s]  okay? so you pass a void star pointer
+[4122.24s -> 4124.24s]  and it's got to be the thread
+[4124.24s -> 4126.24s]  function that knows how to interpret that
+[4126.24s -> 4128.24s]  in this case we're going to be sending in
+[4128.24s -> 4130.24s]  a pointer to
+[4130.24s -> 4132.24s]  a
+[4132.24s -> 4134.24s]  rather we're going to be sending in
+[4134.24s -> 4136.24s]  an integer for the number
+[4136.24s -> 4138.24s]  of the thread
+[4138.24s -> 4140.24s]  or for the number of the friend I should say
+[4140.24s -> 4142.24s]  okay? and then we're going to go and
+[4142.24s -> 4144.24s]  access that through the array
+[4144.24s -> 4146.24s]  okay? so we dereference
+[4146.24s -> 4148.24s]  that integer pointer
+[4148.24s -> 4150.24s]  well, size t pointer
+[4150.24s -> 4152.24s]  dereference it, access
+[4152.24s -> 4154.24s]  the array value from that, and go from
+[4154.24s -> 4156.24s]  there, okay? so we're going to do that
+[4156.24s -> 4158.24s]  alright? and then we are
+[4158.24s -> 4160.24s]  going to
+[4160.24s -> 4162.24s]  printf
+[4162.24s -> 4164.24s]  hey, I'm
+[4164.24s -> 4166.24s]  percent s
+[4166.24s -> 4168.24s]  empowered to
+[4168.24s -> 4170.24s]  meet you
+[4170.24s -> 4172.24s]  okay? and then name
+[4172.24s -> 4174.24s]  okay? and then that's it
+[4174.24s -> 4176.24s]  alright? and then we're going to return null because we have to
+[4176.24s -> 4178.24s]  return a pointer and we're not
+[4178.24s -> 4180.24s]  doing any return value
+[4180.24s -> 4182.24s]  okay? so that's what's happening inside the
+[4182.24s -> 4184.24s]  that's going to happen in each thread
+[4184.24s -> 4186.24s]  okay? we're now going to
+[4186.24s -> 4188.24s]  printf like let's
+[4188.24s -> 4190.24s]  here from percent z u
+[4190.24s -> 4192.24s]  friends
+[4192.24s -> 4194.24s]  n
+[4194.24s -> 4196.24s]  and then k null friends
+[4196.24s -> 4198.24s]  okay? remember this is
+[4198.24s -> 4200.24s]  not the entire amount in the array
+[4200.24s -> 4202.24s]  p thread create
+[4202.24s -> 4204.24s]  or sorry p thread t
+[4204.24s -> 4206.24s]  we have to keep track of them
+[4206.24s -> 4208.24s]  and we have
+[4208.24s -> 4210.24s]  k null friends
+[4210.24s -> 4212.24s]  like that, okay?
+[4212.24s -> 4214.24s]  and then we are going to then
+[4214.24s -> 4216.24s]  do the for loops again
+[4216.24s -> 4218.24s]  for size t i equals
+[4218.24s -> 4220.24s]  zero semicolon i
+[4220.24s -> 4222.24s]  is less than k null
+[4222.24s -> 4224.24s]  friends i plus plus
+[4224.24s -> 4226.24s]  okay? and then we're going
+[4226.24s -> 4228.24s]  to do the p thread create
+[4228.24s -> 4230.24s]  ampersand
+[4230.24s -> 4232.24s]  k friends
+[4232.24s -> 4234.24s]  i
+[4234.24s -> 4236.24s]  because we're passing in
+[4236.24s -> 4238.24s]  that's the pointer
+[4238.24s -> 4240.24s]  to the p thread id
+[4240.24s -> 4242.24s]  that's going to get populated
+[4242.24s -> 4244.24s]  okay? we're not going to have any
+[4244.24s -> 4246.24s]  we're going to call meetup
+[4246.24s -> 4248.24s]  as our thread function
+[4248.24s -> 4250.24s]  and then we're going to pass in
+[4250.24s -> 4252.24s]  a pointer to i remember
+[4252.24s -> 4254.24s]  we can pass this through because we are
+[4254.24s -> 4256.24s]  sharing the data
+[4256.24s -> 4258.24s]  this is the local variable or it's a variable
+[4258.24s -> 4260.24s]  on the stack we can pass a pointer to it
+[4260.24s -> 4262.24s]  okay?
+[4262.24s -> 4264.24s]  it should be
+[4264.24s -> 4266.24s]  it should be friends thank you very much
+[4266.24s -> 4268.24s]  good call, good catch
+[4268.24s -> 4270.24s]  that would have been a weird error
+[4270.24s -> 4272.24s]  and then we are going to end that
+[4272.24s -> 4274.24s]  and then we're going to do basically the same
+[4274.24s -> 4276.24s]  thing again except now we're going to
+[4276.24s -> 4278.24s]  do p thread join
+[4278.24s -> 4280.24s]  and now
+[4280.24s -> 4282.24s]  it is k friends
+[4282.24s -> 4284.24s]  j
+[4284.24s -> 4286.24s]  is it k friends j?
+[4288.24s -> 4290.24s]  hang on
+[4290.24s -> 4292.24s]  in this case we are going to
+[4292.24s -> 4294.24s]  yes you're right
+[4294.24s -> 4296.24s]  friends
+[4296.24s -> 4298.24s]  friends j
+[4298.24s -> 4300.24s]  i sorry
+[4300.24s -> 4302.24s]  thinking two different loops here
+[4302.24s -> 4304.24s]  friends i and then we don't care
+[4304.24s -> 4306.24s]  about the return value
+[4306.24s -> 4308.24s]  okay
+[4308.24s -> 4310.24s]  and then we are going to
+[4310.24s -> 4312.24s]  print f
+[4312.24s -> 4314.24s]  is everyone accounted for
+[4314.24s -> 4316.24s]  okay
+[4316.24s -> 4318.24s]  question mark
+[4318.24s -> 4320.24s]  there we go and then returning
+[4320.24s -> 4322.24s]  zero and that's that okay
+[4322.24s -> 4324.24s]  so now we've got the thing
+[4324.24s -> 4326.24s]  now we're going to see what happens when we do this
+[4326.24s -> 4328.24s]  confused friends
+[4328.24s -> 4330.24s]  okay decoration statement
+[4330.24s -> 4332.24s]  did you see the thing now?
+[4332.24s -> 4334.24s]  print f is everyone accounted for
+[4336.24s -> 4338.24s]  what did i forget
+[4340.24s -> 4342.24s]  curly brace where
+[4342.24s -> 4344.24s]  oh
+[4344.24s -> 4346.24s]  oh my gosh we are going to return
+[4346.24s -> 4348.24s]  right here
+[4348.24s -> 4350.24s]  no
+[4350.24s -> 4352.24s]  hang on it does look like it's gone by the way
+[4352.24s -> 4354.24s]  is that good?
+[4354.24s -> 4356.24s]  i think that's good
+[4356.24s -> 4358.24s]  let's see
+[4358.24s -> 4360.24s]  make it again
+[4360.24s -> 4362.24s]  there we go okay
+[4362.24s -> 4364.24s]  so confused friends is going to say
+[4364.24s -> 4366.24s]  hi i'm richard
+[4366.24s -> 4368.24s]  hi i'm lisa
+[4368.24s -> 4370.24s]  hi i'm lisa again
+[4370.24s -> 4372.24s]  that's a little weird
+[4372.24s -> 4374.24s]  hi i'm imaginary
+[4374.24s -> 4376.24s]  oh wait a minute
+[4376.24s -> 4378.24s]  what's going on?
+[4378.24s -> 4380.24s]  oh now all imaginaries
+[4380.24s -> 4382.24s]  and we run it again
+[4382.24s -> 4384.24s]  we get lots of imaginaries in there
+[4384.24s -> 4386.24s]  there's some serious problems in this program
+[4386.24s -> 4388.24s]  it looked like it was fine
+[4388.24s -> 4390.24s]  because we thought it was fine
+[4390.24s -> 4392.24s]  but
+[4392.24s -> 4394.24s]  what's happening
+[4394.24s -> 4396.24s]  is
+[4396.24s -> 4398.24s]  and by the way it looks like
+[4398.24s -> 4400.24s]  i might have done the same thing here
+[4400.24s -> 4402.24s]  with the wrong
+[4402.24s -> 4404.24s]  friends j
+[4404.24s -> 4406.24s]  yeah i did i had the wrong one in there
+[4406.24s -> 4408.24s]  but that let's see
+[4408.24s -> 4410.24s]  do i have it down here
+[4410.24s -> 4412.24s]  no there i do i'll make sure the slides are correct
+[4412.24s -> 4414.24s]  but the problem here
+[4414.24s -> 4416.24s]  is that we've done something
+[4416.24s -> 4418.24s]  a bit sketchy here
+[4418.24s -> 4420.24s]  remember what i said about
+[4420.24s -> 4422.24s]  calling
+[4422.24s -> 4424.24s]  pthread create
+[4424.24s -> 4426.24s]  it happens and moves on
+[4426.24s -> 4428.24s]  and then the thread
+[4428.24s -> 4430.24s]  gets created and does its thing
+[4430.24s -> 4432.24s]  right here
+[4432.24s -> 4434.24s]  where we have
+[4434.24s -> 4436.24s]  this
+[4436.24s -> 4438.24s]  business right here where we say
+[4438.24s -> 4440.24s]  pthread create and we pass in
+[4440.24s -> 4442.24s]  the address
+[4442.24s -> 4444.24s]  of i
+[4444.24s -> 4446.24s]  ok
+[4446.24s -> 4448.24s]  if we go to the next part of the next loop
+[4448.24s -> 4450.24s]  does the address
+[4450.24s -> 4452.24s]  of i change?
+[4452.24s -> 4454.24s]  probably not actually
+[4454.24s -> 4456.24s]  it probably doesn't change
+[4456.24s -> 4458.24s]  the address of i because it's a local
+[4458.24s -> 4460.24s]  variable in this scope of this for loop
+[4460.24s -> 4462.24s]  i is going to
+[4462.24s -> 4464.24s]  be the same variable we're just incrementing it
+[4464.24s -> 4466.24s]  right? but
+[4466.24s -> 4468.24s]  so the address of i
+[4468.24s -> 4470.24s]  in that case
+[4472.24s -> 4474.24s]  the address of that variable
+[4474.24s -> 4476.24s]  might change by the time
+[4476.24s -> 4478.24s]  the thread starts we don't
+[4478.24s -> 4480.24s]  actually know what that
+[4480.24s -> 4482.24s]  pointer is actually pointing at if it's pointing
+[4482.24s -> 4484.24s]  at the 1 or the 0 or the 1
+[4484.24s -> 4486.24s]  or the 2 or the 3 or the 4 or the 5 or the 6 it turns out
+[4486.24s -> 4488.24s]  that these things happen so fast
+[4488.24s -> 4490.24s]  when the for loop happens that it's almost
+[4490.24s -> 4492.24s]  always the i at the end
+[4492.24s -> 4494.24s]  of the loop which is why we got all those imaginaries
+[4494.24s -> 4496.24s]  in there we are basically passing
+[4496.24s -> 4498.24s]  a pointer that is
+[4498.24s -> 4500.24s]  the value of which is changing
+[4500.24s -> 4502.24s]  like the value of what it's pointing at is changing
+[4502.24s -> 4504.24s]  pointer itself is not changing but the value
+[4504.24s -> 4506.24s]  of what it's pointing at is
+[4506.24s -> 4508.24s]  certainly changing inside the for loop
+[4508.24s -> 4510.24s]  when you do this you are passing a
+[4510.24s -> 4512.24s]  pointer you're not passing
+[4512.24s -> 4514.24s]  an integer that gets copied
+[4514.24s -> 4516.24s]  you're passing a pointer that
+[4516.24s -> 4518.24s]  has an actual address in it
+[4518.24s -> 4520.24s]  you had a question?
+[4520.24s -> 4522.24s]  I was a little bit unsure
+[4522.24s -> 4524.24s]  because you used j in the second one
+[4524.24s -> 4526.24s]  I used j in the second one
+[4526.24s -> 4528.24s]  I just made it a little bit different
+[4528.24s -> 4530.24s]  when I wrote it
+[4530.24s -> 4532.24s]  that one doesn't matter
+[4532.24s -> 4534.24s]  it's this one right here that's the problem
+[4534.24s -> 4536.24s]  so what we have to do
+[4536.24s -> 4538.24s]  instead is
+[4538.24s -> 4540.24s]  we have to change this up a little bit
+[4540.24s -> 4542.24s]  and we
+[4542.24s -> 4544.24s]  have to basically say
+[4544.24s -> 4546.24s]  well what won't change
+[4546.24s -> 4548.24s]  we can't pass in a pointer
+[4548.24s -> 4550.24s]  to the index into the array
+[4550.24s -> 4552.24s]  let's pass a pointer to
+[4552.24s -> 4554.24s]  the actual
+[4554.24s -> 4556.24s]  string in the array
+[4556.24s -> 4558.24s]  why worry about passing an index
+[4558.24s -> 4560.24s]  into that value when we could actually just
+[4560.24s -> 4562.24s]  pass the pointer in
+[4562.24s -> 4564.24s]  so in this case
+[4564.24s -> 4566.24s]  it would end up being
+[4566.24s -> 4568.24s]  there's the stuff
+[4568.24s -> 4570.24s]  we want to do we want to
+[4570.24s -> 4572.24s]  do the following
+[4572.24s -> 4574.24s]  we want to change our meetup
+[4574.24s -> 4576.24s]  to instead of being
+[4576.24s -> 4578.24s]  looking for a pointer to
+[4578.24s -> 4580.24s]  an index which we know
+[4580.24s -> 4582.24s]  could change because that for loop
+[4582.24s -> 4584.24s]  in the main function is
+[4584.24s -> 4586.24s]  zooming through that
+[4586.24s -> 4588.24s]  loop and that
+[4588.24s -> 4590.24s]  the actual value of i could change
+[4590.24s -> 4592.24s]  let's pass
+[4592.24s -> 4594.24s]  a char star
+[4594.24s -> 4596.24s]  which is actually going to be
+[4596.24s -> 4598.24s]  a value to the actual
+[4598.24s -> 4600.24s]  the constant
+[4600.24s -> 4602.24s]  value inside the array
+[4602.24s -> 4604.24s]  okay so we're going to dereference
+[4604.24s -> 4606.24s]  instead of dereferencing a size T pointer
+[4606.24s -> 4608.24s]  we're going to dereference the actual
+[4608.24s -> 4610.24s]  we're going to actually save the pointer
+[4610.24s -> 4612.24s]  value for the string itself
+[4612.24s -> 4614.24s]  and then we're going to change that and the only
+[4614.24s -> 4616.24s]  other thing that's going to change is down
+[4616.24s -> 4618.24s]  here we are going to
+[4618.24s -> 4620.24s]  see if I can do this there we go
+[4620.24s -> 4622.24s]  we are going to send a
+[4622.24s -> 4624.24s]  basically K friends
+[4624.24s -> 4626.24s]  i pointer
+[4626.24s -> 4628.24s]  that's the pointer to the string
+[4628.24s -> 4630.24s]  in the array that is not going to
+[4630.24s -> 4632.24s]  change but the index
+[4632.24s -> 4634.24s]  value that we tried to send at
+[4634.24s -> 4636.24s]  the pointer to that the value itself
+[4636.24s -> 4638.24s]  will change now is that
+[4638.24s -> 4640.24s]  kind of subtle yeah that's a bit subtle
+[4640.24s -> 4642.24s]  right that idea the first
+[4642.24s -> 4644.24s]  time I saw this I was like what's going on
+[4644.24s -> 4646.24s]  you have to go stare at this a little more before we do that
+[4646.24s -> 4648.24s]  when you do
+[4648.24s -> 4650.24s]  okay I will show you here what actually
+[4650.24s -> 4652.24s]  happens you can run this and
+[4652.24s -> 4654.24s]  it says I'm Lisa
+[4654.24s -> 4656.24s]  Richard, Louis, Michaela and Jack
+[4656.24s -> 4658.24s]  all our friends are real and there you
+[4658.24s -> 4660.24s]  go yes
+[4660.24s -> 4662.24s]  a little bit of an unrelated question
+[4662.24s -> 4664.24s]  but why does meetup need to have a return value
+[4664.24s -> 4666.24s]  why does meetup have to have a return value
+[4666.24s -> 4668.24s]  the thread
+[4668.24s -> 4670.24s]  function
+[4670.24s -> 4672.24s]  declaration has to be
+[4672.24s -> 4674.24s]  a void star return
+[4674.24s -> 4676.24s]  value and a void star argument
+[4676.24s -> 4678.24s]  that's the only thing it can be
+[4678.24s -> 4680.24s]  and so we'll see later it's
+[4680.24s -> 4682.24s]  similar in C++ but you can actually
+[4682.24s -> 4684.24s]  do lambdas so it turns out you can do lots of
+[4684.24s -> 4686.24s]  different things in there you'll see how that
+[4686.24s -> 4688.24s]  works when we get to it yeah
+[4688.24s -> 4690.24s]  so because the data at the pointer
+[4690.24s -> 4692.24s]  is changing but it's
+[4692.24s -> 4694.24s]  but it's going up
+[4694.24s -> 4696.24s]  only you can never have imaginary
+[4696.24s -> 4698.24s]  and then like roger or something
+[4698.24s -> 4700.24s]  you could never well
+[4700.24s -> 4702.24s]  you could never have imaginary
+[4702.24s -> 4704.24s]  and then roger it depends when that thread
+[4704.24s -> 4706.24s]  read the value of the variable
+[4706.24s -> 4708.24s]  because remember the threads are on their own and they may read it
+[4708.24s -> 4710.24s]  before they print it and they might go off the processor
+[4710.24s -> 4712.24s]  and wait a sec before they print it and you just
+[4712.24s -> 4714.24s]  never quite know
+[4714.24s -> 4716.24s]  there's a lot of race conditions going on there
+[4716.24s -> 4718.24s]  yeah
+[4718.24s -> 4720.24s]  in the original example
+[4720.24s -> 4722.24s]  all the imaginaries
+[4722.24s -> 4724.24s]  inside the form loop you have
+[4724.24s -> 4726.24s]  nj equals i
+[4726.24s -> 4728.24s]  instead of the address of j
+[4728.24s -> 4730.24s]  instead of the address of i
+[4730.24s -> 4732.24s]  would you lose access to
+[4732.24s -> 4734.24s]  that decent number
+[4734.24s -> 4736.24s]  yes good question if you had said somehow
+[4736.24s -> 4738.24s]  in here you'd change you'd say wait I don't want
+[4738.24s -> 4740.24s]  to use that same i I want to use another
+[4740.24s -> 4742.24s]  another i there yes that goes
+[4742.24s -> 4744.24s]  out of scope that j variable goes
+[4744.24s -> 4746.24s]  out of scope so don't pass a pointer to a
+[4746.24s -> 4748.24s]  variable it goes out of scope remember you're calling
+[4748.24s -> 4750.24s]  another function and your function is
+[4750.24s -> 4752.24s]  continuing so it's not like
+[4752.24s -> 4754.24s]  it's not like in a regular
+[4754.24s -> 4756.24s]  106b or 107 thing where you can
+[4756.24s -> 4758.24s]  pass a value to a static
+[4758.24s -> 4760.24s]  variable and know that that's going to remain
+[4760.24s -> 4762.24s]  on the stack you actually don't know
+[4762.24s -> 4764.24s]  so good question you have to be very careful with that
+[4764.24s -> 4766.24s]  that's one of the reasons I gave this example okay
+[4766.24s -> 4768.24s]  I want to keep you it is time to go I'll stay up here
+[4768.24s -> 4770.24s]  for a couple minutes and then I'm headed to my
+[4770.24s -> 4772.24s]  to 219 for an hour
+[4772.24s -> 4774.24s]  an hour and 15 minutes of office hours
+[4774.24s -> 4776.24s]  see you in labber next week

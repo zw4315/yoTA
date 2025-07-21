@@ -1,0 +1,253 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.00s]  All right, next we're going to talk about some design decisions for actually implementing actor-critic algorithms.
+[6.00s -> 10.00s]  So we'll start with the discussion of neural network architectures.
+[10.00s -> 17.00s]  In order to actually instantiate these algorithms as deep RL algorithms, we have to pick how we're going to represent the value function and the policy.
+[17.00s -> 23.00s]  So before, in the last lecture, we just had the policy to deal with, now we have to represent both of these objects.
+[23.00s -> 25.00s]  And there are a couple of choices we could make.
+[25.00s -> 32.00s]  So one very reasonable starting choice, and this is the one that I would recommend if you're just getting started, is to have two completely separate networks.
+[32.00s -> 42.00s]  So you have one network that maps a state to the value, and then you have another completely separate network that maps the same state to the distribution over actions.
+[42.00s -> 44.00s]  And these networks have nothing in common.
+[44.00s -> 51.00s]  This is a convenient choice because it's relatively simple to implement, and it tends to be fairly stable to train.
+[51.00s -> 58.00s]  The downside is it may be regarded as somewhat inefficient because there's no sharing of features between the actor and critic.
+[58.00s -> 65.00s]  This could be a more important issue if, for example, you are learning directly from images, and both these networks are convolutional neural nets.
+[65.00s -> 74.00s]  Maybe you would really want them to share their internal representations so that, for example, if the value function figures out good representations first, the policy could benefit from them.
+[74.00s -> 86.00s]  In that case, you might opt for a shared network design where you have one trunk, maybe this represents the convolutional layers, and then you have separate heads, one for the value and one for the policy-action distribution.
+[86.00s -> 96.00s]  This shared network design is a little bit harder to train, it can be a little bit more unstable, because those shared layers are getting hit with very different gradients.
+[96.00s -> 102.00s]  The gradients from the value regression and the gradients from the policy gradient, they'll be on different scales, they'll have different statistics,
+[102.00s -> 107.00s]  and therefore it might require more hyperparameter tuning in order to stabilize this approach.
+[107.00s -> 112.00s]  But it can, in principle, be more efficient because you have these shared representations.
+[112.00s -> 123.00s]  Now, there is another important point that we have to discuss before we get an actual practical deep reinforcement learning actor-critic method, and that's the question of batch sizes.
+[123.00s -> 130.00s]  So, as described here, this algorithm is fully online, meaning that it learns one sample at a time.
+[130.00s -> 138.00s]  So it takes an action, gets a transition, updates the value function on that transition, and then updates the policy on that transition, and both updates use just one sample.
+[138.00s -> 149.00s]  Now, we know from the basics of deep learning that updating deep neural nets with stochastic gradient descent using just one sample is not going to work very well.
+[149.00s -> 151.00s]  So those updates are going to have a little too much variance.
+[151.00s -> 160.00s]  So these updates will all work best if we have a batch, and one of the ways that we could get a batch is by using parallel workers.
+[160.00s -> 167.00s]  So here's the idea. This is the most basic kind of parallelized actor-critic. It's a synchronized parallel actor-critic.
+[167.00s -> 179.00s]  Instead of having just one data collection thread, instead of just running one simulator, you might run multiple simulators, and each of them will choose an action in step one and generate a transition.
+[179.00s -> 184.00s]  But they're going to use different random seeds, so they'll do things that are a little bit different.
+[184.00s -> 191.00s]  And then you will update in step two and step four using data from all of the threads together.
+[191.00s -> 204.00s]  So the update is synchronous, meaning that you take one step in step one for each of the threads, then collect all the data into your batch and use it to update the value function, and then use it to update the policy synchronously.
+[204.00s -> 206.00s]  And then you repeat this process.
+[206.00s -> 209.00s]  So this will give you a batch size equal to the number of worker threads.
+[209.00s -> 217.00s]  It can be a little bit expensive, right, because if you want a batch size of like 32, then you need 32 worker threads, but it does work decently well.
+[217.00s -> 225.00s]  Now it can be made even faster if we make it into asynchronous parallel actor-critic, meaning that we basically drop the synchronization point.
+[225.00s -> 235.00s]  So now we have these different threads that are all running at their own speed, and when it comes time to update, what we're going to do is we're going to pull in the latest parameters,
+[235.00s -> 243.00s]  and we're going to make an update for that thread, but we will not actually synchronize all the threads together.
+[243.00s -> 252.00s]  So just as soon as we accumulate some number of transitions, let's say we get 32 transitions from all the workers, we'll make an update.
+[252.00s -> 261.00s]  Now the problem with this approach, of course, is that the actual transitions might not have been collected by exactly the same parameters.
+[261.00s -> 277.00s]  So if one of the threads is lagging behind, maybe its transition was generated by an older actor, and then you will basically not actually update until you get transitions from faster threads, and those will be using a newer actor.
+[277.00s -> 284.00s]  So in general, all of the transitions that you're pulling together into your batch here may have been generated with slightly different actors.
+[285.00s -> 294.00s]  Now they're not going to be too different, because these threads aren't going to be running at such egregiously different rates, but there will be a little bit lagging behind.
+[294.00s -> 302.00s]  So an obvious question to ask here is, well, is this kind of update, the asynchronous update, mathematically equivalent to the standard synchronous update?
+[302.00s -> 308.00s]  And the answer is that it isn't, that you have this small amount of lag, which is similar to what you would get with asynchronous SGD.
+[308.00s -> 318.00s]  But in practice, it usually turns out that making the method asynchronous leads to gains in performance that outweigh the bias incurred from using slightly older actors.
+[318.00s -> 321.00s]  The crucial thing here is slightly older, right, because the actors are not going to be too old.
+[321.00s -> 326.00s]  If they're too old, then of course this won't work, but as long as none of the threads hang up, then you'll be okay.
+[328.00s -> 331.00s]  But this might get us thinking about another question.
+[331.00s -> 340.00s]  Well, in the asynchronous actor-critic algorithm, the whole point was that we could use transitions that were generated by slightly older actors.
+[340.00s -> 348.00s]  If we can somehow get away with using transitions that were generated by much older actors, then maybe we don't even need multiple threads.
+[348.00s -> 351.00s]  Maybe we could use older transitions from the same actor.
+[351.00s -> 358.00s]  Basically, maybe we could use a history and load in transitions from that history and not even bother with multiple threads.
+[358.00s -> 361.00s]  And that's the principle behind off-policy actor-critic.
+[361.00s -> 369.00s]  So the design in off-policy actor-critic is that now you're going to have one thread, and you'll update without one thread.
+[369.00s -> 378.00s]  But when you update, you're going to use a replay buffer of old transitions that you've seen, and you will actually load your batch from that replay buffer.
+[378.00s -> 381.00s]  So you're actually not going to necessarily use the latest transition.
+[381.00s -> 390.00s]  You'll collect a transition, store it in the replay buffer, and then sample an entire batch from that replay buffer, maybe 32 transitions rather than just one, and update on that batch.
+[390.00s -> 395.00s]  Now at this point, we have to modify the algorithm, because doing this naively won't work.
+[395.00s -> 400.00s]  This batch that we loaded in from the replay buffer definitely came from much older policies.
+[400.00s -> 406.00s]  So it's not like the asynchronous actor-critic before, where the transitions came from just slightly older actors, and we could just ignore that.
+[406.00s -> 412.00s]  Now it's coming from much older actors, and we can't ignore that we have to actually change our algorithm.
+[412.00s -> 418.00s]  So when I say replay buffer, basically I just mean a buffer that contains transitions that we saw in prior timestamps.
+[418.00s -> 429.00s]  The most straightforward way to implement a replay buffer is to implement it as a ring buffer, a first-in, first-out buffer, where you batch up, let's say, one million transitions.
+[429.00s -> 434.00s]  I will say here that we will discuss replay buffers much, much more in a subsequent lecture.
+[434.00s -> 437.00s]  So don't get too caught up on this for now.
+[437.00s -> 443.00s]  It's just a buffer that stores all the data, all the experience you've seen so far.
+[443.00s -> 450.00s]  And then, of course, we're going to form a batch for each of these updates by using previously seen transitions.
+[450.00s -> 457.00s]  Okay, so let's see what this might look like in an off-policy actor-critic algorithm.
+[457.00s -> 463.00s]  We're going to take an action, as usual, from our latest policy, get the corresponding transition,
+[463.00s -> 468.00s]  but then instead of using that transition for learning, we'll actually store it in our replay buffer.
+[468.00s -> 472.00s]  Then we will sample a batch from that replay buffer.
+[472.00s -> 478.00s]  So this notation denotes a set of n transitions, each of them indexed with i.
+[478.00s -> 480.00s]  It might not even contain our latest transition.
+[480.00s -> 486.00s]  So when we load this batch from the buffer, it might not contain that latest transition that we sampled, and that's okay.
+[486.00s -> 492.00s]  And then we're going to update our value function using targets for each of these transitions in our batch.
+[492.00s -> 496.00s]  So we have capital n transitions, which means we have capital n targets.
+[496.00s -> 500.00s]  So we're going to compute the gradient of our loss averaged over the batch.
+[500.00s -> 501.00s]  So n here is the batch size.
+[501.00s -> 503.00s]  It's not the total buffer size, it's just the size of the batch.
+[503.00s -> 507.00s]  So it might be 32 or 64.
+[507.00s -> 512.00s]  Then we'll evaluate our advantage, again, for each of the samples in our batch.
+[512.00s -> 516.00s]  And then we'll update our gradient, our policy gradient, by using that batch.
+[516.00s -> 519.00s]  So now the policy gradient is also averaged over n samples.
+[519.00s -> 521.00s]  And then we'll apply the policy gradient like before.
+[522.00s -> 526.00s]  So this algorithm is not going to work the way I described.
+[526.00s -> 530.00s]  It's actually quite broken, and we have to do a bunch of things to fix it.
+[530.00s -> 538.00s]  One thing that I would recommend as an exercise here is to pause the video, look at this algorithm, and try to guess where it's broken.
+[538.00s -> 541.00s]  I'll tell you right now, it's broken in at least two places,
+[541.00s -> 545.00s]  meaning that in at least two places in the pseudocode, there's something that doesn't make sense.
+[545.00s -> 549.00s]  Try to pause the video and find it, and then you can resume, and I'll tell you what it is.
+[549.00s -> 554.00s]  Okay.
+[554.00s -> 559.00s]  So the first problem is that when you load these transitions from the replay buffer,
+[559.00s -> 564.00s]  remember that the actions in those transitions were taken by older actors.
+[564.00s -> 570.00s]  So when you use those older actors to get the action and compute the target values,
+[570.00s -> 573.00s]  that's not going to give you the right target value.
+[573.00s -> 576.00s]  It'll give you the value of some other actor, not your latest actor.
+[576.00s -> 578.00s]  And that is not what you want.
+[578.00s -> 584.00s]  So formally, the issue is that AI did not come from the latest pi theta.
+[584.00s -> 588.00s]  It came from some older pi theta, and therefore,
+[588.00s -> 594.00s]  SI prime also was not the result of taking an action with the latest actor.
+[594.00s -> 597.00s]  And that's a problem.
+[597.00s -> 605.00s]  The second issue is that for that same reason, because AI didn't come from the latest policy pi theta,
+[605.00s -> 608.00s]  you can't compute the policy gradient this way.
+[608.00s -> 613.00s]  Remember from the previous lecture, it is very, very important when computing the policy gradient
+[613.00s -> 616.00s]  that we actually get actions that were sampled from our policy
+[616.00s -> 619.00s]  because this needs to be an expected value under pi theta.
+[619.00s -> 624.00s]  If that is not the case, we need to employ some kind of correction such as importance sampling.
+[624.00s -> 627.00s]  And we could actually do this with importance sampling,
+[627.00s -> 630.00s]  but it turns out that there's actually a better way to do it for off-policy actor critic,
+[630.00s -> 634.00s]  which I will tell you about next.
+[634.00s -> 636.00s]  But first, let's talk about fixing the value function.
+[636.00s -> 641.00s]  So I'll first fix the problem in step 3, and then I'll fix the problem in step 5.
+[641.00s -> 647.00s]  So to fix the problem in step 3, instead of working with value functions,
+[647.00s -> 653.00s]  let's instead think back to lecture 4, where we also introduced this notion of a Q function.
+[653.00s -> 656.00s]  If the value function tells you the expected reward you will get
+[656.00s -> 660.00s]  if you start in state st and then follow the policy pi,
+[660.00s -> 664.00s]  the Q function tells you the reward you'll get if you start in state st,
+[664.00s -> 669.00s]  then take action At, and then follow the policy pi.
+[669.00s -> 674.00s]  Now notice here that there's no assumption that the action At actually came from your policy.
+[674.00s -> 678.00s]  So the Q function is a valid function for any action.
+[678.00s -> 684.00s]  It's just in all subsequence steps, you follow pi.
+[684.00s -> 688.00s]  So what we're going to do to accommodate the fact that our transition,
+[688.00s -> 692.00s]  si, ai, si' did not come from our latest policy pi theta,
+[692.00s -> 698.00s]  is that we will actually not learn V, but we will instead learn Q.
+[698.00s -> 704.00s]  So we will not keep track of V hat pi phi, we will keep track of Q hat pi phi.
+[704.00s -> 706.00s]  It's going to be a different neural network.
+[706.00s -> 710.00s]  It will take in a state and an action and output a Q value.
+[710.00s -> 713.00s]  But otherwise, the principle behind the update is the same.
+[713.00s -> 718.00s]  So we're going to compute target values, and then we'll regress onto those target values.
+[718.00s -> 721.00s]  It's just that now we'll give the action as an input to the Q function.
+[721.00s -> 727.00s]  Another way to think about it is, we can no longer assume that our action came from our latest policy pi theta,
+[727.00s -> 731.00s]  so we'll instead learn a state action value function that is valid for any action,
+[731.00s -> 735.00s]  so that we can train it even using actions that didn't come from pi theta,
+[735.00s -> 738.00s]  but then query it using actions from pi theta.
+[738.00s -> 742.00s]  Okay, now those of you that are paying attention might notice that there's a little bit of an issue here.
+[743.00s -> 748.00s]  Because before, I was learning V hat, and I was using V hat in my targets.
+[748.00s -> 753.00s]  And that's okay, because I'm learning V hat, so I have it available to me to use as my targets.
+[753.00s -> 757.00s]  But now I'm learning Q hat, but I still need V hat for my target values.
+[757.00s -> 759.00s]  So where do I get that?
+[759.00s -> 766.00s]  Well, remember that the value function can also be expressed as the expected value of the Q function,
+[766.00s -> 769.00s]  where the expectation is taken under your policy.
+[770.00s -> 776.00s]  So what we can do is we can replace the V in our target value with Q,
+[776.00s -> 779.00s]  evaluate it at the action ai prime,
+[779.00s -> 785.00s]  except that ai prime now is not the action from our replay buffer.
+[785.00s -> 791.00s]  ai prime is actually the action that your current policy pi theta would have taken,
+[791.00s -> 794.00s]  if it had found itself in si prime.
+[794.00s -> 798.00s]  So you'll actually sample si ai si prime from your replay buffer,
+[798.00s -> 803.00s]  but then you will sample ai prime by actually running your latest policy.
+[803.00s -> 806.00s]  And you can do that because your policy is just a neural network.
+[806.00s -> 811.00s]  You don't have to actually interact with a simulator to ask the policy what action it would have taken.
+[811.00s -> 813.00s]  So it's a little trick that we're pulling here.
+[813.00s -> 817.00s]  We're actually exploiting the fact that we have functional access to our policy,
+[817.00s -> 822.00s]  so we can ask our policy what it would have done if it had found itself in this old state si prime,
+[822.00s -> 824.00s]  even though that had never actually happened.
+[824.00s -> 828.00s]  So then we get this action ai prime, and we plug it into the Q value.
+[828.00s -> 836.00s]  And that gets us a target value that actually represents the value of the latest policy at this old state si prime.
+[836.00s -> 838.00s]  That's really cool.
+[838.00s -> 841.00s]  Okay, so we've resolved our issue with the value function.
+[841.00s -> 843.00s]  Instead of learning V, we're going to learn Q,
+[843.00s -> 847.00s]  and we're going to exploit the fact that we can evaluate the value function
+[847.00s -> 850.00s]  as just the expected value of the Q function under the policy.
+[851.00s -> 853.00s]  Now, how are we going to deal with step five?
+[853.00s -> 855.00s]  How are we going to deal with the policy gradient?
+[855.00s -> 859.00s]  Well, all we're going to do is we're going to use the same trick,
+[859.00s -> 863.00s]  but this time we're going to use it for ai instead of ai prime.
+[863.00s -> 865.00s]  So in order to evaluate the policy gradient,
+[865.00s -> 871.00s]  we need to figure out an action sampled from the latest policy pi theta at the state si.
+[871.00s -> 872.00s]  But of course we can do that.
+[872.00s -> 878.00s]  We can just ask our policy what it would have done at the state si if it had the option to act there.
+[878.00s -> 882.00s]  And we'll call this action ai pi to differentiate it from ai.
+[882.00s -> 884.00s]  So ai was actually from the buffer,
+[884.00s -> 889.00s]  ai prime is what the policy would have done if it had been in the buffer state si.
+[889.00s -> 895.00s]  And now we'll just plug in this ai pi into our policy gradient equation,
+[895.00s -> 899.00s]  and that's now correct because ai prime did in fact come from pi theta,
+[899.00s -> 904.00s]  so this is in fact an unbiased estimator of expectations under pi theta.
+[905.00s -> 909.00s]  So remember, ai pi here is not the action from the replay buffer,
+[909.00s -> 914.00s]  it's the action sampled from your policy at the state from the replay buffer.
+[915.00s -> 920.00s]  Now in practice, when we do this kind of off-policy actor critic,
+[920.00s -> 922.00s]  we don't actually use the advantage values,
+[922.00s -> 926.00s]  we just plug in our q hat directly into this equation.
+[927.00s -> 930.00s]  We don't have to do it, we could actually calculate advantages,
+[930.00s -> 932.00s]  there's nobody stopping us from doing that,
+[932.00s -> 935.00s]  but it turns out that it's very convenient to just plug in q values.
+[935.00s -> 938.00s]  They have higher variance because they're not being baselined.
+[939.00s -> 941.00s]  But higher variance is actually okay here.
+[941.00s -> 943.00s]  Why is that?
+[943.00s -> 945.00s]  Well it's because we don't need to interact with a simulator
+[945.00s -> 947.00s]  to sample these actions ai prime,
+[947.00s -> 949.00s]  so it's actually very easy to lower our variance
+[949.00s -> 951.00s]  just by generating more samples of the actions
+[951.00s -> 954.00s]  without actually generating more sampled states.
+[954.00s -> 956.00s]  So it doesn't require any simulation,
+[956.00s -> 958.00s]  it just requires running the network a few more times.
+[958.00s -> 961.00s]  So in practice we're actually okay with a higher variance here
+[961.00s -> 964.00s]  because in exchange we get a larger batch size and it's all good.
+[964.00s -> 968.00s]  And it spares us the complexity of computing the advantage of step 4.
+[968.00s -> 970.00s]  So we're actually going to completely drop step 4
+[970.00s -> 972.00s]  for off-policy actor critic algorithms
+[972.00s -> 974.00s]  and we'll use q hat instead of a hat,
+[974.00s -> 978.00s]  which is still unbiased, it just doesn't have the baseline.
+[978.00s -> 982.00s]  So that gives us a more or less complete algorithm
+[982.00s -> 985.00s]  for off-policy actor critic.
+[985.00s -> 987.00s]  What else is left?
+[987.00s -> 990.00s]  Well there is still a little bit of an issue
+[990.00s -> 994.00s]  because s i, the state that we're actually using,
+[994.00s -> 997.00s]  itself it didn't come from the state margin of the latest policy.
+[997.00s -> 1000.00s]  It came from the state margin of an old policy.
+[1000.00s -> 1003.00s]  Unfortunately there's basically nothing we can do here.
+[1003.00s -> 1007.00s]  So this is going to be a source of bias in this procedure
+[1007.00s -> 1009.00s]  and we'll just have to accept it.
+[1009.00s -> 1011.00s]  The intuition for why it's not so bad
+[1011.00s -> 1015.00s]  is because ultimately we want the optimal policy on p theta of s,
+[1015.00s -> 1018.00s]  but we get the optimal policy on a broader distribution.
+[1018.00s -> 1021.00s]  So our replay buffer will contain samples from the latest policy
+[1021.00s -> 1023.00s]  as well as many samples from other older policies.
+[1023.00s -> 1026.00s]  So the distribution is sort of broader than the one we want.
+[1026.00s -> 1029.00s]  So we're not going to miss out on the states from our latest policy,
+[1029.00s -> 1031.00s]  we just also have to be good on a bunch of other states,
+[1031.00s -> 1032.00s]  which we might never visit.
+[1032.00s -> 1034.00s]  So we're doing kind of extra work,
+[1034.00s -> 1036.00s]  but we're not missing out on important stuff.
+[1036.00s -> 1039.00s]  And that's the intuition for why this basically tends to work.
+[1041.00s -> 1044.00s]  Okay, so a few details here.
+[1044.00s -> 1046.00s]  If you actually read some papers,
+[1046.00s -> 1049.00s]  and I'll reference a paper here shortly,
+[1049.00s -> 1050.00s]  that implement this procedure,
+[1050.00s -> 1052.00s]  one of the things you'll notice is that
+[1052.00s -> 1056.00s]  oftentimes there's much fancier things we can do for step four.
+[1056.00s -> 1058.00s]  For example, one thing we could use is something called
+[1058.00s -> 1059.00s]  the reparameterization trick,
+[1059.00s -> 1062.00s]  which I'll discuss in the second half of the course much later,
+[1062.00s -> 1063.00s]  so don't worry about it for now,
+[1063.00s -> 1066.00s]  but that can be a better way to estimate this integral.
+[1066.00s -> 1069.00s]  There are also many fancier ways to fit the Q function
+[1069.00s -> 1072.00s]  and we'll discuss this in the next two lectures
+[1072.00s -> 1073.00s]  when we talk about Q learning.
+[1073.00s -> 1076.00s]  So I described a very naive way to fit the Q function,
+[1076.00s -> 1078.00s]  but there are actually better ways to do it.
+[1078.00s -> 1080.00s]  If you want an example of a practical algorithm
+[1080.00s -> 1081.00s]  that builds on this idea,
+[1081.00s -> 1084.00s]  check out the algorithm called soft actor-critic.
+[1084.00s -> 1085.00s]  This is actually one of the most widely used
+[1085.00s -> 1087.00s]  actor-critic methods today.
+[1087.00s -> 1090.00s]  So although the online value-based actor-critic methods
+[1090.00s -> 1092.00s]  are more classical,
+[1092.00s -> 1094.00s]  the off-policy Q-value-based actor-critic methods
+[1094.00s -> 1096.00s]  are more commonly used.
+[1098.00s -> 1100.00s]  And we'll also learn about algorithms
+[1100.00s -> 1101.00s]  that do this kind of thing
+[1101.00s -> 1102.00s]  with deterministic policies later.
+[1102.00s -> 1104.00s]  So this is for a stochastic actor.
+[1104.00s -> 1106.00s]  Later on when we talk about Q learning,
+[1106.00s -> 1108.00s]  we'll actually revisit off-policy actor-critic methods
+[1108.00s -> 1110.00s]  also with deterministic actors.

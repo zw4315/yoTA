@@ -1,0 +1,747 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 11.12s]  Okay, I'm live. How's everybody doing? People are still here, that's good. How's assignment
+[11.12s -> 17.84s]  one going? Pretty good? There's been a lot of conceptual questions in office hours,
+[17.84s -> 23.24s]  which I actually think is correct. I would think about it this way. I've given you
+[23.24s -> 29.52s]  kind of four concepts, like this idea of multi-core, SIMD, multi-threading, and
+[29.56s -> 34.72s]  a little bit of superscaler. I think that's all, yeah, four. And so step one is for you
+[34.72s -> 41.56s]  to understand them kind of all in isolation, completely in isolation. And your written
+[41.56s -> 47.72s]  assignment that is out, you can start taking a look at, definitely you should be able
+[47.72s -> 52.36s]  to answer those questions, right? Like that's like concept from the slide, apply
+[52.36s -> 57.96s]  it, I bet you can answer those questions. When we go to the programming assignment,
+[57.96s -> 65.44s]  you're now running on real hardware. And real hardware is a little messier. And that
+[65.44s -> 72.76s]  real hardware is basically composing all four of those concepts together at once. And so
+[72.76s -> 76.72s]  it's okay if you're like, well, based on first principles, what we said in lecture,
+[76.72s -> 80.88s]  I should observe this, but I'm actually observing this, and so I'm a little bit
+[80.88s -> 85.28s]  doubting my understanding of the core principles. Just come into office hours, we'll talk
+[85.28s -> 89.12s]  about it. Often I can say, no, your understanding is completely correct, it's just some effects
+[89.12s -> 94.60s]  are mixing. The two things you understand are now mixing and interacting, and you can
+[94.60s -> 98.76s]  explain what you're seeing, you just have to think about it a little bit harder. So the
+[98.76s -> 102.56s]  mixing of it, I think, is where it gets a little bit complex. And you're just gonna see
+[102.56s -> 106.52s]  it over and over again, and you're gonna become much more acquainted with it as time
+[106.52s -> 111.72s]  goes on. So I would not worry too much. I'll put it this way. One year in this class,
+[112.16s -> 118.60s]  a long time ago, we had final projects where people could do anything that you wanted. And probably
+[118.60s -> 122.28s]  the most creative project that I've ever seen is a student came up to me and says,
+[122.28s -> 126.48s]  everybody works so hard in this class, but when you think about it, everything you teach
+[126.48s -> 131.84s]  us is stuff that people do already. You get busy, you go do something else. You have
+[131.84s -> 136.20s]  10 tasks to do and three people to do it. You just go, you do that, you do that, you do
+[136.20s -> 140.64s]  that. So their final project was to actually ask a bunch of exam questions or midterm
+[140.64s -> 147.52s]  questions to people on the street, like in a TV show, except they asked the questions
+[147.52s -> 152.08s]  in terms of real-life metaphors and actually wanted to compute what the average person
+[152.08s -> 156.96s]  in the world would get on a 149 exam if they just didn't have computer science
+[156.96s -> 159.96s]  concepts in it. And they actually scored pretty good, so I thought it was a pretty good
+[159.96s -> 165.92s]  final project. So the stuff is actually conceptually challenging because of the composition,
+[166.20s -> 173.20s]  but it's actually quite easy in first principle, so you'll get it. I wanted to, but one
+[173.36s -> 177.80s]  thing I wanted to do is I want to go over a lot from last time, again, given what
+[177.80s -> 184.80s]  everybody's asking me. And let's talk about a lot of this as a class. Because
+[185.16s -> 191.04s]  last time was the first time I was kind of forcing you to think about what does
+[191.04s -> 198.04s]  the program, the parallel program mean in terms of what should it compute. And then
+[198.24s -> 203.84s]  there's a whole bunch of questions about how does it actually run on a computer. And
+[203.84s -> 208.72s]  to keep those very separate in your mind is a very, very helpful skill, both as a
+[208.72s -> 215.08s]  programmer or if you're ever designing any system. So here is just the same example
+[215.08s -> 219.18s]  from last time. I'll page it back in for you if you forgot. This is the same
+[219.18s -> 224.58s]  example even from last week, which is we're computing, we have an array of numbers and
+[224.58s -> 229.18s]  we're computing the, for every element in that array we're computing the sign. And
+[229.18s -> 235.68s]  this is just normal C code. And at some point I call this ispc function. And an ispc
+[235.68s -> 242.68s]  function differs from a normal C function in what way? Like when I call a normal C
+[243.68s -> 251.68s]  function, it's like go look up, you know, if I go to the code, you know, I go to this
+[251.72s -> 257.88s]  code. If this is the normal C function, my control just transfers to the top of this
+[257.88s -> 264.16s]  function and I run those instructions. I do what the program says sequentially. And
+[264.16s -> 271.16s]  then I end up going back to the caller, right? So how does an ispc function
+[271.64s -> 273.16s]  differ from that? Yes, sir.
+[273.16s -> 278.16s]  Is it eight instances of the same thing with the local variable?
+[278.16s -> 284.00s]  Exactly. So this function call here is not saying just move over to that sequence of
+[284.00s -> 290.20s]  logic and run it and then come back. It's saying I want you to move over to this sequence
+[290.20s -> 295.92s]  of logic and run it gang size times. And let's just say our gang size is eight because
+[295.92s -> 300.40s]  that's what's true in my illustrations. We're going to run this code eight different
+[300.40s -> 307.40s]  times. And each time, one little detail will be different. What is that detail?
+[309.60s -> 313.76s]  The value of program index, which just says basically which time is this, which of these
+[313.76s -> 320.76s]  eight copies of the program I'm going to run, which one is this?
+[320.76s -> 326.36s]  Notice that so far I've said nothing about parallelism or implementation. But everything
+[326.40s -> 332.96s]  I've said is true. And if you want those eight different copies of this program together
+[332.96s -> 338.72s]  do all the work we need to do, notice that every program is sequential. This is
+[338.72s -> 343.88s]  just a set of instructions that run back to back to back. And every program does
+[343.88s -> 348.04s]  something a little bit different because its logic is dependent on the value of program
+[348.04s -> 355.04s]  index. Does that make sense? Okay. So this is the point where sort of eight copies
+[355.44s -> 361.04s]  of the function get created. And the return value is the point when those copies have
+[361.04s -> 368.04s]  completed. Again, no talk of implementation at this time. So are there any questions
+[370.04s -> 374.04s]  about that? It's a good time to ask a question. Yes, sir.
+[374.04s -> 380.12s]  How is the gang size determined? It is determined, you just said it, like
+[380.12s -> 385.48s]  at compile time in your flags, actually it's like at compile time gang size will be eight
+[385.48s -> 392.48s]  or gang size will be four or 16. Yes. Gang size is the same. How wide the expected
+[395.48s -> 398.80s]  instruction is? I wouldn't call it a coincidence, but I would
+[398.80s -> 405.80s]  say that first of all, is everything fine, like could you imagine a valid implementation
+[406.04s -> 412.64s]  if I set the gang size to a hundred? Sure. I mean I guess my program may not handle multiples
+[412.64s -> 419.64s]  of that, but let's say if I set the gang size to 64, this program is still valid.
+[420.08s -> 425.84s]  Just 64 copies of the program are going to get created, get executed, and they're all
+[425.84s -> 428.84s]  going to do their piece as defined by my code. Yes.
+[428.84s -> 434.56s]  Is the entire gang wrong at the same time? You're asking about implementation details.
+[434.56s -> 439.64s]  I'm just telling you what needs to happen. I'm telling you if the gang size is 64, 64
+[439.64s -> 443.68s]  copies of this function need to get run, and program index will have a different
+[443.68s -> 449.44s]  value in each of those. So if I ran them back to back to back serially, I'd get
+[449.44s -> 453.84s]  the right answer here. Now I'm going to put an asterisk by that,
+[453.84s -> 458.20s]  in that there's a few tiny little things if you read like page 42 of the manual that
+[458.20s -> 463.44s]  actually prevent ISPC from running them serially, but that's not here today.
+[463.44s -> 473.44s]  Okay, so everybody's good on that. Okay. So it would be perfectly fine for all practical purposes
+[473.44s -> 478.88s]  if the implementation of this call was to take this function and literally throw
+[478.88s -> 485.28s]  a for loop around it, which is for i equals zero to program count, set the value of program,
+[486.00s -> 491.28s]  yeah, program count, set the value of program index, and then just run this ISPC
+[491.28s -> 496.32s]  sine x function call over and over and over again. Perfectly valid, correct implementation.
+[496.32s -> 502.80s]  Now ISPC is not going to do that. Its implementation is not going to do that,
+[502.80s -> 506.76s]  because you wouldn't use ISPC if that's the implementation you were going to get.
+[506.76s -> 511.76s]  Okay. All right. So, and then we talked a little bit about, like,
+[511.76s -> 515.68s]  what you should think about this program is doing is you should ask the question,
+[515.68s -> 523.48s]  what program instance does what work? And so the code that I showed you, program instance zero,
+[523.48s -> 527.88s]  just because of that for loop, if you go look at that for loop, for i equals zero
+[527.88s -> 533.84s]  to program count, compute an index which is i zero plus my program index,
+[533.84s -> 540.12s]  and then increment i by program count every time, you're going to end up with a program
+[540.16s -> 547.12s]  that has divvied up work like this. Now we're going to get to implementation.
+[547.12s -> 555.32s]  The implementation is not going to be run the sine x function program count times back to back
+[555.32s -> 560.80s]  to back. The implementation, what the ISPC compiler is doing for you under the hood,
+[560.80s -> 566.52s]  without you thinking about it, is doing exactly the program transformation that you implemented
+[566.52s -> 572.16s]  in part two of your assignment. Right? You got a straight line set of C code,
+[572.16s -> 577.84s]  and it said rewrite that C code in instructions, in vector instructions,
+[577.84s -> 583.72s]  so that vector size things were all doing a piece of that loop at the same time.
+[583.72s -> 589.44s]  So the underlying implementation of this program, of that sine x program,
+[589.44s -> 595.28s]  is going to be as a set of vector instructions. Now the reason why you're going to set that
+[595.32s -> 600.44s]  gang size to the SIMD width of the machine, is that if I'm going to do eight copies of this
+[600.44s -> 605.64s]  program, I might as well run all eight at the same time in different lanes of a vector.
+[605.64s -> 611.36s]  So the result of compiling an ISPC program where your gang size is your SIMD width,
+[611.36s -> 617.36s]  is just a sequence of SIMD instructions that carry out that logic for all eight instances
+[617.36s -> 623.28s]  of the program altogether. So they are run simultaneously, and they're run simultaneously
+[623.28s -> 627.40s]  all within a thread, we're just issuing vector instructions. So if you actually traced your
+[627.40s -> 632.52s]  program execution, you would see a thread running with scalar instructions, you'd see a normal
+[632.52s -> 636.12s]  function call, and then you just see that same thread running with vector instructions.
+[636.12s -> 640.84s]  And when it returned from sine x, ISPC sine x, it just goes back to running at scalar
+[640.84s -> 647.44s]  instructions again. Right? So once this ISPC code is compiled, it's just like normal call
+[647.48s -> 651.20s]  return of a single thread, just your ISPC code is now vectorized.
+[651.20s -> 658.36s]  Now I talked a little bit last time on I could change the program. This is me as the user,
+[658.36s -> 663.40s]  this has nothing to do with like ISPC compiler. I said I want a different program now,
+[663.40s -> 669.32s]  and I want, I just decided instead to have a different mapping of program instances to who
+[669.32s -> 674.24s]  does what. It's a different program, it does the same thing, it computes the same answer,
+[674.28s -> 678.92s]  but the assignment is different. But that was my choice as a programmer.
+[678.92s -> 685.92s]  And the way I want you to think about how ISPC works is a table like this. So this is iterations
+[685.92s -> 693.72s]  of the I loop. Remember this is I equals zero to program count by program, so zero to N
+[693.72s -> 699.92s]  by program count. And let's say we have a gang size of eight. Now if you go back to that code
+[700.04s -> 709.92s]  here, every program instance in every iteration of this loop for I equals zero will compute some
+[709.92s -> 717.32s]  index. And so drawing out this table can be very, very helpful. Let's go right here.
+[717.32s -> 724.12s]  During the I equals zero iteration of the loop, every program instance is a column,
+[724.12s -> 729.72s]  and these are the indices that are, those are the values of the variable index in each of
+[729.72s -> 735.08s]  those program instances. And in the next iteration of the loop, these are the values,
+[735.08s -> 742.16s]  and so on and so on. Okay? Because of that code in the bottom, the code I have in the
+[742.16s -> 747.48s]  bottom right. So that was my first program, this was my second program, and it's just a
+[747.48s -> 752.92s]  different program, so in every iteration in time, the program instances are accessing
+[752.92s -> 757.80s]  different indices of the array. By the way, do you have a sense of which one is more
+[757.80s -> 769.96s]  efficient? Yeah? And what do you mean by goes one by one? Because in my second
+[769.96s -> 776.16s]  program that I'm showing you here, every program instance goes one by one in time.
+[776.16s -> 785.72s]  In my first program, at any one time, at any one moment, the different program instances
+[785.76s -> 792.36s]  are accessing one by one data. Any idea which one's preferred? You like this one,
+[792.36s -> 795.80s]  because you're saying at one moment in time, I'm going to ask memory for all these
+[795.80s -> 801.32s]  consecutive indices, which happens to fall right on a cache line, and that will be much
+[801.32s -> 806.76s]  more efficient. Absolutely, absolutely. This second program creates a situation where,
+[806.76s -> 812.52s]  this program creates a situation where one instruction, you know, like we're having
+[812.52s -> 817.80s]  a vector load instruction, and every address in every lane is separated by a whole bunch.
+[817.80s -> 824.40s]  Could actually, you know, if this program count was large enough, every single lane
+[824.40s -> 828.92s]  would need a different cache line. So that vector load might actually need eight different
+[828.92s -> 833.32s]  cache lines. And by the way, if they're spaced out by even more, some of them could
+[833.32s -> 838.40s]  even be paged out. So it actually could cause eight different TLB misses, eight different
+[838.40s -> 840.88s]  page faults. It could be quite expensive. Yeah.
+[840.88s -> 844.80s]  So if you have your program count as a scalar multiple of the vector width,
+[844.80s -> 850.12s]  would the implementation line still... Would it compute that all sealers would actually
+[850.12s -> 853.16s]  spawn multiple threads using...
+[853.16s -> 856.08s]  ISPC will never spawn any threads for any of the code that I've had.
+[856.08s -> 860.16s]  So what's your question? And I think it's important. So here's the blocked version.
+[860.16s -> 862.56s]  If you have, right, you have a vector width of eight...
+[862.56s -> 865.68s]  Let me go back to the interleaved version for you. That's probably clear. Yeah, okay.
+[865.68s -> 871.80s]  You said your gang count is 16. Is it going to seriously execute, right, the first portion
+[871.80s -> 873.20s]  and then the second portion?
+[873.20s -> 880.08s]  Ah, good question. So if my width of everything was 16 here, here, and I only have eight
+[880.08s -> 884.32s]  wide vector instructions, now you're asking how does the compiler implement that large
+[884.32s -> 890.44s]  gang size? It's gonna issue two instructions. Yeah. It's gonna back to back. And there's
+[890.44s -> 895.28s]  a reason why on your computers if you modify the gang size on the compiler to 16 from
+[895.32s -> 899.92s]  eight, you will get better performance. And the reason why you will get better performance
+[899.92s -> 905.24s]  is that think about like the vector operation here followed by the next vector operation
+[905.24s -> 909.96s]  to do 16 wide. Those are two independent instructions. So you just created an instruction
+[909.96s -> 913.40s]  string that has a lot more ILP in it and so it's gonna schedule much better on
+[913.40s -> 918.80s]  the pipeline. Absolutely. Okay. Now there's been a lot of questions about what does
+[918.80s -> 923.60s]  this for each mean. And this for each thing, I admit, is weird and ugly and you're
+[923.60s -> 929.20s]  not gonna see it in anything else we have in the class. But the for each thing is the
+[929.20s -> 938.12s]  following. It's a construct that you should think of as a per gang concept. For each
+[938.12s -> 945.72s]  says, I know this program is being run by a gang of program instances. So what for
+[945.72s -> 954.96s]  each says is altogether all of the program instances need to run n iterations. We have
+[954.96s -> 960.64s]  to run n iterations of the loop and in each iteration of the loop like i is gonna take
+[960.64s -> 965.60s]  on a different value. So it's kind of like saying, look, there's n iterations we got to run.
+[965.60s -> 973.84s]  ISPC compiler, you figure out how to map those iterations onto the eight program instances
+[973.84s -> 977.40s]  that we have. I'm not gonna tell you as a programmer. I'm not gonna think about interleaved
+[977.40s -> 983.04s]  or blocked. I'm just gonna tell you here's the work, please do it. Okay. So you don't
+[983.04s -> 990.24s]  know which program instance is being run, running each iteration. So another way to
+[990.24s -> 998.04s]  say that is if I was the ISPC compiler and I saw this, I could easily transform the
+[998.04s -> 1007.72s]  program into any of these four implementations and it would be valid. So I could transform
+[1007.72s -> 1013.40s]  it into an implementation where out of the eight program instances, the first program
+[1013.40s -> 1016.72s]  instance said, okay, I'll do all the iterations and none of the other program
+[1016.72s -> 1022.92s]  instances did anything. I could easily transform it into my first program or I interleave
+[1022.92s -> 1030.24s]  those iterations over the program instances or I could transform it into the blocked version.
+[1030.24s -> 1034.72s]  I could even transform it into a version of the program instances where like I'll just
+[1034.72s -> 1039.04s]  take the next one, the next iteration that nobody else has gotten. All of those
+[1039.04s -> 1044.16s]  are potentially valid implementations. Now in practice, it's gonna do something like this
+[1044.16s -> 1048.48s]  for the reasons that were stated earlier that it's gonna get really good memory utilization.
+[1048.92s -> 1054.24s]  That is something I need you to understand is that when you see a program construct
+[1054.24s -> 1059.96s]  which says here's some independent work, system, you map it to workers however you want,
+[1059.96s -> 1065.76s]  you don't know what worker is doing what piece of work and you actually don't even care.
+[1065.76s -> 1070.28s]  You say system just assign all the work so I get good parallelism, I'll leave it to you
+[1070.28s -> 1074.56s]  to make a good decision. Because in my first program, I chose to do it this way myself.
+[1074.88s -> 1080.88s]  Maybe that's a bad idea in some future system and if we would have written it with high level
+[1080.88s -> 1091.40s]  for each, some future is PC compiler might do a better job. Yeah. Yes, there is. I mean
+[1091.40s -> 1096.96s]  the system is gonna have some policy for doing it and maybe it's not as good as me,
+[1096.96s -> 1101.72s]  right? Like maybe I know my program really well and I'm like I want it to run this way.
+[1101.72s -> 1107.16s]  And so notice what ISPC has done. This is actually usually a clever design of a programming system.
+[1107.16s -> 1112.92s]  They give you low level mechanisms to specify exactly what you want and they give you a higher
+[1112.92s -> 1118.64s]  level mechanism that has an obvious translation into the lower level thing. So you're saying look,
+[1118.64s -> 1124.00s]  use the higher level one whenever you can because it's probably gonna do a good job most
+[1124.00s -> 1127.44s]  of the time. And if you're ever unsatisfied, you have the ability to dig deeper and do
+[1127.44s -> 1132.20s]  it yourself. And those layers of the onion are very, very important I think in good programming
+[1132.20s -> 1138.72s]  systems, especially in good system programming. So let's double down here. Now this is,
+[1138.72s -> 1144.88s]  so here's a basic for each loop. I took all the complexity out of it. It's just for each,
+[1144.88s -> 1149.60s]  for n iterations, do something. Okay? So I just abstracted it because I don't want you to think
+[1149.60s -> 1156.32s]  about a sine x. Okay? So in most cases, if you see something like this, you actually stop
+[1156.32s -> 1161.12s]  thinking about program instances at all. You actually just go, I have n things I need to do,
+[1161.12s -> 1167.68s]  n loop iterations. ISPC, like please make sure it's implemented in good SIMD. That's basically
+[1167.68s -> 1171.80s]  how you should start thinking anymore. Like you're not thinking about program instances or
+[1171.80s -> 1176.40s]  gangs or anything. You're just saying, you're actually saying, oh this for each, that's gonna
+[1176.40s -> 1181.28s]  be like, that's potentially parallel work. ISPC, spread them out, SIMDize it, do whatever
+[1181.28s -> 1185.00s]  you want. I trust you, you're gonna do the right job. You do way better than me
+[1185.04s -> 1191.48s]  implementing intrinsics myself. Okay? But it's important to understand how it runs,
+[1191.48s -> 1197.56s]  like what does this program do? Here's another ISPC program. For every input element of the
+[1197.56s -> 1210.48s]  array x, what happens? It's a big hint in the function name. It's valid. But what does it do?
+[1210.48s -> 1224.60s]  Takes every element, computes the absolute value, and stores it twice in the output.
+[1224.60s -> 1229.92s]  It's a valid program. The input array is a size n, the output array better be a size 2n.
+[1229.92s -> 1236.92s]  Right? Okay, so that's all it does. Makes sense. And again, like if you saw this code,
+[1236.92s -> 1240.24s]  you would just, you wouldn't think about it as what does every program instance do?
+[1241.00s -> 1245.68s]  You would think about it as, I need to process n elements, and for every element I'm gonna take
+[1245.68s -> 1249.96s]  the absolute value and I'm gonna shove it in these two spots, and this can be done in any
+[1249.96s -> 1254.16s]  order that ISPC wants. We already know how it's gonna do it. It's gonna interleave things
+[1254.16s -> 1260.72s]  amongst the program instances, but I don't really think about systems programming when
+[1260.72s -> 1265.48s]  I'm using for each anymore. But here's an interesting question. What does this program do?
+[1266.00s -> 1273.32s]  This is a little bit more interesting. So as long as you're not the first element of the array,
+[1273.32s -> 1282.20s]  if you're less than zero, what happens? I slide it back. Is this a valid program?
+[1282.20s -> 1287.08s]  People are shaking their head no, this is important. Why is this not a valid program?
+[1287.08s -> 1297.72s]  Yeah? So what we've told the system, like I know what this program would do if it was run
+[1297.72s -> 1302.52s]  serially. If it was run serially, I'd put something in I minus, I might put something in I
+[1302.52s -> 1308.32s]  minus one. The next iteration I might override it, or I might not, but it's very well defined
+[1308.32s -> 1313.24s]  what the answer is. If these iterations are run in some order that you don't know,
+[1313.24s -> 1319.12s]  because you've left this up to the ISPC compiler, you said that these are independent
+[1319.12s -> 1324.76s]  iterations, execute them across the program instances in whatever order you wish, you
+[1324.76s -> 1328.04s]  have no idea what the output of this program is, because the output of this program will
+[1328.04s -> 1335.28s]  depend on the order that ISPC will run these things in. So this is a program with undefined
+[1335.28s -> 1340.44s]  output. The next rather the ISPC compiler might come out and your program might be a different
+[1340.44s -> 1345.96s]  answer, and they're well within their rights to do that, because the contract for for each
+[1345.96s -> 1350.88s]  was I'm saying that these iterations can be scheduled onto the program instances in
+[1350.88s -> 1352.76s]  whatever order the system wants.
+[1352.76s -> 1355.80s]  Will the compiler be able to catch something like this?
+[1355.80s -> 1359.80s]  Well, the current ISPC compiler will make no effort to try and catch something like
+[1359.80s -> 1363.96s]  this. And it can't catch something like this, because what if I changed x sub i into
+[1363.96s -> 1371.88s]  x sub a sub i for some arbitrary data dependent a in the index? Yeah. So, sure, maybe some
+[1371.88s -> 1375.40s]  compiler out there, if they cared, could catch this one, but I could continue to write
+[1375.40s -> 1377.40s]  any program that doesn't.
+[1377.40s -> 1379.40s]  That's a race condition.
+[1379.40s -> 1385.32s]  That's a race condition, absolutely. Unclear what the output of this program is. Okay?
+[1385.32s -> 1392.92s]  So here's one more that should really get you to understand things. This is a broken
+[1393.00s -> 1400.12s]  program for how to compute the sum of all elements in the array. Can you see why it is broken?
+[1401.72s -> 1409.32s]  For every element in the array, independently, please add into the variable sum,
+[1410.28s -> 1416.68s]  which is a per program instance variable, and then return sum. So first of all, this is
+[1416.68s -> 1419.40s]  actually not going to compile. Can you tell me why it will not compile?
+[1419.40s -> 1428.44s]  Yeah. If I'm running eight program instances and they all return sum, that doesn't make any
+[1428.44s -> 1433.16s]  sense because the caller is expecting one return value. So the only way to return something
+[1433.16s -> 1436.92s]  actually in ISPC is if it's a uniform value, which means there's one copy for the
+[1436.92s -> 1442.60s]  entire program. So this actually won't type check. But here's another version of it
+[1442.60s -> 1448.36s]  where, well, also, there's actually another conceptual problem here.
+[1451.16s -> 1456.44s]  I have eight copies of sum. What will they be at the end of every program instance's completion?
+[1457.80s -> 1466.76s]  Yeah. They'll be the sum of all of the values from all the iterations
+[1466.76s -> 1471.48s]  that whatever got assigned to the different program instances. Now, here's a version where
+[1471.48s -> 1476.68s]  I changed the program and I made sum uniform. So I could return sum if I wanted to,
+[1476.68s -> 1481.88s]  but there's a problem with this program. Yeah. Now we've got another race condition,
+[1481.88s -> 1487.32s]  which is I have a single sum, and I'm trying to have a bunch of program instances plus equals
+[1487.32s -> 1494.20s]  into that sum. And so now I have something even, I have another race condition.
+[1494.68s -> 1500.60s]  And I'll talk a little bit. So here's actually how to write this thing. Oops, sorry. Did I get
+[1500.60s -> 1508.68s]  this correctly? Yeah. This is actually how you write this thing. So notice that I have a
+[1508.68s -> 1514.92s]  variable partial that's per program instance. I say for all iterations of the loop,
+[1516.04s -> 1520.68s]  I don't care who you allocate the iterations to, but everybody is going to accumulate their
+[1520.68s -> 1528.28s]  local partial. And then at the end, I'm using a special cross instance library function that
+[1528.28s -> 1536.68s]  ISPC provides to perform a safe summation of this value, which is unique per program instance,
+[1538.20s -> 1543.08s]  to put the results in a uniform value, which can then be returned.
+[1543.08s -> 1556.28s]  Yeah. No, not right. No, it doesn't. It doesn't, but it would be conceptually easy to do. Yeah.
+[1557.08s -> 1563.00s]  You can see, trust me, this is a cross-lane operator. Yes. So another way to check
+[1563.00s -> 1569.08s]  your understanding is that ISPC will compile this code, like now we're talking about
+[1569.08s -> 1576.92s]  implementation of the current ISPC compiler, to kind of a program to solution that looks like this.
+[1577.88s -> 1583.96s]  Notice what's going on here. For i equals zero to n by eight, just do a vector load and a
+[1583.96s -> 1590.04s]  vector add. Add, add, add, add, add, add. At the end of this loop, I have a single
+[1590.04s -> 1595.00s]  SIMD vector, and every lane is a partial sum of all of the elements in the array.
+[1595.56s -> 1602.84s]  Can you see how that's going on? And then at the end, I need to do something to add up all the
+[1602.84s -> 1608.44s]  elements in the array. So I iterate sequentially over all the elements of the array, summing over
+[1608.44s -> 1617.56s]  that final vector. So this is a naive implementation of reduce add. Yeah.
+[1618.36s -> 1624.92s]  You need to declare load at the beginning, or you can also declare some at the beginning, or you can also do that?
+[1624.92s -> 1631.00s]  No, the variable can be declared anywhere. I was just adopting good programming conventions.
+[1632.20s -> 1640.92s]  Okay. So, you know, ISPC has all of these interesting cross-program instance operators that
+[1640.92s -> 1645.64s]  you can use if you want to think about programming in terms of a bunch of program
+[1645.64s -> 1654.36s]  instances, and what are they doing at the same time. Okay. And so that's what I wanted to get
+[1654.36s -> 1659.00s]  across here. Like, first you always start by saying, what does the programming language
+[1659.00s -> 1666.84s]  mean and do? And then you start talking about how is it implemented. And nothing I have said
+[1666.84s -> 1673.00s]  here today will ever run on more than one core, or one thread of one core. We have not talked
+[1673.00s -> 1678.04s]  about how to create more threads or anything like that. Okay. So that's the programming model of ISPC.
+[1679.24s -> 1686.04s]  Now, everything that we've said, you can now just replicate out, and that's the idea of tasks.
+[1686.04s -> 1692.28s]  So when you create a task, that's like saying, here is some work to do, and I want one gang of
+[1692.28s -> 1698.12s]  program instances to do it. So I can create a hundred thousand tasks if I want. In the same
+[1698.12s -> 1703.16s]  way that ForEach said, here's a gazillion loop iterations, ISPC, you figure out how to assign
+[1703.16s -> 1708.76s]  it to program instances. Tasks are like saying, here's a gazillion gangs of work to do,
+[1709.32s -> 1713.96s]  you figure out how to assign it to the threads in the machine and do it however you want.
+[1713.96s -> 1719.24s]  So if I create a million tasks and I'm running on a myth machine with eight hyper threads,
+[1720.20s -> 1723.56s]  ISPC under the hood is just going to create eight hyper threads and then go,
+[1723.56s -> 1727.16s]  okay, you do the next task, you do the next task, you do the next task, and so on and so on.
+[1728.12s -> 1737.00s]  Now, one thing that I'd like you to mull over a little bit is, if we're not using any of these
+[1737.00s -> 1740.76s]  cross-lane operators or anything like that, if we don't have to have these
+[1741.40s -> 1744.60s]  program instances communicate at all, which most of the time we don't,
+[1745.56s -> 1753.08s]  and if you're using ForEach, I don't even ever think about program instances. I don't think
+[1753.08s -> 1758.92s]  about program count at all. I just say, here are my loop iterations, ISPC, you go do it in parallel
+[1758.92s -> 1768.04s]  however you want. But ISPC has all these concepts in it, so we can do really advanced
+[1769.64s -> 1776.12s]  shifting and other stuff. Like here's an example of an ISPC program that actually computes the
+[1776.12s -> 1782.68s]  dot product, I think, no, computes the product of all the elements in an array.
+[1783.96s -> 1788.12s]  So given all elements in an array, compute their product. So one output.
+[1790.28s -> 1795.40s]  So if ISPC wasn't trying to be so low level, it would just probably give you a ForEach
+[1795.40s -> 1800.44s]  and say you're not allowed to have program count at all, or program instance. You just
+[1800.44s -> 1803.96s]  write code, you'd almost never think about parallelism, and you'd be like, wow, my program
+[1803.96s -> 1809.24s]  runs eight times faster than it did before. This is awesome. So if I take out all the
+[1809.24s -> 1813.32s]  low level stuff from ISPC, it turns out to be a very, very simple thing.
+[1818.28s -> 1821.16s]  Now there's going to be an alternative that some of you might be, you know,
+[1821.16s -> 1827.80s]  if you're a functional programming person or a numpy programming person, you might be more
+[1827.80s -> 1835.64s]  accustomed to not thinking about array indices, but thinking about operations on vectors,
+[1835.64s -> 1842.68s]  like adding two tensors, or giving a lambda and mapping a lambda onto a collection.
+[1843.56s -> 1849.88s]  So you can kind of think about this ISPC program as the collection is the set of values
+[1849.88s -> 1858.12s]  that are referenced by X of I. So a higher level programming language just wouldn't allow
+[1858.12s -> 1865.16s]  you to do any indexing at all. It would just say, you know, the data access of add is well
+[1865.16s -> 1870.84s]  defined. X plus Y is just every element matches up with everything else. So higher level
+[1870.84s -> 1874.44s]  programming languages would exist and would be able to generate really fast code as well.
+[1876.44s -> 1879.64s]  And we're going to talk about them as well. But now you can think about if you had that
+[1879.96s -> 1884.68s]  in PyTorch or NumPy, how would you actually implement it well on a SIMD machine?
+[1885.48s -> 1888.44s]  And you have some of the tools to think about how you'd actually implement PyTorch.
+[1890.60s -> 1892.84s]  Okay. All right. Any questions on that?
+[1896.12s -> 1899.40s]  Before we actually get to the basics. Yeah.
+[1899.40s -> 1904.20s]  Can you promote the task thing again? Like where did you exactly define it?
+[1904.20s -> 1908.60s]  That's in the program. I would like everybody to kind of,
+[1908.60s -> 1913.08s]  as it says in the handout, go read the manual. Or my office hours are at
+[1913.64s -> 1922.12s]  one o'clock today. So I'll take that.
+[1922.12s -> 1927.72s]  An ISPC task is just a task. A thread would be an implementation detail.
+[1928.60s -> 1935.40s]  But it's very true that if you create eight tasks, a smart thing for ISPC to do would be
+[1935.40s -> 1940.44s]  under the hood spawn eight threads and run them all on different threads. But if you
+[1940.44s -> 1945.72s]  create 100,000 tasks, it'd probably be pretty dumb for ISPC to create 100,000 threads.
+[1945.72s -> 1947.00s]  And I'll show you why in a second.
+[1958.36s -> 1965.88s]  Hmm. So the question was, let's say I'm back in C land and I create 10 C++ threads.
+[1967.08s -> 1974.76s]  If I go to my activity monitor right now and my computer,
+[1978.76s -> 1983.40s]  there's a lot of threads. And I have eight execution contexts.
+[1983.40s -> 1987.56s]  So your question is in general, how does a computer that needs to run
+[1989.24s -> 1995.48s]  apparently 700 kernel threads right now, how does it run 700 kernel threads on my computer?
+[2000.84s -> 2005.24s]  It's got a context switch. So the operating system from time to time is saying,
+[2005.24s -> 2009.00s]  here are those eight threads that need to run. I'm going to put them on the processor
+[2009.08s -> 2013.88s]  and let the processor run. And periodically, some timer expires and the operating system says,
+[2013.88s -> 2018.44s]  well, we have 700 threads. We need to have another eight run. So we're going to rip those
+[2018.44s -> 2023.64s]  threads off the processor and put those on. And you can imagine that could be pretty slow.
+[2024.76s -> 2029.40s]  So in fact, let me go ahead and, since you asked, let me,
+[2029.40s -> 2055.80s]  one second. I have a demo of that. Okay. So here's a program that I wrote.
+[2059.40s -> 2066.60s]  Yeah, one second. Okay. So here's a C program.
+[2068.60s -> 2073.48s]  And it has three tests in it. It has, so there's this function called do work,
+[2073.48s -> 2077.48s]  which literally does nothing. So the cost of doing work is just calling the function. And
+[2077.48s -> 2080.60s]  I put some stuff up here which says, hey, don't do anything fancy. I know there's nothing
+[2080.60s -> 2084.60s]  in it. Don't inline it. Don't try and optimize or anything like that. So I've got a function.
+[2084.60s -> 2089.16s]  Imagine that this is my task. It does nothing. So it's like the cheapest task in the world.
+[2090.20s -> 2095.96s]  And then here's a test which says run test zero. So test zero sequentially calls that
+[2095.96s -> 2103.32s]  function. Okay. Test one, well, actually, let me go to test two first. Test two
+[2105.56s -> 2113.80s]  says right here, I'm going to create num worker threads. So I've hard coded that to eight
+[2113.80s -> 2119.08s]  on my computer. So I'm gonna create eight worker threads. They're all gonna run worker two,
+[2120.20s -> 2124.28s]  where worker two is given the total number of tasks,
+[2127.72s -> 2136.92s]  take the next available task, call do work, run it, and then keep a count of how many tasks
+[2136.92s -> 2142.84s]  i this thread has performed. And if we ever get to a total task count that equals n, we quit.
+[2142.84s -> 2146.68s]  So I create eight workers and they just go next, next, next, next, next, next, next.
+[2147.32s -> 2155.08s]  And then task one, sorry, strategy one, test one is just for every task,
+[2155.08s -> 2159.72s]  create a thread, run the task, and then reap the thread, join the thread.
+[2159.72s -> 2162.76s]  Okay. So which one do you think is gonna be the fastest?
+[2162.76s -> 2169.72s]  Votes? Yeah.
+[2174.60s -> 2180.76s]  Okay. So zero was do everything sequentially. One was spawn up an actual thread,
+[2180.76s -> 2188.20s]  a C++ thread for every task. And two was spawn eight threads and just have those eight
+[2188.20s -> 2196.84s]  threads cooperate, right? So you like two. Okay. Any other votes? Zero. Any other votes?
+[2198.52s -> 2201.48s]  One with eight threads, the same vote here. So let's actually run this thing.
+[2203.08s -> 2206.76s]  What is my program called? Oh, thread launch. Okay. Here we go.
+[2208.52s -> 2215.72s]  So zero finished in 1.6 milliseconds. I think I'm running like a billion iterations or something
+[2215.72s -> 2223.80s]  like that. This is the spawning threads. And then it just flashed test two.
+[2225.40s -> 2230.52s]  So basically the sequential one, because there's just no work involved, it was just a lot easier
+[2230.52s -> 2236.36s]  just to call the function and take the eight operations to push something out of the stack
+[2236.36s -> 2244.92s]  and pop it up. So the test zero was 23 times faster than test two, which was my thread pool.
+[2245.72s -> 2252.36s]  My thread pool was 300 times faster than spawning a thread per task. So this is an
+[2252.36s -> 2259.80s]  extreme case where the task is so tiny that any overhead that you see it. But that's a 300X
+[2259.80s -> 2268.36s]  difference between creating a thread per task and letting the operating system sort it all out.
+[2269.32s -> 2273.72s]  And me just creating exactly the number of threads that my machine can use
+[2274.44s -> 2278.28s]  and me handling the work dispatch with an efficient get next task kind of thing.
+[2279.24s -> 2282.12s]  So what do you think ISPC is doing under the hood when you create tasks?
+[2283.56s -> 2287.72s]  It's creating a pool of the right size and saying, oh, I'm going to divvy up.
+[2295.40s -> 2295.88s]  Yeah.
+[2295.88s -> 2300.68s]  So if the function was very long, would it be still better?
+[2300.68s -> 2305.32s]  If this function was very, very long, I would expect to see my thread parallel thread pool
+[2305.32s -> 2308.84s]  definitely outperform sequential, because I'm doing all the work in parallel.
+[2314.52s -> 2318.92s]  Well, at some point, if the function got so long, it doesn't matter anymore,
+[2318.92s -> 2323.48s]  because the overhead of creating that thread is insignificant. So what we could do is we could
+[2323.48s -> 2327.08s]  put a for loop inside my little task and make it do more and more work, and you could
+[2327.08s -> 2332.12s]  go figure out what the cutoff point would be. Yeah, exactly. There's also a cutoff point
+[2332.12s -> 2336.92s]  where if it's so small, you might as well not even do it in parallel, as we saw there.
+[2345.96s -> 2351.72s]  Yeah. So don't confuse context switching that you'd hear about in an OS class,
+[2351.72s -> 2356.44s]  which is what we are now talking about, with hardware multi-threading that we talked about
+[2356.44s -> 2363.40s]  in this course. In this class, we will almost never think about operating system context switching,
+[2363.40s -> 2367.96s]  because we think about we're the only application on the computer most of the time,
+[2367.96s -> 2374.28s]  and it makes no sense for an application to create more threads than execution context,
+[2375.80s -> 2380.28s]  because all you're forcing to happen is the operating system starts swapping them on and off.
+[2380.92s -> 2384.92s]  Your job is to create one thread per as much work as you can do,
+[2385.72s -> 2389.16s]  and then it's your responsibility to take work and assign them to your working threads.
+[2390.68s -> 2394.92s]  Absolutely. An operating system context switch is hundreds of thousands of cycles.
+[2395.56s -> 2403.00s]  A hardware execution context switch is one cycle, right? Very different. If you use
+[2403.00s -> 2406.36s]  operating system context switching to high the latency of the memory access,
+[2406.92s -> 2410.36s]  memory would be done in a couple hundred cycles, and you'd still be spending a hundred thousand
+[2410.36s -> 2414.76s]  cycles swapping your thread out. It makes no sense. So the same idea,
+[2414.76s -> 2416.68s]  but at very different orders of magnitude.
+[2421.16s -> 2426.04s]  Okay. So the rest of the time, I actually want to go through a case study or two with you.
+[2427.16s -> 2431.72s]  The first time, we're actually going to really start kind of optimizing programs. I mean,
+[2431.72s -> 2436.92s]  you have to, I guess, optimize programs a little bit in assignment one, but it's not super crazy.
+[2437.80s -> 2444.12s]  Our goal is going to just be to get the maximum speedup for now. Our goal is to reduce the timer
+[2444.84s -> 2450.20s]  by some factor. And hopefully, if I can do things, if my time is p times less,
+[2450.20s -> 2461.40s]  then I have this p speedup. And I think it's somewhat helpful. Every year I decide whether or
+[2461.40s -> 2465.88s]  not I should still have this slide. I think it's useful just to talk in general abstract
+[2465.88s -> 2470.36s]  terms for a second about kind of the process of paralyzing the program.
+[2471.08s -> 2478.68s]  And the process you can think of is like, what is step one? Step one is almost always
+[2478.68s -> 2484.84s]  figure out what is independent. Divide work, figure out what are the things I could do in
+[2484.84s -> 2491.56s]  parallel if I want to. And terminology is kind of weird, but decomposition is kind of something
+[2491.56s -> 2496.68s]  that I think I use to say that. It's like, I got a problem. I need to decompose it into things
+[2496.68s -> 2502.28s]  to do. Sometimes people might say tasks or something like that. And then there's the
+[2502.28s -> 2508.20s]  problem of assigning those tasks, assigning that work, really what I should say, to things
+[2508.20s -> 2513.24s]  that can execute the work. And so you'll often hear me say assignment to mean that.
+[2513.24s -> 2518.44s]  So decomposition is going, oh, we can work in parallel. And assignment is like, okay,
+[2518.44s -> 2524.92s]  I'll do this and you do that. And then, of course, at some point there's often some
+[2524.92s -> 2529.80s]  orchestration or some synchronization because we have to sync up. We might have to compute
+[2529.80s -> 2534.60s]  a total sum or it might need to be like when you're done, I'll go. You'll see me call
+[2534.60s -> 2542.04s]  that orchestration. And last, there's often a notion of mapping, of how does some worker
+[2542.12s -> 2549.00s]  actually get to the hardware. So I'll give you some examples of that in a second.
+[2549.80s -> 2556.44s]  So in this class, you are almost always going to be the entity responsible for decomposing
+[2556.44s -> 2562.84s]  a problem into smaller pieces that can be done in parallel. The magic compiler that
+[2562.84s -> 2569.72s]  does it for you largely does not exist unless you're using very specialized computing languages.
+[2570.28s -> 2579.40s]  Okay. And it's a little bit shocking to see how your speedup is limited if only a pretty
+[2579.40s -> 2586.36s]  small fraction of your program is not paralyzed. So let's say we had a program that had some
+[2586.36s -> 2593.40s]  run time and imagine that the fraction S of that program was serial. So let's say
+[2593.40s -> 2597.64s]  you have a program and have half the program just as inherently serial or maybe you just
+[2597.64s -> 2602.68s]  don't get around to parallelizing it, S is one half here. Okay. If 10% of the program
+[2602.68s -> 2608.76s]  is serial, S is 0.1. So then the maximum speedup you could ever hope to achieve if
+[2608.76s -> 2614.92s]  you perfectly paralyzed the other part with an infinite number of processors is
+[2614.92s -> 2623.80s]  sort of one over S because your run time is at least S. And so, you know, if your
+[2623.80s -> 2628.60s]  total time over S, you're limited by one over S of your speedup. And this can actually be pretty
+[2628.60s -> 2633.40s]  dramatic. Let's like look at this. So here's a simple example from programs that I kind of
+[2633.40s -> 2638.84s]  write all the time which is imagine I had an image of me and the goal was to multiply
+[2638.84s -> 2645.00s]  all pixels by two to increase the brightness. And then maybe I wanted to compute the average
+[2645.00s -> 2648.60s]  of all pixels. It's actually a pretty common operation that your camera does all the time.
+[2649.32s -> 2655.48s]  Both steps, hopefully you can see, take n squared time. They're n squared pixels. It's an n by n image.
+[2656.36s -> 2662.84s]  And if I plotted things out like this is execution time and this is the amount of
+[2662.84s -> 2667.64s]  parallelism when running. So if this is a sequential program, right now the implementation
+[2667.64s -> 2676.20s]  has parallelism one and it has time 2n squared, right? 2n squared. So what would be the first step?
+[2676.20s -> 2679.08s]  What do you identify could be done in parallel?
+[2683.80s -> 2688.60s]  I can definitely compute the brightness of every pixel independently and potentially in parallel.
+[2688.60s -> 2694.36s]  And let's say that we run this on a machine with p processors. Now I'm going to use the
+[2694.36s -> 2699.72s]  term p processors because I don't, I mean you could think about it as a processor with
+[2699.72s -> 2704.36s]  p cores or we can think about it as just like distributed computing with p processors. I don't,
+[2704.36s -> 2708.52s]  the details of that don't matter. Let's just say we had p things that could run in parallel.
+[2709.08s -> 2714.76s]  Well if I take your strategy then what happens is the front part of this program now goes to
+[2714.76s -> 2719.96s]  time n squared over p and I haven't touched the back half of the program. What's my speedup?
+[2721.16s -> 2728.20s]  Perfectly parallelized the first part of the program. Didn't touch the back half but
+[2728.20s -> 2732.12s]  my speedup is what? In the limit let's say as n is huge.
+[2735.24s -> 2741.08s]  Sorry, it's twice right? So like what is my overall performance? Well it used to be 2n squared
+[2741.80s -> 2748.20s]  and now it's n squared over p plus n squared and in the limit that's going to go to bounded by
+[2748.20s -> 2754.60s]  2. So half my program remains sequential. There's nothing I can do. I can't be any fancier here.
+[2755.24s -> 2758.52s]  If I went to a million processors I would still be bounded by 2.
+[2759.72s -> 2761.24s]  Okay, now what else could we do?
+[2763.24s -> 2773.40s]  Yeah. Yeah, so I can take all my processors, every processor could take like one pth of the
+[2773.40s -> 2781.56s]  image, compute a sum and then I gotta do what at the end? Well yeah, you're speaking about
+[2781.56s -> 2787.48s]  in terms of like if we had to write an ispc but conceptually we just, every processor does
+[2787.48s -> 2793.72s]  one pth of the sum and then if we just naively add p things up to get the final answer that
+[2793.72s -> 2801.64s]  would be plus p here at the end, right? So I have n squared, n over p, yeah so I have 2
+[2801.64s -> 2808.60s]  n over p squared plus p if I added the the partials up sequentially. Did I see that?
+[2812.20s -> 2819.16s]  So the real question here is like if p is very, very small compared to n I'm going to be doing
+[2819.16s -> 2826.92s]  great. If p is actually kind of substantial compared to n then I fundamentally still have
+[2826.92s -> 2833.40s]  some problems, right? And so this factor s is actually pretty important. So here is a plot where
+[2833.40s -> 2838.84s]  this is the total number of cores, number of processors, 64 processors and this is a
+[2838.84s -> 2846.44s]  theoretical optimum speedup for programs that have different s's, right? So let's say that only
+[2846.44s -> 2852.76s]  1% of your program was sequential and you run that thing and the other 99% is perfectly
+[2852.76s -> 2861.40s]  paralyzable on a 64 core box. You are limited to about 40x speedup. That 1% of sequential
+[2862.04s -> 2868.76s]  really starts to bite you. And so I'm already like not perfect scaling on a machine with 64 cores.
+[2869.64s -> 2876.84s]  If 10% of my program can't be paralyzed, my best case scenario on a 64 core box is about 8x.
+[2878.68s -> 2882.60s]  It's pretty dramatic. Now imagine you're not running on a 64 core machine but you're
+[2882.60s -> 2891.72s]  running on a big supercomputer that has approximately 150 million parallel units.
+[2892.28s -> 2899.24s]  You better get that sequential portion of your code down to like 0.000001% of the problem,
+[2899.80s -> 2901.64s]  otherwise you might as well not be using this thing.
+[2903.56s -> 2905.96s]  Luckily most of the code we run is going to be pretty paralyzable.
+[2907.80s -> 2913.80s]  So like I said, in this class understanding how to decompose something is going to be almost
+[2913.80s -> 2919.32s]  just like what we did here. It's going to be up to you to write a program that decomposes
+[2919.32s -> 2927.64s]  things well. Don't hope for magic there. But what we often might rely on systems for
+[2927.64s -> 2932.44s]  programming languages or compilers is to assign that work to workers for us.
+[2933.64s -> 2941.48s]  So assignment might be something like, well the name of the game in the assignment is to keep
+[2941.48s -> 2947.96s]  all of my workers busy. So you might be responsible for assignment. For example,
+[2947.96s -> 2958.04s]  earlier in this lecture I wrote two different ISPC programs where in this program I assigned
+[2958.76s -> 2964.76s]  loop iterations to program instances. I wrote this code so I decided that this program instance
+[2964.76s -> 2970.12s]  was going to do this iteration. I assigned it. I gave you a different version of the code where
+[2970.12s -> 2976.12s]  I said, ISPC I'll let you do the assignment. I trust you to do as well or better than me.
+[2977.00s -> 2978.84s]  So that's an assignment task right there.
+[2980.28s -> 2986.68s]  On the first day of class I think I showed you this piece of code where I had a C program
+[2986.68s -> 2992.84s]  that spawned an additional thread and in this code I assigned one half of the array to one of
+[2992.84s -> 2997.96s]  those threads by the nature of the code that I wrote and I assigned the other half of the array
+[2997.96s -> 3011.48s]  to another thread. So I assigned who does what. In ISPC tasks you are decomposing this problem
+[3011.48s -> 3019.16s]  into tasks but you're telling ISPC I will let you assign these tasks to the running threads that
+[3019.16s -> 3024.12s]  you have to do the work. So under the hood there might be a pool of threads like one that you
+[3024.12s -> 3029.72s]  implemented in 1.11 and ISPC is going is there an idle thread? If so, hey could you please work on
+[3029.72s -> 3035.16s]  task zero? Oh are you idle? Could you please work on task one? Oh you just got done with the
+[3035.16s -> 3039.96s]  task? Well the next available one is task 42. Could you go do that? That's what's going on
+[3039.96s -> 3045.24s]  under the hood and most of the time we would rather have the computer the system do the
+[3045.24s -> 3048.68s]  assignment for us because we're going to assume that they're going to do a better job than
+[3048.68s -> 3053.16s]  maybe we would or maybe there are different assignment strategies that are the right assignment
+[3053.24s -> 3057.80s]  strategy for different computers and I don't want to have to write my program with a specific
+[3057.80s -> 3061.16s]  computer in mind unless I really really care about performance.
+[3066.20s -> 3070.04s]  We won't talk too much today about orchestration but you saw one example of it
+[3070.04s -> 3074.52s]  like that reduce add or those cross-lane calls but at some point even if you are
+[3076.36s -> 3080.44s]  divvying stuff up into different pieces those workers are going to have to communicate
+[3080.44s -> 3084.84s]  and synchronize. You know one example of synchronization would be these workers have
+[3084.84s -> 3091.00s]  to synchronize so that every task only goes to one worker and every worker goes to the you know
+[3091.00s -> 3094.76s]  gets the next task. So there's going to be a little bit of synchronization and you saw the
+[3094.76s -> 3100.12s]  effect of that synchronization in my demo that I just showed you in that my thread pool was
+[3100.12s -> 3104.60s]  still slower than the sequential version of the algorithm because my threads were synchronizing
+[3104.60s -> 3110.68s]  to take the next task so that was an example of synchronization and then last like at some point
+[3111.80s -> 3119.24s]  someone has to actually take this idea of a thread or a program instance and map it to an
+[3119.24s -> 3124.36s]  actual piece of hardware that's not the last step of this so oh sorry yeah we talked about
+[3124.36s -> 3130.84s]  orchestration and the mapping it to hardware so for example you know imagine you create a thread
+[3131.48s -> 3137.00s]  who maps your C++ thread to a hardware execution context you just talked about it
+[3137.96s -> 3144.44s]  operating system in ispc who maps a program instance to a vector lane
+[3146.52s -> 3150.28s]  that's that's like kind of like built in in the implementation of the compiler exactly
+[3151.24s -> 3155.00s]  and there's a bunch of interesting mapping decisions like imagine you're the operating system
+[3155.56s -> 3162.76s]  and imagine your program creates two threads and you're running on a myth machine if your program
+[3162.76s -> 3168.28s]  creates two threads and I'm the operating system do I put them both on execution context on the
+[3168.28s -> 3174.44s]  same core or do I put them on different cores it's just a it's a policy decision that one
+[3174.44s -> 3181.88s]  could make and there are different plows and costs okay so let's dig in with a little bit
+[3181.88s -> 3185.40s]  a stronger case study here uh how many people do we have any uh
+[3189.40s -> 3193.72s]  like any numerical computing folks any scientific computing folks in the
+[3194.36s -> 3200.44s]  it's almost always on okay no um how many people implemented a solver an iterative solver
+[3200.44s -> 3204.20s]  in a numerical methods class we got some folks cool what solver did you implement
+[3206.36s -> 3209.96s]  yeah oh you did a Newton's method solver okay so here here's you know actually
+[3209.96s -> 3215.16s]  well no not not similar idea but but here's like a grid of so imagine we have like a
+[3216.76s -> 3224.60s]  this is actually from a fluid solver where we have a grid of values and at every value there's
+[3224.60s -> 3233.56s]  like a pressure or some quantity and the goal is to uh to bring this system to convergence
+[3233.56s -> 3238.68s]  and the details of that are not that important but computationally what it basically is is
+[3238.76s -> 3246.12s]  blurting out the grid the new value at a location yellow is going to be the average of the
+[3246.12s -> 3251.08s]  surrounding values okay so we're trying to basically we're going to iterate on this
+[3251.08s -> 3255.80s]  and just kind of bring this to convergence so that uh like if I change if I change the
+[3255.80s -> 3261.16s]  blue value here that should cause some update in the yellow value okay now look carefully at
+[3261.16s -> 3269.00s]  my code here this is the starting code we have while not converged for every element
+[3269.00s -> 3274.12s]  in the array now by the way this is just pseudocode c like pseudocode for every element
+[3274.12s -> 3284.28s]  in the grid save off the previous value and the new value is the combination of my neighbors
+[3284.60s -> 3293.48s]  and then I'm accumulating the total amount of change of all values and if the total amount
+[3293.48s -> 3299.72s]  of change over the whole grid has changed enough we'll stop or we'll keep going if nothing is
+[3299.72s -> 3305.00s]  changing anymore we've converged and we've stopped so step one of anything whenever I slam
+[3305.00s -> 3313.24s]  code up here is I'm going to ask you what can be done in parallel so take a look at this
+[3314.60s -> 3324.20s]  and if we respect the code as is what is the challenge that makes us go uh oh yeah
+[3333.80s -> 3339.80s]  a i j depends on my neighbors but my neighbors just got updated in the previous iteration of the
+[3339.80s -> 3348.92s]  j loop so I cannot do the next iteration of the innermost loop until I uh I complete the
+[3348.92s -> 3353.88s]  previous iteration of the innermost loop so your dependencies might look a little bit like this
+[3354.52s -> 3359.80s]  the red arrows say that the black dot is dependent on another dot if there's a red arrow
+[3359.80s -> 3369.08s]  from an external thing to me okay so if I asked you to parallelize this code
+[3369.08s -> 3371.64s]  and this was the code is there anything you could do
+[3376.28s -> 3383.32s]  different chunks that aren't as useful well okay but uh so let's say I did the top left chunk
+[3384.28s -> 3387.48s]  completely sequentially what could I do in parallel with it
+[3390.12s -> 3395.40s]  but I can't do the top right chunk because none of these values are known until all
+[3395.40s -> 3401.88s]  that information propagates so yeah so I can't quite do that I might get the wrong answer
+[3405.24s -> 3412.44s]  sorry but if I if I make a separate result array every loop I'm going to compute a different
+[3412.44s -> 3419.56s]  answer because my value at this iteration depends on previous computations in the same loop
+[3420.36s -> 3427.80s]  so if I write the new result to like i a2 something else I am not computing the same thing
+[3431.08s -> 3437.00s]  any other thoughts yeah you can sweep day out there is a little bit of parallelism here
+[3438.76s -> 3443.64s]  there's a little bit of parallelism here so you could be really clever and you could say
+[3443.64s -> 3447.88s]  well in certain parts of the program there's at least like sort of like a little bit more than
+[3447.88s -> 3452.44s]  o of n parallelism but I'm kind of like I don't even know if I want to write that code
+[3453.00s -> 3456.52s]  I don't I don't know if I want to write that code for two reasons one is
+[3456.52s -> 3460.84s]  I don't have a lot of parallelism in large parts of the program so Amdahl's law is going
+[3460.84s -> 3465.00s]  to get me and second of all if I'm actually moving in this direction
+[3468.04s -> 3472.52s]  I'm all over the memory address space and so it's not clear that it's necessarily going
+[3472.52s -> 3477.24s]  to be a benefit to me anyways if I even if I got some parallelism so here's what we're
+[3477.24s -> 3484.84s]  going to do which is a big part of often thinking about programs and when we do a mini transformer
+[3484.84s -> 3489.88s]  in an assignment four this year this is going to be a big part of it is sometimes you look
+[3489.88s -> 3494.36s]  at a program and go I don't really want to bother with this this is not a program that I
+[3495.00s -> 3500.20s]  going to have a lot of success with so what we're going to do is we're going to look at it
+[3500.20s -> 3505.88s]  and we're going to use our knowledge of solvers and go there's another solver
+[3507.24s -> 3511.24s]  that will compute approximately the same answer but is more friendly for parallelism
+[3512.04s -> 3515.64s]  okay so that's what I'm going to do we needed some domain knowledge you got to go talk to your
+[3515.64s -> 3519.32s]  expert or you got to be an expert in machine learning or you got to be an expert in graphics
+[3519.32s -> 3523.40s]  or something like that we're going to change the algorithm a little bit to a different algorithm
+[3523.40s -> 3528.68s]  that's way easier and that's is we're going to do this checkerboarding thing and we're
+[3528.68s -> 3535.40s]  going to iterate back and forth which is on one step I'm going to take all of the red
+[3535.40s -> 3537.48s]  cells and update them based on the black cells
+[3539.96s -> 3544.36s]  and then on the next step I'm going to flip it around and update all the black cells based on
+[3544.36s -> 3549.48s]  the red cells so I hope you can convince yourself that I can do all of the red cells
+[3549.48s -> 3555.08s]  in parallel and then I can do all the black cells in parallel okay now I've changed the
+[3555.08s -> 3560.60s]  algorithm which by the way I told you just a second ago you can't do that but now this is
+[3560.60s -> 3565.24s]  like we just we had nothing to do so it's like okay let's go to a different algorithm
+[3565.24s -> 3570.04s]  it's more friendly to parallelism it turns out that this new algorithm will actually take a
+[3570.04s -> 3573.64s]  little bit longer to converge we're actually probably going to need to do more iterations
+[3574.28s -> 3578.12s]  but the cost of doing some extra work we're hoping can be made up
+[3578.12s -> 3581.32s]  by the ability to massively paralyze if we have a big parallel computer
+[3581.32s -> 3584.44s]  yeah
+[3588.28s -> 3591.40s]  I'm just asserting that and I want you to trust me for now right like
+[3592.04s -> 3598.36s]  or it's they're gonna converge not to the same numerical value but this is already an algorithm
+[3598.36s -> 3603.80s]  that's like good enough right so as long as it converges to some threshold we are
+[3603.80s -> 3625.96s]  scientifically happy yeah so you are correct one possible solution would be let's go build
+[3625.96s -> 3632.04s]  some custom hardware for this now the hardware does have some scalability issues and that there
+[3632.04s -> 3637.64s]  is only so much parallelism here but you're also proposing a pretty expensive solution to the
+[3637.64s -> 3642.52s]  problem of go designing a hundred million dollar accelerator to handle this this thing that you
+[3642.52s -> 3650.20s]  know you have two weeks to do the assignment okay so that was decomposition so we we've
+[3650.20s -> 3655.00s]  decomposed the problem into let's do all the red stuff in parallel so every red dot is
+[3655.00s -> 3659.64s]  something independent and now we need to kind of think about assignment let's say if I'm going
+[3659.64s -> 3668.12s]  to chunk this grid up into into two possible assignments let's say I'm going to divide them
+[3668.12s -> 3672.44s]  in a blocked way across the processors or I could divide them in an interleaved way across
+[3672.44s -> 3679.96s]  the processors two valid ways to paralyze this program who knows what might be better there
+[3679.96s -> 3685.32s]  could be some issues that lead us to do one or over the other okay so that'll be an
+[3685.32s -> 3690.12s]  assignment decision so let's consider the the dependencies in this program right we're going
+[3690.12s -> 3695.40s]  to compute all of the red cells which means every red cell needs to access its neighbors
+[3696.60s -> 3701.96s]  and then I'm going to update I'm going to send all processors everybody needs to to be able
+[3701.96s -> 3708.36s]  to get the updated value of the red cells so that we can then do the black cell update
+[3709.72s -> 3714.12s]  right so when I think about like this this program that I've written occurs in phases
+[3715.00s -> 3721.24s]  so in this particular case if we decide to put continuous blocks of this array
+[3722.04s -> 3728.84s]  local to various processors there's much less data that needs to be exchanged because if I'm
+[3728.84s -> 3734.20s]  let's say processor 4 I just updated these black cells or these red cells well I already
+[3734.20s -> 3739.16s]  have the information I need to update my black cells whereas if I would have gone with some
+[3739.16s -> 3744.12s]  interleave mapping every single thing that I compute has to get transferred to my neighbors
+[3744.12s -> 3749.16s]  at some future time so there can be some issues related to what you know given the knowledge of
+[3749.16s -> 3755.24s]  the program in this case I'd probably do this kind of blocked assignment as opposed to interweaves
+[3755.24s -> 3759.72s]  but when we were talking earlier about ispc programming on simd hardware we actually made a different
+[3759.72s -> 3764.28s]  conclusion so you need to know what you're running on in order to think about the thing
+[3764.28s -> 3773.24s]  okay so I want to write this solver now in two different ways the first way
+[3773.24s -> 3777.64s]  we are not going to think about threads or parallelism at all we're just going to think
+[3777.64s -> 3782.28s]  about parallel work it's very much like the for each way of thinking about things
+[3782.84s -> 3786.28s]  and then I'm going to come back and rewrite it in a way that's more like
+[3786.84s -> 3790.60s]  here are all my workers and here's how they communicate to solve the problem
+[3790.60s -> 3796.04s]  so I'd very much rather as a programmer write it in this more I'm going to just think about
+[3797.16s -> 3803.40s]  parallel work okay so here's a version of that now I'm stepping out of ispc just to be in
+[3803.40s -> 3808.36s]  pseudocode this is just pseudocode we're not thinking about simd we're just thinking
+[3808.36s -> 3815.32s]  abstractly right now oh that might end up down here okay so I kept this simple and this is
+[3815.32s -> 3820.84s]  only code for just the update of the red cells so there's you know another thing down here but just
+[3820.84s -> 3826.20s]  the updated so for basically look what this says is there's no parallelism at all I just have a
+[3826.20s -> 3833.88s]  program that runs sequentially logically but here instead of a regular for loop I just wrote
+[3833.88s -> 3842.12s]  it as a for all red cells for all red cells independently please do your red cell update
+[3843.08s -> 3847.08s]  and then using some helper function which we magically have available to us
+[3847.96s -> 3854.28s]  please go ahead and compute the up the amount of update that this iteration did please accumulate
+[3854.28s -> 3863.80s]  it into this global variable diff does that make sense and we've left everything to the system
+[3864.60s -> 3871.08s]  to figure out how to paralyze we've said trust me these iterations are almost completely
+[3871.08s -> 3876.12s]  independent the only thing you have to worry about is that I want all the information that
+[3876.12s -> 3882.60s]  I'm computing to get correctly added into this global variable so I am kind of thinking about
+[3882.60s -> 3887.64s]  parallelism a little bit here because otherwise I wouldn't have written this but more or less I'm
+[3887.64s -> 3895.24s]  leaving all the I've done the decomposition and I've said assignment parallel system you go
+[3895.24s -> 3904.36s]  figure out for me make sense okay and this is why I'd rather write it this way because it's
+[3904.36s -> 3908.44s]  basically the sequential code I just did one little thing which said hey compiler
+[3908.44s -> 3912.28s]  trust me all these iterations you can do in parallel provided that you take a little bit of
+[3912.28s -> 3923.88s]  care right here now let's step down to a lower level and see how we might write it ourselves
+[3923.88s -> 3929.16s]  with lower level abstractions or we might another way to think about this is if you were the the
+[3929.16s -> 3935.00s]  compiler or runtime how would you implement this which at the end of the day you need someone needs
+[3935.00s -> 3943.00s]  to decide who does what okay so now I want you to think about kind of ispc programming or
+[3943.00s -> 3947.56s]  threaded programming whatever programming model you want we're just going to have a bunch of threads
+[3948.12s -> 3953.32s]  running in a shared address space okay so everybody can access shared variables
+[3953.96s -> 3960.68s]  we have one address space but we're going to have to synchronize with some constructs like locks
+[3961.40s -> 3966.60s]  and barriers so here is my implementation of this code now it's a little bit long so I've tried
+[3966.60s -> 3973.72s]  to sort of explain it to you I've tried to sort of annotate it here but it's doing the
+[3973.72s -> 3979.72s]  same thing it's saying while not converged this is code that's run by every thread in the system
+[3979.72s -> 3987.00s]  so if this was ispc this is like the code running a pro by a program instance if this was threaded
+[3987.00s -> 3993.96s]  C programming it's just the thread and in the same way that I could get my program index in
+[3993.96s -> 3998.60s]  any threaded system you have the ability to get your current thread id right so you have
+[3998.60s -> 4004.20s]  some way of knowing out of all the running things in the system which one am I because I
+[4004.20s -> 4009.72s]  need to to take that information about which index I am and turn that into some decision
+[4009.72s -> 4016.68s]  about what work I'm responsible for doing okay so given this thread id notice what happens here
+[4016.68s -> 4022.68s]  I want you to ignore all this jumbo about locks and barriers and just look at this it says
+[4022.68s -> 4028.84s]  I'm going to compute the rows that I'm responsible for my min and my max which is a blocked set
+[4028.88s -> 4034.84s]  of rows and for all elements between row my min and my max I'm going to do the update
+[4034.84s -> 4044.80s]  and I have this local variable my diff which I'm accumulating my my local stuff into and at
+[4044.80s -> 4053.20s]  some point I take my diff and I add it into a global variable diff for all the threads so
+[4053.20s -> 4058.68s]  this is like just a map you could write this in C++ if you wanted with C code okay all right
+[4058.68s -> 4064.60s]  so my question to you is what is this lock doing here what why do I have lock unlock
+[4064.60s -> 4076.72s]  around this line of code yeah okay and what could go badly if I did not lock that what's
+[4076.72s -> 4082.24s]  that it's a race condition but yeah I'm sure but what could go like in the specific terms
+[4082.28s -> 4092.28s]  of this program what could go badly okay so we need to make sure that this change to this
+[4092.28s -> 4098.48s]  shared variable is atomic okay let me elaborate on that a little bit so let's let's go think
+[4098.48s -> 4103.80s]  about a simpler example imagine I have thread one which at some point writes one to some
+[4103.80s -> 4112.56s]  variable X and I have another thread too which also has access to variable X and whenever it's
+[4112.56s -> 4121.84s]  nonzero we're gonna we're gonna print X now we'd really expect X to be printed to be one here
+[4121.84s -> 4127.04s]  right so you can kind of think about the shared address space as this is what you thought
+[4127.04s -> 4132.00s]  of any computer there is some memory address space there's an address X and there's a value
+[4132.00s -> 4137.40s]  at X and all my threads have the ability to read and write to that value that's just you
+[4137.40s -> 4141.28s]  the notion of computer that I haven't even taught you but you naturally would have assumed
+[4141.28s -> 4145.00s]  people like to think about a shared address space is like a bulletin board you can go to
+[4145.00s -> 4149.64s]  somebody's door anybody can read and write could be some problems if we read and write to the
+[4149.64s -> 4158.72s]  same spot okay so the reason why we protect updates to shared variables with locks is let's
+[4158.80s -> 4162.96s]  think about what can happen when we think about what does it mean to write to a value in memory
+[4162.96s -> 4170.56s]  when I have like an X plus plus on my code what that really means is load the value in
+[4170.56s -> 4179.20s]  memory into register r1 then perform the math on r1 and then store that value back out to memory
+[4179.20s -> 4185.64s]  there's actually three operation three operations here even though it's one line of code so
+[4185.64s -> 4193.28s]  imagine that the value in memory was zero as we started t1 would load zero update it to be one
+[4193.28s -> 4201.12s]  and then try and store one what if at the same time thread two went in there tried to do X plus
+[4201.12s -> 4208.80s]  plus it also read zero because it read the value before t1 had written it it updates it by
+[4208.80s -> 4215.32s]  making the value one and then later writes one back to memory we wouldn't miss an update
+[4215.32s -> 4223.48s]  so this is a race condition because we don't have mutual exclusion we don't have a policy set forth
+[4223.48s -> 4231.04s]  so that only one thread is writing to a shared value at once and what the lock does is the lock
+[4231.04s -> 4236.24s]  provides that mutual exclusion only one thread can have the lock at once which means only one
+[4236.24s -> 4242.00s]  thread could be writing later in the course I'll tell you about other really helpful primitives
+[4242.08s -> 4253.36s]  that allow you to ensure mutual exclusion without locks but in this example here that's what that
+[4253.36s -> 4257.60s]  lock is doing and that's something you would have seen probably in 111 with your thread pool
+[4257.60s -> 4263.00s]  just a review here now in the context of this program what bad what could happen if we didn't
+[4263.00s -> 4269.24s]  have the lock what would be the effect on the program the total diff value would be what
+[4269.76s -> 4274.48s]  potentially lower than it should be and some threads might falsely conclude that they should
+[4274.48s -> 4280.76s]  terminate so that would be the effect here you know the incorrect assumption that things
+[4280.76s -> 4289.00s]  had falsely can now this code is correct but now there's a performance problem here
+[4289.00s -> 4305.44s]  something I really don't like oh sorry I actually already fixed it shoot I meant to do it yeah
+[4305.44s -> 4310.76s]  I've already actually fixed in this code so the original code had this lock and unlock
+[4310.76s -> 4317.44s]  update here and in a copy paste thing last night I actually copied the the better version
+[4317.84s -> 4323.80s]  so my original version was don't even have a my diff just do a lot just do a lock and update
+[4323.80s -> 4329.36s]  global diff right and the problem with that is I'm doing the synchronization in my innermost loop
+[4329.36s -> 4336.88s]  right so my solution here was to actually create a private copy of my diff have everybody
+[4336.88s -> 4341.92s]  update their partial diffs without locks and then come back together at the very end of
+[4341.92s -> 4348.64s]  the iteration and compute the overall sum before we actually did the check sorry about that I was
+[4348.64s -> 4352.92s]  looking about that was like there is no prop performance problem with the code okay but now
+[4352.92s -> 4358.00s]  the last question I want to ask you as we finish up is what are these barriers doing here
+[4358.00s -> 4365.52s]  you might even be asking me what is a barrier right so what a barrier is it's another form of
+[4365.52s -> 4370.40s]  synchronization if a lock is about mutual exclusion only one thread can hold the lock
+[4370.48s -> 4377.04s]  a barrier is a very coarse frame of synchronization where you can phase your computation so a barrier
+[4377.04s -> 4386.48s]  says no thread the caller will not proceed past a barrier until all threads have gotten to
+[4386.48s -> 4394.88s]  this point okay so say once I know everybody is here then we can all continue okay so my
+[4394.92s -> 4404.36s]  question is why do I have three barriers in this code I kind of intuitively would think I should
+[4404.36s -> 4408.68s]  probably have one I should do all my work we should wait for everybody to get done and
+[4408.68s -> 4414.00s]  accumulate into my diff and then we should do a check and we should keep going but this
+[4414.00s -> 4419.04s]  code is correct and I have three barriers in it and if we have four minutes the last thing
+[4419.04s -> 4423.64s]  I'll ask you to do today is once you see if you can talk this over what is the purpose of
+[4423.64s -> 4430.28s]  all three of these I claim I need them so you know wake up for one second
+[4443.80s -> 4450.60s]  okay so since we have two minutes let's see if we could talk it over so I think the first
+[4450.64s -> 4457.04s]  one to really look at is to be the one that's the most obvious the second barrier here why
+[4457.04s -> 4469.52s]  did I put a barrier in the code here before any thread checks to see if the system is converged
+[4469.52s -> 4474.56s]  we need to make sure that all threads have performed this update so that we're looking at
+[4474.56s -> 4485.48s]  correct diff value that makes sense okay so let's say we decide to that done is is we want to
+[4485.48s -> 4497.88s]  continue what happens if this barrier is not here and I immediately shoot up yeah so I might
+[4497.88s -> 4502.84s]  I thread 0 might be like okay sure we got to keep going all right let me get started for the
+[4502.84s -> 4510.96s]  next iteration setting global diff to 0 and then what happens all other threads might be like shoot
+[4510.96s -> 4515.84s]  by the time I got around to checking it it's 0 we should can we should we should stop good
+[4515.84s -> 4520.76s]  okay so that's why I need this one because I don't want people to clear that value before
+[4520.76s -> 4532.80s]  I take a look at it and then what about this one the last one oh so what up in the
+[4532.80s -> 4540.68s]  next iteration I get all the way through my work and I update the diff value before in the previous
+[4540.68s -> 4547.16s]  iteration the other threads have actually been able to check it and if that if that allowed
+[4547.16s -> 4553.24s]  to happen then the diff value would be incorrectly to well who knows what it would be you know I've
+[4553.24s -> 4557.04s]  set it to 0 and then I've updated something into it so it could be too large or too small it's
+[4557.04s -> 4563.96s]  just wrong so you see how I need all of these here to have this correct program so my challenge
+[4563.96s -> 4571.68s]  to you to end the lecture is it is possible to do it with one can you do it correctly with one
+[4571.68s -> 4577.68s]  and the hint would be take some inspiration for what we did here with with the diff variable
+[4577.68s -> 4585.60s]  is if we didn't have a local my diff and we had one global diff every single time I
+[4585.64s -> 4592.24s]  wanted to access diff I would have to walk it but what we did is we had contention so I
+[4592.24s -> 4598.16s]  made local copies of something in order to remove the contention by replicating some stuff
+[4598.16s -> 4604.80s]  here what are we contending for with the barriers what's the variable that we're all
+[4604.80s -> 4611.80s]  making decisions off of diff and the problem is that we're reusing the same diff variable
+[4611.84s -> 4618.36s]  across different iterations is there any way you can replicate something in order to remove
+[4618.36s -> 4622.84s]  this dependency and you can get it down all the way to one and this is the only one
+[4622.84s -> 4627.56s]  you actually need so I'll let I'll stop there and that's just a fun one to talk about on the website

@@ -1,0 +1,89 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 9.00s]  In this video, I'm going to talk about two performance improvements using TCP, fast retransmit and fast recovery.
+[9.00s -> 17.00s]  In addition to the congestion avoidance state, improved RTT estimation, and self-clocking, TCP uses three more mechanisms.
+[17.00s -> 23.00s]  These mechanisms improve TCP's performance by softening its response to a packet loss.
+[23.00s -> 28.00s]  Recall that the mechanisms for TCP Tahoe cause it to behave more conservatively than AIMD.
+[28.00s -> 37.00s]  The packet is lost, TCP Tahoe drops to the slow start state, at which point it exponentially increases the congestion window up to SS Thresh.
+[37.00s -> 40.00s]  At that point, it enters additive increase.
+[40.00s -> 45.00s]  The first mechanism, called fast retransmit, was part of TCP Tahoe.
+[45.00s -> 52.00s]  If a TCP Tahoe sender receives three duplicate acknowledgments, so four acts for the same sequence number,
+[52.00s -> 60.00s]  it assumes the next segment was lost and retransmits this segment immediately without waiting for a timeout.
+[60.00s -> 69.00s]  Assuming this retransmission succeeds, this reduces the delay before the sender receives an acknowledgement and can move the send window forward to send new data.
+[69.00s -> 80.00s]  TCP Tahoe treats these triple duplicate acknowledgments as a loss and sets the congestion to 1, dropping into the slow start state.
+[80.00s -> 88.00s]  TCP Reno, a later version of TCP, added a second algorithm called fast recovery, which has two mechanisms.
+[88.00s -> 96.00s]  The first is that when a loss is detected by a triple duplicate act, TCP Reno does not send the congestion window to 1.
+[96.00s -> 99.00s]  It does not drop into the slow start state.
+[99.00s -> 102.00s]  Instead, it halves the congestion window.
+[102.00s -> 110.00s]  Since SS Thresh is set to half the congestion window, this means that TCP Reno does not exit the congestion avoidance state.
+[110.00s -> 117.00s]  Using this algorithm, TCP Reno, in a steady state with no timeouts, follows an AIMD policy.
+[117.00s -> 123.00s]  On a loss, it halves the congestion window, multiplicative decrease, and uses additive increase.
+[123.00s -> 129.00s]  On a timeout, TCP Reno behaves as in TCP Tahoe, setting the congestion window to 1.
+[130.00s -> 141.00s]  The second mechanism that TCP Reno added is that while in the fast recovery state, it inflates the congestion window by 1 for each duplicate acknowledgement.
+[141.00s -> 151.00s]  This is to prevent the problem that, in the case of a single loss, TCP cannot send data for an entire round trip time because it is waiting for an acknowledgement to advance its send window.
+[151.00s -> 161.00s]  Since each duplicate acknowledgement means a segment has left the network successfully, TCP could, in theory, send a new segment without congesting the network.
+[163.00s -> 179.00s]  Because the old congestion window size was C, increasing the congestion window by 1 for each duplicate act, the congestion window grows from C divided by 2, fast recovery, to C plus C divided by 2, or 3C over 2.
+[180.00s -> 187.00s]  This means that for these duplicate acknowledgements, from C over 2 to C, TCP can send a new segment.
+[187.00s -> 194.00s]  For the second half of duplicate acknowledgements, TCP can send a new segment, as the congestion window has advanced further ahead.
+[194.00s -> 201.00s]  Once TCP receives a new acknowledgement, it resets its congestion window to the correct value, so C over 2.
+[201.00s -> 209.00s]  So let's put this together.
+[209.00s -> 215.00s]  TCP Tahoe, when it has a timeout or triple duplicate acknowledgement, takes three steps.
+[215.00s -> 219.00s]  First, it sets SSThresh to half of the congestion window.
+[219.00s -> 222.00s]  Second, it sets the congestion window to 1.
+[222.00s -> 225.00s]  Third, it re-transmits the missing segment.
+[226.00s -> 235.00s]  These first two steps mean that it enters the slow start state and exponentially increases its congestion window until it experiences another loss or reaches SSThresh.
+[239.00s -> 245.00s]  This leads to the behavior we saw in the earlier figure of TCP Tahoe's behavior over time.
+[245.00s -> 255.00s]  So now let's walk through what TCP Tahoe does when it encounters a triple duplicate acknowledgement.
+[255.00s -> 261.00s]  Let's say the congestion window is 8 MSS and a segment is lost.
+[261.00s -> 266.00s]  TCP will receive a total of 7 duplicate acknowledgements.
+[267.00s -> 276.00s]  After the third one, it re-transmits the missing segment, sets its congestion window to 1 MSS, and SSThresh to 4.
+[276.00s -> 281.00s]  When it receives the ACK for the re-transmission, it sends one new segment.
+[281.00s -> 285.00s]  When it receives an ACK for this segment, it sets its congestion window to 2.
+[285.00s -> 292.00s]  When it receives ACKs for these two segments, it increases its congestion window to 3, then 4.
+[293.00s -> 297.00s]  On reaching 4, it enters the congestion avoidance state.
+[297.00s -> 302.00s]  The next 4 ACKs will therefore increase the congestion window by only 1 MSS.
+[302.00s -> 305.00s]  So that's TCP Tahoe.
+[311.00s -> 315.00s]  TCP Reno behaves identically to TCP Tahoe on a timeout.
+[315.00s -> 321.00s]  On a triple duplicate ACK, it performs fast re-transmit, sending the segment immediately.
+[322.00s -> 328.00s]  Instead of sending its congestion window to 1, it halves it, thereby staying in the congestion avoidance state.
+[328.00s -> 336.00s]  For each duplicate acknowledgement, it inflates the congestion window by 1, such that it sends new segments before the re-transmitted segment is acknowledged.
+[337.00s -> 341.00s]  So the major difference between Tahoe and Reno is fast recovery.
+[346.00s -> 349.00s]  So this is a figure showing TCP Reno's behavior.
+[349.00s -> 354.00s]  It starts in the slow start state until it sees a triple duplicate ACK.
+[354.00s -> 360.00s]  It halves the congestion window, staying in the congestion avoidance state, and performs fast re-transmit.
+[360.00s -> 364.00s]  It then starts increasing the congestion window using AIMD.
+[364.00s -> 369.00s]  In the flat spot before AIMD, it uses congestion window inflation to send new segments.
+[369.00s -> 372.00s]  I don't show the inflation in the window size.
+[372.00s -> 376.00s]  On the second set of triple duplicate ACKs, the same occurs.
+[376.00s -> 381.00s]  It performs a fast re-transmit, halves the window, and stays in congestion avoidance.
+[381.00s -> 386.00s]  On a timeout, it sets the congestion window to 1 and re-enters the slow start state.
+[390.00s -> 395.00s]  Congestion window inflation is part of fast recovery. These are the details of how it works.
+[396.00s -> 403.00s]  When TCP Reno enters fast recovery, it inflates its congestion window by 1 for each duplicate acknowledgement.
+[404.00s -> 411.00s]  Since the congestion window has halved, this means that the congestion window can grow larger than it was originally, up to 3 times the old value divided by 2.
+[412.00s -> 423.00s]  This means that the sender will send old congestion window divided by 2 new segments, minus 1 for the lost segment, almost exactly the amount that obeying AIMD requires.
+[423.00s -> 433.00s]  Recall that this is the TCP Tahoe FSM with two states, slow start and congestion avoidance.
+[438.00s -> 443.00s]  And this is the full TCP Reno FSM. It adds a third state, fast recovery.
+[443.00s -> 449.00s]  On a triple duplicate ACK, rather than transition to slow start, it transitions to fast recovery.
+[449.00s -> 456.00s]  In the fast recovery state, it transitions back to congestion avoidance when it receives a new acknowledgement,
+[457.00s -> 463.00s]  resetting the congestion window to be half of the congestion window size when it transitioned to the fast recovery state.
+[464.00s -> 468.00s]  On a timeout, it returns to slow start, just as in congestion avoidance.
+[469.00s -> 474.00s]  On receiving a duplicate ACK, it increases the congestion window by 1.
+[475.00s -> 484.00s]  This plus 3 here in the transition to fast recovery is to consider the three duplicate acknowledgements that were received.
+[490.00s -> 492.00s]  So let's walk through TCP Reno's behavior.
+[493.00s -> 498.00s]  Suppose we start with a congestion window size of 8, maximum segment size, and a segment is dropped.
+[498.00s -> 501.00s]  The sender will receive 7 duplicate ACKs.
+[502.00s -> 508.00s]  After the first 3, it will shrink the congestion window to be 4, remaining in the congestion avoidance state.
+[509.00s -> 512.00s]  It will inflate the congestion window by 3 to 7 MSS.
+[513.00s -> 518.00s]  On the next fourth duplicate acknowledgement, the congestion window grows to 8 MSS.
+[519.00s -> 527.00s]  The next 3 acknowledgements will increase it to 9, 10, then 11 MSS, such that the sender can send 3 new segments.
+[528.00s -> 541.00s]  At around this time, the sender will receive an acknowledgement for the retransmission, whose ACK number moves the send window up to include all of the segments that trigger the duplicate acknowledgements.
+[542.00s -> 547.00s]  At this point, TCP Reno deflates its congestion window to the correct value, half of its old value.
+[548.00s -> 554.00s]  This allows TCP Reno to send one new segment, at which point it will wait for acknowledgements from the segment sent during fast recovery.
+[555.00s -> 557.00s]  Congestion control is a very hard problem.
+[558.00s -> 561.00s]  Recall, it wasn't anything someone expected.
+[562.00s -> 568.00s]  It was an emerging behavior that the early internet developers and users observed had to tackle in order to make the internet work again.
+[569.00s -> 575.00s]  The basic approach that TCP uses today is Additive Increase, Multiplicative Decrease, or AIMD.
+[576.00s -> 583.00s]  But there are a lot of details on exactly how this works, exactly how and when TCP sends data, retransmits data, and sends acknowledgements.
+[584.00s -> 589.00s]  Making AIMD work well and stably in practice requires tackling a bunch of edge cases.
+[590.00s -> 595.00s]  Almost all TCP variants today have TCP Reno at their core.
+[595.00s -> 606.00s]  There have been some additions that deal with modern network speeds, but when you open a connection to your favorite website, your OS is using TCP Reno with slow start, congestion avoidance, fast retransmit, and fast recovery.

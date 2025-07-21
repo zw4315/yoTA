@@ -1,0 +1,1957 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.86s]  All right, I'd like to get started.
+[8.10s -> 10.26s]  Today I wanna talk about virtual machines.
+[11.26s -> 13.84s]  And I'm gonna, the lecture's really gonna be divided
+[13.84s -> 14.84s]  into three pieces.
+[14.84s -> 17.56s]  One is, I'm gonna start with what's called
+[17.56s -> 19.34s]  trap and emulate virtualization,
+[19.34s -> 21.72s]  which is basically an overview of how you could build
+[21.72s -> 26.72s]  your own virtual machine scheme on RISC-V in QEMU.
+[27.44s -> 32.52s]  Now I'm gonna talk a bit about recent hardware support
+[32.52s -> 34.82s]  in microprocessors for virtualization.
+[36.08s -> 37.68s]  And then about today's paper, Dune,
+[37.68s -> 42.00s]  which uses this modern hardware support.
+[42.00s -> 44.72s]  All right, so first, what's a virtual machine?
+[46.34s -> 49.00s]  It's really, you can think of it as a simulation
+[49.00s -> 51.44s]  of a computer that's accurate enough
+[51.44s -> 53.56s]  to run an operating system.
+[54.40s -> 59.40s]  So QEMU is a example of,
+[59.84s -> 62.72s]  you could consider to be an example of a virtual machine.
+[63.60s -> 66.26s]  The way I'm gonna talk about it is that,
+[69.40s -> 71.00s]  down to the sort of the lowest level
+[71.00s -> 73.38s]  sitting on top of the hardware,
+[73.38s -> 78.16s]  we're gonna imagine a virtual machine monitor or VMM.
+[79.52s -> 81.40s]  And this more or less takes the place
+[81.44s -> 83.44s]  of a standard operating system kernel.
+[85.28s -> 87.12s]  And the virtual machine monitor's job
+[87.12s -> 91.16s]  is to simulate a bunch of computers
+[91.16s -> 93.36s]  for guest operating systems.
+[93.36s -> 98.36s]  So up here in what used to be user space
+[99.56s -> 103.20s]  in our usual diagrams, but is now guest space.
+[103.20s -> 107.80s]  So this is, I'm gonna call this guest space
+[107.80s -> 111.44s]  and down here, host space.
+[111.44s -> 113.60s]  We're gonna have a bunch of one or more
+[113.60s -> 116.00s]  guest operating systems kernels.
+[116.00s -> 121.00s]  So we might have a Linux kernel as one guest.
+[125.88s -> 128.24s]  And this Linux kernel is gonna,
+[129.44s -> 131.16s]  it thinks of itself as an ordinary kernel
+[131.16s -> 132.56s]  and it runs a bunch of processes,
+[132.56s -> 136.28s]  maybe a VI and a C compiler.
+[136.32s -> 138.08s]  And we might have other guest,
+[140.48s -> 141.58s]  might have other guests too,
+[141.58s -> 143.88s]  guest virtual machines running here.
+[143.88s -> 146.12s]  There might be maybe another Linux
+[146.12s -> 149.48s]  or maybe even some other operating system like Windows,
+[151.24s -> 153.44s]  all running on the same machine.
+[153.44s -> 157.36s]  And there would be Windows processes running
+[157.36s -> 161.52s]  within this guest operating system.
+[162.52s -> 166.22s]  So we have the host world
+[166.22s -> 167.72s]  where the virtual machine monitor runs
+[167.72s -> 169.20s]  and the guest world
+[169.20s -> 172.56s]  where these ordinary operating systems run.
+[172.56s -> 175.34s]  And furthermore, we're gonna talk about a lot about,
+[177.40s -> 180.68s]  within the guest world, guest supervisor mode,
+[180.68s -> 185.68s]  which is the mode that the guest kernels run in
+[186.56s -> 188.40s]  and guest user mode.
+[192.40s -> 196.60s]  And again, the kind of classical goal
+[196.60s -> 198.20s]  of the virtual machine monitor
+[198.20s -> 201.28s]  is to provide an emulation of a machine that's so good
+[201.28s -> 202.84s]  that you can just boot ordinary Linux,
+[202.84s -> 205.60s]  ordinary Windows unmodified
+[205.60s -> 208.12s]  and have it run inside this virtual machine,
+[208.12s -> 212.44s]  never suspecting that anything funny is going on.
+[212.80s -> 214.92s]  So for example, the virtual machine monitor
+[214.92s -> 216.92s]  has to be in a position to emulate the difference
+[216.92s -> 219.04s]  between supervisor mode and user mode
+[219.04s -> 222.36s]  in a way that is just completely convincing simulation
+[222.36s -> 224.60s]  of how the actual hardware does it,
+[224.60s -> 226.40s]  even though that's,
+[226.40s -> 228.84s]  can't really be exactly what's going on.
+[228.84s -> 230.52s]  So that's why we talk about guest supervisor mode
+[230.52s -> 231.48s]  and guest user mode.
+[231.48s -> 234.72s]  These are the VMM's emulation of those two modes.
+[237.48s -> 240.68s]  So why would you wanna use a virtual machine monitor?
+[241.24s -> 243.96s]  So why would you wanna use a virtual machine?
+[243.96s -> 245.28s]  It turns out there's a lot of reasons
+[245.28s -> 248.96s]  to run lots of distinct guest operating systems
+[248.96s -> 250.96s]  on a single computer.
+[252.10s -> 254.54s]  Sometimes, and maybe you're running a big company
+[254.54s -> 257.16s]  and you need to have lots and lots of servers,
+[257.16s -> 260.80s]  maybe a name servers and security servers, who knows what,
+[260.80s -> 263.40s]  and each one of them doesn't use many resources.
+[263.40s -> 264.92s]  So it's sort of a waste of time
+[264.92s -> 268.08s]  to have to buy a physical machine for it,
+[268.08s -> 269.56s]  but you wanna run,
+[269.56s -> 271.98s]  you wanna run lots of these low intensity servers
+[271.98s -> 273.44s]  on a single piece of hardware.
+[273.44s -> 276.56s]  So you can save money by using a virtual machine.
+[278.76s -> 281.76s]  It turns out virtual machines are also very,
+[281.76s -> 284.16s]  very widely used in cloud computing,
+[284.16s -> 287.24s]  where it's an outfit like Amazon, Amazon AWS.
+[288.90s -> 291.12s]  They don't wanna rent out physical machines to people
+[291.12s -> 293.88s]  because that turns out to be difficult to manage.
+[293.88s -> 296.48s]  What they wanna do is rent their customers,
+[296.48s -> 298.20s]  their cloud customers,
+[298.20s -> 303.20s]  just a machine that Amazon can on the fly,
+[303.40s -> 305.40s]  decide what Harvard run it on,
+[305.40s -> 307.40s]  whether to run it on a bigger or smaller machine,
+[307.40s -> 312.40s]  Amazon can decide, it's current customers,
+[313.60s -> 315.20s]  maybe it has two customers
+[315.20s -> 316.56s]  on this piece of hardware right here,
+[316.56s -> 318.04s]  but they're not using the computer very much.
+[318.04s -> 320.04s]  Maybe it can pack a third or a fourth customer
+[320.04s -> 322.04s]  on to that same piece of hardware
+[322.04s -> 325.12s]  without spending extra money, but get more revenue.
+[325.12s -> 330.12s]  So virtual machines allow kind of extra level of flexibility
+[331.48s -> 334.24s]  and it's kind of trick that's being used
+[334.24s -> 337.00s]  is that we're kind of shifting up
+[337.00s -> 339.36s]  the existing operating system kernels and user space
+[339.36s -> 341.48s]  and adding a new layer underneath
+[343.00s -> 344.70s]  to provide this flexibility.
+[345.84s -> 348.28s]  It turns out there's other reasons
+[348.28s -> 349.42s]  why people use virtual machines.
+[349.42s -> 350.92s]  One is certainly kernel development,
+[350.92s -> 353.34s]  which is why we all use QEMU,
+[354.22s -> 357.66s]  the ability to run XV6 in a kind of virtual environment
+[357.66s -> 359.70s]  rather than a real computer
+[359.70s -> 363.54s]  makes this course much more convenient for all of us.
+[363.54s -> 365.50s]  It also makes it a little bit easier to debug
+[365.50s -> 370.10s]  as we can turns out that once you're running XV6
+[370.10s -> 371.86s]  in this virtual machine environment,
+[371.86s -> 375.14s]  the QEMU provides us easier to provide GDB access
+[376.22s -> 378.54s]  than it would be on a physical computer.
+[379.78s -> 382.50s]  And a final reason that people use virtual machines
+[382.54s -> 385.38s]  is that there's a bunch of tricks that can be played
+[385.38s -> 387.90s]  using this extra layer of indirection
+[387.90s -> 389.46s]  provided by the virtual machine monitor.
+[389.46s -> 392.42s]  For example, you can checkpoint
+[392.42s -> 396.34s]  an entire running operating system and user processes.
+[396.34s -> 399.98s]  You can take a checkpoint of it, stash it away somewhere,
+[399.98s -> 403.26s]  maybe on disk and then later restore that checkpoint
+[403.26s -> 406.24s]  sort of exactly the state of that operating system
+[406.24s -> 408.82s]  and its processes as it was at the time of the checkpoint
+[408.82s -> 411.70s]  and it's useful for reliability, for debugging,
+[411.74s -> 414.90s]  for maybe cloning the image of a virtual machine
+[414.90s -> 417.38s]  so you can run it multiple times.
+[417.38s -> 422.26s]  Another game you can play is you can migrate a guest,
+[422.26s -> 424.74s]  an entire guest to another computer.
+[424.74s -> 426.18s]  If you have a guest operating system
+[426.18s -> 427.78s]  running on a physical computer
+[427.78s -> 429.34s]  and you need to shut down or replace
+[429.34s -> 431.98s]  that physical computer, you can actually turns out
+[431.98s -> 435.46s]  move the running virtual machine image
+[435.46s -> 438.26s]  without disturbing it to another physical computer
+[438.26s -> 440.94s]  so that you can shut down the first one.
+[441.02s -> 443.14s]  There's just examples of why people
+[443.14s -> 445.30s]  really like virtual machines and people really do.
+[445.30s -> 447.70s]  Virtual machines are very, very widely used
+[448.98s -> 450.06s]  and they also have a long history.
+[450.06s -> 452.58s]  This ideas first came up in the 1960s
+[452.58s -> 455.46s]  and they've been developed over time
+[455.46s -> 459.78s]  until they're quite pervasive and easy to use.
+[461.30s -> 465.14s]  For this course, the reason why we're looking into them
+[465.14s -> 468.14s]  is that virtual machine monitors provide
+[468.54s -> 469.74s]  a sort of different view
+[469.74s -> 472.38s]  on what an operating system can be.
+[472.38s -> 475.42s]  Instead of the process abstraction we're all used to,
+[475.42s -> 477.10s]  we have some analogous structures here
+[477.10s -> 479.10s]  but they're sort of providing
+[479.10s -> 480.66s]  a different kind of container.
+[480.66s -> 485.10s]  It's not a process, it's a sort of simulated machine.
+[485.10s -> 487.10s]  So it allows us to kind of think about
+[487.10s -> 490.18s]  all the stuff we've been talking about,
+[490.18s -> 492.70s]  memory allocation, scheduling, protection
+[493.90s -> 496.34s]  from a different point of view.
+[496.34s -> 498.34s]  Maybe give us some ideas which we can take back
+[498.34s -> 501.18s]  to traditional operating system kernels.
+[501.18s -> 503.94s]  And indeed much of the action,
+[503.94s -> 506.14s]  the sort of development, design, development,
+[506.14s -> 511.14s]  research action has shifted from conventional kernels
+[512.34s -> 515.10s]  down into the virtual machine monitors themselves
+[515.10s -> 517.30s]  as they've gotten more and more prevalent.
+[517.30s -> 520.90s]  So in some sense kind of the topic of operating systems
+[520.90s -> 524.30s]  is drifting downwards a bit by one layer.
+[526.74s -> 529.94s]  Okay, for the first part of this lecture
+[529.94s -> 534.70s]  I wanna talk a bit about how we could implement
+[534.70s -> 538.10s]  our own virtual machine.
+[538.10s -> 543.10s]  And I'm gonna use RISC-V as sort of assume
+[543.26s -> 547.26s]  that we're trying to emulate RISC-V hardware
+[547.26s -> 548.70s]  so we can run operating systems
+[548.70s -> 551.30s]  that's designed for RISC-V like XV6.
+[552.14s -> 557.14s]  And just to repeat the specific goals,
+[558.18s -> 562.78s]  what we'd like for kind of classical virtual machines,
+[562.78s -> 564.50s]  what we'd like to build is something
+[564.50s -> 568.54s]  in which the guest software is just completely not aware
+[569.54s -> 571.94s]  that it's running inside a virtual machine.
+[571.94s -> 575.26s]  We wanna build something that makes it impossible
+[575.26s -> 577.66s]  for the guest software to distinguish,
+[577.66s -> 578.82s]  to decide whether is this,
+[578.82s -> 581.22s]  am I running on a real machine or a virtual machine?
+[582.10s -> 584.26s]  We want the emulation to be that good.
+[584.26s -> 586.74s]  And the reason for that is that we don't want,
+[586.74s -> 588.38s]  we want to be able to run,
+[588.38s -> 589.58s]  we'd like to be able to run anything
+[589.58s -> 591.86s]  in our virtual machine, any operating system,
+[591.86s -> 594.18s]  even maybe an operating system we haven't heard of.
+[594.18s -> 597.22s]  And that means that whatever funny stuff
+[597.22s -> 601.26s]  the operating system does and the way it uses hardware,
+[601.26s -> 605.50s]  the virtual machine has to provide that an emulation
+[605.50s -> 608.74s]  of exactly the hardware so that any tricks
+[608.74s -> 609.78s]  that work on the real hardware
+[609.82s -> 611.94s]  are also gonna work in the virtual machine.
+[614.22s -> 618.90s]  Sort of similar goal that we'd like is,
+[618.90s -> 620.22s]  we want there to be no way,
+[620.22s -> 623.30s]  not only no way for a guest to decide
+[623.30s -> 624.86s]  if it's running on virtual machine,
+[624.86s -> 626.98s]  but no way for a guest to be able to escape
+[626.98s -> 628.34s]  from the virtual machine.
+[628.34s -> 630.98s]  A lot of the reason why people use virtual machines
+[630.98s -> 635.82s]  is to provide strict confinement for untrusted software,
+[635.82s -> 637.42s]  even untrusted operating systems
+[637.42s -> 639.10s]  running inside the virtual machine.
+[639.10s -> 640.78s]  For example, if you're Amazon
+[640.78s -> 642.22s]  and you're selling cloud service
+[642.22s -> 644.62s]  and it's your customers often
+[644.62s -> 646.38s]  who provide the operating system
+[646.38s -> 647.54s]  that runs in the virtual machine
+[647.54s -> 649.18s]  as well as the applications.
+[649.18s -> 650.26s]  And gosh, for all you know,
+[650.26s -> 652.50s]  your customers are not running ordinary Linux,
+[652.50s -> 654.86s]  they're running a special hacked version of Linux
+[654.86s -> 658.26s]  who's intended to try to break out
+[658.26s -> 661.94s]  of its virtual machine and break into Amazon's,
+[661.94s -> 664.18s]  either the virtual machines of Amazon's other customers
+[664.18s -> 667.22s]  or into the virtual machine monitor
+[667.22s -> 669.54s]  that Amazon uses to enforce isolation.
+[669.54s -> 672.58s]  So it's quite important that guests
+[672.58s -> 675.06s]  not be able to break out of their virtual machines,
+[675.06s -> 677.30s]  that they be able to use the memory
+[677.30s -> 678.34s]  that they're allowed to use
+[678.34s -> 681.02s]  by the virtual machine monitor, for example,
+[681.02s -> 682.58s]  but not other memory.
+[682.58s -> 684.18s]  And similarly, that they shouldn't be able
+[684.18s -> 686.74s]  to reach out without permission
+[686.74s -> 688.70s]  and use things like storage devices
+[688.70s -> 690.74s]  or network interface cards.
+[690.74s -> 692.86s]  So we wanna have very strict isolation.
+[692.86s -> 695.42s]  And in many ways,
+[695.42s -> 698.70s]  virtual machines provide stricter isolation
+[698.70s -> 701.50s]  than ordinary Unix processes.
+[701.50s -> 703.62s]  Ordinary Unix processes can often interact,
+[703.62s -> 704.98s]  they can kill each other
+[704.98s -> 707.50s]  or they can all read and write the same files
+[707.50s -> 709.22s]  or communicate over pipes.
+[710.38s -> 713.58s]  But in a sort of ordinary virtual machine system,
+[713.58s -> 714.82s]  none of that's possible.
+[715.94s -> 717.82s]  In the different virtual machines
+[717.82s -> 719.34s]  running on the same computer,
+[719.34s -> 722.86s]  they're just completely isolated from each other
+[722.86s -> 723.94s]  by the virtual machine monitor.
+[723.94s -> 725.94s]  So people like them for security, right?
+[725.94s -> 729.30s]  It's a way of being able to run untrusted software
+[729.30s -> 731.94s]  without having to worry if it's buggy or malicious.
+[734.02s -> 735.34s]  Now in practice,
+[736.22s -> 739.82s]  I've pitched the goal as being
+[739.82s -> 743.18s]  sort of completely faithful emulation of a physical machine.
+[743.18s -> 747.18s]  In fact, it turns out that for performance reasons,
+[747.18s -> 748.86s]  this is often blurred
+[749.22s -> 752.66s]  and you'll find for example that Linux
+[752.66s -> 754.90s]  and the most common virtual machine monitors
+[754.90s -> 756.30s]  have co-evolved a little bit
+[756.30s -> 758.22s]  so that in real life,
+[758.22s -> 759.54s]  Linux may actually be aware
+[759.54s -> 761.34s]  that it's running on a virtual machine monitor
+[761.34s -> 763.70s]  and with the virtual machine monitors permission
+[763.70s -> 765.50s]  for efficiency,
+[765.50s -> 768.26s]  Linux sometimes knowingly talks
+[768.26s -> 769.62s]  down to the virtual machine monitors
+[769.62s -> 773.02s]  to do things like get high speed access to devices.
+[773.02s -> 775.14s]  But that's a carefully controlled exception
+[775.22s -> 776.74s]  and the general strategy
+[776.74s -> 780.62s]  is completely faithful simulation.
+[784.50s -> 786.38s]  Okay, so how could we build
+[786.38s -> 788.02s]  our own virtual machine monitor?
+[790.30s -> 792.10s]  Well, one possibility would be
+[792.10s -> 793.70s]  to do it entirely in software.
+[793.70s -> 796.70s]  You can imagine writing something like Qemu
+[797.90s -> 801.62s]  that interpreted the machine instructions.
+[801.62s -> 802.74s]  That is you could write a program
+[802.74s -> 805.74s]  that would open up the XV6,
+[805.74s -> 809.58s]  that read the file that has the XV6 instructions in it
+[809.58s -> 811.46s]  and your program could look at each instruction
+[811.46s -> 813.66s]  and say, oh, that's a load instruction
+[813.66s -> 814.90s]  or a move instruction
+[814.90s -> 819.50s]  and your program could sort of simulate risk five state
+[819.50s -> 822.58s]  like might have 32 registers implemented in software
+[824.34s -> 826.42s]  and as your software sort of reads each instruction
+[826.42s -> 827.26s]  and picks it apart,
+[827.26s -> 828.58s]  it figures out what kind of instruction it is
+[828.58s -> 831.62s]  that would apply the effects of that instruction
+[831.62s -> 835.34s]  to the 32 registers and control registers
+[835.34s -> 837.34s]  that it was simulating all in software.
+[838.26s -> 839.82s]  And people do this
+[841.42s -> 844.10s]  and it's conceptually straightforward to make it work,
+[844.10s -> 846.42s]  although it may be a lot of work
+[846.42s -> 848.26s]  to get all the details right.
+[848.26s -> 853.26s]  The reason why sort of pure software
+[855.70s -> 858.14s]  interpretive virtual machines
+[858.14s -> 861.14s]  aren't widely used is that they're slow.
+[861.94s -> 863.42s]  If you play this game,
+[863.42s -> 866.06s]  your virtual machine is gonna run guest software
+[866.06s -> 868.06s]  at a small fraction
+[868.06s -> 870.70s]  of the speed of the hardware that you're using
+[870.70s -> 873.62s]  because if your virtual machine monitor software
+[873.62s -> 876.62s]  has to look at every instruction as it's executed up here,
+[876.62s -> 878.18s]  your machine monitor is gonna maybe run
+[878.18s -> 880.10s]  dozens of instructions
+[880.10s -> 881.26s]  in the process of interpreting
+[881.26s -> 883.26s]  each one of the guest instructions
+[883.26s -> 886.42s]  and so it's gonna be orders of magnitude slower
+[886.42s -> 887.34s]  than a real computer
+[887.34s -> 890.50s]  and for something like cloud computing,
+[890.50s -> 892.46s]  that really would not be practical.
+[892.46s -> 897.46s]  So people don't use the software interpretation
+[897.66s -> 900.30s]  to build virtual machines for production systems.
+[902.46s -> 903.30s]  Instead,
+[906.22s -> 911.22s]  the sort of core of one of the main
+[912.46s -> 915.82s]  widely used strategies is to run the,
+[915.82s -> 919.70s]  to actually run the guest instructions on the real CPU.
+[920.50s -> 924.74s]  So if you were gonna run XV6
+[924.74s -> 928.10s]  in your virtual machine monitor,
+[928.10s -> 931.74s]  you would actually load XV6's instructions,
+[931.74s -> 933.26s]  the kernel, the beginning,
+[933.26s -> 936.42s]  the entire XV6 instructions in a memory
+[936.42s -> 941.42s]  and then jump to the first instruction in XV6, right?
+[943.98s -> 945.94s]  In order to have your computer
+[945.94s -> 948.02s]  actually run the instructions in XV6
+[948.02s -> 949.74s]  and of course, this requires that your computer
+[949.82s -> 954.06s]  have the same microprocessor in it that XV6 is expecting
+[954.06s -> 957.14s]  but that's easy to arrange.
+[958.14s -> 961.70s]  Now, it turns out you can't literally do this.
+[961.70s -> 963.70s]  The point at which you'd run into trouble
+[963.70s -> 967.22s]  is when your guest operating system
+[967.22s -> 971.02s]  first executed a privileged instruction, right?
+[971.02s -> 973.02s]  If it, and you know,
+[973.02s -> 974.62s]  that's really the difference between a kernel
+[974.62s -> 977.54s]  and ordinary user code is that kernels,
+[977.54s -> 978.78s]  which is what we're trying to run here
+[978.82s -> 980.02s]  in our virtual machine kernels,
+[980.02s -> 981.34s]  use privileged instruction.
+[981.34s -> 984.90s]  So the guest, your guest kernel might, for example,
+[984.90s -> 987.06s]  try to load a new page table
+[987.06s -> 989.42s]  into the satp register on RISC-V
+[989.42s -> 993.14s]  and so that's starting to present a puzzle.
+[994.10s -> 996.26s]  If we're executing our guest kernel
+[996.26s -> 999.42s]  as an ordinary user process in Linux, for example,
+[999.42s -> 1004.22s]  boy, loading satp is an illegal instruction in user mode
+[1004.22s -> 1006.26s]  and so our program's gonna crash.
+[1006.26s -> 1011.22s]  If we are so foolish as to load our guest kernel into,
+[1011.22s -> 1015.30s]  and run it in supervisor mode somehow,
+[1015.30s -> 1017.26s]  then our guest kernel will now be able
+[1017.26s -> 1018.94s]  to modify the real page table
+[1018.94s -> 1021.82s]  and would be able to escape from its virtual machine
+[1021.82s -> 1025.54s]  and because it can control the contents of PTEs,
+[1025.54s -> 1029.58s]  read and write any memory.
+[1029.58s -> 1033.34s]  So we can't use a strategy that's as simple
+[1033.38s -> 1036.42s]  as just running the guest kernel directly.
+[1037.30s -> 1040.06s]  Instead, we're gonna start playing some tricks.
+[1040.06s -> 1045.06s]  The first step is to run the guest kernel in user mode.
+[1050.82s -> 1055.82s]  So this is sort of the fundamental strategy here.
+[1059.02s -> 1061.22s]  We're gonna run the guest kernel in user mode
+[1062.22s -> 1065.06s]  in the RISC-V user mode.
+[1065.06s -> 1066.98s]  And so what that means,
+[1068.54s -> 1071.50s]  we're writing our own virtual machine monitor
+[1071.50s -> 1073.90s]  and when we tell it, look, please boot XV6,
+[1073.90s -> 1077.22s]  it's gonna load XV6's kernel instructions
+[1077.22s -> 1078.50s]  into memory somewhere.
+[1080.74s -> 1082.50s]  Maybe set up a page table appropriately
+[1082.50s -> 1086.98s]  that makes it look to XV6 like its memory starts at zero
+[1086.98s -> 1089.90s]  and goes up to whatever high memory is.
+[1091.22s -> 1095.10s]  And then the virtual machine monitor will use a trap,
+[1095.10s -> 1099.62s]  SRED instruction as you've all come across in XV6
+[1099.62s -> 1104.30s]  to jump into the first instruction of the guest OS
+[1107.94s -> 1110.18s]  in user mode.
+[1110.18s -> 1112.34s]  And so the guest operating system will execute along
+[1112.34s -> 1114.22s]  and now many instructions will work fine
+[1114.22s -> 1115.26s]  if the guest operating system
+[1115.26s -> 1118.34s]  is just adding two registers together
+[1118.34s -> 1119.82s]  or even loading or storing from memory,
+[1119.82s -> 1121.02s]  that'll just work.
+[1121.66s -> 1122.98s]  And as soon as the guest operating system
+[1122.98s -> 1125.02s]  uses privileged instruction,
+[1125.02s -> 1127.38s]  what's gonna happen is it's gonna trap
+[1127.38s -> 1129.42s]  that RISC-V hardware will cause it,
+[1129.42s -> 1132.18s]  since it's running in user mode, not supervised mode,
+[1132.18s -> 1133.30s]  will cause it to trap back
+[1133.30s -> 1137.02s]  into our virtual machine monitor and we'll get control.
+[1137.02s -> 1139.06s]  So if the guest operating system, for example,
+[1139.06s -> 1143.58s]  tries to change SAPP, the page table pointer, boom,
+[1143.58s -> 1146.54s]  the RISC-V CPU will trap into our virtual machine monitor
+[1146.54s -> 1148.58s]  and our software will get control back.
+[1149.42s -> 1150.86s]  And our software will be able to look
+[1151.70s -> 1153.86s]  and see what instruction caused the trap
+[1153.86s -> 1156.54s]  and do something appropriate.
+[1156.54s -> 1158.78s]  But the cool thing is that the guest operating system
+[1158.78s -> 1163.38s]  didn't actually get to set the page table pointer.
+[1163.38s -> 1167.42s]  How does the VMM intercept this?
+[1167.42s -> 1170.06s]  Like it has to set the trap handler, right?
+[1170.06s -> 1172.82s]  Isn't that something only a privileged process can do?
+[1172.82s -> 1177.66s]  Like the VMM is a user program on the host OS, right?
+[1177.66s -> 1179.34s]  Okay, what I'm assuming,
+[1180.94s -> 1183.30s]  what I'm assuming is that the virtual machine monitor
+[1183.30s -> 1184.66s]  runs in supervisor mode.
+[1184.66s -> 1187.18s]  So in this simple picture,
+[1187.18s -> 1189.46s]  the virtual machine monitor is the kernel
+[1189.46s -> 1192.14s]  that boots on this piece of hardware.
+[1192.14s -> 1194.06s]  So instead of booting Linux or whatever,
+[1194.06s -> 1196.42s]  you would boot this virtual machine monitor,
+[1196.42s -> 1197.78s]  it boots in supervisor mode,
+[1197.78s -> 1200.06s]  it has complete control over the hardware.
+[1200.06s -> 1203.46s]  So we can set up STVEC and all this other stuff,
+[1203.46s -> 1205.02s]  however it likes.
+[1205.02s -> 1206.58s]  That makes sense.
+[1206.58s -> 1209.26s]  Now, and actually some virtual machine monitors
+[1209.26s -> 1210.38s]  work in exactly that way.
+[1210.90s -> 1211.74s]  You just boot them on the hardware
+[1211.74s -> 1214.10s]  and it's just the virtual machine monitor only
+[1214.10s -> 1216.54s]  that's running in supervisor mode.
+[1216.54s -> 1217.70s]  In fact, there's also many,
+[1217.70s -> 1219.70s]  many virtual machine schemes out there.
+[1219.70s -> 1222.82s]  In fact, boot Linux.
+[1224.50s -> 1226.62s]  And then once Linux is up and running,
+[1228.34s -> 1231.78s]  you load the virtual, either Linux,
+[1231.78s -> 1235.34s]  I mean actually Linux comes with a virtual machine monitor
+[1235.34s -> 1237.18s]  or you load the virtual machine monitor
+[1237.18s -> 1240.10s]  as what's called a loadable kernel module
+[1240.70s -> 1244.90s]  into Linux and it runs in the kernel in supervisor mode.
+[1245.86s -> 1247.94s]  And that's the way actually today's paper works
+[1247.94s -> 1252.94s]  is boot Linux and then run this loadable kernel module.
+[1253.06s -> 1255.86s]  But the main point is the virtual machine monitor software
+[1255.86s -> 1258.06s]  and the software rewriting that we trust
+[1258.06s -> 1260.06s]  runs in supervisor mode
+[1260.06s -> 1263.82s]  and we're gonna run the guest in a user mode
+[1263.82s -> 1265.86s]  but arrange for it to look like it's running
+[1265.86s -> 1268.06s]  in supervisor mode as far as it's concerned.
+[1271.10s -> 1276.10s]  Okay, so the good news is that on RISC-V,
+[1276.54s -> 1281.54s]  everything dangerous traps if you try to do it
+[1282.30s -> 1285.30s]  in user mode.
+[1285.30s -> 1287.22s]  That is all the sort of privileged things
+[1287.22s -> 1288.98s]  that supervisor node can do
+[1290.78s -> 1291.86s]  with the exception of stuff having to do
+[1291.86s -> 1293.34s]  with the page table or PTEs,
+[1293.34s -> 1294.42s]  which we'll talk about in a bit.
+[1294.42s -> 1297.78s]  But basically every supervisor only instruction
+[1298.70s -> 1303.70s]  causes a trap if you try to execute it in user mode.
+[1303.70s -> 1305.38s]  So that means that every time the guest operating system
+[1305.38s -> 1307.06s]  does anything like reads S cause
+[1307.06s -> 1308.54s]  or reads and writes STVEC
+[1308.54s -> 1311.46s]  or does any of those things that XB6, for example,
+[1311.46s -> 1313.94s]  does to kind of configure the privileged part
+[1313.94s -> 1315.94s]  of RISC-V hardware will cause a trap
+[1315.94s -> 1320.54s]  into the virtual machine monitor and will get control.
+[1320.54s -> 1323.54s]  And then the game is gonna be
+[1323.54s -> 1325.98s]  that the virtual machine monitor is going
+[1325.98s -> 1330.02s]  to maintain virtual state,
+[1330.02s -> 1332.62s]  a whole table of virtual state information
+[1343.02s -> 1344.02s]  for the guest.
+[1344.02s -> 1346.42s]  So the virtual machine monitor will have,
+[1346.42s -> 1351.42s]  for example, a virtual STVEC register
+[1352.70s -> 1355.26s]  just implemented as a variable in software
+[1355.26s -> 1360.26s]  and a virtual SEPC register.
+[1360.50s -> 1363.02s]  And all these protected registers,
+[1363.02s -> 1365.18s]  there'll be a whole array of them down here
+[1365.18s -> 1367.10s]  implemented by the virtual machine monitor.
+[1367.10s -> 1369.34s]  And when the guest operating system, for example,
+[1369.34s -> 1372.74s]  runs the instruction that reads one of these registers,
+[1372.74s -> 1373.74s]  boom, it'll take a trap
+[1373.74s -> 1376.06s]  because it's not legal in user space.
+[1376.06s -> 1378.54s]  The virtual machine monitor will inspect the instruction
+[1378.54s -> 1380.42s]  and say, aha, that's an instruction
+[1380.42s -> 1383.22s]  that's reading the SEPC register.
+[1383.22s -> 1384.90s]  And so the virtual machine monitor
+[1385.50s -> 1387.22s]  will then emulate that instruction.
+[1387.22s -> 1392.22s]  It'll read the virtual SEPC value out of this array.
+[1394.02s -> 1396.70s]  It'll copy that into the hardware.
+[1397.94s -> 1401.06s]  Or well, what really happened here is that the,
+[1407.22s -> 1408.46s]  I forget the name of the,
+[1408.46s -> 1413.46s]  there's some instruction whose name I forgot
+[1415.14s -> 1418.38s]  which is basically supervisor read.
+[1418.38s -> 1419.38s]  Although that's not its name
+[1419.38s -> 1421.30s]  and you give the name of an ordinary register
+[1421.30s -> 1424.66s]  and the name of a privileged register like SEPC.
+[1424.66s -> 1426.74s]  And so with the virtual that will track
+[1426.74s -> 1429.94s]  the virtual machine monitor will read that instruction.
+[1429.94s -> 1431.70s]  We'll see, oh, it's an S read.
+[1431.70s -> 1434.42s]  The virtual machine monitor will copy the virtual copy
+[1434.42s -> 1439.18s]  of SEPC into A0 in the trap frame.
+[1439.18s -> 1441.10s]  It's after all when entering the VMM
+[1441.10s -> 1444.06s]  that's gonna have created a trap frame
+[1444.06s -> 1446.46s]  with copies of all the guest registers
+[1446.46s -> 1449.78s]  that'll copy this SEPC into A0 in the trap frame,
+[1449.78s -> 1452.94s]  then return from the trap using S read.
+[1456.54s -> 1458.38s]  After copying the trap frame registers
+[1458.38s -> 1462.70s]  and the real registers and return from this trap
+[1462.70s -> 1464.38s]  to the instruction after the S read
+[1464.38s -> 1468.26s]  and continue reading there with now A0 set
+[1468.26s -> 1471.82s]  to the virtual SEPC.
+[1472.70s -> 1475.62s]  And now the guest operating system will proceed,
+[1476.98s -> 1479.74s]  but not realizing that something funny happened here.
+[1480.70s -> 1485.02s]  But it will have gotten a copy of the virtual SEPC
+[1485.02s -> 1487.10s]  that the VMM was keeping on its behalf.
+[1489.06s -> 1492.10s]  So any questions about this strategy?
+[1492.10s -> 1492.94s]  Yeah.
+[1497.30s -> 1501.58s]  How does the VMM differentiate between different guests?
+[1505.74s -> 1507.62s]  It's basically the same way.
+[1507.62s -> 1509.70s]  It would keep one of these tables
+[1509.70s -> 1512.10s]  of virtual state per guest.
+[1512.10s -> 1514.14s]  And it just knows, just like XV6 knows
+[1514.14s -> 1516.10s]  which process it's running as a variable,
+[1516.10s -> 1518.26s]  maybe a per core variable saying,
+[1518.26s -> 1520.98s]  here's the process I'm currently running.
+[1521.02s -> 1524.74s]  Similarly, a VMM would have a per core variable
+[1524.74s -> 1526.54s]  that indicated which virtual machine
+[1526.54s -> 1530.18s]  would be multiple of these state structures.
+[1530.18s -> 1532.50s]  VMM would know which virtual machine it was executing
+[1532.50s -> 1534.46s]  and it would look in the appropriate
+[1534.46s -> 1536.82s]  virtual machine state structure
+[1536.82s -> 1541.82s]  to find the ST SEPC or whatever it is it's looking for.
+[1542.10s -> 1543.86s]  Can it run multiple,
+[1544.90s -> 1548.42s]  can it assign multiple cores to one of the guests?
+[1548.42s -> 1550.58s]  Yeah, sophisticated virtual machine monitors
+[1550.58s -> 1551.90s]  can do that, yes.
+[1555.54s -> 1557.70s]  So if you, sorry, go ahead.
+[1557.70s -> 1558.54s]  Oh, sorry.
+[1558.54s -> 1560.66s]  So the guest operating system,
+[1560.66s -> 1565.54s]  it will have some registers in the actual hardware
+[1565.54s -> 1568.82s]  will be the registers that the guest OS uses.
+[1568.82s -> 1572.82s]  So why do we not use the actual SEPC
+[1572.82s -> 1574.38s]  but use a virtual one?
+[1579.26s -> 1584.26s]  The reason is that the virtual machine monitor
+[1584.66s -> 1586.06s]  needs to use these registers,
+[1586.06s -> 1588.78s]  needs to use the real registers.
+[1588.78s -> 1590.86s]  So for example, think about S cause.
+[1592.06s -> 1593.70s]  When a trap occurs,
+[1593.70s -> 1596.14s]  what happens when the guest operating system
+[1597.14s -> 1598.74s]  tries to do anything privileged,
+[1598.74s -> 1601.18s]  a trap will occur and the hardware sets
+[1601.18s -> 1604.18s]  the real hardware S cause register
+[1604.18s -> 1606.30s]  to the cause of the trap, right?
+[1606.30s -> 1609.90s]  Which is illegal instruction or unprivileged instruction,
+[1609.90s -> 1610.94s]  whatever it is.
+[1610.94s -> 1615.94s]  But if the guest operating system,
+[1616.18s -> 1617.42s]  supposing the guest operating system
+[1617.42s -> 1621.94s]  has just taken a system call from a guest user process,
+[1621.94s -> 1625.58s]  the guest operating system needs to see an S cause
+[1625.58s -> 1628.14s]  that's whatever the right S cause value is
+[1628.14s -> 1631.34s]  for system call, right?
+[1631.34s -> 1633.14s]  Even though maybe the last thing that,
+[1633.14s -> 1637.42s]  so the guest operating system is gonna read S cause
+[1641.62s -> 1643.70s]  and what it thinks is the trap handler handling
+[1643.70s -> 1647.66s]  a system call from one of its guest processes.
+[1647.66s -> 1649.66s]  The S cause that the guest operating system
+[1649.66s -> 1652.14s]  needs to see is the value that says,
+[1652.14s -> 1654.14s]  that means system call.
+[1654.14s -> 1657.46s]  But the S cause is gonna be in the real S cause register
+[1657.46s -> 1660.58s]  is the S cause that means illegal instruction
+[1660.58s -> 1663.42s]  or unprivileged or instructions
+[1663.42s -> 1665.30s]  violating the privilege rules.
+[1665.30s -> 1670.30s]  So there are actually some times when you could,
+[1673.06s -> 1677.26s]  well, anyway, in general, the VMM is the one
+[1679.54s -> 1680.70s]  that needs to see the real,
+[1680.70s -> 1682.38s]  the VMM needs to see different values
+[1682.38s -> 1685.46s]  in the real registers than the operating system
+[1685.46s -> 1688.70s]  should see in its vision of the registers.
+[1690.62s -> 1691.46s]  Does that make sense?
+[1691.46s -> 1692.30s]  Thank you, yeah.
+[1695.82s -> 1700.02s]  Okay, so this is called the name for this style
+[1700.02s -> 1702.74s]  of virtual machine implementation
+[1702.74s -> 1704.82s]  in which the guest runs at user level
+[1704.82s -> 1707.02s]  and therefore traps whenever it tries
+[1707.02s -> 1708.50s]  to do anything privileged
+[1708.50s -> 1711.58s]  and the VMM can emulate the privileged instruction.
+[1711.58s -> 1714.26s]  The name for that is trap and emulate.
+[1715.18s -> 1720.18s]  And it's nice because you can build this for yourself.
+[1721.78s -> 1723.42s]  Actually, you can build this for yourselves
+[1723.42s -> 1725.74s]  entirely in software.
+[1725.74s -> 1728.26s]  And you could modify XV6, for example,
+[1728.26s -> 1731.62s]  to be a virtual machine monitor on RISC-V
+[1731.62s -> 1733.50s]  and run little virtual machines,
+[1733.50s -> 1738.50s]  perhaps regular XV6 just by writing software.
+[1738.50s -> 1739.90s]  Of course, your software does have to run
+[1739.90s -> 1742.06s]  in a supervisor mode.
+[1745.26s -> 1749.10s]  The state here, all the registers that begin with S,
+[1749.10s -> 1752.62s]  all those supervisor control registers
+[1753.82s -> 1756.02s]  have to be part of this virtual state.
+[1756.02s -> 1757.14s]  There's also some other things
+[1757.14s -> 1759.58s]  that are not directly accessible
+[1760.90s -> 1763.18s]  from those S registers that nevertheless
+[1763.18s -> 1764.42s]  need to be down in this state.
+[1764.42s -> 1765.62s]  One of them is the mode.
+[1765.62s -> 1767.46s]  The virtual machine monitor needs to know
+[1767.46s -> 1769.30s]  whether the virtual machine's running
+[1769.30s -> 1774.02s]  in guest user mode or guest operating system mode
+[1774.02s -> 1778.98s]  because, for example, if user code executes
+[1778.98s -> 1781.50s]  the privileged instruction like trying to read S cause,
+[1781.50s -> 1783.86s]  sure, that'll cause a trap into the VMM too.
+[1783.86s -> 1786.54s]  But in that case, the VMM should not
+[1786.54s -> 1788.66s]  just emulate the instruction in return
+[1788.66s -> 1790.86s]  because that's not a legal instruction in user mode.
+[1790.86s -> 1794.70s]  So the VMM has to track whether the guest
+[1794.70s -> 1797.74s]  is in guest supervisor mode or guest user mode.
+[1797.74s -> 1801.66s]  And so there's gonna be a mode slot down here as well.
+[1801.74s -> 1806.46s]  And the VMM will know because when the guest operating system
+[1806.46s -> 1809.26s]  jumps into user space, it'll execute
+[1809.26s -> 1810.62s]  the S read instruction.
+[1810.62s -> 1812.38s]  S read is a privileged instruction
+[1812.38s -> 1814.18s]  and so the VMM will actually get control there
+[1814.18s -> 1815.98s]  and will see, oh, the guest is running
+[1815.98s -> 1817.42s]  an S read instruction.
+[1817.42s -> 1819.94s]  Among other things, I'm gonna change the virtual mode
+[1819.94s -> 1821.78s]  from supervisor to user.
+[1824.06s -> 1828.10s]  And another hidden piece of state is the heart number.
+[1829.14s -> 1830.86s]  That is the core number.
+[1832.50s -> 1834.50s]  You can't get that directly,
+[1834.50s -> 1836.30s]  even with a privileged instruction.
+[1838.38s -> 1840.18s]  But the VMM needs to keep track
+[1840.18s -> 1842.50s]  of which heart it's emulating right now.
+[1844.78s -> 1845.62s]  Okay.
+[1847.18s -> 1850.22s]  The RISC-V, it turns out different CPUs
+[1850.22s -> 1852.70s]  are different levels of difficulty
+[1852.70s -> 1855.94s]  and how hard it is to write a trap
+[1855.94s -> 1858.58s]  and emulate a virtual machine on them.
+[1858.58s -> 1861.62s]  RISC-V is particularly well suited to it
+[1861.62s -> 1863.78s]  because the designers had that in mind
+[1863.78s -> 1865.94s]  when they were designing the instruction set.
+[1865.94s -> 1868.34s]  And so they knew what the requirements
+[1868.34s -> 1870.82s]  of a trap and emulate a virtual machine were.
+[1870.82s -> 1873.90s]  And for example, they've been quite diligent
+[1873.90s -> 1875.98s]  in making sure that every single privileged thing
+[1875.98s -> 1878.74s]  that supervisor code can do will cause a trap
+[1878.74s -> 1880.26s]  if you try to do it in user mode,
+[1880.26s -> 1882.62s]  which is what you need in order to make sure
+[1882.62s -> 1884.86s]  the virtual machine monitor sees a trap
+[1884.86s -> 1887.30s]  for every privileged instruction.
+[1891.70s -> 1892.94s]  I have a quick question.
+[1892.94s -> 1896.82s]  So does anything actually run in the guest OS itself
+[1896.82s -> 1900.34s]  or does it always trap into the virtual machine monitor?
+[1900.34s -> 1903.22s]  All ordinary instructions,
+[1903.22s -> 1908.06s]  like if you just have an add instruction that adds,
+[1908.06s -> 1910.26s]  I don't know how to write this RISC-V assembly,
+[1910.26s -> 1912.94s]  but let's just say you add A0 to A1
+[1912.94s -> 1915.18s]  and you wanna put the result in A2,
+[1915.18s -> 1918.30s]  that instruction just executes directly on the hardware
+[1918.30s -> 1920.42s]  at full hardware speed.
+[1920.46s -> 1921.94s]  If you make a function call,
+[1921.94s -> 1926.94s]  just an ordinary function call up here in the guest world,
+[1928.02s -> 1931.58s]  that just executes without anything special.
+[1931.58s -> 1932.78s]  It's just ordinary,
+[1932.78s -> 1936.02s]  all the instructions that are legal in user code
+[1937.54s -> 1939.82s]  on non-privileged actions just execute directly
+[1939.82s -> 1944.46s]  at full speed when the guest operating system executes them.
+[1944.46s -> 1947.58s]  Okay, so is there a semblance of like user mode
+[1947.62s -> 1950.54s]  and kernel mode in the guest OS?
+[1951.58s -> 1953.38s]  Yes, the guest operating system is,
+[1954.86s -> 1959.10s]  well, the guest operating system is unchanged.
+[1959.10s -> 1961.98s]  So what we're running up here is exactly
+[1961.98s -> 1965.18s]  the Linux kernel or exactly the XV6 kernel.
+[1965.18s -> 1966.86s]  And of course, XV6 is all,
+[1966.86s -> 1969.26s]  you know, it knows, the XV6 kernel knows
+[1969.26s -> 1971.66s]  it's running in supervisor mode.
+[1971.66s -> 1972.50s]  Yeah.
+[1972.50s -> 1974.18s]  Right, it just is.
+[1974.18s -> 1975.30s]  Of course, it's not here,
+[1975.30s -> 1977.18s]  but as far as the code is concerned,
+[1977.66s -> 1979.06s]  it's just definitely running in supervisor mode.
+[1979.06s -> 1981.38s]  It just does all kinds of privileged things
+[1981.38s -> 1982.94s]  and expects them to work.
+[1982.94s -> 1985.66s]  And then it knows when it executes an S ret
+[1985.66s -> 1986.70s]  to get into user space,
+[1986.70s -> 1989.66s]  it knows, aha, I'm gonna enter user space now.
+[1991.54s -> 1995.46s]  And you know, the VMM sort of makes everything look like
+[1995.46s -> 1997.66s]  that's indeed what's happening.
+[1997.66s -> 1998.50s]  Okay, okay.
+[1998.50s -> 2001.58s]  Even though it's actually in the real machine,
+[2001.58s -> 2005.06s]  it's in user mode in both places.
+[2005.10s -> 2007.10s]  This looks just like supervisor mode
+[2007.10s -> 2009.26s]  and this looks just like user mode.
+[2009.26s -> 2010.26s]  Okay, cool.
+[2013.70s -> 2014.54s]  Okay.
+[2017.14s -> 2019.42s]  Okay, so for example,
+[2019.42s -> 2023.06s]  when we execute S ret to enter user space,
+[2023.06s -> 2026.70s]  the S ret's privileged, luckily.
+[2028.46s -> 2030.86s]  It traps into the virtual machine monitor.
+[2030.86s -> 2033.34s]  The virtual machine monitor changes the virtual mode
+[2033.38s -> 2035.06s]  to user, even though, of course,
+[2035.06s -> 2036.54s]  the real mode is still supervisor,
+[2036.54s -> 2038.02s]  because we're still executing down here,
+[2038.02s -> 2039.98s]  changes the virtual mode to user.
+[2043.54s -> 2046.18s]  Just before it returns from the trap,
+[2046.18s -> 2049.86s]  the virtual machine monitor sets the real SCPC
+[2051.18s -> 2053.58s]  to the virtual SCPC,
+[2053.58s -> 2055.34s]  because in order that when
+[2055.34s -> 2059.70s]  the virtual machine monitor returns using its own S ret,
+[2059.70s -> 2064.18s]  that the program counter value it returns to
+[2064.18s -> 2066.58s]  is the program counter
+[2066.58s -> 2069.46s]  that the guest operating system wanted to return to.
+[2070.66s -> 2072.54s]  So here's a case where very briefly,
+[2072.54s -> 2076.50s]  the real SCPC was set equal to the virtual SCPC.
+[2078.74s -> 2080.18s]  And I'll talk about this in a bit,
+[2080.18s -> 2082.10s]  but the virtual machine monitor also
+[2082.10s -> 2083.70s]  is gonna be switching page tables
+[2083.70s -> 2087.30s]  when it goes back into the virtual machine.
+[2088.26s -> 2090.66s]  When the guest user code wants to make it,
+[2090.66s -> 2091.94s]  and then the guest user code,
+[2091.94s -> 2092.98s]  for ordinary instructions,
+[2092.98s -> 2094.54s]  it just executes the machine,
+[2094.54s -> 2096.98s]  executes them directly at full speed.
+[2096.98s -> 2101.98s]  When the guest code wants to make a system call,
+[2102.62s -> 2106.98s]  executes the E call instruction, that causes a trap.
+[2106.98s -> 2109.10s]  That trap goes to the virtual machine monitor
+[2109.10s -> 2110.30s]  in this scheme.
+[2110.30s -> 2111.90s]  The virtual machine monitor says, aha,
+[2111.90s -> 2114.14s]  we're in, consults the virtual mode,
+[2114.14s -> 2116.86s]  it's virtual mode is user space,
+[2117.34s -> 2120.22s]  it looks at the instruction that trapped,
+[2120.22s -> 2121.90s]  that faulted, it's an E call.
+[2122.78s -> 2124.62s]  And then the virtual machine monitor
+[2124.62s -> 2126.42s]  sort of does all the virtual changes,
+[2126.42s -> 2128.34s]  makes all the changes in the virtual state
+[2128.34s -> 2131.90s]  required to simulate a system call trap
+[2131.90s -> 2133.82s]  into the guest operating system.
+[2133.82s -> 2137.42s]  So it's gonna set the virtual SCPC
+[2137.42s -> 2139.02s]  to be whatever program counter
+[2139.94s -> 2142.66s]  was the E call instruction was at.
+[2142.66s -> 2145.10s]  It's gonna change the virtual mode back to supervisor.
+[2145.10s -> 2148.46s]  It's gonna set the virtual S cause to be system call.
+[2149.58s -> 2152.62s]  It's gonna set the real EPC
+[2152.62s -> 2157.30s]  to be equal to the virtual STVEC and then call SRAT
+[2157.30s -> 2159.78s]  so that it'll jump into
+[2159.78s -> 2162.50s]  the guest operating system's trap handler,
+[2162.50s -> 2166.26s]  which is what, or trampoline page or whatever it is,
+[2166.26s -> 2169.10s]  which is what the virtual STVEC was pointing to.
+[2175.38s -> 2176.22s]  Okay.
+[2178.90s -> 2181.38s]  We have two remaining pieces of business
+[2181.38s -> 2182.30s]  which are quite important.
+[2182.30s -> 2186.02s]  One is what about page tables?
+[2186.02s -> 2189.38s]  And the other is what about devices?
+[2191.06s -> 2196.06s]  So the page table sort of,
+[2196.18s -> 2198.58s]  there's two pieces to that.
+[2198.58s -> 2200.10s]  One is that at various points
+[2200.10s -> 2201.18s]  the guest operating system
+[2201.18s -> 2203.80s]  is gonna modify the SATP register.
+[2204.80s -> 2206.92s]  And of course, that'll turn into a trap
+[2206.92s -> 2208.04s]  in the virtual machine monitor
+[2208.04s -> 2209.68s]  and the virtual machine monitor
+[2209.68s -> 2211.52s]  gets a chance to do something.
+[2211.52s -> 2214.12s]  But what we don't want the virtual machine monitor to do
+[2214.12s -> 2217.40s]  is simply let the guest set the real SATP
+[2219.24s -> 2222.44s]  and then execute after having changed the real SATP
+[2222.44s -> 2224.48s]  because that would let the guest get at any memory,
+[2224.48s -> 2227.40s]  not just the memory that the virtual machine monitor
+[2227.40s -> 2228.84s]  has allocated to it.
+[2228.84s -> 2231.20s]  So we cannot let the guest operating system
+[2231.20s -> 2232.90s]  simply set the SATP.
+[2234.20s -> 2235.88s]  But we do need to do something to the SATP
+[2235.88s -> 2238.66s]  because we need to provide the illusion
+[2238.66s -> 2240.08s]  to the guest operating system
+[2240.08s -> 2242.96s]  that yes, indeed, the page table's been changed.
+[2242.96s -> 2244.08s]  And more than an illusion,
+[2244.08s -> 2247.32s]  when the guest software runs load and store instructions
+[2247.32s -> 2249.92s]  or fetches instructions to execute,
+[2249.92s -> 2251.56s]  we need those to come from the right place,
+[2251.56s -> 2255.40s]  from the place that the guest operating system
+[2255.40s -> 2257.28s]  pointed its page table entries to.
+[2258.50s -> 2262.12s]  So what actually happens when the guest sets the SATP
+[2264.80s -> 2269.80s]  is we can't directly use
+[2269.88s -> 2271.84s]  the guest operating system's page table,
+[2271.84s -> 2275.98s]  but the virtual machine monitor cooks up a new page table
+[2277.10s -> 2281.92s]  that simulates the guest operating system's
+[2281.92s -> 2283.72s]  desired page table.
+[2283.72s -> 2288.72s]  So now the page translation situation
+[2288.92s -> 2290.40s]  is a little bit different.
+[2290.40s -> 2291.74s]  We have the guest,
+[2293.20s -> 2296.28s]  what the guest was trying to set the page table to.
+[2296.28s -> 2298.20s]  So this is the guest page table.
+[2298.20s -> 2300.24s]  Of course, it's the guest kernel.
+[2301.82s -> 2306.82s]  And that maps sort of guest virtual addresses
+[2307.34s -> 2311.20s]  to what I'll call guest physical addresses.
+[2311.20s -> 2314.16s]  Of course, the guest physical addresses are,
+[2314.16s -> 2315.96s]  the virtual machine monitors,
+[2315.96s -> 2318.56s]  given the guest 32 gigabytes
+[2318.56s -> 2321.88s]  or however much physical memory
+[2324.76s -> 2325.92s]  for its use,
+[2326.80s -> 2331.80s]  presumably starting at telling the guest operating system
+[2331.88s -> 2333.88s]  that its physical addresses start at zero
+[2333.88s -> 2335.28s]  and go up for 32 megabytes.
+[2335.28s -> 2337.86s]  But of course, they don't in real life,
+[2337.86s -> 2338.70s]  on the real hardware,
+[2338.70s -> 2341.28s]  they're just 32 gigabytes worth of pages somewhere,
+[2341.28s -> 2342.76s]  not contiguous.
+[2342.76s -> 2346.80s]  So we can't directly use the guest's physical addresses
+[2346.92s -> 2348.20s]  because they don't correspond
+[2348.20s -> 2350.60s]  to the real physical addresses.
+[2350.60s -> 2354.64s]  So instead, the VMM is gonna maintain
+[2357.28s -> 2362.28s]  a map for each virtual machine
+[2362.28s -> 2365.30s]  that maps guest physical addresses
+[2365.30s -> 2367.16s]  to real physical addresses,
+[2367.16s -> 2370.66s]  what I'll call host physical addresses.
+[2370.66s -> 2373.56s]  So this map, it's like a page table,
+[2373.58s -> 2376.32s]  as an entry for every page,
+[2376.32s -> 2380.00s]  every physical page that the guest thinks exists
+[2380.00s -> 2382.52s]  and indicates what real physical page
+[2382.52s -> 2384.80s]  that guest's physical address refers to,
+[2384.80s -> 2387.04s]  that the VMM has allocated for it.
+[2388.04s -> 2393.04s]  And then when the guest writes a new page table to SatP,
+[2394.58s -> 2395.74s]  in the trap handler for that,
+[2395.74s -> 2400.74s]  the VMM creates what's called a shadow page table,
+[2401.74s -> 2405.58s]  which is gonna be what the VMM puts in the real SatP.
+[2409.18s -> 2412.60s]  And this shadow page table is constructed
+[2412.60s -> 2415.06s]  by the combination of these two page tables.
+[2415.06s -> 2417.98s]  And so it maps guest virtual addresses
+[2419.30s -> 2422.58s]  to host physical addresses.
+[2422.58s -> 2424.66s]  Then it's constructed by taking every entry
+[2424.66s -> 2426.26s]  in the guest page table,
+[2426.26s -> 2429.92s]  looking at the guest's desired guest physical address,
+[2429.96s -> 2432.96s]  using the VMM map to translate that guest physical address
+[2432.96s -> 2434.56s]  to a real host physical address,
+[2434.56s -> 2437.90s]  and putting that virtual physical pair
+[2437.90s -> 2439.76s]  into the shadow page table.
+[2439.76s -> 2442.60s]  And then the virtual machine monitor sets this
+[2442.60s -> 2445.42s]  to be in SatP as the real page table
+[2445.42s -> 2450.36s]  before returning back to the guest kernel.
+[2452.36s -> 2454.28s]  And so the guest kernel thinks it's set one page table,
+[2454.28s -> 2455.76s]  but actually the real hardware
+[2455.76s -> 2458.28s]  is using this shadow page table instead.
+[2459.96s -> 2461.48s]  And this way there's the,
+[2461.48s -> 2464.52s]  this is what prevents the guest from escaping
+[2464.52s -> 2467.18s]  from the memory it's allowed to use.
+[2467.18s -> 2470.68s]  The shadow page table can only contain
+[2470.68s -> 2474.84s]  host physical addresses that the VMM
+[2474.84s -> 2478.92s]  had allocated for that guest.
+[2478.92s -> 2480.36s]  There's nothing the guest can put
+[2480.36s -> 2482.20s]  in the page table it asks for
+[2482.20s -> 2483.96s]  that'll allow it to access a page
+[2483.96s -> 2485.34s]  that wasn't allocated to it
+[2485.34s -> 2486.94s]  by the virtual machine monitor.
+[2486.94s -> 2491.94s]  That's a critical piece of the isolation story here.
+[2492.66s -> 2495.86s]  Any questions about the paging setup for trap and emulate?
+[2498.74s -> 2502.18s]  Sorry, so if it's, if the operating system,
+[2502.18s -> 2506.50s]  the guest just wants to make a new process
+[2506.50s -> 2508.84s]  and a new page table for the process,
+[2508.84s -> 2509.98s]  what does it do?
+[2509.98s -> 2511.22s]  Like what happens?
+[2511.22s -> 2513.62s]  The guest does the usual,
+[2513.62s -> 2516.54s]  just does exactly what Linux or XV6 does right now.
+[2517.26s -> 2520.50s]  It formats up a page table entries to make a page table,
+[2520.50s -> 2522.20s]  and then it executes the instruction
+[2522.20s -> 2525.38s]  to assign that address to the page table into satp.
+[2525.38s -> 2528.38s]  So that's what the guest operating system does.
+[2529.84s -> 2533.38s]  And when the, but it can't actually assign to satp
+[2533.38s -> 2535.76s]  because that's a privileged operation.
+[2535.76s -> 2538.52s]  So there's a trap into the virtual machine monitor.
+[2538.52s -> 2539.60s]  The virtual machine monitor
+[2539.60s -> 2541.28s]  inspects the instruction that trapped,
+[2541.28s -> 2546.22s]  sees, oh gosh, that guest is trying to assign to satp.
+[2546.74s -> 2547.58s]  And then the virtual machine monitor
+[2547.58s -> 2550.86s]  would create this new shadow page table
+[2550.86s -> 2553.18s]  from the combination of the page table
+[2553.18s -> 2556.62s]  the guest was trying to set up.
+[2556.62s -> 2559.26s]  The virtual machine monitor looks at the page table,
+[2559.26s -> 2560.84s]  all the PTEs and the page table
+[2560.84s -> 2562.38s]  the guest was trying to set up.
+[2562.38s -> 2564.88s]  It runs, it translates the physical address
+[2564.88s -> 2567.30s]  in each guest page table entry
+[2567.30s -> 2571.26s]  through this map to get a real physical address
+[2571.26s -> 2573.50s]  or to cause a real fault
+[2573.98s -> 2576.94s]  if the guest is trying to use a physical address
+[2576.94s -> 2578.46s]  that it's not allowed to.
+[2578.46s -> 2579.72s]  And then the virtual machine monitor
+[2579.72s -> 2582.98s]  installs the shadow page table and the real satp
+[2582.98s -> 2585.10s]  and returns back to the guest.
+[2587.36s -> 2589.06s]  Oh, okay, okay, I see, I see.
+[2589.06s -> 2590.54s]  Okay, thank you.
+[2590.54s -> 2591.38s]  Yes.
+[2597.82s -> 2598.66s]  Okay.
+[2599.50s -> 2603.78s]  Okay, so this shadow page table stuff
+[2603.78s -> 2605.86s]  is certainly one of the tricky aspects
+[2605.86s -> 2610.86s]  of implementing a virtual machine monitor.
+[2613.94s -> 2616.38s]  There's actually another thing that,
+[2616.38s -> 2619.46s]  there's another way in which the guest operating system
+[2619.46s -> 2620.66s]  can interact with the page table.
+[2620.66s -> 2622.38s]  The guest operating system may actually,
+[2622.38s -> 2624.94s]  you know, xv6 sometimes directly reads and writes
+[2624.94s -> 2628.00s]  page table entries in its page table.
+[2629.66s -> 2633.86s]  And, you know, so xv6 can modify a page table entry
+[2633.86s -> 2636.66s]  or read the dirty bits, for example,
+[2636.66s -> 2637.86s]  in a page table entry.
+[2637.86s -> 2642.86s]  Now on the RISC-V, if software modifies
+[2643.34s -> 2646.78s]  the page table entry, if you read the RISC-V spec,
+[2646.78s -> 2650.42s]  RISC-V is not required to do anything at that point.
+[2650.42s -> 2652.42s]  So if you modify a page table entry,
+[2653.70s -> 2656.34s]  the RISC-V microprocessor does not promise
+[2656.34s -> 2658.78s]  to immediately observe that modification
+[2658.78s -> 2659.62s]  to a page table entry.
+[2659.62s -> 2662.00s]  It may completely ignore it for the time being.
+[2662.00s -> 2664.22s]  Instead, what the manual says is
+[2664.22s -> 2666.70s]  that if you modify page table entries
+[2666.70s -> 2670.18s]  and you actually want the hardware, the MMU, to see them,
+[2670.18s -> 2675.18s]  you have to execute the sfence.vma instruction.
+[2679.42s -> 2682.02s]  And the spec says it's only this instruction
+[2682.02s -> 2684.22s]  that causes the hardware to pay attention
+[2684.22s -> 2686.02s]  to your page table modifications.
+[2686.54s -> 2688.50s]  And so if you're building a virtual machine monitor,
+[2688.50s -> 2690.22s]  your virtual machine monitor on RISC-V
+[2690.22s -> 2694.78s]  can completely ignore the guest modifications
+[2694.78s -> 2696.14s]  to page table entries.
+[2696.14s -> 2699.22s]  But since you know the guest is gonna issue,
+[2699.22s -> 2702.30s]  is gonna execute an sfence.vma instruction
+[2702.30s -> 2704.06s]  after modifying page table entries,
+[2704.06s -> 2705.78s]  and this is a privileged instruction,
+[2705.78s -> 2707.86s]  you can tell because it starts with s,
+[2707.86s -> 2710.50s]  that's gonna trap into the virtual machine monitor.
+[2710.50s -> 2712.40s]  The virtual machine monitor is gonna,
+[2712.40s -> 2717.12s]  knows that an sfence was executed,
+[2717.12s -> 2718.16s]  it looks at the instruction,
+[2718.16s -> 2722.30s]  it's gonna rescan the guest's version
+[2722.30s -> 2726.76s]  of the current page table and look for page table entries
+[2726.76s -> 2729.20s]  that have changed and reflect those changes
+[2729.20s -> 2732.66s]  if they're legal, into the shadow page table.
+[2734.40s -> 2737.68s]  Reset the, execute a real sfence.vma
+[2737.68s -> 2739.60s]  to get the real hardware to pay attention
+[2739.60s -> 2740.84s]  to the shadow page table
+[2740.84s -> 2744.00s]  and then return to the guest operating system.
+[2744.00s -> 2747.20s]  So this means that there's only like,
+[2747.20s -> 2750.02s]  the MMU actually just uses one page table, right?
+[2750.02s -> 2750.86s]  Which is the shadow.
+[2750.86s -> 2753.32s]  It's not like it's using the EPT or anything.
+[2753.32s -> 2755.40s]  Like the guest- There's no EPT yet.
+[2755.40s -> 2758.32s]  Okay, so the guest just like thinks it has a page table,
+[2758.32s -> 2759.88s]  like the GVA to GPA,
+[2759.88s -> 2762.38s]  but that's not actually doing any translation.
+[2762.38s -> 2764.04s]  Not in this- And then the VMM,
+[2764.04s -> 2765.98s]  yeah, makes its own page table
+[2765.98s -> 2768.32s]  based on both of them combined.
+[2768.32s -> 2769.48s]  That's right, that's right.
+[2769.68s -> 2772.36s]  Just to be clear, the EPT is part of a different,
+[2772.36s -> 2776.96s]  a quite different virtual machine implementation,
+[2776.96s -> 2780.00s]  virtual machine design that requires hardware support.
+[2780.00s -> 2781.24s]  I'm assuming this is a story
+[2781.24s -> 2782.96s]  about how to build a virtual machine
+[2782.96s -> 2784.42s]  with no special hardware support
+[2784.42s -> 2787.94s]  other than trapping on privileged instructions.
+[2790.76s -> 2793.88s]  Does this mess up direct mapping in any way?
+[2795.56s -> 2797.56s]  Well, there won't be a direct map.
+[2799.80s -> 2802.30s]  This will allow the guest, I mean,
+[2804.24s -> 2808.28s]  this will cause the guest kernel to run correctly
+[2809.28s -> 2812.04s]  with what the guest kernel thinks is a direct mapping.
+[2814.20s -> 2815.40s]  But yeah, I mean, it's not a direct,
+[2815.40s -> 2817.12s]  it's a direct mapping in the virtual world,
+[2817.12s -> 2820.92s]  but it's not a direct mapping on the real machine.
+[2823.68s -> 2828.28s]  But it doesn't matter because we're tricking.
+[2829.28s -> 2831.72s]  Yeah, yeah, we're tricking the guest into,
+[2831.72s -> 2834.08s]  everything looks just like it was a direct mapping.
+[2836.36s -> 2837.84s]  One more question.
+[2837.84s -> 2839.52s]  You may be addressing this later,
+[2839.52s -> 2841.92s]  but I wonder, like when we discussed
+[2841.92s -> 2844.12s]  the trap mechanism earlier in the semester,
+[2844.12s -> 2848.00s]  we mentioned the high performance cost to trapping.
+[2848.00s -> 2848.84s]  Oh yeah.
+[2848.84s -> 2850.80s]  So this sounds like there's way more
+[2850.80s -> 2854.32s]  of a performance hit when we use a VMM.
+[2854.32s -> 2857.72s]  Yes, yes, there's all these instructions.
+[2858.60s -> 2860.08s]  If your operating system might have used
+[2860.08s -> 2863.00s]  a lot of privileged instructions, which it may,
+[2863.00s -> 2864.60s]  and you spend a lot of time in the operating system,
+[2864.60s -> 2867.12s]  then the traps, you may have quite a few traps,
+[2867.12s -> 2869.12s]  and that may cost you quite a bit of performance.
+[2869.12s -> 2871.68s]  And that's what motivates, in a little bit,
+[2871.68s -> 2874.56s]  we'll talk about modern hardware support virtual machines,
+[2874.56s -> 2876.70s]  which is what today's paper was using.
+[2876.70s -> 2879.04s]  And the high cost of the traps
+[2879.04s -> 2882.44s]  is a lot of the motivation for why Intel felt compelled
+[2882.44s -> 2886.44s]  to, and AMD felt compelled to add hardware support
+[2886.44s -> 2890.64s]  for a much more efficient, or for a virtual machine scheme
+[2890.64s -> 2893.28s]  that had much, many fewer traps.
+[2894.84s -> 2897.32s]  Yes, that's quite important.
+[2897.32s -> 2899.00s]  But this actually ran, I mean, for many years,
+[2899.00s -> 2900.96s]  this is what people did for virtual machines,
+[2900.96s -> 2903.40s]  and it was very successful, and it works,
+[2903.40s -> 2906.04s]  and it's, you know, somewhere slower,
+[2906.04s -> 2907.92s]  but not so much slower that people didn't like it.
+[2907.92s -> 2909.12s]  People liked it a lot.
+[2912.84s -> 2914.80s]  Okay, any more questions about the trap
+[2914.80s -> 2917.98s]  and emulate strategy for page tables?
+[2922.70s -> 2925.48s]  Okay, let me, as a final piece
+[2925.48s -> 2927.04s]  of the trap and emulate story,
+[2930.20s -> 2931.56s]  let me talk about devices.
+[2934.72s -> 2937.68s]  And so here I'm talking about, you know,
+[2937.68s -> 2939.36s]  ordinary operating system expects to be able
+[2939.36s -> 2942.28s]  to get out a disk drive to store its file system on,
+[2942.28s -> 2944.56s]  and maybe network interface card,
+[2945.20s -> 2947.04s]  and maybe if it's x86, a UART,
+[2947.04s -> 2949.80s]  so it can talk to its console, and you know,
+[2949.80s -> 2952.88s]  who knows, a sound card, a graphics adapter,
+[2952.88s -> 2955.70s]  a mouse, a keyboard, all kinds of stuff.
+[2955.70s -> 2957.92s]  So the operating system, we need to,
+[2957.92s -> 2960.40s]  our virtual machine scheme has to have some provision
+[2960.40s -> 2965.40s]  to allow guests to at least trick them into thinking
+[2965.40s -> 2968.04s]  that all these devices that they need really exist.
+[2969.28s -> 2973.80s]  And there's three main strategies that people use.
+[2975.52s -> 2979.64s]  One is just pick some very commonly used device
+[2979.64s -> 2981.80s]  in the class that you need, say a disk drive,
+[2981.80s -> 2984.70s]  and just do an emulation.
+[2985.66s -> 2989.60s]  That is, you're not actually having a real device.
+[2989.60s -> 2992.48s]  The VMM just makes it look like
+[2992.48s -> 2995.60s]  this particular kind of disk drive exists
+[2995.60s -> 2997.44s]  and that the guest is talking to it.
+[2999.08s -> 3001.68s]  And the way you would drive this emulation,
+[3001.68s -> 3006.32s]  typically the guest operating system is gonna try
+[3006.32s -> 3008.84s]  to talk to the device through memory mapped
+[3008.84s -> 3010.00s]  control registers.
+[3010.00s -> 3014.00s]  So this is how x86 talks to its UART,
+[3014.00s -> 3019.00s]  you know, the serial port console device
+[3021.28s -> 3022.34s]  that you type characters to,
+[3022.34s -> 3023.96s]  and that displays characters to you.
+[3023.96s -> 3026.92s]  x86 is talking to some control registers
+[3026.92s -> 3029.88s]  that are mapped, that it assumes the hardware
+[3029.88s -> 3033.82s]  has mapped in a known address in the address,
+[3033.82s -> 3036.04s]  in the kernel's address space.
+[3036.04s -> 3037.12s]  And so the way you'd emulate that
+[3037.12s -> 3039.64s]  in a virtual machine monitor is you'd actually
+[3039.64s -> 3042.44s]  not map those pages in the guest.
+[3042.44s -> 3046.16s]  Instead you would allow, or have those pages be invalid
+[3046.16s -> 3049.24s]  so that every time the guest operating system tried
+[3049.24s -> 3052.70s]  to use the UART hardware or whatever device hardware,
+[3052.70s -> 3055.08s]  the VM virtual machine monitor will get a trap
+[3055.08s -> 3056.72s]  and the virtual machine monitor will get a look
+[3056.72s -> 3057.56s]  at the instruction and say,
+[3057.60s -> 3060.04s]  oh, it's trying to send a character on the UART
+[3060.04s -> 3062.22s]  or read from the disk or who knows what.
+[3063.94s -> 3067.00s]  And the virtual machine monitor would have some simulation
+[3067.00s -> 3070.78s]  of a disk or simulation of a serial device
+[3072.50s -> 3075.48s]  and, you know, sort of invoke its simulation
+[3075.48s -> 3078.74s]  to figure out how to respond to the guest's instruction
+[3078.74s -> 3081.46s]  and then allow the guest to resume.
+[3083.00s -> 3086.28s]  And so this is basically how QEMU implements
+[3087.08s -> 3090.40s]  the UART console device that XV6 uses.
+[3090.40s -> 3093.20s]  It just has a, there's actually no physical serial port
+[3093.20s -> 3098.20s]  in sight, but QEMU emulates one to keep XV6 happy.
+[3098.88s -> 3100.58s]  And so this is a common strategy.
+[3101.56s -> 3103.76s]  It can be very low performance though
+[3103.76s -> 3106.48s]  because it involves a trap into the operating system
+[3106.48s -> 3108.36s]  for every interaction between the guest
+[3108.36s -> 3109.66s]  and the device hardware.
+[3110.56s -> 3113.82s]  But for low speed stuff, it works pretty well.
+[3114.82s -> 3117.00s]  A second strategy that's often used.
+[3118.66s -> 3123.06s]  And actually, if your goal is to provide,
+[3123.06s -> 3124.92s]  is to be able to boot operating systems
+[3124.92s -> 3127.72s]  that have no idea they're running on a virtual machine,
+[3128.82s -> 3131.06s]  this is pretty much the way you have to go.
+[3132.86s -> 3133.98s]  There's really no other choice.
+[3133.98s -> 3137.02s]  But in the modern world, you know,
+[3137.02s -> 3139.30s]  it's often the case that the operating systems
+[3139.30s -> 3141.54s]  are aware that they're actually running,
+[3141.54s -> 3142.50s]  at a low level at least,
+[3142.50s -> 3145.62s]  aware that they're running on top of a virtual machine.
+[3145.62s -> 3149.94s]  And so a different strategy is to provide virtual devices
+[3149.94s -> 3154.46s]  that is not try to emulate a real device,
+[3154.46s -> 3158.70s]  but cook up a device interface
+[3158.70s -> 3161.50s]  that is particularly efficient for the,
+[3162.86s -> 3166.22s]  provides efficient ways for the device driver
+[3166.22s -> 3170.14s]  in the guest to be able to talk to the device support
+[3170.14s -> 3172.14s]  inside the virtual machine monitor.
+[3172.86s -> 3175.86s]  So you might not have memory map control registers,
+[3175.86s -> 3180.86s]  instead you might have sort of a queue of command
+[3181.18s -> 3185.90s]  structures in memory in which the guest operating system
+[3185.90s -> 3190.90s]  would write its commands to the device.
+[3191.26s -> 3193.98s]  And in fact, xv6 also uses one of these.
+[3193.98s -> 3198.78s]  If you look at the xv6 vert.io disk,
+[3199.46s -> 3204.46s]  vert.io disk.c, you'll see the guest end of a device driver
+[3208.26s -> 3211.42s]  intended to talk to a disk virtual device
+[3211.42s -> 3213.02s]  that's implemented by QEMU.
+[3213.98s -> 3218.78s]  And it uses either little or almost not,
+[3218.78s -> 3223.06s]  either little or no memory map control registers.
+[3223.06s -> 3225.14s]  And so it doesn't really rely on traps.
+[3225.14s -> 3228.66s]  And instead it formats up this sort of queue
+[3229.50s -> 3231.46s]  of commands in memory, as I mentioned.
+[3232.70s -> 3234.90s]  And then QEMU looks at these commands in memory
+[3234.90s -> 3237.34s]  and applies them not to a real disk,
+[3237.34s -> 3241.78s]  but to a file like for us, it's fs.image.
+[3242.98s -> 3245.14s]  QEMU applies these commands to fs.image
+[3245.14s -> 3249.90s]  instead of using a real piece of device hardware.
+[3249.90s -> 3251.30s]  So this is another strategy.
+[3252.78s -> 3254.98s]  And a third strategy that people use,
+[3254.98s -> 3257.30s]  so this is higher performance and straight emulation
+[3257.30s -> 3260.78s]  because you can design the interface,
+[3260.78s -> 3262.86s]  so it doesn't require a lot of traps.
+[3262.86s -> 3264.78s]  A final strategy people use
+[3266.86s -> 3269.70s]  is a pass through of a real device.
+[3272.50s -> 3274.34s]  And that's sort of classic situation for this
+[3274.34s -> 3275.94s]  is network interface controllers
+[3275.94s -> 3279.18s]  that provide access to the network.
+[3279.18s -> 3284.18s]  And modern network devices actually have hardware support
+[3285.06s -> 3288.66s]  for talking to multiple guest operating systems
+[3288.66s -> 3290.42s]  running under a virtual machine monitor.
+[3290.42s -> 3292.34s]  And so you can configure a modern NIC
+[3292.34s -> 3296.62s]  to actually act as if it's multiple independent,
+[3296.62s -> 3298.10s]  apparently independent NICs,
+[3298.10s -> 3300.54s]  one for each guest operating system.
+[3300.54s -> 3304.10s]  And then the guest operating system can talk directly,
+[3304.10s -> 3306.26s]  can be configured by the virtual machine monitor
+[3306.26s -> 3308.22s]  so that it's allowed to talk directly
+[3308.22s -> 3313.14s]  to its sort of slice of the network interface card hardware
+[3314.58s -> 3316.34s]  with very high efficiency.
+[3316.34s -> 3319.34s]  So this is the modern high performance way.
+[3319.34s -> 3323.38s]  And the guest operating system probably,
+[3324.66s -> 3326.54s]  in theory, I think you could design,
+[3326.54s -> 3328.30s]  you could set this up so the guest operating system
+[3328.30s -> 3331.26s]  wasn't really aware that anything odd was going on.
+[3331.26s -> 3332.22s]  But I think in practice,
+[3332.22s -> 3334.70s]  the guest operating system device drivers kind of know
+[3334.70s -> 3338.06s]  that they're talking to one of these
+[3338.06s -> 3339.94s]  special network interface cards.
+[3340.86s -> 3345.86s]  All right, so these are the options for devices.
+[3346.42s -> 3351.42s]  In fact, I believe that most of the difficulty
+[3352.22s -> 3357.06s]  in implementing a virtual machine monitor today
+[3358.90s -> 3363.34s]  comes in the form of trying to cook up device emulations
+[3363.34s -> 3368.02s]  and device drivers that are sufficiently good
+[3368.46s -> 3369.78s]  that they'll actually work correctly
+[3369.78s -> 3373.14s]  with real guest operating systems.
+[3373.14s -> 3375.18s]  This is where probably the majority of the work is,
+[3375.18s -> 3379.46s]  particularly if you need to use this emulation strategy.
+[3382.10s -> 3383.54s]  Any questions about devices?
+[3391.30s -> 3392.14s]  Okay.
+[3392.14s -> 3393.74s]  So what exactly is,
+[3393.74s -> 3395.46s]  I didn't quite get the difference
+[3395.46s -> 3398.02s]  between the virtual and the emulation?
+[3398.02s -> 3401.30s]  Because they're similar.
+[3401.30s -> 3402.14s]  They're similar.
+[3403.70s -> 3405.38s]  Here's a way to think about it.
+[3405.38s -> 3407.14s]  If you're booting an operating system
+[3407.14s -> 3409.30s]  that has no idea about virtual machine,
+[3411.06s -> 3413.38s]  it probably has a lot of disk drivers in it,
+[3413.38s -> 3414.78s]  but they're all for real hardware
+[3414.78s -> 3417.26s]  that you can go out and physical chunks of hardware
+[3417.26s -> 3418.38s]  that you can go out and buy.
+[3418.38s -> 3419.42s]  And that means that if you want to boot
+[3419.42s -> 3422.62s]  that kind of operating system on your virtual machine,
+[3422.66s -> 3426.66s]  you need to have an exact emulation.
+[3426.66s -> 3429.10s]  You need to choose one of those real pieces of hardware
+[3429.10s -> 3432.18s]  and have a precise, super accurate emulation
+[3432.18s -> 3433.42s]  of that hardware.
+[3435.82s -> 3438.70s]  And I mean, people totally do that.
+[3438.70s -> 3440.22s]  So that works.
+[3440.22s -> 3442.62s]  However, and that would be fine,
+[3443.58s -> 3448.58s]  except most of these for real hardware,
+[3448.58s -> 3451.34s]  the device interfaces were not designed,
+[3451.34s -> 3453.74s]  the hardware interfaces were not designed
+[3453.74s -> 3455.26s]  to be efficient with a trap
+[3455.26s -> 3457.26s]  and emulate virtual machine monitor.
+[3457.26s -> 3459.18s]  And so it's very often the case
+[3459.18s -> 3461.70s]  that the real device just requires you
+[3461.70s -> 3465.50s]  to read and write its control registers a lot,
+[3465.50s -> 3467.82s]  but the virtual machine monitor has to get control
+[3467.82s -> 3470.78s]  for every write of a device control register
+[3470.78s -> 3472.46s]  because it needs to emulate it.
+[3473.54s -> 3474.82s]  And that means that every write
+[3474.82s -> 3477.54s]  of a device control register results in a trap
+[3477.54s -> 3478.78s]  into the virtual machine monitor,
+[3478.82s -> 3481.06s]  which costs maybe hundreds of cycles.
+[3482.06s -> 3485.02s]  And that means this is slow, this is inefficient.
+[3485.02s -> 3486.78s]  And so the difference here
+[3486.78s -> 3490.82s]  is that instead of slavishly mimicking a real device,
+[3490.82s -> 3493.82s]  some designers come up with a device interface
+[3497.66s -> 3500.70s]  that's not implemented by any real piece of hardware,
+[3500.70s -> 3502.66s]  but only implemented by a virtual machine monitor.
+[3502.66s -> 3504.42s]  And it just happens to be designed in a way
+[3504.42s -> 3506.58s]  that doesn't require a lot of traps.
+[3507.42s -> 3509.74s]  And instead of chatting with control registers
+[3509.74s -> 3512.98s]  and expecting the device to respond immediately,
+[3512.98s -> 3514.70s]  which really requires a trap,
+[3514.70s -> 3516.58s]  instead the device driver
+[3516.58s -> 3519.94s]  and that sort of virtual hardware are decoupled
+[3519.94s -> 3523.90s]  and don't ever require sort of immediate interaction.
+[3523.90s -> 3525.02s]  Instead-
+[3525.02s -> 3527.30s]  In that case, the guest needs its own,
+[3527.30s -> 3528.58s]  like a new driver.
+[3528.58s -> 3530.86s]  So it's just like the guest will have a driver
+[3530.86s -> 3532.58s]  for like this model of the disk
+[3532.58s -> 3533.70s]  and that model of the disk
+[3533.70s -> 3536.10s]  and they'll also have a driver for the virtual disk.
+[3536.42s -> 3538.30s]  And so indeed, XV6 does.
+[3538.30s -> 3542.42s]  So at the functionality level, you play this game,
+[3542.42s -> 3546.02s]  maybe you can boot any operating system.
+[3546.02s -> 3547.02s]  Whereas if you play this game,
+[3547.02s -> 3548.38s]  you can only boot operating systems
+[3548.38s -> 3551.74s]  that have been taught about your virtual devices,
+[3551.74s -> 3554.54s]  if you want to use the virtual devices.
+[3554.54s -> 3556.66s]  Turns out this is actually a standard
+[3556.66s -> 3560.38s]  that's provided by multiple different
+[3560.38s -> 3561.94s]  virtual machine schemes.
+[3561.94s -> 3563.82s]  So with this, except for the fact
+[3563.86s -> 3566.18s]  that we never tested it on anything other than QEMU,
+[3566.18s -> 3569.18s]  this disk driver in XV6 might work
+[3569.18s -> 3570.54s]  or could probably be modified
+[3570.54s -> 3573.14s]  to work on other virtual machines.
+[3573.14s -> 3576.10s]  So if XV6 was compiled for that board
+[3576.10s -> 3578.14s]  that you showed sometime in the beginning,
+[3579.14s -> 3580.30s]  in that case, it would have to have
+[3580.30s -> 3582.30s]  a different disk driver based on what disk
+[3582.30s -> 3583.62s]  that was running, right?
+[3583.62s -> 3584.54s]  Yeah, yeah.
+[3584.54s -> 3586.54s]  I think you may be able to buy a disk interface,
+[3586.54s -> 3588.02s]  real hardware disk interfaces
+[3588.02s -> 3590.26s]  that now support this interface,
+[3590.26s -> 3593.38s]  but most disk drive don't
+[3593.98s -> 3595.74s]  and we would have to implement a new, as you said,
+[3595.74s -> 3597.38s]  we'd have to implement a new disk driver
+[3597.38s -> 3599.42s]  for a real piece of hardware.
+[3601.98s -> 3602.82s]  Yes.
+[3605.26s -> 3608.26s]  Okay, any other questions about devices?
+[3612.94s -> 3615.50s]  All right, next topic,
+[3615.50s -> 3617.74s]  I want to talk about hardware support
+[3618.82s -> 3621.82s]  for virtual machines.
+[3623.78s -> 3628.78s]  And in particular, Intel's VTX scheme.
+[3631.50s -> 3633.42s]  So what's motivating,
+[3633.42s -> 3638.26s]  what motivated Intel and other hardware providers
+[3638.26s -> 3642.78s]  to add direct hardware support for virtual machines
+[3642.78s -> 3646.18s]  is A, the fact that virtual machine use is pervasive,
+[3646.18s -> 3647.66s]  so a lot of their customers
+[3647.66s -> 3649.34s]  were running a lot of virtual machines,
+[3649.34s -> 3650.94s]  and B, the fact that trap and emulate,
+[3650.94s -> 3652.86s]  as I just described it,
+[3652.86s -> 3654.90s]  often involves a lot of expensive traps,
+[3654.90s -> 3656.74s]  and so it's not particularly efficient.
+[3658.78s -> 3661.42s]  And a third, sort of less interesting, perhaps,
+[3661.42s -> 3663.98s]  motivation was that although the RISC-V
+[3663.98s -> 3667.54s]  is pretty well suited to trap and emulate virtualization,
+[3667.54s -> 3670.26s]  the x86, Intel's microprocessor,
+[3670.26s -> 3671.86s]  has a number of detailed features
+[3671.86s -> 3674.58s]  which make it actually very difficult,
+[3674.58s -> 3677.02s]  possible, but very difficult to virtualize.
+[3677.02s -> 3680.22s]  And so Intel was also motivated to try to fix that
+[3680.26s -> 3681.58s]  because so many of its customers
+[3681.58s -> 3684.26s]  wanted to run virtual machine monitors.
+[3685.50s -> 3688.06s]  All right, okay, so this hardware is,
+[3690.18s -> 3691.98s]  the main point is to make it allow you
+[3691.98s -> 3693.90s]  to build faster virtual machines
+[3693.90s -> 3695.70s]  using this hardware support,
+[3695.70s -> 3698.58s]  and another motivation was to make it easier
+[3699.50s -> 3701.54s]  to implement a virtual machine.
+[3701.54s -> 3705.22s]  And this support has been around for maybe 10 years
+[3705.22s -> 3707.98s]  and is now very, very widely used
+[3707.98s -> 3709.62s]  to build virtual machines.
+[3709.62s -> 3714.62s]  Okay, so the basic strategy is that
+[3715.34s -> 3719.06s]  all that virtual state that in my trap and emulate scheme,
+[3719.06s -> 3721.58s]  all the virtual state that was being maintained
+[3721.58s -> 3724.50s]  by the virtual machine monitor just in software,
+[3724.50s -> 3728.98s]  all that virtual state is gonna be implemented
+[3728.98s -> 3732.30s]  in the hardware, in these hardware supported schemes.
+[3733.62s -> 3736.42s]  And that will allow guest software
+[3736.42s -> 3739.06s]  to execute privilege instructions
+[3739.06s -> 3743.02s]  affecting these virtual hardware supported registers
+[3743.02s -> 3746.90s]  directly rather than trapping.
+[3746.90s -> 3748.70s]  So the goal is now the guest will be able
+[3748.70s -> 3751.98s]  to execute privilege instructions, but not trap.
+[3751.98s -> 3756.46s]  And the reason that works is that again,
+[3756.46s -> 3759.02s]  we have a virtual machine monitor
+[3760.10s -> 3765.10s]  and a guest operating system and user level
+[3765.50s -> 3770.50s]  and the hardware now, we know in the hardware,
+[3770.94s -> 3775.94s]  we have a STVAC and all those hardware registers.
+[3785.14s -> 3787.02s]  And there's all the, when we're running
+[3787.02s -> 3789.54s]  in these new schemes, hardware supported schemes,
+[3789.54s -> 3790.74s]  when we're running the virtual machine monitor,
+[3790.74s -> 3793.26s]  we just use the real versions of these registers,
+[3793.30s -> 3796.66s]  but the hardware, when the virtual machine monitor
+[3796.66s -> 3800.62s]  tells the hardware, look, please switch into guest mode,
+[3800.62s -> 3804.42s]  the hardware has a complete separate set of registers
+[3805.82s -> 3809.90s]  dedicated for use by in guest mode.
+[3809.90s -> 3812.70s]  So the guest mode can read and write these registers,
+[3812.70s -> 3814.94s]  but it's not, it's reading and writing,
+[3814.94s -> 3816.90s]  it's hardware copies of these,
+[3816.90s -> 3818.34s]  it's versions of these registers
+[3818.34s -> 3819.86s]  rather than the real registers.
+[3819.90s -> 3824.42s]  And the hardware has some kind of extra checks it makes
+[3824.42s -> 3827.82s]  on what the guest operating system can do
+[3827.82s -> 3829.82s]  to make sure that it can't abuse these registers
+[3829.82s -> 3831.82s]  to escape from the virtual machine.
+[3833.42s -> 3836.38s]  This is the basic, this is most of the basic strategy.
+[3837.54s -> 3838.86s]  And in the terminology
+[3838.86s -> 3841.18s]  of these hardware supported virtual machine schemes,
+[3841.18s -> 3843.58s]  the name, at least the Intel one,
+[3843.58s -> 3846.94s]  the name for guest mode is non-root
+[3846.94s -> 3851.94s]  and the name for host mode,
+[3854.74s -> 3856.46s]  where we're using the real registers as root.
+[3856.46s -> 3860.82s]  And so there's a set of non-root or virtual registers
+[3860.82s -> 3861.94s]  for the virtual machine to use,
+[3861.94s -> 3863.22s]  and there's a set of registers
+[3863.22s -> 3865.18s]  that are used when we're in root mode.
+[3870.70s -> 3875.14s]  So now when we're running in the guest kernel,
+[3876.06s -> 3881.06s]  it can execute any privileged instruction without trapping.
+[3883.10s -> 3885.50s]  So if it wants to read or write the STVEC,
+[3885.50s -> 3887.58s]  ah, the hardware just lets it read or write
+[3887.58s -> 3891.58s]  the non-root copy of the hardware STVEC register.
+[3893.06s -> 3895.46s]  And so all this stuff proceeds at full speed
+[3895.46s -> 3897.54s]  without having to trap it in the VM app.
+[3897.54s -> 3900.02s]  So it's much faster for code
+[3900.02s -> 3902.30s]  that was incurring a lot of traps.
+[3905.86s -> 3907.34s]  The, you still have to,
+[3907.34s -> 3909.70s]  there's a whole bunch of stuff having involved
+[3909.70s -> 3911.02s]  in configuring this.
+[3911.02s -> 3912.46s]  When the virtual machine monitor
+[3912.46s -> 3914.10s]  wants to create a new virtual machine,
+[3914.10s -> 3915.94s]  it actually has to tell the hardware.
+[3917.06s -> 3922.06s]  And so there is down in virtual machine monitors memory,
+[3922.86s -> 3926.50s]  there's this structure that the virtual machine monitor
+[3926.50s -> 3929.58s]  and the VTX hardware used to communicate,
+[3929.58s -> 3931.50s]  which is called the VM CS
+[3931.54s -> 3935.10s]  or VM control something structure.
+[3936.14s -> 3937.30s]  And when the virtual machine monitor
+[3937.30s -> 3938.86s]  wants to create a new virtual machine,
+[3938.86s -> 3940.82s]  it creates one of these in memory
+[3940.82s -> 3942.90s]  and fills in a bunch of configuration flags
+[3942.90s -> 3946.38s]  and also initial values for all these registers
+[3946.38s -> 3950.34s]  and then tells the VTX hardware,
+[3950.34s -> 3952.70s]  look, I wanna start running a new virtual machine
+[3952.70s -> 3954.74s]  and here's the initial state.
+[3954.74s -> 3957.26s]  And so there's these new instructions,
+[3957.26s -> 3959.22s]  which the paper mentions.
+[3959.22s -> 3960.86s]  There's VM launch,
+[3962.18s -> 3964.50s]  just like a new machine instruction,
+[3964.50s -> 3967.06s]  which you tell it the address of this
+[3967.06s -> 3968.78s]  and it starts running,
+[3970.30s -> 3971.54s]  starting with these registers,
+[3971.54s -> 3974.14s]  like starts running the guest kernel.
+[3975.10s -> 3976.86s]  And there's also this VM resume
+[3978.18s -> 3981.30s]  because sometimes you break out of the kernel,
+[3981.30s -> 3982.74s]  trap out of the kernel into the VMM
+[3982.74s -> 3984.50s]  and you need to resume it.
+[3984.50s -> 3986.46s]  And then code up here can run a new instruction
+[3986.46s -> 3987.46s]  called VM call,
+[3987.46s -> 3992.46s]  which sort of intentionally exits from non-root mode
+[3992.98s -> 3995.54s]  and basically traps into the virtual machine monitor
+[3995.54s -> 3996.38s]  in root mode.
+[3998.38s -> 4001.06s]  All right, so when the virtual machine monitor
+[4001.06s -> 4004.18s]  executes one of these instructions to jump into a guest,
+[4005.34s -> 4007.46s]  the ways that it may come back,
+[4007.46s -> 4009.14s]  I mean, the guests now can execute
+[4009.14s -> 4012.10s]  ordinary privilege instructions without trapping,
+[4012.10s -> 4013.54s]  but there's a bunch of reasons why
+[4013.54s -> 4015.74s]  you may nevertheless return to the virtual machine mode.
+[4015.74s -> 4018.66s]  One is an intentional exit,
+[4018.66s -> 4020.46s]  but also if a device interrupt goes off,
+[4020.46s -> 4022.42s]  like the timer interrupt goes off,
+[4022.42s -> 4026.78s]  that'll, the microprocessor will force a trap
+[4026.78s -> 4030.50s]  out of non-root mode, out of the guest
+[4030.50s -> 4032.74s]  into root mode in the virtual machine monitor.
+[4032.74s -> 4034.54s]  So in general, device interrupts
+[4036.30s -> 4037.94s]  trap back into the virtual machine monitor.
+[4037.94s -> 4039.94s]  And so that means that a guest operating system
+[4039.94s -> 4041.42s]  can't hog the CPU.
+[4041.42s -> 4043.22s]  Every time the hardware timer ticks,
+[4043.22s -> 4045.34s]  the virtual machine monitor gets control.
+[4045.86s -> 4048.34s]  And if there's multiple guests,
+[4048.34s -> 4050.62s]  it can now basically timeshare the machine
+[4050.62s -> 4053.62s]  using the timer interrupts among all the different guests.
+[4059.50s -> 4060.82s]  Okay, so this is the basic strategy.
+[4060.82s -> 4064.10s]  Basically, there's a second set of registers.
+[4068.58s -> 4073.50s]  The other big piece of machinery that VTX provides
+[4073.50s -> 4077.50s]  is a page table support.
+[4077.50s -> 4080.82s]  You know, we're operating up here in the guest world.
+[4080.82s -> 4083.06s]  You know, we still need a page table.
+[4083.06s -> 4085.86s]  Now, we need a page table for two reasons.
+[4085.86s -> 4088.50s]  One is the guest kernel wants to be able
+[4088.50s -> 4089.86s]  to configure its own page tables,
+[4089.86s -> 4093.66s]  wants to be able to load CR3,
+[4093.66s -> 4098.66s]  which is the Intel equivalent of the SATP register.
+[4100.14s -> 4101.82s]  So we'd love to be able to,
+[4101.82s -> 4105.86s]  or VTX allows the guest kernel to load any value it likes
+[4105.86s -> 4110.74s]  into the CR3 register to set the page table.
+[4110.74s -> 4113.54s]  And the hardware will actually obey that page table
+[4113.54s -> 4115.62s]  that the guest kernel loads.
+[4115.62s -> 4118.14s]  But we know that can't be, which is fantastic, right?
+[4118.14s -> 4119.86s]  Because now the guest kernel can load a page table
+[4119.86s -> 4121.38s]  without trapping the VMM.
+[4123.26s -> 4125.78s]  But we know that we can't just let the guest kernel
+[4125.78s -> 4129.66s]  put anything it likes in its page table without,
+[4129.66s -> 4130.54s]  because that would allow it
+[4130.58s -> 4132.34s]  to read and write arbitrary memory.
+[4132.34s -> 4137.34s]  So this VTX scheme actually has another important register
+[4137.90s -> 4141.74s]  which is in fact part of the sort of real,
+[4141.74s -> 4143.26s]  well, who knows where I should draw it,
+[4143.26s -> 4144.82s]  but I'll draw it right here.
+[4145.86s -> 4150.86s]  The extended page table register
+[4153.58s -> 4157.70s]  and the virtual machine which points to a page table
+[4158.54s -> 4163.54s]  that maps one kind of address to another kind of address.
+[4164.46s -> 4166.42s]  And the virtual machine monitor sets
+[4166.42s -> 4169.06s]  when it's about to run a guest kernel,
+[4169.06s -> 4174.06s]  it sets up an EPT for that kernel, tells the hardware,
+[4174.26s -> 4178.98s]  look, here's the EPT for the virtual machine
+[4178.98s -> 4181.62s]  I'm about to run and then jumps into the virtual machine.
+[4181.62s -> 4186.62s]  And then the game is that the MMU on this machine
+[4187.10s -> 4189.42s]  when it's translating a guest virtual address,
+[4189.42s -> 4192.34s]  it first translates the guest virtual address
+[4192.34s -> 4194.06s]  to a guest physical address,
+[4194.06s -> 4197.46s]  to the guests, the page table that the guest sets up,
+[4197.46s -> 4199.54s]  and then does another translation
+[4199.54s -> 4202.54s]  of that guest physical address through the EPT
+[4202.54s -> 4204.42s]  to get a host physical address.
+[4205.66s -> 4208.06s]  And the hardware does that automatically
+[4208.06s -> 4210.54s]  for every memory reference the guest does,
+[4210.54s -> 4212.74s]  as this double level of translation.
+[4212.74s -> 4215.54s]  And so this again gives the VMM control
+[4215.54s -> 4219.02s]  over what physical memory the guest is allowed to use.
+[4219.02s -> 4221.30s]  The guest can set up any page table it likes
+[4221.30s -> 4222.50s]  and can do it quite efficiently
+[4222.50s -> 4224.98s]  because it can directly execute the instructions,
+[4224.98s -> 4228.86s]  but it's still constrained by the EPT,
+[4228.86s -> 4232.58s]  which the VMM configures to be able to only
+[4232.58s -> 4236.62s]  use physical pages that the VMM wants to let it use.
+[4239.10s -> 4240.50s]  Any questions about the EPT?
+[4245.98s -> 4247.58s]  Oh, sorry, I have a question about the EPT,
+[4247.58s -> 4251.54s]  but about the second set of registers.
+[4251.54s -> 4256.22s]  So if you have two cores and you want to run two VMM's,
+[4256.22s -> 4259.62s]  does it, do you guess like a third copy
+[4259.62s -> 4261.02s]  of the registers?
+[4261.02s -> 4265.46s]  Every core has its own set of these registers.
+[4265.46s -> 4267.46s]  Every core has a sort of independent,
+[4270.46s -> 4274.54s]  an independent instance of all this VTX hardware.
+[4274.54s -> 4279.02s]  So every core has its own 32 general purpose registers,
+[4279.02s -> 4281.54s]  its own real control registers,
+[4281.54s -> 4285.54s]  and its own virtual registers for guest mode,
+[4286.50s -> 4288.46s]  and its own EPT.
+[4289.58s -> 4291.42s]  So you can run two different guests
+[4291.42s -> 4293.38s]  on two different cores, they all have their own,
+[4293.38s -> 4296.82s]  every register, every core has its own one.
+[4297.90s -> 4300.30s]  So you need a new VMM too?
+[4300.30s -> 4302.66s]  Well, I mean, it could just like,
+[4302.66s -> 4303.86s]  an ordinary operating system,
+[4304.02s -> 4306.02s]  XV6 can support multiple processes
+[4306.02s -> 4311.02s]  and it's all the same XV6, but although,
+[4311.22s -> 4315.02s]  and just like XV6 has a separate struct proc
+[4315.02s -> 4317.66s]  for every process, our virtual machine monitor
+[4317.66s -> 4321.62s]  would have a separate struct, struct VM or whatever it is,
+[4321.62s -> 4324.70s]  one for each guest to keep track of that guest,
+[4324.70s -> 4326.86s]  information for that guest.
+[4326.86s -> 4328.70s]  Okay, I see, thank you.
+[4328.70s -> 4331.74s]  Yes, and as I mentioned before, the switching,
+[4331.78s -> 4335.22s]  if you have one core and three guests,
+[4335.22s -> 4337.18s]  the switching can be driven by timer interrupts,
+[4337.18s -> 4340.54s]  which go to the virtual machine monitor, not the guest.
+[4345.34s -> 4348.70s]  Okay, more questions about virtual machines
+[4348.70s -> 4353.34s]  before I switch to the paper.
+[4353.34s -> 4358.34s]  All right, the paper takes this hardware
+[4362.10s -> 4365.38s]  as a starting point and uses it for something else,
+[4365.38s -> 4367.06s]  not a virtual machine.
+[4367.06s -> 4368.62s]  So that's a lot of the interest in the papers
+[4368.62s -> 4369.94s]  that they took this hardware,
+[4369.94s -> 4373.82s]  which is like absolutely designed just for virtual machines
+[4373.82s -> 4374.66s]  and the paper's saying, gosh,
+[4374.66s -> 4376.14s]  we could just use this hardware
+[4376.14s -> 4378.38s]  to do something that's not a virtual machine.
+[4379.38s -> 4383.10s]  And what their sort of high-level view
+[4383.74s -> 4385.98s]  of what they're doing is they're just,
+[4385.98s -> 4388.62s]  they wanna implement the ordinary processes.
+[4388.62s -> 4390.42s]  So now we're back in just Linux,
+[4390.42s -> 4392.42s]  no virtual machines anymore, just Linux,
+[4392.42s -> 4394.70s]  but assuming VTX hardware, so this is Dune.
+[4398.50s -> 4402.58s]  We have Linux and we've assumed
+[4402.58s -> 4406.54s]  we've loaded the Dune loadable kernel module into Linux.
+[4406.54s -> 4410.06s]  And now this Dune software is running in supervisor mode
+[4410.06s -> 4411.62s]  as part of the Linux kernel.
+[4412.62s -> 4415.14s]  But for the most part, we're running Linux
+[4415.14s -> 4417.58s]  and we're expecting to run Linux processes.
+[4420.06s -> 4421.42s]  So the abstraction we're trying to support
+[4421.42s -> 4424.06s]  is mostly the process abstraction with system calls
+[4424.06s -> 4426.10s]  and all the sort of ordinary things
+[4426.10s -> 4427.62s]  that Linux processes can do.
+[4428.54s -> 4431.18s]  But we wanna use this VTX hardware
+[4431.18s -> 4433.18s]  to give sort of more,
+[4434.50s -> 4438.30s]  sort of allow ordinary processes to do some extra things.
+[4438.30s -> 4443.30s]  And there's really, so we're actually gonna run,
+[4444.38s -> 4446.70s]  so Dune runs these processes,
+[4446.70s -> 4449.06s]  or allows a process to switch into Dune mode,
+[4449.06s -> 4452.14s]  which means that instead of just being protected,
+[4452.14s -> 4453.90s]  being isolated by a page table,
+[4453.90s -> 4458.90s]  now this process is isolated by the complete VTX apparatus.
+[4459.74s -> 4463.50s]  So for this process, Dune's gonna maintain,
+[4463.50s -> 4466.74s]  this process now has this virtual set
+[4466.94s -> 4469.38s]  of all the control registers,
+[4469.38s -> 4474.38s]  like its own CR3 and therefore its own page table,
+[4475.38s -> 4477.50s]  because this process is gonna run
+[4477.50s -> 4481.38s]  in non-root supervisor mode.
+[4481.38s -> 4483.02s]  So it can run all the privileged instructions,
+[4483.02s -> 4487.70s]  although against the virtual state implemented by VTX.
+[4489.58s -> 4491.82s]  So one of the critical things this process can do
+[4491.82s -> 4495.18s]  under Dune is set up its own page table
+[4495.22s -> 4497.38s]  using its own hardware CR3.
+[4497.38s -> 4502.14s]  And of course, Dune controls an EPT for this process.
+[4502.14s -> 4506.58s]  So, and the EPT is gonna be set up to only have entries
+[4506.58s -> 4509.14s]  for this process's ordinary process memory.
+[4509.14s -> 4511.26s]  So the process can put anything it likes in CR3,
+[4511.26s -> 4515.22s]  but because the NMU translates through the EPT
+[4515.22s -> 4517.14s]  after translating through the ordinary page table,
+[4517.14s -> 4520.14s]  the process still cannot escape its allocated memory.
+[4520.14s -> 4523.10s]  So the process doesn't have any additional powers
+[4523.10s -> 4526.62s]  with respect to other processes or kernel memory,
+[4526.62s -> 4528.90s]  it just has now a more flexible way
+[4528.90s -> 4530.70s]  of setting up its own memory.
+[4532.34s -> 4534.18s]  All right, so one thing a Dune process can do
+[4534.18s -> 4536.38s]  is have its own page table.
+[4536.38s -> 4538.58s]  In fact, it's basically required to have its own page table
+[4538.58s -> 4542.18s]  because otherwise it won't work.
+[4542.18s -> 4544.50s]  And the other thing a process can do
+[4544.50s -> 4549.50s]  is have supervisor mode and user mode
+[4550.06s -> 4555.06s]  within its little virtual machine
+[4555.22s -> 4558.98s]  and be able to run, be able to have the supervisor code
+[4558.98s -> 4562.42s]  set itself up to be protected against the code
+[4562.42s -> 4564.70s]  that it runs in guest user mode.
+[4564.70s -> 4567.98s]  So the paper really talks about these two different uses,
+[4567.98s -> 4570.10s]  two different things you can do with Dune.
+[4571.70s -> 4576.70s]  So this ability to get at, for a process to get at
+[4577.38s -> 4580.46s]  the hardware support for supervisor versus user mode
+[4581.58s -> 4586.58s]  allows them to run untrusted plugin code here in a sandbox.
+[4590.18s -> 4593.50s]  And so the idea is, oh, maybe the main program
+[4593.50s -> 4596.22s]  is like a web browser, you know,
+[4596.22s -> 4600.90s]  you can download plugins that your web browser runs
+[4600.90s -> 4605.90s]  and maybe a new video decoder
+[4606.34s -> 4607.82s]  or a new ad blocker or something,
+[4607.82s -> 4609.34s]  but we don't totally trust that plugin.
+[4609.34s -> 4612.62s]  So we'd like to run it with restricted privileges somehow.
+[4612.62s -> 4616.26s]  It's possible, but a little bit tricky to do
+[4616.26s -> 4618.66s]  in ordinary Linux, but with Dune,
+[4618.66s -> 4622.98s]  we can run the plugin up here in user space
+[4622.98s -> 4626.14s]  and the web browser, which runs in the process
+[4626.14s -> 4629.46s]  in supervisor mode, can configure the page table,
+[4630.46s -> 4633.30s]  can configure a different page table
+[4633.30s -> 4634.78s]  for use by this user code
+[4634.82s -> 4636.62s]  because it's allowed to write CR3.
+[4638.06s -> 4642.22s]  And that can allow it to run this untrusted plugin code
+[4642.22s -> 4644.74s]  with only allowing it restricted access
+[4644.74s -> 4648.50s]  to just some pages of the web browser's memory.
+[4649.38s -> 4652.42s]  So that even if the plugin code is malicious,
+[4652.42s -> 4654.70s]  it can't just arbitrarily read and write
+[4654.70s -> 4656.90s]  the main web browser's memory.
+[4657.94s -> 4659.10s]  And if the user code, you know,
+[4659.10s -> 4662.06s]  the user code may be expecting to make system calls,
+[4662.94s -> 4666.50s]  but those system calls actually trap
+[4666.50s -> 4671.50s]  into the supervisor mode of the process
+[4671.54s -> 4672.58s]  and not into Linux.
+[4672.58s -> 4675.42s]  So this plugin code may think it's calling fork
+[4675.42s -> 4677.18s]  or read or write or who knows what,
+[4677.18s -> 4681.06s]  but actually those attempts to execute system calls
+[4681.06s -> 4684.38s]  trap into the web browser in the process
+[4684.38s -> 4685.54s]  and it can do whatever it likes.
+[4685.54s -> 4687.54s]  It can not do the system call
+[4687.54s -> 4690.54s]  or execute the system call or who knows what.
+[4690.78s -> 4693.02s]  So now our web browser has sort of full control
+[4693.02s -> 4695.34s]  over the sandboxed plugin code.
+[4698.30s -> 4700.06s]  As a quick overview,
+[4700.06s -> 4702.82s]  any questions about using Dune to sandbox?
+[4708.82s -> 4710.98s]  And to be fair, this is an effect
+[4710.98s -> 4714.86s]  that could be achieved by quite different techniques
+[4714.86s -> 4719.34s]  using existing Linux facilities,
+[4719.34s -> 4721.38s]  but Dune allows you to provide it
+[4721.38s -> 4724.62s]  in a particularly kind of elegant and efficient way
+[4725.62s -> 4727.42s]  by using the VTX hardware.
+[4730.10s -> 4735.10s]  The other thing that the paper talks about using Dune for
+[4735.18s -> 4737.38s]  is to make garbage collection faster.
+[4737.38s -> 4740.86s]  And here it's, the way it does that
+[4740.86s -> 4743.50s]  is by allowing the garbage collection.
+[4743.50s -> 4746.82s]  So we're not doing sandbox anymore.
+[4746.82s -> 4749.26s]  We're actually not even using user mode,
+[4750.14s -> 4751.30s]  we're just having one program.
+[4752.66s -> 4754.74s]  We're assuming that we're writing just whatever program,
+[4754.74s -> 4756.86s]  who knows what, but in a garbage collected language
+[4756.86s -> 4761.14s]  like Java or Python or something.
+[4761.14s -> 4762.74s]  Garbage collection can be slow.
+[4763.90s -> 4765.74s]  There's dozens and dozens of tricks
+[4765.74s -> 4767.58s]  for making garbage collection faster.
+[4767.58s -> 4768.90s]  But one of the things that's important
+[4768.90s -> 4771.14s]  in garbage collectors is the garbage collectors
+[4771.14s -> 4773.82s]  is some, many garbage collectors trace,
+[4773.82s -> 4776.82s]  find the memory that's still alive, that's still active
+[4776.86s -> 4779.98s]  by just tracing all the pointers through all objects,
+[4779.98s -> 4781.30s]  starting at the registers.
+[4781.30s -> 4784.34s]  And if it doesn't find some object
+[4784.34s -> 4785.54s]  after it's completed the trace,
+[4785.54s -> 4787.74s]  then that object isn't, can't be reached,
+[4787.74s -> 4791.34s]  isn't referred to by any pointer and can be freed.
+[4793.18s -> 4795.66s]  But many garbage collectors run at the same time
+[4795.66s -> 4798.50s]  in a different thread or something as the main program.
+[4798.50s -> 4799.78s]  And so maybe the garbage collector
+[4799.78s -> 4802.86s]  has started tracing pointers from,
+[4802.86s -> 4804.90s]  maybe from some set of registers
+[4804.94s -> 4807.02s]  and has followed a pointer to this object,
+[4807.02s -> 4808.70s]  which had pointers to these objects.
+[4808.70s -> 4812.14s]  And the garbage collector's following it to these pointers
+[4812.14s -> 4815.34s]  down to the tree or graph of objects.
+[4815.34s -> 4820.34s]  And maybe the garbage collector's gotten down here so far
+[4820.82s -> 4822.26s]  and actually traced through all these objects.
+[4822.26s -> 4824.58s]  But then, because the garbage collector's running
+[4824.58s -> 4827.38s]  concurrently with the program itself,
+[4827.38s -> 4829.94s]  maybe the program modifies this object
+[4829.94s -> 4833.06s]  that the garbage collector's already traced through.
+[4833.06s -> 4834.38s]  So that's a bad deal,
+[4834.70s -> 4837.66s]  because now the list of object pointers
+[4837.66s -> 4839.74s]  the garbage collector's decided are live or dead
+[4839.74s -> 4841.46s]  or whatever may not be correct,
+[4841.46s -> 4843.90s]  because some object that's already seen
+[4843.90s -> 4845.58s]  has been modified by the program.
+[4847.14s -> 4849.74s]  So Dune, using page table support,
+[4849.74s -> 4851.30s]  provides a way for the garbage collector
+[4851.30s -> 4853.66s]  to detect writes like that.
+[4854.66s -> 4859.30s]  And in particular, Dune sets up the CR3,
+[4859.30s -> 4863.06s]  the virtual CR3 supported by VTX,
+[4863.06s -> 4864.74s]  to point to its own page table.
+[4866.34s -> 4869.58s]  And it leaves all these page table entries valid,
+[4869.58s -> 4872.70s]  but it looks at the D bit.
+[4872.70s -> 4875.18s]  Every page table entry has a dirty bit
+[4875.18s -> 4879.18s]  that indicates that there's been a write to that page.
+[4879.18s -> 4881.90s]  So if the program writes some object,
+[4881.90s -> 4884.94s]  then the dirty bit in the corresponding page,
+[4887.10s -> 4889.34s]  in the page table, the dirty bit will be set.
+[4889.34s -> 4891.18s]  And so when the garbage collector's finished
+[4891.18s -> 4892.74s]  tracing through the objects,
+[4893.34s -> 4895.66s]  it goes back and looks at the D bits in the page table
+[4895.66s -> 4898.70s]  to find all pages that contain objects
+[4898.70s -> 4899.82s]  that might have been modified
+[4899.82s -> 4901.94s]  and rescans those objects.
+[4903.14s -> 4905.18s]  And it turns out that this facility
+[4905.18s -> 4908.62s]  of getting at the D bits is difficult and slow
+[4908.62s -> 4910.22s]  with ordinary Linux.
+[4911.26s -> 4912.50s]  I don't even know if Linux supports it.
+[4912.50s -> 4914.02s]  There are operating systems where you can make
+[4914.02s -> 4916.42s]  system calls to ask for D bits.
+[4917.30s -> 4919.38s]  But if you use Dune and VTX,
+[4919.38s -> 4923.02s]  the process can just use ordinary load
+[4923.02s -> 4925.06s]  and store instructions to get at the PTEs
+[4925.06s -> 4926.34s]  and therefore at the D bits.
+[4926.34s -> 4927.58s]  And it's very fast.
+[4929.26s -> 4931.82s]  And so they showed that this trick
+[4932.82s -> 4936.42s]  for some programs that are garbage collection intensive
+[4936.42s -> 4939.10s]  makes the programs significantly faster.
+[4941.78s -> 4942.82s]  Any questions?
+[4943.66s -> 4947.66s]  What would happen if the Sandboxed program
+[4949.70s -> 4954.70s]  wants to run its own garbage collector or something?
+[4954.94s -> 4955.78s]  Like would that-
+[4955.78s -> 4956.62s]  I see.
+[4956.62s -> 4958.10s]  So you're sort of using, all right, all right.
+[4958.10s -> 4961.54s]  So we got, we're using Dune.
+[4963.62s -> 4967.62s]  We have a Dune process that's actually using
+[4968.22s -> 4973.22s]  VTX's supervisor versus user mode.
+[4973.82s -> 4975.82s]  We're running a plugin up here in user mode.
+[4975.82s -> 4977.82s]  And the plugin would also,
+[4977.82s -> 4979.50s]  it's also written in a garbage collected language
+[4979.50s -> 4984.26s]  and was like to use, like to have its own page table,
+[4984.26s -> 4986.74s]  its own CR3 pointing to its own page table
+[4986.74s -> 4988.18s]  with its own D bits.
+[4989.22s -> 4993.86s]  No, that doesn't work because we're going to run the,
+[4993.86s -> 4995.86s]  the way Dune wants you to run plugins,
+[4995.86s -> 5000.86s]  Sandboxed plugins is to run them in guest user mode.
+[5001.62s -> 5003.66s]  Guest user mode is not allowed.
+[5003.66s -> 5004.62s]  I mean, it's just like user mode.
+[5004.62s -> 5007.78s]  It's not allowed to think about CR3.
+[5007.78s -> 5009.98s]  And so in guest user mode,
+[5009.98s -> 5012.66s]  we don't get to have our own page table.
+[5012.66s -> 5015.70s]  And so we don't get quick access to the D bits.
+[5017.26s -> 5020.58s]  It's only in guest supervisor mode
+[5020.58s -> 5022.82s]  that we can have our own CR3.
+[5022.82s -> 5027.50s]  So you can't, there's no obvious way to combine
+[5027.50s -> 5032.26s]  the two tricks, the two kinds of tricks that Dune allows.
+[5035.90s -> 5040.58s]  What about, let's say somebody wrote a browser
+[5040.58s -> 5042.26s]  actually using Dune.
+[5043.34s -> 5047.58s]  That would mean like, that would be quite tough to make
+[5047.58s -> 5051.14s]  if some computers didn't support Dune or something, right?
+[5051.18s -> 5055.26s]  Like it's hard to just put Chrome into and to use Dune,
+[5055.26s -> 5057.78s]  if not everyone has that kernel modules.
+[5057.78s -> 5059.62s]  Right, so first of all, you have to be running
+[5059.62s -> 5062.66s]  on a computer that supports the VTX,
+[5062.66s -> 5064.50s]  the underlying computer has to support VTX,
+[5064.50s -> 5066.94s]  which means many Intel chips, many.
+[5069.26s -> 5072.62s]  So you need VTX to run Dune and Dune had to be loaded
+[5072.62s -> 5075.50s]  in order to run the browser that takes advantage of Dune.
+[5075.50s -> 5077.86s]  So yeah, we've got to settle this up correctly.
+[5078.46s -> 5083.46s]  I mean, it's a research project, it's intended to sort of
+[5086.78s -> 5089.78s]  get people thinking about things that could be deployed
+[5089.78s -> 5091.94s]  in the real world if they were,
+[5091.94s -> 5094.02s]  if it seemed like they were valuable enough.
+[5094.02s -> 5096.54s]  And just like Linux, I mean, Linux has hundreds
+[5096.54s -> 5099.58s]  and hundreds of features it has.
+[5099.58s -> 5103.22s]  And so if somebody decided to add Dune to Linux
+[5103.22s -> 5105.34s]  as a standard feature, then you could start relying
+[5105.34s -> 5108.34s]  on Chrome to just use it and it would not be a problem.
+[5116.30s -> 5121.30s]  Sorry, so in high level, Dune is like making a VM,
+[5121.58s -> 5124.94s]  but instead of a VM, you run a process.
+[5124.94s -> 5128.74s]  Or yeah, or yeah, I mean, you can phrase it either way.
+[5128.74s -> 5133.74s]  It's supporting what's mostly a process abstraction
+[5134.38s -> 5138.98s]  but it's using, instead of using the page table hardware,
+[5138.98s -> 5141.02s]  it's using the CPU hardware to support
+[5141.02s -> 5142.14s]  a process abstraction.
+[5143.10s -> 5145.62s]  But instead of that, the particular CPU hardware
+[5145.62s -> 5148.34s]  it's using is the VTX hardware,
+[5148.34s -> 5151.30s]  which has a few extra features,
+[5151.30s -> 5156.30s]  like the ability to set up your own feature.
+[5157.54s -> 5158.74s]  Right, I see.
+[5158.74s -> 5161.42s]  I remember in the paper, I read process level abstraction,
+[5161.42s -> 5162.90s]  but I didn't understand what that means,
+[5162.94s -> 5164.02s]  but now I understand it.
+[5164.02s -> 5164.86s]  Thank you.
+[5169.94s -> 5173.18s]  All right, time is up and I'm happy to continue.
+[5173.18s -> 5175.82s]  If anybody has any more questions, happy to answer.
+[5177.38s -> 5179.22s]  Yeah, so I had a question in particular
+[5179.22s -> 5181.70s]  about something that said in the paper
+[5181.70s -> 5186.70s]  was if a Dune, like a process inside Dune forks,
+[5187.06s -> 5189.66s]  it becomes a non-Dune process.
+[5189.66s -> 5192.14s]  Isn't that like a security flaw in a way?
+[5193.02s -> 5194.18s]  What's the attack?
+[5196.14s -> 5198.58s]  Well, you've run something as a Dune process
+[5198.58s -> 5200.34s]  thinking that it's now safe,
+[5200.34s -> 5204.54s]  but then it can run, it can just fork with CAPE.
+[5204.54s -> 5206.74s]  So here's the possibility, yeah.
+[5206.74s -> 5211.26s]  Okay, so if, let's see, code down here in supervisor mode,
+[5212.42s -> 5214.66s]  you know, there's no security problem for this,
+[5214.66s -> 5215.66s]  you know, there's like to this code
+[5215.66s -> 5219.06s]  because it already had whatever privileges were possible.
+[5219.06s -> 5220.34s]  It already had, it does not get to gain
+[5220.38s -> 5222.30s]  any extra privileges by forking.
+[5222.30s -> 5223.14s]  Okay.
+[5223.14s -> 5223.98s]  Code up, but you know,
+[5223.98s -> 5227.58s]  maybe it's using Dune to sandbox plugin
+[5227.58s -> 5229.70s]  and what we have untrusted code up here
+[5229.70s -> 5234.70s]  that it would be dangerous to let it run without Dune
+[5235.50s -> 5238.86s]  because it's not trusted and we're using Dune to sandbox.
+[5238.86s -> 5242.18s]  So then if we forked, you know, okay.
+[5242.18s -> 5245.02s]  So this code cannot fork, right?
+[5245.02s -> 5247.66s]  It can try to call the fork system call,
+[5247.66s -> 5250.02s]  but a system call instruction up here
+[5250.90s -> 5253.94s]  traps into the supervisor part of this process.
+[5253.94s -> 5255.46s]  And presumably the supervisor process
+[5255.46s -> 5258.18s]  part of this process is carefully written
+[5258.18s -> 5259.38s]  not to be tricked.
+[5259.38s -> 5262.14s]  And so it's not actually going to fork.
+[5262.14s -> 5263.06s]  So that doesn't work.
+[5263.06s -> 5264.82s]  It's a supervisor code.
+[5264.82s -> 5265.82s]  It is allowed to fork.
+[5265.82s -> 5267.86s]  It is allowed to make system calls.
+[5267.86s -> 5269.18s]  It'll get a fork at this process
+[5269.18s -> 5270.70s]  with the same memory image.
+[5270.70s -> 5273.98s]  So we'll get the plugin up here.
+[5273.98s -> 5278.98s]  And if it didn't realize that fork turned off Dune
+[5279.14s -> 5282.78s]  and it did, well,
+[5284.02s -> 5285.82s]  I mean, it's hard to see how this could actually happen,
+[5285.82s -> 5289.26s]  but if it did something to resume execution
+[5289.26s -> 5291.50s]  of the plugin now, that would be very foolish
+[5291.50s -> 5293.14s]  because now the plugin's in the sandbox.
+[5293.14s -> 5295.22s]  You know, in fact, this, you know,
+[5295.22s -> 5297.54s]  the code to jump into the sandbox here
+[5297.54s -> 5298.90s]  involves privileged instructions,
+[5298.90s -> 5302.74s]  just like it does on RISC-V because it switches,
+[5302.74s -> 5306.02s]  it switches guest modes.
+[5306.02s -> 5307.50s]  And if you ask you that instruction here,
+[5307.50s -> 5309.14s]  that's an illegal instruction.
+[5310.90s -> 5313.86s]  I guess what I was misunderstanding was,
+[5313.86s -> 5316.38s]  I think that the plugin is not a process,
+[5316.38s -> 5318.98s]  like the Dune process is the sandbox.
+[5318.98s -> 5321.02s]  The plugin is just inside there.
+[5321.02s -> 5323.74s]  The Dune process is just enabled to use features
+[5323.74s -> 5326.74s]  to let the plugin run faster, basically.
+[5326.74s -> 5327.58s]  That's right.
+[5327.58s -> 5331.34s]  And we're absolutely assuming that this software down here
+[5331.34s -> 5336.34s]  is clever, is careful about what it lets,
+[5336.34s -> 5338.82s]  about preventing, you know, the sandbox
+[5338.82s -> 5340.70s]  to actually call the fork in real life.
+[5341.90s -> 5346.10s]  And it's not unsafe for the Dune process
+[5346.10s -> 5347.62s]  to have supervisor mode
+[5347.62s -> 5350.42s]  because it's actually supervisor mode and non-root mode,
+[5350.42s -> 5354.38s]  which is the same as supervisor mode in a guest OS, right?
+[5354.38s -> 5355.22s]  That's right.
+[5355.22s -> 5356.30s]  So it's like, you can let it do everything
+[5356.30s -> 5358.66s]  just because of VTX,
+[5358.66s -> 5360.70s]  it's gonna be like a virtual machine,
+[5360.70s -> 5362.10s]  so it's not gonna hurt us.
+[5362.10s -> 5362.94s]  That's right.
+[5362.94s -> 5364.30s]  It can't escape from its address space,
+[5364.30s -> 5367.06s]  because EPT is Dune, a set of EPT,
+[5367.06s -> 5369.10s]  you can stream it to its address space.
+[5371.66s -> 5372.58s]  That makes sense.
+[5374.10s -> 5375.66s]  So one last thing I had,
+[5377.66s -> 5381.30s]  there was like a paragraph on EPTs,
+[5381.30s -> 5383.54s]  and it said that the user page table
+[5383.54s -> 5386.18s]  can just expand the addresses,
+[5386.18s -> 5389.98s]  like remap them to their original layout.
+[5389.98s -> 5391.98s]  That was something I just didn't understand
+[5391.98s -> 5392.82s]  the whole paragraph.
+[5392.82s -> 5394.50s]  So I don't completely understand-
+[5394.50s -> 5396.14s]  But maybe that's a bit specific.
+[5397.50s -> 5402.50s]  I think what's going on is that the physical addresses
+[5404.10s -> 5408.78s]  on the x86 have fewer bits than virtual addresses.
+[5408.78s -> 5410.30s]  So I'm kind of guessing.
+[5410.30s -> 5413.70s]  And so that means that the EPT,
+[5415.90s -> 5417.66s]  the ordinary page table has virtual addresses,
+[5417.66s -> 5418.50s]  the physical addresses,
+[5418.50s -> 5420.82s]  the physical addresses have fewer bits.
+[5420.82s -> 5422.90s]  And so that constricts the,
+[5424.42s -> 5429.42s]  that means that when Dune is setting up
+[5429.62s -> 5432.34s]  an address space for a process,
+[5432.34s -> 5434.02s]  one way to look at it is when Dune's setting up
+[5434.02s -> 5435.82s]  the address space for a process,
+[5435.82s -> 5438.62s]  the process address space has to fit
+[5438.62s -> 5443.18s]  in the smaller number of bits for a Dune process.
+[5443.18s -> 5445.06s]  Regular processes can maybe use,
+[5445.06s -> 5445.94s]  I don't know what the numbers are,
+[5445.94s -> 5448.34s]  let's say 48-bit virtual addresses,
+[5448.38s -> 5452.02s]  but maybe physical addresses are only 36 bits.
+[5452.02s -> 5453.30s]  Again, I'm making this up.
+[5453.30s -> 5455.10s]  Ordinary process could use all 48 bits
+[5455.10s -> 5456.14s]  for virtual addresses,
+[5456.14s -> 5459.30s]  a Dune process can only use 36 or whatever.
+[5459.30s -> 5460.46s]  So there's like different rules
+[5460.46s -> 5463.30s]  for things that have to fit down.
+[5465.62s -> 5466.46s]  Okay.
+[5471.74s -> 5474.74s]  I had a question about the VTX scheme
+[5474.74s -> 5477.10s]  and how we're accessing page tables.
+[5477.10s -> 5481.42s]  So when, like in the way we're accessing page tables,
+[5481.42s -> 5483.74s]  because we're going to the EPT
+[5483.74s -> 5487.30s]  and then like doing the second layer of translation there
+[5487.30s -> 5490.14s]  from the guest physical address
+[5490.14s -> 5491.62s]  to the host physical address,
+[5492.74s -> 5495.30s]  is the latency of accesses
+[5495.30s -> 5497.22s]  to the page table actually lower?
+[5499.06s -> 5500.86s]  It takes more time.
+[5500.86s -> 5501.86s]  Potentially it takes more time,
+[5501.86s -> 5503.70s]  possibly much more time
+[5503.70s -> 5506.62s]  for the hardware MMU to translate it and address.
+[5507.02s -> 5508.34s]  Because now it has to do two,
+[5508.34s -> 5511.54s]  well, the worst case is very much worse
+[5511.54s -> 5515.06s]  because on the RISC-V,
+[5515.06s -> 5518.26s]  there's multiple levels of the page table.
+[5518.26s -> 5520.58s]  And so the MMU has to be an entry
+[5520.58s -> 5524.42s]  from this page table page and then the next and the next.
+[5524.42s -> 5527.50s]  Each of those, the x86 also has multiple levels.
+[5528.42s -> 5532.26s]  And so in the x86 in the lookup in the first,
+[5532.26s -> 5533.14s]  in the main page table
+[5533.14s -> 5536.38s]  also has to make multiple memory references potentially.
+[5536.98s -> 5538.22s]  Each of those multiple memory references
+[5538.22s -> 5540.26s]  has to go through the EPT.
+[5540.26s -> 5543.22s]  And the EPT is also a multi-level page table.
+[5544.30s -> 5545.66s]  And so I don't even know
+[5545.66s -> 5548.74s]  what the worst case number of memory references is,
+[5548.74s -> 5550.70s]  but it's quite a bit worse under VTX
+[5550.70s -> 5554.86s]  than it is with a non than it is ordinary case.
+[5554.86s -> 5555.90s]  So there's a potential there.
+[5555.90s -> 5557.90s]  Now, in fact, there's lots of caching.
+[5557.90s -> 5560.86s]  So usually you don't run up against that worst case, but.
+[5560.86s -> 5562.38s]  Okay, okay.
+[5562.38s -> 5564.46s]  And so virtual machines,
+[5564.50s -> 5568.14s]  are they still like generally slow today?
+[5568.14s -> 5570.94s]  And if so, I guess I was wondering,
+[5570.94s -> 5574.74s]  how does AWS work if it seems to be fast
+[5574.74s -> 5576.58s]  and it seems to be working well, so.
+[5578.18s -> 5581.66s]  My belief is that they use VTX hardware,
+[5581.66s -> 5583.50s]  that they use the support that we're talking about
+[5583.50s -> 5588.50s]  and that it is as well as clever device schemes
+[5588.66s -> 5590.66s]  for efficient device access.
+[5590.66s -> 5593.66s]  And that the result is that AWS virtual machines
+[5593.66s -> 5598.66s]  are like fast or not much slower than a real computer.
+[5600.78s -> 5602.50s]  Cool, thank you so much.
+[5602.50s -> 5603.34s]  Yes.
+[5604.58s -> 5606.02s]  Oh, I had also another question
+[5606.02s -> 5610.14s]  on the shadow copy for a TRAP and MWA.
+[5610.14s -> 5613.34s]  So you said that it like,
+[5613.34s -> 5614.94s]  I understand how you would make it,
+[5614.94s -> 5617.66s]  but does it actually make the shadow copy
+[5617.66s -> 5619.10s]  or does it just,
+[5620.18s -> 5622.06s]  I think it has to make the shadow copy, right?
+[5622.10s -> 5625.34s]  Because it has to allow the process just to do it itself,
+[5625.34s -> 5627.78s]  not like to go through all of the TRAPs,
+[5627.78s -> 5629.74s]  but does it do it every time?
+[5629.74s -> 5632.06s]  Does it remember the previous version?
+[5632.06s -> 5633.18s]  Well, okay, yeah.
+[5633.18s -> 5637.26s]  So yes and yes,
+[5637.26s -> 5639.98s]  the virtual machine monitor has to create a new page table
+[5639.98s -> 5641.54s]  or there, you know,
+[5641.54s -> 5642.90s]  yes, has to create a new page table
+[5642.90s -> 5646.06s]  and it's the virtual machine monitors page table,
+[5646.06s -> 5647.02s]  which formatted up,
+[5647.02s -> 5648.82s]  which is what the real hardware uses.
+[5648.86s -> 5650.02s]  Now, of course,
+[5650.02s -> 5653.18s]  there are plenty of opportunities for caching and for reuse.
+[5653.18s -> 5656.02s]  So if the clever virtual machine monitors,
+[5656.02s -> 5659.66s]  if they notice that, oh, the guest changed just one PTE,
+[5660.82s -> 5661.86s]  then the virtual machine monitor
+[5661.86s -> 5664.74s]  may be able to do correspondingly limited amount of work
+[5664.74s -> 5668.90s]  to update its shadow page table.
+[5668.90s -> 5670.38s]  And it also may keep,
+[5671.42s -> 5672.94s]  you know, when it,
+[5672.94s -> 5675.06s]  if it's sort of multiplexing time sharing
+[5675.06s -> 5676.42s]  among multiple virtual machines,
+[5676.42s -> 5678.62s]  the virtual machine monitor will keep around
+[5679.38s -> 5680.38s]  the shadow page tables
+[5680.38s -> 5682.50s]  for the virtual machines that aren't running
+[5682.50s -> 5684.86s]  so that it can reuse them directly
+[5685.90s -> 5688.66s]  when it switches back to that virtual machine.
+[5688.66s -> 5689.70s]  Okay, I see.
+[5689.70s -> 5690.70s]  So does that mean that you have,
+[5690.70s -> 5694.10s]  like you have to remember a shadow copy
+[5694.10s -> 5699.10s]  for like each process for each virtual machine?
+[5701.82s -> 5704.38s]  Yes, there are many, many,
+[5704.38s -> 5706.54s]  right, there are many, many page tables
+[5706.54s -> 5708.14s]  running around in the virtual machine.
+[5708.66s -> 5711.66s]  The virtual machine is aware of all page table switches
+[5711.66s -> 5713.18s]  that the guest does.
+[5713.18s -> 5714.02s]  Yeah, it's,
+[5715.98s -> 5719.58s]  the specific issue of maintaining the shadow page tables
+[5719.58s -> 5721.06s]  has consumed a lot of work.
+[5722.42s -> 5724.34s]  Right, right, that's interesting.
+[5724.34s -> 5725.18s]  Thank you so much.
+[5725.18s -> 5726.02s]  Yeah, in your days before,
+[5726.02s -> 5727.50s]  you know, and this is one of the many things
+[5727.50s -> 5729.62s]  that hardware supported virtual machines
+[5730.58s -> 5731.82s]  made quite a bit easier.
+[5733.14s -> 5734.66s]  Oh, okay, okay, I see, I see.
+[5734.66s -> 5735.50s]  Okay, thank you so much.
+[5735.50s -> 5736.50s]  Because the EBT means you don't have to
+[5736.50s -> 5738.02s]  cook up your own shadow page table.
+[5738.94s -> 5741.70s]  Right, right, right, yeah, that's nice, yeah, thank you.
+[5741.70s -> 5742.54s]  Yes.
+[5749.86s -> 5750.82s]  All right, got to head up,
+[5750.82s -> 5752.62s]  but I'll see you guys on Wednesday.
+[5752.62s -> 5753.86s]  Yes. Thank you.
+[5753.86s -> 5755.46s]  Thank you, bye-bye.
+[5755.46s -> 5756.30s]  Thank you.
+[5760.58s -> 5763.46s]  Is it okay if you have time for one more question?
+[5763.46s -> 5764.66s]  Yes, please.
+[5764.66s -> 5769.02s]  Yeah, this one is about the garbage collection,
+[5769.02s -> 5772.74s]  of how it like rescans to see if like they're dirty bits.
+[5774.42s -> 5775.26s]  Like,
+[5776.78s -> 5778.58s]  is this like a sort of a continued process
+[5778.58s -> 5781.30s]  where like it continues to rescan like indefinitely
+[5781.30s -> 5783.02s]  because it couldn't?
+[5784.90s -> 5786.46s]  You're asking, oh yeah, would it ever terminate
+[5786.46s -> 5789.46s]  supposing that, oh, there's always something new modified.
+[5789.46s -> 5792.18s]  So in fact, potential problem,
+[5792.18s -> 5794.26s]  in fact, what the garbage collector does is it,
+[5794.98s -> 5796.46s]  it does one pass,
+[5797.82s -> 5799.66s]  one pass through to completion,
+[5799.66s -> 5802.14s]  and then it freezes everything else
+[5802.14s -> 5804.74s]  but the garbage collector, so nothing else can happen.
+[5804.74s -> 5806.50s]  Then it goes back and look at the dirty pages.
+[5806.50s -> 5808.38s]  But of course, everything else is frozen.
+[5808.38s -> 5811.38s]  And so no more, no more dirty pages can occur.
+[5811.38s -> 5812.22s]  And then the garbage,
+[5812.22s -> 5813.54s]  so the garbage here looks all the dirty page
+[5813.54s -> 5815.10s]  and then it knows it's done.
+[5815.10s -> 5816.78s]  It, you know, does whatever it's supposed to do
+[5816.78s -> 5818.06s]  to finish up and create the free list
+[5818.06s -> 5822.98s]  and then it resumes all the threads that it stopped.
+[5823.02s -> 5824.14s]  Oh, okay, yeah.
+[5824.14s -> 5825.46s]  Okay, that makes a lot more sense.
+[5825.46s -> 5827.58s]  I know it froze everything else.
+[5828.82s -> 5830.02s]  This is complex stuff.
+[5830.02s -> 5831.66s]  Of course, there's not enough room in the paper,
+[5831.66s -> 5834.42s]  the Dune paper to explain all the ins and outs
+[5834.42s -> 5837.18s]  of what the garbage collectors have to do, sadly.
+[5838.98s -> 5841.58s]  All right, yeah, thank you so much.
+[5841.58s -> 5843.30s]  Thank you, see you later.

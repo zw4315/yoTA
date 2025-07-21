@@ -1,0 +1,198 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 4.40s]  In the next portion of today's lecture, we're going to talk about how we can
+[4.40s -> 8.56s]  extend policy gradients from the on-policy setting into the off-policy
+[8.56s -> 14.20s]  setting. So the first part I want to cover is why policy gradients are
+[14.20s -> 19.04s]  considered an on-policy algorithm. Policy gradients are the
+[19.04s -> 21.80s]  classical example of an on-policy algorithm because they require
+[21.80s -> 26.80s]  generating new samples each time you modify the policy. The reason
+[26.84s -> 30.88s]  this is an issue is if you look at the form of the policy gradients, it's an
+[30.88s -> 35.96s]  expected value under p theta of tau of grad log p of tau times r of tau, and
+[35.96s -> 39.36s]  it's really the fact that the expected value is taken under p theta of tau.
+[39.36s -> 44.04s]  That's the problem. The way that we calculate this expectation in policy
+[44.04s -> 49.72s]  gradients is by sampling trajectories using the latest policy. But since the
+[49.72s -> 55.50s]  derivative evaluated at parameter vector theta requires samples sampled
+[55.50s -> 59.10s]  according to theta, we have to throw out our samples each time we change theta,
+[59.10s -> 63.34s]  which means that policy gradient is a non-policy algorithm. Each update step
+[63.34s -> 68.10s]  requires fresh samples. We can't retain data from other policies or even from
+[68.10s -> 73.30s]  our own previous policies when using policy gradients. So in the
+[73.30s -> 77.10s]  reinforce algorithm, we have step one, which is to sample from our policy,
+[77.10s -> 80.74s]  step two, which is to evaluate the gradient, and step three, which is to take a
+[80.78s -> 85.74s]  step of gradient descent, and we really cannot skip step one. So we can't use
+[85.74s -> 90.02s]  samples from past policies, we can't use samples obtained from other sources
+[90.02s -> 93.30s]  like demonstrations, we have to generate fresh samples from our own
+[93.30s -> 99.54s]  policy every single time. Now this is a bit of a problem when we want to do
+[99.54s -> 103.70s]  deep reinforcement learning, because neural networks change only a little bit
+[103.70s -> 107.58s]  with each gradient step. Because neural networks are highly nonlinear, we can't
+[107.58s -> 111.14s]  take really huge gradient steps, which means that in practice we usually end up
+[111.14s -> 115.66s]  taking a large number of small gradient steps. But each of those small
+[115.66s -> 120.58s]  gradient steps requires generating new samples by running your policy in your
+[120.58s -> 123.82s]  system, which might involve actually running your policy in the real world
+[123.82s -> 128.38s]  or in an expensive simulator. So this can make policy gradients very costly when
+[128.38s -> 132.90s]  the cost of generating samples is high, either computational cost or practical
+[132.90s -> 139.78s]  monetary cost. So on-policy learning can be very inefficient in this way. I should
+[139.78s -> 143.82s]  of course mention that on the flip side, if generating samples is very cheap, then
+[143.82s -> 146.58s]  policy gradient algorithms can be a great choice, because they're quite
+[146.58s -> 151.38s]  simple, fairly straightforward to implement, and tend to work fairly well.
+[151.38s -> 157.74s]  But if we do want to use off-policy samples, we can modify policy gradients
+[157.74s -> 161.38s]  using something called importance sampling, and that's what we're going to cover
+[161.38s -> 167.46s]  next. So what if we don't have samples from P theta of tau? What if we instead
+[167.46s -> 171.06s]  have samples from some other distribution that I'm going to call P
+[171.06s -> 177.66s]  bar of tau instead? Now P bar of tau could be a previous policy, so you
+[177.66s -> 181.30s]  could be trying to reuse old samples that you've generated, or it could even be
+[181.30s -> 186.54s]  some other distribution, like for example demonstrations from a person.
+[186.54s -> 190.38s]  Alright, so the trick that we're going to use to modify the policy
+[190.38s -> 194.10s]  gradient to accommodate this case is something called importance sampling.
+[194.10s -> 198.66s]  Importance sampling is a general technique for evaluating an expectation
+[198.66s -> 202.62s]  under one distribution when you only have samples from a different
+[202.62s -> 208.18s]  distribution. So here's how we can write out importance sampling in general.
+[208.18s -> 211.66s]  Let's say that we'd like to calculate the expected value of some function f
+[211.66s -> 218.22s]  of x under some distribution P of x. We know that the expected value of f of
+[218.22s -> 226.58s]  x is the integral over x of P of x times f of x. And if we have access only to some
+[226.58s -> 233.10s]  other distribution Q of x, you can multiply the quantity inside the
+[233.10s -> 238.50s]  integral by Q of x over Q of x, right? Because you know the Q of x over Q of
+[238.50s -> 242.54s]  x is just equal to 1, and you can always multiply by 1 without changing
+[242.54s -> 248.30s]  the value. And now we can rearrange these terms a little bit. We can
+[248.30s -> 253.30s]  basically say that, well, Q of x over Q of x times P of x is equal to Q of x
+[253.30s -> 258.66s]  times P of x over Q of x, right? We just shifted the numerator from one to
+[258.66s -> 263.98s]  the other. And now this can be written as an expected value under Q of x. So you
+[263.98s -> 268.10s]  can say this is equal to the expected value under Q of x of P of x
+[268.10s -> 273.18s]  over Q of x times f of x. There's no approximation here, this is all completely
+[273.18s -> 277.74s]  exact, meaning that importance sampling is unbiased. Of course the variance of
+[277.74s -> 281.26s]  this estimator could change, but in expectation it's going to stay the same.
+[281.26s -> 285.70s]  So now we're going to apply the same trick to evaluate the policy gradient,
+[285.70s -> 292.86s]  where the Q here is going to be P bar and the P is going to be P theta. So
+[292.86s -> 296.78s]  here is what the importance sample version of the policy gradient, of the RL
+[296.78s -> 299.98s]  objective, would look like. The importance sampled
+[299.98s -> 303.54s]  version of the RL objective would be the expected value under some other
+[303.54s -> 308.74s]  distribution P bar of tau of P theta of tau divided by P bar of tau times R
+[308.74s -> 315.34s]  of tau. So that's the RL objective, and this is our importance weight. Now if
+[315.34s -> 319.38s]  we'd like to understand what the importance weight is equal to, well, we
+[319.38s -> 324.02s]  can use our identity that describes the trajectory distribution using the chain
+[324.02s -> 330.74s]  rule, and we can substitute that in for P theta of tau and P bar of tau. Now we
+[330.74s -> 335.26s]  know that both P theta of tau and P bar of tau have the same initial state
+[335.26s -> 340.02s]  distribution P of s1 and the same transition probabilities P of s d plus 1
+[340.02s -> 344.02s]  given s t a t. They only differ by their policy because they both operate
+[344.02s -> 349.74s]  in the same MDP. Our distribution has the policy pi theta, the sampling
+[349.74s -> 354.02s]  distribution is the policy pi bar. So that means when we take the ratio of
+[354.02s -> 357.94s]  their trajectory distributions, the initial state terms and the transition
+[357.94s -> 363.14s]  terms cancel, and we're just left with a ratio of the products of the policy
+[363.14s -> 366.54s]  probabilities. And this is very convenient because in general we don't
+[366.54s -> 370.90s]  know P of s1 or P of s t plus 1 given s t a t, but we do know the policy
+[370.90s -> 375.66s]  probabilities. So this allows us to actually evaluate these importance weights.
+[375.66s -> 381.06s]  Okay, so now let's derive the policy gradient with importance sampling where
+[381.06s -> 386.42s]  we're again going to use our convenient identity. So let's say that we
+[386.42s -> 394.42s]  have samples from P theta of tau, and we want to estimate the value of some
+[394.42s -> 402.48s]  new parameter vector theta prime. The objective j theta prime will be equal
+[402.48s -> 407.84s]  to the expected value under P theta of tau of the importance weight multiplied
+[407.84s -> 412.72s]  by the reward. So P theta prime of tau divided by P theta of tau times R of
+[412.72s -> 418.66s]  tau. Now notice that here the only part of this objective that actually
+[418.66s -> 422.72s]  depends on theta prime, that depends on our new parameters, is the numerator and
+[422.72s -> 427.28s]  the importance weight, because now our samples are coming from a distribution
+[427.92s -> 434.36s]  different policy, P theta of tau. So that means that when I want to calculate the
+[434.36s -> 438.12s]  derivative with respect to theta prime of j theta prime, all I have to worry
+[438.12s -> 443.68s]  about is this term in the numerator. So this is the derivative. I've just
+[443.68s -> 446.96s]  replaced the only term that depends on theta prime with its derivative, and
+[446.96s -> 450.98s]  then I'm going to substitute my useful identity back in. So the identity
+[450.98s -> 456.52s]  tells me that grad theta prime P theta prime of tau is equal to P theta
+[456.56s -> 461.96s]  prime of tau times grad log P theta prime of tau. So I substitute that back
+[461.96s -> 466.96s]  in, and I get this equation. Now when you look at this equation, you'll
+[466.96s -> 471.08s]  probably immediately recognize it as exactly the equation that we get if we
+[471.08s -> 474.60s]  took the policy gradient and just stuck in an importance weight. And in fact you
+[474.60s -> 477.96s]  could derive the importance sample policy gradient that way also. I want
+[477.96s -> 481.00s]  to derive it in this other way on the slide just so that you can see the
+[481.40s -> 488.00s]  equivalence. Interestingly enough, if you estimate this gradient locally, so if you
+[488.00s -> 492.48s]  use this importance sampling derivation to evaluate the gradient at theta equals
+[492.48s -> 497.84s]  theta prime, then the importance weight comes out equal to 1 and you
+[497.84s -> 501.76s]  recover the original policy gradient. So this derivation actually gives you a
+[501.76s -> 509.12s]  different way to derive the same policy gradient that we had before. But
+[509.12s -> 514.00s]  in the off-policy setting, theta prime is not equal to theta, and in that case
+[514.00s -> 518.36s]  we have to fall back on our importance weights, which we derived
+[518.36s -> 522.04s]  before as simply the ratio of the products of the policy probabilities.
+[522.04s -> 528.56s]  And if we substituted in all three now the terms in this policy gradient, the
+[528.56s -> 532.46s]  importance weights are product over all time steps of pi theta prime over pi
+[532.46s -> 538.44s]  theta. The grad log pi part is a sum over all time steps of grad theta
+[538.48s -> 542.64s]  prime log pi theta prime, and the reward is a sum over all time steps of the
+[542.64s -> 547.40s]  reward. So we have three terms inside of our importance sampled off-policy
+[547.40s -> 552.68s]  policy gradient estimator, and we just multiply those three terms together.
+[552.68s -> 556.92s]  Now what about causality? What about the fact that we don't need to
+[556.92s -> 560.84s]  consider the effect of current actions on past rewards? Well, we can work those
+[560.84s -> 564.96s]  in two, in which case we again distribute the rewards and the
+[565.00s -> 572.32s]  importance weights into the sum over grad log pi, and we get a sum from t
+[572.32s -> 578.52s]  equals 1 capital T of grad log pi times the product of all the importance
+[578.52s -> 582.12s]  weights in the past. You can think of that intuitively as the probability that
+[582.12s -> 587.72s]  you would have arrived at the state using your new policy, times the sum of
+[587.72s -> 595.76s]  rewards weighted by the importance weights in the future. So future actions
+[595.76s -> 602.64s]  don't affect the current weight, that's fine. The trouble is that this last
+[602.64s -> 607.96s]  part, you know, this part can be, you know, problematic, can be exponentially
+[607.96s -> 612.12s]  large, so can the first part. It turns out that if we ignore this last part,
+[612.12s -> 615.28s]  if we ignore the weights on the rewards, we recover something called a
+[615.28s -> 619.72s]  policy iteration algorithm, and you can actually prove that a policy iteration
+[619.72s -> 624.92s]  algorithm will still improve your policy. It's no longer the gradient, but
+[624.92s -> 630.56s]  it's a well-defined way to provide guaranteed improvement to your policy. So
+[630.56s -> 633.72s]  don't worry about this yet, we'll cover policy iteration in much more detail
+[633.72s -> 638.24s]  in a subsequent lecture. For now, just take my word at it, that if you ignore
+[638.24s -> 642.96s]  the importance weights that multiply the rewards, you basically ignore this last
+[643.08s -> 647.96s]  term, you still get a procedure that will improve your policy. That is not
+[647.96s -> 653.44s]  true for this first term, the sum that the product from t prime equals one to
+[653.44s -> 663.00s]  little t of the probability ratios. So this first term is trouble. The reason
+[663.00s -> 668.70s]  this first term is trouble is because it's exponential in capital T, right?
+[668.70s -> 675.06s]  Let's say that the importance weights are all less than one. That's a pretty
+[675.06s -> 678.50s]  reasonable assumption because you sampled your actions according to pi
+[678.50s -> 681.82s]  theta, so your actions probably have a higher probability under pi theta than
+[681.82s -> 684.88s]  they do under pi theta prime. So, you know, a good chance that your importance
+[684.88s -> 689.18s]  weights will be less than one. If you multiply together many, many numbers, each
+[689.18s -> 693.90s]  of which is less than one, then their product will go to zero exponentially
+[693.90s -> 697.74s]  fast. That's a really big problem. It essentially means that your
+[697.78s -> 701.94s]  variance will go to infinity exponentially fast. Policy gradients
+[701.94s -> 704.18s]  already have high variance, and now you're going to blow up the variance
+[704.18s -> 707.34s]  even more by multiplying them by these high variance and importance weights.
+[707.34s -> 714.98s]  That's a really bad idea. Now, in order to understand the role that this term
+[714.98s -> 718.46s]  plays, we can rewrite our objective a little bit differently, and the reason
+[718.46s -> 721.58s]  we're doing all this is because we really just want an excuse to delete
+[721.58s -> 725.26s]  that term. So to try to find that excuse, let's write our objective a
+[725.26s -> 730.54s]  little bit differently. So here's our on-policy policy gradient. It's a sum
+[730.54s -> 736.10s]  over all of our samples, a sum over all of our time steps, of grad log pi times
+[736.10s -> 740.58s]  this reward to go times this Q hat. The Q hat is just the sum from t
+[740.58s -> 744.30s]  prime equals t to capital T of the rewards, but I'll write it as Q hat
+[744.30s -> 749.36s]  because otherwise the notation is going to get pretty hairy. Now, the way
+[749.36s -> 754.30s]  that we sampled our SITs and AITs is by actually rolling out our policy
+[754.34s -> 760.50s]  in the environment. But you can equivalently think of it as sampling
+[760.50s -> 765.18s]  state-action pairs from the state-action marginal at time step t, right,
+[765.18s -> 768.62s]  because when you sample entire trajectories, the corresponding states
+[768.62s -> 772.58s]  and actions at every time step look indistinguishable from what you
+[772.58s -> 776.62s]  would have gotten if you sample from the state-action marginal at that time step.
+[776.62s -> 781.78s]  So you could write a different off-policy policy gradient where instead of
+[781.82s -> 785.10s]  importance sampling over entire trajectories, you importance sample over
+[785.10s -> 790.10s]  state-action marginals. So now your importance of weight is the probability
+[790.10s -> 794.30s]  under theta prime of SIT comma AIT divided by the probability under theta
+[794.30s -> 799.26s]  of SIT comma AIT. This is not by itself very useful because actually
+[799.26s -> 803.74s]  calculating the probabilities for these marginals is impossible without
+[803.74s -> 806.44s]  knowledge of the initial state distribution and the transition
+[806.48s -> 813.04s]  probabilities. But writing it out in this way allows us to perform a little trick.
+[813.04s -> 817.28s]  We can split up using the chain rule, we can split up this marginal both in
+[817.28s -> 821.32s]  the numerator and the denominator into the product of two terms, a state marginal
+[821.32s -> 826.60s]  pi theta prime of SIT and the action conditional pi theta prime of AIT
+[826.60s -> 834.88s]  given SIT. And then we could imagine what happens if we just ignore the
+[834.88s -> 839.04s]  state marginals, if we just ignore the ratio of the state probabilities. Well,
+[839.04s -> 842.16s]  then we get an equation for the importance sampled policy gradient
+[842.16s -> 846.00s]  that is very similar to the one I have at the top of the slide, only the
+[846.00s -> 853.70s]  product neglects all of the ratios except at t prime equals t. So if you
+[853.70s -> 857.92s]  don't want your importance weights to be exponential in capital T, you could try
+[857.96s -> 865.32s]  to ignore the ratio of the state marginal probabilities. So you're still
+[865.32s -> 870.04s]  accounting for the ratio of action probabilities but ignoring the state
+[870.04s -> 875.32s]  marginal probabilities. This does not in general give you the correct policy
+[875.32s -> 880.76s]  gradient. However, we'll see later on in the course when we discuss advanced
+[880.76s -> 885.60s]  policy gradients that ignoring the state marginal probabilities is reasonable
+[885.60s -> 889.44s]  in the sense that it gives you bounded error in the case where theta prime is
+[889.44s -> 895.72s]  not too different from theta. And this simple insight is actually very important
+[895.72s -> 899.28s]  for deriving practical importance sample policy gradient algorithms that
+[899.28s -> 903.84s]  don't suffer from an exponential increase in their variance, right, because
+[903.84s -> 907.76s]  when you multiply together importance weights over all time steps from t
+[907.76s -> 911.52s]  prime equals 1 to t, you get an exponential increase in variance because
+[911.52s -> 916.04s]  your weights exponentially attract to 0. But if you ignore the state marginal
+[916.04s -> 920.80s]  rate ratio, then you only get the weights at the time step t, which means
+[920.80s -> 925.88s]  that their variance does not grow exponentially. So we'll learn later on when we
+[925.88s -> 930.24s]  discuss advanced policy gradients why ignoring this part is reasonable. For
+[930.24s -> 933.88s]  now, I'll just tell you that it's a reasonable choice if theta is close
+[933.88s -> 939.68s]  to theta prime, meaning that if your policy is changing only a little bit.

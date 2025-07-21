@@ -1,0 +1,142 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.48s]  All right, the last topic we're going to talk about is the DAGGER algorithm, and the DAGGER
+[5.48s -> 9.62s]  algorithm is actually something that you're going to be implementing in your homework.
+[9.62s -> 14.38s]  And the DAGGER algorithm aims to provide a more principled solution to the imitation
+[14.38s -> 17.02s]  learning distributional shift problem.
+[17.02s -> 23.06s]  So as a reminder, the problem with distributional shift, intuitively, is that your policy
+[23.06s -> 27.38s]  makes at least small mistakes, even close to the training data, and when it makes small
+[27.40s -> 30.58s]  mistakes it finds itself in states that are more unfamiliar.
+[30.58s -> 34.48s]  And there it makes bigger mistakes, and the mistakes compound.
+[34.48s -> 38.62s]  More precisely, the problem can be described as a problem of distributional shift, meaning
+[38.62s -> 42.76s]  the distribution of states under which the policy is trained, p-data, is systematically
+[42.76s -> 48.00s]  different from the distribution of states under which it's tested, which is p pi theta.
+[48.00s -> 52.78s]  And so far, a lot of what we talked about are methods that try to change the policy
+[52.78s -> 57.78s]  so that p pi theta will stay closer to p-data by making fewer mistakes.
+[57.78s -> 58.90s]  But can we go the other way around?
+[58.90s -> 63.66s]  Can we instead change p-data so that p-data better covers the states that the policy
+[63.66s -> 64.66s]  actually visits?
+[64.66s -> 68.90s]  How can we make p-data be equal to p pi theta?
+[68.90s -> 73.54s]  Well, of course, if we're changing our data set, we're introducing some additional assumptions.
+[73.54s -> 77.56s]  So we're going to be actually collecting more data than just the initial demonstrations.
+[77.56s -> 82.12s]  And the question then is which data to collect, and that's what DAGGER tries to answer.
+[82.12s -> 85.92s]  So instead of being clever about p pi theta or about how we train our policy, let's be
+[85.92s -> 88.88s]  clever about our data collection strategy.
+[88.88s -> 93.64s]  So the idea in DAGGER is to actually run the policy in the real world, see which
+[93.64s -> 98.40s]  states it visits, and ask humans to label those states.
+[98.40s -> 103.12s]  So the goal is to collect data in such a way that p pi theta, that the trained data
+[103.12s -> 107.90s]  comes from p pi theta instead of p-data.
+[107.90s -> 110.54s]  And we're going to do that by actually running our policy.
+[110.54s -> 111.54s]  So here's the algorithm.
+[111.54s -> 115.02s]  Now, we're going to need labels for all those states.
+[115.02s -> 118.70s]  We're going to train our policy, first on our training and just on our demonstrations
+[118.70s -> 119.82s]  to get it started.
+[119.82s -> 124.42s]  And then we'll run our policy and we'll record the observations that the policy sees.
+[124.42s -> 128.22s]  And then we'll ask a person to go through all of those observations and label them
+[128.22s -> 132.60s]  with the action that they would have taken.
+[132.60s -> 135.74s]  And now we have a labeled version of the policy data set.
+[135.74s -> 136.74s]  And then we're going to aggregate.
+[136.74s -> 140.94s]  We're going to take the union of the original data set and this additional labeled data
+[140.94s -> 145.98s]  set that we just got, and then go back to step one, retrain the policy and repeat.
+[145.98s -> 150.24s]  So every time through this loop, we run our policy, we collect observations, we ask
+[150.24s -> 155.50s]  humans to label them with the correct actions for those observations, and then we aggregate.
+[155.50s -> 159.58s]  And it can actually be shown that eventually this algorithm will converge such that
+[159.58s -> 166.52s]  eventually the distribution of observations in this data set will approach the distribution
+[166.52s -> 170.36s]  of observations that the policy actually sees when it runs.
+[170.36s -> 174.88s]  The intuition for why that's true, of course, is that eventually, is that each time the
+[174.88s -> 178.40s]  policy runs, you collect its observations, but then you might label them with actions
+[178.40s -> 180.48s]  that are different from the actions it took.
+[180.48s -> 183.88s]  But that distribution is closer than the initial one.
+[183.88s -> 187.20s]  So as long as you get closer to each step, eventually you'll get to a distribution where
+[187.20s -> 190.16s]  the policy can actually learn, and then you'll stay there forever.
+[190.16s -> 194.16s]  So then as you collect from it more and more, eventually your data set becomes dominated
+[194.20s -> 198.76s]  by samples from the correct p pi theta distribution.
+[198.76s -> 199.76s]  So that's the algorithm.
+[199.76s -> 205.12s]  It's a very simple algorithm to implement if you can get those labels.
+[205.12s -> 207.52s]  Here is a video of this algorithm in action.
+[207.52s -> 208.96s]  This is in the original Dagger paper.
+[208.96s -> 213.88s]  This was about 12 years ago where they actually used it to fly a drone through a forest,
+[213.88s -> 217.56s]  and Dagger was used to where they actually flew the drone, collected the data, and
+[217.56s -> 221.84s]  then asked humans to label it offline by actually looking at the images and using
+[222.52s -> 226.12s]  a little mouse interface to specify what the action should have been, and with a few iterations
+[226.12s -> 232.60s]  of Dagger that can actually get it to fly pretty reliably through a forest, dodging trees.
+[232.60s -> 235.80s]  Now there is of course a problem with this method, and that has to do with step
+[235.80s -> 238.28s]  3.
+[238.28s -> 243.04s]  It's sometimes not very natural to ask a human to examine images after the fact and upload
+[243.04s -> 244.04s]  the correct action.
+[244.04s -> 247.60s]  When you're driving a car, you're not just instantaneously making a decision every time
+[247.60s -> 249.56s]  step about which action to choose.
+[249.56s -> 254.28s]  You are situated on a temporal process, you have reaction times, all that stuff, so sometimes
+[254.28s -> 259.12s]  the human labels that you can get offline in this sort of a counterfactual way can
+[259.12s -> 263.96s]  be not as natural as what a human might do when they were actually operating the system.
+[263.96s -> 267.96s]  So step 3 can be a bit of a problem for Dagger, and many improvements on Dagger seek
+[267.96s -> 271.68s]  to alleviate that challenge, but the basic version of Dagger works like this, and that's
+[271.68s -> 274.72s]  the version that you will all be implementing in your homework.
+[274.72s -> 276.28s]  There's really not much more to say about Dagger.
+[276.28s -> 280.28s]  It alleviates the distributional shift problem, it actually provably addresses it, so you
+[280.28s -> 285.52s]  can derive a bound for Dagger, and that bound is linear in T rather than quadratic, but
+[285.52s -> 289.24s]  of course that comes at the cost of introducing this much stronger assumption that you can
+[289.24s -> 292.04s]  collect the additional data.
+[292.04s -> 296.20s]  Okay, so that's basically the list of the methods I wanted to cover for how to address
+[296.20s -> 298.02s]  the challenges of behavior cloning.
+[298.02s -> 301.64s]  We can be smart about how we collect and augment our data, we can use powerful models
+[301.64s -> 305.48s]  that make very few mistakes, we can use multitask learning, or we can change the data
+[305.48s -> 308.28s]  collection procedure and use Dagger.
+[308.28s -> 311.12s]  The last thing I want to mention, which is a little bit of a preview of what's going
+[311.12s -> 314.76s]  to come next, is why is imitation learning not enough by itself?
+[314.76s -> 317.48s]  Why do we even need the rest of the course?
+[317.48s -> 324.92s]  Well, humans need to provide data for imitation learning, which is sometimes fine, but deep
+[324.92s -> 328.48s]  learning works best when the data is very plentiful, so asking humans to provide huge
+[328.48s -> 331.32s]  amounts of data can be a huge limitation.
+[331.32s -> 336.52s]  If the algorithm can collect data autonomously, then we can be in that regime where deepness
+[336.52s -> 341.88s]  really thrive and data is very plentiful without exorbitant amounts of human effort.
+[341.88s -> 344.94s]  The other thing is that humans are not good at providing some kinds of actions,
+[344.94s -> 347.68s]  so humans might be pretty good at specifying whether they should go left or right on
+[347.68s -> 352.52s]  a hiking trail, or controlling a quadcopter through a remote control, but they might
+[352.52s -> 356.32s]  not be so good at, for example, controlling the low-level commands to a quadcopter rotors
+[356.32s -> 359.28s]  to make it do some really complex aerobatic trick.
+[359.28s -> 363.08s]  If you want humans to control all the joints in a complex humanoid robot, that might be
+[363.08s -> 364.08s]  even harder.
+[364.08s -> 367.32s]  Maybe you need to rig up some really complicated harness for them to wear, if you want to
+[367.32s -> 375.24s]  control a giant robotic spider, well, good luck finding a human who can operate that.
+[375.24s -> 378.32s]  And humans can learn things autonomously, and just intellectually, it seems very appealing
+[378.32s -> 381.68s]  to try to develop methods that can allow our machines to do the same.
+[381.68s -> 384.92s]  As I mentioned in lecture one, one of the most exciting things we can get out of learning-based
+[384.92s -> 388.32s]  control is immersion behaviors, behaviors that are better than what humans would have
+[388.36s -> 393.48s]  done, and in that case, it's very desirable to learn autonomously.
+[393.48s -> 396.48s]  When learning autonomously, in principle, machines can get unlimited data from their
+[396.48s -> 400.16s]  own experience, and they can continuously self-improve and get better and better, in
+[400.16s -> 404.44s]  principle exceeding the performance of humans.
+[404.44s -> 408.68s]  Now in order to start thinking about that, we have to introduce some terminology and
+[408.68s -> 411.00s]  notation, we have to actually define what it is that we want.
+[411.00s -> 414.32s]  If our goal is no longer just to imitate, but we want to do something else, well,
+[414.32s -> 416.52s]  what is it that we want?
+[416.52s -> 420.12s]  And maybe instead of matching the actions in the expert dataset, we want to bring about
+[420.12s -> 421.12s]  some desired outcome.
+[421.12s -> 425.12s]  Maybe in the tiger example, we want to minimize the probability of being eaten by
+[425.12s -> 428.92s]  the tiger, so we want to minimize the probability that we will land in a state,
+[428.92s -> 433.08s]  S prime, which is an eaten-by-tiger state, and we can write that down mathematically,
+[433.08s -> 436.84s]  and in general we can write it as the expected value of some cost, in this case
+[436.84s -> 440.52s]  the cost is being eaten by a tiger.
+[440.52s -> 444.76s]  Now we already saw costs before when we talked about counting the number of mistakes,
+[444.76s -> 448.24s]  but in general we can have arbitrary costs on states and actions, and those can define
+[448.24s -> 453.96s]  arbitrary control tasks, like not being eaten by tigers or reaching a desired destination.
+[453.96s -> 457.20s]  So the new thing that we're going to introduce and that we're going to use in lectures
+[457.20s -> 463.04s]  next week is the cost function, or sometimes the reward function.
+[463.04s -> 465.56s]  Now the cost function and the reward function are really the same thing, they're just
+[465.56s -> 469.72s]  negatives of one another, and the reason that we see both sometimes is the same
+[469.72s -> 472.80s]  kind of cultural distinction that I alluded to before.
+[472.80s -> 477.00s]  Remember I mentioned that we have S and A, which comes from the state of dynamic programming,
+[477.00s -> 478.48s]  that's where the reward comes from.
+[478.48s -> 481.64s]  In optimal control, it's a bit more common to deal with costs, I don't know if there's
+[481.64s -> 484.88s]  a cultural commentary here, well, you know, optimal control originated in Russia,
+[484.88s -> 488.76s]  maybe it's a little more common to think about costs in America, we are all very
+[488.76s -> 492.48s]  optimistic and we think about life as bringing rewards, maybe there's something to that,
+[492.48s -> 500.32s]  but for the purpose of this class, don't worry about it, C is just a negative of R.
+[500.32s -> 504.84s]  And to bring this all the way back around to imitation, well, the cost function that
+[504.84s -> 510.32s]  we saw before for imitation is just, can be framed in exactly the same framework.
+[510.32s -> 515.16s]  We have rewards, which are log probabilities, we have costs, and those are interchangeable,
+[515.16s -> 519.04s]  you can have the cost be the negative of the reward and you can define a cost for imitation,
+[519.04s -> 522.92s]  but you can define a more expressive cost for the thing you actually want, like reaching
+[522.92s -> 527.08s]  your destination or avoiding a car accident, and then use those with the more powerful
+[527.08s -> 529.60s]  reinforcement learning algorithms that we'll cover in future weeks.

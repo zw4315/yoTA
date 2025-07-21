@@ -1,0 +1,1700 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 12.00s]  Okay, let's get started.
+[12.00s -> 18.00s]  Okay, so today we're going to get into some of the details
+[18.00s -> 22.00s]  about how we train neural networks.
+[22.00s -> 25.00s]  So some administrative details first.
+[25.00s -> 28.00s]  Assignment one is due today, Thursday,
+[28.00s -> 32.00s]  so 1159 p.m. tonight on Canvas.
+[32.00s -> 36.00s]  We're also going to be releasing assignment two today.
+[36.00s -> 40.00s]  And then your project proposals are due Tuesday, April 25th.
+[40.00s -> 42.00s]  So you should be really starting to think about
+[42.00s -> 46.00s]  your projects now if you haven't already.
+[46.00s -> 48.00s]  How many people have decided what they want to do
+[48.00s -> 52.00s]  for their project so far?
+[52.00s -> 54.00s]  Okay, so some people.
+[54.00s -> 58.00s]  Some people, so yeah, everyone else.
+[58.00s -> 62.00s]  You can go to TA office hours if you want suggestions
+[62.00s -> 66.00s]  and bounce ideas off of TAs.
+[66.00s -> 69.00s]  We also have a list of projects
+[69.00s -> 71.00s]  that other people have proposed,
+[71.00s -> 74.00s]  some people usually affiliated with Stanford,
+[74.00s -> 76.00s]  so on Piazza, so you can take a look at those
+[76.00s -> 80.00s]  for additional ideas.
+[80.00s -> 83.00s]  And we also have some notes on backprop
+[83.00s -> 86.00s]  for linear layer and vector and tensor derivatives
+[86.00s -> 88.00s]  that Justin's written up.
+[88.00s -> 90.00s]  So this should help with understanding
+[90.00s -> 94.00s]  how exactly backprop works and for vectors and matrices.
+[94.00s -> 97.00s]  So these are linked to lecture four on the syllabus
+[97.00s -> 105.00s]  and you can go and take a look at those.
+[105.00s -> 107.00s]  Okay, so where we are now.
+[107.00s -> 110.00s]  We've talked about how to express a function
+[110.00s -> 112.00s]  in terms of a computational graph.
+[112.00s -> 114.00s]  We can represent any function
+[114.00s -> 117.00s]  in terms of a computational graph.
+[117.00s -> 120.00s]  And we've talked more explicitly about neural networks,
+[120.00s -> 122.00s]  which is a type of graph where we have
+[122.00s -> 125.00s]  these linear layers that we stack on top of each other
+[125.00s -> 129.00s]  with non-linearities in between.
+[129.00s -> 131.00s]  And we've also talked last lecture
+[131.00s -> 133.00s]  about convolutional neural networks,
+[133.00s -> 135.00s]  which are a particular type of network
+[135.00s -> 138.00s]  that uses convolution layers
+[138.00s -> 140.00s]  to preserve the spatial structure
+[140.00s -> 144.00s]  throughout all the hierarchy of the network.
+[144.00s -> 147.00s]  And so we saw exactly how a convolution layer looked
+[147.00s -> 150.00s]  where each activation map in the convolutional layer output
+[150.00s -> 153.00s]  is produced by sliding a filter of weights
+[153.00s -> 157.00s]  over all of the spatial locations in the input.
+[157.00s -> 159.00s]  And we also saw that usually we can have
+[159.00s -> 161.00s]  many filters per layer,
+[161.00s -> 164.00s]  each of which produces a separate activation map.
+[164.00s -> 167.00s]  And so what we can get is from an input
+[167.00s -> 168.00s]  with a certain depth,
+[168.00s -> 170.00s]  we'll get an activation map output
+[170.00s -> 173.00s]  which has some spatial dimension that's preserved
+[173.00s -> 176.00s]  as well as the depth is the total number of filters
+[176.00s -> 179.00s]  that we have in that layer.
+[179.00s -> 181.00s]  And so what we want to do is we want to learn
+[181.00s -> 185.00s]  the values of all of these weights or parameters.
+[185.00s -> 188.00s]  And we saw that we can learn our network parameters
+[188.00s -> 189.00s]  through optimization,
+[189.00s -> 192.00s]  which we talked about a little bit earlier in the course.
+[192.00s -> 194.00s]  And so we want to get to a point
+[194.00s -> 197.00s]  in the loss landscape that produces a low loss.
+[197.00s -> 199.00s]  And we can do this by taking steps
+[199.00s -> 203.00s]  in the direction of the negative gradient.
+[203.00s -> 205.00s]  And so the whole process we actually call
+[205.00s -> 208.00s]  a mini-batch stochastic gradient descent
+[208.00s -> 211.00s]  where the steps are that we continuously,
+[211.00s -> 213.00s]  we sample a batch of data,
+[213.00s -> 215.00s]  we forward-prop it through our computational graph
+[215.00s -> 217.00s]  or our neural network,
+[217.00s -> 218.00s]  we get the loss at the end,
+[218.00s -> 220.00s]  we back-prop through our network
+[220.00s -> 222.00s]  to calculate the gradients,
+[222.00s -> 224.00s]  and then we update the parameters
+[224.00s -> 228.00s]  or the weights in our network using this gradient.
+[230.00s -> 233.00s]  Okay, so now for the next couple of lectures,
+[233.00s -> 235.00s]  we're going to talk about some of the details
+[235.00s -> 238.00s]  involved in training neural networks.
+[238.00s -> 240.00s]  And so this involves things like
+[240.00s -> 242.00s]  how do we set up our neural network at the beginning,
+[242.00s -> 245.00s]  which activation functions that we choose,
+[245.00s -> 247.00s]  how do we pre-process the data,
+[247.00s -> 251.00s]  weight initialization, regularization, gradient checking.
+[251.00s -> 253.00s]  We'll also talk about training dynamics.
+[253.00s -> 256.00s]  So how do we babysit the learning process?
+[256.00s -> 259.00s]  How do we choose how we do parameter updates,
+[259.00s -> 261.00s]  specific parameter update rules?
+[261.00s -> 263.00s]  And how do we do hyperparameter optimization
+[263.00s -> 266.00s]  to choose the best hyperparameters?
+[266.00s -> 268.00s]  And then we'll also talk about evaluation
+[268.00s -> 270.00s]  and model ensembles.
+[273.00s -> 274.00s]  So today in the first part,
+[274.00s -> 276.00s]  we'll talk about activation functions,
+[276.00s -> 279.00s]  data pre-processing, weight initialization,
+[279.00s -> 282.00s]  batch normalization, babysitting the learning process
+[282.00s -> 285.00s]  and hyperparameter optimization.
+[287.00s -> 290.00s]  Okay, so first activation functions.
+[291.00s -> 295.00s]  So we saw earlier how at any particular layer,
+[295.00s -> 297.00s]  we have the data coming in.
+[297.00s -> 300.00s]  We multiply by our weights in a fully connected
+[300.00s -> 301.00s]  or a convolutional layer,
+[301.00s -> 303.00s]  and then we'll pass this through an activation function
+[303.00s -> 305.00s]  or non-linearity.
+[306.00s -> 308.00s]  And we saw some examples of this.
+[308.00s -> 311.00s]  We used sigmoid previously in some of our examples.
+[311.00s -> 313.00s]  We also saw the ReLU non-linearity.
+[313.00s -> 315.00s]  And so today we'll talk more about
+[315.00s -> 318.00s]  different choices for these different non-linearities
+[318.00s -> 320.00s]  and trade-offs between them.
+[322.00s -> 325.00s]  So first the sigmoid, which we've seen before
+[325.00s -> 327.00s]  and probably the one we're most comfortable with.
+[327.00s -> 329.00s]  Right, so the sigmoid function is,
+[329.00s -> 330.00s]  as we have up here,
+[330.00s -> 332.00s]  one over one plus e to the negative x.
+[332.00s -> 335.00s]  And what this does is it takes each number
+[335.00s -> 338.00s]  that's input into the sigmoid non-linearity,
+[338.00s -> 339.00s]  so each element,
+[339.00s -> 341.00s]  and it element-wise squashes these
+[341.00s -> 343.00s]  into this range zero one, right,
+[343.00s -> 345.00s]  using this function here.
+[345.00s -> 348.00s]  And so if you get very high values as input,
+[348.00s -> 350.00s]  then the output is going to be something near one.
+[350.00s -> 352.00s]  If you get very low values,
+[352.00s -> 353.00s]  sorry, very negative values,
+[353.00s -> 355.00s]  it's going to be near zero.
+[355.00s -> 358.00s]  And then we have this regime near zero
+[358.00s -> 360.00s]  that it's in a linear regime.
+[360.00s -> 362.00s]  It looks a bit like a linear function.
+[362.00s -> 365.00s]  And so this has been historically popular
+[365.00s -> 367.00s]  because sigmoids, in a sense,
+[367.00s -> 371.00s]  you can interpret them as a kind of a saturating firing rate
+[371.00s -> 372.00s]  of a neuron, right,
+[372.00s -> 373.00s]  so it's something between zero and one.
+[373.00s -> 375.00s]  You can think of it as a firing rate.
+[375.00s -> 378.00s]  And we'll talk later about other non-linearities
+[378.00s -> 380.00s]  like ReLU's that in practice
+[380.00s -> 383.00s]  actually turn out to be more biologically plausible,
+[383.00s -> 386.00s]  but this does have a kind of interpretation
+[386.00s -> 388.00s]  that you could make.
+[390.00s -> 393.00s]  So if we look at this non-linearity more carefully,
+[393.00s -> 396.00s]  there's several problems that there actually are with this.
+[396.00s -> 399.00s]  So the first is that saturated neurons
+[399.00s -> 401.00s]  can kill off the gradient.
+[401.00s -> 404.00s]  And so what exactly does this mean?
+[405.00s -> 406.00s]  So if we look at a sigmoid gate, right,
+[406.00s -> 408.00s]  a node in our computational graph,
+[408.00s -> 411.00s]  and we have our data X that's input into it,
+[411.00s -> 412.00s]  and then we have the output
+[412.00s -> 415.00s]  of the sigmoid gate coming out of it,
+[415.00s -> 418.00s]  what does the gradient flow look like
+[418.00s -> 419.00s]  as we're coming back?
+[419.00s -> 421.00s]  We have dL over d sigma, right,
+[421.00s -> 423.00s]  the upstream gradient coming down,
+[423.00s -> 425.00s]  and then we're going to multiply this
+[425.00s -> 427.00s]  by d sigma over dx.
+[428.00s -> 431.00s]  This will be the gradient of the local sigmoid function,
+[431.00s -> 432.00s]  and we're going to chain these together
+[432.00s -> 436.00s]  for our downstream gradient that we pass back.
+[436.00s -> 438.00s]  So who can tell me what happens
+[438.00s -> 440.00s]  when X is equal to negative 10?
+[440.00s -> 441.00s]  It's very negative.
+[441.00s -> 444.00s]  What does this gradient look like?
+[444.00s -> 445.00s]  Zero.
+[445.00s -> 447.00s]  Yeah, so that's right.
+[447.00s -> 449.00s]  So the gradient becomes zero,
+[449.00s -> 451.00s]  and that's because in this negative,
+[451.00s -> 454.00s]  very negative region of the sigmoid,
+[455.00s -> 457.00s]  it's essentially flat, so the gradient is zero,
+[457.00s -> 460.00s]  and we chain any upstream gradient coming down,
+[460.00s -> 463.00s]  we multiply by basically something near zero,
+[463.00s -> 465.00s]  and we're going to get a very small gradient
+[465.00s -> 467.00s]  that's flowing back downwards, right?
+[467.00s -> 469.00s]  So in a sense, after the chain rule,
+[469.00s -> 471.00s]  this kills the gradient flow,
+[471.00s -> 474.00s]  and you're going to have a zero gradient pass down
+[474.00s -> 476.00s]  to downstream nodes.
+[479.00s -> 483.00s]  And so what happens when X is equal to zero?
+[484.00s -> 487.00s]  So there, yeah, it's fine in this regime, right?
+[487.00s -> 489.00s]  So in this regime near zero,
+[489.00s -> 492.00s]  you're going to get a reasonable gradient here,
+[492.00s -> 495.00s]  and then it'll be fine for a back prop.
+[495.00s -> 498.00s]  And then what about X equals 10?
+[498.00s -> 499.00s]  Zero.
+[499.00s -> 503.00s]  Right, so again, so when X is equal to very negative,
+[503.00s -> 506.00s]  or X is equal to large positive numbers,
+[506.00s -> 507.00s]  then these are all regions
+[507.00s -> 509.00s]  where the sigmoid function is flat,
+[509.00s -> 511.00s]  and it's going to kill off the gradient,
+[511.00s -> 515.00s]  and you're not going to get a gradient flow coming back.
+[517.00s -> 518.00s]  Okay, so a second problem
+[518.00s -> 522.00s]  is that the sigmoid outputs are not zero-centered.
+[522.00s -> 526.00s]  And so let's take a look at why this is a problem.
+[526.00s -> 528.00s]  So consider what happens
+[528.00s -> 532.00s]  when the input to a neuron is always positive.
+[532.00s -> 533.00s]  So in this case,
+[533.00s -> 535.00s]  all of our Xs we're going to say is positive.
+[535.00s -> 539.00s]  It's going to be multiplied by some weight W,
+[539.00s -> 542.00s]  and then we're going to run it
+[542.00s -> 544.00s]  through our activation function.
+[544.00s -> 548.00s]  So what can we say about the gradients on W?
+[552.00s -> 556.00s]  So think about what the local gradient is going to be,
+[556.00s -> 558.00s]  right, for this linear layer.
+[558.00s -> 562.00s]  We have DL over whatever the activation function,
+[562.00s -> 564.00s]  the loss coming down.
+[564.00s -> 566.00s]  And then we have our local gradient,
+[566.00s -> 570.00s]  which is going to be basically X, right?
+[570.00s -> 574.00s]  And so what does this mean if all of X is positive?
+[576.00s -> 578.00s]  Okay, so I heard it's always going to be positive.
+[578.00s -> 580.00s]  So that's almost right.
+[580.00s -> 582.00s]  It's always going to be either positive
+[582.00s -> 584.00s]  or all positive or all negative, right?
+[584.00s -> 589.00s]  So our upstream gradient coming down is DL over our loss L.
+[589.00s -> 591.00s]  It's going to be DL over DF.
+[591.00s -> 593.00s]  And this is going to be either positive or negative.
+[593.00s -> 595.00s]  It's some arbitrary gradient coming down.
+[596.00s -> 599.00s]  And then our local gradient that we multiply this by
+[599.00s -> 602.00s]  is if we're going to find the gradients on W
+[602.00s -> 605.00s]  is going to be, right, DF over DW,
+[605.00s -> 608.00s]  which is going to be X, right?
+[608.00s -> 610.00s]  And so if X is always positive,
+[610.00s -> 612.00s]  then the gradients on W,
+[612.00s -> 614.00s]  which is multiplying these two together,
+[614.00s -> 617.00s]  are going to always be the sign
+[618.00s -> 620.00s]  of the upstream gradient coming down.
+[620.00s -> 624.00s]  And so what this means is that all the gradients of W,
+[625.00s -> 627.00s]  since they're always either positive or negative,
+[627.00s -> 629.00s]  they're always going to move in the same direction, right?
+[629.00s -> 632.00s]  You're either going to increase all of the,
+[632.00s -> 633.00s]  when you do a parameter update,
+[633.00s -> 637.00s]  you're going to either increase all of the values of W
+[637.00s -> 641.00s]  by a positive amount or differing positive amounts
+[641.00s -> 643.00s]  or you will decrease them all.
+[643.00s -> 646.00s]  And so the problem with this is that
+[646.00s -> 650.00s]  this gives very inefficient gradient updates, right?
+[650.00s -> 652.00s]  So if you look at on the right here,
+[652.00s -> 655.00s]  an example of a case where,
+[655.00s -> 657.00s]  let's say W is two dimensional, right?
+[657.00s -> 660.00s]  So we have our two axes for W
+[660.00s -> 663.00s]  and if we say that we can only have all positive
+[663.00s -> 665.00s]  or all negative updates,
+[665.00s -> 668.00s]  then we have these two quadrants, right,
+[668.00s -> 671.00s]  are the two places where the axes are either all positive
+[671.00s -> 674.00s]  or all negative and these are the only directions
+[674.00s -> 677.00s]  in which we're allowed to make a gradient update.
+[677.00s -> 679.00s]  And so in the case where,
+[679.00s -> 683.00s]  in the case where let's say our hypothetical optimal W
+[683.00s -> 686.00s]  is actually this blue vector here, right,
+[686.00s -> 688.00s]  and we're starting off at some point
+[688.00s -> 691.00s]  at the top of the beginning of the red arrows,
+[691.00s -> 694.00s]  we can't just directly take a gradient update
+[694.00s -> 697.00s]  in this direction because this is not
+[697.00s -> 699.00s]  in one of those two allowed gradient directions.
+[699.00s -> 701.00s]  And so what we're going to have to do
+[701.00s -> 704.00s]  is we'll have to take a sequence of gradient updates,
+[704.00s -> 707.00s]  for example, in these red arrow directions
+[707.00s -> 709.00s]  that are each in allowed directions
+[709.00s -> 713.00s]  in order to finally get to this optimal W.
+[713.00s -> 716.00s]  And so this is why also in general
+[716.00s -> 719.00s]  we want a zero mean data, right?
+[719.00s -> 721.00s]  So we want our input X to be zero mean
+[721.00s -> 725.00s]  so that we actually have positive and negative values
+[725.00s -> 727.00s]  and we don't get into this problem
+[727.00s -> 731.00s]  of the gradient updates W all moving in the same direction.
+[731.00s -> 733.00s]  So is this clear?
+[733.00s -> 735.00s]  Any questions on this point?
+[736.00s -> 737.00s]  Okay.
+[741.00s -> 743.00s]  Okay, so we've talked about these two main problems
+[743.00s -> 746.00s]  of a sigmoid, right, the saturated neurons
+[746.00s -> 748.00s]  can kill the gradients if we're too positive
+[748.00s -> 750.00s]  or too negative of an input.
+[750.00s -> 752.00s]  They're also not zero centered
+[752.00s -> 756.00s]  and so we get this inefficient kind of gradient update.
+[756.00s -> 758.00s]  And then a third problem,
+[758.00s -> 760.00s]  we have an exponential function in here
+[760.00s -> 763.00s]  so this is a little bit computationally expensive.
+[763.00s -> 765.00s]  In the grand scheme of your network
+[765.00s -> 767.00s]  this is usually not the main problem
+[767.00s -> 769.00s]  because we have all these convolutions
+[769.00s -> 771.00s]  and dot products that are a lot more expensive
+[771.00s -> 775.00s]  but this is just a minor point also to observe.
+[779.00s -> 782.00s]  So now we can look at a second activation function
+[782.00s -> 785.00s]  here at tanh and so this looks very similar
+[785.00s -> 787.00s]  to the sigmoid but the difference is that
+[787.00s -> 791.00s]  now it's squashing to the range negative one and one.
+[791.00s -> 794.00s]  So here the main difference is that
+[794.00s -> 796.00s]  it's now zero centered so we've gotten rid
+[796.00s -> 798.00s]  of the second problem that we had.
+[798.00s -> 800.00s]  It still kills the gradients however
+[800.00s -> 802.00s]  when it's saturated, right, so you still have
+[802.00s -> 806.00s]  these regimes where the gradient is essentially flat
+[806.00s -> 809.00s]  and you're going to kill the gradient flow.
+[809.00s -> 811.00s]  So this is a bit better than the sigmoid
+[811.00s -> 814.00s]  but it still has some problems.
+[816.00s -> 820.00s]  Okay, so now let's look at the ReLU activation function
+[820.00s -> 824.00s]  and this is one that we saw in our examples last lecture
+[824.00s -> 828.00s]  when we were talking about the convolutional neural network
+[828.00s -> 831.00s]  and we saw that we intersperse ReLU nonlinearities
+[831.00s -> 834.00s]  between many of the convolutional layers.
+[834.00s -> 838.00s]  And so this function is f of x equals max of zero and x
+[838.00s -> 843.00s]  so it takes an element wise operation on your input
+[843.00s -> 845.00s]  and basically if your input is negative
+[845.00s -> 847.00s]  it's going to put it to zero
+[847.00s -> 849.00s]  and then if it's positive
+[849.00s -> 853.00s]  it's going to be just passed through, it's the identity.
+[853.00s -> 856.00s]  And so this is one that's pretty commonly used
+[856.00s -> 858.00s]  and if we look at this one
+[858.00s -> 860.00s]  and look at the thing about the problems
+[860.00s -> 863.00s]  that we saw earlier with the sigmoid and the tanh
+[863.00s -> 865.00s]  we can see that it doesn't saturate
+[865.00s -> 868.00s]  in the positive region so there's this whole half
+[868.00s -> 872.00s]  of our input space where it's not going to saturate
+[872.00s -> 874.00s]  so this is a big advantage.
+[874.00s -> 877.00s]  So this is also computationally very efficient.
+[877.00s -> 879.00s]  We saw earlier that the sigmoid
+[879.00s -> 882.00s]  has this e exponential in it
+[882.00s -> 886.00s]  and so the ReLU is just this simple max
+[886.00s -> 888.00s]  and it's extremely fast
+[888.00s -> 891.00s]  and in practice using this ReLU
+[891.00s -> 894.00s]  it converges much faster than the sigmoid and the tanh
+[894.00s -> 896.00s]  so about six times faster
+[896.00s -> 900.00s]  and it's also turned out to be more biologically plausible
+[900.00s -> 902.00s]  than the sigmoid so if you look at a neuron
+[902.00s -> 904.00s]  and you look at what the inputs look like
+[904.00s -> 906.00s]  and you look at what the outputs look like
+[906.00s -> 908.00s]  and you try and measure this
+[908.00s -> 911.00s]  in neuroscience experiments
+[911.00s -> 914.00s]  you'll see that this one is actually a closer
+[914.00s -> 918.00s]  approximation to what's happening than sigmoids.
+[918.00s -> 921.00s]  And so ReLUs were started to be used a lot
+[921.00s -> 924.00s]  around 2012 when we had AlexNet
+[924.00s -> 927.00s]  the first major convolutional neural network
+[927.00s -> 929.00s]  that was able to do well on ImageNet
+[929.00s -> 930.00s]  and large scale data.
+[930.00s -> 933.00s]  They used the ReLU in their experiments.
+[936.00s -> 938.00s]  So a problem however with the ReLU
+[938.00s -> 941.00s]  is that it's still, it's not zero centered anymore
+[941.00s -> 944.00s]  so we saw that the sigmoid was not zero centered
+[944.00s -> 948.00s]  tanh fixed this and now ReLU has this problem again.
+[948.00s -> 951.00s]  Right, and so that's one of the issues of the ReLU.
+[951.00s -> 954.00s]  And then we also have this further annoyance
+[954.00s -> 957.00s]  of again we saw that in the positive half
+[957.00s -> 959.00s]  of the inputs we don't have saturation
+[959.00s -> 963.00s]  but this is not the case in the negative half.
+[963.00s -> 965.00s]  Right, so just thinking about this a little bit more
+[965.00s -> 967.00s]  precisely so what's happening here
+[967.00s -> 969.00s]  when x equals negative 10?
+[970.00s -> 972.00s]  So is there a gradient, that's right.
+[972.00s -> 975.00s]  What happens when x is equal to positive 10?
+[976.00s -> 979.00s]  It's good, right, so we're in the linear regime
+[979.00s -> 983.00s]  and then what happens when x is equal to zero?
+[985.00s -> 987.00s]  Yeah, so it's undefined here
+[987.00s -> 990.00s]  but in practice we'll say zero, right.
+[990.00s -> 993.00s]  And so basically it's killing the gradient
+[993.00s -> 995.00s]  in half of the regime.
+[998.00s -> 1000.00s]  And so we can get this phenomenon
+[1000.00s -> 1002.00s]  of basically dead ReLUs, right,
+[1002.00s -> 1005.00s]  when we're in this bad part of the regime.
+[1005.00s -> 1008.00s]  And so you can look at this
+[1008.00s -> 1011.00s]  as coming from several potential reasons.
+[1011.00s -> 1014.00s]  And so if we look at our data cloud here,
+[1014.00s -> 1017.00s]  this is all of our training data.
+[1018.00s -> 1022.00s]  Then if we look at where the ReLUs can fall,
+[1022.00s -> 1026.00s]  so the ReLUs can be, each of these is basically
+[1027.00s -> 1031.00s]  the half of the plane where it's going to activate.
+[1031.00s -> 1033.00s]  Right, and so each of these is the plane
+[1033.00s -> 1035.00s]  that defines each of these ReLUs
+[1035.00s -> 1039.00s]  and we can see that you can have these dead ReLUs
+[1039.00s -> 1041.00s]  that are basically off of the data cloud
+[1041.00s -> 1043.00s]  and in this case it will never activate
+[1044.00s -> 1047.00s]  and never update as compared to an active ReLU
+[1047.00s -> 1050.00s]  where some of the data is going to be positive
+[1050.00s -> 1052.00s]  and pass through and some won't be.
+[1052.00s -> 1054.00s]  And so there are several reasons for this.
+[1054.00s -> 1055.00s]  The first is that it can happen
+[1055.00s -> 1057.00s]  when you have bad initialization.
+[1057.00s -> 1059.00s]  Right, so if you have weights
+[1059.00s -> 1060.00s]  that happen to be unlucky
+[1060.00s -> 1062.00s]  and they happen to be off the data cloud,
+[1062.00s -> 1065.00s]  so they happen to specify this bad ReLU over here,
+[1065.00s -> 1069.00s]  then they're never going to get a data input
+[1069.00s -> 1071.00s]  that causes it to activate
+[1071.00s -> 1074.00s]  and so they're never going to get
+[1075.00s -> 1076.00s]  good gradient flow coming back
+[1076.00s -> 1079.00s]  and so it'll just never update and never activate.
+[1079.00s -> 1081.00s]  What's a more common case is
+[1081.00s -> 1084.00s]  when your learning rate is too high.
+[1084.00s -> 1087.00s]  And so in this case you started off with an okay ReLU
+[1087.00s -> 1090.00s]  but because you're making these huge updates,
+[1090.00s -> 1093.00s]  the weights jump around and then your ReLU unit
+[1093.00s -> 1095.00s]  in a sense gets knocked off of the data manifold.
+[1095.00s -> 1098.00s]  Right, and so this happens through training.
+[1098.00s -> 1099.00s]  So it was fine at the beginning
+[1099.00s -> 1102.00s]  and then at some point it became bad and it died.
+[1102.00s -> 1105.00s]  And so in practice if you freeze a network
+[1105.00s -> 1108.00s]  that you've trained and you pass the data through,
+[1108.00s -> 1110.00s]  you can see that actually as much as
+[1110.00s -> 1113.00s]  10 to 20% of the network is these dead ReLUs
+[1113.00s -> 1115.00s]  and so that's a problem
+[1115.00s -> 1119.00s]  but also most networks do have this type of problem
+[1119.00s -> 1120.00s]  when you use ReLUs.
+[1120.00s -> 1121.00s]  Some of them will be dead
+[1121.00s -> 1124.00s]  and in practice people look into this
+[1124.00s -> 1126.00s]  and it's a research problem
+[1126.00s -> 1129.00s]  but it's still doing okay for training networks.
+[1129.00s -> 1131.00s]  Yeah, is that a question?
+[1142.00s -> 1143.00s]  Right, so the question is yeah,
+[1143.00s -> 1145.00s]  so the data cloud is just your training data.
+[1157.00s -> 1159.00s]  Okay, so the question is when,
+[1159.00s -> 1163.00s]  how do you tell when the ReLU is going to be dead or not
+[1163.00s -> 1165.00s]  with respect to the data cloud?
+[1165.00s -> 1167.00s]  And so if you look at,
+[1167.00s -> 1169.00s]  this is an example of like a simple
+[1169.00s -> 1170.00s]  two-dimensional case, right?
+[1170.00s -> 1173.00s]  And so our ReLU, we're going to get our input
+[1173.00s -> 1177.00s]  to the ReLU which is going to be basically
+[1177.00s -> 1180.00s]  you know, w1 x1 plus w2 x2
+[1180.00s -> 1182.00s]  and then we apply this,
+[1182.00s -> 1185.00s]  so that defines this separating hyperplane here
+[1186.00s -> 1188.00s]  and then we're going to take half of it
+[1188.00s -> 1190.00s]  that's going to be positive
+[1190.00s -> 1192.00s]  and half of it's going to be killed off
+[1192.00s -> 1194.00s]  and so yeah, so you know,
+[1194.00s -> 1197.00s]  it's whatever the weights happen to be
+[1197.00s -> 1199.00s]  and where the data happens to be
+[1199.00s -> 1202.00s]  is where these hyperplanes fall
+[1204.00s -> 1208.00s]  and so yeah, so just throughout the course of training
+[1208.00s -> 1211.00s]  some of your ReLUs will be in different places
+[1211.00s -> 1214.00s]  with respect to the data cloud.
+[1216.00s -> 1217.00s]  Oh, question.
+[1227.00s -> 1230.00s]  So, okay, so the question is
+[1230.00s -> 1232.00s]  for the sigmoid we talked about two drawbacks
+[1232.00s -> 1235.00s]  and one of them was that the
+[1235.00s -> 1237.00s]  neurons can get saturated
+[1237.00s -> 1240.00s]  so let's go back to the sigmoid here
+[1241.00s -> 1243.00s]  and the question was this is not the case
+[1243.00s -> 1246.00s]  when all of your inputs are positive.
+[1246.00s -> 1248.00s]  So when all of your inputs are positive
+[1248.00s -> 1250.00s]  they're all going to be coming in
+[1250.00s -> 1252.00s]  in this zero plus region here
+[1252.00s -> 1255.00s]  and so you can still get a saturating neuron
+[1255.00s -> 1258.00s]  because you see up in this positive regime
+[1258.00s -> 1260.00s]  it also plateaus at one
+[1260.00s -> 1263.00s]  and so when you have large positive values as input
+[1263.00s -> 1265.00s]  you're also going to get the zero gradient
+[1265.00s -> 1268.00s]  because you have a flat slope here.
+[1270.00s -> 1271.00s]  Okay.
+[1274.00s -> 1276.00s]  Okay, so in practice
+[1280.00s -> 1283.00s]  people also like to initialize ReLUs
+[1283.00s -> 1285.00s]  with slightly positive biases
+[1285.00s -> 1287.00s]  in order to increase the likelihood
+[1287.00s -> 1290.00s]  of it being active at initialization
+[1290.00s -> 1292.00s]  and to get some updates, right,
+[1292.00s -> 1294.00s]  and so this basically just biases
+[1294.00s -> 1296.00s]  towards more ReLUs firing at the beginning
+[1296.00s -> 1298.00s]  and in practice some say that it helps,
+[1298.00s -> 1301.00s]  some say that it doesn't.
+[1301.00s -> 1304.00s]  But really people don't always use this.
+[1304.00s -> 1307.00s]  A lot of times people just initialize it
+[1307.00s -> 1309.00s]  with zero biases still.
+[1310.00s -> 1313.00s]  Okay, so now we can look at some modifications
+[1313.00s -> 1316.00s]  on the ReLU that have come out since then
+[1316.00s -> 1318.00s]  and so one example is this leaky ReLU
+[1318.00s -> 1321.00s]  and so this looks very similar to the original ReLU
+[1321.00s -> 1323.00s]  and the only difference is that now
+[1323.00s -> 1325.00s]  instead of being flat in the negative regime
+[1325.00s -> 1328.00s]  we're going to give a slight negative slope here
+[1328.00s -> 1331.00s]  and so this solves a lot of the problems
+[1331.00s -> 1332.00s]  that we mentioned earlier.
+[1332.00s -> 1334.00s]  Right, here we don't have a saturating,
+[1334.00s -> 1337.00s]  any saturating regime even in the negative space.
+[1337.00s -> 1340.00s]  It's still very computationally efficient.
+[1340.00s -> 1342.00s]  It still converges faster than sigmoid and tanh
+[1342.00s -> 1344.00s]  so it's very similar to a ReLU
+[1344.00s -> 1347.00s]  and it doesn't have this dying problem.
+[1349.00s -> 1352.00s]  And there's also another example
+[1352.00s -> 1355.00s]  is the parametric rectifier, so P ReLU
+[1355.00s -> 1358.00s]  and so in this case it's just like the leaky ReLU
+[1358.00s -> 1360.00s]  where we again have this sloped region
+[1360.00s -> 1362.00s]  in the negative space
+[1362.00s -> 1364.00s]  but now the slope in the negative regime
+[1364.00s -> 1367.00s]  is determined through this alpha parameter
+[1367.00s -> 1369.00s]  so we don't specify it, we don't hard code it
+[1369.00s -> 1371.00s]  but we treat it as now a parameter
+[1371.00s -> 1373.00s]  that we can back prop into and learn
+[1373.00s -> 1377.00s]  and so this gives it a little bit more flexibility.
+[1378.00s -> 1379.00s]  And we also have something called
+[1379.00s -> 1382.00s]  an exponential linear unit, an ELU.
+[1382.00s -> 1384.00s]  So we have all of these different types of
+[1384.00s -> 1386.00s]  you know, LUs basically.
+[1386.00s -> 1388.00s]  And this one, again, you know,
+[1388.00s -> 1390.00s]  it has all the benefits of the ReLU
+[1390.00s -> 1394.00s]  but now your, it also is closer to zero mean outputs.
+[1396.00s -> 1397.00s]  Right, so that's actually an advantage
+[1397.00s -> 1400.00s]  that the leaky ReLU, parametric ReLU,
+[1400.00s -> 1402.00s]  a lot of these, they allow you
+[1402.00s -> 1405.00s]  to have your mean closer to zero.
+[1406.00s -> 1408.00s]  But compared with the leaky ReLU
+[1408.00s -> 1412.00s]  instead of it being sloped in the negative regime,
+[1412.00s -> 1414.00s]  here you actually are building back in
+[1414.00s -> 1416.00s]  a negative saturation regime
+[1416.00s -> 1419.00s]  and there's arguments that basically
+[1419.00s -> 1422.00s]  this allows you to have some more robustness to noise
+[1422.00s -> 1426.00s]  and you basically get these deactivation states
+[1426.00s -> 1428.00s]  that can be more robust
+[1428.00s -> 1431.00s]  and you can look at this paper for,
+[1431.00s -> 1433.00s]  there's a lot of kind of more justification
+[1433.00s -> 1435.00s]  for all of why this is the case
+[1435.00s -> 1438.00s]  and in a sense, this is kind of something
+[1438.00s -> 1441.00s]  in between the ReLUs and the leaky ReLUs, right,
+[1441.00s -> 1443.00s]  where it has some of this shape
+[1443.00s -> 1445.00s]  which the leaky ReLU does
+[1445.00s -> 1447.00s]  which gives it closer to zero mean outputs
+[1447.00s -> 1449.00s]  but then it also still has some of this
+[1449.00s -> 1453.00s]  more saturating behavior that ReLUs have.
+[1453.00s -> 1454.00s]  Question.
+[1460.00s -> 1462.00s]  So whether this parameter alpha
+[1462.00s -> 1464.00s]  is going to be specific for each neuron.
+[1464.00s -> 1467.00s]  So I believe it is often specified
+[1467.00s -> 1469.00s]  but I actually can't remember exactly
+[1469.00s -> 1472.00s]  so she can look in the paper for exactly
+[1472.00s -> 1474.00s]  how this is defined
+[1475.00s -> 1478.00s]  but yeah, so I believe this function
+[1478.00s -> 1481.00s]  is basically very carefully designed
+[1481.00s -> 1485.00s]  in order to have nice desirable properties.
+[1485.00s -> 1487.00s]  Okay, so there's basically all of these kinds
+[1487.00s -> 1490.00s]  of variance on the ReLU, right,
+[1490.00s -> 1492.00s]  and so you can see that all of these,
+[1492.00s -> 1494.00s]  it's kind of, you can argue that
+[1494.00s -> 1497.00s]  each one may have certain benefits, certain drawbacks.
+[1497.00s -> 1499.00s]  In practice, people just want to run experiments
+[1499.00s -> 1501.00s]  on all of them and see empirically
+[1501.00s -> 1503.00s]  what works better, try and justify it
+[1503.00s -> 1505.00s]  and come up with new ones
+[1505.00s -> 1506.00s]  but they're all different things
+[1506.00s -> 1509.00s]  that are being experimented with.
+[1510.00s -> 1513.00s]  And so let's just mention one more.
+[1513.00s -> 1515.00s]  This is the max-out neuron
+[1515.00s -> 1516.00s]  and so this one looks a little bit different
+[1516.00s -> 1519.00s]  in that it doesn't have the same form
+[1519.00s -> 1522.00s]  as the others did of taking your basic dot product
+[1522.00s -> 1524.00s]  and then putting this element-wise
+[1524.00s -> 1526.00s]  non-linearity in front of it.
+[1526.00s -> 1529.00s]  Instead, it looks like this, this max of
+[1529.00s -> 1532.00s]  w dot product with x plus b
+[1532.00s -> 1535.00s]  and a second set of weights, w2
+[1535.00s -> 1538.00s]  dot product with x plus b2
+[1538.00s -> 1540.00s]  and so what this does is this is taking
+[1540.00s -> 1542.00s]  the max of these two,
+[1543.00s -> 1545.00s]  these two functions in a sense, right,
+[1545.00s -> 1547.00s]  and so what it does is it kind of generalizes
+[1547.00s -> 1549.00s]  the ReLU and the leaky ReLU because you're just,
+[1549.00s -> 1552.00s]  you're taking the max over these two,
+[1552.00s -> 1555.00s]  two linear functions
+[1555.00s -> 1558.00s]  and so what this gives us, it's again,
+[1558.00s -> 1560.00s]  you're operating in a linear regime,
+[1560.00s -> 1562.00s]  it doesn't saturate and it doesn't die.
+[1562.00s -> 1564.00s]  The problem is that here,
+[1564.00s -> 1566.00s]  you are doubling the number of parameters
+[1566.00s -> 1569.00s]  per neuron, right, so each neuron now has this
+[1569.00s -> 1571.00s]  original set of weights w
+[1571.00s -> 1574.00s]  but now it has w1 and w2,
+[1574.00s -> 1576.00s]  so you have twice these.
+[1577.00s -> 1579.00s]  So in practice, when we look at
+[1579.00s -> 1581.00s]  all of these activation functions,
+[1581.00s -> 1583.00s]  kind of a good general rule of thumb is
+[1583.00s -> 1586.00s]  use ReLU, this is the most standard one
+[1586.00s -> 1589.00s]  that generally just works well
+[1589.00s -> 1592.00s]  and you do want to be careful in general
+[1592.00s -> 1595.00s]  with your learning rates to adjust them based,
+[1595.00s -> 1597.00s]  see how things do, we'll talk more about
+[1597.00s -> 1599.00s]  adjusting learning rates later in this lecture
+[1599.00s -> 1603.00s]  but you can also try out some of these fancier
+[1604.00s -> 1606.00s]  activation functions, the leaky ReLU,
+[1606.00s -> 1608.00s]  max out, Elu,
+[1608.00s -> 1610.00s]  but these are generally,
+[1611.00s -> 1613.00s]  they're still kind of more experimental
+[1613.00s -> 1616.00s]  so you can see how they work for your problem.
+[1616.00s -> 1618.00s]  You can also try out tanh
+[1619.00s -> 1621.00s]  but probably some of these ReLU
+[1621.00s -> 1623.00s]  and ReLU variants are going to be better
+[1623.00s -> 1626.00s]  and in general, don't use sigmoid,
+[1626.00s -> 1629.00s]  this is one of the earliest original activation functions
+[1629.00s -> 1631.00s]  and ReLU and these other variants
+[1631.00s -> 1635.00s]  have generally worked better since then.
+[1636.00s -> 1639.00s]  Okay, so now let's talk a little bit
+[1639.00s -> 1641.00s]  about data pre-processing, right,
+[1641.00s -> 1642.00s]  so the activation function,
+[1642.00s -> 1644.00s]  we designed this as part of our network,
+[1644.00s -> 1645.00s]  now we want to train the network
+[1645.00s -> 1647.00s]  and we have our input data
+[1647.00s -> 1651.00s]  that we want to start training from.
+[1651.00s -> 1653.00s]  So generally we want to always pre-process the data
+[1653.00s -> 1656.00s]  and this is something that you've probably seen before
+[1656.00s -> 1659.00s]  in machine learning classes if you've taken those
+[1659.00s -> 1661.00s]  and some standard types of pre-processing
+[1661.00s -> 1663.00s]  are you take your original data
+[1663.00s -> 1665.00s]  and you want to zero mean them
+[1665.00s -> 1669.00s]  and then you probably want to also normalize them, right,
+[1669.00s -> 1673.00s]  so normalized by this standard deviation.
+[1675.00s -> 1677.00s]  And so why do we want to do this?
+[1677.00s -> 1680.00s]  For zero centering, you can remember earlier
+[1680.00s -> 1681.00s]  that we talked about, right,
+[1681.00s -> 1684.00s]  when all of the inputs are positive, for example,
+[1684.00s -> 1686.00s]  then we get all of our gradients
+[1686.00s -> 1687.00s]  on the weights to be positive
+[1687.00s -> 1692.00s]  and we get this basically suboptimal optimization
+[1693.00s -> 1698.00s]  and in general, even if it's not all zero or all negative,
+[1698.00s -> 1702.00s]  any sort of bias will still cause this type of problem.
+[1704.00s -> 1708.00s]  And so then in terms of normalizing the data,
+[1708.00s -> 1710.00s]  this is basically, you want to normalize data
+[1710.00s -> 1712.00s]  typically in machine learning problems, right,
+[1712.00s -> 1714.00s]  so that all features are in the same range
+[1714.00s -> 1717.00s]  and so that they contribute equally.
+[1717.00s -> 1719.00s]  In practice, since for images
+[1719.00s -> 1720.00s]  and which is what we're dealing with
+[1720.00s -> 1724.00s]  in this course here for the most part,
+[1724.00s -> 1726.00s]  we do do the zero centering,
+[1726.00s -> 1728.00s]  but in practice we don't actually normalize
+[1728.00s -> 1730.00s]  the pixel value so much
+[1730.00s -> 1732.00s]  because generally for images, right,
+[1732.00s -> 1734.00s]  at each location you already have
+[1734.00s -> 1736.00s]  relatively comparable scale and distribution
+[1736.00s -> 1739.00s]  and so we don't really need to normalize so much
+[1739.00s -> 1741.00s]  compared to, you know,
+[1741.00s -> 1743.00s]  more general machine learning problems
+[1743.00s -> 1745.00s]  where you might have different features
+[1745.00s -> 1749.00s]  that are very different and of very different scales.
+[1751.00s -> 1754.00s]  And in machine learning you might also see
+[1754.00s -> 1758.00s]  more complicated things like PCA or whitening,
+[1758.00s -> 1760.00s]  but again, with images,
+[1760.00s -> 1763.00s]  we typically just stick with the zero mean
+[1763.00s -> 1765.00s]  and we don't do the normalization
+[1765.00s -> 1767.00s]  and we also don't do some of these more
+[1767.00s -> 1769.00s]  complicated pre-processing
+[1769.00s -> 1772.00s]  and one reason for this is generally with images
+[1772.00s -> 1775.00s]  we don't really want to take all of our input,
+[1775.00s -> 1776.00s]  let's say pixel values
+[1776.00s -> 1778.00s]  and project this onto a lower dimensional space
+[1778.00s -> 1780.00s]  of, you know, new kinds of features
+[1780.00s -> 1781.00s]  that we're dealing with,
+[1781.00s -> 1784.00s]  we typically just want to apply convolutional networks
+[1784.00s -> 1785.00s]  spatially, right,
+[1785.00s -> 1788.00s]  and have our spatial structure over the original image.
+[1788.00s -> 1789.00s]  Yeah, question.
+[1799.00s -> 1800.00s]  So the question is,
+[1800.00s -> 1802.00s]  we do this pre-processing in a training phase,
+[1802.00s -> 1805.00s]  do we also do the same kind of thing in the test phase?
+[1805.00s -> 1807.00s]  And the answer is yes,
+[1807.00s -> 1810.00s]  so let me just move to the next slide here.
+[1810.00s -> 1811.00s]  Right, so in general,
+[1811.00s -> 1814.00s]  on the training phase is where we determine our,
+[1814.00s -> 1815.00s]  let's say mean
+[1815.00s -> 1818.00s]  and then we apply this exact same mean
+[1818.00s -> 1820.00s]  to the test data, right,
+[1820.00s -> 1822.00s]  so we'll normalize by the same
+[1822.00s -> 1825.00s]  empirical mean from the training data.
+[1825.00s -> 1827.00s]  Okay, so to summarize,
+[1827.00s -> 1830.00s]  basically for images, right,
+[1830.00s -> 1833.00s]  we typically just do the zero mean pre-processing
+[1833.00s -> 1838.00s]  and we can subtract either the entire mean image,
+[1838.00s -> 1839.00s]  so from the training data,
+[1839.00s -> 1841.00s]  you compute the mean image,
+[1841.00s -> 1844.00s]  which will be the same size as your,
+[1844.00s -> 1845.00s]  as each image,
+[1845.00s -> 1847.00s]  so for example, 32 by 32 by three,
+[1847.00s -> 1849.00s]  you'll get this array of numbers
+[1849.00s -> 1853.00s]  and then you subtract that from each image
+[1853.00s -> 1855.00s]  that you're about to pass through the network
+[1855.00s -> 1857.00s]  and you'll do the same thing at test time
+[1857.00s -> 1860.00s]  for this array that you determined at training time.
+[1860.00s -> 1863.00s]  In practice, we can also,
+[1863.00s -> 1864.00s]  for some networks,
+[1864.00s -> 1868.00s]  we also do this by just subtracting a per channel mean
+[1868.00s -> 1870.00s]  and so instead of having an entire mean image
+[1870.00s -> 1873.00s]  that we're going to zero center by,
+[1873.00s -> 1875.00s]  we just take the mean by channel
+[1875.00s -> 1878.00s]  and this is just because it turns out that,
+[1878.00s -> 1881.00s]  you know, it was similar enough across the whole image,
+[1881.00s -> 1882.00s]  it didn't make such a big difference
+[1882.00s -> 1884.00s]  to subtract the mean image
+[1884.00s -> 1885.00s]  versus just a per channel value
+[1885.00s -> 1888.00s]  and this is easier to just pass around and deal with,
+[1888.00s -> 1889.00s]  so you'll see this as well
+[1889.00s -> 1891.00s]  for example in a VGG network,
+[1891.00s -> 1894.00s]  which is a network that came after AlexNet
+[1894.00s -> 1896.00s]  that we'll talk about later.
+[1896.00s -> 1897.00s]  Question?
+[1904.00s -> 1906.00s]  Okay, so there are two questions.
+[1906.00s -> 1907.00s]  The first is,
+[1907.00s -> 1909.00s]  what's a channel in this case
+[1909.00s -> 1911.00s]  when we are subtracting a per channel mean
+[1911.00s -> 1913.00s]  and this is RGB, right?
+[1913.00s -> 1916.00s]  So our array, our images are typically,
+[1917.00s -> 1919.00s]  for example, 32 by 32 by three,
+[1919.00s -> 1921.00s]  so with height each of 32
+[1921.00s -> 1924.00s]  and our depth, we have three channels RGB
+[1924.00s -> 1927.00s]  and so we'll have one mean for the red channel,
+[1927.00s -> 1929.00s]  one mean for green, one for blue.
+[1929.00s -> 1931.00s]  And then the second,
+[1931.00s -> 1934.00s]  what was your second question?
+[1943.00s -> 1944.00s]  Okay, so the question is
+[1944.00s -> 1946.00s]  when we're subtracting the mean image,
+[1946.00s -> 1947.00s]  what is the mean taken over
+[1947.00s -> 1951.00s]  and the mean is taken over all of your training images,
+[1951.00s -> 1953.00s]  right, so you'll take all of your training images
+[1953.00s -> 1957.00s]  and just compute the mean of all of those.
+[1957.00s -> 1959.00s]  Does that make sense?
+[1968.00s -> 1970.00s]  Yeah, so the question is
+[1970.00s -> 1972.00s]  we do this for the entire training set
+[1972.00s -> 1973.00s]  once before we start training.
+[1973.00s -> 1975.00s]  We don't do this per batch
+[1975.00s -> 1977.00s]  and yeah, that's exactly correct.
+[1977.00s -> 1981.00s]  So we just want to have a good sample, right,
+[1981.00s -> 1983.00s]  an empirical mean that we have
+[1983.00s -> 1986.00s]  and so if you take it per batch,
+[1986.00s -> 1988.00s]  if you're sampling reasonable batches,
+[1988.00s -> 1990.00s]  it should be basically,
+[1990.00s -> 1993.00s]  you should be getting the same values anyways for the mean
+[1993.00s -> 1996.00s]  and so it's more efficient and easier
+[1996.00s -> 1998.00s]  just to do this once at the beginning.
+[1998.00s -> 2000.00s]  You might not even have to
+[2000.00s -> 2002.00s]  really take it over the entire training data.
+[2002.00s -> 2005.00s]  You could also just sample enough training images
+[2005.00s -> 2008.00s]  to get a good estimate of your mean.
+[2011.00s -> 2014.00s]  Okay, so any other questions about data pre-processing?
+[2014.00s -> 2015.00s]  Yes.
+[2018.00s -> 2019.00s]  So the question is
+[2019.00s -> 2022.00s]  does the data pre-processing solve the sigmoid problem?
+[2022.00s -> 2026.00s]  So the data pre-processing is doing zero mean, right,
+[2027.00s -> 2029.00s]  and we talked about how sigmoid,
+[2029.00s -> 2030.00s]  we want to have zero mean
+[2030.00s -> 2034.00s]  and so it does solve this for the first layer
+[2034.00s -> 2036.00s]  that we pass it through, right,
+[2036.00s -> 2039.00s]  so now our inputs to the first layer of our network
+[2039.00s -> 2040.00s]  is going to be zero mean
+[2040.00s -> 2041.00s]  but we'll see later on
+[2041.00s -> 2044.00s]  that we're actually going to have this problem come up
+[2044.00s -> 2047.00s]  in much worse and greater form
+[2047.00s -> 2048.00s]  as we have deep networks.
+[2048.00s -> 2050.00s]  You're going to get a lot of
+[2050.00s -> 2052.00s]  non-zero mean problems later on
+[2052.00s -> 2055.00s]  and so in this case, this is not going to be sufficient
+[2055.00s -> 2059.00s]  so this only helps at the first layer of your network.
+[2061.00s -> 2063.00s]  Okay, so now let's talk about
+[2063.00s -> 2067.00s]  how do we want to initialize the weights of our network.
+[2067.00s -> 2069.00s]  Right, so we have, let's say,
+[2069.00s -> 2071.00s]  a standard two-layer neural network
+[2071.00s -> 2074.00s]  and we have all of these weights that we want to learn
+[2074.00s -> 2078.00s]  but we have to start them with some value, right,
+[2078.00s -> 2080.00s]  and then we're going to update them
+[2080.00s -> 2083.00s]  using our gradient updates from there.
+[2083.00s -> 2084.00s]  So first question,
+[2084.00s -> 2088.00s]  what happens when we use an initialization of w equals zero?
+[2089.00s -> 2093.00s]  We just set all of the parameters to be zero.
+[2093.00s -> 2095.50s]  What's the problem with this?
+[2099.00s -> 2101.00s]  So, sorry, say that again.
+[2101.00s -> 2105.00s]  So I heard all the neurons are going to be dead,
+[2105.00s -> 2108.00s]  no updates ever, so not exactly.
+[2111.00s -> 2113.00s]  So part of that is correct
+[2113.00s -> 2116.00s]  in that all the neurons will do the same thing, right,
+[2116.00s -> 2117.00s]  so they might not all be dead
+[2117.00s -> 2119.00s]  but depending on your input value,
+[2119.00s -> 2122.00s]  I mean, you could be in any regime of your neuron
+[2122.00s -> 2123.00s]  so they might not be dead
+[2123.00s -> 2126.00s]  but the key thing is that
+[2126.00s -> 2128.00s]  they will all do the same thing, right,
+[2128.00s -> 2131.00s]  so since your weights are zero given an input,
+[2131.00s -> 2135.00s]  every neuron is going to have the same operation
+[2135.00s -> 2137.00s]  basically on top of your inputs
+[2137.00s -> 2140.00s]  and so since they're all going to output the same thing,
+[2140.00s -> 2144.00s]  they're also all going to get the same gradient, right,
+[2144.00s -> 2145.00s]  and so because of that,
+[2145.00s -> 2147.00s]  they're all going to update in the same way
+[2147.00s -> 2149.00s]  and now you're just going to get all neurons
+[2149.00s -> 2151.00s]  that are exactly the same, right,
+[2151.00s -> 2152.00s]  which is not what you want,
+[2152.00s -> 2154.00s]  you want the neurons to learn different things
+[2154.00s -> 2156.00s]  and so that's the problem
+[2156.00s -> 2158.00s]  when you initialize everything equally
+[2158.00s -> 2162.00s]  and there's basically no symmetry breaking here.
+[2163.00s -> 2166.00s]  So what's the first, yeah, question?
+[2176.00s -> 2180.00s]  So the question is because the gradient also depends
+[2184.00s -> 2188.00s]  on our loss, won't one back prop differently
+[2188.00s -> 2190.00s]  compared to the other?
+[2190.00s -> 2194.00s]  So in the last layer, like, yes, you do have
+[2196.00s -> 2197.00s]  basically some of this,
+[2197.00s -> 2200.00s]  the gradients will get the same,
+[2200.00s -> 2202.00s]  sorry, will get different loss, right,
+[2202.00s -> 2203.00s]  for each specific neuron
+[2203.00s -> 2205.00s]  based on which class it was connected to
+[2205.00s -> 2208.00s]  but if you look at all the neurons generally
+[2208.00s -> 2209.00s]  throughout your network,
+[2209.00s -> 2210.00s]  like you're going to,
+[2210.00s -> 2212.00s]  you basically have a lot of these neurons
+[2212.00s -> 2214.00s]  that are connected in exactly the same way,
+[2214.00s -> 2215.00s]  they have the same updates
+[2215.00s -> 2219.00s]  and it's basically going to be a problem.
+[2219.00s -> 2221.00s]  Okay, so the first idea that we can have
+[2221.00s -> 2224.00s]  to try and improve upon this
+[2224.00s -> 2227.00s]  is to set all of the weights to be small random numbers
+[2227.00s -> 2230.00s]  that we can sample from a distribution.
+[2231.00s -> 2234.00s]  So in this case, we're going to sample from
+[2234.00s -> 2236.00s]  a basically a standard Gaussian
+[2236.00s -> 2238.00s]  but we're going to scale it, right,
+[2238.00s -> 2240.00s]  so that the standard deviation is actually
+[2240.00s -> 2242.00s]  one E negative two, 0.01
+[2242.00s -> 2246.00s]  and so this gives us many small random weights
+[2246.00s -> 2249.00s]  and so this does work okay for small networks, right,
+[2249.00s -> 2251.00s]  now we've broken the symmetry
+[2251.00s -> 2256.00s]  but there's going to be problems with deeper networks
+[2256.00s -> 2259.00s]  and so let's take a look at why this is the case.
+[2259.00s -> 2263.00s]  So here, this is basically an experiment that we can do
+[2263.00s -> 2265.00s]  where let's take a deeper network,
+[2265.00s -> 2267.00s]  so in this case, let's initialize
+[2267.00s -> 2269.00s]  a 10 layer neural network
+[2269.00s -> 2273.00s]  to have 500 neurons in each of these 10 layers.
+[2273.00s -> 2276.00s]  Okay, we'll use tanh non-linearities in this case
+[2276.00s -> 2280.00s]  and we'll initialize it with small random numbers
+[2280.00s -> 2283.00s]  as we described in the last slide.
+[2283.00s -> 2284.00s]  So here we're going to basically
+[2284.00s -> 2286.00s]  just initialize this network,
+[2286.00s -> 2289.00s]  we have random data that we're going to take
+[2289.00s -> 2292.00s]  and now let's just pass it through the entire network
+[2292.00s -> 2295.00s]  and at each layer, look at the statistics
+[2295.00s -> 2299.00s]  of the activations that come out of that layer.
+[2302.00s -> 2303.00s]  And so what we'll see,
+[2303.00s -> 2305.00s]  this is probably a little bit hard to read up top
+[2305.00s -> 2308.00s]  but if we compute the mean
+[2308.00s -> 2311.00s]  and the standard deviations at each layer,
+[2311.00s -> 2314.00s]  we'll see that at the first layer,
+[2314.00s -> 2318.16s]  at the first layer, the means are always around zero.
+[2321.00s -> 2323.66s]  There's a funny sound in here.
+[2326.00s -> 2329.50s]  Interesting, okay, well, that was fixed.
+[2330.50s -> 2334.00s]  So if we look at the outputs from here,
+[2334.00s -> 2337.00s]  the mean is always going to be around zero,
+[2337.00s -> 2339.00s]  which makes sense.
+[2339.00s -> 2342.00s]  So if we look here, let's see,
+[2342.00s -> 2347.00s]  in this case, we looked at the dot product of x with w
+[2347.00s -> 2350.00s]  and then we took the tanh non-linearity
+[2350.00s -> 2352.00s]  and then we stored these values
+[2352.00s -> 2356.00s]  and so because the tanh is centered around zero,
+[2356.00s -> 2358.00s]  this will make sense.
+[2358.00s -> 2361.00s]  And then the standard deviation, however, shrinks
+[2361.00s -> 2363.00s]  and it quickly collapses to zero.
+[2363.00s -> 2365.00s]  And so if we're plotting this,
+[2365.00s -> 2367.00s]  here this second row of plots here
+[2367.00s -> 2370.00s]  is showing the mean and the standard deviations
+[2370.00s -> 2373.00s]  over time per layer and then in the bottom,
+[2373.00s -> 2376.00s]  the sequence of plots is showing for each of our layers
+[2376.00s -> 2379.00s]  what's the distribution of the activations that we have.
+[2379.00s -> 2381.00s]  And so we can see that at the first layer,
+[2381.00s -> 2384.00s]  we still have a reasonable Gaussian-looking thing.
+[2384.00s -> 2386.00s]  It's a nice distribution.
+[2386.00s -> 2390.00s]  But the problem is that as we multiply by this w,
+[2390.00s -> 2393.00s]  these small numbers at each layer,
+[2393.00s -> 2396.00s]  this quickly shrinks and collapses all of these values
+[2396.00s -> 2399.00s]  as we multiply this over and over again.
+[2399.00s -> 2402.00s]  And so by the end, we get all of these zeros,
+[2402.00s -> 2404.00s]  which is not what we want.
+[2404.00s -> 2407.00s]  So we get all the activations become zero.
+[2407.00s -> 2411.00s]  And so now let's think about the backward pass.
+[2411.00s -> 2412.00s]  So if we do a backward pass,
+[2412.00s -> 2414.00s]  now assuming this was our forward pass
+[2414.00s -> 2416.00s]  and now we want to compute our gradients.
+[2416.00s -> 2421.00s]  So first, what does the gradients look like on the weights?
+[2424.00s -> 2426.50s]  Does anyone have a guess?
+[2427.50s -> 2430.50s]  So, okay, so if we think about this,
+[2430.50s -> 2435.50s]  we have our input values are very small at each layer,
+[2435.50s -> 2438.50s]  right, because they've all collapsed to this near zero.
+[2438.50s -> 2439.50s]  And then now at each layer,
+[2439.50s -> 2442.50s]  we have our upstream gradient flowing down.
+[2442.50s -> 2445.50s]  And then in order to get the gradient on the weights,
+[2445.50s -> 2447.50s]  remember it's our upstream gradient
+[2447.50s -> 2449.50s]  times our local gradient,
+[2449.50s -> 2452.50s]  which for this dot product, we're doing w times x,
+[2452.50s -> 2454.50s]  is just basically going to be x,
+[2455.50s -> 2457.50s]  which is our inputs, right?
+[2457.50s -> 2459.50s]  So it's again the similar kind of problem
+[2459.50s -> 2461.50s]  that we saw earlier, where now since,
+[2461.50s -> 2463.50s]  so here because x is small,
+[2463.50s -> 2465.50s]  our weights are getting a very small gradient
+[2465.50s -> 2467.50s]  and they're basically not updating.
+[2467.50s -> 2469.50s]  Right, so this is a way that you can basically
+[2469.50s -> 2472.50s]  try and think about the effect of gradient flows
+[2472.50s -> 2473.50s]  through your networks, right?
+[2473.50s -> 2476.50s]  You can always think about what the forward pass is doing
+[2476.50s -> 2478.50s]  and then think about what's happening
+[2478.50s -> 2480.50s]  as you have gradient flows coming down
+[2480.50s -> 2482.50s]  and different types of inputs,
+[2482.50s -> 2484.50s]  what the effect of this actually is
+[2484.50s -> 2488.50s]  on our weights and the gradients on them.
+[2488.50s -> 2492.50s]  And so also, if now if we think about, right,
+[2492.50s -> 2496.50s]  what's the gradient that's going to be flowing back
+[2496.50s -> 2499.50s]  from each layer as we're chaining all these gradients?
+[2499.50s -> 2501.50s]  Right, so this is going to be the flip thing
+[2501.50s -> 2503.50s]  where we have now the gradient flowing back
+[2503.50s -> 2506.50s]  is our upstream gradient times, in this case,
+[2506.50s -> 2510.50s]  the local gradient is w, right, on our input x.
+[2510.50s -> 2513.50s]  And so, again, because this is the dot product,
+[2513.50s -> 2517.50s]  and so now actually going backwards at each layer,
+[2517.50s -> 2519.50s]  we're basically doing a multiplication
+[2519.50s -> 2522.50s]  of the upstream gradient by our weights
+[2522.50s -> 2527.50s]  in order to get the next gradient flowing downwards.
+[2527.50s -> 2529.50s]  And so because here we're multiplying
+[2529.50s -> 2531.50s]  by w over and over again,
+[2531.50s -> 2533.50s]  you're getting basically the same phenomenon
+[2533.50s -> 2535.50s]  as we had in the forward pass
+[2535.50s -> 2538.50s]  where everything is getting smaller and smaller
+[2538.50s -> 2541.50s]  and now the upstream gradients
+[2541.50s -> 2543.50s]  are collapsing to zero as well.
+[2543.50s -> 2544.50s]  Question.
+[2550.50s -> 2553.50s]  Yeah, so I guess upstream and downstream
+[2553.50s -> 2555.50s]  can be interpreted differently
+[2555.50s -> 2558.50s]  depending on if you're going forward and backwards,
+[2558.50s -> 2562.50s]  but in this case, we're going backwards, right,
+[2562.50s -> 2564.50s]  we're doing back propagation,
+[2564.50s -> 2567.50s]  and so upstream is the gradient flowing,
+[2567.50s -> 2569.50s]  you can think of a flow from your loss
+[2569.50s -> 2571.50s]  all the way back to your inputs,
+[2571.50s -> 2573.50s]  and so upstream is what came from
+[2573.50s -> 2576.50s]  what you've already done flowing down
+[2576.50s -> 2578.66s]  into your current node.
+[2580.50s -> 2582.50s]  Right, so we're flowing downwards
+[2582.50s -> 2585.50s]  and what we get coming into the node through backprop
+[2585.50s -> 2587.66s]  is coming from upstream.
+[2594.50s -> 2596.50s]  Okay, so now let's think about what happens
+[2596.50s -> 2599.50s]  when, you know, we saw that this was a problem
+[2599.50s -> 2601.50s]  when our weights were pretty small, right?
+[2601.50s -> 2603.50s]  So we can think about, well, what if we just
+[2603.50s -> 2606.50s]  try and solve this by making our weights big?
+[2606.50s -> 2609.50s]  So let's sample from this standard Gaussian,
+[2609.50s -> 2613.50s]  now with standard deviation one instead of 0.01.
+[2615.50s -> 2618.00s]  So what's the problem here?
+[2619.50s -> 2621.50s]  Does anyone have a guess?
+[2622.50s -> 2625.50s]  If our weights are now all big, right,
+[2625.50s -> 2627.50s]  and we're passing them,
+[2627.50s -> 2629.50s]  and we're taking these outputs of w times x
+[2629.50s -> 2632.50s]  and passing them through tanh non-linearities,
+[2632.50s -> 2634.50s]  remember we were talking about what happens
+[2634.50s -> 2637.50s]  at different values of inputs to tanh,
+[2637.50s -> 2639.50s]  so what's the problem?
+[2639.50s -> 2642.50s]  Okay, so yeah, so I heard that it's going to be saturated.
+[2642.50s -> 2644.50s]  So that's right.
+[2644.50s -> 2647.50s]  Basically now, right, because our weights are going to be
+[2647.50s -> 2649.50s]  big, we're going to always be
+[2649.50s -> 2651.50s]  at saturated regimes of either very negative
+[2651.50s -> 2653.50s]  or very positive of the tanh,
+[2653.50s -> 2656.50s]  and so in practice what you're going to get here
+[2656.50s -> 2660.50s]  is now, right, if we look at the distribution
+[2660.50s -> 2662.50s]  of the activations at each of the layers here
+[2662.50s -> 2665.50s]  on the bottom, they're going to be all basically
+[2665.50s -> 2668.50s]  negative one or plus one, right?
+[2669.50s -> 2671.50s]  And so this will have the problem that we talked about
+[2671.50s -> 2673.50s]  with the tanh earlier when they're saturated,
+[2673.50s -> 2675.50s]  that all the gradients will be zero
+[2675.50s -> 2678.50s]  and our weights are not updating.
+[2679.50s -> 2682.50s]  So basically it's really hard to get your
+[2682.50s -> 2684.50s]  weight initialization right, right?
+[2684.50s -> 2686.50s]  When it's too small, they all collapse.
+[2686.50s -> 2688.50s]  When it's too large, they saturate.
+[2688.50s -> 2691.50s]  So there's been some work in trying to figure out,
+[2691.50s -> 2694.50s]  well, what's the proper way to initialize these weights?
+[2694.50s -> 2697.50s]  And so one kind of good rule of thumb
+[2697.50s -> 2700.50s]  that you can use is the Xavier initialization.
+[2700.50s -> 2705.50s]  And so this is from this paper by Glorot in 2010.
+[2706.50s -> 2711.50s]  And so what this formula is, is if we look at w up here,
+[2712.50s -> 2715.50s]  right, we can see that we want to initialize them
+[2715.50s -> 2718.50s]  to these, you know, we sample from our standard Gaussian
+[2718.50s -> 2720.50s]  and then we're going to scale by the number
+[2720.50s -> 2722.50s]  of inputs that we have.
+[2722.50s -> 2723.50s]  And you can go through the math,
+[2723.50s -> 2726.50s]  I think it's in the lecture notes as well as in this paper
+[2726.50s -> 2728.50s]  of exactly how this works out,
+[2728.50s -> 2730.50s]  but basically the way we do it is we specify
+[2730.50s -> 2732.50s]  that we want the variance of the input
+[2732.50s -> 2734.50s]  to be the same as the variance of the output
+[2734.50s -> 2737.50s]  and then if you derive what the weights should be,
+[2737.50s -> 2739.50s]  you'll get this formula.
+[2739.50s -> 2741.50s]  And intuitively what this kind of means is that
+[2741.50s -> 2744.50s]  if you have a small number of inputs,
+[2744.50s -> 2747.50s]  right, then we're going to divide by the smaller number
+[2747.50s -> 2748.50s]  and get larger weights.
+[2748.50s -> 2751.50s]  And we need larger weights because with small inputs
+[2751.50s -> 2754.50s]  and you're multiplying each of these by a weight,
+[2754.50s -> 2756.50s]  you need larger weights to get the same
+[2756.50s -> 2759.50s]  larger variance at output and kind of vice versa
+[2759.50s -> 2761.50s]  for if we have many inputs,
+[2762.50s -> 2765.50s]  then we want smaller weights in order to get
+[2765.50s -> 2768.50s]  the same spread at the output.
+[2768.50s -> 2771.50s]  So you can look at the notes for more details about this
+[2771.50s -> 2775.50s]  and so basically now if we want to have a unit Gaussian,
+[2775.50s -> 2777.50s]  right, as input to each layer,
+[2777.50s -> 2780.50s]  we can use this kind of initialization to,
+[2780.50s -> 2783.50s]  at training time, be able to initialize this
+[2783.50s -> 2786.50s]  so that there is approximately a unit Gaussian
+[2786.50s -> 2788.50s]  at each layer.
+[2789.50s -> 2791.50s]  Okay, and so one thing this does assume though
+[2791.50s -> 2794.50s]  is that it assumes that there's linear activations
+[2794.50s -> 2797.50s]  and so it assumes that we are in the activation,
+[2797.50s -> 2800.50s]  in the active region of a tanh for example.
+[2800.50s -> 2803.50s]  And so again you can look at the notes
+[2803.50s -> 2806.50s]  to really try and understand this derivation.
+[2806.50s -> 2808.50s]  But the problem is that this breaks when
+[2808.50s -> 2811.50s]  now you use something like a ReLU, right.
+[2811.50s -> 2814.50s]  And so with the ReLU what happens is that
+[2814.50s -> 2817.50s]  because it's killing half of your units,
+[2817.50s -> 2819.50s]  right, it's setting approximately half of them
+[2819.50s -> 2822.50s]  to zero at each time, it's actually having the variance
+[2822.50s -> 2824.50s]  that you get out of this.
+[2824.50s -> 2827.50s]  And so now if you just make the same assumptions
+[2827.50s -> 2829.50s]  as your derivation earlier,
+[2829.50s -> 2833.50s]  you won't actually get the right variance coming out.
+[2834.50s -> 2835.50s]  It's going to be too small.
+[2835.50s -> 2839.50s]  And so what you see is again this kind of phenomenon
+[2839.50s -> 2842.50s]  as the distribution starts collapsing,
+[2842.50s -> 2845.50s]  in this case you get more and more peak towards zero
+[2845.50s -> 2847.50s]  and more units deactivated.
+[2849.50s -> 2852.50s]  And the way to address this was something
+[2852.50s -> 2855.50s]  that has been pointed out in some papers
+[2855.50s -> 2858.50s]  which is that you can try and account for this
+[2858.50s -> 2861.50s]  with an extra divided by two, right.
+[2861.50s -> 2863.50s]  So now you're basically adjusting for the fact
+[2863.50s -> 2866.50s]  that half the neurons get killed
+[2868.50s -> 2871.50s]  and so your kind of equivalent input
+[2872.50s -> 2874.50s]  has actually half these number of inputs
+[2874.50s -> 2877.50s]  and so if you just add this divide by two factor in,
+[2877.50s -> 2879.50s]  this works much better and you can see
+[2879.50s -> 2881.50s]  that the distributions are pretty good
+[2881.50s -> 2884.50s]  throughout all layers of the network.
+[2886.50s -> 2888.50s]  And so in practice this has been really important
+[2888.50s -> 2891.50s]  actually for training these types of little things
+[2891.50s -> 2894.50s]  to really pay attention to how your weights are
+[2894.50s -> 2895.50s]  and make a big difference.
+[2895.50s -> 2899.50s]  And so for example you'll see in some papers
+[2900.50s -> 2902.50s]  that this actually is the difference
+[2902.50s -> 2904.50s]  between the network even training at all
+[2904.50s -> 2908.50s]  and performing well versus nothing happening.
+[2911.50s -> 2914.50s]  So proper initialization is still an active area
+[2914.50s -> 2916.50s]  of research and so if you're interested in this
+[2916.50s -> 2919.50s]  you can look at a lot of these papers and resources.
+[2919.50s -> 2922.50s]  A good general rule of thumb is basically
+[2922.50s -> 2925.50s]  use the Xavier initialization to start with
+[2925.50s -> 2928.50s]  and then you can also think about
+[2928.50s -> 2931.50s]  some of these other kinds of methods.
+[2932.50s -> 2935.50s]  And so now we're going to talk about a related idea to this
+[2935.50s -> 2938.50s]  to this idea of wanting to keep activations
+[2938.50s -> 2941.50s]  in a Gaussian range that we want.
+[2942.50s -> 2944.50s]  Right and so this idea behind
+[2944.50s -> 2946.50s]  what we're going to call batch normalization
+[2946.50s -> 2949.50s]  is okay we want unit Gaussian activations,
+[2949.50s -> 2951.50s]  let's just make them that way,
+[2951.50s -> 2953.50s]  let's just force them to be that way.
+[2953.50s -> 2955.50s]  And so how does this work?
+[2955.50s -> 2959.50s]  So let's consider a batch of activations at some layer.
+[2959.50s -> 2962.50s]  Right so now we have all of our activations coming out.
+[2962.50s -> 2965.50s]  If we want to make this unit Gaussian
+[2965.50s -> 2969.50s]  we actually can just do this empirically right?
+[2969.50s -> 2973.50s]  We can take the mean of the batch that we have so far
+[2973.50s -> 2976.50s]  of the current batch and we can just
+[2976.50s -> 2979.50s]  and the variance and we can just normalize by this.
+[2979.50s -> 2983.50s]  Right and so basically instead of with weight initialization
+[2983.50s -> 2985.50s]  we're setting this at the start of training
+[2985.50s -> 2988.50s]  so that we try and get it into a good spot
+[2988.50s -> 2990.50s]  that we can have unit Gaussians at every layer
+[2990.50s -> 2993.50s]  and hopefully during training this will preserve this.
+[2993.50s -> 2995.50s]  Now we're going to explicitly make that happen
+[2995.50s -> 2998.50s]  on every forward pass through the network.
+[2998.50s -> 3000.50s]  Right we're going to make this happen functionally
+[3000.50s -> 3004.50s]  and basically by normalizing by the mean
+[3005.50s -> 3008.50s]  and the variance of each neuron we look at
+[3008.50s -> 3011.50s]  all of the inputs coming into it
+[3011.50s -> 3014.50s]  and calculate the mean and the variance for that batch
+[3014.50s -> 3016.50s]  and normalize it by it.
+[3016.50s -> 3018.50s]  And the thing is that this is just
+[3018.50s -> 3020.50s]  a differentiable function right?
+[3020.50s -> 3023.50s]  If we have our mean and our variance as constants
+[3023.50s -> 3027.50s]  this is just a sequence of computational operations
+[3027.50s -> 3031.50s]  that we can differentiate and do back prop through this.
+[3034.50s -> 3036.50s]  Okay so yeah so just as I was saying earlier
+[3036.50s -> 3039.50s]  right if we look at our input data
+[3039.50s -> 3043.50s]  and we think of this as we have n training examples
+[3043.50s -> 3045.50s]  in our current batch and then each batch
+[3045.50s -> 3048.50s]  in dimension D we're going to compute
+[3048.50s -> 3051.50s]  the empirical mean and variance independently
+[3051.50s -> 3053.50s]  for each dimension right?
+[3053.50s -> 3056.50s]  So each basically feature element
+[3056.50s -> 3059.50s]  and we compute this across our batch
+[3059.50s -> 3060.50s]  our current mini-batch that we have
+[3060.50s -> 3062.50s]  and we normalize by this.
+[3065.50s -> 3068.50s]  And so this is usually inserted after fully connected
+[3068.50s -> 3071.50s]  or convolutional layers right?
+[3071.50s -> 3073.50s]  We saw that when we were multiplying by W
+[3073.50s -> 3075.50s]  which we do over and over again
+[3075.50s -> 3078.50s]  then we can have this bad scaling effect with each one
+[3078.50s -> 3082.50s]  and so this basically is able to undo this effect right?
+[3082.50s -> 3085.50s]  And since we're basically just scaling
+[3085.50s -> 3089.50s]  by the inputs connected to each neuron each activation
+[3089.50s -> 3091.50s]  we can apply this the same way
+[3091.50s -> 3094.50s]  to fully connected and convolutional layers
+[3094.50s -> 3096.50s]  and the only difference is that
+[3096.50s -> 3098.50s]  with convolutional layers we want to normalize
+[3098.50s -> 3102.50s]  not just across all the training examples
+[3102.50s -> 3106.50s]  and independently for each feature dimension
+[3106.50s -> 3110.50s]  but we actually want to normalize jointly across both
+[3110.50s -> 3113.50s]  all the feature dimensions all the spatial locations
+[3113.50s -> 3115.50s]  that we have in our activation map
+[3115.50s -> 3118.50s]  as well as all of the training examples
+[3118.50s -> 3120.50s]  and we do this because we want to
+[3120.50s -> 3121.50s]  obey the convolutional property
+[3121.50s -> 3123.50s]  and we want nearby locations
+[3123.50s -> 3126.50s]  to be normalized the same way right?
+[3126.50s -> 3127.50s]  And so with the convolutional layer
+[3127.50s -> 3130.50s]  we're basically going to have one mean
+[3130.50s -> 3133.50s]  one standard deviation per activation map that we have
+[3133.50s -> 3135.50s]  and we're going to normalize by this
+[3135.50s -> 3138.50s]  across all of the examples in the batch
+[3138.50s -> 3141.50s]  and so this is something that you guys
+[3141.50s -> 3143.50s]  are going to implement in your next homework
+[3143.50s -> 3146.50s]  and so all of these details are explained
+[3146.50s -> 3149.50s]  very clearly in this paper from 2015
+[3149.50s -> 3152.50s]  and so this is a very useful
+[3152.50s -> 3155.50s]  useful technique that you want to use a lot in practice
+[3155.50s -> 3157.50s]  you want to have these batch normalization layers
+[3157.50s -> 3160.50s]  and so you should read this paper
+[3160.50s -> 3162.50s]  go through all of the derivations
+[3162.50s -> 3165.50s]  and then also go through the derivations
+[3165.50s -> 3168.50s]  of how to compute the gradients
+[3168.50s -> 3172.50s]  with given these this normalization operation.
+[3176.50s -> 3178.50s]  Okay so one thing that I just want to point out
+[3178.50s -> 3180.50s]  is that it's not clear that
+[3180.50s -> 3183.50s]  you know we're doing this batch normalization
+[3183.50s -> 3185.50s]  right after every fully connected layer
+[3185.50s -> 3188.50s]  and it's not clear that we necessarily want
+[3188.50s -> 3191.50s]  a unit Gaussian input to these tanh nonlinearities
+[3191.50s -> 3194.50s]  because what this is doing is this is constraining you
+[3194.50s -> 3196.50s]  to the linear regime of this nonlinearity
+[3196.50s -> 3198.50s]  and we're not actually
+[3198.50s -> 3199.50s]  you're trying to basically say
+[3199.50s -> 3201.50s]  let's not have any of this saturation
+[3201.50s -> 3204.50s]  but maybe a little bit of this is good right?
+[3204.50s -> 3206.50s]  You want to be able to control
+[3206.50s -> 3210.50s]  what's how much saturation that you want to have
+[3211.50s -> 3214.50s]  and so what the way that we address this
+[3214.50s -> 3216.50s]  when we're doing batch normalization
+[3216.50s -> 3219.50s]  is that we have our normalization operation
+[3219.50s -> 3222.50s]  but then after that we have this additional
+[3222.50s -> 3224.50s]  squashing and scaling operation
+[3224.50s -> 3225.50s]  so we do our normalization
+[3225.50s -> 3229.50s]  then we're going to scale by some constant gamma
+[3229.50s -> 3233.50s]  and then shift by another factor of beta right?
+[3233.50s -> 3235.50s]  And so what this actually does
+[3235.50s -> 3238.50s]  is that this allows you to be able to recover
+[3238.50s -> 3241.50s]  the identity function if you wanted to
+[3241.50s -> 3243.50s]  so if the network wanted to
+[3243.50s -> 3246.50s]  it could learn your scaling factor gamma
+[3246.50s -> 3247.50s]  to be just your variance
+[3247.50s -> 3250.50s]  it could learn your beta to be your mean
+[3250.50s -> 3253.50s]  and in this case you can recover the identity mapping
+[3253.50s -> 3256.50s]  it's as if you didn't have batch normalization
+[3256.50s -> 3258.50s]  and so now you have the flexibility
+[3258.50s -> 3261.50s]  of doing kind of everything in between
+[3261.50s -> 3264.50s]  and making the network learning
+[3264.50s -> 3266.50s]  how to make your tanh more or less saturated
+[3266.50s -> 3271.50s]  and how much to do so in order to have good training.
+[3274.50s -> 3277.50s]  Okay so just to sort of summarize
+[3277.50s -> 3280.50s]  the batch normalization idea
+[3280.50s -> 3282.50s]  right so given our inputs
+[3282.50s -> 3286.50s]  we're going to compute our mini-batch mean
+[3286.50s -> 3289.50s]  so we do this for every mini-batch that's coming in
+[3289.50s -> 3291.50s]  we compute our variance
+[3291.50s -> 3293.50s]  we normalize by this median variance
+[3293.50s -> 3296.50s]  and we have this additional scaling and shifting factor
+[3296.50s -> 3301.50s]  and so this improves gradient flow through the network
+[3302.50s -> 3304.50s]  it's also more robust as a result
+[3304.50s -> 3307.50s]  it works for more range of learning rates
+[3307.50s -> 3309.50s]  and different kinds of initialization
+[3309.50s -> 3312.50s]  so people have seen that once you put batch normalization in
+[3312.50s -> 3314.50s]  it's just easier to train
+[3314.50s -> 3316.50s]  and so that's why you should do this
+[3316.50s -> 3321.50s]  and then also one thing that I just want to point out
+[3321.50s -> 3323.50s]  is that you can also think of this
+[3323.50s -> 3326.50s]  as in a way also doing some regularization
+[3326.50s -> 3330.50s]  and so because now at the output of each layer
+[3331.50s -> 3335.50s]  each of these outputs is an output of both your input x
+[3338.50s -> 3340.50s]  as well as the other examples in the batch
+[3340.50s -> 3342.50s]  that it happens to be sampled with
+[3342.50s -> 3345.50s]  because you're going to normalize each input data
+[3345.50s -> 3347.50s]  by the empirical mean over that batch
+[3347.50s -> 3350.50s]  so because of that it's no longer producing
+[3350.50s -> 3353.50s]  deterministic values for a given training example
+[3353.50s -> 3357.50s]  and it's tying all of these inputs in a batch together
+[3357.50s -> 3359.50s]  and so this basically because it's no longer deterministic
+[3359.50s -> 3362.50s]  kind of jitters your representation of x a little bit
+[3362.50s -> 3366.50s]  and in a sense gives some sort of regularization effect.
+[3368.50s -> 3369.50s]  Yeah, question.
+[3372.50s -> 3375.50s]  Question is gamma and beta are learned parameters
+[3375.50s -> 3376.50s]  and yes.
+[3377.50s -> 3380.50s]  Yeah, so the question is why do we want to learn
+[3380.50s -> 3383.50s]  this gamma and beta to be able to learn
+[3383.50s -> 3385.50s]  the identity function back
+[3385.50s -> 3388.50s]  and the reason is because you want to give it
+[3388.50s -> 3392.50s]  the flexibility, right, so what batch normalization
+[3392.50s -> 3395.50s]  is doing is it's forcing our data
+[3395.50s -> 3398.50s]  to become this unit Gaussian, our input,
+[3398.50s -> 3401.50s]  our input, our input, our output,
+[3401.50s -> 3404.50s]  what it's doing is it's forcing our data
+[3404.50s -> 3406.50s]  to become this unit Gaussian,
+[3406.50s -> 3408.50s]  our inputs to be this unit Gaussian
+[3408.50s -> 3411.50s]  but even though in general this is a good idea
+[3411.50s -> 3413.50s]  it's not always that this is exactly
+[3413.50s -> 3415.50s]  the best thing to do, right,
+[3415.50s -> 3417.50s]  and we saw in particular for something like a tanh
+[3417.50s -> 3419.50s]  you might want to control some degree of saturation
+[3419.50s -> 3421.50s]  that you have and so what this does
+[3421.50s -> 3425.50s]  is it gives you the flexibility of doing this exact
+[3425.50s -> 3428.50s]  like unit Gaussian normalization if it wants to
+[3428.50s -> 3430.50s]  but also learning that maybe in this particular part
+[3430.50s -> 3433.50s]  of the network maybe it's not the best thing to do,
+[3433.50s -> 3436.50s]  maybe we want something still in this general idea
+[3436.50s -> 3439.50s]  but slightly different, right, slightly scaled or shifted
+[3439.50s -> 3441.50s]  and so these parameters just give it
+[3441.50s -> 3445.50s]  that extra flexibility to learn that if it wants to
+[3445.50s -> 3447.50s]  and then if it, yeah, if the best thing to do
+[3447.50s -> 3451.50s]  is just batch normalization then it'll learn
+[3451.50s -> 3453.50s]  the right parameters for that.
+[3453.50s -> 3454.50s]  Yes.
+[3454.50s -> 3455.50s]  Yes.
+[3459.50s -> 3463.50s]  Yeah, so basically each neuron output, right,
+[3463.50s -> 3466.50s]  so we have output of a fully connected layer,
+[3466.50s -> 3469.50s]  we have W times X and so we have the values
+[3469.50s -> 3472.50s]  of each of these outputs and then we're going to apply
+[3472.50s -> 3476.50s]  batch normalization separately to each of these neurons.
+[3476.50s -> 3477.50s]  Question.
+[3485.50s -> 3489.50s]  Yeah, so the question is that for things
+[3489.50s -> 3491.50s]  like reinforcement learning you might have
+[3491.50s -> 3495.50s]  a really small batch size, how do you deal with this?
+[3495.50s -> 3498.50s]  So in practice I guess batch normalization
+[3498.50s -> 3500.50s]  has been used a lot for like
+[3500.50s -> 3502.50s]  for standard convolutional neural networks
+[3502.50s -> 3505.50s]  and there's actually papers on how do we want
+[3505.50s -> 3507.50s]  to do normalization for different kinds
+[3507.50s -> 3510.50s]  of recurrent networks or some of these networks
+[3510.50s -> 3512.50s]  that might also be in reinforcement learning
+[3512.50s -> 3514.50s]  and so there's different considerations
+[3514.50s -> 3515.50s]  that you might want to think of there
+[3515.50s -> 3518.50s]  and this is still an active area of research,
+[3518.50s -> 3520.50s]  there's papers on this and we might also
+[3520.50s -> 3522.50s]  talk about some of this more later
+[3522.50s -> 3525.50s]  but for typical convolutional neural network
+[3525.50s -> 3528.50s]  this generally works fine and then if you have
+[3528.50s -> 3531.50s]  a smaller batch size maybe this becomes
+[3531.50s -> 3534.50s]  a little bit less accurate but you still get
+[3534.50s -> 3536.50s]  kind of the same effect and you know
+[3536.50s -> 3538.50s]  it's possible also that you could design
+[3538.50s -> 3541.50s]  your mean and variance to be computed
+[3541.50s -> 3543.50s]  maybe over more examples, right,
+[3543.50s -> 3545.50s]  and I think in practice usually it's just okay
+[3545.50s -> 3547.50s]  so you don't see this too much
+[3547.50s -> 3550.50s]  but this is something that maybe could help
+[3550.50s -> 3552.50s]  if that was a problem.
+[3552.50s -> 3553.50s]  Yeah, question.
+[3565.50s -> 3567.50s]  So the question is if we flip this
+[3567.50s -> 3570.50s]  so the question is if we force the inputs
+[3570.50s -> 3574.50s]  to be Gaussian do we lose the structure, right,
+[3574.50s -> 3578.50s]  so know in a sense that you can think of
+[3579.50s -> 3582.50s]  like if you had all your features distributed
+[3582.50s -> 3584.50s]  as a Gaussian for example even if you were
+[3584.50s -> 3586.50s]  just doing data pre-processing this Gaussian
+[3586.50s -> 3588.50s]  is not losing you any structure, right,
+[3588.50s -> 3592.50s]  all the, it's just shifting and scaling your data
+[3592.50s -> 3596.50s]  into a regime that works well for the operations
+[3596.50s -> 3598.50s]  that you perform on it.
+[3598.50s -> 3601.50s]  In convolutional layers you do have some structure
+[3601.50s -> 3603.50s]  that you want to preserve spatially, right,
+[3603.50s -> 3606.50s]  you want, like if you look at your activation maps
+[3606.50s -> 3609.50s]  you want them to relatively all make sense to each other
+[3609.50s -> 3612.50s]  so in this case you do want to take that
+[3612.50s -> 3615.50s]  into consideration and so now we're going to normalize
+[3615.50s -> 3618.50s]  find one mean for the entire activation map
+[3618.50s -> 3621.50s]  so we only find the empirical mean and variance
+[3621.50s -> 3624.50s]  over training examples and yeah,
+[3624.50s -> 3627.50s]  and so that's something that you'll be doing
+[3627.50s -> 3629.50s]  in your homework and also it's explained
+[3629.50s -> 3632.50s]  in the paper as well so you should refer to that.
+[3632.50s -> 3633.50s]  Yes.
+[3633.50s -> 3637.50s]  So the question is are we normalizing the weights
+[3646.50s -> 3648.50s]  so that they become Gaussian?
+[3648.50s -> 3650.50s]  So if I understand your question correctly
+[3650.50s -> 3653.50s]  then the answer is we're normalizing the inputs
+[3653.50s -> 3657.50s]  of each layer so we're not changing the weights
+[3658.50s -> 3660.00s]  in this process.
+[3675.50s -> 3678.50s]  Yeah, so the question is once we subtract by the mean
+[3678.50s -> 3680.50s]  and divide by the standard deviation
+[3680.50s -> 3684.50s]  does this become Gaussian and the answer is yes
+[3684.50s -> 3688.50s]  so if you think about the operations that are happening
+[3688.50s -> 3691.50s]  basically you're shifting by the mean, right,
+[3691.50s -> 3694.50s]  and so this shifts it to be zero centered
+[3694.50s -> 3697.50s]  and then you're scaling by the standard deviation
+[3697.50s -> 3701.50s]  this now transforms this into a unit Gaussian
+[3701.50s -> 3705.50s]  and so if you want to look more into that
+[3705.50s -> 3707.50s]  I think you can look at there's a lot of
+[3707.50s -> 3709.50s]  machine learning explanations that go into exactly
+[3709.50s -> 3712.50s]  what this, visualizing what this operation is doing
+[3712.50s -> 3714.50s]  but yeah this basically takes your data
+[3714.50s -> 3718.50s]  and turns it into a Gaussian distribution.
+[3720.50s -> 3722.50s]  Okay, so yeah, question.
+[3740.50s -> 3744.50s]  So the question is if we're going to be doing
+[3749.50s -> 3751.50s]  this shift in scale and learning these
+[3751.50s -> 3753.50s]  is the batch normalization redundant
+[3753.50s -> 3756.50s]  because you could recover the identity mapping?
+[3756.50s -> 3759.50s]  So in the case that the network learns that
+[3759.50s -> 3761.50s]  identity mapping is always the best
+[3761.50s -> 3763.50s]  and it learns these parameters then yeah there would be
+[3763.50s -> 3765.50s]  kind of no point for batch normalization
+[3765.50s -> 3767.50s]  but in practice this doesn't happen
+[3767.50s -> 3770.50s]  and in practice we will learn this gamma and beta
+[3770.50s -> 3773.50s]  that's not the same as the identity mapping
+[3773.50s -> 3775.50s]  so it will shift in scale by some amount
+[3775.50s -> 3777.50s]  but not the amount that's going to
+[3777.50s -> 3779.50s]  give you an identity mapping
+[3779.50s -> 3781.50s]  and so what you get is you still get this
+[3781.50s -> 3784.50s]  batch normalization effect, right,
+[3784.50s -> 3786.50s]  so having this identity mapping there
+[3786.50s -> 3789.50s]  I'm only putting this here to say that
+[3789.50s -> 3792.50s]  in the extreme it could learn the identity mapping
+[3792.50s -> 3795.50s]  but in practice it doesn't, yeah.
+[3797.50s -> 3799.50s]  Oh, oh right, right.
+[3813.50s -> 3814.50s]  Yeah, yeah, sorry, so okay,
+[3814.50s -> 3816.50s]  so I was not clear about this
+[3816.50s -> 3817.50s]  but yeah I think this is related
+[3817.50s -> 3819.50s]  to the other question earlier
+[3819.50s -> 3820.50s]  that yeah so when we're doing this
+[3820.50s -> 3823.50s]  we're actually getting zero mean and unit Gaussian
+[3823.50s -> 3825.50s]  which puts this into a nice shape
+[3825.50s -> 3829.50s]  but it doesn't have to actually be a Gaussian
+[3829.50s -> 3832.50s]  so yeah I mean ideally if we're looking at
+[3832.50s -> 3835.50s]  like inputs coming in as you know
+[3835.50s -> 3837.50s]  sort of approximately Gaussian
+[3837.50s -> 3839.50s]  we would like it to have this kind of effect
+[3839.50s -> 3843.50s]  but yeah in practice it doesn't have to be.
+[3846.50s -> 3850.50s]  Okay so, okay so the last thing
+[3850.50s -> 3851.50s]  I just want to mention about this
+[3851.50s -> 3854.50s]  is that so at test time
+[3855.50s -> 3857.50s]  the batch normalization layer
+[3857.50s -> 3860.50s]  we now take the empirical mean
+[3860.50s -> 3863.50s]  and variance from the training data
+[3865.50s -> 3867.50s]  so we don't recompute this as test time
+[3867.50s -> 3869.50s]  we just estimate this at training time
+[3869.50s -> 3871.50s]  for example using running averages
+[3871.50s -> 3875.50s]  and then we're going to use this at test time
+[3875.50s -> 3878.50s]  so we're just going to scale by that.
+[3880.50s -> 3882.50s]  Okay so now I'm going to move on
+[3882.50s -> 3884.50s]  to babysitting the learning process right
+[3884.50s -> 3886.50s]  so now we've defined our network architecture
+[3886.50s -> 3890.50s]  and we'll talk about how do we monitor training
+[3890.50s -> 3894.50s]  and how do we adjust hyperparameters as we go
+[3894.50s -> 3897.00s]  to get good learning results.
+[3898.50s -> 3900.50s]  So as always so the first step we want to do
+[3900.50s -> 3902.50s]  is we want to pre-process the data
+[3902.50s -> 3904.50s]  right so we want to zero mean the data
+[3904.50s -> 3905.50s]  as we talked about earlier
+[3905.50s -> 3907.50s]  then we want to choose the architecture
+[3907.50s -> 3910.50s]  and so here we are starting with
+[3910.50s -> 3913.50s]  one hidden layer of 50 neurons for example
+[3913.50s -> 3916.50s]  but we basically we can pick any architecture
+[3916.50s -> 3919.50s]  that we want to start with
+[3919.50s -> 3921.50s]  and then the first thing that we want to do
+[3921.50s -> 3923.50s]  is we initialize our network
+[3923.50s -> 3925.50s]  we do a forward pass through it
+[3925.50s -> 3926.50s]  right and we want to make sure
+[3926.50s -> 3928.50s]  that our loss is reasonable
+[3928.50s -> 3930.50s]  so we talked about this several lectures ago
+[3930.50s -> 3933.50s]  where we have a basically a
+[3934.50s -> 3936.50s]  let's say we have a softmax classifier
+[3936.50s -> 3937.50s]  that we have here
+[3937.50s -> 3939.50s]  we know what our loss should be
+[3939.50s -> 3940.50s]  when our weights are small
+[3940.50s -> 3944.50s]  and we have generally a diffuse distribution
+[3944.50s -> 3946.50s]  then we want it to be
+[3946.50s -> 3947.50s]  the softmax classifier loss
+[3947.50s -> 3949.50s]  is going to be your negative log likelihood
+[3949.50s -> 3951.50s]  which if we have 10 classes
+[3951.50s -> 3954.50s]  it'll be something like negative log of one over 10
+[3954.50s -> 3957.50s]  which here is around 2.3
+[3957.50s -> 3959.50s]  and so we want to make sure
+[3959.50s -> 3962.50s]  that our loss is what we expect it to be
+[3962.50s -> 3965.50s]  right so this is a good sanity check
+[3965.50s -> 3968.50s]  that we want to always do
+[3968.50s -> 3971.50s]  so now once we've seen that our original loss is good
+[3971.50s -> 3973.50s]  now we want to
+[3973.50s -> 3977.50s]  so first we want to do this having zero regularization
+[3977.50s -> 3979.50s]  so when we disable the regularization
+[3979.50s -> 3982.50s]  now our only loss term is this data loss
+[3982.50s -> 3984.50s]  which is going to give 2.3 here
+[3984.50s -> 3988.50s]  and so here now we want to crank up the regularization
+[3988.50s -> 3990.50s]  and when we do that
+[3990.50s -> 3992.50s]  we want to see that our loss goes up
+[3992.50s -> 3995.50s]  because we've added this additional regularization term
+[3996.50s -> 3997.50s]  so this is a good next step
+[3997.50s -> 4000.50s]  that you can do for your sanity check
+[4000.50s -> 4003.50s]  and then now we can start training
+[4003.50s -> 4006.50s]  so now if we start trying to train
+[4006.50s -> 4008.50s]  what we do is
+[4008.50s -> 4009.50s]  a good way to do this
+[4009.50s -> 4012.50s]  is to start off with a very small amount of data
+[4012.50s -> 4015.50s]  because if you have just a very small training set
+[4015.50s -> 4017.50s]  you should be able to overfit this very well
+[4017.50s -> 4020.50s]  and get very good training loss on here
+[4020.50s -> 4022.50s]  and so in this case
+[4022.50s -> 4025.50s]  we want to turn off our regularization again
+[4025.50s -> 4028.50s]  and just see if we can make the loss go down to zero
+[4031.50s -> 4033.50s]  and so we can see how our loss is changing
+[4033.50s -> 4035.50s]  as we have all these epochs
+[4035.50s -> 4038.50s]  we compute our loss at each epoch
+[4038.50s -> 4041.50s]  and we want to see this go all the way down to zero
+[4041.50s -> 4043.50s]  and here we can see that also our training accuracy
+[4043.50s -> 4045.50s]  is going all the way up to one
+[4045.50s -> 4046.50s]  and this makes sense
+[4046.50s -> 4048.50s]  if you have a very small number of data
+[4048.50s -> 4051.50s]  you should be able to overfit this perfectly
+[4053.50s -> 4055.50s]  okay so now once you've done that
+[4055.50s -> 4057.50s]  these are all sanity checks
+[4057.50s -> 4059.50s]  now you can start really trying to train
+[4059.50s -> 4062.50s]  so now you can take your full training data
+[4062.50s -> 4065.50s]  and now start with a small amount of regularization
+[4065.50s -> 4068.50s]  and let's first figure out what's a good learning rate
+[4068.50s -> 4071.50s]  so learning rate is one of the most important hyperparameters
+[4071.50s -> 4074.50s]  and it's something that you want to adjust first
+[4074.50s -> 4077.50s]  so you want to try some value of learning rate
+[4077.50s -> 4080.50s]  and here I've tried one E negative six
+[4080.50s -> 4083.50s]  and you can see that the loss is barely changing
+[4083.50s -> 4085.50s]  and so the reason this is barely changing
+[4085.50s -> 4089.50s]  is usually because your learning rate is too small
+[4089.50s -> 4090.50s]  so when it's too small
+[4090.50s -> 4092.50s]  your gradient updates are not big enough
+[4092.50s -> 4095.50s]  and your cost is basically about the same
+[4100.50s -> 4103.50s]  one thing that I want to point out here
+[4103.50s -> 4105.50s]  is that we can notice that even though our loss
+[4105.50s -> 4107.50s]  was barely changing
+[4107.50s -> 4109.50s]  the training and the validation accuracy
+[4109.50s -> 4112.50s]  jumped up to 20% very quickly
+[4112.50s -> 4115.50s]  and so does anyone have any idea
+[4115.50s -> 4118.50s]  for why this might be the case?
+[4120.50s -> 4122.50s]  So remember we have a softmax function
+[4122.50s -> 4123.50s]  and our loss didn't really change
+[4123.50s -> 4126.50s]  but our accuracy improved a lot
+[4130.50s -> 4133.50s]  okay so the reason for this is that
+[4133.50s -> 4136.50s]  here the probabilities are still pretty diffuse
+[4137.50s -> 4139.50s]  so our loss term is still pretty similar
+[4139.50s -> 4143.50s]  but when we shift all of these probabilities
+[4143.50s -> 4144.50s]  slightly in the right direction
+[4144.50s -> 4145.50s]  because we're learning
+[4145.50s -> 4147.50s]  our weights are changing in the right direction
+[4147.50s -> 4151.50s]  now the accuracy all of a sudden can jump
+[4151.50s -> 4154.50s]  because we're taking the maximum correct value
+[4154.50s -> 4157.50s]  and so we're going to get a big jump in accuracy
+[4157.50s -> 4161.50s]  even though our loss is still relatively diffuse
+[4163.50s -> 4165.50s]  okay so now if we try another learning rate
+[4165.50s -> 4167.50s]  now here I'm jumping in the other extreme
+[4167.50s -> 4169.50s]  picking a very big learning rate
+[4169.50s -> 4171.50s]  wanting negative six
+[4171.50s -> 4172.50s]  what's happening is that
+[4172.50s -> 4175.50s]  our cost is now giving us NANs
+[4175.50s -> 4176.50s]  and when you have NANs
+[4176.50s -> 4178.50s]  what this usually means is that
+[4178.50s -> 4180.50s]  basically your cost exploded
+[4180.50s -> 4183.50s]  and so the reason for that
+[4183.50s -> 4186.50s]  is typically that your learning rate was too high
+[4188.50s -> 4190.50s]  so then you can adjust your learning rate down again
+[4190.50s -> 4193.50s]  here I can see that for trying three
+[4193.50s -> 4194.50s]  e to the negative three
+[4194.50s -> 4196.50s]  the cost is still exploding
+[4196.50s -> 4199.50s]  so usually the rough range for learning rates
+[4199.50s -> 4200.50s]  that we want to look at
+[4200.50s -> 4202.50s]  is between one e negative three
+[4202.50s -> 4204.50s]  and one e negative five
+[4204.50s -> 4205.50s]  and this is the rough range
+[4205.50s -> 4209.50s]  that we want to be cross validating in between
+[4209.50s -> 4211.50s]  so you want to try out values in this range
+[4211.50s -> 4214.50s]  and depending on whether your loss is too slow
+[4214.50s -> 4216.50s]  or too small or whether it's too large
+[4216.50s -> 4218.50s]  adjust it based on this
+[4219.50s -> 4223.50s]  and so how do we exactly pick these hyperparameters, right?
+[4223.50s -> 4225.50s]  Do hyperparameter optimization
+[4225.50s -> 4227.50s]  and pick the best values
+[4227.50s -> 4229.50s]  of all of these hyperparameters
+[4229.50s -> 4231.50s]  so the strategy that we're going to use
+[4231.50s -> 4233.50s]  is for any hyperparameter
+[4233.50s -> 4234.50s]  for example learning rate
+[4234.50s -> 4236.50s]  to do cross validation
+[4236.50s -> 4239.50s]  so cross validation is training on your training set
+[4239.50s -> 4242.50s]  and then evaluating on a validation set
+[4242.50s -> 4244.50s]  how well did this hyperparameter do
+[4244.50s -> 4245.50s]  something that you guys have already done
+[4245.50s -> 4247.50s]  in your assignment
+[4248.50s -> 4251.50s]  and so typically we want to do this in stages
+[4251.50s -> 4254.50s]  and so we can do first a course stage
+[4254.50s -> 4257.50s]  where we pick values pretty spread out apart
+[4257.50s -> 4259.50s]  and then we learn for only a few epochs
+[4259.50s -> 4261.50s]  and with only a few epochs
+[4261.50s -> 4263.50s]  you can already get a pretty good sense
+[4263.50s -> 4265.50s]  of which hyperparameters are
+[4265.50s -> 4267.50s]  which values are good or not, right?
+[4267.50s -> 4269.50s]  You can quickly see that it's a NAN
+[4269.50s -> 4271.50s]  or you can see that nothing is happening
+[4271.50s -> 4273.50s]  and you can adjust accordingly
+[4273.50s -> 4275.50s]  so typically once you do that
+[4275.50s -> 4278.50s]  then you can see what's sort of a pretty good range
+[4278.50s -> 4281.50s]  and the range that you want to now do finer
+[4281.50s -> 4282.50s]  sampling of values in
+[4282.50s -> 4284.50s]  and so this is the second stage
+[4284.50s -> 4287.50s]  where now you might want to run this for a longer time
+[4287.50s -> 4289.50s]  and do a finer search over that region
+[4291.50s -> 4295.50s]  and one tip for detecting explosions like NANs
+[4295.50s -> 4297.50s]  you can have in your training loop
+[4297.50s -> 4299.50s]  sample some hyperparameter
+[4300.50s -> 4301.50s]  start training
+[4301.50s -> 4304.50s]  and then look at your cost
+[4305.50s -> 4307.50s]  at every iteration or every epoch
+[4307.50s -> 4309.50s]  and if you ever get a cost
+[4310.50s -> 4312.50s]  that's much larger than your original cost
+[4312.50s -> 4313.50s]  so for example something like
+[4313.50s -> 4315.50s]  three times your original cost
+[4315.50s -> 4316.50s]  then you know that this is not heading
+[4316.50s -> 4317.50s]  in the right direction, right?
+[4317.50s -> 4319.50s]  It's getting very big very quickly
+[4319.50s -> 4321.50s]  and you can just break out of your loop
+[4321.50s -> 4323.50s]  stop this hyperparameter choice
+[4323.50s -> 4325.50s]  and pick something else.
+[4326.50s -> 4328.50s]  All right so an example of this
+[4328.50s -> 4331.50s]  let's say here we want to run
+[4331.50s -> 4333.50s]  now course search for five epochs
+[4333.50s -> 4335.50s]  right this is a similar you know
+[4335.50s -> 4337.50s]  network that we were talking about earlier
+[4337.50s -> 4339.50s]  and what we can do is
+[4339.50s -> 4341.50s]  we can see all of these
+[4341.50s -> 4343.50s]  validation accuracies that we're getting
+[4343.50s -> 4346.50s]  and I've put in highlighted in red
+[4346.50s -> 4348.50s]  the ones that give better values
+[4348.50s -> 4350.50s]  and so these are going to be regions
+[4350.50s -> 4352.50s]  that we're going to look into in more detail
+[4352.50s -> 4353.50s]  and one thing to note is
+[4353.50s -> 4356.50s]  it's usually better to optimize in log space
+[4356.50s -> 4358.50s]  and so here instead of sampling
+[4358.50s -> 4360.50s]  let's say uniformly between you know
+[4361.50s -> 4364.50s]  one E to the negative 0.01 and 100
+[4364.50s -> 4366.50s]  you're going to actually do
+[4366.50s -> 4369.50s]  10 to the power of some range
+[4369.50s -> 4371.50s]  right and this is because
+[4371.50s -> 4374.50s]  the learning rate is multiplying your gradient update
+[4374.50s -> 4378.50s]  and so it has these multiplicative effects
+[4378.50s -> 4381.50s]  and so it makes more sense to consider
+[4381.50s -> 4382.50s]  a range of learning rates
+[4382.50s -> 4384.50s]  that are multiplied or divided by some value
+[4384.50s -> 4386.50s]  rather than uniformly sampled
+[4386.50s -> 4389.50s]  so you want to be dealing with orders of magnitude here.
+[4389.50s -> 4391.50s]  Okay so once you find that
+[4391.50s -> 4393.50s]  you can then adjust your range
+[4393.50s -> 4395.50s]  right get in this case
+[4395.50s -> 4397.50s]  we have a range of you know
+[4397.50s -> 4400.50s]  maybe of 10 to the negative four
+[4400.50s -> 4402.50s]  right to 10 to the zeroeth power
+[4402.50s -> 4404.50s]  this is a good range that we want to
+[4404.50s -> 4405.50s]  narrow down into
+[4405.50s -> 4407.50s]  and so we can do this again
+[4407.50s -> 4408.50s]  and here we can see that we're getting
+[4408.50s -> 4412.50s]  a relatively good accuracy of 53%
+[4412.50s -> 4415.50s]  and so this means we're headed in the right direction.
+[4417.50s -> 4418.50s]  But one thing that I want to point out
+[4419.50s -> 4422.50s]  is that here we actually have a problem
+[4422.50s -> 4424.50s]  and so the problem is that
+[4424.50s -> 4427.50s]  we can see that our best accuracy here
+[4427.50s -> 4430.50s]  has a learning rate that's
+[4430.50s -> 4433.50s]  that's about you know
+[4433.50s -> 4435.50s]  it's all of our good learning rates
+[4435.50s -> 4437.50s]  are in this E to the negative four range
+[4437.50s -> 4439.50s]  right and since the learning rate that we specified
+[4439.50s -> 4442.50s]  was going from 10 to the negative four
+[4442.50s -> 4443.50s]  to 10 to the zero
+[4443.50s -> 4445.50s]  that means that all the good learning rates
+[4445.50s -> 4449.50s]  were at the edge of the range that we were sampling
+[4449.50s -> 4452.50s]  and so this is this is bad
+[4452.50s -> 4455.50s]  because this means that we might not have
+[4455.50s -> 4456.50s]  explored our space sufficiently right
+[4456.50s -> 4458.50s]  we might actually want to go to 10 to the negative five
+[4458.50s -> 4460.50s]  or 10 to the negative six
+[4460.50s -> 4461.50s]  there might be still better ranges
+[4461.50s -> 4462.50s]  if we continue shifting down
+[4462.50s -> 4464.50s]  so you want to make sure
+[4464.50s -> 4466.50s]  that your range kind of has the good values
+[4466.50s -> 4467.50s]  somewhere in the middle
+[4467.50s -> 4469.50s]  or somewhere where you get a sense
+[4469.50s -> 4472.50s]  that you've hit you've explored your range fully.
+[4476.50s -> 4479.50s]  Okay and so another thing is that
+[4479.50s -> 4482.50s]  we can sample all of our different hyperparameters
+[4482.50s -> 4483.50s]  using a kind of grid search right
+[4483.50s -> 4486.50s]  we can sample for a fixed set of combinations
+[4486.50s -> 4489.50s]  a fixed set of values for each hyperparameter
+[4489.50s -> 4492.50s]  sample in a grid manner
+[4492.50s -> 4494.50s]  over all of these values
+[4494.50s -> 4496.50s]  but in practice it's actually better to sample
+[4496.50s -> 4498.50s]  from a random layout
+[4498.50s -> 4500.50s]  so sampling random value
+[4500.50s -> 4502.50s]  of each hyperparameter in a range
+[4502.50s -> 4503.50s]  and so what you'll get instead
+[4503.50s -> 4505.50s]  is if we have these two hyperparameters here
+[4505.50s -> 4507.50s]  that we want to sample from
+[4507.50s -> 4511.50s]  you'll get samples that look like this right side instead
+[4511.50s -> 4513.50s]  and the reason for this is that
+[4513.50s -> 4515.50s]  if a function is really sort of more
+[4515.50s -> 4518.50s]  a function of one variable than another
+[4518.50s -> 4519.50s]  which is usually true
+[4519.50s -> 4521.50s]  usually we have a little bit more
+[4521.50s -> 4524.50s]  a lower effective dimensionality than we actually have
+[4524.50s -> 4527.50s]  then you're going to get many more samples
+[4527.50s -> 4530.50s]  of the important variable that you have
+[4530.50s -> 4531.50s]  but you're going to be able to see
+[4531.50s -> 4535.50s]  the shape in this green function that I've drawn on top
+[4535.50s -> 4537.50s]  showing where the good values are
+[4537.50s -> 4540.50s]  compared to if you just did a grid layout
+[4540.50s -> 4543.50s]  where we were only able to sample three values here
+[4543.50s -> 4546.50s]  and you missed where were the good regions
+[4546.50s -> 4550.50s]  and so basically we'll get much more useful signal overall
+[4550.50s -> 4552.50s]  since we have more samples of different values
+[4552.50s -> 4554.50s]  of the important variable
+[4556.50s -> 4558.50s]  and so hyperparameters to play with
+[4558.50s -> 4560.50s]  we've talked about learning rate
+[4560.50s -> 4562.50s]  things like different types of
+[4562.50s -> 4565.50s]  just case schedules, update types, regularization
+[4565.50s -> 4567.50s]  also your network architecture
+[4567.50s -> 4569.50s]  so the number of hidden units, the depth
+[4569.50s -> 4570.50s]  all of these are hyperparameters
+[4570.50s -> 4572.50s]  that you can optimize over
+[4572.50s -> 4573.50s]  and we've talked about some of these
+[4573.50s -> 4575.50s]  but we'll keep talking about more of these
+[4575.50s -> 4576.50s]  in the next lecture
+[4576.50s -> 4579.50s]  and so you can think of this as kind of
+[4579.50s -> 4582.50s]  if you're basically tuning all the knobs
+[4582.50s -> 4584.50s]  of some turntable
+[4585.50s -> 4587.50s]  where you're a neural network's practitioner
+[4587.50s -> 4589.50s]  you can think of the music that's output
+[4589.50s -> 4591.50s]  is the loss function that you want
+[4591.50s -> 4593.50s]  and you want to adjust everything appropriately
+[4593.50s -> 4595.50s]  to get the kind of output that you want
+[4595.50s -> 4598.50s]  so this is really kind of an art that you're doing
+[4601.50s -> 4603.50s]  and in practice you're going to
+[4604.50s -> 4607.50s]  do a lot of hyperparameter optimization
+[4607.50s -> 4609.50s]  a lot of cross validation
+[4609.50s -> 4611.50s]  and so in order to get numbers
+[4611.50s -> 4613.50s]  people will run cross validation
+[4613.50s -> 4615.50s]  over tons of hyperparameters
+[4616.50s -> 4617.50s]  monitor all of them
+[4617.50s -> 4618.50s]  see which ones are doing better
+[4618.50s -> 4619.50s]  which ones are doing worse
+[4619.50s -> 4621.50s]  here we have all of these loss curves
+[4621.50s -> 4622.50s]  pick the right ones
+[4622.50s -> 4625.50s]  readjust and keep going through this process
+[4627.50s -> 4630.50s]  and so as I mentioned earlier
+[4630.50s -> 4632.50s]  as you're monitoring each of these loss curves
+[4632.50s -> 4634.50s]  learning rate is an important one
+[4634.50s -> 4636.50s]  but you'll get a sense
+[4636.50s -> 4637.50s]  for how different learning rates
+[4637.50s -> 4639.50s]  which learning rates are good and bad
+[4639.50s -> 4641.50s]  so you'll see that
+[4641.50s -> 4643.50s]  if you have a very high exploding one
+[4643.50s -> 4644.50s]  your loss explodes
+[4644.50s -> 4646.50s]  then your learning rate is too high
+[4647.50s -> 4649.50s]  if it's too kind of linear and too flat
+[4649.50s -> 4651.50s]  you'll see that it's too low
+[4651.50s -> 4653.50s]  it's not changing enough
+[4653.50s -> 4656.50s]  and if you get something that looks like
+[4656.50s -> 4658.50s]  there's a steep change but then a plateau
+[4658.50s -> 4661.50s]  this is also an indicator of it being maybe too high
+[4661.50s -> 4662.50s]  because in this case
+[4662.50s -> 4664.50s]  you're taking too large jumps
+[4664.50s -> 4666.50s]  and you're not able to settle well
+[4666.50s -> 4668.50s]  into your local optimum
+[4668.50s -> 4670.50s]  and so a good learning rate usually
+[4670.50s -> 4671.50s]  ends up looking something like this
+[4671.50s -> 4673.50s]  where you have a relatively steep curve
+[4673.50s -> 4674.50s]  but then it's continuing to go down
+[4674.50s -> 4676.50s]  and then you might keep adjusting
+[4676.50s -> 4677.50s]  your learning rate from there
+[4677.50s -> 4678.50s]  and so this is something
+[4678.50s -> 4680.50s]  that you'll see through practice
+[4683.50s -> 4684.50s]  okay and just
+[4684.50s -> 4685.50s]  I think we're very close to the end
+[4685.50s -> 4686.50s]  so just one last thing
+[4686.50s -> 4688.50s]  that I want to point out
+[4688.50s -> 4690.50s]  is that in case you ever see
+[4690.50s -> 4692.50s]  learning rate loss curves
+[4692.50s -> 4694.50s]  where it's, sorry,
+[4694.50s -> 4695.50s]  if you ever see loss curves
+[4695.50s -> 4696.50s]  where it's flat for a while
+[4696.50s -> 4698.50s]  and then starts training all of a sudden
+[4700.50s -> 4703.50s]  a potential reason could be bad initialization
+[4703.50s -> 4704.50s]  so in this case

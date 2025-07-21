@@ -1,0 +1,411 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.00s]  In the next two videos, I'm going to be telling you about clocks and clock recovery.
+[5.00s -> 11.00s]  Whenever we send data over a link, for example an Ethernet link, we nominally assume a data rate,
+[11.00s -> 14.00s]  like 10 megabits per second or a gigabit per second.
+[14.00s -> 19.00s]  When we send it 10 megabits per second, we're assuming that each bit lasts 100 nanoseconds,
+[19.00s -> 21.00s]  or 10 million of them per second.
+[21.00s -> 26.00s]  And at a gigabit per second, we're assuming each bit lasts a nanosecond.
+[26.00s -> 29.00s]  So there must be some notion of a clock somewhere,
+[29.00s -> 34.00s]  the clock that was used by the transmitter in order to send those bits in the first place.
+[34.00s -> 39.00s]  And the receiver needs to know that clock as well in order to be able to correctly decode them.
+[39.00s -> 45.00s]  The problem is that there is no universal reference for a clock which is precisely the same in two places.
+[45.00s -> 49.00s]  So the clock that's used, or the frequency that's used by the transmitter,
+[49.00s -> 51.00s]  is not precisely known to the receiver.
+[51.00s -> 56.00s]  It has to figure it out so it can figure out where one bit ends and another bit begins.
+[56.00s -> 61.00s]  So in this video, I'm going to be describing what the general problem is,
+[61.00s -> 67.00s]  how we encode clock information with the data to make life easier for the receiver,
+[67.00s -> 73.00s]  and then how the receiver can extract the clock and use it to transfer it into its own clock domain,
+[73.00s -> 80.00s]  its own frequency of clock, and then use it and manipulate it as it would like at the receiver.
+[80.00s -> 83.00s]  So the outline of what we're going to be seeing is this.
+[83.00s -> 86.00s]  I'm going to be describing how data is transmitted using a clock,
+[86.00s -> 92.00s]  and the receiver needs to know when to sample the incoming bits in order to recover them correctly.
+[92.00s -> 97.00s]  We'll see this in the context of what's called asynchronous communications for short messages.
+[97.00s -> 100.00s]  But then the more common case is synchronous communication.
+[100.00s -> 104.00s]  That's what's used in Ethernet and systems like that,
+[104.00s -> 107.00s]  where the data is encoded along with the clock,
+[107.00s -> 111.00s]  making it easier for the receiver to recover the clock at the far end
+[111.00s -> 113.00s]  and then move it into its own clock domain.
+[116.00s -> 120.00s]  When we transmit data, we always send it using a clock.
+[120.00s -> 123.00s]  That's because we want it to have a particular frequency.
+[123.00s -> 127.00s]  So for example, here I show a server sending data,
+[127.00s -> 131.00s]  and I've sort of zoomed in on the final stage of processing
+[131.00s -> 134.00s]  just before the data goes out on the wire.
+[134.00s -> 140.00s]  This is a flip-flop, which is just merely timing the data according to the outgoing clock,
+[140.00s -> 142.00s]  which is here 10 MHz.
+[142.00s -> 146.00s]  In other words, there's a 100-nanosecond period to this clock.
+[146.00s -> 150.00s]  So this is a clock that we might use for sending at 10 megabits per second.
+[150.00s -> 153.00s]  When we want to receive that data at the other end,
+[153.00s -> 156.00s]  ideally there would be a second wire coming from here
+[156.00s -> 161.00s]  that could be used in order to clock the data in at the other end,
+[161.00s -> 164.00s]  so that this would come in as the data,
+[164.00s -> 168.00s]  and then would go to the receiver at the other end.
+[168.00s -> 170.00s]  This would take two wires.
+[170.00s -> 173.00s]  We'd have to send both the data and the clock.
+[173.00s -> 175.00s]  In most cases, we can't afford to do that.
+[175.00s -> 178.00s]  It would be much more efficient if we could just send one of them.
+[178.00s -> 182.00s]  So on here, if we were to do this, we'd have the data.
+[182.00s -> 187.00s]  That could be the sequence 01011 and then 00.
+[187.00s -> 190.00s]  And then down here would just be the clock that we would use
+[190.00s -> 194.00s]  in order to be able to encode it at one end and decode it at the other.
+[194.00s -> 197.00s]  We're going to be looking at a number of different examples
+[197.00s -> 199.00s]  where the clock is not sent.
+[199.00s -> 202.00s]  There's no specific or separate clock line.
+[202.00s -> 204.00s]  And in fact, this is how it's done in practice.
+[204.00s -> 206.00s]  There's no separate clock that's sent.
+[206.00s -> 209.00s]  Everything has to be determined from the signal itself.
+[212.00s -> 215.00s]  To illustrate the problem, let me start with an example.
+[215.00s -> 218.00s]  Imagine that we have a clock here,
+[218.00s -> 221.00s]  and this is the clock that is being used by the transmitter
+[221.00s -> 224.00s]  in order to clock the data out onto the wire.
+[224.00s -> 227.00s]  Okay, so I've put the guidelines here just to help me draw that.
+[227.00s -> 229.00s]  So this is the TX clock.
+[229.00s -> 233.00s]  I'll write that as TXCLK.
+[233.00s -> 237.00s]  The data that's being sent, let's say in this example,
+[237.00s -> 241.00s]  we're going to, every time there's a downward transition in the clock,
+[241.00s -> 244.00s]  we're going to change the data that's put on the wire.
+[244.00s -> 248.00s]  So for example, let's say that it started out idle,
+[248.00s -> 253.00s]  and then it went to a 1, and then it went for a 1 here,
+[253.00s -> 257.00s]  and then it continued as a 1 in the data down to here,
+[257.00s -> 261.00s]  and then we wanted to send a 0, and then a, and so on.
+[261.00s -> 267.00s]  So the data that's being sent is 0, 1, 1, 0, 1,
+[267.00s -> 270.00s]  and then we're sending another 1 again here, and so on.
+[271.00s -> 274.00s]  At the receiver, let's look at the receiver's clock,
+[274.00s -> 279.00s]  and let's assume that the receiver's clock is nominally running at the same frequency,
+[279.00s -> 282.00s]  although we didn't get it exactly right because we were generating it locally
+[282.00s -> 286.00s]  and we were using a different oscillator, for example, in order to generate that.
+[286.00s -> 291.00s]  And they were designed to be the same nominally, but they're very slightly different.
+[291.00s -> 296.00s]  And so in this case, we're going to assume that that receiver clock is operating just a tad slower.
+[296.00s -> 300.00s]  So it may have its transition at the same place at the beginning,
+[300.00s -> 305.00s]  but because it's running a little bit slower, its first transition is a little bit later than this one,
+[305.00s -> 309.00s]  and so its next transition is a little bit later again.
+[309.00s -> 312.00s]  It's going to get a little later, and then it's going to get a little later,
+[312.00s -> 316.00s]  and then eventually, just because it's running a little bit slower,
+[316.00s -> 322.00s]  it's going to start falling behind, and you can see that by the time we get all the way over to here,
+[322.00s -> 326.00s]  its upward transition is about the same time as the transmit clock's downward transition,
+[326.00s -> 328.00s]  so it's about out by half a phase.
+[328.00s -> 331.00s]  Now, I've exaggerated it here. In practice, they'd be much closer than this,
+[331.00s -> 334.00s]  but I'm just exaggerating to show you what's going on.
+[334.00s -> 341.00s]  Okay, now, the data when we were sending it was being changed on the downward transition,
+[341.00s -> 346.00s]  and it kind of makes sense for the receiver to try and identify the middle of the bit
+[346.00s -> 351.00s]  and sample the bit in the middle, so here and here and here, if it can.
+[351.00s -> 356.00s]  Because this is furthest away from the edges, and so the data is going to be at its most stable.
+[356.00s -> 359.00s]  So we're looking to sample that in the middle.
+[359.00s -> 363.00s]  So, for example, if we started sampling here, right at the beginning, from the receiver,
+[363.00s -> 366.00s]  we would pretty accurately detect that as a zero.
+[366.00s -> 369.00s]  So we would see that as a zero, and everything would be good.
+[369.00s -> 371.00s]  Then we're going to sample it again here.
+[371.00s -> 374.00s]  We're a little later than we would have liked,
+[374.00s -> 378.00s]  but we're still going to reliably see that as a one, so things are good.
+[378.00s -> 380.00s]  We're going to sample it here.
+[380.00s -> 382.00s]  We're getting a bit close to that edge.
+[382.00s -> 386.00s]  Let's give ourselves the benefit of the doubt and say that we just caught that one there.
+[386.00s -> 389.00s]  By the time we come over here and sample again,
+[389.00s -> 394.00s]  we're actually sampling right here, and we're going to miss this zero completely.
+[394.00s -> 396.00s]  So when we sample here, we're going to see a one again.
+[396.00s -> 401.00s]  So this zero that happened in the middle, this zero that was sent here,
+[401.00s -> 402.00s]  we didn't sample.
+[402.00s -> 406.00s]  There were no up arrows during that bit period at the receiver, so we didn't see it.
+[406.00s -> 407.00s]  We missed it completely.
+[407.00s -> 412.00s]  So clearly, our ability to detect this is going to depend on a couple of things.
+[412.00s -> 415.00s]  One is, how different are these clocks?
+[415.00s -> 417.00s]  I really exaggerated the difference here.
+[417.00s -> 421.00s]  In practice, they're very, very similar within a fraction of a percent.
+[421.00s -> 427.00s]  In fact, we usually use units of parts per million, PPM, parts per million.
+[427.00s -> 432.00s]  So for example, if we say that a clock is within plus or minus 100 parts per million,
+[432.00s -> 442.00s]  we mean it's within plus or minus, that would be 0.01%.
+[442.00s -> 445.00s]  That's because that's 10 to the minus 4.
+[445.00s -> 446.00s]  So that would be a typical value.
+[446.00s -> 451.00s]  In fact, you can get clocks that are as much as close as 50 parts per million.
+[451.00s -> 455.00s]  Still, if we go over enough bits, so if it's 100 parts per million,
+[455.00s -> 459.00s]  we would have to go over about 10,000 bit times,
+[459.00s -> 463.00s]  and we would actually have shifted by a complete bit in either direction.
+[463.00s -> 467.00s]  We don't know whether the receiver is running faster or slower than the transmitter,
+[467.00s -> 470.00s]  so we don't know whether we're going to accidentally double sample a bit
+[470.00s -> 472.00s]  or we're going to miss a bit completely.
+[472.00s -> 476.00s]  Generally speaking, though, they hold at a fairly constant frequency.
+[476.00s -> 481.00s]  In other words, if one is faster, it's likely to stay faster for quite a while.
+[481.00s -> 484.00s]  They're not drifting very quickly relative to each other.
+[484.00s -> 486.00s]  They may just have a fixed offset.
+[486.00s -> 490.00s]  So here we see the problem where we've actually incorrectly decoded the data
+[490.00s -> 493.00s]  because we didn't have the clock.
+[493.00s -> 496.00s]  Now, in some cases, we can still communicate
+[496.00s -> 500.00s]  without having to explicitly understand what the clock is
+[500.00s -> 508.00s]  or be able to recover it in what's called asynchronous communication.
+[508.00s -> 511.00s]  Although we don't use this for networks like Ethernet,
+[511.00s -> 518.00s]  it's used by things like infrared remote control for a TV or for short communications.
+[518.00s -> 522.00s]  It's also used on the serial bus that's used to connect computers,
+[522.00s -> 525.00s]  although that's not used very much anymore.
+[525.00s -> 528.00s]  So for very short communications, so long as we know nominally
+[528.00s -> 531.00s]  that the transmit and the receive clock are about the same,
+[531.00s -> 533.00s]  we can make this work.
+[533.00s -> 538.00s]  For example, imagine that we had a very short packet here consisting of just seven bits.
+[538.00s -> 543.00s]  At the beginning, it has this big bit at the beginning,
+[543.00s -> 546.00s]  which looks like it has a bigger amplitude,
+[546.00s -> 548.00s]  just to tell us that this is the start of the packet
+[548.00s -> 551.00s]  and there's one at the end to tell us that it's the end of the packet,
+[551.00s -> 553.00s]  so the start bit and the stop bit.
+[553.00s -> 555.00s]  Then we have the sequence 0110100.
+[555.00s -> 559.00s]  This is just the data inside the packet.
+[559.00s -> 565.00s]  So the transmit clock, that's what was used in order to encode this in the first place.
+[565.00s -> 570.00s]  That's correctly detecting the middle of each of these bits,
+[570.00s -> 573.00s]  0111, right in the center of all those bits,
+[573.00s -> 576.00s]  because that's what was used to transmit it in the first place.
+[576.00s -> 578.00s]  And here might be the receive clock.
+[578.00s -> 581.00s]  The receive clock here is running a little slower than the transmit clock.
+[581.00s -> 586.00s]  You can see that there's a slight gap between here and here,
+[586.00s -> 591.00s]  and that gap is going to grow as we go on closer to the end of the bit.
+[591.00s -> 595.00s]  So long as, before we get to the end of the packet,
+[595.00s -> 599.00s]  the receiver can still correctly decode the bits,
+[599.00s -> 603.00s]  and here it can correctly decode that zero,
+[603.00s -> 605.00s]  then we're okay.
+[605.00s -> 607.00s]  So how did all of this work?
+[607.00s -> 610.00s]  Well, after the start bit, the receiver said,
+[610.00s -> 613.00s]  I'm going to start sampling half a bit time later,
+[613.00s -> 617.00s]  so it sees that start bit, it sees that falling edge here,
+[617.00s -> 619.00s]  and then it times until it samples,
+[619.00s -> 622.00s]  and then it correctly samples the zero here.
+[622.00s -> 625.00s]  And then it waits for another clock period,
+[625.00s -> 628.00s]  and then it samples again, and it will correctly sample that one,
+[628.00s -> 631.00s]  and so on, all the way to the end.
+[631.00s -> 634.00s]  However, you can see that if the packet was longer,
+[634.00s -> 636.00s]  because of this drift of the receive clock,
+[636.00s -> 639.00s]  it's getting later and later and later.
+[639.00s -> 641.00s]  Eventually it will miss a bit.
+[641.00s -> 645.00s]  So long as we can make sure that the packet is not too long,
+[645.00s -> 649.00s]  we can control P, and if we know that the tolerance
+[649.00s -> 652.00s]  between these two clocks, the difference between them,
+[652.00s -> 654.00s]  then knowing those two numbers,
+[654.00s -> 657.00s]  we can make sure that we can reliably decode the packet.
+[657.00s -> 659.00s]  So for short packets, this works fine.
+[659.00s -> 662.00s]  In practice, though, this doesn't work very well for long packets,
+[662.00s -> 666.00s]  because we'd like P to be thousands or hundreds of thousands of bits,
+[666.00s -> 670.00s]  and we would have to make the tolerance of the receive clock so tight
+[670.00s -> 674.00s]  that this would not be practical to do in a real system.
+[674.00s -> 678.00s]  So asynchronous communication is sometimes used for links with short packets,
+[678.00s -> 680.00s]  infrared remote control or serial links,
+[680.00s -> 685.00s]  or, for example, those connecting directly to a printer locally.
+[685.00s -> 689.00s]  Okay, so we've seen how data is transmitted using a clock,
+[689.00s -> 694.00s]  and we've seen that the receiver needs to know when to sample the arriving data,
+[694.00s -> 697.00s]  and we've also seen an example of asynchronous communications.
+[697.00s -> 699.00s]  Now we're going to go on to the real meat,
+[699.00s -> 705.00s]  which is the synchronous communications, which is what we use in practice.
+[705.00s -> 710.00s]  Let me start with sort of a block diagram of how the system might look.
+[710.00s -> 713.00s]  Don't be intimidated. I'm going to go through each of these pieces in turn,
+[713.00s -> 717.00s]  and we're going to understand what each of them is doing.
+[717.00s -> 720.00s]  So the problem is different hosts,
+[720.00s -> 725.00s]  and here we have server A that's sending to the router on the right,
+[725.00s -> 728.00s]  different hosts are using locally generated clocks
+[728.00s -> 731.00s]  of nominally the same frequency but slightly different.
+[731.00s -> 734.00s]  So we have 10 megahertz plus or minus 100 parts per million.
+[734.00s -> 738.00s]  Again, this example here is a 10 megabit per second link
+[738.00s -> 742.00s]  because I'm sending data using this 10 megahertz clock.
+[742.00s -> 745.00s]  And I'm sending to the router, sending to my first router.
+[745.00s -> 747.00s]  Of course, this could be another host or an Ethernet switch,
+[747.00s -> 752.00s]  anything which is the other end of an Ethernet link.
+[752.00s -> 760.00s]  When the data arrives, because I'm only sending one over one piece of wire,
+[760.00s -> 763.00s]  what the receiver is going to do is going to try and figure out the clock
+[763.00s -> 765.00s]  that was used by the sender.
+[765.00s -> 768.00s]  And this is in what's called a clock recovery unit or a clock recovery circuit.
+[768.00s -> 772.00s]  These are special circuits that take the incoming signal
+[772.00s -> 776.00s]  and determine the clock that was used by the sender.
+[776.00s -> 780.00s]  It does this by examining the frequency and the phase of the arriving bits,
+[780.00s -> 783.00s]  so those bits that were on the wire.
+[783.00s -> 785.00s]  So it's going to look at the bits and say,
+[785.00s -> 789.00s]  aha, if I can actually detect when there's a transition,
+[789.00s -> 792.00s]  then I can actually determine what the frequency was
+[792.00s -> 796.00s]  and actually where one bit starts and another bit ends.
+[796.00s -> 799.00s]  So it's able to recover this.
+[799.00s -> 801.00s]  So where the bit pattern could be anything,
+[801.00s -> 805.00s]  if there's a strong enough component in the spectrum from the sender's clock
+[805.00s -> 808.00s]  of what its frequency was, then the receiver will find it
+[808.00s -> 811.00s]  and use it to sample the bits.
+[811.00s -> 814.00s]  There are many types of circuit that are used for a clock recovery unit,
+[814.00s -> 818.00s]  but the most common one is called a phase-locked loop or a PLL,
+[818.00s -> 822.00s]  phase-locked loop, and delay-locked loop is called DLLs.
+[822.00s -> 824.00s]  They're kind of a digital equivalent.
+[824.00s -> 827.00s]  Or they could actually be a very precise filter.
+[827.00s -> 830.00s]  There's something called a saw filter or surface acoustic wave,
+[830.00s -> 835.00s]  which is also used as a clock recovery device.
+[835.00s -> 837.00s]  In the next slide, I'm going to tell you about how we make life easier
+[837.00s -> 842.00s]  for this clock recovery unit by encoding the clock and the data together
+[842.00s -> 845.00s]  before we transmit it.
+[845.00s -> 848.00s]  Let's go on and see what the other pieces are here.
+[848.00s -> 852.00s]  So there's a flip-flop that's used at the receiver in order to clock that data in.
+[852.00s -> 855.00s]  And you can see that, let me just redraw that,
+[855.00s -> 860.00s]  here's the flip-flop, and it's being clocked using the sender's clock.
+[860.00s -> 863.00s]  So in other words, we've figured out what this clock was
+[863.00s -> 869.00s]  in the clock recovery unit, and we're using that to clock here.
+[869.00s -> 873.00s]  Even though we've used the sender's clock in order to recover the data,
+[873.00s -> 878.00s]  eventually we need to process it using a clock that's being generated locally,
+[878.00s -> 881.00s]  using an oscillator that is running inside the router.
+[881.00s -> 883.00s]  So it needs to be able to clock this in,
+[883.00s -> 885.00s]  and this is why we say that the clock that's,
+[885.00s -> 890.00s]  once we've moved it into the clock domain of the receiver,
+[890.00s -> 892.00s]  we call this the receive clock domain.
+[892.00s -> 896.00s]  So up until this point here, this transition, this dotted line,
+[896.00s -> 901.00s]  we're using the transmitter's clock domain because we've recovered the sender's clock,
+[901.00s -> 903.00s]  and so we're operating using its clock.
+[903.00s -> 907.00s]  But the clock of the transmitter is not much use to us at the receiver
+[907.00s -> 911.00s]  if we're wanting to process the data in order to calculate checksums
+[911.00s -> 915.00s]  and retransmit the data according to our local clock.
+[915.00s -> 918.00s]  So we have to somehow move from one domain to the other.
+[918.00s -> 922.00s]  We have to do this very carefully so that we don't lose bits in between.
+[922.00s -> 927.00s]  So once the data has been sampled by the flip-flop,
+[927.00s -> 932.00s]  it's placed into a small FIFO, and that's the FIFO shown here.
+[932.00s -> 936.00s]  And this FIFO is very critical to how the whole system works.
+[936.00s -> 940.00s]  The FIFO is another special circuit to help us take the bit from the sender's clock domain
+[940.00s -> 943.00s]  into the receiver's clock domain.
+[943.00s -> 946.00s]  Why? Because we need to get the bit into the clock domain of the receiver
+[946.00s -> 949.00s]  so it can process the packet using its own clock.
+[949.00s -> 952.00s]  To do this, the bit is written into the FIFO,
+[952.00s -> 957.00s]  so it's written into the FIFO here using the transmitter's clock,
+[957.00s -> 963.00s]  and then it's read out of the FIFO using the receiver's clock.
+[963.00s -> 966.00s]  So the FIFO is different from the ones we used before,
+[966.00s -> 969.00s]  where we assume that the clock is the same on both sides.
+[969.00s -> 973.00s]  This FIFO is very carefully designed to let us do this using two clocks.
+[973.00s -> 978.00s]  Once the bit emerges on the other side, it is now in the clock domain of the receiver,
+[978.00s -> 981.00s]  and we can safely process it using its clock.
+[984.00s -> 989.00s]  This FIFO is called an elasticity buffer.
+[989.00s -> 995.00s]  And we call it an elasticity buffer because it's taking up the slack between the two clocks,
+[995.00s -> 999.00s]  and we're going to see in a minute how this is going to go up and down
+[999.00s -> 1003.00s]  according to the relative speeds of the two clocks.
+[1003.00s -> 1005.00s]  And in a few minutes, I'll explain how we designed the whole system
+[1005.00s -> 1010.00s]  so we never overflow or underflow this elasticity buffer.
+[1011.00s -> 1016.00s]  But first, I'm going to describe how we encode the signal in the first place
+[1016.00s -> 1020.00s]  so that the clock can be recovered by this clock recovery unit.
+[1020.00s -> 1025.00s]  If the clock was sent separately, as I described in an example earlier,
+[1025.00s -> 1030.00s]  as it would be on a circuit board of a computer or between different parts of a circuit on a chip,
+[1030.00s -> 1032.00s]  life would be pretty simple.
+[1032.00s -> 1035.00s]  We could simply use the clock to feed into the flip-flop
+[1035.00s -> 1038.00s]  and capture the bits in the same clock domain everywhere.
+[1039.00s -> 1042.00s]  But if the clock is not sent separately,
+[1042.00s -> 1045.00s]  the data stream must have sufficient transitions in it.
+[1045.00s -> 1048.00s]  We must make sure that there are enough transitions in it
+[1048.00s -> 1053.00s]  in order for the receiver to be able to determine the clock at the other end.
+[1053.00s -> 1055.00s]  Now, you might be looking at this and saying,
+[1055.00s -> 1060.00s]  what if I was to send a stream of all ones so that this actually was like this?
+[1060.00s -> 1062.00s]  It would have no transitions in it at all,
+[1062.00s -> 1064.00s]  and so the receiver wouldn't be able to determine what the clock is.
+[1064.00s -> 1066.00s]  So we need to prevent that from happening.
+[1066.00s -> 1070.00s]  Likewise, if it was to send all zeros, there would be no transitions.
+[1070.00s -> 1073.00s]  Or if it was to send a signal that looked like this
+[1073.00s -> 1076.00s]  that changed half as often as the clock,
+[1076.00s -> 1081.00s]  then we might be confused and believe that the clock frequency was half what in fact it was.
+[1081.00s -> 1083.00s]  So we need to think about this carefully.
+[1083.00s -> 1088.00s]  And the method that is typically used is to encode the data and when we send it
+[1088.00s -> 1091.00s]  in order to make sure there are sufficient transitions.
+[1092.00s -> 1096.00s]  So I'm going to start by describing what the original 10 megabit per second Ethernet used.
+[1096.00s -> 1099.00s]  It used something called Manchester coding, or Manchester encoding.
+[1099.00s -> 1103.00s]  Manchester coding is a very, very simple mechanism.
+[1103.00s -> 1106.00s]  It's used occasionally these days, not as much as it was,
+[1106.00s -> 1108.00s]  and we'll see why that is in a minute.
+[1108.00s -> 1110.00s]  But it's perhaps the simplest one to understand.
+[1111.00s -> 1113.00s]  Here at the top is the data that we want to send.
+[1113.00s -> 1120.00s]  So this is the 0110101011, which is the data that we want to send.
+[1120.00s -> 1125.00s]  And the way that that's going to be encoded before placing it onto the wire is as follows.
+[1127.00s -> 1133.00s]  We're going to look at the bit and make sure that there is a transition during every bit time.
+[1133.00s -> 1137.00s]  So this signal here is the one that's going to go onto the wire.
+[1137.00s -> 1141.00s]  Whenever we see a zero, we're going to have a downward transition.
+[1141.00s -> 1144.00s]  Whenever we see a one, we're going to have an upward transition.
+[1144.00s -> 1147.00s]  So here we can see one is encoded by an upward transition,
+[1147.00s -> 1150.00s]  zero is encoded by a downward transition.
+[1152.00s -> 1154.00s]  So this would be what would go on the line.
+[1154.00s -> 1156.00s]  And then to make it a continuous signal, we do this.
+[1156.00s -> 1161.00s]  Now notice I had to insert another transition here because I've got one followed by one,
+[1161.00s -> 1163.00s]  so therefore I need to have a downward transition.
+[1164.00s -> 1168.00s]  And here I've got a one followed by a zero, so I need to have a downward transition here.
+[1168.00s -> 1171.00s]  So this would be the sequence that I would send on the wire.
+[1173.00s -> 1179.00s]  Then, the clock that I would use at the far end can be recovered by just looking for the transitions.
+[1179.00s -> 1181.00s]  See, I've got a transition here, I've got a transition here,
+[1181.00s -> 1189.00s]  so whenever I see a transition, I can be sure that I can use that to have a nice, strong, and easy way to recover the clock.
+[1189.00s -> 1191.00s]  I must make sure that I'm not confused.
+[1191.00s -> 1197.00s]  I mustn't see this transition as representing another upbeat on the clock at the other end.
+[1197.00s -> 1200.00s]  But I could do that by just having a finely tuned filter at the other end
+[1200.00s -> 1205.00s]  because I know that nominally I'm looking for a 10 megabit per second clock,
+[1205.00s -> 1210.00s]  and so I'm not going to confuse it with one that's running at twice the speed.
+[1210.00s -> 1214.00s]  So by having a nice, healthy set of transitions in the middle of the signal,
+[1214.00s -> 1218.00s]  I can be sure that it's easy to recover it at the other end.
+[1218.00s -> 1223.00s]  So the advantages of this Manchester encoding is it guarantees one transition per bit period.
+[1223.00s -> 1227.00s]  It has a second benefit, which is a little bit more subtle.
+[1227.00s -> 1230.00s]  It does something which is called ensuring the DC balance.
+[1230.00s -> 1235.00s]  If I send those as voltage levels on the wire,
+[1235.00s -> 1241.00s]  if that was zero, and this was plus and this was minus,
+[1241.00s -> 1250.00s]  I'm actually spending just as much of the time above that line as I am below it,
+[1250.00s -> 1255.00s]  and so I'm making sure that I get DC balance in the long term.
+[1255.00s -> 1261.00s]  The benefit of this is that in order to be able to correctly differentiate a one and a zero at the other end,
+[1261.00s -> 1265.00s]  I just need to set my threshold to be in the middle or the average on the wire.
+[1265.00s -> 1270.00s]  So that makes for a very reliable and robust recovery of bits at the far end.
+[1270.00s -> 1276.00s]  There's a clear disadvantage of Manchester encoding in that I'm inserting more transitions than I actually need.
+[1276.00s -> 1281.00s]  I'm doubling the bandwidth in the worst case.
+[1281.00s -> 1287.00s]  I'm doubling the bandwidth because by having more transitions, if I was to send a sequence of all ones,
+[1287.00s -> 1293.00s]  I would actually have a sequence of these where I've got twice as many transitions as I really need.
+[1293.00s -> 1302.00s]  So by doubling the bandwidth, I would have a dominant frequency component of the signal that has been increased.
+[1302.00s -> 1306.00s]  If we're running over a cable and trying to make it as fast as we can, this is a problem.
+[1306.00s -> 1311.00s]  We've now wasted some of the precious bandwidth on the wire.
+[1311.00s -> 1314.00s]  Let's look at what this spectrum looks like.
+[1314.00s -> 1317.00s]  This is the frequency spectrum for 10 megabits per second.
+[1317.00s -> 1319.00s]  So in other words, if we take it into a spectrum analyzer,
+[1319.00s -> 1324.00s]  something that will tell us the signal strength as a function of the frequency,
+[1324.00s -> 1330.00s]  and if we were to take the original bit sequence, we would see something like this.
+[1330.00s -> 1333.00s]  We would see at different frequencies.
+[1333.00s -> 1343.00s]  So this frequency here is the 5 MHz, which is the average when I've got a sequence of zeros and ones,
+[1343.00s -> 1345.00s]  but a random sequence of zeros and ones.
+[1345.00s -> 1349.00s]  I would see some frequency component around here, but it's not strong enough to find it and lock onto it
+[1349.00s -> 1352.00s]  and know that that was the frequency of the clock.
+[1352.00s -> 1361.00s]  However, if I look at it with Manchester encoding, I see what suddenly emerges is this strong component at 10 MHz.
+[1361.00s -> 1367.00s]  Everything has been moved up in the frequency band because I've encoded it and inserted more transitions,
+[1367.00s -> 1370.00s]  so the spectrum itself is starting at 5 MHz roughly now.
+[1370.00s -> 1374.00s]  There will be a little bit down here for long sequences of zeros and ones,
+[1374.00s -> 1379.00s]  but I'm seeing that most of that spectrum is now above 5 MHz.
+[1379.00s -> 1383.00s]  It makes it very easy for clock recovery because I just need to find this dominant component
+[1383.00s -> 1386.00s]  and then use it as my clock at the far end.
+[1386.00s -> 1391.00s]  So Manchester encoding makes it nice and easy.
+[1391.00s -> 1397.00s]  As a second example, if I wanted to use something that was a little bit more efficient than Manchester encoding,
+[1397.00s -> 1403.00s]  I can take successive blocks of bits and encode them in a way to make sure I've got some transitions,
+[1403.00s -> 1406.00s]  but maybe not twice as many as I had before.
+[1406.00s -> 1410.00s]  In this example, I will describe something called 4B-5B encoding.
+[1410.00s -> 1414.00s]  There are variants of this, 8B-10B, 15B-16B.
+[1414.00s -> 1422.00s]  4B means it's 4B of original data that I wanted to send, and I'm going to encode that into a 5-bit code.
+[1422.00s -> 1428.00s]  So just as an example here, I took 0000 and I encoded it as 11110.
+[1429.00s -> 1436.00s]  So I'm guaranteed if I send this on the wire of 11110,
+[1436.00s -> 1440.00s]  so this would be the 11110,
+[1440.00s -> 1443.00s]  I'm guaranteed that there is a downward transition during that code.
+[1443.00s -> 1446.00s]  This code has two transitions in it, well actually three.
+[1446.00s -> 1449.00s]  From 0 to 1, 1 to 0, and then 0 to 1 again.
+[1449.00s -> 1451.00s]  This one has from 1 to 0, 0 to 1.
+[1451.00s -> 1456.00s]  So I can be sure always that there are some transitions within that 5 bits.
+[1456.00s -> 1460.00s]  If I know that at the far end, then that there will be enough transitions.
+[1460.00s -> 1464.00s]  Then whatever the data originally included,
+[1464.00s -> 1469.00s]  I can make sure that I've got enough transitions to be able to recover the clock at the far end.
+[1469.00s -> 1471.00s]  Why can I be sure that there are transitions?
+[1471.00s -> 1475.00s]  Well, there are 2 to the 4 or 16 data codes,
+[1475.00s -> 1479.00s]  and there are 2 to the 5 or 32 codes that I'm going to put onto the wire.
+[1479.00s -> 1482.00s]  I'm just going to select those ones that have enough transitions.
+[1482.00s -> 1484.00s]  So there are twice as many to choose from.
+[1484.00s -> 1488.00s]  I can always be sure to find a code that has a transition in it,
+[1488.00s -> 1494.00s]  so I can be sure that the outgoing data that I put onto the wire has enough transitions in it.
+[1494.00s -> 1496.00s]  It comes at an overhead.
+[1496.00s -> 1499.00s]  It's more bandwidth efficient than Manchester encoding,
+[1499.00s -> 1502.00s]  but it has a 25% overhead,
+[1502.00s -> 1506.00s]  but that's certainly much better than having a double overhead.
+[1506.00s -> 1509.00s]  I'm actually left with some extra codes,
+[1509.00s -> 1513.00s]  and some people will use these for some in-band control signals,
+[1513.00s -> 1518.00s]  so I'll actually end up with 16 codes that I didn't actually need,
+[1518.00s -> 1522.00s]  because I've taken from 4 bits to 5 bits.
+[1522.00s -> 1526.00s]  Fewer transitions definitely make the clock recovery harder than for Manchester encoding,
+[1526.00s -> 1531.00s]  but this has been around long enough that people have developed clever circuits in order to be able to do this.
+[1531.00s -> 1538.00s]  So 4B, 5B, and variants of this block coding is very commonly used today.
+[1538.00s -> 1542.00s]  So in summary, I have a system that looks like this.
+[1542.00s -> 1546.00s]  We've seen the clock that's being used here.
+[1546.00s -> 1549.00s]  I've now got encoded data.
+[1549.00s -> 1552.00s]  So this would be the encoded data that I'm sending.
+[1552.00s -> 1555.00s]  It could be 4B, 5B, or Manchester encoded.
+[1555.00s -> 1557.00s]  It goes out over the link.
+[1557.00s -> 1561.00s]  The clock recovery unit is going to determine what the clock was that was used at the sender
+[1561.00s -> 1563.00s]  by examining the transitions.
+[1563.00s -> 1565.00s]  We'll use that to clock the data in,
+[1565.00s -> 1569.00s]  and then it's going to put it into this elasticity buffer right here.
+[1569.00s -> 1574.00s]  In the next video, I'm going to be describing how this elasticity buffer works
+[1574.00s -> 1576.00s]  and how we can size it correctly.
+[1576.00s -> 1581.00s]  But for now, we've seen how we send data and how we can recover it.

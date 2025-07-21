@@ -1,0 +1,68 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.00s]  So welcome to Unit 6. Unit 6 is about routing.
+[5.00s -> 12.00s]  So the basic question of how do we get a packet from A to B across a large network such as the Internet.
+[12.00s -> 18.00s]  We've already been implicitly assuming that there was a way for packets to be delivered from one side of the Internet to the other
+[18.00s -> 23.00s]  in all of the exercises, assignments, videos that we've been working on so far.
+[23.00s -> 30.00s]  Now we're actually going to look at the methods and the approaches that we can use to forward and route those packets through the Internet.
+[30.00s -> 38.00s]  So there's a very obvious place to start, and that is what if each packet contained a list of all the routers that it was going to pass through
+[38.00s -> 43.00s]  and then just found its own way through the network, just with the state entirely contained within the packet.
+[43.00s -> 45.00s]  That would work. That's one way to do it.
+[45.00s -> 47.00s]  But it's not how the Internet works.
+[47.00s -> 54.00s]  That method that we call source routing was considered to be both inefficient and potentially a security loophole.
+[54.00s -> 57.00s]  And we'll see that in the videos coming up.
+[57.00s -> 61.00s]  Instead, as you know, the Internet uses forwarding tables.
+[61.00s -> 70.00s]  Each router contains a forwarding table that tells it for each destination prefix which path or which next hop to send a packet to.
+[70.00s -> 75.00s]  And so the next question to ask is, how do those forwarding tables get populated?
+[75.00s -> 80.00s]  For that, we use an algorithm, and that algorithm runs as a distributed algorithm
+[80.00s -> 87.00s]  so that the routers can come to a conclusion as to the entries that they will put into those forwarding tables.
+[87.00s -> 92.00s]  The basic approach that gets used is that the routers will build a spanning tree.
+[92.00s -> 96.00s]  The spanning tree is a tree, therefore it has no loops.
+[96.00s -> 101.00s]  And it's spanning in that it provides a way for every source to reach a given destination.
+[101.00s -> 106.00s]  So the root of the tree is at the destination, and the leaves are all of the other sources
+[106.00s -> 109.00s]  so that they can send on the spanning tree to reach that destination.
+[109.00s -> 112.00s]  So the routers now have to build that spanning tree.
+[112.00s -> 117.00s]  And there are two well-known algorithms that we'll be describing in upcoming videos
+[117.00s -> 123.00s]  and how those forwarding table entries get built in order to create that spanning tree.
+[123.00s -> 128.00s]  The first one is called the Bellman-Ford algorithm, also known as the distance factor algorithm.
+[128.00s -> 132.00s]  And you'll see why it's called the distance factor in an upcoming video.
+[132.00s -> 137.00s]  The alternative method, which is now more widely used, is called Dijkstra's algorithm,
+[137.00s -> 140.00s]  or Dijkstra's shortest path first algorithm.
+[140.00s -> 143.00s]  And this is known as a link state algorithm.
+[143.00s -> 147.00s]  And again, you'll see that described in detail in an upcoming video.
+[147.00s -> 151.00s]  You're also going to see how these algorithms are actually used in the internet today.
+[151.00s -> 155.00s]  Well, first off, the internet is a collection of many different parties,
+[155.00s -> 158.00s]  each with their own networks, which are somehow interconnected.
+[158.00s -> 161.00s]  So we're going to talk a little bit about the notion of an autonomous system,
+[161.00s -> 164.00s]  an administrative domain of routing within the internet.
+[164.00s -> 166.00s]  For example, Stanford is an autonomous system.
+[166.00s -> 170.00s]  It's actually multiple ones, like the Stanford linear accelerator is its own autonomous system,
+[170.00s -> 172.00s]  and then there's the main Stanford campus.
+[172.00s -> 175.00s]  Many large ISPs, in fact, might have multiple ASs.
+[175.00s -> 179.00s]  Not a huge number of multiple autonomous systems are ASs.
+[179.00s -> 181.00s]  And there are different kinds of ASs.
+[181.00s -> 185.00s]  For example, Stanford doesn't route transit traffic across the internet.
+[185.00s -> 188.00s]  It acts as an edge AS or a stub AS.
+[188.00s -> 193.00s]  So within an autonomous system, there are two basic routing algorithms that are used,
+[193.00s -> 195.00s]  RIP and OSPF.
+[195.00s -> 199.00s]  RIP is a distance vector protocol, whereas OSPF is a link state protocol.
+[199.00s -> 202.00s]  Generally today, almost everyone uses OSPF
+[202.00s -> 206.00s]  in order to define their routing tables within an autonomous system.
+[206.00s -> 209.00s]  It is, for example, what Stanford uses.
+[209.00s -> 214.00s]  But then the routing between autonomous systems uses a different protocol, BGP,
+[214.00s -> 216.00s]  or the Order Gateway Protocol.
+[216.00s -> 219.00s]  It turns out that often autonomous systems don't necessarily want to expose
+[219.00s -> 221.00s]  what their internal network is like,
+[221.00s -> 223.00s]  and so just doing a shortest path can be tricky.
+[223.00s -> 226.00s]  So instead, BGP adds some additional mechanisms,
+[226.00s -> 229.00s]  like actually knowing the path that packets might take,
+[229.00s -> 233.00s]  in order to allow autonomous systems to hide their internals
+[233.00s -> 238.00s]  while giving enough information that routers can pick loop-free paths.
+[239.00s -> 243.00s]  And so, suddenly we've so far been talking mostly about applications
+[243.00s -> 246.00s]  and transport and all these things happening end to end.
+[246.00s -> 248.00s]  This is the unit we're going to look inside the middle
+[248.00s -> 250.00s]  and see what are actually the pieces that work
+[250.00s -> 254.00s]  and the mechanisms and the algorithms to make the internet work as it does today.
+[254.00s -> 256.00s]  And so when you come to the end of this unit,
+[256.00s -> 259.00s]  you should have a very good idea of the different strategies that we can take
+[259.00s -> 262.00s]  in order to route packets from A to B.

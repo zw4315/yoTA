@@ -1,0 +1,108 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.00s]  All right, in the next portion of the lecture, we're going to talk about how we can perform
+[6.00s -> 11.92s]  approximate inverse reinforcement learning in high-dimensional or continuous spaces.
+[11.92s -> 16.92s]  So what's missing from the methods that we've discussed so far? Well, so far maximum
+[16.92s -> 21.60s]  entropy inverse RL requires a number of things that are difficult to obtain in large
+[21.60s -> 26.68s]  realistic problem settings. It requires solving for the soft optimal policy in the
+[26.68s -> 31.16s]  inner loop in order to compute those backward and forward messages. It requires
+[31.16s -> 35.96s]  enumerating all state-action tuples in order to normalize the visitation
+[35.96s -> 40.34s]  frequency and compute the gradient, and to apply this in practical problem
+[40.34s -> 43.20s]  settings, willing to handle the fact that we might have large and
+[43.20s -> 46.56s]  continuous state and action spaces, which make both these things difficult.
+[46.56s -> 50.48s]  States might be obtained only by sampling, which makes enumerating all
+[50.48s -> 54.92s]  state-action tuples impossible, and we might have unknown dynamics, which makes
+[54.96s -> 60.32s]  the naive approaches for calculating the backward and forward messages infeasible.
+[60.32s -> 65.60s]  So the next anti-RAL algorithm, as I discussed so far, is not entirely
+[65.60s -> 69.40s]  practical to apply in realistic settings, and willing to come up with
+[69.40s -> 74.44s]  tractable approximations in order to handle the kind of high-dimensional and
+[74.44s -> 78.76s]  continuous problems that we often encounter in deep reinforcement learning.
+[78.76s -> 83.80s]  All right, so what can we do in order to make it possible to carry out
+[83.80s -> 87.96s]  inverse reinforcement learning with unknown dynamics and large state or
+[87.96s -> 93.56s]  action spaces? Well, first we'll assume that we don't know the dynamics, but
+[93.56s -> 98.02s]  that we can sample, like in standard model-free reinforcement learning.
+[98.02s -> 102.56s]  Recall that the gradient of the likelihood is the difference of two
+[102.56s -> 107.08s]  expected values. The expected value of the gradient reward for trajectories
+[107.08s -> 110.76s]  sampled from the expert, minus the expected value of the gradient of the
+[110.76s -> 115.28s]  reward for trajectories sampled from the optimal policy for your current reward
+[115.28s -> 120.88s]  function. You can estimate the first term easily by using the trajectory
+[120.88s -> 124.80s]  sampled from the expert, so the biggest challenge is really the second
+[124.80s -> 131.04s]  term, which requires the soft optimal policy under the current reward. So one
+[131.04s -> 135.44s]  idea that we could explore is, let's try to learn the soft optimal policy
+[135.44s -> 140.16s]  using p of a t given s t comma o one through t comma psi, using any
+[140.16s -> 144.16s]  max-cent RL algorithm, basically any of the algorithms from Monday's lecture,
+[144.16s -> 150.48s]  like soft Q-learning or entropy-regularized policy gradient, so
+[150.48s -> 156.08s]  basically anything that maximizes the subjective, and then run that policy to
+[156.08s -> 160.92s]  sample trajectories tau j. And then we would take the trajectories tau i from
+[160.92s -> 165.20s]  the expert, and we would use those to estimate the first expected value, and
+[165.20s -> 170.04s]  then we would use trajectories tau j from this max-cent optimal policy to
+[170.04s -> 175.76s]  estimate the second term. Now this would actually be a viable way to
+[175.76s -> 180.80s]  perform approximate max-cent IRL. However, it would require running
+[180.80s -> 185.96s]  max-cent RL, the corresponding forward problem, to convergence for every
+[185.96s -> 193.56s]  gradient step on the reward function. And that actually is pretty difficult. So
+[193.56s -> 197.24s]  the first sum is over the expert samples, the second sum is over policy
+[197.24s -> 204.64s]  samples. So this is the intractable procedure, learn the policy using any
+[204.64s -> 207.32s]  max-cent RL algorithm, and then run the policy to sample the
+[207.32s -> 211.88s]  trajectories. What if we instead have some kind of lazy policy optimization
+[211.88s -> 216.44s]  procedure? What if instead of optimizing the max-cent optimal policy to
+[216.44s -> 219.90s]  convergence every time we take a gradient step, what if we only optimize
+[219.94s -> 224.46s]  it a little bit each time we take a gradient step? So instead of learning
+[224.46s -> 229.90s]  p a t given s t o one through t comma psi, we just improve starting from the
+[229.90s -> 235.02s]  policy we had from the previous psi. And maybe we improve it a little bit,
+[235.02s -> 241.06s]  maybe we improve it even for just a single gradient step. The problem now
+[241.06s -> 246.18s]  is that our estimator is biased, we have the wrong distribution. So one
+[246.18s -> 250.94s]  solution we could have is we could use an important sampling correction. We
+[250.94s -> 254.82s]  could basically say, well, we wanted the optimal policy, but we got some sub
+[254.82s -> 260.14s]  optimal policy. Basically, we didn't train p a t given s t o one through t
+[260.14s -> 264.74s]  to convergence, but perhaps we can importance weight those samples to make
+[264.74s -> 270.10s]  them look like they were samples from the optimal policy. So instead of the
+[270.10s -> 273.06s]  equation that we have at the top of the slide, we're going to
+[273.06s -> 279.38s]  introduce some importance weight w j for the second term, where we'll weight each
+[279.38s -> 284.14s]  of the samples by w j and then normalize by the sum over w j's so that the weights
+[284.14s -> 289.50s]  sum up to one. And if we do this, we can correct for the bias due to not
+[289.50s -> 294.94s]  having fully optimized our policy. And it turns out that the importance
+[294.94s -> 302.02s]  weights actually have a very appealing form, because we know that the, you know,
+[302.02s -> 305.30s]  up to a normalization constant, the probabilities of the structures from the
+[305.30s -> 309.74s]  optimal policy are given by p of tau times the exponential of the reward, and
+[309.74s -> 314.02s]  we know the reward for the, well, not the true reward, but the reward for our
+[314.02s -> 317.06s]  current psi, so we can actually calculate these importance weights,
+[317.06s -> 321.66s]  provided that we have access to the policy that we just optimized to
+[321.66s -> 327.22s]  calculate the denominator, and we usually do. So the importance weights, we can
+[327.22s -> 331.50s]  write them out like this. This is very similar to what we had before in the
+[331.50s -> 335.86s]  lecture on importance weighted policy gradients. So we have the initial state
+[335.86s -> 340.26s]  terms, the dynamics terms, and at the top we have the additional reward terms, at
+[340.26s -> 344.88s]  the bottom we have the additional policy terms. So the unknown terms all
+[344.88s -> 349.94s]  cancel out, and we're just left with a ratio of the exponential, the total
+[349.94s -> 353.26s]  reward of that trajectory under your current reward function, divided by the
+[353.26s -> 357.06s]  product of the probabilities of all the actions. And since you just learned the
+[357.06s -> 360.66s]  policy pi, you would typically know its probability, you know, in continuous
+[360.66s -> 363.38s]  space, it might be something like a Gaussian probability, so you could
+[363.38s -> 370.74s]  calculate these importance weights. Now crucially, each policy update with
+[370.74s -> 375.42s]  respect to our psi brings us closer and closer to the target distribution, so
+[375.42s -> 379.02s]  we would expect that the more we optimize the policy, the closer these
+[379.02s -> 383.54s]  importance weights will go to one. So that's quite appealing. We can take
+[383.54s -> 388.06s]  gradient steps on psi even with an incompletely optimized policy, but the
+[388.06s -> 394.66s]  more we optimize the policy, the better our importance weights get. So this idea is
+[394.66s -> 400.02s]  the basis of the guided cost learning algorithm by Finn et al., which was the
+[400.02s -> 404.06s]  first, you know, deep inverse RL algorithm that could scale to high
+[404.06s -> 408.22s]  dimensional state and action spaces, and the design of this algorithm was
+[408.22s -> 412.98s]  the following. You have your initial guess of the policy pi, which might be just
+[412.98s -> 417.82s]  random, and you have some human demonstrations. Then you would sample
+[417.82s -> 422.14s]  from your current policy to generate the policy samples, and then you would use
+[422.14s -> 426.52s]  those policy samples and the human demonstrations to update the
+[426.52s -> 431.22s]  reward using essentially your samples and the demos. And then the updated
+[431.22s -> 437.22s]  reward would be used to update the policy. So at the end, this would produce
+[437.22s -> 441.46s]  a reward function and a policy actually, and if the policy was optimized to
+[441.46s -> 444.58s]  convergence, the policy would actually be a good policy for that reward
+[444.58s -> 447.78s]  function, and the reward function would hopefully be a good explanation of
+[447.78s -> 453.22s]  expert behavior. The reward function update would be based on that important
+[453.22s -> 456.74s]  sample expression I showed on the previous slide, and the policy update
+[456.74s -> 462.26s]  would just be based on the maximum entropy learning framework. So this is
+[462.26s -> 466.16s]  the expression for the reward gradient, and the policy gradient would just be
+[466.16s -> 470.94s]  the regular policy gradient with that additional entropy term. And then the
+[470.94s -> 474.54s]  rewards are just given by the ratio of the exponential rewards divided by the
+[474.54s -> 481.18s]  action probabilities. So in the original paper, what Chelsea Finn did is she
+[481.18s -> 486.70s]  actually collected demonstrations with a real robot showing how to pour into a
+[486.70s -> 491.82s]  cup, and then the learned policy would have to find the cup using vision and
+[491.82s -> 494.82s]  then pour into that cup regardless of where it was located. So I'd actually
+[494.82s -> 499.82s]  figure out the intent of the task, which was to perform the pouring.

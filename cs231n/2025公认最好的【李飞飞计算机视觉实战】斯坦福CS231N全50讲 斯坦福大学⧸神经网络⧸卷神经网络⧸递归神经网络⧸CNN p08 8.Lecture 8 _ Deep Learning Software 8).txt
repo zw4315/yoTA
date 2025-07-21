@@ -1,0 +1,376 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 1.84s]  Stanford University.
+[9.84s -> 10.66s]  Hello?
+[11.52s -> 14.24s]  Okay, it's after 12, so I want to get started.
+[14.24s -> 16.46s]  So today, lecture eight, we're going to talk about
+[16.46s -> 18.20s]  deep learning software.
+[18.20s -> 19.60s]  This is a super exciting topic,
+[19.60s -> 21.68s]  because it changes a lot every year.
+[21.68s -> 23.20s]  That also means it's a lot of work to give this
+[23.20s -> 25.96s]  lecture, because it changes a lot every year.
+[25.96s -> 28.46s]  But as usual, a couple administrative notes
+[28.50s -> 30.26s]  before we dive into the material.
+[30.26s -> 32.66s]  So as a reminder, the project proposals
+[32.66s -> 35.02s]  for your course projects were due on Tuesday.
+[35.02s -> 37.74s]  So hopefully you all turned that in,
+[37.74s -> 40.06s]  and hopefully you all have a somewhat good idea
+[40.06s -> 41.90s]  of what kind of projects you want to work on
+[41.90s -> 43.34s]  for the class.
+[43.34s -> 46.50s]  So we're in the process of assigning TAs to projects
+[46.50s -> 48.38s]  based on what the project area is
+[48.38s -> 50.42s]  and the expertise of the TAs.
+[50.42s -> 52.70s]  So we'll have some more information about that
+[52.70s -> 55.10s]  in the next couple days, I think.
+[55.10s -> 57.18s]  We're also in the process of grading assignment one,
+[57.22s -> 60.02s]  so stay tuned, and we'll get those grades back to you
+[60.02s -> 61.82s]  as soon as we can.
+[61.82s -> 63.82s]  Another reminder is that assignment two
+[63.82s -> 64.98s]  has been out for a while.
+[64.98s -> 66.74s]  That's going to be due next week,
+[66.74s -> 68.82s]  a week from today, Thursday.
+[68.82s -> 71.06s]  And again, when working on assignment two,
+[71.06s -> 73.18s]  remember to stop your Google Cloud instances
+[73.18s -> 76.42s]  when you're not working to try to preserve your credits.
+[76.42s -> 80.06s]  And another bit of confusion I just wanted to reemphasize
+[80.06s -> 82.90s]  is that for assignment two, you really only need to use
+[82.90s -> 85.06s]  GPU instances for the last notebook.
+[85.06s -> 87.42s]  For all the first several notebooks,
+[87.42s -> 89.14s]  it's just in Python and NumPy,
+[89.14s -> 91.86s]  so you don't need any GPUs for those questions.
+[91.86s -> 93.86s]  So again, conserve your credits,
+[93.86s -> 96.34s]  only use GPUs when you need them.
+[96.34s -> 99.34s]  And the final reminder is that the midterm is coming up.
+[99.34s -> 101.22s]  It's kind of hard to believe we're there already,
+[101.22s -> 105.38s]  but the midterm will be in class on Tuesday, 5-9.
+[105.38s -> 107.74s]  So the midterm will be more theoretical.
+[107.74s -> 109.78s]  It'll be sort of pen and paper,
+[109.78s -> 112.30s]  working through different kinds of,
+[112.30s -> 113.54s]  slightly more theoretical questions
+[113.54s -> 115.10s]  to check your understanding of the material
+[115.10s -> 116.70s]  we've covered so far.
+[116.70s -> 118.90s]  And I think we'll probably post at least a short
+[118.90s -> 121.78s]  sort of sample of the types of questions to expect.
+[121.78s -> 122.62s]  Question?
+[122.62s -> 124.74s]  Is it open book, or?
+[124.74s -> 127.38s]  Oh, yeah, question is whether it's open book.
+[127.38s -> 129.78s]  So we're going to say closed note, closed book.
+[129.78s -> 132.58s]  So just, yeah, yeah, so that's what we've done
+[132.58s -> 134.46s]  in the past, is just closed note, closed book,
+[134.46s -> 136.74s]  relatively just like, want to check that you understand
+[136.74s -> 140.90s]  the intuition behind most of the stuff we presented.
+[140.90s -> 144.66s]  So a quick recap, as a reminder of what we were talking
+[144.66s -> 147.22s]  about last time, last time we talked about fancier
+[147.22s -> 149.78s]  optimization algorithms for deep learning models,
+[149.78s -> 153.94s]  including SGD Momentum, Nesterov, RMSprop, and Adam.
+[153.94s -> 156.02s]  And we saw that these relatively small tweaks
+[156.02s -> 160.18s]  on top of vanilla SGD are relatively easy to implement,
+[161.06s -> 164.10s]  but can make your networks converge a bit faster.
+[164.10s -> 166.82s]  We also talked about regularization, especially dropout.
+[166.82s -> 168.98s]  So remember, dropout, you're kind of randomly setting
+[169.86s -> 171.78s]  parts of the network to zero during the forward pass,
+[171.78s -> 174.10s]  and then you kind of marginalize out over that noise
+[174.10s -> 175.10s]  at test time.
+[176.10s -> 178.10s]  And we saw that this was kind of a general pattern
+[178.10s -> 179.94s]  across many different types of regularization
+[179.94s -> 182.18s]  in deep learning, where you might add some kind of noise
+[182.18s -> 184.58s]  during training, but then marginalize out that noise
+[184.58s -> 187.62s]  at test time, so it's not stochastic at test time.
+[187.62s -> 189.70s]  We also talked about transfer learning, where you can
+[189.70s -> 191.94s]  maybe download big networks that were pre-trained
+[191.94s -> 193.86s]  on some data set, and then fine-tune them
+[193.86s -> 194.78s]  for your own problem.
+[194.78s -> 196.42s]  And this is one way that you can attack a lot
+[196.42s -> 197.86s]  of different problems in deep learning,
+[197.86s -> 201.54s]  even if you don't have a huge data set of your own.
+[201.54s -> 203.38s]  So today we're gonna shift gears a little bit
+[203.38s -> 205.30s]  and talk about some of the nuts and bolts
+[205.30s -> 208.42s]  about writing software and how the hardware works,
+[208.42s -> 210.98s]  and a little bit, diving into a lot of details
+[210.98s -> 213.38s]  about what the software looks like that you actually
+[213.38s -> 215.50s]  use to train these things in practice.
+[215.50s -> 218.46s]  So we'll talk a little bit about CPUs and GPUs,
+[218.46s -> 220.62s]  and then we'll talk about several of the major
+[220.62s -> 221.98s]  deep learning frameworks that are out there
+[221.98s -> 223.82s]  in use these days.
+[224.82s -> 228.34s]  So first, we've sort of mentioned this offhand
+[228.34s -> 230.22s]  a bunch of different times, that there's like,
+[230.22s -> 232.42s]  computers have CPUs, computers have GPUs,
+[232.42s -> 234.86s]  deep learning uses GPUs, but we weren't really
+[234.86s -> 237.30s]  too explicit up to this point about what exactly
+[237.30s -> 239.50s]  these things are and why one might be better
+[239.50s -> 241.78s]  than another for different tasks.
+[241.78s -> 243.98s]  So who's built a computer before?
+[243.98s -> 246.26s]  Just kind of show of hands.
+[246.26s -> 248.90s]  So maybe about a third of you, half of you,
+[248.90s -> 250.62s]  somewhere around that ballpark.
+[251.38s -> 255.74s]  So this is a shot of my computer at home that I built,
+[255.74s -> 258.18s]  and you can see that there's a lot of stuff
+[258.18s -> 259.42s]  going on inside the computer.
+[259.42s -> 262.66s]  Maybe, hopefully, you know what most of these parts are.
+[262.66s -> 265.86s]  And the CPU is the central processing unit.
+[265.86s -> 268.50s]  That's this little chip hidden under this cooling fan
+[268.50s -> 271.78s]  right here near the top of the case.
+[271.78s -> 275.06s]  And the CPU is actually a relatively small piece.
+[275.06s -> 277.02s]  It's a relatively small thing inside the case.
+[277.02s -> 278.82s]  It's not taking up a lot of space.
+[278.86s -> 281.66s]  And the GPUs are these two big monster things
+[281.66s -> 283.62s]  that are taking up a gigantic amount of space
+[283.62s -> 286.78s]  in the case, they have their own cooling,
+[286.78s -> 289.66s]  they're taking a lot of power, they're quite large.
+[289.66s -> 293.30s]  So just in terms of how much power they're using,
+[293.30s -> 295.26s]  in terms of how big they are, the GPUs are kind of
+[295.26s -> 297.50s]  physically imposing and taking up a lot of space
+[297.50s -> 298.46s]  in the case.
+[298.46s -> 300.38s]  So the question is, what are these things
+[300.38s -> 304.14s]  and why are they so important for deep learning?
+[304.14s -> 306.58s]  Well, the GPU is called a graphics card
+[306.58s -> 308.10s]  or a graphics processing unit.
+[308.26s -> 310.78s]  And these were really developed originally
+[310.78s -> 312.62s]  for rendering computer graphics,
+[312.62s -> 315.58s]  and especially around games and that sort of thing.
+[315.58s -> 319.46s]  So another show of hands, who plays video games
+[319.46s -> 322.30s]  at home sometimes from time to time on their computer?
+[322.30s -> 324.94s]  Yeah, so again, maybe about half, good fraction.
+[324.94s -> 327.22s]  So for those of you who've played video games before
+[327.22s -> 329.06s]  and who've built your own computers,
+[329.06s -> 331.74s]  you probably have your own opinions on this debate.
+[331.74s -> 336.26s]  So this is one of those big debates in computer science,
+[337.10s -> 340.58s]  there's Intel versus AMD and NVIDIA versus AMD
+[340.58s -> 343.30s]  for graphics cards, maybe up there with VIM versus EMACS
+[343.30s -> 345.70s]  for text editor, and pretty much any gamer
+[345.70s -> 348.66s]  has their own opinions on which of these two sides
+[348.66s -> 351.22s]  they prefer for their own cards.
+[351.22s -> 354.02s]  And in deep learning, we kind of have mostly picked
+[354.02s -> 358.18s]  one side of this fight, and that's NVIDIA.
+[358.18s -> 360.02s]  So if you guys have AMD cards,
+[360.02s -> 361.98s]  you might be in a little bit more trouble
+[361.98s -> 364.22s]  if you want to use those for deep learning.
+[364.30s -> 367.06s]  And really NVIDIA's been pushing a lot for deep learning
+[367.06s -> 369.82s]  in the last several years, it's been kind of a large focus
+[369.82s -> 372.70s]  of some of their strategy, and they put a lot of effort
+[372.70s -> 374.74s]  into engineering sort of good solutions
+[374.74s -> 378.58s]  to make their hardware better suited for deep learning.
+[378.58s -> 383.30s]  So most people in deep learning, when we talk about GPUs,
+[383.30s -> 386.98s]  we're pretty much exclusively talking about NVIDIA GPUs.
+[386.98s -> 388.82s]  Maybe in the future this will change a little bit
+[388.82s -> 390.34s]  and there might be new players coming up,
+[390.34s -> 392.78s]  but at least for now NVIDIA is pretty dominant.
+[394.78s -> 397.06s]  So to give you an idea of what is the difference
+[397.06s -> 399.82s]  between a CPU and a GPU, I've kind of made
+[399.82s -> 400.98s]  a little spreadsheet here.
+[400.98s -> 404.14s]  On the top we have two of the kind of top end
+[404.14s -> 407.42s]  Intel consumer CPUs, and on the bottom we have two
+[407.42s -> 411.66s]  of NVIDIA's sort of current top end consumer GPUs.
+[411.66s -> 415.46s]  And there's a couple general trends to notice here.
+[415.46s -> 418.54s]  Both GPUs and CPUs are kind of a general purpose
+[418.54s -> 420.90s]  computing machine where they can execute programs
+[420.90s -> 423.06s]  and do sort of arbitrary instructions,
+[423.10s -> 425.70s]  but they're qualitatively pretty different.
+[425.70s -> 429.26s]  So CPUs tend to have just a few cores.
+[429.26s -> 432.74s]  For consumer desktop CPUs these days,
+[432.74s -> 434.54s]  they might have something like four or six
+[434.54s -> 436.58s]  or maybe up to 10 cores.
+[436.58s -> 440.18s]  With hyper-threading technology that means they can run,
+[440.18s -> 442.42s]  the hardware can physically run like maybe eight
+[442.42s -> 444.62s]  or up to 20 threads concurrently.
+[444.62s -> 449.18s]  So the CPU can maybe do 20 things in parallel at once,
+[449.18s -> 451.30s]  which is not a gigantic number,
+[451.34s -> 454.18s]  but those threads for a CPU are pretty powerful.
+[454.18s -> 456.94s]  They can actually do a lot of things, they're very fast.
+[456.94s -> 459.02s]  Every CPU instruction can actually do quite a lot
+[459.02s -> 462.50s]  of stuff, and they can all work pretty independently.
+[462.50s -> 465.26s]  For GPUs, it's a little bit different.
+[465.26s -> 467.86s]  So for GPUs we see that these sort of common
+[467.86s -> 471.38s]  top end consumer GPUs have thousands of cores.
+[471.38s -> 475.62s]  So the NVIDIA Titan XP, which is the current
+[475.62s -> 480.14s]  top of the line consumer GPU, has 3,840 cores.
+[480.46s -> 482.86s]  So that's a crazy number, that's like way more
+[482.86s -> 484.22s]  than the 10 cores that you'll get
+[484.22s -> 486.62s]  for a similarly priced CPU.
+[486.62s -> 489.18s]  The downside of a GPU is that each of those cores,
+[489.18s -> 491.78s]  one, it runs at a much lower clock speed,
+[491.78s -> 494.58s]  and two, they really can't do quite as much.
+[494.58s -> 496.42s]  You can't really compare CPU cores
+[496.42s -> 499.50s]  and GPU cores apples to apples.
+[499.50s -> 502.50s]  The GPU cores can't really operate very independently.
+[502.50s -> 503.90s]  They all kind of need to work together
+[503.90s -> 506.66s]  and sort of parallelize one task across many cores
+[506.66s -> 509.02s]  rather than each core totally doing its own thing.
+[509.38s -> 512.62s]  So you can't really compare these numbers directly,
+[512.62s -> 513.90s]  but it should give you the sense
+[513.90s -> 516.02s]  that due to the large number of cores,
+[516.02s -> 518.94s]  GPUs are really good for parallel things
+[518.94s -> 520.26s]  where you need to do a lot of things
+[520.26s -> 522.10s]  all at the same time, but those things
+[522.10s -> 524.06s]  are all pretty much the same flavor.
+[525.14s -> 528.26s]  Another thing to point out between CPUs and GPUs
+[528.26s -> 530.18s]  is this idea of memory.
+[530.18s -> 533.94s]  So CPUs have some cache on the CPU,
+[533.94s -> 536.34s]  but that's relatively small, and the majority
+[536.34s -> 538.70s]  of the memory for your CPU is pulling
+[539.42s -> 540.50s]  from your system memory, the RAM,
+[540.50s -> 544.34s]  which will maybe be like eight, 12, 16, 32 gigabytes of RAM
+[544.34s -> 547.18s]  on a typical consumer desktop these days,
+[547.18s -> 549.46s]  whereas GPUs actually have their own RAM
+[549.46s -> 550.50s]  built into the chip.
+[552.18s -> 553.42s]  There's a pretty large bottleneck
+[553.42s -> 555.58s]  communicating between the RAM in your system
+[555.58s -> 558.66s]  and the GPU, so that GPUs typically have
+[558.66s -> 562.06s]  their own relatively large block of memory
+[562.06s -> 565.98s]  within the card itself, and for the Titan XP,
+[565.98s -> 567.70s]  which again is maybe the current
+[567.74s -> 569.10s]  top-of-the-line consumer card,
+[569.10s -> 573.78s]  this thing has 12 gigabytes of memory local to the GPU.
+[573.78s -> 575.78s]  GPUs also have their own caching system
+[575.78s -> 578.06s]  where there's sort of multiple hierarchies of caching
+[578.06s -> 580.42s]  between the 12 gigabytes of GPU memory
+[580.42s -> 583.66s]  and the actual GPU cores, and that's somewhat similar
+[583.66s -> 586.26s]  to the caching hierarchy that you might see in a CPU.
+[588.22s -> 591.38s]  So CPUs are kind of good for general-purpose processing.
+[591.38s -> 592.78s]  They can do a lot of different things,
+[592.78s -> 594.50s]  and GPUs are maybe more specialized
+[594.50s -> 597.30s]  for these highly-paralyzable algorithms.
+[597.74s -> 599.26s]  The prototypical algorithm of something
+[599.26s -> 600.50s]  that works really, really well
+[600.50s -> 604.78s]  and is perfectly suited to a GPU is matrix multiplication.
+[604.78s -> 606.70s]  Remember, in matrix multiplication,
+[606.70s -> 608.54s]  on the left, we've got a matrix
+[608.54s -> 609.98s]  composed of a bunch of rows.
+[609.98s -> 612.46s]  We multiply that on the right by another matrix
+[612.46s -> 614.14s]  composed of a bunch of columns,
+[614.14s -> 616.30s]  and then this produces a final matrix
+[616.30s -> 618.82s]  where each element in the output matrix
+[618.82s -> 620.94s]  is a dot product between one of the rows
+[620.94s -> 623.58s]  and one of the columns of the two input matrices.
+[623.58s -> 625.54s]  These dot products are all independent.
+[626.54s -> 629.10s]  For this output matrix, you could split it up completely
+[629.10s -> 630.94s]  and have each of those different elements
+[630.94s -> 633.82s]  of the output matrix all being computed in parallel,
+[633.82s -> 636.22s]  and they all sort of are running the same computation,
+[636.22s -> 638.58s]  which is taking a dot product of these two vectors,
+[638.58s -> 640.70s]  but exactly where they're reading that data from
+[640.70s -> 643.98s]  is from different places in the two input matrices.
+[643.98s -> 645.86s]  So you could imagine that for a GPU,
+[645.86s -> 648.10s]  you can just blast this out and have all of these
+[648.10s -> 650.74s]  elements of the output matrix all computed in parallel,
+[650.74s -> 652.70s]  and that could make this thing
+[652.70s -> 655.30s]  actually compute super, super fast on GPU.
+[655.90s -> 658.74s]  That's kind of the prototypical type of problem
+[658.74s -> 660.50s]  where a GPU is really well-suited,
+[660.50s -> 661.90s]  where a CPU might have to go in
+[661.90s -> 663.10s]  and step through sequentially
+[663.10s -> 666.34s]  and compute each of these elements one by one.
+[666.34s -> 669.66s]  That picture is a little bit of a caricature
+[669.66s -> 671.86s]  because CPUs these days have multiple cores.
+[671.86s -> 674.22s]  They can do vectorized instructions as well,
+[674.22s -> 677.66s]  but still, for these massively parallel problems,
+[677.66s -> 679.62s]  GPUs tend to have much better throughput,
+[679.62s -> 682.78s]  especially when these matrices get really, really big.
+[682.78s -> 685.50s]  By the way, convolution is kind of the same kind of story,
+[685.50s -> 688.06s]  where in convolution, we have this input tensor,
+[688.06s -> 689.50s]  we have this weight tensor,
+[689.50s -> 691.34s]  and then every point in the output tensor
+[691.34s -> 693.74s]  after convolution is, again, some inner product
+[693.74s -> 695.04s]  between some part of the weights
+[695.04s -> 696.62s]  and some part of the input.
+[696.62s -> 698.26s]  You can imagine that a GPU could really
+[698.26s -> 700.14s]  parallelize this computation,
+[700.14s -> 701.86s]  split it all up across the many cores,
+[701.86s -> 703.54s]  and compute it very quickly.
+[703.54s -> 705.70s]  So that's kind of the general flavor
+[705.70s -> 707.62s]  of the types of problems where GPUs
+[707.62s -> 710.22s]  give you a huge speed advantage over CPUs.
+[711.22s -> 714.86s]  You can actually write programs that run directly on GPUs.
+[714.86s -> 716.90s]  So NVIDIA has this CUDA abstraction,
+[716.90s -> 719.90s]  which lets you write code that kind of looks like C,
+[719.90s -> 722.90s]  but executes directly on the GPUs.
+[722.90s -> 725.46s]  But writing CUDA code is really, really tricky.
+[725.46s -> 727.66s]  It's actually really tough to write CUDA code
+[727.66s -> 729.66s]  that's performant and actually squeezes all the juice
+[729.66s -> 731.30s]  out of these GPUs.
+[731.30s -> 733.50s]  You have to be very careful managing the memory hierarchy
+[733.50s -> 735.50s]  and making sure you don't have cache misses
+[735.50s -> 738.34s]  and branch miss predictions and all that sort of stuff.
+[738.38s -> 739.82s]  So it's actually really, really hard
+[739.82s -> 742.18s]  to write performant CUDA code on your own.
+[742.18s -> 745.58s]  So as a result, NVIDIA has released a lot of libraries
+[745.58s -> 748.42s]  that implement common computational primitives
+[748.42s -> 751.86s]  that are very, very highly optimized for GPUs.
+[751.86s -> 754.82s]  So for example, NVIDIA has a cuBLAST library
+[754.82s -> 757.42s]  that implements different kinds of matrix multiplications
+[757.42s -> 759.02s]  and different matrix operations
+[759.02s -> 761.58s]  that are super optimized, run really well on GPU,
+[761.58s -> 766.02s]  get very close to theoretical peak hardware utilization.
+[766.02s -> 768.26s]  Similarly, they have a cuDNN library,
+[768.26s -> 770.06s]  which implements things like convolution,
+[770.06s -> 772.58s]  forward and backward passes, batch normalization,
+[772.58s -> 774.22s]  recurrent networks, all these kinds
+[774.22s -> 776.70s]  of computational primitives that we need in deep learning.
+[776.70s -> 779.18s]  NVIDIA has gone in there and released their own binaries
+[779.18s -> 781.70s]  that compute these primitives very efficiently
+[781.70s -> 783.34s]  on NVIDIA hardware.
+[783.34s -> 786.94s]  So in practice, you tend not to end up writing
+[786.94s -> 788.90s]  your own CUDA code for deep learning.
+[788.90s -> 792.30s]  You typically are just mostly calling into existing code
+[792.30s -> 793.90s]  that other people have written,
+[793.90s -> 796.18s]  much of which is the stuff which has been heavily
+[796.18s -> 798.66s]  optimized by NVIDIA already.
+[798.66s -> 801.78s]  There's another sort of language called OpenCL,
+[801.78s -> 803.02s]  which is a bit more general,
+[803.02s -> 805.46s]  runs on more than just NVIDIA GPUs,
+[805.46s -> 808.42s]  can run on AMD hardware, can run on CPUs.
+[808.42s -> 813.10s]  But OpenCL, nobody's really spent a really large amount
+[813.10s -> 815.66s]  of effort and energy trying to get optimized
+[815.66s -> 817.90s]  deep learning primitives for OpenCL,
+[817.90s -> 819.78s]  so it tends to be a lot less performant
+[819.78s -> 823.26s]  than the super optimized versions in CUDA.
+[823.70s -> 825.82s]  So maybe in the future, we might see a bit
+[825.82s -> 827.86s]  of a more open standard, and we might see this
+[827.86s -> 830.62s]  across many different more types of platforms.
+[830.62s -> 833.62s]  But at least for now, NVIDIA's kind of the main game
+[833.62s -> 835.22s]  in town for deep learning.
+[835.22s -> 837.58s]  So you can check, there's a lot of different resources
+[837.58s -> 840.78s]  for learning about how you can do GPU programming yourself.
+[840.78s -> 842.78s]  It's kind of fun, it's sort of a different paradigm
+[842.78s -> 844.38s]  of writing code, because it's this massively
+[844.38s -> 846.78s]  parallel architecture, but that's a bit beyond
+[846.78s -> 848.06s]  the scope of this course.
+[848.06s -> 849.74s]  And again, you don't really need to write
+[849.74s -> 852.38s]  your own CUDA code much in practice for deep learning.
+[852.42s -> 854.78s]  And in fact, I've never written my own CUDA code
+[854.78s -> 856.42s]  for any research project.
+[856.42s -> 858.66s]  But it is kind of useful to know how it works
+[858.66s -> 859.90s]  and what are the basic ideas,
+[859.90s -> 863.14s]  even if you're not writing it yourself.
+[863.14s -> 865.94s]  So if you want to look at CPU, GPU performance
+[865.94s -> 868.74s]  in practice, I did some benchmarks last summer
+[868.74s -> 873.74s]  comparing a relatively, like a decent Intel CPU
+[873.82s -> 875.34s]  against a bunch of different GPUs
+[875.34s -> 878.58s]  that were sort of near top of the line at that time.
+[878.58s -> 880.90s]  And these were my own benchmarks that you can find
+[880.94s -> 882.42s]  more details on GitHub.
+[882.42s -> 886.10s]  But my findings were that for things like VGG,
+[886.10s -> 889.46s]  16 and 19, ResNets, various ResNets,
+[889.46s -> 892.90s]  then you typically see something like a 65 to 75
+[892.90s -> 896.54s]  times speed up when running the exact same computation
+[896.54s -> 899.14s]  on a top of the line GPU, in this case
+[899.14s -> 902.14s]  a Pascal Titan X, versus a top of the line,
+[902.14s -> 904.06s]  well, not quite top of the line CPU,
+[904.06s -> 908.74s]  which in this case was an Intel E5 processor.
+[908.78s -> 911.98s]  Although, I'd like to make one sort of caveat here,
+[911.98s -> 913.54s]  is that you always need to be super careful
+[913.54s -> 915.22s]  whenever you're reading any kind of benchmarks
+[915.22s -> 917.46s]  about deep learning, because it's super easy
+[917.46s -> 919.66s]  to be unfair between different things.
+[919.66s -> 921.46s]  And you kind of need to know a lot of the details
+[921.46s -> 923.38s]  about what exactly is being benchmarked
+[923.38s -> 925.86s]  in order to know whether or not the comparison is fair.
+[925.86s -> 928.58s]  So in this case, I'll come right out and tell you
+[928.58s -> 932.26s]  that probably this comparison is a little bit unfair to CPU,
+[932.26s -> 935.46s]  because I didn't spend a lot of effort
+[935.46s -> 938.26s]  trying to squeeze the maximal performance out of CPUs
+[938.82s -> 941.06s]  I probably could have tuned the BLAST libraries better
+[941.06s -> 943.30s]  for the CPU performance, and I probably could have gotten
+[943.30s -> 944.82s]  these numbers a bit better.
+[944.82s -> 946.66s]  This was sort of out of the box performance

@@ -1,0 +1,295 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 5.60s]  All right, so on Monday we had kind of a longer lecture about core topics in
+[5.60s -> 9.24s]  exploration. In today's lecture, we're going to do something a little different.
+[9.24s -> 12.88s]  I'm actually going to discuss a different perspective on exploration,
+[12.88s -> 17.64s]  which is quite distinct from the one on Monday, and a little bit unusual.
+[17.64s -> 21.44s]  This is not how most people think about exploration problems, but I think
+[21.44s -> 24.44s]  it offers a different perspective that might get us thinking about what
+[24.44s -> 29.80s]  exploration really is. So this lecture is much more of kind of a state-of-the-art
+[29.92s -> 34.32s]  research-focused lecture, partly to get you thinking about final project topics,
+[34.32s -> 38.80s]  partly to just get you thinking about how else we could consider the
+[38.80s -> 43.52s]  exploration problem differently from how it is considered conventionally.
+[43.52s -> 46.80s]  And this lecture will be probably a little bit shorter and a little bit
+[46.80s -> 54.68s]  quicker to get through. All right, so what's the the exploration problem, just
+[54.68s -> 57.84s]  to recap from Monday? Well, the exploration problem can be kind of
+[57.88s -> 63.24s]  summarized with these two animations. So in Homework 3, you used your Q learning
+[63.24s -> 67.60s]  algorithm to learn a variety of Atari games, and probably some of them work
+[67.60s -> 71.64s]  pretty well. But some games are easy to learn, whereas others are seemingly
+[71.64s -> 75.92s]  impossible. And we learned on Monday how this is due in part to the fact that
+[75.92s -> 79.72s]  some of these games have highly delayed rewards, where intermediate
+[79.72s -> 83.76s]  reward signals don't really correlate with what you're supposed to be doing.
+[84.60s -> 87.92s]  So that's what Monday's lecture was about. And conventionally, we think about
+[87.92s -> 92.08s]  exploration as this problem where you have to trade off exploration,
+[92.08s -> 97.36s]  exploitation, and figure out some way to incentivize your RL agent to visit
+[97.36s -> 102.00s]  novel, unusual states or states where it has a lot of information gain.
+[104.28s -> 107.12s]  But here is a different way we can think about the exploration problem.
+[107.28s -> 112.28s]  What if we don't just consider delayed rewards or sparse rewards, but we
+[112.28s -> 115.32s]  consider a setting where the rewards are absent altogether? What if we want to
+[115.32s -> 121.40s]  recover diverse behaviors without any reward signal at all? So you could
+[121.40s -> 127.00s]  imagine this from kind of a more of an AI or kind of scientific perspective.
+[127.00s -> 131.92s]  You could say, well, human children, for example, seem to be able to, you
+[131.92s -> 135.16s]  know, spend copious amounts of time playing with things in their
+[135.16s -> 138.84s]  environment. Presumably they're not acting randomly, and presumably they're
+[138.84s -> 142.52s]  getting something out of this. You know, it's an energy-intensive activity both
+[142.52s -> 146.28s]  for them and their parents. So there must be a reason why this is something
+[146.28s -> 149.64s]  that people do. Probably there is something that is learned through play,
+[149.64s -> 155.24s]  through undirected exploration, and it's not just random. There's some
+[155.24s -> 159.28s]  notion of goals being set, some notion of goals being accomplished, and some
+[159.28s -> 163.64s]  presumably very useful body of knowledge that is distilled with the
+[163.64s -> 168.48s]  brain through this activity. So why might we want to learn without any
+[168.52s -> 172.52s]  reward function at all? Well, perhaps we could acquire a variety of
+[172.52s -> 177.60s]  different skills without any explicit reward supervision, create a
+[177.60s -> 180.84s]  repertoire of those skills, and then use them to accomplish new
+[180.84s -> 184.24s]  goals when those goals are given to us. Maybe we can use some
+[184.24s -> 187.60s]  sub-skills that we can use with perhaps a hierarchical
+[187.60s -> 191.24s]  reinforcement learning scheme. And perhaps we can explore the
+[191.24s -> 195.92s]  space of possible behaviors to build up a large data set, a large
+[195.92s -> 201.00s]  software that can then be used to acquire other tasks. So this is a
+[201.00s -> 203.60s]  pretty different way of thinking about exploration. Conventionally,
+[203.60s -> 206.72s]  exploration is thought of as this problem where you just have to
+[206.72s -> 209.68s]  seek out the states that have reward. Here we're thinking about it
+[209.68s -> 212.96s]  instead as the problem of acquiring skills that could then be
+[212.96s -> 218.04s]  repurposed later. If you want a kind of a more practically-minded
+[218.04s -> 223.16s]  example, you could imagine that you have a robot in your home and
+[223.20s -> 226.52s]  you buy that robot, you put it in your kitchen, and then you
+[226.52s -> 231.76s]  turn it on. And the robot's job is to figure out what it can do
+[231.76s -> 234.68s]  in this environment that could potentially be useful. So that
+[234.68s -> 239.32s]  when you come home in the evening and you say, well, now
+[239.32s -> 242.80s]  I need you to do my dishes, whatever the robot practiced
+[242.80s -> 246.68s]  during this unsupervised phase, it can repurpose to very
+[246.68s -> 251.68s]  efficiently figure out how to clean your dishes. So if you
+[251.68s -> 254.32s]  prepare for an unknown future goal, then when that goal is
+[254.32s -> 257.32s]  given to you, you can accomplish it quite quickly.
+[259.20s -> 263.36s]  Alright, so in today's lecture, we're going to cover a few
+[263.36s -> 267.04s]  concepts that might help us start thinking about this
+[267.04s -> 270.00s]  problem. This is a big open area of research. There are no
+[270.04s -> 273.24s]  fixed, known, and perfect solutions. But perhaps some of
+[273.24s -> 275.88s]  the concepts I'll discuss might help you start thinking about
+[275.88s -> 278.92s]  how formal mathematical tools and reinforcement learning
+[278.92s -> 281.68s]  algorithms could be brought to bear on this kind of
+[281.68s -> 285.56s]  problem. So we'll discuss first some definitions and
+[285.56s -> 288.64s]  concepts from information theory, which many of you
+[288.64s -> 291.16s]  might already be familiar with. But getting a refresh on
+[291.16s -> 293.80s]  those will be important for everyone to be on the same
+[293.80s -> 297.76s]  page as we talk about the more sophisticated algorithms
+[297.76s -> 301.28s]  that come next. Then we'll discuss how we can learn
+[301.32s -> 304.32s]  without a reward function to figure out strategies for
+[304.32s -> 306.96s]  reaching goals. So we'll have an algorithm that proposes
+[306.96s -> 309.88s]  goals, attempts to reach them, and through that process
+[309.92s -> 314.72s]  acquires a deeper understanding of the world. Then we'll
+[314.72s -> 316.84s]  talk about a state distribution matching
+[316.84s -> 320.28s]  formulation of reinforcement learning, where we can
+[320.32s -> 322.72s]  match desired state distributions, and in the
+[322.72s -> 327.36s]  process, perform unsupervised exploration. We'll discuss
+[327.36s -> 330.28s]  whether coverage of valid states, whether basically
+[330.32s -> 332.92s]  breadth and novelty is a good exploration objective by
+[332.92s -> 336.84s]  itself and why it might be. And then we'll talk about
+[336.84s -> 339.04s]  how we can go beyond just covering states and actually
+[339.04s -> 340.84s]  covering the space of skills and what the
+[340.84s -> 344.60s]  distinction between those is. All right, but let's
+[344.60s -> 347.12s]  start with some definitions and concepts from
+[347.12s -> 349.52s]  information theory before we dive into the main
+[349.52s -> 354.08s]  technical portion of today's lecture. So first, some
+[354.08s -> 358.48s]  useful identities. As all of you probably know, we can
+[358.48s -> 360.96s]  use p of x to denote a distribution, and of course
+[360.96s -> 363.00s]  we'll see that a lot in today's lecture. We saw that
+[363.00s -> 367.04s]  a lot already. And you can think of a distribution as
+[367.04s -> 368.84s]  something that you fit to a bunch of points, and you
+[368.84s -> 371.72s]  get maybe a density in continuous space or a
+[371.72s -> 375.32s]  distribution in discrete space. H of p of x denotes
+[375.32s -> 379.24s]  entropy, and we've seen this before. Entropy is
+[379.24s -> 382.80s]  defined as the negative of the expected value of the
+[382.80s -> 386.44s]  log probability of x. And intuitively, entropy
+[386.44s -> 390.24s]  quantifies how broad a distribution is. So if you
+[390.24s -> 392.84s]  have a discrete variable x, then the uniform
+[392.84s -> 395.56s]  distribution has the largest entropy, whereas a
+[395.56s -> 398.04s]  distribution that is peaked on exactly one value
+[398.04s -> 401.52s]  and zero everywhere else has the lowest entropy. So
+[401.52s -> 403.28s]  intuitively, the entropy is kind of the width of
+[403.28s -> 407.84s]  this distribution. So that's stuff that hopefully
+[407.84s -> 411.92s]  all of you are familiar with. Now, another
+[411.92s -> 413.88s]  concept which maybe not everyone is familiar with,
+[413.88s -> 416.68s]  but that will come up a lot in today's lecture, is
+[416.68s -> 420.16s]  mutual information. The mutual information between
+[420.16s -> 422.64s]  two variables x and y, which we write with a
+[422.64s -> 424.96s]  semicolon like this, because we could also have
+[424.96s -> 426.76s]  mutual information between groups of variables. So
+[426.76s -> 429.24s]  you could have mutual information between x
+[429.24s -> 432.12s]  together with z and y, in which case you would
+[432.12s -> 436.48s]  write I of x comma z semicolon y. This is
+[436.48s -> 438.80s]  defined as the KL divergence, and remember, KL
+[438.80s -> 441.84s]  divergence is a measure of how different two
+[441.84s -> 444.28s]  distributions are. It's defined as the KL
+[444.28s -> 447.00s]  divergence between the joint distribution over x and
+[447.00s -> 450.44s]  y, and the product of their marginals. So
+[450.44s -> 453.36s]  intuitively, if x and y are independent of each
+[453.36s -> 455.92s]  other, then their joint will just be their
+[455.92s -> 457.92s]  product of marginals, and the KL divergence will
+[457.92s -> 460.84s]  be zero. As x and y depend on each other more
+[460.84s -> 463.20s]  and more, their joint distribution will be more
+[463.20s -> 465.00s]  and more different from their product of
+[465.00s -> 467.40s]  marginals, in which case you'll see the KL
+[467.40s -> 473.80s]  divergence go up. Now we can write the mutual
+[473.80s -> 476.00s]  information as the expected, you know, just
+[476.00s -> 478.24s]  using the definition of KL divergence, as the
+[478.24s -> 480.72s]  expected value under the joint distribution
+[480.72s -> 483.88s]  over x and y of the log of the ratio of the
+[483.88s -> 488.48s]  joint and the product of marginals. Intuitively,
+[488.60s -> 490.24s]  you can think of it like this. If these
+[490.24s -> 492.08s]  green dots represent samples from our
+[492.08s -> 495.24s]  distribution, here looking at this picture, you
+[495.24s -> 497.92s]  notice that there is a clear trend. The y
+[497.92s -> 500.44s]  values clearly depend on the x values. They're
+[500.44s -> 502.52s]  not fully determined by the x values, but
+[502.52s -> 503.96s]  there is definitely a trend in our
+[503.96s -> 508.24s]  relationship. Whereas here, the y values seemingly
+[508.24s -> 511.52s]  don't depend on the x values. So in the top
+[511.52s -> 513.28s]  picture, you have high mutual information.
+[513.32s -> 515.48s]  Essentially, if I tell you x, you can do a
+[515.48s -> 518.32s]  decent job of guessing y. At the bottom, you
+[518.32s -> 520.40s]  have low mutual information. If I tell you x,
+[520.52s -> 522.72s]  you will not do any better at guessing y than
+[522.72s -> 526.12s]  if I hadn't told you about it. Now, one
+[526.12s -> 529.04s]  important thing about mutual information is that
+[529.04s -> 531.36s]  it can be also written as a difference of two
+[531.36s -> 533.76s]  entropies. So you can write the mutual
+[533.76s -> 537.32s]  information as the entropy of y minus the
+[537.32s -> 541.44s]  entropy of y given x. And this just follows
+[541.44s -> 542.84s]  from a little bit of algebra. So you can
+[542.84s -> 545.20s]  basically start with the definition at the top,
+[545.28s -> 547.44s]  manipulate that equation a little bit, and you
+[547.44s -> 548.60s]  will end up with the equation at the
+[548.60s -> 551.84s]  bottom. But this way of writing mutual
+[551.84s -> 555.20s]  information also has a very appealing intuitive
+[555.20s -> 557.52s]  interpretation. You can think of mutual
+[557.52s -> 560.48s]  information as the reduction in the entropy of y
+[560.56s -> 563.36s]  that you get from observing x. This is
+[563.36s -> 565.92s]  essentially like that information gain
+[566.00s -> 568.12s]  calculation that we saw in the previous
+[568.12s -> 570.92s]  lecture on Monday. So mutual information tells
+[570.92s -> 573.16s]  you how informative x is about y, and because
+[573.16s -> 575.60s]  it's symmetric, it also tells you about how
+[575.60s -> 577.92s]  informative y is about x.
+[581.00s -> 584.64s]  All right, so let's tie this into RL a little
+[584.64s -> 587.20s]  bit. So the kind of information theoretic
+[587.28s -> 589.24s]  quantities that will be useful in our
+[589.24s -> 591.60s]  discussion in today's lecture will be the
+[591.60s -> 594.40s]  following. I'll use pi of s to denote the
+[594.40s -> 597.00s]  state marginal distribution of policy pi. In
+[597.00s -> 598.36s]  previous lectures, I also referred to this
+[598.36s -> 600.68s]  sometimes as p theta of s, same exact thing.
+[602.12s -> 604.84s]  When I write h of pi of s, this refers to
+[604.84s -> 608.44s]  the state marginal entropy of a policy pi. Now,
+[608.68s -> 610.80s]  this is kind of an interesting quantity
+[610.80s -> 612.84s]  because it quantifies the coverage that our
+[612.84s -> 614.96s]  policy gets. So if you have a very random
+[614.96s -> 618.08s]  policy that visits all possible states, you
+[618.08s -> 620.48s]  would expect that h of pi of s would be
+[620.48s -> 625.68s]  large. Here's an example of how mutual
+[625.68s -> 629.00s]  information can crop up in reinforcement
+[629.00s -> 630.92s]  learning, and I won't go into this in too
+[630.92s -> 633.36s]  much detail, but it's a fairly intuitive
+[633.36s -> 635.84s]  concept that's worth bringing up. So one
+[635.84s -> 639.12s]  very classic quantity that has been defined
+[639.12s -> 640.36s]  in reinforcement learning in terms of
+[640.36s -> 642.32s]  mutual information is something called
+[642.32s -> 644.00s]  empowerment. So a lot of this comes from
+[644.00s -> 646.36s]  work by Daniel Polanyi and colleagues.
+[647.36s -> 649.56s]  Empowerment is defined as the mutual
+[649.56s -> 652.16s]  information between the next state and the
+[652.16s -> 654.56s]  current action. There are a lot of variants
+[654.56s -> 656.16s]  of empowerment. It has also been defined
+[656.16s -> 658.08s]  as the mutual information between the next
+[658.08s -> 659.72s]  state and the current action, given the
+[659.72s -> 662.00s]  current state, as well as other variants. But
+[662.00s -> 665.20s]  let's think about the simple version, the
+[665.20s -> 668.12s]  mutual information between the next state and
+[668.12s -> 672.36s]  the current action. If we substituted in the
+[672.40s -> 673.96s]  entropy equations that we had on the
+[673.96s -> 675.68s]  previous slide, we know that we can also
+[675.68s -> 678.76s]  write this as the entropy of the next
+[678.76s -> 680.96s]  state minus the conditional entropy of
+[680.96s -> 682.12s]  the next state given the current
+[682.12s -> 684.72s]  action. Why is this called
+[684.72s -> 687.92s]  empowerment? Take a moment to consider
+[687.92s -> 689.76s]  that. You know, empowerment in English
+[689.76s -> 693.88s]  refers to how much power you have, how
+[693.92s -> 696.24s]  capable you are of achieving your
+[696.24s -> 699.24s]  desired end goals. What does this
+[699.24s -> 701.28s]  equation tell us about empowerment? Take a
+[701.28s -> 703.00s]  moment to think about it. Maybe write a
+[703.00s -> 708.84s]  comment in the comment section. So the
+[708.84s -> 710.04s]  way that we can think about this
+[710.04s -> 714.48s]  equation is it's saying that you would
+[714.48s -> 716.32s]  like the entropy of the next state
+[716.32s -> 718.24s]  to be large, which means that you would
+[718.24s -> 720.12s]  like there to be many possible next
+[720.12s -> 722.48s]  states, but you would like that entropy
+[722.48s -> 724.52s]  to be small conditioned on your current
+[724.52s -> 729.96s]  action. So that means that if you know
+[729.96s -> 731.56s]  which action you took, it's easy to
+[731.56s -> 732.92s]  predict which state you landed in. That
+[732.92s -> 734.28s]  means you have a lot of control
+[734.28s -> 735.72s]  authority about the environment. It means
+[735.72s -> 737.64s]  you have a lot of ability to
+[737.64s -> 739.48s]  deterministically influence which
+[739.48s -> 742.20s]  state you'll be in. On the other hand,
+[742.20s -> 744.40s]  if you don't know the action, you
+[744.40s -> 746.28s]  want the state entropy to be large. So
+[746.28s -> 747.40s]  that means that you have a variety of
+[747.40s -> 749.56s]  actions available to you and different
+[749.56s -> 750.76s]  actions will lead to very different
+[750.76s -> 752.96s]  states. And if you have both of these
+[752.96s -> 755.24s]  things, then what you should get is an
+[755.24s -> 756.80s]  agent that places themselves in a
+[756.80s -> 758.88s]  situation where they have many actions
+[758.88s -> 760.52s]  available to them that will all lead
+[760.52s -> 762.52s]  to very different states, but will do so
+[762.52s -> 766.08s]  in a reliable and controlled manner. So
+[766.08s -> 767.96s]  if you have a room, maybe you want to
+[767.96s -> 768.96s]  stand in the middle of that room
+[768.96s -> 770.52s]  because from there you can access all
+[770.52s -> 771.56s]  the parts of the room
+[771.56s -> 775.12s]  deterministically. If you had just one
+[775.12s -> 776.68s]  of these things, that wouldn't do the
+[776.68s -> 778.40s]  job. If you just have the entropy over
+[778.40s -> 781.72s]  the next state, now that's not really
+[781.72s -> 783.80s]  providing you with empowerment because
+[783.80s -> 785.36s]  there you want to put yourself in a
+[785.36s -> 786.52s]  situation where the future is very
+[786.52s -> 788.28s]  random. Maybe it's out of your control.
+[789.28s -> 791.44s]  If you just have the negative entropy
+[791.44s -> 792.72s]  of the next state given the current
+[792.72s -> 795.12s]  action, that's not quantifying the notion
+[795.12s -> 796.56s]  that you want many options available
+[796.56s -> 798.32s]  to you. So there you might put
+[798.32s -> 799.60s]  yourself in a very deterministic
+[799.60s -> 801.36s]  situation. Maybe you're sitting at the
+[801.36s -> 804.56s]  bottom of a well. The next state is
+[804.56s -> 806.88s]  extremely predictable whether you know
+[806.88s -> 808.48s]  the action or not, which means that
+[808.48s -> 810.00s]  the next state given the current
+[810.00s -> 812.40s]  action is also extremely predictable. So
+[812.40s -> 814.24s]  that would minimize the second term,
+[814.24s -> 815.84s]  but wouldn't maximize the first term.
+[816.56s -> 818.24s]  But if you have both of these terms,
+[818.24s -> 819.76s]  then the only way to satisfy that
+[819.76s -> 821.36s]  objective is to put yourself in
+[821.36s -> 823.52s]  situations where you have many actions
+[823.52s -> 825.28s]  available that lead to many different
+[825.28s -> 827.52s]  future states, but you have a lot of
+[827.52s -> 829.20s]  control about which state you get by
+[829.20s -> 831.04s]  choosing your action. So that's why
+[831.04s -> 832.64s]  this quantity is referred to as
+[832.64s -> 834.72s]  empowerment. And the main reason I
+[834.72s -> 836.08s]  wanted to illustrate this, you know,
+[836.08s -> 837.12s]  we're not going to go into detail
+[837.12s -> 839.04s]  about empowerment in today's lecture, but I
+[839.04s -> 840.64s]  want to illustrate this just to give
+[840.64s -> 842.56s]  you sort of a taste for how mutual
+[842.56s -> 845.92s]  information concepts can quantify useful
+[845.92s -> 847.44s]  notions in reinforcement learning.
+[849.20s -> 850.80s]  So this can be viewed as quantifying
+[850.80s -> 852.64s]  a notion of control authority in an
+[852.64s -> 854.08s]  information-theoretic way.

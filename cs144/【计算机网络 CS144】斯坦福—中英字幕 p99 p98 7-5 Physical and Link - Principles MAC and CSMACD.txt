@@ -1,0 +1,351 @@
+# Detected language: en (p=1.00)
+
+[0.00s -> 6.84s]  When we connect our computer to the network today, we're usually using Wi-Fi for wireless,
+[6.84s -> 9.44s]  or Ethernet for a wired connection.
+[9.44s -> 14.76s]  Ethernet is by far the most widely used link layer mechanism in the Internet today.
+[14.76s -> 19.16s]  The link layer covers how an end host is connected to a router, how one router
+[19.16s -> 23.80s]  is connected to the next, and generally, as we've seen, packets at the IP layer
+[23.80s -> 28.74s]  are encapsulated into a link layer frame, most often Ethernet, in order to be sent
+[28.74s -> 30.34s]  off to the first router.
+[30.34s -> 35.70s]  So in this video and the next, I'm going to be describing something called CSMA-CD,
+[35.70s -> 42.02s]  which is right at the heart of how Ethernet works, and was very much a part of the original
+[42.02s -> 43.02s]  Ethernet.
+[43.02s -> 47.72s]  And I'll be describing how Ethernet started out, its evolution over the years, and then
+[47.72s -> 54.30s]  how Ethernet switching became a very common way to extend the scope of a link to cover
+[54.30s -> 59.38s]  many many end hosts connected to a single router.
+[59.38s -> 62.52s]  You'll often hear Ethernet referred to as layer 2.
+[62.52s -> 67.26s]  And this goes back to the 7-layer OSI model that we saw in an earlier video.
+[67.26s -> 72.06s]  Whereas in the 4-layer Internet model, Ethernet is the lowest layer, in the 7-layer
+[72.06s -> 76.98s]  OSI model, Ethernet encompassed both the link and the physical layers, both of the
+[76.98s -> 77.98s]  lower two.
+[77.98s -> 81.36s]  So Ethernet is often referred to as layer 2 because of the link.
+[81.36s -> 86.18s]  The link really just covers the frame format and the algorithm that decides when a packet
+[86.18s -> 87.18s]  can be sent onto the wire.
+[87.18s -> 92.10s]  And we're going to see that a little bit later, that's the CSMA-CD mechanism.
+[92.10s -> 95.60s]  The physical layer covers things like the connectors and the electrical signals that
+[95.60s -> 98.02s]  are used on the wire.
+[98.02s -> 103.36s]  Ethernet started out as a means to connect multiple computers together on a single cable.
+[103.36s -> 109.60s]  That single cable was arranged as a long string or a bus, as shown here.
+[109.60s -> 114.24s]  It was in fact a big thick yellow cable that snaked around either in the walls, the ceiling
+[114.24s -> 116.32s]  or under the floor.
+[116.32s -> 118.72s]  And computers would be connected down into it.
+[118.72s -> 123.12s]  And then they're all sharing access to this same common wire.
+[123.12s -> 127.56s]  And the idea was that they would share it in order to be able to send packets between
+[127.56s -> 133.44s]  themselves, but that only one packet would be allowed onto the cable at a time because
+[133.44s -> 138.12s]  otherwise it would collide or corrupt and interfere with other packets.
+[138.12s -> 140.92s]  So this is what we call sharing a medium.
+[140.92s -> 146.86s]  And Ethernet is an example of when multiple hosts share a common cable.
+[146.86s -> 148.92s]  That's what we mean by medium.
+[148.92s -> 154.34s]  So to share the medium, we need to decide who gets to send and when.
+[154.34s -> 158.50s]  Because if only one packet can be sent on the medium at a time, we need to decide
+[158.50s -> 160.32s]  when the medium becomes free.
+[160.32s -> 161.92s]  Who is it that gets to use it next?
+[161.92s -> 164.00s]  Do they do it in round robin order?
+[164.00s -> 165.08s]  Do they do it randomly?
+[165.08s -> 167.00s]  Whoever gets to send first?
+[167.00s -> 168.60s]  What is the mechanism for doing so?
+[168.60s -> 173.04s]  And there's generally a class of what are called medium access control protocols, or
+[173.04s -> 174.84s]  MAC protocols.
+[174.84s -> 179.24s]  And these are the protocols or algorithms for determining who gets to send next.
+[179.24s -> 183.64s]  We're going to look at some examples, but one thing to note here is you've probably
+[183.64s -> 188.16s]  heard Ethernet addresses being referred to as MAC addresses before.
+[188.16s -> 191.16s]  And you may even see this written on the bottom of your computer.
+[191.16s -> 195.72s]  MAC stands for medium access control, even though we'll see later Ethernet doesn't
+[195.72s -> 198.60s]  use this mechanism very much anymore.
+[198.60s -> 203.64s]  That's just a vestige of the earlier 10 megabit per second version of Ethernet.
+[203.64s -> 208.10s]  Let's take a look at some examples of medium access control protocols.
+[208.10s -> 212.02s]  There have actually been dozens or hundreds of them described, published, and invented
+[212.02s -> 213.02s]  over the years.
+[213.02s -> 214.72s]  And many of them were standardized.
+[214.72s -> 218.66s]  But because many of them have gone out of fashion, I'm really going to be focusing
+[218.66s -> 226.38s]  on just one Ethernet or carrier sense multiple access with collision detection, CSMA-CD.
+[226.38s -> 227.72s]  That's the one we're going to be focusing on.
+[227.72s -> 230.54s]  But I just want to set it into context a little bit.
+[230.54s -> 235.78s]  So there are MAC protocols which are simple and random, the simplest of which is something
+[235.78s -> 240.06s]  called ALOHA that I will describe in a moment.
+[240.06s -> 242.74s]  And at the other extreme is a method called token passing.
+[242.74s -> 244.94s]  Let me describe roughly how these work.
+[244.94s -> 248.02s]  Let me start with the simple and random mechanisms.
+[248.06s -> 254.14s]  A random access protocol is one where every host can try to send at any time that it
+[254.14s -> 255.78s]  has data to send.
+[255.78s -> 260.26s]  It doesn't need to wait for some central authority to give it permission or until its
+[260.26s -> 261.68s]  turn comes around.
+[261.68s -> 263.50s]  It just tries to send.
+[263.50s -> 268.20s]  It might listen and see whether anyone else is speaking or it just may go right ahead.
+[268.20s -> 273.22s]  So it's random in the sense that it just may start speaking at any time.
+[273.26s -> 280.78s]  The other extreme, deterministic protocols like token passing, have some means to explicitly
+[280.78s -> 282.62s]  control who gets to go next.
+[282.62s -> 286.58s]  In other words, which host gets to send a packet next.
+[286.58s -> 292.04s]  The most common method is called token passing, in which a special packet or a token is sent
+[292.04s -> 294.38s]  from one host to the next.
+[294.38s -> 299.46s]  So they might be arranged, for example, in a ring.
+[299.46s -> 303.82s]  And there'll be a packet called a token that goes around.
+[303.82s -> 305.86s]  This would be the token packet.
+[305.86s -> 308.50s]  And when you hold the token, you're allowed to send a packet.
+[308.50s -> 312.26s]  So it might then send a packet on to another host.
+[312.26s -> 314.38s]  So this would be the packet being sent.
+[314.38s -> 318.78s]  And then when it's finished sending the packet, it then passes on the token to its neighbor,
+[318.78s -> 323.14s]  who then gets the opportunity to send a packet, and then will send the token on again.
+[323.14s -> 328.06s]  So the token will go around like the conch shell in Lord of the Flies, if you've
+[328.06s -> 333.06s]  read that book, or in any mechanism where we have a round-robin opportunity to send.
+[333.06s -> 338.22s]  And the token is indicating who gets to send next.
+[338.22s -> 342.64s]  This gives every host the chance to send in a deterministic order.
+[342.64s -> 346.86s]  But it does require us to both generate and maintain this token.
+[346.86s -> 351.10s]  And it turns out that there are lots of ways in which this mechanism can fail.
+[351.10s -> 354.50s]  And the token get lost, or the token can get duplicated.
+[354.50s -> 361.34s]  And so these have generally fallen out of favor of being replaced by the simpler Ethernet mechanism,
+[361.34s -> 364.90s]  in which every host just basically randomly sends.
+[364.90s -> 369.54s]  But we'll see how that's controlled using this CSMA-CD mechanism in a moment.
+[369.54s -> 375.40s]  So generally speaking, random access protocols are simple to implement, give really good
+[375.40s -> 379.74s]  performance when there are a small number of senders sending data at random times.
+[379.74s -> 383.02s]  But they work less well under very heavy load, because they can spend a lot of time
+[383.14s -> 387.14s]  colliding with each other and corrupting each other until they figure out an opportunity to send.
+[391.14s -> 397.14s]  So when we're designing a MAC protocol, or choosing one, then we generally have some goals in mind.
+[397.14s -> 401.14s]  We would like to have high utilization of the shared channel.
+[401.14s -> 407.14s]  We'd like to make sure that most of the time is spent sending data, not trying to recover from collisions,
+[407.14s -> 411.14s]  or when multiple end hosts are talking at the same time.
+[411.26s -> 413.26s]  We'd like it to be fair.
+[413.26s -> 418.26s]  We'd like it to be fair in the sense that everybody gets an equal opportunity to send,
+[418.26s -> 421.26s]  averaged over a long period.
+[421.26s -> 427.26s]  We'd like it to be simple and low-cost to implement, so that it can be very widely deployed.
+[427.26s -> 429.26s]  And we'd like it to be robust to errors.
+[429.26s -> 435.26s]  So we'd like it that if an end host fails, then the chances are it's not going to bring the whole network down.
+[438.26s -> 440.26s]  Let me start with an example.
+[440.38s -> 446.38s]  And the example that I'm going to be using is one of the earliest medium access control protocols,
+[446.38s -> 452.38s]  called the ALOHA protocol, that was used in the ALOHA network in Hawaii.
+[452.38s -> 454.38s]  So here are the Hawaiian islands.
+[454.38s -> 458.38s]  Basically, there was a central station in Oahu, where Honolulu is,
+[458.38s -> 468.38s]  and then there were relays or end attachments at radio transmitters on the islands of Kauai, Molokai, Maui, and Hawaii.
+[468.50s -> 474.50s]  And every packet that was sent would be sent from an end host into the central station,
+[474.50s -> 478.50s]  which would then rebroadcast it out to everybody.
+[478.50s -> 484.50s]  And so this was radio-based, RF-based, there was no wire, and so the medium in this case was the air.
+[485.50s -> 490.50s]  The way that ALOHA worked was all hosts would transmit on one frequency.
+[490.50s -> 494.50s]  So if a host has something to send, it would send on, say, frequency zero.
+[494.62s -> 498.62s]  This blue is just representing the channel corresponding to frequency zero.
+[498.62s -> 505.62s]  This would be sent up to the main relay station, or the central relay station on Oahu.
+[505.62s -> 511.62s]  And then that would be retransmitted, the packet data would be retransmitted out over frequency one,
+[511.62s -> 518.62s]  a separate frequency, so essentially a separate orthogonal channel, that would then be repeated to all end hosts.
+[518.62s -> 521.62s]  So we need a way to decide who can send when.
+[521.74s -> 527.74s]  And for this we need a protocol that everybody agrees upon so that the system will work correctly.
+[527.74s -> 532.74s]  And the first ALOHA network to use the ALOHA MAC protocol, which is very simple,
+[532.74s -> 535.74s]  if you have data to send, transmit it.
+[535.74s -> 539.74s]  If your transmission collides with another, retry later.
+[539.74s -> 541.74s]  That was it.
+[541.74s -> 546.74s]  So very simple. You send, and then if you discover that it collided, then you would retry later.
+[546.74s -> 548.74s]  How would you know that it collided?
+[548.86s -> 553.86s]  Well, you would send on frequency zero, and you would listen on frequency one,
+[553.86s -> 559.86s]  and if what came back was not a correct copy of what you would send on frequency zero,
+[559.86s -> 563.86s]  you know it must have collided, and therefore you need to send again.
+[563.86s -> 566.86s]  And you would retry at a later time.
+[566.86s -> 570.86s]  Nice thing about the ALOHA protocol was it's very simple.
+[570.86s -> 574.86s]  It's pretty robust against the failure of an end host.
+[574.86s -> 575.86s]  What do I mean by this?
+[575.98s -> 578.98s]  Well, if an end host fails and just stops sending,
+[578.98s -> 583.98s]  then the mechanism doesn't rely on any end host being powered on or correctly operating,
+[583.98s -> 585.98s]  because it'll just stop sending packets.
+[585.98s -> 591.98s]  There is a failure condition if it just starts jabbering away, sending packets that are meaningless.
+[591.98s -> 594.98s]  It can actually bring down communication for everyone else.
+[594.98s -> 598.98s]  So that's why we say that it's quite robust against failure.
+[598.98s -> 600.98s]  The protocol is distributed.
+[601.10s -> 607.10s]  In the sense that it's actually operating independently on all of the end hosts.
+[607.10s -> 610.10s]  They all independently decide for themselves.
+[610.10s -> 615.10s]  Under low load, when there are either very few hosts sending,
+[615.10s -> 618.10s]  or they're sending at a very low rate, they're sending infrequently,
+[618.10s -> 620.10s]  we can expect the delay to be small.
+[620.10s -> 625.10s]  Nearly any host that has data to send will find that the channel is free
+[625.10s -> 627.10s]  when it wants to send its packet.
+[627.10s -> 629.10s]  So it's very likely to get through first time.
+[629.22s -> 632.22s]  With very little trouble, it doesn't have to wait for some coordinating mechanism.
+[632.22s -> 636.22s]  It just sends, discovers that it gets through, and that's great.
+[636.22s -> 642.22s]  Under high load, a lot of time can be wasted sending packets that collide.
+[642.22s -> 647.22s]  Because under high load, the chances are that there are other hosts wanting to send at the same time.
+[647.22s -> 653.22s]  And so, as a consequence, generally speaking, the Aloha protocol is thought to have very low performance.
+[653.34s -> 660.34s]  And in fact, studies and theory and simulations have all suggested that under high load,
+[660.34s -> 665.34s]  you can show that the wasted time is so high, we can only achieve about 20% throughput.
+[665.34s -> 667.34s]  18%, in fact.
+[667.34s -> 672.34s]  So over 80% of the time is spent on transmissions that collide under very heavy load.
+[672.34s -> 675.34s]  Clearly, we need to improve performance.
+[675.34s -> 682.34s]  There were many, many papers in the 1970s and 80s on this topic of how to improve networks like this.
+[682.46s -> 689.46s]  And the technique most widely adopted for wired networks is called CSMA-CD, and it was used for Ethernet.
+[689.46s -> 693.46s]  And you can see some of the ideas here for improving performance.
+[693.46s -> 699.46s]  One is, instead of just going ahead and sending, regardless of whether anyone else is sending,
+[699.46s -> 701.46s]  you could actually listen for activity first.
+[701.46s -> 704.46s]  This is the carrier sense part of CSMA-CD.
+[704.46s -> 709.46s]  So you listen, first of all, to check whether anyone else is sending before sending a packet.
+[709.58s -> 714.58s]  If they are, you wait. If they're not, then probably your packet will get through OK.
+[714.58s -> 719.58s]  The next one is to try and detect collisions quickly and stop transmitting.
+[719.58s -> 725.58s]  If you take your time to detect the collision or you wait until the packet is over, then you've wasted all of that time.
+[725.58s -> 732.58s]  If you can detect it very, very quickly, back off, and then try again later, then you can improve the performance.
+[732.58s -> 738.58s]  And the third one is, after there has been a collision, pick a random waiting time that is based on the load.
+[738.70s -> 741.70s]  In other words, pick a random time before trying again.
+[741.70s -> 747.70s]  If the load is high, then wait a long time, because that'll give others the opportunity to be able to send.
+[747.70s -> 753.70s]  If the load is low, then wait a short time, because probably you'll get through successfully next time.
+[753.70s -> 759.70s]  If the load is high and you wait a short time, the chances are you'll collide again, and it'll just be a wasted opportunity.
+[759.82s -> 765.82s]  This leads us, then, naturally from that simple Aloha mechanism to the very widely used CSMA-CD protocol.
+[768.82s -> 771.82s]  And this is how it works.
+[771.82s -> 776.82s]  This is what was used for the original 10 megabit per second Ethernet.
+[776.82s -> 781.82s]  All hosts can transmit and receive on the one channel, which is this wire here.
+[781.82s -> 786.82s]  This is the shared medium. Packets are of variable size, of course.
+[786.94s -> 791.94s]  When a host has a packet to transmit, first of all it does carry a sense.
+[791.94s -> 794.94s]  So that's the CS of CSMA-CD.
+[794.94s -> 798.94s]  It checks that the line is quiet before transmitting, so it listens.
+[798.94s -> 803.94s]  If the wire is quiet, then it says, probably my packet will get through.
+[803.94s -> 808.94s]  Then, if there is a collision, it will try and detect it quickly.
+[808.94s -> 811.94s]  It will detect the collision as soon as possible.
+[812.06s -> 817.06s]  If a collision is detected, it will stop transmitting, wait a random time, and then it'll go back to 1 again.
+[820.06s -> 825.06s]  In other words, it will go back, listen for whether the wire is quiet, and then try and transmit.
+[825.06s -> 827.06s]  And if there's a collision, it'll keep doing that.
+[827.06s -> 830.06s]  And it'll just keep doing that until it's successful.
+[830.06s -> 833.06s]  This random time is called a binary exponential back-off.
+[833.06s -> 838.06s]  And all it means is, as the number of collisions increase for a given packet, it will wait a longer time.
+[838.18s -> 843.18s]  In other words, if there are lots of collisions, it means there's lots of other transmitters.
+[843.18s -> 848.18s]  And therefore, I should try and hold off a longer amount of time in order to be able to give everybody the opportunity to send.
+[854.18s -> 859.18s]  Let's look at how CSMA-CD works in practice.
+[859.18s -> 864.18s]  Let's say that I have a packet at A that wants to send a packet to B.
+[868.18s -> 870.18s]  The packet wants to go to D.
+[870.18s -> 873.18s]  So it has the Ethernet address of D.
+[873.18s -> 875.18s]  A will send the packet.
+[875.18s -> 878.18s]  The packet will propagate down the wire.
+[878.18s -> 883.18s]  So I'm going to draw it all the way along the wire here with D in it.
+[883.18s -> 886.18s]  As if it's moving from left to right.
+[886.18s -> 889.18s]  It'll propagate at the speed of light down the wire.
+[889.18s -> 891.18s]  And then it'll come up into D.
+[891.18s -> 896.18s]  D will recognize the Ethernet address, and the packet will be correctly delivered.
+[896.30s -> 900.30s]  That first bit, that very first bit at the front of the packet,
+[900.30s -> 903.30s]  will start out by being put onto the wire here.
+[903.30s -> 905.30s]  And then it'll propagate along.
+[905.30s -> 908.30s]  And it will take it L over C.
+[908.30s -> 911.30s]  If L is the length of the cable from A to D.
+[911.30s -> 915.30s]  It'll take it L over C seconds to arrive.
+[915.30s -> 917.30s]  D listens. Here's the packet.
+[917.30s -> 921.30s]  And in the meantime, while that packet is coming in,
+[921.30s -> 923.30s]  the wire is busy.
+[923.42s -> 926.42s]  So B, C, and D will all hear the wire is busy
+[926.42s -> 928.42s]  and won't try and send packets.
+[928.42s -> 932.42s]  So if they've got anything to send, they'll do the carrier sends, the step 1.
+[932.42s -> 934.42s]  Say the network is busy.
+[934.42s -> 936.42s]  I won't try and send now.
+[936.42s -> 938.42s]  I'll wait until later.
+[940.42s -> 946.42s]  Now let's look at the condition of what causes a collision in the network.
+[946.42s -> 949.42s]  So if A again has a packet destined for D.
+[949.42s -> 952.42s]  And D has a packet that is destined for A.
+[952.42s -> 956.42s]  A will send its packet.
+[956.42s -> 958.42s]  So let's look at the first bit.
+[958.42s -> 963.42s]  I'm just now going to talk in terms of the first bit propagating down the wire from A to D.
+[963.42s -> 965.42s]  It'll take L over C seconds.
+[967.42s -> 970.42s]  If that packet is going down the wire.
+[970.42s -> 972.42s]  Here is the whole packet.
+[972.42s -> 975.42s]  And D listens and says,
+[975.42s -> 979.42s]  aha, it's quiet right now because the first bit hasn't arrived.
+[979.42s -> 981.42s]  And starts sending its packet.
+[981.42s -> 984.42s]  And so its packet is heading down in this direction.
+[984.42s -> 986.42s]  Its first bit is going down here.
+[986.42s -> 991.42s]  And so at some point, the front of this packet will collide with the front of this packet.
+[991.42s -> 995.42s]  And after that, they will pass through each other, corrupting each other,
+[995.42s -> 999.42s]  so that everyone that sees it, first of all C, will see it in this case.
+[999.42s -> 1002.42s]  So it will hear that there is a collision.
+[1002.42s -> 1006.42s]  And the way that it detects the collision is through a number of mechanisms.
+[1006.42s -> 1009.42s]  One is it just starts to get garbled messages.
+[1009.42s -> 1012.42s]  It sees a much larger number of transitions,
+[1012.42s -> 1015.42s]  basically twice as many transitions on the wire.
+[1015.42s -> 1018.42s]  Or the main frequency component is doubled.
+[1018.42s -> 1020.42s]  Or the voltage level has been increased.
+[1020.42s -> 1023.42s]  Any of these mechanisms can be used to detect a collision.
+[1023.42s -> 1028.42s]  As the packet from D continues to head towards A,
+[1028.42s -> 1034.42s]  that collision will soon be noted at B, when the front of the packet gets to B.
+[1034.42s -> 1037.42s]  And so it will hear the collision.
+[1037.42s -> 1042.42s]  And eventually that packet will reach A, and it will hear the collision.
+[1042.42s -> 1046.42s]  And of course, this packet here will hit D.
+[1046.42s -> 1048.42s]  And so it will hear the collision.
+[1048.42s -> 1051.42s]  So at all slightly different times, they all hear the collision,
+[1051.42s -> 1056.42s]  depending on the particular time that the packets were sent.
+[1056.42s -> 1058.42s]  So, carry a sense.
+[1058.42s -> 1061.42s]  Listen, see whether the line is quiet.
+[1061.42s -> 1065.42s]  Send the packet, listen for the collision, then back off.
+[1065.42s -> 1068.42s]  The binary exponential back off is set so that there's a good chance
+[1068.42s -> 1070.42s]  that they will both back off by different amounts,
+[1070.42s -> 1075.42s]  and therefore not collide next time they send.
+[1075.42s -> 1079.42s]  CSMA-CD networks have a minimum packet size requirement.
+[1079.42s -> 1082.42s]  Let me explain why that is.
+[1082.42s -> 1086.42s]  Going back to my example of when A and D were sending packets to each other,
+[1086.42s -> 1090.42s]  imagine now that A and D are sending packets on this network
+[1090.42s -> 1096.42s]  of length L and speed of propagation C.
+[1096.42s -> 1100.42s]  Imagine that the first bit of the packet from A
+[1100.42s -> 1104.42s]  so remember we have packet from A to D
+[1104.42s -> 1108.42s]  and we have packets from D to A
+[1108.42s -> 1112.42s]  D listens, hears that the wire is quiet
+[1112.42s -> 1117.42s]  and at time 0, so this is going to be T equals 0
+[1117.42s -> 1120.42s]  the first bit of A from A
+[1120.42s -> 1124.42s]  is going to start propagating down here towards D.
+[1124.42s -> 1129.42s]  Now imagine that at a time just a tiny, tiny little bit
+[1129.42s -> 1132.42s]  L over C minus delta
+[1132.42s -> 1136.42s]  just a tiny time period before that first bit reaches D
+[1136.42s -> 1140.42s]  host D decides that it's going to send its packet.
+[1140.42s -> 1143.42s]  It listens to the wire, says that it's idle
+[1143.42s -> 1145.42s]  and then starts to transmit its packet.
+[1145.42s -> 1149.42s]  So the packet almost immediately collides
+[1149.42s -> 1153.42s]  and at time delta later
+[1153.42s -> 1156.42s]  the collision will be detected at D
+[1156.42s -> 1159.42s]  and D will stop transmitting
+[1159.42s -> 1161.42s]  almost immediately.
+[1161.42s -> 1164.42s]  Now although D knows about the collision
+[1164.42s -> 1166.42s]  A doesn't know about the collision yet
+[1166.42s -> 1170.42s]  because that information or that collision has not propagated to A.
+[1170.42s -> 1174.42s]  So that little fragment of what D has sent
+[1174.42s -> 1178.42s]  will propagate down here, so this is the collision propagating down
+[1178.42s -> 1182.42s]  and so eventually the propagation, the first bit will reach here.
+[1182.42s -> 1186.42s]  If A is still sending the packet towards D
+[1186.42s -> 1189.42s]  in other words if it hasn't reached the end of the packet yet
+[1189.42s -> 1194.42s]  then A will detect the collision as well.
+[1194.42s -> 1198.42s]  And it will detect that collision after L over C from when it started
+[1198.42s -> 1202.42s]  and then another L over C until the packet is finished.
+[1202.42s -> 1204.42s]  So there's two L over C in the worst case
+[1204.42s -> 1207.42s]  is the time from when A starts sending a packet
+[1207.42s -> 1210.42s]  until it hears of the collision.
+[1210.42s -> 1214.42s]  If A had finished sending its packet
+[1214.42s -> 1218.42s]  by the time the collision propagated to it
+[1218.42s -> 1221.42s]  A wouldn't realize that the collision took place
+[1221.42s -> 1223.42s]  and when it hears about the collision
+[1223.42s -> 1226.42s]  it wouldn't know what packet had caused the collision
+[1226.42s -> 1229.42s]  had it been its own packet, had it been a packet from another host.
+[1229.42s -> 1233.42s]  So in order for a simple way for A to be sure
+[1233.42s -> 1236.42s]  that it stops and realizes that there was a collision
+[1236.42s -> 1238.42s]  and needs to back off and retransmit the packet
+[1238.42s -> 1241.42s]  one simple way to do this is to make sure
+[1241.42s -> 1245.42s]  that A is sending its packet for at least two L over C.
+[1245.42s -> 1249.42s]  In other words, in the worst case it's guaranteed to hear about the collision
+[1249.42s -> 1253.42s]  before it stops transmitting the packet.
+[1253.42s -> 1256.42s]  This means that we have a requirement of P over R
+[1256.42s -> 1258.42s]  the packet length divided by the rate
+[1258.42s -> 1263.42s]  is greater than or equal to two L over C.
+[1263.42s -> 1267.42s]  This is a general requirement for CSMA CD networks
+[1267.42s -> 1269.42s]  in order to be able to detect a collision
+[1269.42s -> 1272.42s]  while it's still transmitting a packet.
+[1272.42s -> 1274.42s]  Let's look at an example.
+[1274.42s -> 1277.42s]  Imagine that I have a CSMA CD network
+[1277.42s -> 1281.42s]  which is running at a rate of 10 megabits per second
+[1282.42s -> 1288.42s]  and let's say it's 10,000 meters long, 10 kilometers long.
+[1288.42s -> 1290.42s]  It's a pretty big network
+[1290.42s -> 1294.42s]  and that the speed of propagation is 2 times 10 to the 8 meters per second.
+[1294.42s -> 1298.42s]  Well we need P over R is greater than or equal to two L over C
+[1298.42s -> 1302.42s]  so we can say P must be greater than or equal to
+[1302.42s -> 1306.42s]  2 times L, 10 to the 4
+[1307.42s -> 1313.42s]  times, well I've just moved the R over onto the other side
+[1313.42s -> 1318.42s]  so 10 to the 7, divided by 2 times 10 to the 8.
+[1318.42s -> 1320.42s]  So the 2's are going to cancel
+[1320.42s -> 1324.42s]  and I've got 11 over 8 is 1000 bits.
+[1324.42s -> 1328.42s]  So what that would tell me is that for a CSMA CD network
+[1328.42s -> 1331.42s]  to operate correctly at that size and those rates
+[1331.42s -> 1336.42s]  the minimum size packet has to be 1000 bits or about 128 bytes.
+[1336.42s -> 1341.42s]  So in summary, we've seen how medium access control protocols are used
+[1341.42s -> 1345.42s]  starting with the LoHa nice simple random access protocol
+[1345.42s -> 1349.42s]  and then improved in its performance to create CSMA CD.
+[1349.42s -> 1353.42s]  And we saw that CSMA CD is very simple
+[1353.42s -> 1355.42s]  nice random access mechanism
+[1355.42s -> 1360.42s]  and we learned that the minimum packet size P over R
+[1360.42s -> 1362.42s]  has to be greater than 2L over C
+[1362.42s -> 1365.42s]  in order to be able to reliably detect collisions
+[1365.42s -> 1368.42s]  before we finish transmitting a packet.
+[1368.42s -> 1374.42s]  In the next video I'm going to be explaining how CSMA CD was used in the original Ethernet
+[1374.42s -> 1376.42s]  and then how Ethernet has evolved over time
+[1376.42s -> 1379.42s]  and then end with Ethernet switching.
