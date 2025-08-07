@@ -3,7 +3,7 @@ from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor
 from faster_whisper import WhisperModel
 
-INPUT_DIR = Path.home() / "repo/yoTA/cs285"
+INPUT_DIR = Path.home() / "open-course/mithpc"
 OUTPUT_SUFFIX = ".txt"
 NUM_CORES = 3
 
